@@ -5,15 +5,29 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Copied from https://raw.githubusercontent.com/dotnet/runtime/main/src/libraries/Common/src/System/Text/ValueStringBuilder.cs
+// Original source: .NET Runtime and Windows Forms source code.
 
 using System.Buffers;
 
 namespace Touki;
 
 /// <summary>
-///  String builder struct that allows using stack space for small strings.
+///  String builder struct that can be used to build strings in a memory-efficient way.
+///  Allows using stack space for small strings.
 /// </summary>
+/// <remarks>
+///  <para>
+///   This class can also be used as an interpolated string handler, which allows you to get efficiently
+///   formatted strings in your helper methods that take this as a ref parameter.
+///  </para>
+///  <para>
+///   <code>
+///    <![CDATA[
+///      string Format(ref ValueStringBuilder builder)
+///    ]]>
+///   </code>
+///  </para>
+/// </remarks>
 [InterpolatedStringHandler]
 public ref partial struct ValueStringBuilder
 {
@@ -32,9 +46,10 @@ public ref partial struct ValueStringBuilder
     /// <param name="formattedCount">The number of formatted holes in the interpolated string.</param>
     public ValueStringBuilder(int literalLength, int formattedCount)
     {
-        _arrayToReturnToPool = null;
-        _chars = ArrayPool<char>.Shared.Rent(
-            Math.Min(MinimumArrayPoolLength, literalLength + (GuessedLengthPerHole * formattedCount)));
+        _arrayToReturnToPool = ArrayPool<char>.Shared.Rent(
+            Math.Max(MinimumArrayPoolLength, literalLength + (GuessedLengthPerHole * formattedCount)));
+
+        _chars = _arrayToReturnToPool;
         _pos = 0;
     }
 
@@ -337,14 +352,28 @@ public ref partial struct ValueStringBuilder
     {
         int charsWritten;
 
-        // This must be cast inline to avoid boxing.
-        while (!((ISpanFormattable)value).TryFormat(_chars[_pos..], out charsWritten, format: default, provider: default))
+        while (!value.TryFormat(_chars[_pos..], out charsWritten, format: default, provider: default))
         {
             Grow(1);
         }
 
         _pos += charsWritten;
         return;
+    }
+
+    /// <summary>
+    ///  Appends the formatted representation of an integer to this builder.
+    /// </summary>
+    /// <param name="value">The value to format and append.</param>
+    public void AppendFormatted(int value)
+    {
+#if NET
+        AppendFormatted<int>(value);
+#else
+        // This at least avoids boxing for the common case of formatting an int. This could be improved further
+        // by writing (or porting) an int formatting method that writes directly to the builder.
+        AppendFormatted(value.ToString());
+#endif
     }
 
     /// <summary>

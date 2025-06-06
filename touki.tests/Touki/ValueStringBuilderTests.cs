@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
+
 namespace Touki;
 
 public unsafe class ValueStringBuilderTests
@@ -519,4 +521,83 @@ public unsafe class ValueStringBuilderTests
 
         builder.ToString().Should().Be("Value: 42, Text: Hello");
     }
+
+    [Theory]
+    [InlineData(10)]
+    [InlineData(100)]
+    public void AsHandler_Int(int value)
+    {
+        string result = TestFormat($"Hello, {value}!");
+        result.Should().Be($"Hello, {value}!");
+    }
+
+    [Theory]
+    [InlineData(DayOfWeek.Monday)]
+    [InlineData(DayOfWeek.Friday)]
+    public void AsHandler_Enum(DayOfWeek value)
+    {
+        string result = TestFormat($"Hello, it's {value}!");
+        result.Should().Be($"Hello, it's {value}!");
+    }
+
+    [Theory()]
+    [InlineData(DayOfWeek.Monday)]
+    public void AsHandler_EnsureNoExtraAllocations(DayOfWeek value)
+    {
+        // Ensure we've rented from the pool and primed any other data.
+        _ = TestFormat($"Today is {(int)value}.");
+        _ = TestFormat($"Today is {value}.");
+
+        // Check int formatting first.
+        long startBytes = GC.GetAllocatedBytesForCurrentThread();
+        _ = TestFormat($"Today is {(int)value}.");
+
+        long currentBytes = GC.GetAllocatedBytesForCurrentThread();
+        long totalBytes = currentBytes - startBytes;
+#if NETFRAMEWORK
+        totalBytes.Should().Be(80);
+#else
+        totalBytes.Should().Be(48);
+#endif
+
+        // Now check normal formatting.
+        startBytes = GC.GetAllocatedBytesForCurrentThread();
+        _ = $"Today is {(int)value}.";
+
+        currentBytes = GC.GetAllocatedBytesForCurrentThread();
+        totalBytes = currentBytes - startBytes;
+
+#if NETFRAMEWORK
+        totalBytes.Should().Be(224);
+#else
+        totalBytes.Should().Be(48);
+#endif
+
+        startBytes = GC.GetAllocatedBytesForCurrentThread();
+        _ = TestFormat($"Today is {value}.");
+
+        currentBytes = GC.GetAllocatedBytesForCurrentThread();
+        totalBytes = currentBytes - startBytes;
+
+#if NETFRAMEWORK
+        totalBytes.Should().Be(184);
+#else
+        totalBytes.Should().Be(80);
+#endif
+
+        // Now check normal formatting.
+        startBytes = GC.GetAllocatedBytesForCurrentThread();
+        _ = $"Today is {value}.";
+
+        currentBytes = GC.GetAllocatedBytesForCurrentThread();
+        totalBytes = currentBytes - startBytes;
+
+#if NETFRAMEWORK
+        totalBytes.Should().Be(280);
+#else
+        totalBytes.Should().Be(56);
+#endif
+    }
+
+    private static string TestFormat(ref ValueStringBuilder builder) => builder.ToStringAndClear();
 }
