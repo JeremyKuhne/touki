@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
-
 namespace Touki;
 
 public unsafe class ValueStringBuilderTests
@@ -547,6 +545,8 @@ public unsafe class ValueStringBuilderTests
         // Ensure we've rented from the pool and primed any other data.
         _ = TestFormat($"Today is {(int)value}.");
         _ = TestFormat($"Today is {value}.");
+        _ = $"Today is {(int)value}.";
+        _ = $"Today is {value}.";
 
         // Check int formatting first.
         long startBytes = GC.GetAllocatedBytesForCurrentThread();
@@ -568,7 +568,7 @@ public unsafe class ValueStringBuilderTests
         totalBytes = currentBytes - startBytes;
 
 #if NETFRAMEWORK
-        totalBytes.Should().Be(224);
+        totalBytes.Should().Be(104);
 #else
         totalBytes.Should().Be(48);
 #endif
@@ -593,7 +593,7 @@ public unsafe class ValueStringBuilderTests
         totalBytes = currentBytes - startBytes;
 
 #if NETFRAMEWORK
-        totalBytes.Should().Be(280);
+        totalBytes.Should().Be(184);
 #else
         totalBytes.Should().Be(56);
 #endif
