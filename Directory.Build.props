@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- SDK props pull in common props -->
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
+          Condition="'$(ImportCommonProps)' == 'true' and Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+
+  <!-- Common repo directories -->
+  <PropertyGroup>
+    <RepoDir>$(MSBuildThisFileDirectory)</RepoDir>
+    <SourceDir>$(ProjectDir)src\</SourceDir>
+
+    <!-- Output directories -->
+    <BinDir Condition="'$(BinDir)'==''">$(RepoDir)artifacts\</BinDir>
+    <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj\</ObjDir>
+
+    <!-- Input Directories -->
+    <PackagesDir Condition="'$(PackagesDir)'==''">$(RepoDir)packages\</PackagesDir>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- Set default Configuration and Platform -->
+  <PropertyGroup>
+    <Platforms Condition="'$(Platforms)'==''">x64</Platforms>
+    <Platform Condition="'$(Platform)'==''">x64</Platform>
+    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
+  </PropertyGroup>
+
+  <!-- Set up Default symbol and optimization for Configuration -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+    <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
+    <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+    <DebugType Condition="'$(DebugType)' == ''">pdbonly</DebugType>
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Platform)' == 'x86'">
+    <DefineConstants>TARGET_32BIT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Platform)' != 'x86'">
+    <DefineConstants>TARGET_64BIT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Set up the default output and intermediate paths -->
+  <PropertyGroup>
+    <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(Platform)\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
+
+    <!--
+        Putting the project at the root rather than after the platform/configuration allows usages of BaseIntermediateOutputPath
+        that implicitly expect it to be project isolated to work. $(ProjectAssetsFile) depends on this. (New to VS 2017)
+    -->
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(Platform)\$(Configuration)\</IntermediateOutputRootPath>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)\</IntermediateOutputPath>
+
+    <!--
+        Note that SDK targets add the target framework to $(IntermediateOutputPath) and $(OutputPath). (via Microsoft.NET.TargetFrameworkInference.targets)
+        $(AppendTargetFrameworkToOutputPath) can be used to skip this behavior.
+    -->
+  </PropertyGroup>
+
+</Project>

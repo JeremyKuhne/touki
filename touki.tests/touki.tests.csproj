@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Multitarget .NET 9 and .NET Framework 4.72
+      https://learn.microsoft.com/dotnet/standard/frameworks
+    -->
+    <TargetFrameworks>net9.0;net472</TargetFrameworks>
+
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="FluentAssertions" Version="6.12.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(TargetFramework)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EditorConfigFiles Remove="N:\repos\vsinterop\vsinterop.tests\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="N:\repos\vsinterop\vsinterop.tests\.editorconfig" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Multitarget .NET 9 and .NET Framework 4.72
+      https://learn.microsoft.com/dotnet/standard/frameworks
+    -->
+    <TargetFrameworks>net9.0;net472</TargetFrameworks>
+
+    <!--
+     We don't want to have implicit usings as we're retargeting System.IO to Microsoft.IO
+     in our GlobalUsings.cs file for .NET 4.7.2.
+    -->
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace />
+
+    <!--
+     Modifying default items to exclude the Framework items if not building for .NET Framework.
+    -->
+    <DefaultItemExcludes Condition="'$(TargetFramework)' != 'net472'">$(DefaultItemExcludes);**/Framework/**/*</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'net472'">
+    <!-- Include the Framework specific items as none so we can see them easily in the Solution Explorer. -->
+    <None Include="**/Framework/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" Version="6.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <!-- This gets us .NET 6 System.IO repackaged for .NET Framework. -->
+    <PackageReference Include="Microsoft.IO.Redist" Version="6.1.3" />
+    <!-- This gets us Span. -->
+    <PackageReference Include="System.Memory" Version="4.6.3" />
+    <!-- This provides Range and Index support downlevel -->
+    <PackageReference Include="Microsoft.Bcl.Memory" Version="9.0.5" />
+  </ItemGroup>
+
+</Project>
