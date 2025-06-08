@@ -538,6 +538,7 @@ public unsafe class ValueStringBuilderTests
         result.Should().Be($"Hello, it's {value}!");
     }
 
+    // These are theories to avoid compilation optimization removing the code paths.
     [Theory()]
     [InlineData(DayOfWeek.Monday)]
     public void AsHandler_EnsureNoExtraAllocations(DayOfWeek value)
@@ -549,54 +550,65 @@ public unsafe class ValueStringBuilderTests
         _ = $"Today is {value}.";
 
         // Check int formatting first.
-        long startBytes = GC.GetAllocatedBytesForCurrentThread();
-        _ = TestFormat($"Today is {(int)value}.");
 
-        long currentBytes = GC.GetAllocatedBytesForCurrentThread();
-        long totalBytes = currentBytes - startBytes;
+        using (AssertBytesAllocated assert = new(48, 80))
+        {
+            _ = TestFormat($"Today is {(int)value}.");
+        }
+
+        using (AssertBytesAllocated assert = new(48, 104))
+        {
+            _ = $"Today is {(int)value}.";
+        }
+
+        // Check enum formatting allocations.
+
+        using (AssertBytesAllocated assert = new(80, 184))
+        {
+            _ = TestFormat($"Today is {value}.");
+        }
+
+        using (AssertBytesAllocated tracker = new(56, 184))
+        {
+            _ = $"Today is {value}.";
+        }
+
+        // Now try with spans
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        builder.Append("This is a test");
+        ReadOnlySpan<char> readOnlySpan = builder.AsSpan();
+
+        using (AssertBytesAllocated assert = new(72, 72))
+        {
+            _ = TestFormat($"Message {readOnlySpan}");
+        }
+
+        using (AssertBytesAllocated assert = new(72, 128))
+        {
+            // You *have* to convert to string on .NET Framework.
 #if NETFRAMEWORK
-        totalBytes.Should().Be(80);
+            _ = $"Message {readOnlySpan.ToString()}";
 #else
-        totalBytes.Should().Be(48);
+            _ = $"Message {readOnlySpan}";
 #endif
+        }
 
-        // Now check normal formatting.
-        startBytes = GC.GetAllocatedBytesForCurrentThread();
-        _ = $"Today is {(int)value}.";
+        Span<char> span = builder.ToString().ToArray();
 
-        currentBytes = GC.GetAllocatedBytesForCurrentThread();
-        totalBytes = currentBytes - startBytes;
+        using (AssertBytesAllocated assert = new(72, 72))
+        {
+            _ = TestFormat($"Message {span}");
+        }
 
+        using (AssertBytesAllocated assert = new(72, 128))
+        {
+            // You *have* to convert to string on .NET Framework.
 #if NETFRAMEWORK
-        totalBytes.Should().Be(104);
+            _ = $"Message {span.ToString()}";
 #else
-        totalBytes.Should().Be(48);
+            _ = $"Message {span}";
 #endif
-
-        startBytes = GC.GetAllocatedBytesForCurrentThread();
-        _ = TestFormat($"Today is {value}.");
-
-        currentBytes = GC.GetAllocatedBytesForCurrentThread();
-        totalBytes = currentBytes - startBytes;
-
-#if NETFRAMEWORK
-        totalBytes.Should().Be(184);
-#else
-        totalBytes.Should().Be(80);
-#endif
-
-        // Now check normal formatting.
-        startBytes = GC.GetAllocatedBytesForCurrentThread();
-        _ = $"Today is {value}.";
-
-        currentBytes = GC.GetAllocatedBytesForCurrentThread();
-        totalBytes = currentBytes - startBytes;
-
-#if NETFRAMEWORK
-        totalBytes.Should().Be(184);
-#else
-        totalBytes.Should().Be(56);
-#endif
+        }
     }
 
     private static string TestFormat(ref ValueStringBuilder builder) => builder.ToStringAndClear();

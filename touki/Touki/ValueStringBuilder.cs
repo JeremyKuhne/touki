@@ -362,6 +362,12 @@ public ref partial struct ValueStringBuilder
     }
 
     /// <summary>
+    ///  Appends the specified read-only span of characters to this builder.
+    /// </summary>
+    /// <param name="value">The span of characters to append.</param>
+    public void AppendFormatted(ReadOnlySpan<char> value) => Append(value);
+
+    /// <summary>
     ///  Appends the formatted representation of an integer to this builder.
     /// </summary>
     /// <param name="value">The value to format and append.</param>
