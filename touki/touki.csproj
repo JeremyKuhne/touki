@@ -17,6 +17,19 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace />
 
+    <PackageId>KlutzyNinja.Touki</PackageId>
+    <Description>Provides useful functionality both for .NET and .NET Framework applications.</Description>
+    <Authors>Jeremy W. Kuhne</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/JeremyKuhne/touki</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/JeremyKuhne/touki</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+
+    <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\touki.snk</AssemblyOriginatorKeyFile>
+
     <!--
      Modifying default items to exclude the Framework items if not building for .NET Framework.
     -->
@@ -37,6 +50,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <None Include="../README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
