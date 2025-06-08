@@ -25,6 +25,7 @@
     <RepositoryUrl>https://github.com/JeremyKuhne/touki</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Copyright>Copyright (c) Jeremy W. Kuhne. All rights reserved.</Copyright>
 
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
