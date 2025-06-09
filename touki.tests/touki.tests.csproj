@@ -35,12 +35,4 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
-  <ItemGroup>
-    <EditorConfigFiles Remove="N:\repos\vsinterop\vsinterop.tests\.editorconfig" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="N:\repos\vsinterop\vsinterop.tests\.editorconfig" />
-  </ItemGroup>
-
 </Project>

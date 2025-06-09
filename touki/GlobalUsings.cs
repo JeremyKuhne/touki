@@ -33,8 +33,10 @@ global using Marshal = System.Runtime.InteropServices.Marshal;
 
 #if NETFRAMEWORK
 global using ArgumentOutOfRange = Touki.ArgumentOutOfRangeAdapter;
+global using ObjectDisposed = Touki.ObjectDisposedAdapter;
 #else
 global using ArgumentOutOfRange = System.ArgumentOutOfRangeException;
+global using ObjectDisposed = System.ObjectDisposedException;
 #endif
 
 #pragma warning restore IDE0005 // Using directive is unnecessary.
