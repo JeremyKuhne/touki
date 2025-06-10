@@ -5,12 +5,17 @@
   <Folder Name="/Solution Items/" Id="9c552411-0ad8-4d21-bb80-88fb680d5b51">
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
+    <File Path=".github/copilot-instructions.md" />
     <File Path=".gitignore" />
     <File Path="CONTRIBUTING.md" />
     <File Path="Directory.Build.props" />
     <File Path="LICENSE" />
     <File Path="README.md" />
     <File Path="THIRD-PARTY-NOTICES.TXT" />
+  </Folder>
+  <Folder Name="/Solution Items/GitHub/">
+    <File Path=".github/copilot-instructions.md" />
+    <File Path=".github/workflows/dotnet.yml" />
   </Folder>
   <Project Path="touki.tests/touki.tests.csproj" Id="19ab971c-bbbf-45f9-8a09-11054caec775">
     <Platform Project="x64" />

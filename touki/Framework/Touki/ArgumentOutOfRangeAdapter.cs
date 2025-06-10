@@ -12,6 +12,12 @@ internal static class ArgumentOutOfRangeAdapter
             ThrowNegative(value, paramName);
     }
 
+    public static void ThrowIfLessThan(int value, int minValue, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+    {
+        if (value < minValue)
+            ThrowNegative(value, paramName);
+    }
+
     [DoesNotReturn]
     private static void ThrowNegative<T>(T value, string? paramName) =>
     throw new ArgumentOutOfRangeException(paramName, value, $"{paramName} must be positive. ({value})");
