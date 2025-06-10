@@ -28,7 +28,8 @@ public unsafe class ValueStringBuilderTests_Memory
             _ = TestFormat($"Today is {(int)value}.");
         }
 
-        using (AssertBytesAllocated assert = new(48, 104))
+        // This is 104 without DefaultInterpolatedStringHandler, 80 with it.
+        using (AssertBytesAllocated assert = new(48, 80))
         {
             _ = $"Today is {(int)value}.";
         }
@@ -57,12 +58,17 @@ public unsafe class ValueStringBuilderTests_Memory
 
         using (AssertBytesAllocated assert = new(72, 128))
         {
-            // You *have* to convert to string on .NET Framework.
+            // You normally *have* to convert to string on .NET Framework.
 #if NETFRAMEWORK
             _ = $"Message {readOnlySpan.ToString()}";
 #else
             _ = $"Message {readOnlySpan}";
 #endif
+        }
+
+        using (AssertBytesAllocated assert = new(72, 72))
+        {
+            _ = $"Message {readOnlySpan}";
         }
 
         Span<char> span = builder.ToString().ToArray();

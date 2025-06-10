@@ -383,6 +383,21 @@ public ref partial struct ValueStringBuilder
     }
 
     /// <summary>
+    ///  Appends the formatted representation of an integer to this builder.
+    /// </summary>
+    /// <param name="value">The value to format and append.</param>
+    public void AppendFormatted(long value)
+    {
+#if NET
+        AppendFormatted<long>(value);
+#else
+        // This at least avoids boxing for the common case of formatting an int. This could be improved further
+        // by writing (or porting) an int formatting method that writes directly to the builder.
+        AppendFormatted(value.ToString());
+#endif
+    }
+
+    /// <summary>
     ///  Appends the specified string to this builder.
     /// </summary>
     /// <param name="value">The string to append. If <see langword="null"/>, this method does nothing.</param>

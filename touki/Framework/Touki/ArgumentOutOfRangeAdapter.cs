@@ -20,5 +20,5 @@ internal static class ArgumentOutOfRangeAdapter
 
     [DoesNotReturn]
     private static void ThrowNegative<T>(T value, string? paramName) =>
-    throw new ArgumentOutOfRangeException(paramName, value, $"{paramName} must be positive. ({value})");
+    throw new ArgumentOutOfRangeException(paramName, value, null);
 }

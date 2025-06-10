@@ -29,7 +29,7 @@
 
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\touki.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
 
     <!--
      Modifying default items to exclude the Framework items if not building for .NET Framework.
