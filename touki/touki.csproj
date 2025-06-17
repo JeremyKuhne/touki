@@ -16,6 +16,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RootNamespace />
+    <NeutralLanguage>en-US</NeutralLanguage>
 
     <PackageId>KlutzyNinja.Touki</PackageId>
     <Description>Provides useful functionality both for .NET and .NET Framework applications.</Description>
@@ -52,6 +53,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <None Include="../README.md" Pack="true" PackagePath="" />
+    <None Include="Touki\NotSupportedAdapter.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
@@ -60,7 +62,23 @@
     <!-- This gets us Span. -->
     <PackageReference Include="System.Memory" Version="4.6.3" />
     <!-- This provides Range and Index support downlevel -->
-    <PackageReference Include="Microsoft.Bcl.Memory" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Bcl.Memory" Version="9.0.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Resources\SR.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>SR.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\SR.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>SR.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Touki.Resources</CustomToolNamespace>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

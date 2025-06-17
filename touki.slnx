@@ -17,6 +17,9 @@
     <File Path=".github/copilot-instructions.md" />
     <File Path=".github/workflows/dotnet.yml" />
   </Folder>
+  <Project Path="touki.perf/touki.perf.csproj">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="touki.tests/touki.tests.csproj" Id="19ab971c-bbbf-45f9-8a09-11054caec775">
     <Platform Project="x64" />
   </Project>

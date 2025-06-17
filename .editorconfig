@@ -1647,8 +1647,9 @@ dotnet_diagnostic.SA1413.severity = none
 # SA1414: Tuple types in signatures should have element names
 dotnet_diagnostic.SA1414.severity = none
 
+# Does not work for do {} while (); loops
 # SA1500: Braces for multi-line statements should not share line
-dotnet_diagnostic.SA1500.severity = error
+dotnet_diagnostic.SA1500.severity = silent
 
 # SA1501: Statement should not be on a single line
 dotnet_diagnostic.SA1501.severity = none

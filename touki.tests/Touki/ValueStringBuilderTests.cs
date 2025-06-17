@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.Text;
+
 namespace Touki;
 
 public unsafe class ValueStringBuilderTests
@@ -536,6 +538,19 @@ public unsafe class ValueStringBuilderTests
     {
         string result = TestFormat($"Hello, it's {value}!");
         result.Should().Be($"Hello, it's {value}!");
+    }
+
+    [Fact]
+    public void StringBuilderBehavior()
+    {
+        StringBuilder builder = new();
+        builder.Append($"Test{builder}");
+        string result = builder.ToString();
+#if NETFRAMEWORK
+        result.Should().Be("Test");
+#else
+        result.Should().Be("TestTest");
+#endif
     }
 
     private static string TestFormat(ref ValueStringBuilder builder) => builder.ToStringAndClear();
