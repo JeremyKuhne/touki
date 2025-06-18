@@ -963,4 +963,299 @@ public class SpanReaderTests
         fields[2].Should().Be(""); // Empty field
         fields[3].Should().Be("field4");
     }
+
+    [Fact]
+    public void SpanReader_TrySplitAny_EmptySpan()
+    {
+        ReadOnlySpan<byte> span = [];
+        SpanReader<byte> reader = new(span);
+
+        ReadOnlySpan<byte> delimiters = [1, 2];
+        reader.TrySplitAny(delimiters, out var segment).Should().BeFalse();
+        segment.ToArray().Should().BeEmpty();
+        reader.Position.Should().Be(0);
+    }
+
+    [Fact]
+    public void SpanReader_TrySplitAny_NoDelimiterFound()
+    {
+        ReadOnlySpan<byte> span = [3, 4, 5];
+        SpanReader<byte> reader = new(span);
+
+        ReadOnlySpan<byte> delimiters = [1, 2];
+        reader.TrySplitAny(delimiters, out var segment).Should().BeTrue();
+        segment.ToArray().Should().BeEquivalentTo([3, 4, 5]);
+        reader.Position.Should().Be(3);
+    }
+
+    [Fact]
+    public void SpanReader_TrySplitAny_DelimiterFound()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
+        SpanReader<byte> reader = new(span);
+
+        ReadOnlySpan<byte> delimiters = [2, 9];
+        reader.TrySplitAny(delimiters, out var segment).Should().BeTrue();
+        segment.ToArray().Should().BeEquivalentTo([1]);
+        reader.Position.Should().Be(2);
+    }
+
+    [Fact]
+    public void SpanReader_TrySplitAny_MultipleDelimiters()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3, 4, 5, 6];
+        SpanReader<byte> reader = new(span);
+
+        ReadOnlySpan<byte> delimiters = [2, 5];
+
+        // First split on '2'
+        reader.TrySplitAny(delimiters, out var segment).Should().BeTrue();
+        segment.ToArray().Should().BeEquivalentTo([1]);
+        reader.Position.Should().Be(2);
+
+        // Second split on '5'
+        reader.TrySplitAny(delimiters, out segment).Should().BeTrue();
+        segment.ToArray().Should().BeEquivalentTo([3, 4]);
+        reader.Position.Should().Be(5);
+
+        // Final split (no more delimiters)
+        reader.TrySplitAny(delimiters, out segment).Should().BeTrue();
+        segment.ToArray().Should().BeEquivalentTo([6]);
+        reader.Position.Should().Be(6);
+    }
+
+    [Fact]
+    public void SpanReader_TryReadToAny_Success()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
+        SpanReader<byte> reader = new(span);
+
+        ReadOnlySpan<byte> delimiters = [3, 9];
+        reader.TryReadToAny(delimiters, advancePastDelimiter: true, out var read).Should().BeTrue();
+        read.ToArray().Should().BeEquivalentTo([1, 2]);
+        reader.Position.Should().Be(3);
+    }
+
+    [Fact]
+    public void SpanReader_TryReadToAny_NoAdvancePast()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
+        SpanReader<byte> reader = new(span);
+
+        ReadOnlySpan<byte> delimiters = [3, 9];
+        reader.TryReadToAny(delimiters, advancePastDelimiter: false, out var read).Should().BeTrue();
+        read.ToArray().Should().BeEquivalentTo([1, 2]);
+        reader.Position.Should().Be(2);
+    }
+
+    [Fact]
+    public void SpanReader_TryReadToAny_NotFound()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
+        SpanReader<byte> reader = new(span);
+
+        ReadOnlySpan<byte> delimiters = [7, 8, 9];
+        reader.TryReadToAny(delimiters, advancePastDelimiter: true, out var read).Should().BeFalse();
+        read.ToArray().Should().BeEmpty();
+        reader.Position.Should().Be(0);
+    }
+
+    [Fact]
+    public void SpanReader_TryReadToAny_EmptySpan()
+    {
+        ReadOnlySpan<byte> span = [];
+        SpanReader<byte> reader = new(span);
+
+        ReadOnlySpan<byte> delimiters = [1, 2];
+        reader.TryReadToAny(delimiters, advancePastDelimiter: true, out var read).Should().BeFalse();
+        read.ToArray().Should().BeEmpty();
+        reader.Position.Should().Be(0);
+    }
+
+    [Fact]
+    public void SpanReader_TryReadToAny_DelimiterAtStart()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3];
+        SpanReader<byte> reader = new(span);
+
+        ReadOnlySpan<byte> delimiters = [1, 9];
+        reader.TryReadToAny(delimiters, advancePastDelimiter: true, out var read).Should().BeTrue();
+        read.ToArray().Should().BeEmpty();
+        reader.Position.Should().Be(1);
+    }
+
+    [Fact]
+    public void SpanReader_TryReadToAny_TwoDelimitersOptimization()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
+        SpanReader<byte> reader = new(span);
+
+        // Test the optimization path for exactly 2 delimiters
+        ReadOnlySpan<byte> delimiters = [3, 4];
+        reader.TryReadToAny(delimiters, advancePastDelimiter: true, out var read).Should().BeTrue();
+        read.ToArray().Should().BeEquivalentTo([1, 2]);
+        reader.Position.Should().Be(3);
+    }
+
+    [Fact]
+    public void SpanReader_TryPeek_Success()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3];
+        SpanReader<byte> reader = new(span);
+
+        reader.TryPeek(out byte value).Should().BeTrue();
+        value.Should().Be(1);
+        reader.Position.Should().Be(0); // Position should not change
+
+        reader.Advance(1);
+        reader.TryPeek(out value).Should().BeTrue();
+        value.Should().Be(2);
+        reader.Position.Should().Be(1);
+    }
+
+    [Fact]
+    public void SpanReader_TryPeek_EmptySpan()
+    {
+        ReadOnlySpan<byte> span = [];
+        SpanReader<byte> reader = new(span);
+
+        reader.TryPeek(out byte value).Should().BeFalse();
+        value.Should().Be(default);
+        reader.Position.Should().Be(0);
+    }
+
+    [Fact]
+    public void SpanReader_TryPeek_AtEnd()
+    {
+        ReadOnlySpan<byte> span = [1];
+        SpanReader<byte> reader = new(span);
+
+        reader.Advance(1);
+        reader.TryPeek(out byte value).Should().BeFalse();
+        value.Should().Be(default);
+        reader.Position.Should().Be(1);
+    }
+
+    [Fact]
+    public void SpanReader_Unread_Property()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
+        SpanReader<byte> reader = new(span);
+
+        reader.Unread.ToArray().Should().BeEquivalentTo([1, 2, 3, 4, 5]);
+
+        reader.Advance(2);
+        reader.Unread.ToArray().Should().BeEquivalentTo([3, 4, 5]);
+
+        reader.Advance(3);
+        reader.Unread.ToArray().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void SpanReader_End_Property()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3];
+        SpanReader<byte> reader = new(span);
+
+        reader.End.Should().BeFalse();
+
+        reader.Advance(2);
+        reader.End.Should().BeFalse();
+
+        reader.Advance(1);
+        reader.End.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SpanReader_End_Property_EmptySpan()
+    {
+        ReadOnlySpan<byte> span = [];
+        SpanReader<byte> reader = new(span);
+
+        reader.End.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SpanReader_Constructor_EmptySpan()
+    {
+        ReadOnlySpan<byte> span = [];
+        SpanReader<byte> reader = new(span);
+
+        reader.Length.Should().Be(0);
+        reader.Position.Should().Be(0);
+        reader.End.Should().BeTrue();
+        reader.Span.ToArray().Should().BeEmpty();
+        reader.Unread.ToArray().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void SpanReader_Large_Span()
+    {
+        byte[] data = new byte[10000];
+        for (int i = 0; i < data.Length; i++)
+        {
+            data[i] = (byte)(i % 256);
+        }
+
+        ReadOnlySpan<byte> span = data;
+        SpanReader<byte> reader = new(span);
+
+        reader.Length.Should().Be(10000);
+        reader.TryRead(5000, out var segment).Should().BeTrue();
+        segment.Length.Should().Be(5000);
+        reader.Position.Should().Be(5000);
+
+        reader.TryRead(5000, out segment).Should().BeTrue();
+        segment.Length.Should().Be(5000);
+        reader.Position.Should().Be(10000);
+        reader.End.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SpanReader_TryRead_Struct_LargerThanElementSize()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3, 4, 5, 6, 7, 8];
+        SpanReader<byte> reader = new(span);
+
+        // Test reading larger struct (ulong is 8 bytes)
+        reader.TryRead<ulong>(out ulong value).Should().BeTrue();
+        reader.Position.Should().Be(8);
+        reader.End.Should().BeTrue();
+
+        // Value should contain the bytes interpreted as ulong
+        value.Should().NotBe(0); // Should have some value from the bytes
+    }
+
+    [Fact]
+    public void SpanReader_TryRead_Struct_Count_ZeroCount()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3, 4];
+        SpanReader<byte> reader = new(span);
+
+        reader.TryRead<ushort>(0, out var values).Should().BeTrue();
+        values.ToArray().Should().BeEmpty();
+        reader.Position.Should().Be(0);
+    }
+
+    [Fact]
+    public void SpanReader_TryRead_Struct_Count_InsufficientData()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3]; // 3 bytes
+        SpanReader<byte> reader = new(span);
+
+        // Try to read 2 ushorts (4 bytes needed)
+        reader.TryRead<ushort>(2, out var values).Should().BeFalse();
+        values.ToArray().Should().BeEmpty();
+        reader.Position.Should().Be(0);
+    }
+
+    [Fact]
+    public void SpanReader_TryRead_Struct_ExactFit()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3, 4]; // 4 bytes
+        SpanReader<byte> reader = new(span);        // Read exactly one uint (4 bytes)
+        reader.TryRead<uint>(out _).Should().BeTrue();
+        reader.Position.Should().Be(4);
+        reader.End.Should().BeTrue();
+    }
 }
