@@ -17,7 +17,21 @@
     <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace />
+
+    <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+
+    <!--
+     Modifying default items to exclude the Framework items if not building for .NET Framework.
+    -->
+    <DefaultItemExcludes Condition="'$(TargetFramework)' != 'net481'">$(DefaultItemExcludes);**/Framework/**/*</DefaultItemExcludes>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'net481'">
+    <!-- Include the Framework specific items as none so we can see them easily in the Solution Explorer. -->
+    <None Include="**/Framework/**/*" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.2" />

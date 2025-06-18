@@ -1195,7 +1195,7 @@ internal static partial class Number
             fixed (uint* pValueBlocks = &value._blocks[0])
             {
                 long bytesToCopy = rhsLength * sizeof(uint);
-                Buffer.MemoryCopy(pResultBlocks, pValueBlocks, bytesToCopy, bytesToCopy);
+                Buffer.MemoryCopy(pValueBlocks, pResultBlocks, bytesToCopy, bytesToCopy);
             }
         }
 
@@ -1220,21 +1220,23 @@ internal static partial class Number
             int readIndex = (length - 1);
             int writeIndex = readIndex + (int)(blocksToShift);
 
+            // Check if the final length would exceed MaxBlockCount
+            int finalLength = length + (int)blocksToShift;
+            if (remainingBitsToShift != 0)
+            {
+                finalLength++; // Need extra block for partial shift
+            }
+
+            if (unchecked((uint)finalLength) >= MaxBlockCount)
+            {
+                // The shift would exceed maximum block count, set to zero
+                SetZero(out this);
+                return;
+            }
+
             // Check if the shift is block aligned
             if (remainingBitsToShift == 0)
             {
-                Debug.Assert(unchecked((uint)(length)) < MaxBlockCount);
-
-                if (unchecked((uint)(length)) >= MaxBlockCount)
-                {
-                    // We shouldn't reach here, and the above assert will help flag this
-                    // during testing, but we'll ensure that we return a safe value of
-                    // zero in the case we end up overflowing in any way.
-
-                    SetZero(out this);
-                    return;
-                }
-
                 while (readIndex >= 0)
                 {
                     _blocks[writeIndex] = _blocks[readIndex];
@@ -1250,19 +1252,7 @@ internal static partial class Number
             else
             {
                 // We need an extra block for the partial shift
-
                 writeIndex++;
-                Debug.Assert(unchecked((uint)(length)) < MaxBlockCount);
-
-                if (unchecked((uint)(length)) >= MaxBlockCount)
-                {
-                    // We shouldn't reach here, and the above assert will help flag this
-                    // during testing, but we'll ensure that we return a safe value of
-                    // zero in the case we end up overflowing in any way.
-
-                    SetZero(out this);
-                    return;
-                }
 
                 // Set the length to hold the shifted blocks
                 _length = writeIndex + 1;

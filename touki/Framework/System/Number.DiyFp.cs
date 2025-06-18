@@ -41,6 +41,9 @@ internal static partial class Number
         {
             var result = new DiyFp(value);
             result.GetBoundaries(DoubleImplicitBitIndex, out mMinus, out mPlus);
+
+            // Normalize result to the same exponent as the boundaries for consistent distance calculations
+            result = new DiyFp(result.f << (result.e - mPlus.e), mPlus.e);
             return result;
         }
 
@@ -55,6 +58,9 @@ internal static partial class Number
         {
             var result = new DiyFp(value);
             result.GetBoundaries(SingleImplicitBitIndex, out mMinus, out mPlus);
+
+            // Normalize result to the same exponent as the boundaries for consistent distance calculations
+            result = new DiyFp(result.f << (result.e - mPlus.e), mPlus.e);
             return result;
         }
 

@@ -472,7 +472,12 @@ internal unsafe partial class Number
         return (uint)NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
     }
 
-    private static ulong NumberToFloatingPointBitsSlow(ref NumberBuffer number, in FloatingPointInfo info, uint positiveExponent, uint integerDigitsPresent, uint fractionalDigitsPresent)
+    private static ulong NumberToFloatingPointBitsSlow(
+        ref NumberBuffer number,
+        in FloatingPointInfo info,
+        uint positiveExponent,
+        uint integerDigitsPresent,
+        uint fractionalDigitsPresent)
     {
         // To generate an N bit mantissa we require N + 1 bits of precision.  The
         // extra bit is used to correctly round the mantissa (if there are fewer bits

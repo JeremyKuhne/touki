@@ -71,11 +71,11 @@ public ref partial struct ValueStringBuilder
         }
         else if (typeof(T) == typeof(byte))
         {
-            return TryAppendFormattedPrimitives(Unsafe.As<T, byte>(ref value), format, formatProvider);
+            return TryAppendFormattedPrimitives((uint)Unsafe.As<T, byte>(ref value), format, formatProvider);
         }
         else if (typeof(T) == typeof(ushort))
         {
-            return TryAppendFormattedPrimitives(Unsafe.As<T, ushort>(ref value), format, formatProvider);
+            return TryAppendFormattedPrimitives((uint)Unsafe.As<T, ushort>(ref value), format, formatProvider);
         }
         else if (typeof(T) == typeof(uint))
         {
@@ -136,20 +136,40 @@ public ref partial struct ValueStringBuilder
         }
         else if (typeof(T) == typeof(float))
         {
+            // Behavior of floating point formatting changed in .NET Core 3.0. To maintain compatibility, always use
+            // G15 format for floats and doubles to avoid compatibility issues.
+
+            // https://devblogs.microsoft.com/dotnet/floating-point-parsing-and-formatting-improvements-in-net-core-3-0/
+
+            if (format.IsEmpty || (format.Length == 1 && format[0] == 'G'))
+            {
+                format = "G7".AsSpan();
+            }
+
             Number.FormatSingle(
                 Unsafe.As<T, float>(ref value),
                 ref this,
-                [],
+                format,
                 NumberFormatInfo.GetInstance(_formatProvider));
 
             return true;
         }
         else if (typeof(T) == typeof(double))
         {
+            // Behavior of floating point formatting changed in .NET Core 3.0. To maintain compatibility, always use
+            // G15 format for floats and doubles to avoid compatibility issues.
+
+            // https://devblogs.microsoft.com/dotnet/floating-point-parsing-and-formatting-improvements-in-net-core-3-0/
+
+            if (format.IsEmpty || (format.Length == 1 && format[0] == 'G'))
+            {
+                format = "G15".AsSpan();
+            }
+
             Number.FormatDouble(
                 Unsafe.As<T, double>(ref value),
                 ref this,
-                [],
+                format,
                 NumberFormatInfo.GetInstance(_formatProvider));
 
             return true;

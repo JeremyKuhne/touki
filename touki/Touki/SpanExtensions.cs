@@ -45,7 +45,7 @@ public static partial class SpanExtensions
         return strings;
     }
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NET6_0
     /// <summary>
     ///  Searches for the first index of any value other than the specified <paramref name="value"/>.
     /// </summary>

@@ -1,0 +1,5 @@
+﻿// Copyright (c) 2025 Jeremy W Kuhne
+// SPDX-License-Identifier: MIT
+// See LICENSE file in the project root for full license information
+
+[assembly: InternalsVisibleTo("touki.tests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100973c55493d53875edf875bfa75caef5c922e5a6e77ca009dea625f036d206bbd1d34aea66965d646891c7d0abd24f97a26c3995ee4b914d28fd59ecb5aad7838dfff97d9d77ca99d6313f27cdff31e9fddd37e2e2493e7d60202f1d948d91c05ed796d8cd458efd10aaa752a5a1dd688c2940d28a107eb4481e0736111d9c5e0")]
