@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information
 
 using BenchmarkDotNet.Attributes;
+using Touki;
 
 namespace touki.perf;
 
@@ -27,5 +28,11 @@ public class StringFormatting
     public string StringInterpolation()
     {
         return $"The answer is {_value}.";
+    }
+
+    [Benchmark]
+    public string StringsFormat()
+    {
+        return Strings.Format("The answer is {0}.", _value);
     }
 }

@@ -642,7 +642,10 @@ public ref partial struct ValueStringBuilder
     }
 
     /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
-    public void AppendFormatted<T>(T value, string? format)
+    public void AppendFormatted<T>(T value, string? format) => AppendFormatted(value, (StringSpan)format);
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    public void AppendFormatted<T>(T value, StringSpan format)
     {
         if (value is null)
         {
@@ -659,7 +662,7 @@ public ref partial struct ValueStringBuilder
 
 #if NETFRAMEWORK
         // On .NET Framework, directly format with the copy of the .NET 6 formatting code.
-        if (TryAppendFormattedPrimitives(value, format.AsSpan(), _formatProvider))
+        if (TryAppendFormattedPrimitives(value, format, _formatProvider))
         {
             return;
         }
@@ -679,7 +682,7 @@ public ref partial struct ValueStringBuilder
                 // validate that it doesn't box for value types in my unit tests. Have tried every combination of code I can think
                 // of without success. If the boxing is unavoidable, then other options can be considered, such as type checking for
                 // frequently used runtime types and calling a constrained method directly.
-                while (!((ISpanFormattable)value!).TryFormat(_chars[_position..], out charsWritten, format.AsSpan(), _formatProvider))
+                while (!((ISpanFormattable)value!).TryFormat(_chars[_position..], out charsWritten, format, _formatProvider))
                 {
                     DoubleRemaining();
                 }
@@ -688,7 +691,7 @@ public ref partial struct ValueStringBuilder
                 return;
             }
 
-            Append(((IFormattable)value).ToString(format, _formatProvider));
+            Append(((IFormattable)value).ToString(format.ToStringOrNull(), _formatProvider));
             return;
         }
 #pragma warning restore IDE0038
@@ -713,6 +716,17 @@ public ref partial struct ValueStringBuilder
 
     /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
     public void AppendFormatted<T>(T value, int alignment, string? format)
+    {
+        int startingPos = _position;
+        AppendFormatted(value, format.AsSpan());
+        if (alignment != 0)
+        {
+            AppendOrInsertAlignmentIfNeeded(startingPos, alignment);
+        }
+    }
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    public void AppendFormatted<T>(T value, int alignment, StringSpan format)
     {
         int startingPos = _position;
         AppendFormatted(value, format);
@@ -769,7 +783,7 @@ public ref partial struct ValueStringBuilder
     /// <param name="value">The value to write.</param>
     /// <param name="format">The format string.</param>
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private void AppendCustomFormatter<T>(T value, string? format)
+    private void AppendCustomFormatter<T>(T value, StringSpan format)
     {
         // This case is very rare, but we need to handle it prior to the other checks in case
         // a provider was used that supplied an ICustomFormatter which wanted to intercept the particular value.
@@ -783,7 +797,7 @@ public ref partial struct ValueStringBuilder
             formatter is not null,
             "An incorrectly written provider said it implemented ICustomFormatter, and then didn't");
 
-        if (formatter is not null && formatter.Format(format, value, _formatProvider) is string customFormatted)
+        if (formatter is not null && formatter.Format(format.ToStringOrNull(), value, _formatProvider) is string customFormatted)
         {
             AppendLiteral(customFormatted);
         }

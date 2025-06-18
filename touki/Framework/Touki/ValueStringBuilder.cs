@@ -29,6 +29,7 @@ public ref partial struct ValueStringBuilder
         if (typeof(T) == typeof(bool))
         {
             AppendLiteral(Unsafe.As<T, bool>(ref value).ToString());
+            return true;
         }
         else if (typeof(T) == typeof(sbyte))
         {

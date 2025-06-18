@@ -5,6 +5,7 @@
 - Avoid using `var`.
 - Use target-typed `new` expressions where applicable.
 - Lines should never end in whitespace or contain only whitespace.
+- Avoid putting comments at the end of lines. Comments should be before the code they describe.
 
 # Testing
 - Place tests in the 'touki.tests' project.

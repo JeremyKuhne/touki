@@ -554,4 +554,535 @@ public unsafe class ValueStringBuilderTests
     }
 
     private static string TestFormat(ref ValueStringBuilder builder) => builder.ToStringAndClear();
+
+    [Fact]
+    public void AppendFormat_Int()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[20]);
+        builder.AppendFormat("Value: {0}", 42);
+        builder.ToString().Should().Be("Value: 42");
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_String()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("Hello {0}!", new Value("World"));
+        builder.ToString().Should().Be("Hello World!");
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_Byte()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[20]);
+        builder.AppendFormat("Byte: {0}", (byte)255);
+        builder.ToString().Should().Be("Byte: 255");
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_SByte()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[20]);
+        builder.AppendFormat("SByte: {0}", (sbyte)-128);
+        builder.ToString().Should().Be("SByte: -128");
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_Bool()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[30]);
+        builder.AppendFormat("True: {0}, False: {1}", true, false);
+        builder.ToString().Should().Be("True: True, False: False");
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_Char()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[20]);
+        builder.AppendFormat("Char: {0}", 'A');
+        builder.ToString().Should().Be("Char: A");
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_Short()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[20]);
+        builder.AppendFormat("Short: {0}", (short)-32768);
+        builder.ToString().Should().Be("Short: -32768");
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_UShort()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[20]);
+        builder.AppendFormat("UShort: {0}", (ushort)65535);
+        builder.ToString().Should().Be("UShort: 65535");
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_UInt()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[20]);
+        builder.AppendFormat("UInt: {0}", 4294967295U);
+        builder.ToString().Should().Be("UInt: 4294967295");
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_Long()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[30]);
+        builder.AppendFormat("Long: {0}", -9223372036854775808L);
+        builder.ToString().Should().Be("Long: -9223372036854775808");
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_ULong()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[30]);
+        builder.AppendFormat("ULong: {0}", 18446744073709551615UL);
+        builder.ToString().Should().Be("ULong: 18446744073709551615");
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_Float()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[30]);
+        builder.AppendFormat("Float: {0}", 3.14159f);
+        builder.ToString().Should().Be("Float: 3.14159");
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_Double()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[30]);
+        builder.AppendFormat("Double: {0}", 3.141592653589793);
+        builder.ToString().Should().Be(string.Format("Double: {0}", 3.141592653589793));
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_Decimal()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[30]);
+        builder.AppendFormat("Decimal: {0}", 123.456m);
+        builder.ToString().Should().Be("Decimal: 123.456");
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_DateTime()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        DateTime dateTime = new(2025, 6, 18, 15, 30, 45);
+        builder.AppendFormat("DateTime: {0}", dateTime);
+        string expected = $"DateTime: {dateTime}";
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_DateTimeOffset()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        DateTimeOffset dateTimeOffset = new(2025, 6, 18, 15, 30, 45, TimeSpan.FromHours(-5));
+        builder.AppendFormat("DateTimeOffset: {0}", dateTimeOffset);
+        string expected = $"DateTimeOffset: {dateTimeOffset}";
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_SingleArg_NullableTypes()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        int? nullableInt = 42;
+        int? nullInt = null;
+
+        builder.AppendFormat("Nullable: {0}, Null: {1}", nullableInt, nullInt);
+        builder.ToString().Should().Be("Nullable: 42, Null: ");
+    }
+    [Fact]
+    public void AppendFormat_SingleArg_Object()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        object obj = "Hello World";
+        builder.AppendFormat("Object: {0}", new Value(obj));
+        builder.ToString().Should().Be("Object: Hello World");
+    }
+
+    [Fact]
+    public void AppendFormat_TwoArgs()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("Name: {0}, Age: {1}", new Value("John"), 25);
+        builder.ToString().Should().Be("Name: John, Age: 25");
+    }
+
+    [Fact]
+    public void AppendFormat_TwoArgs_ReversedOrder()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("Age: {1}, Name: {0}", new Value("Alice"), 30);
+        builder.ToString().Should().Be("Age: 30, Name: Alice");
+    }
+
+    [Fact]
+    public void AppendFormat_ThreeArgs()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        builder.AppendFormat("Name: {0}, Age: {1}, City: {2}", new Value("Bob"), 35, new Value("Seattle"));
+        builder.ToString().Should().Be("Name: Bob, Age: 35, City: Seattle");
+    }
+
+    [Fact]
+    public void AppendFormat_FourArgs()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[150]);
+        builder.AppendFormat("Name: {0}, Age: {1}, City: {2}, Country: {3}", new Value("Charlie"), 40, new Value("London"), new Value("UK"));
+        builder.ToString().Should().Be("Name: Charlie, Age: 40, City: London, Country: UK");
+    }
+
+    [Fact]
+    public void AppendFormat_WithFormatSpecifiers()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        // Test various format specifiers
+        builder.AppendFormat("Hex: {0:X}, Decimal: {0:D}, Currency: {1:C}", 255, 123.45m);
+
+        // Note: The exact output may vary based on culture, so we'll test the structure
+        string result = builder.ToString();
+        result.Should().StartWith("Hex: FF, Decimal: 255, Currency:");
+        result.Should().Contain("123.45");
+    }
+    [Fact]
+    public void AppendFormat_WithAlignment()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("Left: '{0,-10}' Right: '{1,10}'", new Value("Hello"), new Value("World"));
+        builder.ToString().Should().Be("Left: 'Hello     ' Right: '     World'");
+    }
+
+    [Fact]
+    public void AppendFormat_WithAlignmentAndFormat()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("Padded hex: '{0,8:X8}'", 255);
+        builder.ToString().Should().Be("Padded hex: '000000FF'");
+    }
+    [Fact]
+    public void AppendFormat_ReadOnlySpanArgs()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        Value[] args = [42, new Value("Hello"), 3.14, true];
+        builder.AppendFormat("Int: {0}, String: {1}, Double: {2}, Bool: {3}".AsSpan(), args.AsSpan());
+        builder.ToString().Should().Be("Int: 42, String: Hello, Double: 3.14, Bool: True");
+    }
+
+    [Fact]
+    public void AppendFormat_EmptyFormatString()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[10]);
+        builder.AppendFormat("", 42);
+        builder.ToString().Should().Be("");
+    }
+
+    [Fact]
+    public void AppendFormat_NoPlaceholders()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[20]);
+        builder.AppendFormat("No placeholders", 42);
+        builder.ToString().Should().Be("No placeholders");
+    }
+
+    [Fact]
+    public void AppendFormat_MultipleSameArgument()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("{0} + {0} = {1}", 5, 10);
+        builder.ToString().Should().Be("5 + 5 = 10");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("{{0}} = {0}", 42);
+        builder.ToString().Should().Be("{0} = 42");
+    }
+
+    [Fact]
+    public void AppendFormat_ArraySegmentByte()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        byte[] data = [1, 2, 3, 4, 5];
+        ArraySegment<byte> segment = new(data, 1, 3);
+        builder.AppendFormat("Segment: {0}", segment);
+
+        string result = builder.ToString();
+        result.Should().StartWith("Segment:");
+        // ArraySegment<byte> format may vary, but should contain the type information
+    }
+
+    [Fact]
+    public void AppendFormat_ArraySegmentChar()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        char[] data = ['H', 'e', 'l', 'l', 'o'];
+        ArraySegment<char> segment = new(data, 1, 3);
+        builder.AppendFormat("Segment: {0}", segment);
+
+        string result = builder.ToString();
+        result.Should().StartWith("Segment:");
+        // ArraySegment<char> format may vary, but should contain the type information
+    }
+
+    [Fact]
+    public void AppendFormat_StringFormatBehavior_NumberFormats()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[200]);
+
+        // Test that behavior matches string.Format
+        int number = 1234;
+        string expected = string.Format("D: {0:D6}, F: {0:F2}, N: {0:N0}, P: {1:P1}", number, 0.1234);
+
+        builder.AppendFormat("D: {0:D6}, F: {0:F2}, N: {0:N0}, P: {1:P1}", number, 0.1234);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_StringFormatBehavior_DateTimeFormats()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[200]);
+
+        DateTime dateTime = new(2025, 6, 18, 15, 30, 45);
+        string expected = string.Format("Short: {0:d}, Long: {0:D}, Time: {0:t}", dateTime);
+
+        builder.AppendFormat("Short: {0:d}, Long: {0:D}, Time: {0:t}", dateTime);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_StringFormatBehavior_CustomFormats()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        DateTime dateTime = new(2025, 6, 18, 15, 30, 45);
+        string expected = string.Format("Custom: {0:yyyy-MM-dd HH:mm:ss}", dateTime);
+
+        builder.AppendFormat("Custom: {0:yyyy-MM-dd HH:mm:ss}", dateTime);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("G")]
+    [InlineData("N")]
+    [InlineData("F")]
+    [InlineData("E")]
+    [InlineData("e")]
+    [InlineData("C")]
+    [InlineData("P")]
+    public void AppendFormat_StandardNumericFormats(string format)
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        double value = 1234.5678;
+        string formatString = "{0:" + format + "}";
+        string expected = string.Format(formatString, value);
+
+        builder.AppendFormat(formatString, value);
+        builder.ToString().Should().Be(expected);
+    }
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void AppendFormat_ArgumentIndexBoundaries(int argIndex)
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        Value[] args = [new Value("First"), new Value("Second"), new Value("Third"), new Value("Fourth")];
+        string formatString = $"Value: {{{argIndex}}}";
+
+        builder.AppendFormat(formatString.AsSpan(), args.AsSpan());
+        builder.ToString().Should().Be("Value: " + args[argIndex].As<object>().ToString());
+    }
+    [Fact]
+    public void AppendFormat_LargeFormatString()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[500]);
+
+        string largeFormat = string.Join(" ", Enumerable.Range(0, 20).Select(i => $"{{{i}}}"));
+        Value[] args = [.. Enumerable.Range(0, 20).Select(i => (Value)i)];
+
+        builder.AppendFormat(largeFormat.AsSpan(), args.AsSpan());
+
+        string expected = string.Join(" ", Enumerable.Range(0, 20));
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_MixedTypesPrecisionTest()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[200]);
+
+        // Test that behavior exactly matches string.Format for mixed types
+        string stringVal = "test";
+        int intVal = 42;
+        double doubleVal = 3.14159;
+        bool boolVal = true;
+        DateTime dateVal = new(2025, 1, 1);
+
+        string expected = string.Format("String: {0}, Int: {1:D5}, Double: {2:F2}, Bool: {3}, Date: {4:yyyy-MM-dd}",
+            stringVal, intVal, doubleVal, boolVal, dateVal);
+
+        Value[] args = [new Value(stringVal), intVal, doubleVal, boolVal, dateVal];
+        builder.AppendFormat("String: {0}, Int: {1:D5}, Double: {2:F2}, Bool: {3}, Date: {4:yyyy-MM-dd}".AsSpan(), args.AsSpan());
+
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_ArgumentIndexOutOfRange_ThrowsFormatException()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+
+        // Test argument index that's out of range
+        bool threwException = false;
+        try
+        {
+            builder.AppendFormat("{1}", 42); // Only one argument provided, but index 1 requested
+        }
+        catch (FormatException)
+        {
+            threwException = true;
+        }
+        threwException.Should().BeTrue("Out of range argument index should throw FormatException");
+    }
+
+    [Fact]
+    public void AppendFormat_NegativeArgumentIndex_ThrowsFormatException()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+
+        // Test negative argument index
+        bool threwException = false;
+        try
+        {
+            builder.AppendFormat("{-1}", 42);
+        }
+        catch (FormatException)
+        {
+            threwException = true;
+        }
+        threwException.Should().BeTrue("Negative argument index should throw FormatException");
+    }
+
+    [Fact]
+    public void AppendFormat_VeryLargeAlignment_ThrowsFormatException()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+
+        // Test alignment that exceeds the width limit (1000000)
+        bool threwException = false;
+        try
+        {
+            builder.AppendFormat("{0,2000000}", 42);
+        }
+        catch (FormatException)
+        {
+            threwException = true;
+        }
+        threwException.Should().BeTrue("Very large alignment should throw FormatException");
+    }
+
+    [Fact]
+    public void AppendFormat_ComplexFormatSpecifiers()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[200]);
+
+        // Test complex format scenarios that match string.Format behavior
+        decimal value = 1234567.89m;
+        DateTime date = new(2025, 12, 25, 14, 30, 0);
+
+        string expected = string.Format("Money: {0:C2}, Scientific: {1:E3}, Date: {2:MMM dd, yyyy}",
+            value, 987654.321, date);
+
+        Value[] args = [value, 987654.321, date];
+        builder.AppendFormat("Money: {0:C2}, Scientific: {1:E3}, Date: {2:MMM dd, yyyy}".AsSpan(), args.AsSpan());
+
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_CustomFormatsWithPadding()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        // Test custom numeric formats with padding
+        int number = 42;
+        string expected = string.Format("Binary-like: {0:0000000000}, Custom: {0:#,##0.00}", number);
+
+        builder.AppendFormat("Binary-like: {0:0000000000}, Custom: {0:#,##0.00}", number);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_StringWithSpecialCharacters()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        string specialString = "Hello\tWorld\nNew Line\r\nCarriage Return";
+        builder.AppendFormat("Special: '{0}'", new Value(specialString));
+        builder.ToString().Should().Be($"Special: '{specialString}'");
+    }
+
+    [Fact]
+    public void AppendFormat_NullValue()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+
+        Value nullValue = new((object?)null);
+        builder.AppendFormat("Null value: '{0}'", nullValue);
+        builder.ToString().Should().Be("Null value: ''");
+    }
+
+    [Fact]
+    public void AppendFormat_VeryLongString()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[1000]);
+
+        string longString = new('A', 500);
+        string expected = $"Long: {longString}";
+
+        builder.AppendFormat("Long: {0}", new Value(longString));
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_MultipleFormatsSequentially()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[200]);
+
+        // Test multiple AppendFormat calls in sequence
+        builder.AppendFormat("First: {0}", 1);
+        builder.AppendFormat(", Second: {0}", 2);
+        builder.AppendFormat(", Third: {0}", new Value("three"));
+
+        builder.ToString().Should().Be("First: 1, Second: 2, Third: three");
+    }
+
+    [Fact]
+    public void AppendFormat_PerformanceWithManyArguments()
+    {
+        using ValueStringBuilder builder = new(2000);
+
+        // Test with the maximum number of arguments supported by the 4-arg overload
+        Value[] manyArgs = [.. Enumerable.Range(0, 100).Select(i => (Value)i)];
+        string format = string.Join(", ", Enumerable.Range(0, 100).Select(i => $"{{{i}}}"));
+
+        builder.AppendFormat(format.AsSpan(), manyArgs.AsSpan());
+
+        string expected = string.Join(", ", Enumerable.Range(0, 100));
+        builder.ToString().Should().Be(expected);
+    }
 }

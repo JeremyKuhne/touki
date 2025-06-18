@@ -4,7 +4,7 @@
 
 namespace Touki;
 
-internal static class Strings
+public static partial class Strings
 {
     /// <summary>
     ///  Allocates a string of the specified length filled with null characters.

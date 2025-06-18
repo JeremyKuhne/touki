@@ -28,6 +28,16 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     public ReadOnlySpan<T> Span { get; } = span;
 
     /// <summary>
+    ///  The portion of the original span that has not yet been read.
+    /// </summary>
+    public readonly ReadOnlySpan<T> Unread => _unread;
+
+    /// <summary>
+    ///  Returns <see langword="true"/> if there is no unread data left in the span.
+    /// </summary>
+    public readonly bool End => _unread.IsEmpty;
+
+    /// <summary>
     ///  Gets or sets the current position of the reader within the span.
     /// </summary>
     /// <value>
@@ -54,21 +64,55 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     /// <param name="delimiter">The delimiter to look for.</param>
     /// <param name="span">The read data, if any.</param>
     /// <returns><see langword="true"/> if a segment was found; otherwise, <see langword="false"/>.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TrySplit(T delimiter, out ReadOnlySpan<T> span)
     {
+        bool result = false;
+
         if (_unread.IsEmpty)
         {
             span = default;
-            return false;
         }
-
-        if (!TryReadTo(delimiter, advancePastDelimiter: true, out span))
+        else
         {
-            span = _unread;
-            _unread = default;
+            if (!TryReadTo(delimiter, advancePastDelimiter: true, out span))
+            {
+                span = _unread;
+                _unread = default;
+            }
+
+            result = true;
         }
 
-        return true;
+        return result;
+    }
+
+    /// <summary>
+    ///  Splits out the next span of data up to the given <paramref name="delimiters"/> or the end of the unread data.
+    ///  Positions the reader to the next unread data after the delimiter.
+    /// </summary>
+    /// <param name="delimiters">The delimiter to look for.</param>
+    /// <param name="span">The read data, if any.</param>
+    /// <returns><see langword="true"/> if a segment was found; otherwise, <see langword="false"/>.</returns>
+    public bool TrySplitAny(scoped ReadOnlySpan<T> delimiters, out ReadOnlySpan<T> span)
+    {
+        bool result = false;
+        if (_unread.IsEmpty)
+        {
+            span = default;
+        }
+        else
+        {
+            if (!TryReadToAny(delimiters, advancePastDelimiter: true, out span))
+            {
+                span = _unread;
+                _unread = default;
+            }
+
+            result = true;
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -76,6 +120,7 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     ///  <paramref name="delimiter"/> if found.
     /// </summary>
     /// <inheritdoc cref="TryReadTo(T, bool, out ReadOnlySpan{T})"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryReadTo(T delimiter, out ReadOnlySpan<T> span) =>
         TryReadTo(delimiter, advancePastDelimiter: true, out span);
 
@@ -86,11 +131,49 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     /// <param name="delimiter">The delimiter to look for.</param>
     /// <param name="advancePastDelimiter"><see langword="true"/> to move past the <paramref name="delimiter"/> if found.</param>
     /// <returns><see langword="true"/> if the <paramref name="delimiter"/> was found.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryReadTo(T delimiter, bool advancePastDelimiter, out ReadOnlySpan<T> span)
     {
         bool found = false;
         int index = _unread.IndexOf(delimiter);
         span = default;
+
+        if (index != -1)
+        {
+            found = true;
+            if (index > 0)
+            {
+                span = _unread;
+                UncheckedSliceTo(ref span, index);
+            }
+
+            if (advancePastDelimiter)
+            {
+                index++;
+            }
+
+            UnsafeAdvance(index);
+        }
+
+        return found;
+    }
+
+    /// <summary>
+    ///  Try to read everything up to the given <paramref name="delimiters"/>.
+    /// </summary>
+    /// <param name="span">The read data, if any.</param>
+    /// <param name="delimiters">The delimiters to look for.</param>
+    /// <param name="advancePastDelimiter">True to move past the first found instance of any of the given <paramref name="delimiters"/>.</param>
+    /// <returns>True if any of the <paramref name="delimiters"/> were found.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryReadToAny(scoped ReadOnlySpan<T> delimiters, bool advancePastDelimiter, out ReadOnlySpan<T> span)
+    {
+        bool found = false;
+        span = default;
+
+        int index = delimiters.Length == 2
+            ? _unread.IndexOfAny(delimiters[0], delimiters[1])
+            : _unread.IndexOfAny(delimiters);
 
         if (index != -1)
         {
@@ -149,6 +232,7 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     ///  <see langword="true"/> if the requested number of elements was successfully read; otherwise, <see langword="false"/>.
     /// </returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count"/> is negative.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryRead(int count, out ReadOnlySpan<T> span)
     {
         bool success;
@@ -262,6 +346,24 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
         }
 
         return success;
+    }
+
+    /// <summary>
+    /// Peeks at the next value without advancing the reader.
+    /// </summary>
+    /// <param name="value">The next value or default if at the end.</param>
+    /// <returns>False if at the end of the reader.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly bool TryPeek(out T value)
+    {
+        if (_unread.IsEmpty)
+        {
+            value = default;
+            return false;
+        }
+
+        value = _unread[0];
+        return true;
     }
 
     /// <summary>

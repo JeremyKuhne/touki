@@ -25,7 +25,7 @@ namespace Touki;
 public readonly partial struct Value
 {
     private readonly Union _union;
-    private readonly object? _object;
+    internal readonly object? _object;
 
     /// <summary>
     ///  Creates a new <see cref="Value"/> instance with the specified value.
@@ -38,6 +38,13 @@ public readonly partial struct Value
     }
 
     /// <summary>
+    ///  Implicitly converts a <see langword="string"/> value to a <see cref="Value"/>.
+    /// </summary>
+    /// <param name="value">The <see langword="string"/> value to convert.</param>
+    /// <returns>A <see cref="Value"/> containing the specified <see langword="string"/> value.</returns>
+    public static implicit operator Value(string value) => new(value);
+
+    /// <summary>
     ///  Gets the type of the value stored in this instance.
     /// </summary>
     /// <value>
@@ -47,6 +54,8 @@ public readonly partial struct Value
     {
         get
         {
+            // This must stay aligned with Format logic
+
             Type? type;
             if (_object is null)
             {
@@ -1478,6 +1487,140 @@ public readonly partial struct Value
         }
 
         return value;
+    }
+
+    /// <summary>
+    ///  Format the variant into the given <paramref name="destination"/>.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Format(ref ValueStringBuilder destination, int alignment, ReadOnlySpan<char> format)
+    {
+        // This must stay aligned with logic in Type. To get the best performance, we replicate the logic here.
+
+        // Try keeping these checks in expected frequency order. Note that directly casting out of the enum didn't make
+        // much of a perf difference over using the As<T>() method. This is explicitly structured to have a single
+        // return to simplify the JIT's job of optimizing the code. Also try to keep the method small to allow the JIT
+        // to actually inline it.
+
+        if (_object is TypeFlag typeFlag)
+        {
+            Type type = typeFlag.Type;
+
+            if (type == typeof(int))
+            {
+                destination.AppendFormatted(As<int>(), alignment, format);
+            }
+            else if (type == typeof(long))
+            {
+                destination.AppendFormatted(As<long>(), alignment, format);
+            }
+            else if (type == typeof(bool))
+            {
+                destination.AppendFormatted(As<bool>(), alignment, format);
+            }
+            else if (type == typeof(uint))
+            {
+                destination.AppendFormatted(As<uint>(), alignment, format);
+            }
+            else
+            {
+                // Push some of the logic off to facilitate inlining.
+                FormatTypeFlagSlow(ref destination, typeFlag, alignment, format);
+            }
+        }
+        else if (_object?.GetType() is Type objectType)
+        {
+            if (_union.UInt64 == 0)
+            {
+                destination.AppendFormatted(_object, alignment, format);
+            }
+            else
+            {
+                // Need to special case ArraySegment<byte> and ArraySegment<char>
+
+                Debug.Assert(objectType.IsArray);
+
+                // We have an ArraySegment
+                if (objectType == typeof(byte[]))
+                {
+                    destination.AppendFormatted(As<ArraySegment<byte>>(), alignment, format);
+                }
+                else if (objectType == typeof(char[]))
+                {
+                    destination.AppendFormatted(As<ArraySegment<char>>(), alignment, format);
+                }
+                else
+                {
+                    Debug.Fail($"Unexpected type {objectType.Name}.");
+                }
+            }
+        }
+    }
+
+    private void FormatTypeFlagSlow(
+        ref ValueStringBuilder destination,
+        TypeFlag typeFlag,
+        int alignment,
+        ReadOnlySpan<char> format)
+    {
+        Type type = typeFlag.Type;
+
+        if (type == typeof(ulong))
+        {
+            destination.AppendFormatted(As<ulong>(), alignment, format);
+        }
+        else if (type == typeof(char))
+        {
+            destination.AppendFormatted(As<char>(), alignment, format);
+        }
+        else if (type == typeof(byte))
+        {
+            destination.AppendFormatted(As<byte>(), alignment, format);
+        }
+        else if (type == typeof(DateTime))
+        {
+            destination.AppendFormatted(As<DateTime>(), alignment, format);
+        }
+        else if (type == typeof(DateTimeOffset))
+        {
+            destination.AppendFormatted(As<DateTimeOffset>(), alignment, format);
+        }
+        else if (type == typeof(decimal))
+        {
+            destination.AppendFormatted(As<decimal>(), alignment, format);
+        }
+        else if (type == typeof(double))
+        {
+            destination.AppendFormatted(As<double>(), alignment, format);
+        }
+        else if (type == typeof(Guid))
+        {
+            destination.AppendFormatted(As<Guid>(), alignment, format);
+        }
+        else if (type == typeof(short))
+        {
+            destination.AppendFormatted(As<short>(), alignment, format);
+        }
+        else if (type == typeof(sbyte))
+        {
+            destination.AppendFormatted(As<sbyte>(), alignment, format);
+        }
+        else if (type == typeof(float))
+        {
+            destination.AppendFormatted(As<float>(), alignment, format);
+        }
+        else if (type == typeof(TimeSpan))
+        {
+            destination.AppendFormatted(As<TimeSpan>(), alignment, format);
+        }
+        else if (type == typeof(ushort))
+        {
+            destination.AppendFormatted(As<ushort>(), alignment, format);
+        }
+        else
+        {
+            destination.AppendFormatted(typeFlag.ToObject(in this));
+        }
     }
     #endregion
 }
