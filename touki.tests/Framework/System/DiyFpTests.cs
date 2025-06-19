@@ -192,7 +192,8 @@ public class DiyFpTests
 
     #endregion
 
-    #region Subtract Tests    [Fact]
+    #region Subtract Tests
+    [Fact]
     public void Subtract_SameExponents_ShouldSubtractSignificands()
     {
         DiyFp a = new(1000, 50);
@@ -230,7 +231,8 @@ public class DiyFpTests
 
     #endregion
 
-    #region CreateAndGetBoundaries Tests    [Fact]
+    #region CreateAndGetBoundaries Tests
+    [Fact]
     public void CreateAndGetBoundaries_Double_ShouldReturnBoundaries()
     {
         double value = 1.0;

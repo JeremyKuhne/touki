@@ -166,6 +166,9 @@ public ref struct BufferScope<T>
     /// </summary>
     public void Dispose()
     {
+        // Clear the span to avoid accidental use after returning the array.
+        _span = default;
+
         if (_array is not null)
         {
             ArrayPool<T>.Shared.Return(_array!);

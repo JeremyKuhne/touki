@@ -599,7 +599,8 @@ public class BigIntegerTests
 
     #endregion
 
-    #region Edge Cases and Error Conditions    [Fact]
+    #region Edge Cases and Error Conditions
+    [Fact]
     public void GetBlock_ValidIndex_ShouldReturnCorrectBlock()
     {
         BigInteger.SetUInt64(out BigInteger value, 0x123456789ABCDEFul);

@@ -891,6 +891,7 @@ public unsafe class ValueStringBuilderTests
         builder.AppendFormat(formatString, value);
         builder.ToString().Should().Be(expected);
     }
+
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
@@ -906,6 +907,7 @@ public unsafe class ValueStringBuilderTests
         builder.AppendFormat(formatString.AsSpan(), args.AsSpan());
         builder.ToString().Should().Be("Value: " + args[argIndex].As<object>().ToString());
     }
+
     [Fact]
     public void AppendFormat_LargeFormatString()
     {
@@ -1084,5 +1086,133 @@ public unsafe class ValueStringBuilderTests
 
         string expected = string.Join(", ", Enumerable.Range(0, 100));
         builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_AtBeginning()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("{{Start}} {0}", new Value("value"));
+        builder.ToString().Should().Be("{Start} value");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_AtEnd()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("{0} {{End}}", new Value("value"));
+        builder.ToString().Should().Be("value {End}");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_OnlyEscaped()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("{{No}} {{Arguments}}", 42); // Need at least one argument
+        builder.ToString().Should().Be("{No} {Arguments}");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_Multiple()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        builder.AppendFormat("{{First}} {0} {{Second}} {1} {{Third}}", new Value("arg1"), new Value("arg2"));
+        builder.ToString().Should().Be("{First} arg1 {Second} arg2 {Third}");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_Consecutive()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("{{{{{0}}}}}", 42);
+        builder.ToString().Should().Be("{{42}}");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_Mixed()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        builder.AppendFormat("Value is {{0: {0}}} and {{1: {1}}}", 42, new Value("test"));
+        builder.ToString().Should().Be("Value is {0: 42} and {1: test}");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_WithFormatSpecifiers()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        builder.AppendFormat("{{Format: {0:X8}}}", 255);
+        builder.ToString().Should().Be("{Format: 000000FF}");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_WithAlignment()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        builder.AppendFormat("{{Padded: {0,10}}}", new Value("test"));
+        builder.ToString().Should().Be("{Padded:       test}");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_WithAlignmentAndFormat()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        builder.AppendFormat("{{Hex: {0,8:X8}}}", 255);
+        builder.ToString().Should().Be("{Hex: 000000FF}");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_ComplexPattern()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[200]);
+        builder.AppendFormat("{{obj: {{ name: \"{0}\", value: {1} }}}}", new Value("test"), 42);
+        builder.ToString().Should().Be("{obj: { name: \"test\", value: 42 }}");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_ArgumentIndexReuse()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        builder.AppendFormat("{{arg0}} = {0}, {{arg0}} = {0}", 42);
+        builder.ToString().Should().Be("{arg0} = 42, {arg0} = 42");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_EmptyBetween()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("{{}}{0}{{}}", new Value("middle"));
+        builder.ToString().Should().Be("{}middle{}");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_QuadrupleOpening()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("{{{{{0}", 42);
+        builder.ToString().Should().Be("{{42");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_QuadrupleClosing()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("{0}}}}}", 42);
+        builder.ToString().Should().Be("42}}");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_NestedPattern()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        builder.AppendFormat("{{outer {{inner {0}}} outer}}", new Value("value"));
+        builder.ToString().Should().Be("{outer {inner value} outer}");
+    }
+
+    [Fact]
+    public void AppendFormat_EscapedBraces_AllTypesOfEscaping()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[200]);
+        builder.AppendFormat("{{}} {{ }} {0} }} {{ {{", new Value("test"));
+        builder.ToString().Should().Be("{} { } test } { {");
     }
 }
