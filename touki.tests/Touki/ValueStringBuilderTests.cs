@@ -698,6 +698,7 @@ public unsafe class ValueStringBuilderTests
         builder.AppendFormat("Nullable: {0}, Null: {1}", nullableInt, nullInt);
         builder.ToString().Should().Be("Nullable: 42, Null: ");
     }
+
     [Fact]
     public void AppendFormat_SingleArg_Object()
     {
@@ -752,6 +753,7 @@ public unsafe class ValueStringBuilderTests
         result.Should().StartWith("Hex: FF, Decimal: 255, Currency:");
         result.Should().Contain("123.45");
     }
+
     [Fact]
     public void AppendFormat_WithAlignment()
     {
@@ -767,6 +769,7 @@ public unsafe class ValueStringBuilderTests
         builder.AppendFormat("Padded hex: '{0,8:X8}'", 255);
         builder.ToString().Should().Be("Padded hex: '000000FF'");
     }
+
     [Fact]
     public void AppendFormat_ReadOnlySpanArgs()
     {

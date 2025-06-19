@@ -58,9 +58,9 @@ public ref struct DefaultInterpolatedStringHandler
     /// <inheritdoc cref="ValueStringBuilder.AppendFormatted{T}(T, int)"/>
     public void AppendFormatted<T>(T value, int alignment) => _builder.AppendFormatted(value, alignment);
 
-    /// <inheritdoc cref="ValueStringBuilder.AppendFormatted{T}(T, int, string?)"/>
+    /// <inheritdoc cref="ValueStringBuilder.AppendFormatted{T}(T, int, StringSpan)"/>
     public void AppendFormatted<T>(T value, int alignment, string? format) =>
-        _builder.AppendFormatted(value, alignment, format);
+        _builder.AppendFormatted<T>(value, alignment, format);
 
     /// <inheritdoc cref="ValueStringBuilder.AppendFormatted(ReadOnlySpan{char})"/>
     public void AppendFormatted(scoped ReadOnlySpan<char> value) => _builder.AppendFormatted(value);

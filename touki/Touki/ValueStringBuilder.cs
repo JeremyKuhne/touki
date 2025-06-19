@@ -660,6 +660,12 @@ public ref partial struct ValueStringBuilder
             return;
         }
 
+        if (typeof(T) == typeof(Value))
+        {
+            Unsafe.As<T, Value>(ref value).Format(ref this, format);
+            return;
+        }
+
 #if NETFRAMEWORK
         // On .NET Framework, directly format with the copy of the .NET 6 formatting code.
         if (TryAppendFormattedPrimitives(value, format, _formatProvider))
@@ -696,7 +702,7 @@ public ref partial struct ValueStringBuilder
         }
 #pragma warning restore IDE0038
 
-        if (value.ToString() is string asString)
+        if (value?.ToString() is string asString)
         {
             Append(asString);
             return;
@@ -708,17 +714,6 @@ public ref partial struct ValueStringBuilder
     {
         int startingPos = _position;
         AppendFormatted(value);
-        if (alignment != 0)
-        {
-            AppendOrInsertAlignmentIfNeeded(startingPos, alignment);
-        }
-    }
-
-    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
-    public void AppendFormatted<T>(T value, int alignment, string? format)
-    {
-        int startingPos = _position;
-        AppendFormatted(value, format.AsSpan());
         if (alignment != 0)
         {
             AppendOrInsertAlignmentIfNeeded(startingPos, alignment);

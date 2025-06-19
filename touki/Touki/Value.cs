@@ -1493,7 +1493,7 @@ public readonly partial struct Value
     ///  Format the variant into the given <paramref name="destination"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Format(ref ValueStringBuilder destination, int alignment, ReadOnlySpan<char> format)
+    public void Format(ref ValueStringBuilder destination, ReadOnlySpan<char> format)
     {
         // This must stay aligned with logic in Type. To get the best performance, we replicate the logic here.
 
@@ -1508,31 +1508,31 @@ public readonly partial struct Value
 
             if (type == typeof(int))
             {
-                destination.AppendFormatted(As<int>(), alignment, format);
+                destination.AppendFormatted(As<int>(), format);
             }
             else if (type == typeof(long))
             {
-                destination.AppendFormatted(As<long>(), alignment, format);
+                destination.AppendFormatted(As<long>(), format);
             }
             else if (type == typeof(bool))
             {
-                destination.AppendFormatted(As<bool>(), alignment, format);
+                destination.AppendFormatted(As<bool>(), format);
             }
             else if (type == typeof(uint))
             {
-                destination.AppendFormatted(As<uint>(), alignment, format);
+                destination.AppendFormatted(As<uint>(), format);
             }
             else
             {
                 // Push some of the logic off to facilitate inlining.
-                FormatTypeFlagSlow(ref destination, typeFlag, alignment, format);
+                FormatTypeFlagSlow(ref destination, typeFlag, format);
             }
         }
         else if (_object?.GetType() is Type objectType)
         {
             if (_union.UInt64 == 0)
             {
-                destination.AppendFormatted(_object, alignment, format);
+                destination.AppendFormatted(_object, format);
             }
             else
             {
@@ -1543,11 +1543,11 @@ public readonly partial struct Value
                 // We have an ArraySegment
                 if (objectType == typeof(byte[]))
                 {
-                    destination.AppendFormatted(As<ArraySegment<byte>>(), alignment, format);
+                    destination.AppendFormatted(As<ArraySegment<byte>>(), format);
                 }
                 else if (objectType == typeof(char[]))
                 {
-                    destination.AppendFormatted(As<ArraySegment<char>>(), alignment, format);
+                    destination.AppendFormatted(As<ArraySegment<char>>(), format);
                 }
                 else
                 {
@@ -1560,62 +1560,61 @@ public readonly partial struct Value
     private void FormatTypeFlagSlow(
         ref ValueStringBuilder destination,
         TypeFlag typeFlag,
-        int alignment,
         ReadOnlySpan<char> format)
     {
         Type type = typeFlag.Type;
 
         if (type == typeof(ulong))
         {
-            destination.AppendFormatted(As<ulong>(), alignment, format);
+            destination.AppendFormatted(As<ulong>(), format);
         }
         else if (type == typeof(char))
         {
-            destination.AppendFormatted(As<char>(), alignment, format);
+            destination.AppendFormatted(As<char>(), format);
         }
         else if (type == typeof(byte))
         {
-            destination.AppendFormatted(As<byte>(), alignment, format);
+            destination.AppendFormatted(As<byte>(), format);
         }
         else if (type == typeof(DateTime))
         {
-            destination.AppendFormatted(As<DateTime>(), alignment, format);
+            destination.AppendFormatted(As<DateTime>(), format);
         }
         else if (type == typeof(DateTimeOffset))
         {
-            destination.AppendFormatted(As<DateTimeOffset>(), alignment, format);
+            destination.AppendFormatted(As<DateTimeOffset>(), format);
         }
         else if (type == typeof(decimal))
         {
-            destination.AppendFormatted(As<decimal>(), alignment, format);
+            destination.AppendFormatted(As<decimal>(), format);
         }
         else if (type == typeof(double))
         {
-            destination.AppendFormatted(As<double>(), alignment, format);
+            destination.AppendFormatted(As<double>(), format);
         }
         else if (type == typeof(Guid))
         {
-            destination.AppendFormatted(As<Guid>(), alignment, format);
+            destination.AppendFormatted(As<Guid>(), format);
         }
         else if (type == typeof(short))
         {
-            destination.AppendFormatted(As<short>(), alignment, format);
+            destination.AppendFormatted(As<short>(), format);
         }
         else if (type == typeof(sbyte))
         {
-            destination.AppendFormatted(As<sbyte>(), alignment, format);
+            destination.AppendFormatted(As<sbyte>(), format);
         }
         else if (type == typeof(float))
         {
-            destination.AppendFormatted(As<float>(), alignment, format);
+            destination.AppendFormatted(As<float>(), format);
         }
         else if (type == typeof(TimeSpan))
         {
-            destination.AppendFormatted(As<TimeSpan>(), alignment, format);
+            destination.AppendFormatted(As<TimeSpan>(), format);
         }
         else if (type == typeof(ushort))
         {
-            destination.AppendFormatted(As<ushort>(), alignment, format);
+            destination.AppendFormatted(As<ushort>(), format);
         }
         else
         {

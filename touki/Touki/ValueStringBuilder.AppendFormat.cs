@@ -30,20 +30,42 @@ public ref partial struct ValueStringBuilder
 
     private static char[] s_brackets { get; } = ['{', '}'];
 
-    /// <inheritdoc cref="AppendFormat(ReadOnlySpan{char}, ReadOnlySpan{Value})"/>
-    public unsafe void AppendFormat(string format, Value arg) => AppendFormat(format.AsSpan(), arg);
+    // These overloads should be conditioned between .NET and .NET Framework to leverage the ability to create
+    // spans from refs in .NET.
 
-    /// <inheritdoc cref="AppendFormat(ReadOnlySpan{char}, ReadOnlySpan{Value})"/>
+    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
+    public unsafe void AppendFormat(string format, ReadOnlySpan<Value> args)
+        => AppendFormat<Value>(format.AsSpan(), args);
+
+    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
+    public unsafe void AppendFormat(ReadOnlySpan<char> format, ReadOnlySpan<Value> args)
+        => AppendFormat<Value>(format, args);
+
+    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
+    public unsafe void AppendFormat<TArgument>(string format, TArgument arg) where TArgument : unmanaged
+        => AppendFormat(format.AsSpan(), arg);
+
+    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
+    public unsafe void AppendFormat<TArgument>(ReadOnlySpan<char> format, TArgument arg) where TArgument : unmanaged
+    {
+        AppendFormat(format, new ReadOnlySpan<TArgument>(&arg, 1));
+    }
+
+    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
+    public unsafe void AppendFormat(string format, Value arg)
+        => AppendFormat(format.AsSpan(), arg);
+
+    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
     public unsafe void AppendFormat(ReadOnlySpan<char> format, Value arg)
     {
         Values[0] = arg;
         AppendFormat(format, new ReadOnlySpan<Value>(Values, 0, 1));
     }
 
-    /// <inheritdoc cref="AppendFormat(ReadOnlySpan{char}, ReadOnlySpan{Value})"/>
+    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
     public unsafe void AppendFormat(string format, Value arg1, Value arg2) => AppendFormat(format.AsSpan(), arg1, arg2);
 
-    /// <inheritdoc cref="AppendFormat(ReadOnlySpan{char}, ReadOnlySpan{Value})"/>
+    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
     public unsafe void AppendFormat(ReadOnlySpan<char> format, Value arg1, Value arg2)
     {
         Values[0] = arg1;
@@ -51,11 +73,11 @@ public ref partial struct ValueStringBuilder
         AppendFormat(format, new ReadOnlySpan<Value>(Values, 0, 2));
     }
 
-    /// <inheritdoc cref="AppendFormat(ReadOnlySpan{char}, ReadOnlySpan{Value})"/>
+    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
     public unsafe void AppendFormat(string format, Value arg1, Value arg2, Value arg3) =>
         AppendFormat(format.AsSpan(), arg1, arg2, arg3);
 
-    /// <inheritdoc cref="AppendFormat(ReadOnlySpan{char}, ReadOnlySpan{Value})"/>
+    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
     public unsafe void AppendFormat(ReadOnlySpan<char> format, Value arg1, Value arg2, Value arg3)
     {
         Values[0] = arg1;
@@ -64,11 +86,11 @@ public ref partial struct ValueStringBuilder
         AppendFormat(format, new ReadOnlySpan<Value>(Values, 0, 3));
     }
 
-    /// <inheritdoc cref="AppendFormat(ReadOnlySpan{char}, ReadOnlySpan{Value})"/>
+    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
     public unsafe void AppendFormat(string format, Value arg1, Value arg2, Value arg3, Value arg4) =>
         AppendFormat(format.AsSpan(), arg1, arg2, arg3, arg4);
 
-    /// <inheritdoc cref="AppendFormat(ReadOnlySpan{char}, ReadOnlySpan{Value})"/>
+    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
     public unsafe void AppendFormat(ReadOnlySpan<char> format, Value arg1, Value arg2, Value arg3, Value arg4)
     {
         Values[0] = arg1;
@@ -81,7 +103,7 @@ public ref partial struct ValueStringBuilder
     /// <summary>
     ///  Appends a formatted string to the current instance using the specified format and arguments.
     /// </summary>
-    public void AppendFormat(ReadOnlySpan<char> format, ReadOnlySpan<Value> args)
+    public void AppendFormatReader<TArgument>(ReadOnlySpan<char> format, ReadOnlySpan<TArgument> args)
     {
         SpanReader<char> reader = new(format);
         while (reader.TrySplitAny(s_brackets, out var literal))
@@ -173,7 +195,123 @@ public ref partial struct ValueStringBuilder
             }
 
             // Now add the formatted value.
-            args[(int)index].Format(ref this, alignment, formatSpan);
+            AppendFormatted(args[(int)index], alignment, formatSpan);
+        }
+    }
+
+    /// <summary>
+    ///  Optimized version of <see cref="AppendFormatReader{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>.
+    /// </summary>
+    public void AppendFormat<TArgument>(ReadOnlySpan<char> format, ReadOnlySpan<TArgument> args)
+    {
+        ReadOnlySpan<char> remaining = format;
+        while (true)
+        {
+            int braceIndex = remaining.IndexOfAny('{', '}');
+            if (braceIndex < 0)
+            {
+                Append(remaining);
+                break;
+            }
+
+            if (braceIndex > 0)
+            {
+                Append(remaining[..braceIndex]);
+            }
+
+            remaining = remaining[braceIndex..];
+            char c = remaining[0];
+            remaining = remaining[1..];
+
+            if (c == '}')
+            {
+                if (!remaining.IsEmpty && remaining[0] == '}')
+                {
+                    Append('}');
+                    remaining = remaining[1..];
+                    continue;
+                }
+
+                FormatError();
+            }
+            else if (!remaining.IsEmpty && remaining[0] == '{')
+            {
+                Append('{');
+                remaining = remaining[1..];
+                continue;
+            }
+
+            if (remaining.IsEmpty || (uint)(remaining[0] - '0') > 9)
+            {
+                FormatError();
+            }
+
+            uint index = (uint)(remaining[0] - '0');
+            remaining = remaining[1..];
+            while (!remaining.IsEmpty && (uint)(remaining[0] - '0') <= 9)
+            {
+                index = index * 10 + (uint)(remaining[0] - '0');
+                remaining = remaining[1..];
+            }
+
+            if (index >= args.Length || remaining.IsEmpty)
+            {
+                FormatError();
+            }
+
+            int alignment = 0;
+            if (remaining[0] == ',')
+            {
+                remaining = remaining[1..];
+                bool negative = false;
+                if (!remaining.IsEmpty && remaining[0] == '-')
+                {
+                    negative = true;
+                    remaining = remaining[1..];
+                }
+
+                uint width = 0;
+                bool gotDigit = false;
+                while (!remaining.IsEmpty && (uint)(remaining[0] - '0') <= 9)
+                {
+                    width = width * 10 + (uint)(remaining[0] - '0');
+                    remaining = remaining[1..];
+                    gotDigit = true;
+                    if (width >= WidthLimit)
+                    {
+                        FormatError();
+                    }
+                }
+
+                if (!gotDigit || remaining.IsEmpty)
+                {
+                    FormatError();
+                }
+
+                alignment = negative ? -(int)width : (int)width;
+            }
+
+            ReadOnlySpan<char> itemFormat = default;
+            if (remaining[0] == ':')
+            {
+                remaining = remaining[1..];
+                int end = remaining.IndexOf('}');
+                if (end < 0)
+                {
+                    FormatError();
+                }
+
+                itemFormat = remaining[..end];
+                remaining = remaining[end..];
+            }
+
+            if (remaining.IsEmpty || remaining[0] != '}')
+            {
+                FormatError();
+            }
+
+            remaining = remaining[1..];
+            AppendFormatted(args[(int)index], alignment, itemFormat);
         }
     }
 

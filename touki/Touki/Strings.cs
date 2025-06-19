@@ -10,15 +10,30 @@ namespace Touki;
 public static partial class Strings
 {
     /// <inheritdoc cref="ValueStringBuilder.AppendFormat(ReadOnlySpan{char}, Value)" />
-    public static string Format(string format, Value arg) => Format(format.AsSpan(), arg);
+    public static string Format<TArgument>(string format, TArgument arg) where TArgument : unmanaged
+        => Format(format.AsSpan(), arg);
 
     /// <inheritdoc cref="ValueStringBuilder.AppendFormat(ReadOnlySpan{char}, Value)" />
     [SkipLocalsInit]
-    public static string Format(ReadOnlySpan<char> format, Value arg)
+    public static string Format<TArgument>(ReadOnlySpan<char> format, TArgument arg) where TArgument : unmanaged
     {
         Span<char> buffer = stackalloc char[256];
         using ValueStringBuilder builder = new(buffer);
         builder.AppendFormat(format, arg);
+        return builder.ToString();
+    }
+
+    /// <inheritdoc cref="ValueStringBuilder.AppendFormat(ReadOnlySpan{char}, Value)" />
+    public static string Format(string format, ReadOnlySpan<Value> args)
+        => Format(format.AsSpan(), args);
+
+    /// <inheritdoc cref="ValueStringBuilder.AppendFormat(ReadOnlySpan{char}, Value)" />
+    [SkipLocalsInit]
+    public static string Format(ReadOnlySpan<char> format, ReadOnlySpan<Value> args)
+    {
+        Span<char> buffer = stackalloc char[256];
+        using ValueStringBuilder builder = new(buffer);
+        builder.AppendFormat(format, args);
         return builder.ToString();
     }
 
