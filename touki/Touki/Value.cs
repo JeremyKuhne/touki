@@ -1616,10 +1616,39 @@ public readonly partial struct Value
         {
             destination.AppendFormatted(As<ushort>(), format);
         }
+#if NETFRAMEWORK
+        else if (type.IsEnum
+            && (format.Length == 0 || (format.Length == 1 && (format[0] == 'D' || format[0] == 'd')))
+            && EnumExtensions.GetEnumData(type) is var enumData
+            && !enumData.IsFlags)
+        {
+            ulong value = _union.UInt64;
+            (ulong[] values, string[] names) = enumData.Data;
+            int index = Array.BinarySearch(values, value);
+            if (index >= 0)
+            {
+                destination.AppendFormatted(names[index], format);
+            }
+            else
+            {
+                Type underlying = enumData.UnderlyingType;
+                if (type == typeof(int) || type == typeof(long) || type == typeof(short) || type == typeof(sbyte))
+                {
+                    destination.AppendFormatted((long)value);
+                }
+                else
+                {
+                    destination.AppendFormatted(value);
+                }
+            }
+        }
         else
+#else
+        else
+#endif
         {
             destination.AppendFormatted(typeFlag.ToObject(in this));
         }
     }
-    #endregion
+#endregion
 }

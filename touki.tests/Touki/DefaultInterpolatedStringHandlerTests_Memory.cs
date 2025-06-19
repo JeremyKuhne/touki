@@ -31,7 +31,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests_Memory
 
         _ = $"Today is {value}.";
 
-        using (AssertBytesAllocated tracker = new(56, 256))
+        using (AssertBytesAllocated tracker = new(56, 136))
         {
             _ = $"Today is {value}.";
         }

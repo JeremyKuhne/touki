@@ -8,9 +8,9 @@ using Touki;
 namespace touki.perf;
 
 [MemoryDiagnoser]
-public class StringFormatting
+public class StringFormattingEnum
 {
-    private readonly int _value = 42;
+    private readonly DayOfWeek _value = DayOfWeek.Sunday;
 
     [Benchmark(Baseline = true)]
     public string StringFormat()

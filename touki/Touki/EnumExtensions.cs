@@ -7,7 +7,7 @@ namespace System;
 /// <summary>
 ///  Enum extension methods.
 /// </summary>
-public static unsafe class EnumExtensions
+public static unsafe partial class EnumExtensions
 {
     // Note that the non-relevant if clauses will be omitted when compiling to a given T.
 

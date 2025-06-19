@@ -177,9 +177,24 @@ public ref partial struct ValueStringBuilder
         }
 
         // We could handle very common enums so that they don't need to allocate like crazy.
-        if (typeof(T).IsEnum && format.IsEmpty)
+        if (typeof(T).IsEnum
+            && format.IsEmpty
+            && EnumExtensions.GetEnumData(typeof(T)) is var enumData
+            && enumData.UnderlyingType == typeof(int))
         {
-            Append(value!.ToString());
+            int intValue = Unsafe.As<T, int>(ref value);
+
+            (ulong[] values, string[] names) = enumData.Data;
+            int index = Array.BinarySearch(values, (ulong)intValue);
+            if (index >= 0)
+            {
+                Append(names[index]);
+            }
+            else
+            {
+                return TryAppendFormattedPrimitives(intValue, default, null);
+            }
+
             return true;
         }
 
