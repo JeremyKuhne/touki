@@ -105,6 +105,7 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
         {
             if (!TryReadToAny(delimiters, advancePastDelimiter: true, out span))
             {
+                // No delimiter found (or empty delimiters), return all remaining data
                 span = _unread;
                 _unread = default;
             }
@@ -171,9 +172,15 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
         bool found = false;
         span = default;
 
-        int index = delimiters.Length == 2
-            ? _unread.IndexOfAny(delimiters[0], delimiters[1])
-            : _unread.IndexOfAny(delimiters);
+        int index = delimiters.Length switch
+        {
+            // The downlevel extension of IndexOfAny returns 0 for empty delimiters.
+#if NETFRAMEWORK
+            0 => -1,
+#endif
+            2 => _unread.IndexOfAny(delimiters[0], delimiters[1]),
+            _ => _unread.IndexOfAny(delimiters)
+        };
 
         if (index != -1)
         {
@@ -235,6 +242,8 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryRead(int count, out ReadOnlySpan<T> span)
     {
+        ArgumentOutOfRange.ThrowIfNegative(count);
+
         bool success;
 
         if (count > _unread.Length)
@@ -325,6 +334,8 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
         {
             throw new ArgumentException($"The size of {nameof(TValue)} must be evenly divisible by the size of {nameof(T)}.");
         }
+
+        ArgumentOutOfRange.ThrowIfNegative(count);
 
         bool success;
 
