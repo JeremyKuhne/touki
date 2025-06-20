@@ -14,3 +14,11 @@ Some of the design goals include:
 - Avoiding code that prevents AOT compilation on .NET
 
 See [CONTRIBUTING.md](CONTRIBUTING) for more information on how to contribute to this project.
+
+## Environment setup
+
+Run `setup.sh` once after cloning the repository to automatically install the .NET 9 SDK and configure your PATH. The script updates `~/.bashrc` so that the SDK is available in future sessions.
+
+```bash
+./setup.sh
+```
