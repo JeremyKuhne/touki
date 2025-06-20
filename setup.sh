@@ -13,7 +13,7 @@ if ! command -v dotnet >/dev/null || ! dotnet --list-sdks | grep -q '^9\.'; then
 fi
 
 # Ensure PATH includes the installed SDK
-if ! grep -q 'export PATH="$HOME/.dotnet' "$HOME/.bashrc" 2>/dev/null; then
+if ! grep -q 'export PATH="$HOME/.dotnet:$PATH"' "$HOME/.bashrc" 2>/dev/null; then
   echo 'export PATH="$HOME/.dotnet:$PATH"' >> "$HOME/.bashrc"
 fi
 export PATH="$HOME/.dotnet:$PATH"
