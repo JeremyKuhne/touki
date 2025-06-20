@@ -19,7 +19,7 @@ fi
 export PATH="$HOME/.dotnet:$PATH"
 
 # Ensure this script runs on new shell sessions
-SETUP_SOURCE="source $SCRIPT_DIR/setup.sh"
+SETUP_SOURCE="source \"$SCRIPT_DIR/setup.sh\""
 if ! grep -Fq "$SETUP_SOURCE" "$HOME/.bashrc" 2>/dev/null; then
   echo "$SETUP_SOURCE" >> "$HOME/.bashrc"
 fi
