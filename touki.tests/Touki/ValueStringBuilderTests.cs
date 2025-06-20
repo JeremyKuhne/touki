@@ -1218,4 +1218,213 @@ public unsafe class ValueStringBuilderTests
         builder.AppendFormat("{{}} {{ }} {0} }} {{ {{", new Value("test"));
         builder.ToString().Should().Be("{} { } test } { {");
     }
+
+    // Define test enum types for the AppendFormat tests
+    private enum TestEnum
+    {
+        First = 1,
+        Second = 2,
+        Third = 3
+    }
+
+    private enum TestEnumWithZero
+    {
+        Zero = 0,
+        One = 1,
+        Two = 2
+    }
+
+    [Flags]
+    private enum TestFlagsEnum
+    {
+        None = 0,
+        Flag1 = 1,
+        Flag2 = 2,
+        Flag3 = 4,
+        Flag1And2 = Flag1 | Flag2,
+        All = Flag1 | Flag2 | Flag3
+    }
+
+    [Fact]
+    public void AppendFormat_SingleEnumArg()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("Value: {0}", TestEnum.Second);
+        builder.ToString().Should().Be("Value: Second");
+
+        builder.Clear();
+        builder.AppendFormat("Value: {0}", DayOfWeek.Wednesday);
+        builder.ToString().Should().Be("Value: Wednesday");
+    }
+
+    [Fact]
+    public void AppendFormat_MultipleEnumArgs()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        builder.AppendFormat("First: {0}, Second: {1}", Value.Create(TestEnum.First), Value.Create(DayOfWeek.Friday));
+        builder.ToString().Should().Be("First: First, Second: Friday");
+
+        builder.Clear();
+        builder.AppendFormat("Values: {0}, {1}, {2}",
+            Value.Create(TestEnum.First),
+            Value.Create(TestEnum.Second),
+            Value.Create(TestEnum.Third));
+        builder.ToString().Should().Be("Values: First, Second, Third");
+    }
+
+    [Fact]
+    public void AppendFormat_EnumWithZeroValue()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("Value: {0}", TestEnumWithZero.Zero);
+        builder.ToString().Should().Be("Value: Zero");
+    }
+
+    [Fact]
+    public void AppendFormat_UndefinedEnumValue()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        // Cast to create an undefined enum value
+        TestEnum undefinedValue = (TestEnum)42;
+
+        builder.AppendFormat("Value: {0}", undefinedValue);
+        builder.ToString().Should().Be("Value: 42");
+
+        // Compare with string.Format behavior
+        string expected = string.Format("Value: {0}", undefinedValue);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_SingleFlagsEnum()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        // Single flag
+        builder.AppendFormat("Flags: {0}", TestFlagsEnum.Flag1);
+        builder.ToString().Should().Be("Flags: Flag1");
+
+        builder.Clear();
+        // Multiple flags
+        builder.AppendFormat("Flags: {0}", TestFlagsEnum.Flag1And2);
+        builder.ToString().Should().Be("Flags: Flag1And2");
+
+        builder.Clear();
+        // All flags
+        builder.AppendFormat("Flags: {0}", TestFlagsEnum.All);
+        builder.ToString().Should().Be("Flags: All");
+    }
+
+    [Fact]
+    public void AppendFormat_FlagsEnumNone()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("Flags: {0}", TestFlagsEnum.None);
+        builder.ToString().Should().Be("Flags: None");
+    }
+
+    [Fact]
+    public void AppendFormat_UndefinedFlagsEnum()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        // Create an undefined flags enum value
+        TestFlagsEnum undefinedFlag = (TestFlagsEnum)32;
+
+        builder.AppendFormat("Flags: {0}", undefinedFlag);
+        builder.ToString().Should().Be("Flags: 32");
+
+        // Compare with string.Format behavior
+        string expected = string.Format("Flags: {0}", undefinedFlag);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_CombinedDefinedAndUndefinedFlags()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        // Combine a defined flag with an undefined one
+        TestFlagsEnum mixedFlags = TestFlagsEnum.Flag1 | (TestFlagsEnum)32;
+
+        builder.AppendFormat("Flags: {0}", mixedFlags);
+        // The output should be the numeric value since it can't represent this combination with names
+        builder.ToString().Should().Be("Flags: 33");
+
+        // Compare with string.Format behavior
+        string expected = string.Format("Flags: {0}", mixedFlags);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_SystemFlagsEnum()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        FileAttributes attrs = FileAttributes.Hidden | FileAttributes.ReadOnly;
+        builder.AppendFormat("Attributes: {0}", attrs);
+
+        // Compare with string.Format behavior for system-defined enums
+        string expected = string.Format("Attributes: {0}", attrs);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(ConsoleColor.Red)]
+    [InlineData(ConsoleColor.Blue)]
+    [InlineData(ConsoleColor.Yellow)]
+    public void AppendFormat_EnumTheory(ConsoleColor color)
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+        builder.AppendFormat("Color: {0}", color);
+        builder.ToString().Should().Be($"Color: {color}");
+
+        // Check that the output matches string.Format
+        string expected = string.Format("Color: {0}", color);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_EnumWithFormat()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+
+        // Format "D" shows the decimal value
+        builder.AppendFormat("Value: {0:D}", TestEnum.Second);
+        builder.ToString().Should().Be("Value: 2");
+
+        builder.Clear();
+        // Format "X" shows the hex value
+        builder.AppendFormat("Value: {0:X}", TestEnum.Second);
+        builder.ToString().Should().Be("Value: 00000002");
+
+        builder.Clear();
+        // Format "G" is the default format (name)
+        builder.AppendFormat("Value: {0:G}", TestEnum.Second);
+        builder.ToString().Should().Be("Value: Second");
+    }
+
+    [Fact]
+    public void AppendFormat_EnumWithFormatAndAlignment()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+
+        // Right-aligned with format specifier
+        builder.AppendFormat("Value: {0,10:D}", TestEnum.Second);
+        builder.ToString().Should().Be("Value:          2");
+
+        builder.Clear();
+        // Left-aligned with format specifier
+        builder.AppendFormat("Value: {0,-10:D}", TestEnum.Second);
+        builder.ToString().Should().Be("Value: 2         ");
+    }
+
+    [Fact]
+    public void AppendFormat_EnumArraySegment()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        string expected = string.Format("Values: {0}, {1}, {2}", TestEnum.First, TestFlagsEnum.Flag1And2, DayOfWeek.Monday);
+        builder.AppendFormat("Values: {0}, {1}, {2}", Value.Create(TestEnum.First), Value.Create(TestFlagsEnum.Flag1And2), Value.Create(DayOfWeek.Monday));
+        builder.ToString().Should().Be("Values: First, Flag1And2, Monday");
+        builder.ToString().Should().Be(expected);
+    }
 }

@@ -4,4 +4,7 @@
 
 [assembly: SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Thread local", Scope = "member", Target = "~F:Touki.Cache`1.t_localItem")]
 [assembly: SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Thread local", Scope = "member", Target = "~F:Touki.ValueStringBuilder.t_values")]
+
+#if NETFRAMEWORK
 [assembly: SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Thread local", Scope = "member", Target = "~F:System.EnumExtensions.t_params")]
+#endif

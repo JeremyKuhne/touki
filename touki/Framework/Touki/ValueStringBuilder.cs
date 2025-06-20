@@ -180,10 +180,15 @@ public ref partial struct ValueStringBuilder
         if (typeof(T).IsEnum
             && format.IsEmpty
             && EnumExtensions.GetEnumData(typeof(T)) is var enumData
-            && !enumData.IsFlags
             && enumData.UnderlyingType == typeof(int))
         {
             int intValue = Unsafe.As<T, int>(ref value);
+
+            if (enumData.IsFlags)
+            {
+                InternalFlagsFormat(intValue, enumData);
+                return true;
+            }
 
             (ulong[] values, string[] names) = enumData.Data;
             int index = Array.BinarySearch(values, (ulong)intValue);
@@ -200,5 +205,66 @@ public ref partial struct ValueStringBuilder
         }
 
         return false;
+    }
+
+    internal void InternalFlagsFormat(int value, EnumExtensions.EnumData enumData)
+    {
+        ulong result = (uint)value;
+
+        ulong[] values = enumData.Data.Values;
+        string[] names = enumData.Data.Names;
+
+        int index = values.Length - 1;
+        bool firstTime = true;
+        ulong saveResult = result;
+
+        int startPosition = _position;
+
+        // We will not optimize this code further to keep it maintainable. There are some boundary checks that can be applied
+        // to minimize the comparsions required. This code works the same for the best/worst case. In general the number of
+        // items in an enum are sufficiently small and not worth the optimization.
+        while (index >= 0)
+        {
+            if ((index == 0) && (values[index] == 0))
+            {
+                break;
+            }
+
+            if ((result & values[index]) == values[index])
+            {
+                result -= values[index];
+                if (!firstTime)
+                {
+                    Insert(startPosition, ", ");
+                }
+
+                Insert(startPosition, names[index]);
+                firstTime = false;
+            }
+
+            index--;
+        }
+
+        // We were unable to represent this number as a bitwise or of valid flags
+        if (result != 0)
+        {
+            _position = startPosition;
+            bool success = TryAppendFormattedPrimitives(value, default, default);
+            Debug.Assert(success, "Failed to format value as a primitive type.");
+            return;
+        }
+
+        // For the case when we have zero
+        if (saveResult == 0)
+        {
+            if (values.Length > 0 && values[0] == 0)
+            {
+                Append(names[0]); // Zero was one of the enum values.
+            }
+            else
+            {
+                Append("0");
+            }
+        }
     }
 }

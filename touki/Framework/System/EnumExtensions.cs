@@ -45,8 +45,8 @@ public static unsafe partial class EnumExtensions
         }
 
         // Use reflection to get the private static GetCachedValuesAndNames method
-
-        var parameters = t_params ?? [null!, true];
+        t_params ??= [null!, true];
+        var parameters = t_params;
         parameters[0] = type;
         var valuesAndNames = s_cachedNames.Invoke(null, parameters);
         var values = (ulong[])s_valuesField.GetValue(valuesAndNames)!;

@@ -128,6 +128,15 @@ public ref partial struct ValueStringBuilder
     }
 
     /// <summary>
+    ///  Clears the contents of the string builder, resetting its length to zero.
+    /// </summary>
+    public void Clear()
+    {
+        // Reset the position to 0, but do not clear the underlying array.
+        _position = 0;
+    }
+
+    /// <summary>
     ///  Gets the maximum number of characters that can be contained in the memory allocated by the current instance.
     /// </summary>
     /// <value>The capacity of the current instance.</value>

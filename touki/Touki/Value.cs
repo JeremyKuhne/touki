@@ -1133,16 +1133,22 @@ public readonly partial struct Value
         if (typeof(T).IsEnum)
         {
             Debug.Assert(Unsafe.SizeOf<T>() <= sizeof(ulong));
-            return new Value(StraightCastFlag<T>.Instance, Unsafe.As<T, ulong>(ref value));
+
+            // There may or may not be extra garbage in the 64 bits with the arg, so we need to check the actual size.
+            return Unsafe.SizeOf<T>() switch
+            {
+                1 => new Value(StraightCastFlag<T>.Instance, Unsafe.As<T, byte>(ref value)),
+                2 => new Value(StraightCastFlag<T>.Instance, Unsafe.As<T, ushort>(ref value)),
+                4 => new Value(StraightCastFlag<T>.Instance, Unsafe.As<T, uint>(ref value)),
+                _ => new Value(StraightCastFlag<T>.Instance, Unsafe.As<T, ulong>(ref value)),
+            };
         }
 
         return new Value(value);
     }
 
-    [SkipLocalsInit]
     private Value(object o, ulong u)
     {
-        Unsafe.SkipInit(out _union);
         _object = o;
         _union.UInt64 = u;
     }
@@ -1508,19 +1514,19 @@ public readonly partial struct Value
 
             if (type == typeof(int))
             {
-                destination.AppendFormatted(As<int>(), format);
+                destination.AppendFormatted(_union.Int32, format);
             }
             else if (type == typeof(long))
             {
-                destination.AppendFormatted(As<long>(), format);
+                destination.AppendFormatted(_union.Int64, format);
             }
             else if (type == typeof(bool))
             {
-                destination.AppendFormatted(As<bool>(), format);
+                destination.AppendFormatted(_union.Boolean, format);
             }
             else if (type == typeof(uint))
             {
-                destination.AppendFormatted(As<uint>(), format);
+                destination.AppendFormatted(_union.UInt32, format);
             }
             else
             {
@@ -1566,55 +1572,43 @@ public readonly partial struct Value
 
         if (type == typeof(ulong))
         {
-            destination.AppendFormatted(As<ulong>(), format);
+            destination.AppendFormatted(_union.UInt64, format);
         }
         else if (type == typeof(char))
         {
-            destination.AppendFormatted(As<char>(), format);
+            destination.AppendFormatted(_union.Char, format);
         }
         else if (type == typeof(byte))
         {
-            destination.AppendFormatted(As<byte>(), format);
+            destination.AppendFormatted(_union.Byte, format);
         }
         else if (type == typeof(DateTime))
         {
-            destination.AppendFormatted(As<DateTime>(), format);
+            destination.AppendFormatted(_union.DateTime, format);
         }
         else if (type == typeof(DateTimeOffset))
         {
-            destination.AppendFormatted(As<DateTimeOffset>(), format);
-        }
-        else if (type == typeof(decimal))
-        {
-            destination.AppendFormatted(As<decimal>(), format);
+            destination.AppendFormatted(_union.PackedDateTimeOffset.Extract(), format);
         }
         else if (type == typeof(double))
         {
-            destination.AppendFormatted(As<double>(), format);
-        }
-        else if (type == typeof(Guid))
-        {
-            destination.AppendFormatted(As<Guid>(), format);
+            destination.AppendFormatted(_union.Double, format);
         }
         else if (type == typeof(short))
         {
-            destination.AppendFormatted(As<short>(), format);
+            destination.AppendFormatted(_union.Int16, format);
         }
         else if (type == typeof(sbyte))
         {
-            destination.AppendFormatted(As<sbyte>(), format);
+            destination.AppendFormatted(_union.SByte, format);
         }
         else if (type == typeof(float))
         {
-            destination.AppendFormatted(As<float>(), format);
-        }
-        else if (type == typeof(TimeSpan))
-        {
-            destination.AppendFormatted(As<TimeSpan>(), format);
+            destination.AppendFormatted(_union.Single, format);
         }
         else if (type == typeof(ushort))
         {
-            destination.AppendFormatted(As<ushort>(), format);
+            destination.AppendFormatted(_union.UInt16, format);
         }
 #if NETFRAMEWORK
         else if (type.IsEnum
@@ -1650,5 +1644,5 @@ public readonly partial struct Value
             destination.AppendFormatted(typeFlag.ToObject(in this));
         }
     }
-#endregion
+    #endregion
 }
