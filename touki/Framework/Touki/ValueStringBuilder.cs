@@ -180,6 +180,7 @@ public ref partial struct ValueStringBuilder
         if (typeof(T).IsEnum
             && format.IsEmpty
             && EnumExtensions.GetEnumData(typeof(T)) is var enumData
+            && !enumData.IsFlags
             && enumData.UnderlyingType == typeof(int))
         {
             int intValue = Unsafe.As<T, int>(ref value);
