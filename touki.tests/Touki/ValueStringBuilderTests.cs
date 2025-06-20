@@ -1412,6 +1412,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Value:          2");
 
         builder.Clear();
+
         // Left-aligned with format specifier
         builder.AppendFormat("Value: {0,-10:D}", TestEnum.Second);
         builder.ToString().Should().Be("Value: 2         ");
@@ -1423,8 +1424,603 @@ public unsafe class ValueStringBuilderTests
         using ValueStringBuilder builder = new(stackalloc char[100]);
 
         string expected = string.Format("Values: {0}, {1}, {2}", TestEnum.First, TestFlagsEnum.Flag1And2, DayOfWeek.Monday);
-        builder.AppendFormat("Values: {0}, {1}, {2}", Value.Create(TestEnum.First), Value.Create(TestFlagsEnum.Flag1And2), Value.Create(DayOfWeek.Monday));
+        builder.AppendFormat("Values: {0}, {1}, {2}", new Value(TestEnum.First), new Value(TestFlagsEnum.Flag1And2), new Value(DayOfWeek.Monday));
         builder.ToString().Should().Be("Values: First, Flag1And2, Monday");
+        builder.ToString().Should().Be(expected);
+    }
+
+    // Comprehensive enum type definitions for all integer backing types
+    private enum ByteEnum : byte
+    {
+        ByteFirst = 1,
+        ByteSecond = 2,
+        ByteMax = 255
+    }
+
+    [Flags]
+    private enum ByteFlagsEnum : byte
+    {
+        ByteNone = 0,
+        ByteFlag1 = 1,
+        ByteFlag2 = 2,
+        ByteFlag4 = 4,
+        ByteAll = ByteFlag1 | ByteFlag2 | ByteFlag4
+    }
+
+    private enum SByteEnum : sbyte
+    {
+        SByteMin = -128,
+        SByteFirst = -1,
+        SByteZero = 0,
+        SByteSecond = 1,
+        SByteMax = 127
+    }
+
+    [Flags]
+    private enum SByteFlagsEnum : sbyte
+    {
+        SByteNone = 0,
+        SByteFlag1 = 1,
+        SByteFlag2 = 2,
+        SByteFlag4 = 4,
+        SByteAll = SByteFlag1 | SByteFlag2 | SByteFlag4
+    }
+
+    private enum ShortEnum : short
+    {
+        ShortMin = -32768,
+        ShortFirst = -1,
+        ShortZero = 0,
+        ShortSecond = 1,
+        ShortMax = 32767
+    }
+
+    [Flags]
+    private enum ShortFlagsEnum : short
+    {
+        ShortNone = 0,
+        ShortFlag1 = 1,
+        ShortFlag2 = 2,
+        ShortFlag4 = 4,
+        ShortAll = ShortFlag1 | ShortFlag2 | ShortFlag4
+    }
+
+    private enum UShortEnum : ushort
+    {
+        UShortFirst = 1,
+        UShortSecond = 2,
+        UShortMax = 65535
+    }
+
+    [Flags]
+    private enum UShortFlagsEnum : ushort
+    {
+        UShortNone = 0,
+        UShortFlag1 = 1,
+        UShortFlag2 = 2,
+        UShortFlag4 = 4,
+        UShortAll = UShortFlag1 | UShortFlag2 | UShortFlag4
+    }
+
+    private enum IntEnum : int
+    {
+        IntMin = int.MinValue,
+        IntFirst = -1,
+        IntZero = 0,
+        IntSecond = 1,
+        IntMax = int.MaxValue
+    }
+
+    [Flags]
+    private enum IntFlagsEnum : int
+    {
+        IntNone = 0,
+        IntFlag1 = 1,
+        IntFlag2 = 2,
+        IntFlag4 = 4,
+        IntAll = IntFlag1 | IntFlag2 | IntFlag4
+    }
+
+    private enum UIntEnum : uint
+    {
+        UIntFirst = 1,
+        UIntSecond = 2,
+        UIntMax = uint.MaxValue
+    }
+
+    [Flags]
+    private enum UIntFlagsEnum : uint
+    {
+        UIntNone = 0,
+        UIntFlag1 = 1,
+        UIntFlag2 = 2,
+        UIntFlag4 = 4,
+        UIntAll = UIntFlag1 | UIntFlag2 | UIntFlag4
+    }
+
+    private enum LongEnum : long
+    {
+        LongMin = long.MinValue,
+        LongFirst = -1,
+        LongZero = 0,
+        LongSecond = 1,
+        LongMax = long.MaxValue
+    }
+
+    [Flags]
+    private enum LongFlagsEnum : long
+    {
+        LongNone = 0,
+        LongFlag1 = 1,
+        LongFlag2 = 2,
+        LongFlag4 = 4,
+        LongAll = LongFlag1 | LongFlag2 | LongFlag4
+    }
+
+    private enum ULongEnum : ulong
+    {
+        ULongFirst = 1,
+        ULongSecond = 2,
+        ULongMax = ulong.MaxValue
+    }
+
+    [Flags]
+    private enum ULongFlagsEnum : ulong
+    {
+        ULongNone = 0,
+        ULongFlag1 = 1,
+        ULongFlag2 = 2,
+        ULongFlag4 = 4, ULongAll = ULongFlag1 | ULongFlag2 | ULongFlag4
+    }
+
+    [Fact]
+    public void AppendFormat_ByteEnums()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        // Test direct enum formatting
+        builder.AppendFormat("Value: {0}", ByteEnum.ByteSecond);
+        builder.ToString().Should().Be("Value: ByteSecond");
+
+        builder.Clear();
+
+        // Test Value-wrapped enum formatting
+        builder.AppendFormat("Value: {0}", new Value(ByteEnum.ByteMax));
+        builder.ToString().Should().Be("Value: ByteMax");
+
+        builder.Clear();
+
+        // Test undefined positive value
+        ByteEnum undefinedByte = (ByteEnum)42;
+        builder.AppendFormat("Value: {0}", undefinedByte);
+        builder.ToString().Should().Be("Value: 42");
+        string expected = string.Format("Value: {0}", undefinedByte);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_ByteFlagsEnums()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        // Test single flag
+        builder.AppendFormat("Flags: {0}", ByteFlagsEnum.ByteFlag1);
+        builder.ToString().Should().Be("Flags: ByteFlag1");
+
+        builder.Clear();
+
+        // Test combined flags via Value
+        builder.AppendFormat("Flags: {0}", Value.Create(ByteFlagsEnum.ByteAll));
+        builder.ToString().Should().Be("Flags: ByteAll");
+
+        builder.Clear();
+
+        // Test undefined flags value
+        ByteFlagsEnum undefinedFlags = (ByteFlagsEnum)64;
+        builder.AppendFormat("Flags: {0}", undefinedFlags);
+        builder.ToString().Should().Be("Flags: 64");
+        string expected = string.Format("Flags: {0}", undefinedFlags);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_SByteEnums()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        // Test negative value
+        builder.AppendFormat("Value: {0}", SByteEnum.SByteMin);
+        builder.ToString().Should().Be("Value: SByteMin");
+
+        builder.Clear();
+
+        // Test Value-wrapped negative enum
+        builder.AppendFormat("Value: {0}", Value.Create(SByteEnum.SByteFirst));
+        builder.ToString().Should().Be("Value: SByteFirst");
+
+        builder.Clear();
+
+        // Test undefined negative value
+        SByteEnum undefinedNegative = (SByteEnum)(-42);
+        builder.AppendFormat("Value: {0}", undefinedNegative);
+        builder.ToString().Should().Be("Value: -42");
+        string expected = string.Format("Value: {0}", undefinedNegative);
+        builder.ToString().Should().Be(expected);
+
+        builder.Clear();
+
+        // Test undefined positive value
+        SByteEnum undefinedPositive = (SByteEnum)42;
+        builder.AppendFormat("Value: {0}", undefinedPositive);
+        builder.ToString().Should().Be("Value: 42");
+        expected = string.Format("Value: {0}", undefinedPositive);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_ShortEnums()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);        // Test extreme values
+        builder.AppendFormat("Min: {0}, Max: {1}", Value.Create(ShortEnum.ShortMin), Value.Create(ShortEnum.ShortMax));
+        builder.ToString().Should().Be("Min: ShortMin, Max: ShortMax");
+
+        builder.Clear();
+
+        // Test undefined values
+        ShortEnum undefinedNegative = (ShortEnum)(-1000);
+        ShortEnum undefinedPositive = (ShortEnum)1000;
+        builder.AppendFormat("Negative: {0}, Positive: {1}", Value.Create(undefinedNegative), Value.Create(undefinedPositive));
+        builder.ToString().Should().Be("Negative: -1000, Positive: 1000");
+        string expected = string.Format("Negative: {0}, Positive: {1}", undefinedNegative, undefinedPositive);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_UShortEnums()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        // Test max value
+        builder.AppendFormat("Value: {0}", UShortEnum.UShortMax);
+        builder.ToString().Should().Be("Value: UShortMax");
+
+        builder.Clear();
+
+        // Test Value-wrapped and undefined
+        UShortEnum undefined = (UShortEnum)30000;
+        builder.AppendFormat("Values: {0}, {1}", Value.Create(UShortEnum.UShortFirst), Value.Create(undefined));
+        builder.ToString().Should().Be("Values: UShortFirst, 30000");
+        string expected = string.Format("Values: {0}, {1}", UShortEnum.UShortFirst, undefined);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_IntEnums()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[150]);        // Test extreme values
+        builder.AppendFormat("Min: {0}, Max: {1}", Value.Create(IntEnum.IntMin), Value.Create(IntEnum.IntMax));
+        builder.ToString().Should().Be("Min: IntMin, Max: IntMax");
+
+        builder.Clear();
+
+        // Test undefined large values
+        IntEnum undefinedLarge = (IntEnum)1000000;
+        IntEnum undefinedNegativeLarge = (IntEnum)(-1000000);
+        builder.AppendFormat("Large: {0}, NegLarge: {1}", Value.Create(undefinedLarge), Value.Create(undefinedNegativeLarge));
+        builder.ToString().Should().Be("Large: 1000000, NegLarge: -1000000");
+        string expected = string.Format("Large: {0}, NegLarge: {1}", undefinedLarge, undefinedNegativeLarge);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_UIntEnums()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        // Test max value
+        builder.AppendFormat("Max: {0}", UIntEnum.UIntMax);
+        builder.ToString().Should().Be("Max: UIntMax");
+
+        builder.Clear();
+
+        // Test undefined large value
+        UIntEnum undefinedLarge = (UIntEnum)3000000000;
+        builder.AppendFormat("Value: {0}", Value.Create(undefinedLarge));
+        builder.ToString().Should().Be("Value: 3000000000");
+        string expected = string.Format("Value: {0}", undefinedLarge);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_LongEnums()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[200]);        // Test extreme values
+        builder.AppendFormat("Min: {0}, Max: {1}", Value.Create(LongEnum.LongMin), Value.Create(LongEnum.LongMax));
+        builder.ToString().Should().Be("Min: LongMin, Max: LongMax");
+
+        builder.Clear();
+
+        // Test undefined very large values
+        LongEnum undefinedVeryLarge = (LongEnum)9000000000000000000L;
+        LongEnum undefinedVeryNegative = (LongEnum)(-9000000000000000000L);
+        builder.AppendFormat("VeryLarge: {0}, VeryNeg: {1}", Value.Create(undefinedVeryLarge), Value.Create(undefinedVeryNegative));
+        builder.ToString().Should().Be("VeryLarge: 9000000000000000000, VeryNeg: -9000000000000000000");
+        string expected = string.Format("VeryLarge: {0}, VeryNeg: {1}", undefinedVeryLarge, undefinedVeryNegative);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_ULongEnums()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[150]);
+
+        // Test max value
+        builder.AppendFormat("Max: {0}", ULongEnum.ULongMax);
+        builder.ToString().Should().Be("Max: ULongMax");
+
+        builder.Clear();
+
+        // Test undefined very large value
+        ULongEnum undefinedVeryLarge = (ULongEnum)18000000000000000000UL;
+        builder.AppendFormat("Value: {0}", Value.Create(undefinedVeryLarge));
+        builder.ToString().Should().Be("Value: 18000000000000000000");
+        string expected = string.Format("Value: {0}", undefinedVeryLarge);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_AllFlagsEnumsWithCombinations()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[200]);        // Test combinations across different backing types
+        builder.AppendFormat("Byte: {0}, SByte: {1}, Short: {2}",
+            Value.Create(ByteFlagsEnum.ByteFlag1 | ByteFlagsEnum.ByteFlag2),
+            Value.Create(SByteFlagsEnum.SByteFlag1 | SByteFlagsEnum.SByteFlag4),
+            Value.Create(ShortFlagsEnum.ShortAll));
+        builder.ToString().Should().Be("Byte: ByteFlag1, ByteFlag2, SByte: SByteFlag1, SByteFlag4, Short: ShortAll");
+
+        builder.Clear();
+
+        // Test undefined flag combinations
+        IntFlagsEnum undefinedCombination = IntFlagsEnum.IntFlag1 | (IntFlagsEnum)64;
+        ULongFlagsEnum undefinedULongCombination = ULongFlagsEnum.ULongFlag2 | (ULongFlagsEnum)128;        builder.AppendFormat("Undefined: {0}, ULongUndefined: {1}",
+            Value.Create(undefinedCombination),
+            Value.Create(undefinedULongCombination));
+        builder.ToString().Should().Be("Undefined: 65, ULongUndefined: 130");
+        string expected = string.Format("Undefined: {0}, ULongUndefined: {1}", undefinedCombination, undefinedULongCombination);
+        builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_EnumFormatsWithAllBackingTypes()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[200]);        // Test decimal format on different backing types
+        builder.AppendFormat("Byte: {0:D}, Short: {1:D}, Int: {2:D}",
+            Value.Create(ByteEnum.ByteMax),
+            Value.Create(ShortEnum.ShortMax),
+            Value.Create(IntEnum.IntMax));
+        builder.ToString().Should().Be("Byte: 255, Short: 32767, Int: 2147483647");
+
+        builder.Clear();        // Test hex format
+        builder.AppendFormat("Hex Byte: {0:X}, Hex UInt: {1:X}",
+            Value.Create(ByteEnum.ByteMax),
+            Value.Create(UIntEnum.UIntMax));
+        builder.ToString().Should().Be("Hex Byte: FF, Hex UInt: FFFFFFFF");
+
+        builder.Clear();        // Test general format (default)
+        builder.AppendFormat("General Long: {0:G}, General ULong: {1:G}",
+            Value.Create(LongEnum.LongSecond),
+            Value.Create(ULongEnum.ULongSecond));
+        builder.ToString().Should().Be("General Long: LongSecond, General ULong: ULongSecond");
+    }
+
+    [Fact]
+    public void AppendFormat_EnumZeroValuesAllTypes()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[300]);        // Test zero values across all backing types - split into multiple calls due to parameter limit
+        builder.AppendFormat("Zeros: {0}, {1}, {2}, {3}",
+            Value.Create(SByteEnum.SByteZero),
+            Value.Create(ShortEnum.ShortZero),
+            Value.Create(IntEnum.IntZero),
+            Value.Create(LongEnum.LongZero));
+        builder.AppendFormat(", {0}, {1}, {2}, {3}",
+            Value.Create(ByteFlagsEnum.ByteNone),
+            Value.Create(UShortFlagsEnum.UShortNone),
+            Value.Create(UIntFlagsEnum.UIntNone),
+            Value.Create(ULongFlagsEnum.ULongNone));builder.ToString().Should().Be("Zeros: SByteZero, ShortZero, IntZero, LongZero, ByteNone, UShortNone, UIntNone, ULongNone");
+    }
+
+    [Fact]
+    public void AppendFormat_EnumAllBackingTypes_Byte()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        ByteEnum enumValue = ByteEnum.ByteFirst;
+
+        string expected = string.Format("Value: {0}", enumValue);
+        builder.AppendFormat("Value: {0}", enumValue);
+        string directResult = builder.ToString();
+        directResult.Should().Be(expected);
+
+        builder.Clear();
+        builder.AppendFormat("Value: {0}", Value.Create(enumValue));
+        string valueResult = builder.ToString();
+        valueResult.Should().Be(expected);
+
+    }
+
+    [Fact]
+    public void AppendFormat_EnumAllBackingTypes_SByte()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        SByteEnum enumValue = SByteEnum.SByteFirst;
+
+        builder.AppendFormat("Value: {0}", enumValue);
+        string directResult = builder.ToString();
+
+        builder.Clear();
+        builder.AppendFormat("Value: {0}", Value.Create(enumValue));
+        string valueResult = builder.ToString();
+
+        valueResult.Should().Be(directResult);
+        string expected = $"Value: {enumValue}";
+        directResult.Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_EnumAllBackingTypes_Short()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        ShortEnum enumValue = ShortEnum.ShortFirst;
+
+        builder.AppendFormat("Value: {0}", enumValue);
+        string directResult = builder.ToString();
+
+        builder.Clear();
+        builder.AppendFormat("Value: {0}", Value.Create(enumValue));
+        string valueResult = builder.ToString();
+
+        valueResult.Should().Be(directResult);
+        string expected = $"Value: {enumValue}";
+        directResult.Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_EnumAllBackingTypes_UShort()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        UShortEnum enumValue = UShortEnum.UShortFirst;
+
+        builder.AppendFormat("Value: {0}", enumValue);
+        string directResult = builder.ToString();
+
+        builder.Clear();
+        builder.AppendFormat("Value: {0}", Value.Create(enumValue));
+        string valueResult = builder.ToString();
+
+        valueResult.Should().Be(directResult);
+        string expected = $"Value: {enumValue}";
+        directResult.Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_EnumAllBackingTypes_Int()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        IntEnum enumValue = IntEnum.IntFirst;
+
+        builder.AppendFormat("Value: {0}", enumValue);
+        string directResult = builder.ToString();
+
+        builder.Clear();
+        builder.AppendFormat("Value: {0}", Value.Create(enumValue));
+        string valueResult = builder.ToString();
+
+        valueResult.Should().Be(directResult);
+        string expected = $"Value: {enumValue}";
+        directResult.Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_EnumAllBackingTypes_UInt()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        UIntEnum enumValue = UIntEnum.UIntFirst;
+
+        builder.AppendFormat("Value: {0}", enumValue);
+        string directResult = builder.ToString();
+
+        builder.Clear();
+        builder.AppendFormat("Value: {0}", Value.Create(enumValue));
+        string valueResult = builder.ToString();
+
+        valueResult.Should().Be(directResult);
+        string expected = $"Value: {enumValue}";
+        directResult.Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_EnumAllBackingTypes_Long()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        LongEnum enumValue = LongEnum.LongFirst;
+
+        builder.AppendFormat("Value: {0}", enumValue);
+        string directResult = builder.ToString();
+
+        builder.Clear();
+        builder.AppendFormat("Value: {0}", Value.Create(enumValue));
+        string valueResult = builder.ToString();
+
+        valueResult.Should().Be(directResult);
+        string expected = $"Value: {enumValue}";
+        directResult.Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_EnumAllBackingTypes_ULong()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+        ULongEnum enumValue = ULongEnum.ULongFirst;
+
+        builder.AppendFormat("Value: {0}", enumValue);
+        string directResult = builder.ToString();
+
+        builder.Clear();
+        builder.AppendFormat("Value: {0}", Value.Create(enumValue));
+        string valueResult = builder.ToString();
+
+        valueResult.Should().Be(directResult);
+        string expected = $"Value: {enumValue}";
+        directResult.Should().Be(expected);
+    }
+
+    // Additional enum backing type tests
+    private enum Int16Enum : short { First = 1, Negative = -1, Max = short.MaxValue }
+    private enum UInt16Enum : ushort { First = 1, Max = ushort.MaxValue }
+    private enum Int64Enum : long { First = 1, Negative = -1, Max = long.MaxValue }
+    private enum UInt64Enum : ulong { First = 1, Max = ulong.MaxValue }
+
+    [Flags] private enum Int16FlagsEnum : short { None = 0, Flag1 = 1, Flag2 = 2 }
+    [Flags] private enum UInt64FlagsEnum : ulong { None = 0, Flag1 = 1, Flag2 = 2 }
+
+    [Fact]
+    public void AppendFormat_AdditionalIntegerBackedEnums()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[200]);        // Test short-backed enums
+        builder.AppendFormat("Short: {0}, UShort: {1}", Value.Create(Int16Enum.Negative), Value.Create(UInt16Enum.Max));
+        builder.ToString().Should().Be("Short: Negative, UShort: Max");
+
+        builder.Clear();
+
+        // Test long-backed enums via Value
+        builder.AppendFormat("Long: {0}, ULong: {1}", new Value(Int64Enum.Max), new Value(UInt64Enum.Max));
+        string expected = string.Format("Long: {0}, ULong: {1}", Int64Enum.Max, UInt64Enum.Max);
+        builder.ToString().Should().Be(expected);
+
+        builder.Clear();
+
+        // Test undefined values for different backing types
+        Int16Enum undefinedShort = (Int16Enum)999;
+        UInt64Enum undefinedULong = (UInt64Enum)999999999999UL;
+        builder.AppendFormat("Undefined: {0}, {1}", Value.Create(undefinedShort), Value.Create(undefinedULong));
+        builder.ToString().Should().Be("Undefined: 999, 999999999999");
+    }
+
+    [Fact]
+    public void AppendFormat_FlagsEnumsAdditionalTypes()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        // Test flags with different backing types
+        builder.AppendFormat("Flags: {0}", Int16FlagsEnum.Flag1 | Int16FlagsEnum.Flag2);
+        builder.ToString().Should().Be("Flags: Flag1, Flag2");
+
+        builder.Clear();
+
+        // Test undefined flags
+        UInt64FlagsEnum undefinedFlags = (UInt64FlagsEnum)128;
+        builder.AppendFormat("UndefinedFlags: {0}", new Value(undefinedFlags));
+        builder.ToString().Should().Be("UndefinedFlags: 128");
+        string expected = string.Format("UndefinedFlags: {0}", undefinedFlags);
         builder.ToString().Should().Be(expected);
     }
 }

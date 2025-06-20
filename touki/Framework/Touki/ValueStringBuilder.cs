@@ -180,25 +180,26 @@ public ref partial struct ValueStringBuilder
         if (typeof(T).IsEnum
             && format.IsEmpty
             && EnumExtensions.GetEnumData(typeof(T)) is var enumData
-            && enumData.UnderlyingType == typeof(int))
+            && enumData.UnderlyingType is Type underlyingType
+            && underlyingType == typeof(int))
         {
-            int intValue = Unsafe.As<T, int>(ref value);
+            ulong ulongValue = (ulong)Unsafe.As<T, int>(ref value);
 
             if (enumData.IsFlags)
             {
-                InternalFlagsFormat(intValue, enumData);
+                InternalFlagsFormat(ulongValue, signed: true, enumData);
                 return true;
             }
 
             (ulong[] values, string[] names) = enumData.Data;
-            int index = Array.BinarySearch(values, (ulong)intValue);
+            int index = Array.BinarySearch(values, ulongValue);
             if (index >= 0)
             {
                 Append(names[index]);
             }
             else
             {
-                return TryAppendFormattedPrimitives(intValue, default, null);
+                return TryAppendFormattedPrimitives((int)ulongValue, default, null);
             }
 
             return true;
@@ -207,9 +208,9 @@ public ref partial struct ValueStringBuilder
         return false;
     }
 
-    internal void InternalFlagsFormat(int value, EnumExtensions.EnumData enumData)
+    internal void InternalFlagsFormat(ulong value, bool signed, EnumExtensions.EnumData enumData)
     {
-        ulong result = (uint)value;
+        ulong result = value;
 
         ulong[] values = enumData.Data.Values;
         string[] names = enumData.Data.Names;
@@ -249,7 +250,10 @@ public ref partial struct ValueStringBuilder
         if (result != 0)
         {
             _position = startPosition;
-            bool success = TryAppendFormattedPrimitives(value, default, default);
+            bool success = signed
+                ? TryAppendFormattedPrimitives((long)value, default, default)
+                : TryAppendFormattedPrimitives(value, default, default);
+
             Debug.Assert(success, "Failed to format value as a primitive type.");
             return;
         }

@@ -1137,10 +1137,10 @@ public readonly partial struct Value
             // There may or may not be extra garbage in the 64 bits with the arg, so we need to check the actual size.
             return Unsafe.SizeOf<T>() switch
             {
-                1 => new Value(StraightCastFlag<T>.Instance, Unsafe.As<T, byte>(ref value)),
-                2 => new Value(StraightCastFlag<T>.Instance, Unsafe.As<T, ushort>(ref value)),
-                4 => new Value(StraightCastFlag<T>.Instance, Unsafe.As<T, uint>(ref value)),
-                _ => new Value(StraightCastFlag<T>.Instance, Unsafe.As<T, ulong>(ref value)),
+                1 => new Value(EnumTypeFlag<T>.Instance, Unsafe.As<T, byte>(ref value)),
+                2 => new Value(EnumTypeFlag<T>.Instance, Unsafe.As<T, ushort>(ref value)),
+                4 => new Value(EnumTypeFlag<T>.Instance, Unsafe.As<T, uint>(ref value)),
+                _ => new Value(EnumTypeFlag<T>.Instance, Unsafe.As<T, ulong>(ref value)),
             };
         }
 
@@ -1494,7 +1494,9 @@ public readonly partial struct Value
 
         return value;
     }
+    #endregion T
 
+    #region Format
     /// <summary>
     ///  Format the variant into the given <paramref name="destination"/>.
     /// </summary>
@@ -1611,12 +1613,19 @@ public readonly partial struct Value
             destination.AppendFormatted(_union.UInt16, format);
         }
 #if NETFRAMEWORK
-        else if (type.IsEnum
-            && (format.Length == 0 || (format.Length == 1 && (format[0] == 'D' || format[0] == 'd')))
-            && EnumExtensions.GetEnumData(type) is var enumData
-            && !enumData.IsFlags)
+        else if (typeFlag is IEnumType enumType
+            && format.Length == 0
+            && EnumExtensions.GetEnumData(type) is var enumData)
         {
-            ulong value = _union.UInt64;
+            ulong value = enumType.AsUlong(in this);
+            bool signed = enumType.IsSigned;
+
+            if (enumData.IsFlags)
+            {
+                destination.InternalFlagsFormat(value, signed, enumData);
+                return;
+            }
+
             (ulong[] values, string[] names) = enumData.Data;
             int index = Array.BinarySearch(values, value);
             if (index >= 0)
@@ -1625,8 +1634,7 @@ public readonly partial struct Value
             }
             else
             {
-                Type underlying = enumData.UnderlyingType;
-                if (type == typeof(int) || type == typeof(long) || type == typeof(short) || type == typeof(sbyte))
+                if (signed)
                 {
                     destination.AppendFormatted((long)value);
                 }
@@ -1641,7 +1649,7 @@ public readonly partial struct Value
         else
 #endif
         {
-            destination.AppendFormatted(typeFlag.ToObject(in this));
+            destination.AppendFormatted(typeFlag.ToObject(in this), format);
         }
     }
     #endregion
