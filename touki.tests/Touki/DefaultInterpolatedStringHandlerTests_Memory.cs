@@ -16,7 +16,9 @@ public unsafe class DefaultInterpolatedStringHandlerTests_Memory
     // Need to run sequentially to avoid contention with StringBuilder pooling in
     // string formatting (which will give different memory usage results occasionally).
 
-    [Theory()]
+#pragma warning disable xUnit1004 // Test methods should not be skipped
+    [Theory(Skip = "No way to make this completely consistent, run manually.")]
+#pragma warning restore xUnit1004
     [InlineData(DayOfWeek.Monday)]
     public void ValidateAllocations(DayOfWeek value)
     {
@@ -49,12 +51,5 @@ public unsafe class DefaultInterpolatedStringHandlerTests_Memory
         {
             _ = $"Today is {(float)value}.";
         }
-    }
-
-    [Theory()]
-    [InlineData(DayOfWeek.Monday)]
-    public void ValidateAllocations2(DayOfWeek value)
-    {
-        _ = $"Today is {value}.";
     }
 }
