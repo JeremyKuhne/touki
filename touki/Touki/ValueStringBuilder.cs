@@ -35,7 +35,7 @@ public ref partial struct ValueStringBuilder
     private const int GuessedLengthPerHole = 11;
     private const int MinimumArrayPoolLength = 256;
 
-    private char[]? _arrayToReturnToPool;
+    private byte[]? _arrayToReturnToPool;
 
     private Span<char> _chars;
     private int _position;
@@ -92,8 +92,8 @@ public ref partial struct ValueStringBuilder
     /// <param name="initialCapacity">The initial capacity for the string builder.</param>
     public ValueStringBuilder(int initialCapacity, IFormatProvider? provider = null)
     {
-        _arrayToReturnToPool = ArrayPool<char>.Shared.Rent(initialCapacity);
-        _chars = _arrayToReturnToPool;
+        _arrayToReturnToPool = ArrayPool<byte>.Shared.Rent(initialCapacity * sizeof(char));
+        _chars = MemoryMarshal.Cast<byte, char>(_arrayToReturnToPool);
         _position = 0;
         _formatProvider = provider;
         _hasCustomFormatter = provider is not null && HasCustomFormatter(provider);
@@ -499,15 +499,16 @@ public ref partial struct ValueStringBuilder
 
         // Make sure to let Rent throw an exception if the caller has a bug and the desired capacity is negative.
         // This could also go negative if the actual required length wraps around.
-        char[] poolArray = ArrayPool<char>.Shared.Rent(newCapacity);
+        byte[] poolArray = ArrayPool<byte>.Shared.Rent(newCapacity * sizeof(char));
 
-        _chars[.._position].CopyTo(poolArray);
+        _chars[.._position].CopyTo(MemoryMarshal.Cast<byte, char>(poolArray));
 
-        char[]? toReturn = _arrayToReturnToPool;
-        _chars = _arrayToReturnToPool = poolArray;
+        byte[]? toReturn = _arrayToReturnToPool;
+        _chars = MemoryMarshal.Cast<byte, char>(poolArray);
+        _arrayToReturnToPool = poolArray;
         if (toReturn is not null)
         {
-            ArrayPool<char>.Shared.Return(toReturn);
+            ArrayPool<byte>.Shared.Return(toReturn);
         }
     }
 
@@ -531,7 +532,7 @@ public ref partial struct ValueStringBuilder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Dispose()
     {
-        char[]? toReturn = _arrayToReturnToPool;
+        byte[]? toReturn = _arrayToReturnToPool;
 
         // Clear the fields to prevent accidental reuse
         _arrayToReturnToPool = null;
@@ -539,7 +540,7 @@ public ref partial struct ValueStringBuilder
 
         if (toReturn is not null)
         {
-            ArrayPool<char>.Shared.Return(toReturn);
+            ArrayPool<byte>.Shared.Return(toReturn);
         }
     }
 
