@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2025 Jeremy W Kuhne
+// SPDX-License-Identifier: MIT
+// See LICENSE file in the project root for full license information
+
 namespace System.Diagnostics;
 
 /// <summary>
@@ -55,7 +59,7 @@ public ref struct AssertInterpolatedStringHandler
         }
     }
 
-    /// <inheritdoc cref="Touki.ValueStringBuilder.AppendFormatted{T}(T,int,string?)"/>
+    /// <inheritdoc cref="Touki.ValueStringBuilder.AppendFormatted{T}(T, int, Touki.StringSpan)"/>
     public void AppendFormatted<T>(T value, int alignment, string? format)
     {
         if (_shouldAppend)

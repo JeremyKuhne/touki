@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Jeremy W Kuhne
+﻿// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -43,15 +43,15 @@ public class StreamExtensionsTests
     {
         using MemoryStream memory = new();
 
-        memory.Write(default(ArraySegment<byte>));
+        memory.Write(default);
         memory.Length.Should().Be(0);
 
         byte[] data = [1, 2, 3];
-        memory.Write(data);
+        memory.Write(data, 0, data.Length);
         memory.Position = 0;
 
         long initial = memory.Position;
-        int read = memory.Read(default(ArraySegment<byte>));
+        int read = memory.Read(new ArraySegment<byte>());
         read.Should().Be(0);
         memory.Position.Should().Be(initial);
     }
@@ -61,15 +61,16 @@ public class StreamExtensionsTests
     {
         using MemoryStream memory = new();
 
-        await memory.WriteAsync(default(ArraySegment<byte>));
+        await memory.WriteAsync(new ArraySegment<byte>());
         memory.Length.Should().Be(0);
 
         byte[] data = [4, 5];
-        await memory.WriteAsync(data);
+        await memory.WriteAsync(new ArraySegment<byte>(data));
+
         memory.Position = 0;
 
         long initial = memory.Position;
-        int read = await memory.ReadAsync(default(ArraySegment<byte>));
+        int read = await memory.ReadAsync(new ArraySegment<byte>());
         read.Should().Be(0);
         memory.Position.Should().Be(initial);
     }

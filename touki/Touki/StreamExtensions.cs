@@ -1,11 +1,11 @@
-// Copyright (c) 2025 Jeremy W Kuhne
+﻿// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Touki;
+namespace System.IO;
 
 /// <summary>
 ///  Extension methods for <see cref="Stream"/>.
@@ -32,8 +32,10 @@ public static class StreamExtensions
     /// <param name="buffer">The buffer to read into.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous read operation.</returns>
-    public static Task<int> ReadAsync(this Stream stream, ArraySegment<byte> buffer, CancellationToken cancellationToken = default)
-        => buffer.Array is byte[] array
+    public static Task<int> ReadAsync(
+        this Stream stream,
+        ArraySegment<byte> buffer,
+        CancellationToken cancellationToken = default) => buffer.Array is byte[] array
             ? stream.ReadAsync(array, buffer.Offset, buffer.Count, cancellationToken)
             : Task.FromResult(0);
 

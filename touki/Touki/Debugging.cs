@@ -1,3 +1,7 @@
+﻿// Copyright (c) 2025 Jeremy W Kuhne
+// SPDX-License-Identifier: MIT
+// See LICENSE file in the project root for full license information
+
 namespace Touki;
 
 /// <summary>
@@ -58,17 +62,17 @@ public static class Debugging
     }
 #endif
 
-    /// <inheritdoc cref="Debug.Assert(bool,string?,string,System.Object[])"/>
+    /// <inheritdoc cref="Debug.Assert(bool,string?,string,object[])"/>
     [Conditional("DEBUG")]
     public static void Assert([DoesNotReturnIf(false)] bool condition, string? message,
         [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string detailMessageFormat, params object?[] args)
         => Debug.Assert(condition, message, detailMessageFormat, args);
 
     /// <inheritdoc cref="Debug.Fail(string?)"/>
-    [Conditional("DEBUG"), DoesNotReturn]
+    [Conditional("DEBUG")]
     public static void Fail(string? message) => Debug.Fail(message);
 
     /// <inheritdoc cref="Debug.Fail(string?,string?)"/>
-    [Conditional("DEBUG"), DoesNotReturn]
+    [Conditional("DEBUG")]
     public static void Fail(string? message, string? detailMessage) => Debug.Fail(message, detailMessage);
 }
