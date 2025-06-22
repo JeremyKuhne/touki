@@ -4,14 +4,12 @@
 name: .NET
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
 jobs:
   build:
-
+    name: ".NET / build"
     runs-on: windows-latest
 
     steps:
