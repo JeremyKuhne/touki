@@ -13,6 +13,10 @@ Some of the design goals include:
 - Avoiding unnecessary allocations
 - Avoiding code that prevents AOT compilation on .NET
 
+Features:
+
+- Non allocating interpolated string support on .NET Framework (`$"Age: {age}"`)
+
 See [CONTRIBUTING.md](CONTRIBUTING) for more information on how to contribute to this project.
 
 ## Environment setup
