@@ -35,6 +35,14 @@ public ref partial struct ValueStringBuilder
     private const int GuessedLengthPerHole = 11;
     private const int MinimumArrayPoolLength = 256;
 
+    // We're using a byte array here to allow directly copying into Stream on .NET Framework. Byte arrays are always
+    // going to be allocated on pointer size boundaries so they're safe for reinterpreting as Span<char>. With a
+    // byte[] backing array we can call the byte [] virtual on Stream without worrying about type safety issues.
+    //
+    // We may also be able to use this with GREAT caution via Unsafe.As<byte[], char[]> as a last result. Doing so would
+    // allow a buffer overrun as code would be using the prefixed array info for length and indicies, so we would have
+    // to be *extremely* careful. If any code would check the length of the array it would get the byte length, not
+    // the char length.
     private byte[]? _arrayToReturnToPool;
 
     private Span<char> _chars;
@@ -848,4 +856,69 @@ public ref partial struct ValueStringBuilder
             _position += paddingNeeded;
         }
     }
+
+#pragma warning disable IDE0251 // Member can be made readonly
+
+    /// <summary>
+    ///  Writes the string to the specified stream.
+    /// </summary>
+    public void CopyTo(Stream stream)
+    {
+        if (_chars[.._position].IsEmpty)
+        {
+            return;
+        }
+
+        // Write the contents of the builder to the stream.
+#if NET
+        stream.Write(MemoryMarshal.Cast<char, byte>(_chars[.._position]));
+#else
+        if (_arrayToReturnToPool is null)
+        {
+            // If we don't have a rented array, we need to rent one.
+            EnsureCapacity(_chars.Length + 1);
+        }
+
+        // If we have a rented array, write it out directly
+        stream.Write(_arrayToReturnToPool, 0, _position * sizeof(char));
+#endif
+    }
+
+    /// <summary>
+    ///  Writes the string to the specified <see cref="System.IO.StreamWriter"/>.
+    /// </summary>
+    public void CopyTo<T>(T writer) where T : System.IO.StreamWriter
+    {
+        if (_chars[.._position].IsEmpty)
+        {
+            return;
+        }
+
+#if NET
+        writer.Write(AsSpan());
+#else
+        if (typeof(T) != typeof(System.IO.StreamWriter))
+        {
+            throw new InvalidOperationException("Derived classes are not supported for safety.");
+        }
+
+        if (_arrayToReturnToPool is null)
+        {
+            // If we don't have a rented array, we need to rent one.
+            EnsureCapacity(_chars.Length + 1);
+        }
+
+        // More details are above with _arrayToReturnToPool. This is a dangerous cast as the Length will be twice as
+        // long as the actual length when cast to char[], but StreamWriter.Write doesn't index out of the given
+        // bounds. One other option here would be to reflect all of the internals necessary to replicate, but that
+        // would be costly.
+
+        // Also not a terribly crazy idea to port the .NET implementation of StreamWriter, trim it down and seal it.
+
+        char[] chars = Unsafe.As<byte[], char[]>(ref _arrayToReturnToPool!);
+        writer.Write(chars, 0, _position);
+#endif
+    }
+
+#pragma warning restore IDE0251
 }

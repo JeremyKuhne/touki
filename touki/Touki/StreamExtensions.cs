@@ -4,6 +4,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
+using Touki;
 
 namespace System.IO;
 
@@ -65,4 +66,28 @@ public static class StreamExtensions
         => buffer.Array is byte[] array
             ? stream.WriteAsync(array, buffer.Offset, buffer.Count, cancellationToken)
             : Task.CompletedTask;
+
+    /// <summary>
+    ///  Writes an interpolated string directly to a stream.
+    /// </summary>
+    public static void WriteFormatted(this Stream stream, ref ValueStringBuilder builder)
+    {
+        if (builder.Length > 0)
+        {
+            builder.CopyTo(stream);
+            builder.Clear();
+        }
+    }
+
+    /// <summary>
+    ///  Writes an interpolated string directly to a <see cref="StreamWriter"/>.
+    /// </summary>
+    public static void WriteFormatted(this StreamWriter writer, ref ValueStringBuilder builder)
+    {
+        if (builder.Length > 0)
+        {
+            builder.CopyTo(writer);
+            builder.Clear();
+        }
+    }
 }
