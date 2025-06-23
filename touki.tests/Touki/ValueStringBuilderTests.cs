@@ -1782,7 +1782,8 @@ public unsafe class ValueStringBuilderTests
 
         // Test undefined flag combinations
         IntFlagsEnum undefinedCombination = IntFlagsEnum.IntFlag1 | (IntFlagsEnum)64;
-        ULongFlagsEnum undefinedULongCombination = ULongFlagsEnum.ULongFlag2 | (ULongFlagsEnum)128;        builder.AppendFormat("Undefined: {0}, ULongUndefined: {1}",
+        ULongFlagsEnum undefinedULongCombination = ULongFlagsEnum.ULongFlag2 | (ULongFlagsEnum)128;
+        builder.AppendFormat("Undefined: {0}, ULongUndefined: {1}",
             Value.Create(undefinedCombination),
             Value.Create(undefinedULongCombination));
         builder.ToString().Should().Be("Undefined: 65, ULongUndefined: 130");
@@ -1826,7 +1827,8 @@ public unsafe class ValueStringBuilderTests
             Value.Create(ByteFlagsEnum.ByteNone),
             Value.Create(UShortFlagsEnum.UShortNone),
             Value.Create(UIntFlagsEnum.UIntNone),
-            Value.Create(ULongFlagsEnum.ULongNone));builder.ToString().Should().Be("Zeros: SByteZero, ShortZero, IntZero, LongZero, ByteNone, UShortNone, UIntNone, ULongNone");
+            Value.Create(ULongFlagsEnum.ULongNone));
+        builder.ToString().Should().Be("Zeros: SByteZero, ShortZero, IntZero, LongZero, ByteNone, UShortNone, UIntNone, ULongNone");
     }
 
     [Fact]
