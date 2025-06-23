@@ -54,6 +54,7 @@
     </PackageReference>
     <None Include="../README.md" Pack="true" PackagePath="" />
     <None Include="Touki\NotSupportedAdapter.cs" />
+    <None Include="Touki\StringBuilderExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
