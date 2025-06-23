@@ -37,6 +37,10 @@ public readonly partial struct Value
         _union = default;
     }
 
+    // Generally speaking we want to avoid implicit operators for most reference types to avoid accidental boxing.
+    // In particular this will happen with `object`. `string` is a common reference type that would be passed as
+    // a formatting argument and is somewhat unlikely to have implicit conversions from other reference types.
+
     /// <summary>
     ///  Implicitly converts a <see langword="string"/> value to a <see cref="Value"/>.
     /// </summary>

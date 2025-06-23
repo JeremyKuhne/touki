@@ -24,6 +24,20 @@ public static partial class Strings
     }
 
     /// <inheritdoc cref="ValueStringBuilder.AppendFormat(ReadOnlySpan{char}, Value)" />
+    public static string Format(string format, Value arg)
+        => Format(format.AsSpan(), arg);
+
+    /// <inheritdoc cref="ValueStringBuilder.AppendFormat(ReadOnlySpan{char}, Value)" />
+    [SkipLocalsInit]
+    public static string Format(ReadOnlySpan<char> format, Value arg)
+    {
+        Span<char> buffer = stackalloc char[256];
+        using ValueStringBuilder builder = new(buffer);
+        builder.AppendFormat(format, arg);
+        return builder.ToString();
+    }
+
+    /// <inheritdoc cref="ValueStringBuilder.AppendFormat(ReadOnlySpan{char}, Value)" />
     public static string Format(string format, ReadOnlySpan<Value> args)
         => Format(format.AsSpan(), args);
 
