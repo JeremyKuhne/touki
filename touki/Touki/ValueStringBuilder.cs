@@ -40,7 +40,7 @@ public ref partial struct ValueStringBuilder
     // byte[] backing array we can call the byte [] virtual on Stream without worrying about type safety issues.
     //
     // We may also be able to use this with GREAT caution via Unsafe.As<byte[], char[]> as a last result. Doing so would
-    // allow a buffer overrun as code would be using the prefixed array info for length and indicies, so we would have
+    // allow a buffer overrun as code would be using the prefixed array info for length and indices, so we would have
     // to be *extremely* careful. If any code would check the length of the array it would get the byte length, not
     // the char length.
     private byte[]? _arrayToReturnToPool;
