@@ -318,4 +318,309 @@ public ref partial struct ValueStringBuilder
     [DoesNotReturn]
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void FormatError() => throw new FormatException("Input string was not in a correct format.");
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    public void AppendFormatted(scoped ReadOnlySpan<char> value) => Append(value);
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    public void AppendFormatted(string? value)
+    {
+        if (_hasCustomFormatter)
+        {
+            // If there's a custom formatter, always use it.
+            AppendCustomFormatter(value, format: null);
+            return;
+        }
+
+        if (value is null)
+        {
+            // If the value is null, just leave it blank.
+            return;
+        }
+
+        Append(value.AsSpan());
+    }
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    public void AppendFormatted(string? value, int alignment = 0, string? format = null) =>
+        // Format is meaningless for strings and doesn't make sense for someone to specify.  We have the overload
+        // simply to disambiguate between ROS<char> and object, just in case someone does specify a format, as
+        // string is implicitly convertible to both. Just delegate to the T-based implementation.
+        AppendFormatted<object?>(value, alignment, format);
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    public void AppendFormatted(object? value, int alignment = 0, string? format = null) =>
+        // This overload is expected to be used rarely, only if either a) something strongly typed as object is
+        // formatted with both an alignment and a format, or b) the compiler is unable to target type to T. It
+        // exists purely to help make cases from (b) compile. Just delegate to the T-based implementation.
+        AppendFormatted<object?>(value, alignment, format);
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    public void AppendFormatted<T>(T value)
+    {
+        // This method could delegate to AppendFormatted with a null format, but explicitly passing
+        // default as the format to TryFormat helps to improve code quality in some cases when TryFormat is inlined,
+        // e.g. for Int32 it enables the JIT to eliminate code in the inlined method based on a length check on the format.
+
+        // If there's a custom formatter, always use it.
+        if (_hasCustomFormatter)
+        {
+            AppendCustomFormatter(value, format: null);
+            return;
+        }
+
+        if (value is null)
+        {
+            // If the value is null, just leave it blank.
+            return;
+        }
+
+        // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
+        // requires the former.  For value types, it won't matter as the type checks devolve into
+        // JIT-time constants.  For reference types, they're more likely to implement IFormattable
+        // than they are to implement ISpanFormattable: if they don't implement either, we save an
+        // interface check over first checking for ISpanFormattable and then for IFormattable, and
+        // if it only implements IFormattable, we come out even: only if it implements both do we
+        // end up paying for an extra interface check.
+
+#if NETFRAMEWORK
+        // On .NET Framework, directly format with the copy of the .NET 6 formatting code.
+        if (TryAppendFormattedPrimitives(value, [], _formatProvider))
+        {
+            return;
+        }
+#endif
+
+        // Attempting to avoid boxing by casting inline to allow constrained calls.
+#pragma warning disable IDE0038 // Use pattern matching
+        if (value is IFormattable)
+        {
+            if (value is ISpanFormattable)
+            {
+                int charsWritten;
+
+                // The intent here is to avoid boxing for value types that implement ISpanFormattable by enabling a constrained call.
+                //
+                // Having difficulty validating this in unit tests. The .NET libraries code does the exact same thing, and I can
+                // validate that it doesn't box for value types in my unit tests. Have tried every combination of code I can think
+                // of without success. If the boxing is unavoidable, then other options can be considered, such as type checking for
+                // frequently used runtime types and calling a constrained method directly.
+                while (!((ISpanFormattable)value!).TryFormat(_chars[_position..], out charsWritten, default, _formatProvider))
+                {
+                    DoubleRemaining();
+                }
+
+                _position += charsWritten;
+                return;
+            }
+
+            Append(((IFormattable)value).ToString(format: null, _formatProvider));
+            return;
+        }
+#pragma warning restore IDE0038
+
+        if (value.ToString() is string asString)
+        {
+            Append(asString);
+            return;
+        }
+    }
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    public void AppendFormatted<T>(T value, string? format) => AppendFormatted(value, (StringSpan)format);
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    public void AppendFormatted<T>(T value, StringSpan format)
+    {
+        if (value is null)
+        {
+            // If the value is null, just leave it blank.
+            return;
+        }
+
+        // If there's a custom formatter, always use it.
+        if (_hasCustomFormatter)
+        {
+            AppendCustomFormatter(value, format);
+            return;
+        }
+
+        if (typeof(T) == typeof(Value))
+        {
+            Unsafe.As<T, Value>(ref value).Format(ref this, format);
+            return;
+        }
+
+#if NETFRAMEWORK
+        // On .NET Framework, directly format with the copy of the .NET 6 formatting code.
+        if (TryAppendFormattedPrimitives(value, format, _formatProvider))
+        {
+            return;
+        }
+#endif
+
+        // Attempting to avoid boxing by casting inline to allow constrained calls.
+#pragma warning disable IDE0038 // Use pattern matching
+        if (value is IFormattable)
+        {
+            if (value is ISpanFormattable)
+            {
+                int charsWritten;
+
+                // The intent here is to avoid boxing for value types that implement ISpanFormattable by enabling a constrained call.
+                //
+                // Having difficulty validating this in unit tests. The .NET libraries code does the exact same thing, and I can
+                // validate that it doesn't box for value types in my unit tests. Have tried every combination of code I can think
+                // of without success. If the boxing is unavoidable, then other options can be considered, such as type checking for
+                // frequently used runtime types and calling a constrained method directly.
+                while (!((ISpanFormattable)value!).TryFormat(_chars[_position..], out charsWritten, format, _formatProvider))
+                {
+                    DoubleRemaining();
+                }
+
+                _position += charsWritten;
+                return;
+            }
+
+            Append(((IFormattable)value).ToString(format.ToStringOrNull(), _formatProvider));
+            return;
+        }
+#pragma warning restore IDE0038
+
+        if (value?.ToString() is string asString)
+        {
+            Append(asString);
+            return;
+        }
+    }
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    public void AppendFormatted<T>(T value, int alignment)
+    {
+        int startingPos = _position;
+        AppendFormatted(value);
+        if (alignment != 0)
+        {
+            AppendOrInsertAlignmentIfNeeded(startingPos, alignment);
+        }
+    }
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    public void AppendFormatted<T>(T value, int alignment, StringSpan format)
+    {
+        int startingPos = _position;
+        AppendFormatted(value, format);
+        if (alignment != 0)
+        {
+            AppendOrInsertAlignmentIfNeeded(startingPos, alignment);
+        }
+    }
+
+    /// <summary>Writes the specified value to the handler.</summary>
+    /// <param name="value">The value to write.</param>
+    /// <param name="format">The format string.</param>
+    /// <param name="alignment">
+    ///  Minimum number of characters that should be written for this value. If the value is negative,
+    ///  it indicates left-aligned and the required minimum is the absolute value.</param>
+    public void AppendFormatted(scoped ReadOnlySpan<char> value, int alignment = 0, string? format = null)
+    {
+        bool leftAlign = false;
+        if (alignment < 0)
+        {
+            leftAlign = true;
+            alignment = -alignment;
+        }
+
+        int paddingRequired = alignment - value.Length;
+        if (paddingRequired <= 0)
+        {
+            // The value is as large or larger than the required amount of padding,
+            // so just write the value.
+            AppendFormatted(value);
+            return;
+        }
+
+        // Write the value along with the appropriate padding.
+        EnsureRemaining(value.Length + paddingRequired);
+
+        if (leftAlign)
+        {
+            value.CopyTo(_chars[_position..]);
+            _position += value.Length;
+            _chars.Slice(_position, paddingRequired).Fill(' ');
+            _position += paddingRequired;
+        }
+        else
+        {
+            _chars.Slice(_position, paddingRequired).Fill(' ');
+            _position += paddingRequired;
+            value.CopyTo(_chars[_position..]);
+            _position += value.Length;
+        }
+    }
+
+    /// <summary>Formats the value using the custom formatter from the provider.</summary>
+    /// <param name="value">The value to write.</param>
+    /// <param name="format">The format string.</param>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void AppendCustomFormatter<T>(T value, StringSpan format)
+    {
+        // This case is very rare, but we need to handle it prior to the other checks in case
+        // a provider was used that supplied an ICustomFormatter which wanted to intercept the particular value.
+        // We do the cast here rather than in the ctor, even though this could be executed multiple times per
+        // formatting, to make the cast pay for play.
+        Debug.Assert(_hasCustomFormatter);
+        Debug.Assert(_formatProvider is not null);
+
+        ICustomFormatter? formatter = (ICustomFormatter?)_formatProvider!.GetFormat(typeof(ICustomFormatter));
+        Debug.Assert(
+            formatter is not null,
+            "An incorrectly written provider said it implemented ICustomFormatter, and then didn't");
+
+        if (formatter is not null && formatter.Format(format.ToStringOrNull(), value, _formatProvider) is string customFormatted)
+        {
+            AppendLiteral(customFormatted);
+        }
+    }
+
+    /// <summary>
+    ///  Handles adding any padding required for aligning a formatted value in an interpolation expression.
+    /// </summary>
+    /// <param name="startingPosition">The position at which the written value started.</param>
+    /// <param name="alignment">
+    ///  Non-zero minimum number of characters that should be written for this value. If the value is
+    ///  negative, it indicates left-aligned and the required minimum is the absolute value.
+    /// </param>
+    private void AppendOrInsertAlignmentIfNeeded(int startingPosition, int alignment)
+    {
+        Debug.Assert(startingPosition >= 0 && startingPosition <= _position);
+        Debug.Assert(alignment != 0);
+
+        int charsWritten = _position - startingPosition;
+
+        bool leftAlign = false;
+        if (alignment < 0)
+        {
+            leftAlign = true;
+            alignment = -alignment;
+        }
+
+        int paddingNeeded = alignment - charsWritten;
+        if (paddingNeeded > 0)
+        {
+            EnsureRemaining(paddingNeeded);
+
+            if (leftAlign)
+            {
+                _chars.Slice(_position, paddingNeeded).Fill(' ');
+            }
+            else
+            {
+                _chars.Slice(startingPosition, charsWritten).CopyTo(_chars[(startingPosition + paddingNeeded)..]);
+                _chars.Slice(startingPosition, paddingNeeded).Fill(' ');
+            }
+
+            _position += paddingNeeded;
+        }
+    }
 }
