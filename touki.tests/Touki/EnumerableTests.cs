@@ -9,7 +9,7 @@ namespace Touki;
 public class EnumerableTests
 {
     // Test implementation of Enumerable<T>
-    private class TestEnumerable : Enumerable<int>
+    private class TestEnumerable : EnumerableBase<int>
     {
         private readonly int[] _items;
         private int _index = -1;
@@ -48,7 +48,7 @@ public class EnumerableTests
     }
 
     // Test implementation that throws on MoveNext
-    private class ThrowingEnumerable : Enumerable<int>
+    private class ThrowingEnumerable : EnumerableBase<int>
     {
         public override bool MoveNext() => throw new InvalidOperationException("Test exception");
 

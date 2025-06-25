@@ -4,6 +4,8 @@
 
 namespace Touki;
 
+#pragma warning disable CA2263 // Prefer the generic overload for GetService
+
 public class SimpleServiceProviderTests
 {
     // Test interfaces and classes for service registration
@@ -237,3 +239,5 @@ public class SimpleServiceProviderTests
         public CustomService(int id) => Id = id;
     }
 }
+
+#pragma warning restore CA2263 // Prefer the generic overload for GetService

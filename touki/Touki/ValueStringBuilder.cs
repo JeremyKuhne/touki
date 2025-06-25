@@ -552,6 +552,11 @@ public ref partial struct ValueStringBuilder
         }
     }
 
+    /// <summary>
+    ///  Implicitly converts a <see cref="ValueStringBuilder"/> to a <see cref="string"/>.
+    /// </summary>
+    public static implicit operator ReadOnlySpan<char>(ValueStringBuilder builder) => builder._chars[..builder._position];
+
 #pragma warning disable IDE0251 // Member can be made readonly
 
     /// <summary>
