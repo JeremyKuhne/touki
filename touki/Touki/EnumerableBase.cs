@@ -9,7 +9,7 @@ namespace Touki;
 /// <summary>
 ///  Simple enumerable base class.
 /// </summary>
-public abstract class Enumerable<T> : DisposableBase, IEnumerable<T>, IEnumerator<T>
+public abstract class EnumerableBase<T> : DisposableBase, IEnumerable<T>, IEnumerator<T>
 {
     /// <inheritdoc cref="IEnumerator.MoveNext"/>
     public abstract bool MoveNext();
