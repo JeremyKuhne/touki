@@ -262,6 +262,7 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
             {
                 bool canRecurse = _specSegments.Count > 0 &&
                     (_specSegments[0].IsAnyDirectory || MatchSpec(finalSegment, _specSegments[0].Spec.AsSpan()));
+
                 fullyMatches = false;
                 return canRecurse;
             }
@@ -308,7 +309,6 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
 
                 if (specIndex >= _specSegments.Count)
                 {
-                    reader.Advance(reader.Unread.Length);
                     break;
                 }
 
@@ -323,13 +323,8 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
             }
             else
             {
-                if (!reader.TrySplit(Path.DirectorySeparatorChar, out ReadOnlySpan<char> segment))
-                {
-                    segment = reader.Unread;
-                    reader.Advance(segment.Length);
-                }
-
-                if (!MatchSpec(segment, currentSpec.Spec.AsSpan()))
+                if (!reader.TrySplit(Path.DirectorySeparatorChar, out ReadOnlySpan<char> segment)
+                    || !MatchSpec(segment, currentSpec.Spec.AsSpan()))
                 {
                     fullyMatches = false;
                     return false;
@@ -350,8 +345,8 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
             finalPathSegment = default;
         }
 
-        bool allConsumed = reader.End && finalPathSegment.IsEmpty;
         bool hasRemainingSpecs = specIndex < _specSegments.Count;
+        bool allConsumed = (!hasRemainingSpecs || reader.End) && finalPathSegment.IsEmpty;
 
         fullyMatches = allConsumed && (!hasRemainingSpecs ||
             (_specSegments[specIndex].IsAnyDirectory && specIndex == _specSegments.Count - 1));
@@ -361,24 +356,11 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
 
     private bool FindMatchingSegment(ref SpanReader<char> reader, Segment nextSpec, ref ReadOnlySpan<char> finalPathSegment)
     {
-        while (!reader.End)
+        while (reader.TrySplit(Path.DirectorySeparatorChar, out ReadOnlySpan<char> segment))
         {
-            if (reader.TrySplit(Path.DirectorySeparatorChar, out ReadOnlySpan<char> segment))
+            if (MatchSpec(segment, nextSpec.Spec.AsSpan()))
             {
-                if (MatchSpec(segment, nextSpec.Spec.AsSpan()))
-                {
-                    return true;
-                }
-            }
-            else
-            {
-                if (MatchSpec(reader.Unread, nextSpec.Spec.AsSpan()))
-                {
-                    reader.Advance(reader.Unread.Length);
-                    return true;
-                }
-
-                break;
+                return true;
             }
         }
 
