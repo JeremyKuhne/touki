@@ -45,9 +45,10 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
     private readonly int _projectDirectoryLength;
 
     private readonly bool _alwaysRecurse;
+    private readonly bool _specEndsInAnyDirectory;
     private readonly StringSegment _directorySpec;
     private readonly StringSegment _fileNameSpec;
-    private readonly List<Segment> _specSegments = [];
+    private readonly List<SpecSegment> _specSegments = [];
     private readonly string _startDirectory;
 
     private readonly MatchType _matchType;
@@ -55,15 +56,21 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
 
     // Cache for current directory being processed - valid until OnDirectoryFinished is called
     private bool _cacheValid;
-    private bool _cachedCanMatch;
     private bool _cachedFullyMatches;
 
-    private readonly struct Segment
+    [DebuggerDisplay("{Spec}")]
+    private readonly struct SpecSegment
     {
         public StringSegment Spec { get; }
         public bool IsAnyDirectory { get; }
 
-        public Segment(StringSegment spec)
+        /// <summary>
+        ///  Implicitly converts a <see cref="SpecSegment"/> to a <see cref="ReadOnlySpan{T}"/> of <see cref="char"/>.
+        /// </summary>
+        /// <param name="segment">The segment to convert.</param>
+        public static implicit operator ReadOnlySpan<char>(SpecSegment segment) => segment.Spec;
+
+        public SpecSegment(StringSegment spec)
         {
             Spec = spec;
             IsAnyDirectory = spec.Equals("**");
@@ -148,10 +155,11 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
             }
         }
 
-        if (_specSegments.Count == 1 && _specSegments[0].IsAnyDirectory)
+        if (_specSegments.Count > 0 && _specSegments[^1].IsAnyDirectory)
         {
-            // The only spec is "**"
-            _alwaysRecurse = true;
+            // Spec ends with "**"; always recurse only when it's the sole segment
+            _alwaysRecurse = _specSegments.Count == 1;
+            _specEndsInAnyDirectory = true;
         }
     }
 
@@ -228,11 +236,22 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
         // Get the relative path from start directory to this directory
         ReadOnlySpan<char> relativePath = GetRelativeDirectoryPath(entry.Directory);
 
+        if (!_cacheValid)
+        {
+            UpdateCachedMatchState(relativePath);
+        }
+
+        if (_cachedFullyMatches && _specEndsInAnyDirectory)
+        {
+            // If the current directory fully matches the pattern and it ends with "**", we should always recurse.
+            return true;
+        }
+
         // Check if recursing into this directory would match the pattern
         // Combine relative path and entry filename into a VirtualPath to avoid string allocation
 
         VirtualPath virtualPath = new(relativePath, entry.FileName);
-        return MatchDirectorySegments(ref virtualPath, out _);
+        return MatchDirectorySegments(ref virtualPath);
     }
 
     /// <inheritdoc/>
@@ -246,78 +265,93 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
         // Get the relative path from start directory to this file's directory
         ReadOnlySpan<char> relativePath = GetRelativeDirectoryPath(entry.Directory);
 
+        if (!_cacheValid)
+        {
+            UpdateCachedMatchState(relativePath);
+        }
+
         // Check if the current directory fully matches the pattern and the file name matches
         // Use cached result since we'll be called multiple times for files in the same directory
-        return GetCachedDirectoryMatchState(relativePath).FullyMatches && MatchSpec(entry.FileName, _fileNameSpec);
+        return _cachedFullyMatches && MatchSpec(entry.FileName, _fileNameSpec);
+    }
+
+    private void UpdateCachedMatchState(ReadOnlySpan<char> relativePath)
+    {
+        if (_specSegments.Count == 0)
+        {
+            _cachedFullyMatches = _alwaysRecurse || relativePath.IsEmpty;
+        }
+        else
+        {
+            VirtualPath virtualPath = new(relativePath);
+            MatchSegments(ref virtualPath, out _cachedFullyMatches);
+        }
+
+        _cacheValid = true;
     }
 
     private ReadOnlySpan<char> GetRelativeDirectoryPath(ReadOnlySpan<char> fullDirectory) =>
         // Remove the start directory prefix to get the relative path
         fullDirectory.Length <= _startDirectory.Length ? default : fullDirectory[(_startDirectory.Length + 1)..];
 
-    private bool MatchDirectorySegments(ref VirtualPath virtualPath, out bool fullyMatches)
+    private bool MatchDirectorySegments(ref VirtualPath virtualPath)
     {
         if (virtualPath.Length == 0)
         {
-            if (_specSegments.Count == 0)
-            {
-                fullyMatches = true;
-                return true;
-            }
-
-            if (_specSegments[0].IsAnyDirectory)
-            {
-                fullyMatches = _specSegments.Count == 1;
-                return true;
-            }
-
-            fullyMatches = false;
-            return false;
+            // No relative directory path, match if there are no spec segments or if the first segment is "**".
+            return _specSegments.Count == 0 || _specSegments[0].IsAnyDirectory;
         }
 
-        bool exactMatch = MatchSegments(ref virtualPath, out fullyMatches);
-
-        if (!exactMatch && _specSegments.Count > 0 && _specSegments[0].IsAnyDirectory)
-        {
-            fullyMatches = false;
-            return true;
-        }
-
-        return exactMatch;
+        return MatchSegments(ref virtualPath, out _);
     }
 
-    private bool MatchSegments(ref VirtualPath virtualPath, out bool fullyMatches)
+    private bool MatchSegments(ref VirtualPath virtualPath, out bool fullMatch)
     {
         int specIndex = 0;
 
         while (specIndex < _specSegments.Count && virtualPath.MoveNextSegment())
         {
-            Segment currentSpec = _specSegments[specIndex];
+            SpecSegment currentSpec = _specSegments[specIndex];
 
             if (currentSpec.IsAnyDirectory)
             {
+                // Current is match any, need to greedily look forward for a valid match for the next (not "**") spec.
                 specIndex++;
 
                 if (specIndex >= _specSegments.Count)
                 {
+                    // Already at the end.
                     break;
                 }
 
-                Segment nextSpec = _specSegments[specIndex];
-                if (!FindMatchingSegment(ref virtualPath, nextSpec))
-                {
-                    fullyMatches = false;
-                    return false;
-                }
+                SpecSegment nextSpec = _specSegments[specIndex];
 
-                specIndex++;
+                bool matched = false;
+                do
+                {
+                    if (MatchSpec(virtualPath.CurrentSegment, nextSpec))
+                    {
+                        // Found one, match it and continue.
+                        matched = true;
+                        specIndex++;
+                        break;
+                    }
+                } while (virtualPath.MoveNextSegment());
+
+                if (!matched)
+                {
+                    // No match found for the next non "**" spec, which means we can't fully match this path.
+                    // If we are at the end of the path, we can still consider it a partial match.
+                    fullMatch = false;
+                    return virtualPath.End;
+                }
             }
             else
             {
-                ReadOnlySpan<char> segment = virtualPath.CurrentSegment;
-                if (!MatchSpec(segment, currentSpec.Spec.AsSpan()))
+                // Regular match, not "**".
+                if (!MatchSpec(virtualPath.CurrentSegment, currentSpec))
                 {
-                    fullyMatches = false;
+                    fullMatch = false;
                     return false;
                 }
 
@@ -325,26 +359,19 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
             }
         }
 
-        bool hasRemainingSpecs = specIndex < _specSegments.Count;
-        bool allConsumed = !hasRemainingSpecs || virtualPath.End;
+        // We've successfully matched all segments that we could.
 
-        fullyMatches = allConsumed && (!hasRemainingSpecs ||
-            (_specSegments[specIndex].IsAnyDirectory && specIndex == _specSegments.Count - 1));
+        bool specsRemaining = specIndex < _specSegments.Count;
+        bool pathRemaining = !virtualPath.End;
 
-        return allConsumed;
-    }
+        // We're fully matched if the spec ends in "**" and we've matched all segments, otherwise
+        // we need to have matched both the path and spec segments completely.
+        fullMatch = _specEndsInAnyDirectory
+            ? specIndex >= _specSegments.Count - 1
+            : !pathRemaining && !specsRemaining;
 
-    private bool FindMatchingSegment(ref VirtualPath virtualPath, Segment nextSpec)
-    {
-        do
-        {
-            if (MatchSpec(virtualPath.CurrentSegment, nextSpec.Spec.AsSpan()))
-            {
-                return true;
-            }
-        } while (virtualPath.MoveNextSegment());
-
-        return false;
+        // We have a partial, *possible* full match when we've matched all of the path segments.
+        return !pathRemaining;
     }
 
     private bool MatchSpec(ReadOnlySpan<char> name, ReadOnlySpan<char> spec) => _matchType switch
@@ -358,33 +385,4 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
             name,
             ignoreCase: _matchCasing == MatchCasing.CaseInsensitive)
     };
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private (bool CanMatch, bool FullyMatches) GetCachedDirectoryMatchState(ReadOnlySpan<char> relativePath)
-    {
-        if (_cacheValid)
-        {
-            return (_cachedCanMatch, _cachedFullyMatches);
-        }
-
-        bool canMatch;
-        bool fullyMatches;
-
-        if (_specSegments.Count == 0)
-        {
-            fullyMatches = _alwaysRecurse || relativePath.IsEmpty;
-            canMatch = true;
-        }
-        else
-        {
-            VirtualPath virtualPath = new(relativePath);
-            canMatch = MatchDirectorySegments(ref virtualPath, out fullyMatches);
-        }
-
-        _cacheValid = true;
-        _cachedCanMatch = canMatch;
-        _cachedFullyMatches = fullyMatches;
-
-        return (canMatch, fullyMatches);
-    }
 }
