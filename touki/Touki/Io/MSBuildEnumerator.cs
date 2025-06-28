@@ -157,7 +157,7 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
 
         if (_specSegments.Count > 0 && _specSegments[^1].IsAnyDirectory)
         {
-            // The only spec is "**"
+            // Spec ends with "**"; always recurse only when it's the sole segment
             _alwaysRecurse = _specSegments.Count == 1;
             _specEndsInAnyDirectory = true;
         }
