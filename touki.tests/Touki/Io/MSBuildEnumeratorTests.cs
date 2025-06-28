@@ -16,7 +16,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "file3.md"), "Content 3");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "*.txt");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("*.txt", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -40,7 +40,7 @@ public class MSBuildEnumeratorTests
         IReadOnlyList<string> expected = FileMatcherWrapper.GetFilesSimple(directory, "*.cs");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(directory, "*.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("*.cs", directory);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -58,7 +58,7 @@ public class MSBuildEnumeratorTests
         string[] expected = FileMatcherWrapper.GetFilesSimple(directory, "**/*.cs");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(directory, "**/*.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/*.cs", directory);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -79,7 +79,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "abc.txt"), "Content 4");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "?.txt");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("?.txt", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -104,7 +104,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "a.txt"), "Content 4");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "???.txt");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("???.txt", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -129,7 +129,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "test.txt"), "Content 5");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "test*.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("test*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -157,7 +157,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(subDir, "file3.txt"), "Content 3");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "subdir/*.txt");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("subdir/*.txt", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -189,7 +189,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(level2, "other.txt"), "Other");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "**/*.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -223,7 +223,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tests, "test.cs"), "Test");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "src/**/*.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("src/**/*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -254,7 +254,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(subDir, "Dialog.tsx"), "React");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "components/*.test.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("components/*.test.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -277,7 +277,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "file2.md"), "Content 2");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "*.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -299,7 +299,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "Other.cs"), "Content 3");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "Program.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("Program.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -325,7 +325,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(Path.Join(tempFolder, "a"), "intermediate.txt"), "Intermediate");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "**/deep.txt");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/deep.txt", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -349,7 +349,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "file.txt"), "Text");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "file.?");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("file.?", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -381,7 +381,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(otherDir, "file.cs"), "Other File");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "Test*/*.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("Test*/*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -402,7 +402,7 @@ public class MSBuildEnumeratorTests
         using TempFolder tempFolder = new();
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "*.*");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("*.*", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -426,7 +426,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(subDir, "nested.txt"), "Nested");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "**");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -450,7 +450,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "FILE.TXT"), "Upper");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "file.txt");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("file.txt", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -488,7 +488,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(level2, "other.txt"), "Other file");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "**/target.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/target.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -526,7 +526,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(testsUnit, "unit.cs"), "Unit test");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "src/main/**/*.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("src/main/**/*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -559,7 +559,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "api.cs"), "Root API");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "lib/**/v*/api.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("lib/**/v*/api.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -599,7 +599,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(srcMainTests, "test4.cs"), "Main test");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "src/**/tests/**/*.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("src/**/tests/**/*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -634,14 +634,14 @@ public class MSBuildEnumeratorTests
 
         // Test that consecutive ** are treated as a single **
         List<string> files1 = [];
-        using MSBuildEnumerator enumerator1 = MSBuildEnumerator.Create(tempFolder, "**/**/file.txt");
+        using MSBuildEnumerator enumerator1 = MSBuildEnumerator.Create("**/**/file.txt", tempFolder);
         while (enumerator1.MoveNext())
         {
             files1.Add(enumerator1.Current);
         }
 
         List<string> files2 = [];
-        using MSBuildEnumerator enumerator2 = MSBuildEnumerator.Create(tempFolder, "**/file.txt");
+        using MSBuildEnumerator enumerator2 = MSBuildEnumerator.Create("**/file.txt", tempFolder);
         while (enumerator2.MoveNext())
         {
             files2.Add(enumerator2.Current);
@@ -671,14 +671,14 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(deep, "target.cs"), "Deep");
 
         List<string> files1 = [];
-        using MSBuildEnumerator enumerator1 = MSBuildEnumerator.Create(tempFolder, "**/**/**/target.cs");
+        using MSBuildEnumerator enumerator1 = MSBuildEnumerator.Create("**/**/**/target.cs", tempFolder);
         while (enumerator1.MoveNext())
         {
             files1.Add(enumerator1.Current);
         }
 
         List<string> files2 = [];
-        using MSBuildEnumerator enumerator2 = MSBuildEnumerator.Create(tempFolder, "**/target.cs");
+        using MSBuildEnumerator enumerator2 = MSBuildEnumerator.Create("**/target.cs", tempFolder);
         while (enumerator2.MoveNext())
         {
             files2.Add(enumerator2.Current);
@@ -714,7 +714,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "bin.exe"), "Root binary");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "**/bin/*.exe");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/bin/*.exe", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -746,7 +746,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(otherDebug, "other.dll"), "Other DLL");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "build/**/*.dll");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("build/**/*.dll", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -779,7 +779,7 @@ public class MSBuildEnumeratorTests
 
         // Pattern: any 3-char directory, then v1, then ** for any subdirs, then single-char filename + .cs
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "???/v1/**/?*.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("???/v1/**/?*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -799,7 +799,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(srcV1, "a.cs"), "Source A v1");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "???/v1/**/?*.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("???/v1/**/?*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -816,7 +816,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "a.cs"), "A");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "?*.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("?*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -837,7 +837,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(srcDir, "a.cs"), "A");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "???/*.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("???/*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -857,7 +857,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(srcV1Dir, "a.cs"), "A");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "???/v1/*.cs");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("???/v1/*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -875,7 +875,7 @@ public class MSBuildEnumeratorTests
 
         // Test if root file bin.exe matches pattern **/bin/*.exe
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(tempFolder, "**/bin/*.exe");
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/bin/*.exe", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
