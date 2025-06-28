@@ -35,6 +35,7 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
     {
         MatchType = MatchType.Simple,
         MatchCasing = MatchCasing.PlatformDefault,
+        IgnoreInaccessible = true,
         RecurseSubdirectories = true
     };
 
