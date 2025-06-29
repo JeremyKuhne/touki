@@ -3,6 +3,9 @@
 // See LICENSE file in the project root for full license information
 
 using System.Text;
+#if NETFRAMEWORK
+using System.IO;
+#endif
 
 namespace Touki;
 
