@@ -267,7 +267,6 @@ public class MSBuildSpec
             ignoreCase: _matchCasing == MatchCasing.CaseInsensitive)
     };
 
-    [DebuggerDisplay("{Spec}")]
     private readonly struct SpecSegment
     {
         public StringSegment Spec { get; }
@@ -284,5 +283,7 @@ public class MSBuildSpec
             Spec = spec;
             IsAnyDirectory = spec.Equals("**");
         }
+
+        public override string ToString() => Spec.ToString();
     }
 }

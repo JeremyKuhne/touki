@@ -2,8 +2,9 @@
 
 # Coding
 - Use modern C# features where appropriate.
-- Avoid using `var`.
-- Use target-typed `new` expressions where applicable.
+- Avoid using `var` - always use explicit type declarations.
+- Use target-typed `new` expressions where applicable (e.g., `List<string> list = new()` instead of `var list = new List<string>()`).
+- When instantiating objects, prefer `TypeName instance = new()` over `var instance = new TypeName()`.
 - Lines should never end in spaces or contain only spaces.
 - Never put multiple statements on a single line.
 - Avoid putting comments at the end of lines. Comments should be before the code they describe.

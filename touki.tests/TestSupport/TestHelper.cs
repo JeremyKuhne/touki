@@ -8,6 +8,9 @@ namespace Touki;
 
 internal static class TestHelper
 {
+    /// <summary>
+    ///  Invokes the finalizer of an object directly, bypassing the normal garbage collection process.
+    /// </summary>
     internal static void InvokeFinalizer(object @object)
     {
         // Find the special finalizer method and invoke it directly
@@ -17,5 +20,4 @@ internal static class TestHelper
 
         finalizerMethod?.Invoke(@object, null);
     }
-
 }
