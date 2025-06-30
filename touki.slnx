@@ -7,6 +7,7 @@
     <File Path=".gitattributes" />
     <File Path=".github/copilot-instructions.md" />
     <File Path=".gitignore" />
+    <File Path="AGENTS.md" />
     <File Path="CONTRIBUTING.md" />
     <File Path="Directory.Build.props" />
     <File Path="LICENSE" />

@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Touki.Collections;
+
 namespace Touki.Io;
 
 /// <summary>
 ///  Represents a specification for matching files and directories in an MSBuild project.
 /// </summary>
-public class MSBuildSpec
+public class MSBuildSpec : DisposableBase
 {
     private readonly StringSegment _directorySpec;
     private readonly StringSegment _fileNameSpec;
@@ -29,7 +31,7 @@ public class MSBuildSpec
     private bool _cacheValid;
     private bool _cachedFullyMatches;
 
-    private readonly List<SpecSegment> _specSegments = [];
+    private readonly ArrayPoolList<SpecSegment> _specSegments = [];
 
     /// <summary>
     ///  Constructs a new <see cref="MSBuildSpec"/> from a full path specification, start directory, match type, and match casing.
@@ -64,8 +66,9 @@ public class MSBuildSpec
             }
 
             StringSegment segment = remainingSpec[..nextSeparator];
-            if (_specSegments.Count == 0 || !_specSegments[^1].IsAnyDirectory || !segment.Equals("**"))
+            if (_specSegments.Count == 0 || !segment.Equals("**") || !_specSegments[^1].IsAnyDirectory)
             {
+                // Only add the segment if it's not a duplicate "**" at the end.
                 _specSegments.Add(new(segment));
             }
 
@@ -266,6 +269,15 @@ public class MSBuildSpec
             name,
             ignoreCase: _matchCasing == MatchCasing.CaseInsensitive)
     };
+
+    /// <inheritdoc/>
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _specSegments?.Dispose();
+        }
+    }
 
     private readonly struct SpecSegment
     {

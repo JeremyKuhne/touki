@@ -68,5 +68,14 @@ namespace Touki.Resources {
                 return ResourceManager.GetString("Argument_BadFormatSpecifier", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Destination array is not long enough to copy all the items in the collection..
+        /// </summary>
+        internal static string DestinationArrayTooSmall {
+            get {
+                return ResourceManager.GetString("DestinationArrayTooSmall", resourceCulture);
+            }
+        }
     }
 }

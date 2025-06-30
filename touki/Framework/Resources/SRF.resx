@@ -98,10 +98,31 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Argument_BadFormatSpecifier" xml:space="preserve">
-    <value>Format specifier was invalid.</value>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonZero" xml:space="preserve">
+    <value>{0} ('{1}') must be a non-zero value.</value>
   </data>
-  <data name="DestinationArrayTooSmall" xml:space="preserve">
-    <value>Destination array is not long enough to copy all the items in the collection.</value>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonNegative" xml:space="preserve">
+    <value>{0} ('{1}') must be a non-negative value.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero" xml:space="preserve">
+    <value>{0} ('{1}') must be a non-negative and non-zero value.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeLessOrEqual" xml:space="preserve">
+    <value>{0} ('{1}') must be less than or equal to '{2}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeLess" xml:space="preserve">
+    <value>{0} ('{1}') must be less than '{2}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeGreaterOrEqual" xml:space="preserve">
+    <value>{0} ('{1}') must be greater than or equal to '{2}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeGreater" xml:space="preserve">
+    <value>{0} ('{1}') must be greater than '{2}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeEqual" xml:space="preserve">
+    <value>{0} ('{1}') must be equal to '{2}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNotEqual" xml:space="preserve">
+    <value>{0} ('{1}') must not be equal to '{2}'.</value>
   </data>
 </root>
