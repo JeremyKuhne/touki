@@ -33,7 +33,7 @@ global using Marshal = System.Runtime.InteropServices.Marshal;
 
 #if NETFRAMEWORK || NET6_0
 global using ArgumentNull = Touki.ArgumentNullAdapter;
-global using ArgumentOutOfRange = Touki.ArgumentOutOfRangeAdapter;
+global using ArgumentOutOfRange = Touki.Exceptions.ArgumentOutOfRangeAdapter;
 global using ObjectDisposed = Touki.ObjectDisposedAdapter;
 global using Overflow = Touki.OverflowAdapter;
 #else

@@ -48,10 +48,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <None Include="../README.md" Pack="true" PackagePath="" />
     <None Include="Touki\NotSupportedAdapter.cs" />
     <None Include="Touki\StringBuilderExtensions.cs" />
@@ -72,12 +68,19 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>SR.resx</DependentUpon>
     </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
     <EmbeddedResource Update="Resources\SR.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>SR.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Touki.Resources</CustomToolNamespace>
+    </EmbeddedResource>
+    <Compile Update="Framework\Resources\SRF.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>SRF.resx</DependentUpon>
+    </Compile>
+    <EmbeddedResource Update="Framework\Resources\SRF.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>SRF.Designer.cs</LastGenOutput>
       <CustomToolNamespace>Touki.Resources</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>

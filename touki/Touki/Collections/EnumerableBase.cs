@@ -4,7 +4,7 @@
 
 using System.Collections;
 
-namespace Touki;
+namespace Touki.Collections;
 
 /// <summary>
 ///  Simple enumerable base class.

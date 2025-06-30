@@ -7,7 +7,6 @@ namespace Touki;
 internal static class ArgumentNullAdapter
 {
     public static void ThrowIfNull<T>(T? value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
-        where T : class
     {
         if (value is null)
         {

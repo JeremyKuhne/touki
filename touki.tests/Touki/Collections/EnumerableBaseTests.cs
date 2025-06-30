@@ -4,9 +4,9 @@
 
 using System.Collections;
 
-namespace Touki;
+namespace Touki.Collections;
 
-public class EnumerableTests
+public class EnumerableBaseTests
 {
     // Test implementation of Enumerable<T>
     private class TestEnumerable : EnumerableBase<int>

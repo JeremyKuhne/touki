@@ -201,7 +201,7 @@ public class MSBuildSpecTests
         // If we have an expected first segment, check it
         if (!string.IsNullOrEmpty(expectedFirstSegment))
         {
-            IList list = accessor._specSegments;
+            IList list = (IList)accessor._specSegments;
             if (list.Count > 0)
             {
                 list[0]!.ToString()!.Should().Be(expectedFirstSegment);

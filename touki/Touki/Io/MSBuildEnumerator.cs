@@ -166,4 +166,15 @@ public sealed partial class MSBuildEnumerator : FileSystemEnumerator<string>
     /// <inheritdoc/>
     protected override bool ShouldIncludeEntry(ref FileSystemEntry entry) =>
         !entry.IsDirectory && _spec.ShouldIncludeFile(entry.Directory, entry.FileName);
+
+    /// <inheritdoc/>
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _spec.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
 }
