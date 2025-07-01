@@ -29,9 +29,12 @@ namespace Touki.Io;
 ///   </list>
 ///  </para>
 /// </remarks>
-public sealed partial class MSBuildEnumerator : FileSystemEnumerator<string>
+public abstract partial class MSBuildEnumerator : FileSystemEnumerator<string>
 {
-    private static readonly EnumerationOptions s_defaultOptions = new()
+    /// <summary>
+    ///  Default options for the enumerator.
+    /// </summary>
+    protected static EnumerationOptions DefaultOptions { get; } = new()
     {
         MatchType = MatchType.Simple,
         MatchCasing = MatchCasing.PlatformDefault,
@@ -45,24 +48,18 @@ public sealed partial class MSBuildEnumerator : FileSystemEnumerator<string>
     private readonly bool _stripProjectDirectory;
     private readonly int _projectDirectoryLength;
 
-    private readonly MatchType _matchType;
-    private readonly MatchCasing _matchCasing;
-
-    private readonly MSBuildSpec _spec;
-
     /// <summary>
     ///  Initializes a new instance of the <see cref="MSBuildEnumerator"/> class.
     /// </summary>
     private MSBuildEnumerator(
-        string fileSpec,
-        string fullPathSpec,
         string? projectDirectory,
+        bool stripProjectDirectory,
         string startDirectory,
-        EnumerationOptions? options = null)
-        : base(startDirectory, options ?? s_defaultOptions)
+        EnumerationOptions options)
+        : base(startDirectory, options)
     {
         // Initialize project directory settings
-        if (projectDirectory is null)
+        if (projectDirectory is null || !stripProjectDirectory)
         {
             _stripProjectDirectory = false;
             _projectDirectory = string.Empty;
@@ -70,32 +67,11 @@ public sealed partial class MSBuildEnumerator : FileSystemEnumerator<string>
         }
         else
         {
+            _stripProjectDirectory = true;
             _projectDirectory = projectDirectory;
             _projectDirectoryLength = projectDirectory.Length +
                 (Path.EndsInDirectorySeparator(_projectDirectory) ? 0 : 1);
-            _stripProjectDirectory = !Path.IsPathFullyQualified(fileSpec);
         }
-
-        // Initialize matching options
-        _matchType = options?.MatchType ?? MatchType.Simple;
-        _matchCasing = options?.MatchCasing ?? MatchCasing.PlatformDefault;
-
-        if (_matchCasing == MatchCasing.PlatformDefault)
-        {
-#if NETFRAMEWORK
-            _matchCasing = MatchCasing.CaseInsensitive;
-#else
-            _matchCasing = OperatingSystem.IsWindows()
-                || OperatingSystem.IsMacOS()
-                || OperatingSystem.IsIOS()
-                || OperatingSystem.IsTvOS()
-                || OperatingSystem.IsWatchOS()
-                    ? MatchCasing.CaseInsensitive
-                    : MatchCasing.CaseSensitive;
-#endif
-        }
-
-        _spec = new MSBuildSpec(fullPathSpec, startDirectory, _matchType, _matchCasing);
     }
 
     /// <summary>
@@ -116,6 +92,8 @@ public sealed partial class MSBuildEnumerator : FileSystemEnumerator<string>
             ? Path.GetFullPath(Environment.CurrentDirectory)
             : Path.GetFullPath(projectDirectory);
 
+        options ??= DefaultOptions;
+
         string fullPathSpec = Path.GetFullPath(fileSpec, rootDirectory);
 
         ReadOnlySpan<char> fullPath = fullPathSpec.AsSpan();
@@ -133,13 +111,13 @@ public sealed partial class MSBuildEnumerator : FileSystemEnumerator<string>
 
         string startDirectory = fullPath[..lastSeparator].ToString();
 
-        return new MSBuildEnumerator(fileSpec, fullPathSpec, projectDirectory, startDirectory, options);
+        return new SingleSpec(
+            new MSBuildSpec(fullPathSpec, startDirectory, options.MatchType, options.MatchCasing),
+            projectDirectory,
+            !Path.IsPathFullyQualified(fileSpec),
+            startDirectory,
+            options);
     }
-
-    /// <inheritdoc/>
-    protected override void OnDirectoryFinished(ReadOnlySpan<char> directory) =>
-        // Clear the cache when we finish processing a directory
-        _spec.InvalidateCache();
 
     /// <inheritdoc/>
     protected override string TransformEntry(ref FileSystemEntry entry)
@@ -157,24 +135,5 @@ public sealed partial class MSBuildEnumerator : FileSystemEnumerator<string>
         }
 
         return $"{entry.Directory[_projectDirectoryLength..]}{Path.DirectorySeparatorChar}{entry.FileName}";
-    }
-
-    /// <inheritdoc/>
-    protected override bool ShouldRecurseIntoEntry(ref FileSystemEntry entry) =>
-        _spec.ShouldRecurseIntoDirectory(entry.Directory, entry.FileName);
-
-    /// <inheritdoc/>
-    protected override bool ShouldIncludeEntry(ref FileSystemEntry entry) =>
-        !entry.IsDirectory && _spec.ShouldIncludeFile(entry.Directory, entry.FileName);
-
-    /// <inheritdoc/>
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            _spec.Dispose();
-        }
-
-        base.Dispose(disposing);
     }
 }
