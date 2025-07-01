@@ -13,7 +13,7 @@ public class ArrayBackedListTests
     {
         public TestArrayBackedList() : base([]) { }
 
-        public TestArrayBackedList(T[] initialItems) : base(initialItems) { }
+        public TestArrayBackedList(T[] backingArray) : base(backingArray) { }
 
         protected override T[] GetNewArray(int miminumCapacity) => new T[miminumCapacity];
 

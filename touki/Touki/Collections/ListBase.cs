@@ -32,7 +32,7 @@ public abstract class ListBase<T> : DisposableBase, IList<T>, IReadOnlyList<T>, 
     public abstract void Clear();
 
     /// <inheritdoc/>
-    public abstract bool Contains(T item);
+    public virtual bool Contains(T item) => IndexOf(item) >= 0;
 
     /// <inheritdoc/>
     public abstract void CopyTo(T[] array, int arrayIndex);
@@ -44,7 +44,17 @@ public abstract class ListBase<T> : DisposableBase, IList<T>, IReadOnlyList<T>, 
     public abstract void Insert(int index, T item);
 
     /// <inheritdoc/>
-    public abstract bool Remove(T item);
+    public virtual bool Remove(T item)
+    {
+        int index = IndexOf(item);
+        if (index >= 0)
+        {
+            RemoveAt(index);
+            return true;
+        }
+
+        return false;
+    }
 
     /// <inheritdoc/>
     public abstract void RemoveAt(int index);
