@@ -38,9 +38,20 @@
     <DefaultItemExcludes Condition="'$(TargetFramework)' != 'net472'">$(DefaultItemExcludes);**/Framework/**/*</DefaultItemExcludes>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PolySharpUsePublicAccessibilityForGeneratedTypes>true</PolySharpUsePublicAccessibilityForGeneratedTypes>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' != 'net472'">
     <!-- Include the Framework specific items as none so we can see them easily in the Solution Explorer. -->
     <None Include="**/Framework/**/*" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <PackageReference Include="PolySharp" Version="1.15.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
