@@ -20,32 +20,6 @@ public sealed class ArrayPoolList<T> : ArrayBackedList<T> where T : notnull
 
     private const int DefaultMinimumCapacity = 64;
 
-    private static readonly bool s_typeHasReferences =
-#if NET
-        RuntimeHelpers.IsReferenceOrContainsReferences<T>();
-#else
-        IsReferenceOrContainsReferences();
-
-    private static bool IsReferenceOrContainsReferences()
-    {
-        if (!typeof(T).IsValueType)
-        {
-            return false;
-        }
-
-        try
-        {
-            _ = Marshal.SizeOf<T>();
-            return true;
-        }
-        catch (Exception)
-        {
-            // Contained a reference
-            return false;
-        }
-    }
-#endif
-
     /// <summary>
     ///  Initializes a new instance of the <see cref="ArrayPoolList{T}"/> class.
     /// </summary>
@@ -73,7 +47,7 @@ public sealed class ArrayPoolList<T> : ArrayBackedList<T> where T : notnull
     {
         if (array is not null)
         {
-            ArrayPool<T>.Shared.Return(array, s_typeHasReferences);
+            ArrayPool<T>.Shared.Return(array, TypeInfo<T>.IsReferenceOrContainsReferences());
         }
     }
 }

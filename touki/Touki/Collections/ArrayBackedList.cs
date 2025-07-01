@@ -15,10 +15,13 @@ public abstract class ArrayBackedList<T> : ListBase<T> where T : notnull
     /// <summary>
     ///  Constructs a new instance of the <see cref="ArrayBackedList{T}"/> class with an initial array.
     /// </summary>
-    protected ArrayBackedList(T[] initialItems)
+    /// <param name="backingArray">
+    ///  The initial backing array to use. This array should not be <see langword="null"/> but can be empty.
+    /// </param>
+    protected ArrayBackedList(T[] backingArray)
     {
-        ArgumentNull.ThrowIfNull(initialItems);
-        _items = initialItems;
+        ArgumentNull.ThrowIfNull(backingArray);
+        _items = backingArray;
     }
 
     /// <inheritdoc/>
@@ -32,18 +35,16 @@ public abstract class ArrayBackedList<T> : ListBase<T> where T : notnull
     /// <inheritdoc/>
     public override void Clear()
     {
-        if (_count > 0)
+        if (_count > 0 && TypeInfo<T>.IsReferenceOrContainsReferences())
         {
             Array.Clear(_items, 0, _count);
-            _count = 0;
         }
+
+        _count = 0;
     }
 
     /// <inheritdoc/>
     public override int IndexOf(T item) => _count == 0 ? -1 : Array.IndexOf(_items, item, 0, _count);
-
-    /// <inheritdoc/>
-    public override bool Contains(T item) => IndexOf(item) >= 0;
 
     /// <inheritdoc/>
     public override void Add(T item)
@@ -77,19 +78,6 @@ public abstract class ArrayBackedList<T> : ListBase<T> where T : notnull
 
         _items[index] = item;
         _count++;
-    }
-
-    /// <inheritdoc/>
-    public override bool Remove(T item)
-    {
-        int index = IndexOf(item);
-        if (index >= 0)
-        {
-            RemoveAt(index);
-            return true;
-        }
-
-        return false;
     }
 
     /// <inheritdoc/>
