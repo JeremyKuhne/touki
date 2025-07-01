@@ -50,7 +50,7 @@ public class MSBuildSpec : DisposableBase
     {
         _startDirectoryLength = startDirectory.Length;
         _matchType = matchType;
-        _matchCasing = matchCasing;
+        _matchCasing = GetFinalCasing(matchCasing);
 
         // Parse pattern segments
         _directorySpec = new(fullPathSpec, _startDirectoryLength + 1);
@@ -91,6 +91,28 @@ public class MSBuildSpec : DisposableBase
             EndsInAnyDirectory = true;
         }
     }
+
+    /// <summary>
+    ///  Given <paramref name="matchCasing"/>, ensure that it is set to a specific casing.
+    /// </summary>
+    private static MatchCasing GetFinalCasing(MatchCasing matchCasing) => matchCasing switch
+    {
+        MatchCasing.CaseSensitive => MatchCasing.CaseSensitive,
+        MatchCasing.CaseInsensitive => MatchCasing.CaseInsensitive,
+        _ =>
+#if NETFRAMEWORK
+            MatchCasing.CaseInsensitive
+#else
+            OperatingSystem.IsWindows()
+                || OperatingSystem.IsMacOS()
+                || OperatingSystem.IsIOS()
+                || OperatingSystem.IsTvOS()
+                || OperatingSystem.IsWatchOS()
+                    ? MatchCasing.CaseInsensitive
+                    : MatchCasing.CaseSensitive
+#endif
+    };
+
 
     /// <summary>
     ///  Invalidates the cache. This should be called whenever the current directory being
