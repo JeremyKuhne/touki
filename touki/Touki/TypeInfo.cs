@@ -30,23 +30,27 @@ public static partial class TypeInfo<T>
         {
             if (!typeof(T).IsValueType)
             {
-                return false;
+                return true;
             }
 
-            if (typeof(T).IsPrimitive || typeof(T).IsEnum)
+            if (typeof(T).IsPrimitive
+                || typeof(T).IsEnum
+                || typeof(T) == typeof(DateTime))
             {
-                return true;
+                return false;
             }
 
             try
             {
-                _ = Marshal.SizeOf<T>();
-                return true;
+                Type type = typeof(T);
+                GCHandle handle = GCHandle.Alloc(default(T), GCHandleType.Pinned);
+                handle.Free();
+                return false;
             }
             catch (Exception)
             {
                 // Contained a reference
-                return false;
+                return true;
             }
         }
 #endif
