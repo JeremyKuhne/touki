@@ -56,7 +56,7 @@ public readonly struct HandleRef<THandle> : IHandle<THandle>, IEquatable<HandleR
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is THandle other && Equals(other);
 
     /// <inheritdoc/>
-    public override int GetHashCode() => Wrapper?.GetHashCode() ?? 0 ^ Handle.GetHashCode();
+    public override int GetHashCode() => HashCode.Combine(Wrapper, Handle);
 
     /// <summary>
     ///  Determines whether two specified instances of <see cref="HandleRef{THandle}"/> are equal.
