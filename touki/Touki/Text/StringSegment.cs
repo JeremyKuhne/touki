@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.ComponentModel;
+
 namespace Touki;
 
 /// <summary>
@@ -15,6 +17,10 @@ namespace Touki;
 ///   <see cref="ReadOnlyMemory{T}"/> (created via <see cref="MemoryExtensions.AsMemory(string?)"/> provides
 ///   some functionality similar to <see cref="StringSegment"/>, but it is not as optimized for <see langword="string"/>
 ///   operations. This struct leverages <see langword="string"/> methods to get good performance on .NET Framework.
+///  </para>
+///  <para>
+///   Microsoft.Extensions.Primitives also provides a <see cref="StringSegment"/> struct, but it is not as optimized
+///   as this one and does not have as much functionality.
 ///  </para>
 /// </remarks>
 public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<string>
@@ -127,7 +133,7 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
         get
         {
             (int offset, int length) = range.GetOffsetAndLength(_length);
-            return new StringSegment(_value, _startIndex + offset, length);
+            return new StringSegment(_startIndex + offset, length, _value);
         }
     }
 
@@ -139,12 +145,9 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
     /// <exception cref="ArgumentOutOfRangeException">
     ///  Thrown when <paramref name="startIndex"/> is negative or greater than <see cref="Length"/>.
     /// </exception>
-    public StringSegment Slice(int startIndex)
-    {
-        return (uint)startIndex > (uint)_length
-            ? throw new ArgumentOutOfRangeException(nameof(startIndex))
-            : new StringSegment(_value, _startIndex + startIndex, _length - startIndex);
-    }
+    public StringSegment Slice(int startIndex) => (uint)startIndex > (uint)_length
+        ? throw new ArgumentOutOfRangeException(nameof(startIndex))
+        : new StringSegment(_startIndex + startIndex, _length - startIndex, _value);
 
     /// <summary>
     ///  Slices the segment to create a new segment starting at a specified index with the specified length.
@@ -159,7 +162,7 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
     public StringSegment Slice(int startIndex, int length) =>
         (uint)startIndex > (uint)_length || (uint)length > (uint)(_length - startIndex)
             ? throw new ArgumentOutOfRangeException(nameof(startIndex))
-            : new StringSegment(_value, _startIndex + startIndex, length);
+            : new StringSegment(_startIndex + startIndex, length, _value);
 
     /// <summary>
     ///  Splits on the next separator, or returns the entire segment if no separator is found.
@@ -167,6 +170,7 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
     /// <returns>
     ///  <see langword="false"/> if the current segment is empty, otherwise <see langword="true"/>.
     /// </returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TrySplit(char delimiter, out StringSegment left, out StringSegment right)
     {
         if (_length == 0)
@@ -195,6 +199,7 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
     /// <returns>
     ///  <see langword="false"/> if the current segment is empty, otherwise <see langword="true"/>.
     /// </returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TrySplitAny(char value0, char value1, out StringSegment left, out StringSegment right)
     {
         // Optimizing for DirectorySeparatorChar == AltDirectorySeparatorChar
@@ -272,6 +277,25 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
     }
 
     /// <summary>
+    ///  Returns the last index of the given <see langword="char"/>s or -1 if not found.
+    /// </summary>
+    public int LastIndexOfAny(char value0, char value1) => value0 == value1
+        // Optimizing for DirectorySeparatorChar == AltDirectorySeparatorChar
+        ? LastIndexOf(value0)
+        : AsSpan().LastIndexOfAny(value0, value1);
+
+    /// <summary>
+    ///  Returns the last index of the given <see langword="char"/>s or -1 if not found.
+    /// </summary>
+    public int LastIndexOfAny(ReadOnlySpan<char> values) => values.Length switch
+    {
+        0 => -1,
+        1 => LastIndexOf(values[0]),
+        2 => LastIndexOfAny(values[0], values[1]),
+        _ => AsSpan().LastIndexOfAny(values),
+    };
+
+    /// <summary>
     ///  Returns <see langword="true"/> if the segment starts with the specified <see langword="string"/>,
     /// </summary>
     public bool StartsWith(string value, StringComparison comparison = StringComparison.Ordinal) =>
@@ -288,6 +312,24 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
     /// </summary>
     public bool StartsWith(ReadOnlySpan<char> value, StringComparison comparison = StringComparison.Ordinal) =>
         value.Length <= _length && AsSpan().StartsWith(value, comparison);
+
+    /// <summary>
+    ///  Returns <see langword="true"/> if the segment ends with the specified <see langword="string"/>,
+    /// </summary>
+    public bool EndsWith(string value, StringComparison comparison = StringComparison.Ordinal) =>
+        value is not null && _length >= value.Length && string.Compare(_value, _startIndex + _length - value.Length, value, 0, value.Length, comparison) == 0;
+
+    /// <summary>
+    ///  Returns <see langword="true"/> if the segment ends with the specified <see cref="StringSegment"/>,
+    /// </summary>
+    public bool EndsWith(StringSegment value, StringComparison comparison = StringComparison.Ordinal) =>
+        value._length <= _length && string.Compare(_value, _startIndex + _length - value._length, value._value, value._startIndex, value._length, comparison) == 0;
+
+    /// <summary>
+    ///  Returns <see langword="true"/> if the segment ends with the specified <see cref="ReadOnlySpan{Char}"/>.
+    /// </summary>
+    public bool EndsWith(ReadOnlySpan<char> value, StringComparison comparison = StringComparison.Ordinal) =>
+        value.Length <= _length && AsSpan(_length - value.Length).StartsWith(value, comparison);
 
     /// <summary>
     ///  Replace all occurrences of a character in the segment with another character.
@@ -355,10 +397,68 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
     }
 
     /// <summary>
+    ///  Trims the segment by removing the specified character.
+    /// </summary>
+    /// <returns>The trimmed <see cref="StringSegment"/>.</returns>
+    /// <remarks>
+    ///  <para>
+    ///   This API will never allocate a new backing string.
+    ///  </para>
+    /// </remarks>
+    public StringSegment Trim(char trimChar)
+    {
+        if (_length == 0)
+        {
+            return this;
+        }
+
+        int start = _startIndex;
+        int end = _startIndex + _length - 1;
+
+        while (start <= end && _value[start] == trimChar)
+        {
+            start++;
+        }
+
+        while (end >= start && _value[end] == trimChar)
+        {
+            end--;
+        }
+
+        return new StringSegment(start, end - start + 1, _value);
+    }
+
+    /// <summary>
+    ///  Trims the segment by removing the specified characters.
+    /// </summary>
+    /// <inheritdoc cref="Trim(char)"/>
+    public StringSegment Trim(char trimChar0, char trimChar1)
+    {
+        if (_length == 0)
+        {
+            return this;
+        }
+
+        int start = _startIndex;
+        int end = _startIndex + _length - 1;
+
+        while (start <= end && (_value[start] == trimChar0 || _value[start] == trimChar1))
+        {
+            start++;
+        }
+
+        while (end >= start && (_value[end] == trimChar0 || _value[end] == trimChar1))
+        {
+            end--;
+        }
+        return new StringSegment(start, end - start + 1, _value);
+    }
+
+    /// <summary>
     ///  Trims the segment by removing leading whitespace characters.
     /// </summary>
     /// <inheritdoc cref="Trim()"/>
-    public unsafe StringSegment TrimStart()
+    public StringSegment TrimStart()
     {
         if (_length == 0)
         {
@@ -368,6 +468,47 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
         int start = _startIndex;
 
         while (start < _startIndex + _length && char.IsWhiteSpace(_value[start]))
+        {
+            start++;
+        }
+
+        return new StringSegment(start, _length - (start - _startIndex), _value);
+    }
+
+    /// <summary>
+    ///  Trims the segment by removing leading specified character.
+    /// </summary>
+    /// <inheritdoc cref="Trim(char)"/>
+    public StringSegment TrimStart(char trimChar)
+    {
+        if (_length == 0)
+        {
+            return this;
+        }
+
+        int start = _startIndex;
+
+        while (start < _startIndex + _length && _value[start] == trimChar)
+        {
+            start++;
+        }
+
+        return new StringSegment(start, _length - (start - _startIndex), _value);
+    }
+
+    /// <summary>
+    ///  Trims the segment by removing leading specified characters.
+    /// </summary>
+    /// <inheritdoc cref="Trim(char)"/>
+    public StringSegment TrimStart(char trimChar0, char trimChar1)
+    {
+        if (_length == 0)
+        {
+            return this;
+        }
+
+        int start = _startIndex;
+        while (start < _startIndex + _length && (_value[start] == trimChar0 || _value[start] == trimChar1))
         {
             start++;
         }
@@ -389,6 +530,46 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
         int end = _startIndex + _length - 1;
 
         while (end >= _startIndex && char.IsWhiteSpace(_value[end]))
+        {
+            end--;
+        }
+
+        return new StringSegment(_startIndex, end - _startIndex + 1, _value);
+    }
+
+    /// <summary>
+    ///  Trims the segment by removing trailing specified character.
+    /// </summary>
+    /// <inheritdoc cref="Trim(char)"/>
+    public StringSegment TrimEnd(char trimChar)
+    {
+        if (_length == 0)
+        {
+            return this;
+        }
+
+        int end = _startIndex + _length - 1;
+        while (end >= _startIndex && _value[end] == trimChar)
+        {
+            end--;
+        }
+
+        return new StringSegment(_startIndex, end - _startIndex + 1, _value);
+    }
+
+    /// <summary>
+    ///  Trims the segment by removing trailing specified characters.
+    /// </summary>
+    /// <inheritdoc cref="Trim(char)"/>
+    public StringSegment TrimEnd(char trimChar0, char trimChar1)
+    {
+        if (_length == 0)
+        {
+            return this;
+        }
+
+        int end = _startIndex + _length - 1;
+        while (end >= _startIndex && (_value[end] == trimChar0 || _value[end] == trimChar1))
         {
             end--;
         }
@@ -510,24 +691,63 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
     ///  Gets the hash code for the segment.
     /// </summary>
     /// <returns>A hash code for the segment.</returns>
-    public override int GetHashCode()
+    public override unsafe int GetHashCode()
     {
         ReadOnlySpan<char> span = AsSpan();
 
 #if NET
         return string.GetHashCode(span);
 #else
-        // If we ever pull the Marvin code into Touki we can use that here. (See GetHashCode implementation)
-
-        int hash = 0;
-
-        for (int i = 0; i < span.Length; i++)
+        if (IsEmpty)
         {
-            hash = unchecked((hash * 31) + span[i]);
+            // "".GetHashCode();
+            return 371857150;
         }
 
-        return hash;
+        // This is the 64bit .NET Framework implementation.
+        Debug.Assert(sizeof(nint) == 8);
+
+        fixed (char* src = _value)
+        {
+            int hash1 = 5381;
+            int hash2 = hash1;
+
+            int c;
+            char* s = src + _startIndex;
+            char* end = s + _length;
+
+            while (s < end)
+            {
+                c = s[0];
+                hash1 = ((hash1 << 5) + hash1) ^ c;
+                s++;
+
+                if (s < end)
+                {
+                    c = s[0];
+                    hash2 = ((hash2 << 5) + hash2) ^ c;
+                    s++;
+                }
+            }
+
+            return hash1 + (hash2 * 1566083941);
+        }
 #endif
+    }
+
+    /// <summary>
+    ///  The C# compiler pattern needed to pin the segment in memory.
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public unsafe ref char GetPinnableReference()
+    {
+        if (IsEmpty)
+        {
+            // Return a null ref so the compiler emits a null pointer.
+            return ref Unsafe.AsRef<char>(null);
+        }
+
+        return ref MemoryMarshal.GetReference(AsSpan());
     }
 
     /// <summary>

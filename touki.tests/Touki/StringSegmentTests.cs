@@ -238,6 +238,14 @@ public class StringSegmentTests
     }
 
     [Fact]
+    public void Replace_WithNoMatches_ReturnsSameInstance()
+    {
+        StringSegment segment = new("Hello");
+        StringSegment replaced = segment.Replace('z', 'x');
+        replaced.ToString().Should().BeSameAs(segment);
+    }
+
+    [Fact]
     public void AsSpan_ReturnsCorrectSpan()
     {
         StringSegment segment = new("Hello", 1, 3);
@@ -762,6 +770,31 @@ public class StringSegmentTests
     }
 
     [Fact]
+    public void Trim_WithNoWhitespace_ReturnsSameInstance()
+    {
+        string original = "HelloWorld";
+        StringSegment segment = new(original);
+        StringSegment trimmed = segment.Trim();
+        trimmed.ToString().Should().BeSameAs(original);
+    }
+
+    [Fact]
+    public void TrimStart_WithNoLeadingWhitespace_ReturnsSameInstance()
+    {
+        StringSegment segment = new("HelloWorld");
+        StringSegment trimmed = segment.TrimStart();
+        trimmed.ToString().Should().BeSameAs(segment);
+    }
+
+    [Fact]
+    public void TrimEnd_WithNoTrailingWhitespace_ReturnsSameInstance()
+    {
+        StringSegment segment = new("HelloWorld");
+        StringSegment trimmed = segment.TrimEnd();
+        trimmed.ToString().Should().BeSameAs(segment);
+    }
+
+    [Fact]
     public void Trim_WithEmptySegment_ReturnsEmptySegment()
     {
         StringSegment segment = new();
@@ -823,5 +856,601 @@ public class StringSegmentTests
         StringSegment segment = new("\t \n\rHello World\r\n \t");
         StringSegment trimmed = segment.Trim();
         trimmed.ToString().Should().Be("Hello World");
+    }
+
+    [Fact]
+    public void EndsWith_WithString_ReturnsTrueForSuffix()
+    {
+        StringSegment segment = new("Hello World");
+        segment.EndsWith("World").Should().BeTrue();
+        segment.EndsWith("d").Should().BeTrue();
+        segment.EndsWith("Hello World").Should().BeTrue();
+    }
+
+    [Fact]
+    public void EndsWith_WithString_ReturnsFalseForNonSuffix()
+    {
+        StringSegment segment = new("Hello World");
+        segment.EndsWith("Hello").Should().BeFalse();
+        segment.EndsWith("world").Should().BeFalse(); // Case sensitive by default
+        segment.EndsWith("!Hello World").Should().BeFalse(); // Longer than segment
+    }
+
+    [Fact]
+    public void EndsWith_WithString_HandlesCaseComparison()
+    {
+        StringSegment segment = new("Hello World");
+        segment.EndsWith("world", StringComparison.OrdinalIgnoreCase).Should().BeTrue();
+        segment.EndsWith("world", StringComparison.Ordinal).Should().BeFalse();
+        segment.EndsWith("WORLD", StringComparison.InvariantCultureIgnoreCase).Should().BeTrue();
+    }
+
+    [Fact]
+    public void EndsWith_WithStringSegment_ReturnsTrueForSuffix()
+    {
+        StringSegment segment = new("Hello World");
+        StringSegment suffix1 = new("World");
+        StringSegment suffix2 = new("Hello World", 6, 5); // "World"
+
+        segment.EndsWith(suffix1).Should().BeTrue();
+        segment.EndsWith(suffix2).Should().BeTrue();
+        segment.EndsWith(segment).Should().BeTrue(); // Same segment
+    }
+
+    [Fact]
+    public void EndsWith_WithStringSegment_ReturnsFalseForNonSuffix()
+    {
+        StringSegment segment = new("Hello World");
+        StringSegment nonSuffix1 = new("Hello");
+        StringSegment nonSuffix2 = new("Hello World", 0, 5); // "Hello"
+        StringSegment nonSuffix3 = new("world"); // Case sensitive by default
+
+        segment.EndsWith(nonSuffix1).Should().BeFalse();
+        segment.EndsWith(nonSuffix2).Should().BeFalse();
+        segment.EndsWith(nonSuffix3).Should().BeFalse();
+    }
+
+    [Fact]
+    public void EndsWith_WithStringSegment_HandlesCaseComparison()
+    {
+        StringSegment segment = new("Hello World");
+        StringSegment lowerSuffix = new("world");
+
+        segment.EndsWith(lowerSuffix, StringComparison.OrdinalIgnoreCase).Should().BeTrue();
+        segment.EndsWith(lowerSuffix, StringComparison.Ordinal).Should().BeFalse();
+    }
+
+    [Fact]
+    public void EndsWith_WithReadOnlySpan_ReturnsTrueForSuffix()
+    {
+        StringSegment segment = new("Hello World");
+        ReadOnlySpan<char> suffix1 = "World".AsSpan();
+        ReadOnlySpan<char> suffix2 = "d".AsSpan();
+
+        segment.EndsWith(suffix1).Should().BeTrue();
+        segment.EndsWith(suffix2).Should().BeTrue();
+        segment.EndsWith(segment.AsSpan()).Should().BeTrue(); // Full span
+    }
+
+    [Fact]
+    public void EndsWith_WithReadOnlySpan_ReturnsFalseForNonSuffix()
+    {
+        StringSegment segment = new("Hello World");
+        ReadOnlySpan<char> nonSuffix1 = "Hello".AsSpan();
+        ReadOnlySpan<char> nonSuffix2 = "world".AsSpan(); // Case sensitive by default
+
+        segment.EndsWith(nonSuffix1).Should().BeFalse();
+        segment.EndsWith(nonSuffix2).Should().BeFalse();
+    }
+
+    [Fact]
+    public void EndsWith_WithReadOnlySpan_HandlesCaseComparison()
+    {
+        StringSegment segment = new("Hello World");
+        ReadOnlySpan<char> lowerSuffix = "world".AsSpan();
+
+        segment.EndsWith(lowerSuffix, StringComparison.OrdinalIgnoreCase).Should().BeTrue();
+        segment.EndsWith(lowerSuffix, StringComparison.Ordinal).Should().BeFalse();
+    }
+
+    [Fact]
+    public void EndsWith_WithEmptyValues_ReturnsExpectedResults()
+    {
+        StringSegment segment = new("Hello");
+        StringSegment empty = new();
+
+        // Empty values should always match as a suffix
+        segment.EndsWith(string.Empty).Should().BeTrue();
+        segment.EndsWith(empty).Should().BeTrue();
+        segment.EndsWith("".AsSpan()).Should().BeTrue();
+
+        // Empty segment behavior
+        empty.EndsWith(string.Empty).Should().BeTrue();
+        empty.EndsWith(empty).Should().BeTrue();
+        empty.EndsWith("".AsSpan()).Should().BeTrue();
+        empty.EndsWith("Hello").Should().BeFalse();
+    }
+
+    [Fact]
+    public void EndsWith_WithPartialSegment_WorksCorrectly()
+    {
+        StringSegment segment = new("Hello World", 0, 5); // "Hello"
+
+        segment.EndsWith("lo").Should().BeTrue();
+        segment.EndsWith("Hello").Should().BeTrue();
+        segment.EndsWith("World").Should().BeFalse();
+        segment.EndsWith("xHello").Should().BeFalse();
+    }
+
+    [Fact]
+    public void LastIndexOfAny_WithCharsPresent_ReturnsCorrectIndex()
+    {
+        StringSegment segment = new("Hello World");
+        segment.LastIndexOfAny('l', 'o').Should().Be(9); // 'l' at index 9 is the last occurrence
+
+        // Character at the beginning
+        segment.LastIndexOfAny('H', 'x').Should().Be(0);
+
+        // Character at the end
+        segment.LastIndexOfAny('x', 'd').Should().Be(10);
+
+        // Multiple occurrences of both characters
+        segment.LastIndexOfAny('l', 'o').Should().Be(9); // 'l' at index 9 comes after 'o' at index 7
+
+        // Same character provided twice
+        segment.LastIndexOfAny('l', 'l').Should().Be(9);
+    }
+
+    [Fact]
+    public void LastIndexOfAny_WithCharsNotPresent_ReturnsMinusOne()
+    {
+        StringSegment segment = new("Hello World");
+        segment.LastIndexOfAny('z', 'y').Should().Be(-1);
+    }
+
+    [Fact]
+    public void LastIndexOfAny_WithEmptySegment_ReturnsMinusOne()
+    {
+        StringSegment empty = new();
+        empty.LastIndexOfAny('a', 'b').Should().Be(-1);
+    }
+
+    [Fact]
+    public void LastIndexOfAny_WithPartialSegment_ReturnsCorrectIndex()
+    {
+        StringSegment segment = new("Hello World", 3, 5); // "lo Wo"
+        segment.LastIndexOfAny('l', 'o').Should().Be(4);  // 'o' at index 4 relative to the segment
+        segment.LastIndexOfAny('H', 'e').Should().Be(-1); // Not in this segment
+    }
+
+    [Fact]
+    public void LastIndexOfAny_WithReadOnlySpan_ReturnsCorrectIndex()
+    {
+        StringSegment segment = new("Hello World");
+
+        // Empty span
+        segment.LastIndexOfAny([]).Should().Be(-1);
+
+        // Single char span
+        segment.LastIndexOfAny("l".AsSpan()).Should().Be(9);
+
+        // Two char span
+        segment.LastIndexOfAny("lo".AsSpan()).Should().Be(9);
+
+        // Multiple chars span
+        segment.LastIndexOfAny("xyzWdol".AsSpan()).Should().Be(10); // 'd' at index 10
+
+        // No match
+        segment.LastIndexOfAny("xyz".AsSpan()).Should().Be(-1);
+    }
+
+    [Fact]
+    public void LastIndexOfAny_WithReadOnlySpan_AndEmptySegment_ReturnsMinusOne()
+    {
+        StringSegment empty = new();
+        empty.LastIndexOfAny("abc".AsSpan()).Should().Be(-1);
+    }
+
+    [Fact]
+    public void LastIndexOfAny_WithReadOnlySpan_AndPartialSegment_ReturnsCorrectIndex()
+    {
+        StringSegment segment = new("Hello World Hello", 6, 5); // "World"
+
+        segment.LastIndexOfAny("dlr".AsSpan()).Should().Be(4);  // 'd' at index 4 relative to the segment
+        segment.LastIndexOfAny("o".AsSpan()).Should().Be(1);
+        segment.LastIndexOfAny("W".AsSpan()).Should().Be(0);
+        segment.LastIndexOfAny("HZ".AsSpan()).Should().Be(-1);
+    }
+
+    [Fact]
+    public void Trim_WithSpecificChar_RemovesLeadingAndTrailingChar()
+    {
+        StringSegment segment = new("###Hello World###");
+        StringSegment trimmed = segment.Trim('#');
+        trimmed.ToString().Should().Be("Hello World");
+    }
+
+    [Fact]
+    public void Trim_WithSpecificChar_WhenNotPresent_ReturnsOriginalSegment()
+    {
+        StringSegment segment = new("Hello World");
+        StringSegment trimmed = segment.Trim('#');
+        trimmed.Should().Be(segment);
+    }
+
+    [Fact]
+    public void Trim_WithSpecificChar_WhenNotPresent_ReturnsSameInstance()
+    {
+        string original = "Hello World";
+        StringSegment segment = new(original);
+        StringSegment trimmed = segment.Trim('#');
+        trimmed.ToString().Should().BeSameAs(original);
+    }
+
+    [Fact]
+    public void Trim_WithSpecificChar_WhenOnlyTrimChar_ReturnsEmptySegment()
+    {
+        StringSegment segment = new("######");
+        StringSegment trimmed = segment.Trim('#');
+        trimmed.IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Trim_WithTwoSpecificChars_RemovesLeadingAndTrailingChars()
+    {
+        StringSegment segment = new("###Hello*World***");
+        StringSegment trimmed = segment.Trim('#', '*');
+        trimmed.ToString().Should().Be("Hello*World");
+    }
+
+    [Fact]
+    public void Trim_WithTwoSpecificChars_WhenOnlyTrimChars_ReturnsEmptySegment()
+    {
+        StringSegment segment = new("##**##**##");
+        StringSegment trimmed = segment.Trim('#', '*');
+        trimmed.IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Trim_WithTwoSpecificChars_WhenNotPresent_ReturnsSameInstance()
+    {
+        StringSegment segment = new("Hello World");
+        StringSegment trimmed = segment.Trim('#', '*');
+        trimmed.ToString().Should().BeSameAs(segment);
+    }
+
+    [Fact]
+    public void TrimStart_WithSpecificChar_RemovesLeadingChar()
+    {
+        StringSegment segment = new("###Hello World###");
+        StringSegment trimmed = segment.TrimStart('#');
+        trimmed.ToString().Should().Be("Hello World###");
+    }
+
+    [Fact]
+    public void TrimStart_WithSpecificChar_WhenNotPresent_ReturnsOriginalSegment()
+    {
+        StringSegment segment = new("Hello World");
+        StringSegment trimmed = segment.TrimStart('#');
+        trimmed.Should().Be(segment);
+    }
+
+    [Fact]
+    public void TrimStart_WithSpecificChar_WhenNotPresent_ReturnsSameInstance()
+    {
+        StringSegment segment = new("Hello World");
+        StringSegment trimmed = segment.TrimStart('#');
+        trimmed.ToString().Should().BeSameAs(segment);
+    }
+
+    [Fact]
+    public void TrimStart_WithSpecificChar_WhenOnlyTrimChar_ReturnsEmptySegment()
+    {
+        StringSegment segment = new("######");
+        StringSegment trimmed = segment.TrimStart('#');
+        trimmed.IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void TrimStart_WithTwoSpecificChars_RemovesLeadingChars()
+    {
+        StringSegment segment = new("##**Hello World");
+        StringSegment trimmed = segment.TrimStart('#', '*');
+        trimmed.ToString().Should().Be("Hello World");
+    }
+
+    [Fact]
+    public void TrimStart_WithTwoSpecificChars_WhenNotPresent_ReturnsSameInstance()
+    {
+        StringSegment segment = new("Hello World");
+        StringSegment trimmed = segment.TrimStart('#', '*');
+        trimmed.ToString().Should().BeSameAs(segment);
+    }
+
+    [Fact]
+    public void TrimEnd_WithSpecificChar_RemovesTrailingChar()
+    {
+        StringSegment segment = new("###Hello World###");
+        StringSegment trimmed = segment.TrimEnd('#');
+        trimmed.ToString().Should().Be("###Hello World");
+    }
+
+    [Fact]
+    public void TrimEnd_WithSpecificChar_WhenNotPresent_ReturnsOriginalSegment()
+    {
+        StringSegment segment = new("Hello World");
+        StringSegment trimmed = segment.TrimEnd('#');
+        trimmed.Should().Be(segment);
+    }
+
+    [Fact]
+    public void TrimEnd_WithSpecificChar_WhenNotPresent_ReturnsSameInstance()
+    {
+        StringSegment segment = new("Hello World");
+        StringSegment trimmed = segment.TrimEnd('#');
+        trimmed.ToString().Should().BeSameAs(segment);
+    }
+
+    [Fact]
+    public void TrimEnd_WithSpecificChar_WhenOnlyTrimChar_ReturnsEmptySegment()
+    {
+        StringSegment segment = new("######");
+        StringSegment trimmed = segment.TrimEnd('#');
+        trimmed.IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void TrimEnd_WithTwoSpecificChars_RemovesTrailingChars()
+    {
+        StringSegment segment = new("Hello World##**");
+        StringSegment trimmed = segment.TrimEnd('#', '*');
+        trimmed.ToString().Should().Be("Hello World");
+    }
+
+    [Fact]
+    public void TrimEnd_WithTwoSpecificChars_WhenNotPresent_ReturnsSameInstance()
+    {
+        StringSegment segment = new("Hello World");
+        StringSegment trimmed = segment.TrimEnd('#', '*');
+        trimmed.ToString().Should().BeSameAs(segment);
+    }
+
+    [Fact]
+    public void Trim_WithSpecificChar_OnPartialSegment_TrimsCorrectly()
+    {
+        StringSegment segment = new("###Hello World###", 3, 11); // "Hello World"
+        StringSegment trimmed = segment.Trim('#');
+        trimmed.ToString().Should().Be("Hello World");
+    }
+
+    [Fact]
+    public void Trim_WithTwoSpecificChars_OnPartialSegment_TrimsCorrectly()
+    {
+        StringSegment segment = new("###Hello*World###", 3, 11); // "Hello*World"
+        StringSegment trimmed = segment.Trim('*', '#');
+        trimmed.ToString().Should().Be("Hello*World");
+    }
+
+    [Fact]
+    public unsafe void Pinning_NonEmptySegment_ProvidesValidPointer()
+    {
+        string original = "Hello World";
+        StringSegment segment = new(original);
+
+        fixed (char* pSegment = segment)
+        {
+            // Pointer should not be null
+            ((nint)pSegment).Should().NotBe(0);
+
+            // Should be able to read characters through the pointer
+            for (int i = 0; i < segment.Length; i++)
+            {
+                pSegment[i].Should().Be(original[i]);
+            }
+        }
+    }
+
+    [Fact]
+    public unsafe void Pinning_PartialSegment_ProvidesValidPointerToSubstring()
+    {
+        string original = "Hello World";
+        StringSegment segment = new(original, 6, 5); // "World"
+
+        fixed (char* pSegment = segment)
+        {
+            // Pointer should not be null
+            (pSegment is null).Should().BeFalse();
+
+            // Should be able to read characters through the pointer
+            for (int i = 0; i < segment.Length; i++)
+            {
+                pSegment[i].Should().Be(original[i + 6]);
+            }
+
+            // The pointer should point to the correct position in the original string
+            fixed (char* pOriginal = original)
+            {
+                // The segment pointer should be offset from the original string
+                nint offset = (nint)(pSegment - pOriginal);
+                offset.Should().Be((nint)6);
+            }
+        }
+    }
+
+    [Fact]
+    public unsafe void Pinning_EmptySegment_ReturnsNullPointer()
+    {
+        StringSegment empty = new();
+
+        fixed (char* pEmpty = empty)
+        {
+            // Empty segment should return a null pointer
+            (pEmpty is null).Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public unsafe void Pinning_SegmentWithEmptyString_ReturnsNonNullPointer()
+    {
+        // Empty string is different from a null string - it's a valid but zero-length buffer
+        string emptyString = string.Empty;
+        StringSegment segment = new(emptyString);
+
+        fixed (char* pSegment = segment)
+        {
+            // Empty string segment should return a null pointer (to avoid empty string's buffer)
+            (pSegment is null).Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public unsafe void Pinning_SegmentAfterSlicing_ProvidesCorrectPointer()
+    {
+        string original = "Hello World";
+        StringSegment segment = new(original);
+        StringSegment sliced = segment.Slice(6, 5); // "World"
+
+        fixed (char* pSliced = sliced)
+        {
+            fixed (char* pOriginal = original)
+            {
+                // The sliced pointer should be offset from the original string
+                nint offset = (nint)(pSliced - pOriginal);
+                offset.Should().Be((nint)6);
+
+                // Verify content
+                for (int i = 0; i < sliced.Length; i++)
+                {
+                    pSliced[i].Should().Be(original[i + 6]);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void GetHashCode_ForFullString_MatchesStringHashCode()
+    {
+        // Full string segment
+        string original = "Hello World";
+        StringSegment segment = new(original);
+
+        // Should have same hash code as the original string
+        segment.GetHashCode().Should().Be(original.GetHashCode());
+    }
+
+    [Fact]
+    public void GetHashCode_ForPartialSegment_MatchesEquivalentStringHashCode()
+    {
+        // Partial segment
+        string original = "Hello World";
+        StringSegment segment = new(original, 6, 5); // "World"
+
+        // Should have same hash code as the equivalent substring
+        string equivalent = "World";
+        segment.GetHashCode().Should().Be(equivalent.GetHashCode());
+    }
+
+    [Fact]
+    public void GetHashCode_ForEmptySegment_MatchesEmptyStringHashCode()
+    {
+        // Empty segment
+        StringSegment emptySegment = new();
+
+        // Should have same hash code as empty string
+        string emptyString = string.Empty;
+        emptySegment.GetHashCode().Should().Be(emptyString.GetHashCode());
+    }
+
+    [Fact]
+    public void GetHashCode_ForSubSegments_MatchesCorrespondingSubstrings()
+    {
+        string original = "This is a test string for hash code validation";
+
+        // Test various segments
+        TestSegmentHashCode(original, 0, 4);    // "This"
+        TestSegmentHashCode(original, 5, 2);    // "is"
+        TestSegmentHashCode(original, 10, 4);   // "test"
+        TestSegmentHashCode(original, 22, 9);   // "hash code"
+
+        // Local helper function
+        static void TestSegmentHashCode(string source, int start, int length)
+        {
+            StringSegment segment = new(source, start, length);
+            string substring = source.Substring(start, length);
+
+            segment.GetHashCode().Should().Be(substring.GetHashCode(),
+                $"Segment '{segment}' should have same hash code as substring '{substring}'");
+        }
+    }
+
+    [Fact]
+    public void GetHashCode_ForDifferentSegmentsWithSameContent_HaveSameHashCode()
+    {
+        // Different string sources with the same content in segments
+        string source1 = "Hello World";
+        string source2 = "TestHelloTest";
+
+        StringSegment segment1 = new(source1, 0, 5); // "Hello"
+        StringSegment segment2 = new(source2, 4, 5); // "Hello"
+
+        // Should have the same hash code
+        segment1.GetHashCode().Should().Be(segment2.GetHashCode());
+
+        // Both should match the hash code of the equivalent string
+        string equivalent = "Hello";
+        segment1.GetHashCode().Should().Be(equivalent.GetHashCode());
+        segment2.GetHashCode().Should().Be(equivalent.GetHashCode());
+    }
+
+    [Fact]
+    public void GetHashCode_ForSegmentsAfterSlicing_MatchesCorrectSubstring()
+    {
+        string original = "Hello World";
+        StringSegment segment = new(original);
+
+        // Create segments through slicing
+        StringSegment helloSegment = segment[..5];    // "Hello"
+        StringSegment worldSegment = segment[6..];    // "World"
+
+        // Compare with equivalent strings
+        helloSegment.GetHashCode().Should().Be("Hello".GetHashCode());
+        worldSegment.GetHashCode().Should().Be("World".GetHashCode());
+    }
+
+    [Fact]
+    public void GetHashCode_IsConsistentForSameContent()
+    {
+        // Multiple calls should return the same hash code
+        StringSegment segment = new("Test String");
+        int hash1 = segment.GetHashCode();
+        int hash2 = segment.GetHashCode();
+
+        hash1.Should().Be(hash2);
+    }
+
+    [Fact]
+    public void GetHashCode_ForStringWithOddLength_MatchesStringHashCode()
+    {
+        // Test with odd-length string to validate hash algorithm handles it correctly
+        string oddString = "Hello";  // 5 characters
+        StringSegment segment = new(oddString);
+
+        segment.GetHashCode().Should().Be(oddString.GetHashCode());
+    }
+
+    [Fact]
+    public void GetHashCode_WithUnicodeCharacters_MatchesStringHashCode()
+    {
+        // Test with Unicode characters
+        string unicodeString = "こんにちは世界";  // "Hello World" in Japanese
+        StringSegment segment = new(unicodeString);
+
+        segment.GetHashCode().Should().Be(unicodeString.GetHashCode());
+
+        // Also test a segment
+        StringSegment partialSegment = new(unicodeString, 0, 5); // "こんにちは"
+        string partialString = unicodeString[..5];
+
+        partialSegment.GetHashCode().Should().Be(partialString.GetHashCode());
     }
 }

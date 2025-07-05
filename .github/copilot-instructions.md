@@ -3,6 +3,7 @@
 # Coding
 - Use modern C# features where appropriate.
 - Always use C# keywords for types (e.g., `int`, `string`, `bool`) instead of their aliases (e.g., `Int32`, `String`, `Boolean`).
+- Always use `nint` and `nuint` for native integer types (not `IntPtr` and `UIntPtr`).
 - Avoid using `var` - always use explicit type declarations.
 - Use target-typed `new` expressions where applicable (e.g., `List<string> list = new()` instead of `var list = new List<string>()`).
 - When instantiating objects, prefer `TypeName instance = new()` over `var instance = new TypeName()`.
