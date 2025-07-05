@@ -74,7 +74,7 @@ public ref struct VirtualPath
     }
 
     /// <summary>
-    ///  Moves to the next segment (between <see cref="System.IO.Path.DirectorySeparatorChar"/>)
+    ///  Moves to the next segment (between <see cref="Path.DirectorySeparatorChar"/>)
     ///  in the virtual path, returns false if there are no more segments.
     /// </summary>
     public bool MoveNextSegment()

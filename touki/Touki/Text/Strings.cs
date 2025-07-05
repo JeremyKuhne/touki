@@ -91,4 +91,11 @@ public static partial class Strings
         builder.AppendFormat(format, arg1, arg2, arg3, arg4);
         return builder.ToString();
     }
+
+    /// <summary>
+    ///  Allocates a string of the specified length filled with null characters.
+    /// </summary>
+    internal static string FastAllocateString(int length) =>
+        // This calls FastAllocateString in the runtime, with extra checks.
+        new string('\0', length);
 }

@@ -76,6 +76,6 @@ public ref struct DefaultInterpolatedStringHandler
     /// <returns>The built string.</returns>
     public override readonly string ToString() => _builder.ToString();
 
-    /// <inheritdoc cref="ValueStringBuilder.ToStringAndClear()"/>
-    public string ToStringAndClear() => _builder.ToStringAndClear();
+    /// <inheritdoc cref="ValueStringBuilder.ToStringAndDispose()"/>
+    public string ToStringAndClear() => _builder.ToStringAndDispose();
 }
