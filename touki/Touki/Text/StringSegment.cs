@@ -451,6 +451,7 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
         {
             end--;
         }
+
         return new StringSegment(start, end - start + 1, _value);
     }
 
@@ -691,49 +692,7 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
     ///  Gets the hash code for the segment.
     /// </summary>
     /// <returns>A hash code for the segment.</returns>
-    public override unsafe int GetHashCode()
-    {
-        ReadOnlySpan<char> span = AsSpan();
-
-#if NET
-        return string.GetHashCode(span);
-#else
-        if (IsEmpty)
-        {
-            // "".GetHashCode();
-            return 371857150;
-        }
-
-        // This is the 64bit .NET Framework implementation.
-        Debug.Assert(sizeof(nint) == 8);
-
-        fixed (char* src = _value)
-        {
-            int hash1 = 5381;
-            int hash2 = hash1;
-
-            int c;
-            char* s = src + _startIndex;
-            char* end = s + _length;
-
-            while (s < end)
-            {
-                c = s[0];
-                hash1 = ((hash1 << 5) + hash1) ^ c;
-                s++;
-
-                if (s < end)
-                {
-                    c = s[0];
-                    hash2 = ((hash2 << 5) + hash2) ^ c;
-                    s++;
-                }
-            }
-
-            return hash1 + (hash2 * 1566083941);
-        }
-#endif
-    }
+    public override int GetHashCode() => Strings.GetHashCode(AsSpan());
 
     /// <summary>
     ///  The C# compiler pattern needed to pin the segment in memory.
