@@ -209,6 +209,8 @@ public sealed class SingleOptimizedList<T> : ListBase<T> where T : notnull
         // If we now have no items, mark as empty
         if (_backingList.Count == 0)
         {
+            _backingList.Dispose();
+            _backingList = null;
             _hasItem = false;
             _item = default!;
         }
