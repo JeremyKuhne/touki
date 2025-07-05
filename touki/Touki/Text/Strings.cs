@@ -98,4 +98,44 @@ public static partial class Strings
     internal static string FastAllocateString(int length) =>
         // This calls FastAllocateString in the runtime, with extra checks.
         new string('\0', length);
+
+    /// <summary>
+    ///  Generates a hash code for the specified string value that matches what <see langword="string"/> generates.
+    /// </summary>
+    public static int GetHashCode(ReadOnlySpan<char> value)
+    {
+#if NET
+        return string.GetHashCode(value);
+#else
+        if (value.IsEmpty)
+        {
+            // "".GetHashCode();
+            return 371857150;
+        }
+
+        // This is the 64bit .NET Framework implementation
+        // adapted to work with spans instead of pointers
+        int hash1 = 5381;
+        int hash2 = hash1;
+
+        int i = 0;
+        int length = value.Length;
+
+        while (i < length)
+        {
+            int c = value[i];
+            hash1 = ((hash1 << 5) + hash1) ^ c;
+            i++;
+
+            if (i < length)
+            {
+                c = value[i];
+                hash2 = ((hash2 << 5) + hash2) ^ c;
+                i++;
+            }
+        }
+
+        return hash1 + (hash2 * 1566083941);
+#endif
+    }
 }
