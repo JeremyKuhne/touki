@@ -69,6 +69,7 @@
     <PackageReference Include="System.Memory" Version="4.6.3" />
     <!-- This provides Range and Index support downlevel -->
     <PackageReference Include="Microsoft.Bcl.Memory" Version="9.0.6" />
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
