@@ -129,6 +129,7 @@ public ref partial struct ValueStringBuilder
         readonly get => _position;
         set
         {
+            // Do not free if set to 0. This allows in-place building of strings.
             Debug.Assert(value >= 0);
             Debug.Assert(value <= _chars.Length);
             _position = value;
@@ -140,7 +141,7 @@ public ref partial struct ValueStringBuilder
     /// </summary>
     public void Clear()
     {
-        // Reset the position to 0, but do not clear the underlying array.
+        // Reset the position to 0, but do not clear the underlying array to allow in-place building.
         _position = 0;
     }
 
@@ -222,7 +223,7 @@ public ref partial struct ValueStringBuilder
     /// <remarks>
     ///  This method disposes the builder after converting to string, making it unusable afterwards.
     /// </remarks>
-    public string ToStringAndClear()
+    public string ToStringAndDispose()
     {
         string s = ToString();
         Dispose();
@@ -475,6 +476,25 @@ public ref partial struct ValueStringBuilder
 
     /// <inheritdoc cref="Append(ReadOnlySpan{char})"/>
     public void Append(string value) => Append(value.AsSpan());
+
+    /// <inheritdoc cref="Append(ReadOnlySpan{char})"/>
+    public void Append(StringSegment value) => Append(value.AsSpan());
+
+    /// <summary>
+    ///  Replace all occurrences of a character in the segment with another character.
+    /// </summary>
+    /// <returns>
+    ///  The new <see cref="StringSegment"/> with the specified character replaced.
+    /// </returns>
+    public readonly void Replace(char oldValue, char newValue)
+    {
+        if (_position == 0 || oldValue == newValue)
+        {
+            return;
+        }
+
+        _chars[.._position].Replace(oldValue, newValue);
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void GrowAndAppend(char c)

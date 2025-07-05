@@ -279,7 +279,7 @@ public unsafe class ValueStringBuilderTests
         ValueStringBuilder builder = new(stackalloc char[20]);
         builder.Append("Hello World");
 
-        string result = builder.ToStringAndClear();
+        string result = builder.ToStringAndDispose();
         result.Should().Be("Hello World");
 
         // Builder should be disposed and unusable after ToStringAndClear
@@ -553,7 +553,7 @@ public unsafe class ValueStringBuilderTests
 #endif
     }
 
-    private static string TestFormat(ref ValueStringBuilder builder) => builder.ToStringAndClear();
+    private static string TestFormat(ref ValueStringBuilder builder) => builder.ToStringAndDispose();
 
     [Fact]
     public void AppendFormat_Int()
