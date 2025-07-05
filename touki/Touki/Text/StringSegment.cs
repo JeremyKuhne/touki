@@ -327,7 +327,7 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
 
     /// <summary>
     ///  Returns <see langword="true"/> if the segment ends with the specified <see cref="ReadOnlySpan{Char}"/>.
-    /// </summary>s
+    /// </summary>
     public bool EndsWith(ReadOnlySpan<char> value, StringComparison comparison = StringComparison.Ordinal) =>
         value.Length <= _length && AsSpan(_length - value.Length).StartsWith(value, comparison);
 
