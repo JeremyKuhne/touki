@@ -5,7 +5,7 @@
 using System.Collections.Concurrent;
 using System.Reflection;
 
-namespace System;
+namespace Touki;
 
 public static unsafe partial class EnumExtensions
 {

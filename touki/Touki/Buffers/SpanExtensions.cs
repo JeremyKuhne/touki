@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using Touki;
-
-namespace System;
+namespace Touki;
 
 /// <summary>
 ///  Span extensions for common operations.
