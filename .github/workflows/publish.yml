@@ -1,6 +1,6 @@
 # Publishes a .NET package to NuGet when a new tag is pushed.
 
-name: publish-package
+name: Publish NuGet Package
 
 on:
   push:
@@ -23,8 +23,11 @@ jobs:
     - name: Build
       run: dotnet build -c Release --no-restore
     - name: Pack
-      run: dotnet pack  -c Release --no-build -o ./artifacts
+      run: dotnet pack -c Release --no-build -o ./artifacts
     - name: Publish to NuGet
+      shell: cmd
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       run: dotnet nuget push ./artifacts/*.nupkg \
            --api-key ${{ secrets.NUGET_API_KEY }} \
            --source https://api.nuget.org/v3/index.json \
