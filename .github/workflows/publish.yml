@@ -5,6 +5,7 @@ name: Publish NuGet Package
 on:
   push:
     tags: ['v*.*.*']        # fires on v0.1.0, v0.1.0-rc.1, etc.
+  workflow_dispatch:
 
 jobs:
   publish:
