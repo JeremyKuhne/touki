@@ -32,10 +32,10 @@ global using DriveNotFoundException = System.IO.DriveNotFoundException;
 global using Marshal = System.Runtime.InteropServices.Marshal;
 
 #if NETFRAMEWORK || NET6_0
-global using ArgumentNull = Touki.ArgumentNullAdapter;
+global using ArgumentNull = Touki.Exceptions.ArgumentNullAdapter;
 global using ArgumentOutOfRange = Touki.Exceptions.ArgumentOutOfRangeAdapter;
-global using ObjectDisposed = Touki.ObjectDisposedAdapter;
-global using Overflow = Touki.OverflowAdapter;
+global using ObjectDisposed = Touki.Exceptions.ObjectDisposedAdapter;
+global using Overflow = Touki.Exceptions.OverflowAdapter;
 #else
 global using ArgumentNull = System.ArgumentNullException;
 global using ArgumentOutOfRange = System.ArgumentOutOfRangeException;

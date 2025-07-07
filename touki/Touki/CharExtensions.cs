@@ -97,7 +97,7 @@ public static class CharExtensions
     /// </remarks>
     public static bool IsAsciiHexDigit(this char c) =>
 #if NETFRAMEWORK
-    HexConverter.IsHexChar(c);
+        System.HexConverter.IsHexChar(c);
 #else
         char.IsAsciiHexDigit(c);
 #endif
@@ -111,7 +111,7 @@ public static class CharExtensions
     /// </remarks>
     public static bool IsAsciiHexDigitUpper(this char c) =>
 #if NETFRAMEWORK
-        HexConverter.IsHexUpperChar(c);
+        System.HexConverter.IsHexUpperChar(c);
 #else
         char.IsAsciiHexDigitUpper(c);
 #endif
@@ -125,7 +125,7 @@ public static class CharExtensions
     /// </remarks>
     public static bool IsAsciiHexDigitLower(this char c) =>
 #if NETFRAMEWORK
-        HexConverter.IsHexLowerChar(c);
+        System.HexConverter.IsHexLowerChar(c);
 #else
         char.IsAsciiHexDigitLower(c);
 #endif

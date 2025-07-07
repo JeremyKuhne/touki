@@ -39,7 +39,7 @@ internal static partial class HexConverter
             return (long)(shift & mask) < 0;
         }
 
-        return FromChar(c) != 0xFF;
+        return Touki.HexConverter.FromChar(c) != 0xFF;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,64 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema
-
-    Version 1.3
-
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-
-    Example:
-
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">1.3</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1">this is my long string</data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-      [base64 mime encoded serialized .NET Framework object]
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-      [base64 mime encoded string representing a byte array form of the .NET Framework object]
-    </data>
-
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-      : System.Serialization.Formatters.Binary.BinaryFormatter
-      : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-      : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-      : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-      : using a System.ComponentModel.TypeConverter
-      : and then encoded with base64 encoding.
-  -->
-  
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
       <xsd:complexType>
@@ -98,8 +39,183 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ArgumentOutOfRange_Generic_MustBeNonZero" xml:space="preserve">
-    <value>{0} ('{1}') must be a non-zero value.</value>
+  <data name="Arg_AmbiguousMatchException_Attribute" xml:space="preserve">
+    <value>Multiple custom attributes of the same type '{0}' found.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_CustomAttributeData" xml:space="preserve">
+    <value>Ambiguous match found for '{0}'.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_MemberInfo" xml:space="preserve">
+    <value>Ambiguous match found for '{0} {1}'.</value>
+  </data>
+  <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
+    <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
+  </data>
+  <data name="Arg_BogusIComparer" xml:space="preserve">
+    <value>Unable to sort because the IComparer.Compare() method returns inconsistent results. Either a value does not compare equal to itself, or one value repeatedly compared to another value yields different results. IComparer: '{0}'.</value>
+  </data>
+  <data name="Arg_ByteArrayTooSmallForValue" xml:space="preserve">
+    <value>The array starting from the specified index is not long enough to read a value of the specified type.</value>
+  </data>
+  <data name="Arg_CannotBeNaN" xml:space="preserve">
+    <value>TimeSpan does not accept floating point Not-a-Number values.</value>
+  </data>
+  <data name="Arg_HandleNotAsync" xml:space="preserve">
+    <value>Handle does not support asynchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened synchronously (that is, it was not opened for overlapped I/O).</value>
+  </data>
+  <data name="Arg_HandleNotSync" xml:space="preserve">
+    <value>Handle does not support synchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened asynchronously (that is, it was opened explicitly for overlapped I/O).</value>
+  </data>
+  <data name="Arg_InvalidHandle" xml:space="preserve">
+    <value>Invalid handle.</value>
+  </data>
+  <data name="Arg_KeyNotFoundWithKey" xml:space="preserve">
+    <value>The given key '{0}' was not present in the dictionary.</value>
+  </data>
+  <data name="Arg_LowerBoundsMustMatch" xml:space="preserve">
+    <value>The arrays' lower bounds must be identical.</value>
+  </data>
+  <data name="Arg_MustBeType" xml:space="preserve">
+    <value>Type must be a type provided by the runtime.</value>
+  </data>
+  <data name="Arg_Need1DArray" xml:space="preserve">
+    <value>Array was not a one-dimensional array.</value>
+  </data>
+  <data name="Arg_Need2DArray" xml:space="preserve">
+    <value>Array was not a two-dimensional array.</value>
+  </data>
+  <data name="Arg_Need3DArray" xml:space="preserve">
+    <value>Array was not a three-dimensional array.</value>
+  </data>
+  <data name="Arg_NeedAtLeast1Rank" xml:space="preserve">
+    <value>Must provide at least one rank.</value>
+  </data>
+  <data name="Arg_NonZeroLowerBound" xml:space="preserve">
+    <value>The lower bound of target array must be zero.</value>
+  </data>
+  <data name="Arg_NullArgumentNullRef" xml:space="preserve">
+    <value>The method was called with a null array argument.</value>
+  </data>
+  <data name="Arg_RankIndices" xml:space="preserve">
+    <value>Indices length does not match the array rank.</value>
+  </data>
+  <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
+    <value>Only single dimensional arrays are supported for the requested action.</value>
+  </data>
+  <data name="Arg_RanksAndBounds" xml:space="preserve">
+    <value>Number of lengths and lowerBounds must match.</value>
+  </data>
+  <data name="Arg_TypeNotSupported" xml:space="preserve">
+    <value>Specified type is not supported</value>
+  </data>
+  <data name="Arg_WrongType" xml:space="preserve">
+    <value>The value "{0}" is not of type "{1}" and cannot be used in this generic collection.</value>
+  </data>
+  <data name="Argument_AddingDuplicate" xml:space="preserve">
+    <value>An item with the same key has already been added.</value>
+  </data>
+  <data name="Argument_AddingDuplicateWithKey" xml:space="preserve">
+    <value>An item with the same key has already been added. Key: {0}</value>
+  </data>
+  <data name="Argument_AlignmentMustBePow2" xml:space="preserve">
+    <value>The alignment must be a power of two.</value>
+  </data>
+  <data name="Argument_BadFormatSpecifier" xml:space="preserve">
+    <value>Format specifier was invalid.</value>
+  </data>
+  <data name="Argument_CannotExtractScalar" xml:space="preserve">
+    <value>Cannot extract a Unicode scalar value from the specified index in the input.</value>
+  </data>
+  <data name="Argument_DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
+  </data>
+  <data name="Argument_HasToBeArrayClass" xml:space="preserve">
+    <value>Must be an array type.</value>
+  </data>
+  <data name="Argument_IncompatibleArrayType" xml:space="preserve">
+    <value>Target array type is not compatible with the type of items in the collection.</value>
+  </data>
+  <data name="Argument_InvalidArgumentForComparison" xml:space="preserve">
+    <value>Type of argument is not compatible with the generic comparer.</value>
+  </data>
+  <data name="Argument_InvalidEnumValue" xml:space="preserve">
+    <value>The value '{0}' is not valid for this usage of the type {1}.</value>
+  </data>
+  <data name="Argument_InvalidFlag" xml:space="preserve">
+    <value>Value of flags is invalid.</value>
+  </data>
+  <data name="Argument_InvalidOffLen" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="Argument_InvalidTimeSpanStyles" xml:space="preserve">
+    <value>An undefined TimeSpanStyles value is being used.</value>
+  </data>
+  <data name="Argument_InvalidTypeWithPointersNotSupported" xml:space="preserve">
+    <value>Cannot use type '{0}'. Only value types without pointers or references are supported.</value>
+  </data>
+  <data name="Argument_OverlapAlignmentMismatch" xml:space="preserve">
+    <value>Overlapping spans have mismatching alignment.</value>
+  </data>
+  <data name="Argument_PrecisionTooLarge" xml:space="preserve">
+    <value>Precision cannot be larger than {0}.</value>
+  </data>
+  <data name="Argument_SpansMustHaveSameLength" xml:space="preserve">
+    <value>Length of items must be same as length of keys.</value>
+  </data>
+  <data name="Argument_UnexpectedStateForKnownCallback" xml:space="preserve">
+    <value>An unexpected state object was encountered. This is usually a sign of a bug in async method custom infrastructure, such as a custom awaiter or IValueTaskSource implementation.</value>
+  </data>
+  <data name="ArgumentException_OtherNotArrayOfCorrectLength" xml:space="preserve">
+    <value>The object is not an array with the same number of elements as the array to compare it to.</value>
+  </data>
+  <data name="ArgumentException_ValueTupleIncorrectType" xml:space="preserve">
+    <value>Argument must be of type {0}.</value>
+  </data>
+  <data name="ArgumentNull_Array" xml:space="preserve">
+    <value>Array cannot be null.</value>
+  </data>
+  <data name="ArgumentNull_SafeHandle" xml:space="preserve">
+    <value>SafeHandle cannot be null.</value>
+  </data>
+  <data name="ArgumentNull_TypedRefType" xml:space="preserve">
+    <value>Type in TypedReference cannot be null.</value>
+  </data>
+  <data name="ArgumentOutOfRange_BadHourMinuteSecond" xml:space="preserve">
+    <value>Hour, Minute, and Second parameters describe an un-representable DateTime.</value>
+  </data>
+  <data name="ArgumentOutOfRange_BadYearMonthDay" xml:space="preserve">
+    <value>Year, Month, and Day parameters describe an un-representable DateTime.</value>
+  </data>
+  <data name="ArgumentOutOfRange_BiggerThanCollection" xml:space="preserve">
+    <value>Larger than collection size.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Count" xml:space="preserve">
+    <value>Count must be positive and count must refer to a location within the string/array/collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_DayNumber" xml:space="preserve">
+    <value>Day number must be between 0 and DateOnly.MaxValue.DayNumber.</value>
+    <comment>{Locked="DateOnly.MaxValue.DayNumber"}</comment>
+  </data>
+  <data name="ArgumentOutOfRange_EndIndexStartIndex" xml:space="preserve">
+    <value>endIndex cannot be greater than startIndex.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Enum" xml:space="preserve">
+    <value>Enum value was out of legal range.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeEqual" xml:space="preserve">
+    <value>{0} ('{1}') must be equal to '{2}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeGreater" xml:space="preserve">
+    <value>{0} ('{1}') must be greater than '{2}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeGreaterOrEqual" xml:space="preserve">
+    <value>{0} ('{1}') must be greater than or equal to '{2}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeLess" xml:space="preserve">
+    <value>{0} ('{1}') must be less than '{2}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeLessOrEqual" xml:space="preserve">
+    <value>{0} ('{1}') must be less than or equal to '{2}'.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeNonNegative" xml:space="preserve">
     <value>{0} ('{1}') must be a non-negative value.</value>
@@ -107,22 +223,257 @@
   <data name="ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero" xml:space="preserve">
     <value>{0} ('{1}') must be a non-negative and non-zero value.</value>
   </data>
-  <data name="ArgumentOutOfRange_Generic_MustBeLessOrEqual" xml:space="preserve">
-    <value>{0} ('{1}') must be less than or equal to '{2}'.</value>
-  </data>
-  <data name="ArgumentOutOfRange_Generic_MustBeLess" xml:space="preserve">
-    <value>{0} ('{1}') must be less than '{2}'.</value>
-  </data>
-  <data name="ArgumentOutOfRange_Generic_MustBeGreaterOrEqual" xml:space="preserve">
-    <value>{0} ('{1}') must be greater than or equal to '{2}'.</value>
-  </data>
-  <data name="ArgumentOutOfRange_Generic_MustBeGreater" xml:space="preserve">
-    <value>{0} ('{1}') must be greater than '{2}'.</value>
-  </data>
-  <data name="ArgumentOutOfRange_Generic_MustBeEqual" xml:space="preserve">
-    <value>{0} ('{1}') must be equal to '{2}'.</value>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonZero" xml:space="preserve">
+    <value>{0} ('{1}') must be a non-zero value.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeNotEqual" xml:space="preserve">
     <value>{0} ('{1}') must not be equal to '{2}'.</value>
   </data>
+  <data name="ArgumentOutOfRange_GetCharCountOverflow" xml:space="preserve">
+    <value>Too many bytes. The resulting number of chars is larger than what can be returned as an int.</value>
+  </data>
+  <data name="ArgumentOutOfRange_HugeArrayNotSupported" xml:space="preserve">
+    <value>Arrays larger than 2GB are not supported.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexCount" xml:space="preserve">
+    <value>Index and count must refer to a location within the string.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexCountBuffer" xml:space="preserve">
+    <value>Index and count must refer to a location within the buffer.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexMustBeLess" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexMustBeLessOrEqual" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than or equal to the size of the collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_ListInsert" xml:space="preserve">
+    <value>Index must be within the bounds of the List.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Month" xml:space="preserve">
+    <value>Month must be between one and twelve.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NotGreaterThanBufferLength" xml:space="preserve">
+    <value>Must not be greater than the length of the buffer.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Range" xml:space="preserve">
+    <value>Valid values are between {0} and {1}, inclusive.</value>
+  </data>
+  <data name="ArgumentOutOfRange_RoundingDigits" xml:space="preserve">
+    <value>Rounding digits must be between 0 and 15, inclusive.</value>
+  </data>
+  <data name="ArgumentOutOfRange_RoundingDigits_MathF" xml:space="preserve">
+    <value>Rounding digits must be between 0 and 6, inclusive.</value>
+  </data>
+  <data name="ArgumentOutOfRange_SmallCapacity" xml:space="preserve">
+    <value>capacity was less than the current size.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Year" xml:space="preserve">
+    <value>Year must be between 1 and 9999.</value>
+  </data>
+  <data name="AsyncMethodBuilder_InstanceNotInitialized" xml:space="preserve">
+    <value>The builder was not properly initialized.</value>
+  </data>
+  <data name="CancellationTokenSource_Disposed" xml:space="preserve">
+    <value>The CancellationTokenSource has been disposed.</value>
+  </data>
+  <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
+    <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
+  </data>
+  <data name="Format_BadBoolean" xml:space="preserve">
+    <value>String '{0}' was not recognized as a valid Boolean.</value>
+  </data>
+  <data name="Format_ExpectedAsciiDigit" xml:space="preserve">
+    <value>Expected an ASCII digit.</value>
+  </data>
+  <data name="Format_IndexOutOfRange" xml:space="preserve">
+    <value>Index (zero based) must be greater than or equal to zero and less than the size of the argument list.</value>
+  </data>
+  <data name="Format_InvalidString" xml:space="preserve">
+    <value>Input string was not in a correct format.</value>
+  </data>
+  <data name="Format_InvalidStringWithOffsetAndReason" xml:space="preserve">
+    <value>Input string was not in a correct format. Failure to parse near offset {0}. {1}</value>
+  </data>
+  <data name="Format_NeedSingleChar" xml:space="preserve">
+    <value>String must be exactly one character long.</value>
+  </data>
+  <data name="Format_UnclosedFormatItem" xml:space="preserve">
+    <value>Format item ends prematurely.</value>
+  </data>
+  <data name="Format_UnexpectedClosingBrace" xml:space="preserve">
+    <value>Unexpected closing brace without a corresponding opening brace.</value>
+  </data>
+  <data name="InvalidOperation_ConcurrentOperationsNotSupported" xml:space="preserve">
+    <value>Operations that change non-concurrent collections must have exclusive access. A concurrent update was performed on this collection and corrupted its state. The collection's state is no longer correct.</value>
+  </data>
+  <data name="InvalidOperation_EnumEnded" xml:space="preserve">
+    <value>Enumeration already finished.</value>
+  </data>
+  <data name="InvalidOperation_EnumFailedVersion" xml:space="preserve">
+    <value>Collection was modified; enumeration operation may not execute.</value>
+  </data>
+  <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
+    <value>Enumeration has not started. Call MoveNext.</value>
+  </data>
+  <data name="InvalidOperation_EnumOpCantHappen" xml:space="preserve">
+    <value>Enumeration has either not started or has already finished.</value>
+  </data>
+  <data name="InvalidOperation_HandleIsNotInitialized" xml:space="preserve">
+    <value>Handle is not initialized.</value>
+  </data>
+  <data name="InvalidOperation_HandleIsNotPinned" xml:space="preserve">
+    <value>Handle is not pinned.</value>
+  </data>
+  <data name="InvalidOperation_IComparerFailed" xml:space="preserve">
+    <value>Failed to compare two elements in the array.</value>
+  </data>
+  <data name="InvalidOperation_IncompatibleComparer" xml:space="preserve">
+    <value>The collection's comparer does not support the requested operation.</value>
+  </data>
+  <data name="InvalidOperation_InvalidUtf8" xml:space="preserve">
+    <value>Formatted string contains characters not representable as valid UTF-8.</value>
+  </data>
+  <data name="InvalidOperation_NoValue" xml:space="preserve">
+    <value>Nullable object must have a value.</value>
+  </data>
+  <data name="InvalidOperation_NullArray" xml:space="preserve">
+    <value>The underlying array is null.</value>
+  </data>
+  <data name="InvalidOperation_SpanOverlappedOperation" xml:space="preserve">
+    <value>This operation is invalid on overlapping buffers.</value>
+  </data>
+  <data name="InvalidOperation_TimeProviderInvalidTimestampFrequency" xml:space="preserve">
+    <value>The operation cannot be performed when TimeProvider.TimestampFrequency is zero or negative.</value>
+  </data>
+  <data name="InvalidOperation_TimeProviderNullLocalTimeZone" xml:space="preserve">
+    <value>The operation cannot be performed when TimeProvider.LocalTimeZone is null.</value>
+  </data>
+  <data name="InvalidOperation_WrongAsyncResultOrEndCalledMultiple" xml:space="preserve">
+    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or the End method was called multiple times with the same IAsyncResult.</value>
+  </data>
+  <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
+    <value>Unable to read beyond the end of the stream.</value>
+  </data>
+  <data name="Lock_Enter_WaiterCountOverflow_OutOfMemoryException" xml:space="preserve">
+    <value>The lock has reached the limit of how many threads may wait for the lock.</value>
+  </data>
+  <data name="Lock_Exit_SynchronizationLockException" xml:space="preserve">
+    <value>The calling thread does not hold the lock.</value>
+  </data>
+  <data name="NotSupported_FixedSizeCollection" xml:space="preserve">
+    <value>Collection was of a fixed size.</value>
+  </data>
+  <data name="NotSupported_KeyCollectionSet" xml:space="preserve">
+    <value>Mutating a key collection derived from a dictionary is not allowed.</value>
+  </data>
+  <data name="NotSupported_ReadOnlyCollection" xml:space="preserve">
+    <value>Collection is read-only.</value>
+  </data>
+  <data name="NotSupported_StringComparison" xml:space="preserve">
+    <value>The string comparison type passed in is currently not supported.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnseekableStream" xml:space="preserve">
+    <value>Stream does not support seeking.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="NotSupported_ValueCollectionSet" xml:space="preserve">
+    <value>Mutating a value collection derived from a dictionary is not allowed.</value>
+  </data>
+  <data name="ObjectDisposed_FileClosed" xml:space="preserve">
+    <value>Cannot access a closed file.</value>
+  </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed Stream.</value>
+  </data>
+  <data name="OutOfMemory_StringTooLong" xml:space="preserve">
+    <value>String length exceeded supported range.</value>
+  </data>
+  <data name="Overflow_Duration" xml:space="preserve">
+    <value>The duration cannot be returned for TimeSpan.MinValue because the absolute value of TimeSpan.MinValue exceeds the value of TimeSpan.MaxValue.</value>
+  </data>
+  <data name="Overflow_NegateTwosCompNum" xml:space="preserve">
+    <value>Negating the minimum value of a twos complement number is invalid.</value>
+  </data>
+  <data name="Overflow_TimeSpanTooLong" xml:space="preserve">
+    <value>TimeSpan overflowed because the duration is too long.</value>
+  </data>
+  <data name="Rank_MultiDimNotSupported" xml:space="preserve">
+    <value>Only single dimension arrays are supported here.</value>
+  </data>
+  <data name="Serialization_MissingKeys" xml:space="preserve">
+    <value>The Keys for this Hashtable are missing.</value>
+  </data>
+  <data name="Serialization_NullKey" xml:space="preserve">
+    <value>One of the serialized keys is null.</value>
+  </data>
+  <data name="Task_ContinueWith_ESandLR" xml:space="preserve">
+    <value>The specified TaskContinuationOptions combined LongRunning and ExecuteSynchronously.  Synchronous continuations should not be long running.</value>
+  </data>
+  <data name="Task_ContinueWith_NotOnAnything" xml:space="preserve">
+    <value>The specified TaskContinuationOptions excluded all continuation kinds.</value>
+  </data>
+  <data name="Task_Delay_InvalidMillisecondsDelay" xml:space="preserve">
+    <value>The value needs to be either -1 (signifying an infinite timeout), 0 or a positive integer.</value>
+  </data>
+  <data name="Task_Dispose_NotCompleted" xml:space="preserve">
+    <value>A task may only be disposed if it is in a completion state (RanToCompletion, Faulted or Canceled).</value>
+  </data>
+  <data name="Task_InvalidTimerTimeSpan" xml:space="preserve">
+    <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), 0, or a positive integer less than or equal to the maximum allowed timer duration.</value>
+  </data>
+  <data name="Task_MultiTaskContinuation_EmptyTaskList" xml:space="preserve">
+    <value>The tasks argument contains no tasks.</value>
+  </data>
+  <data name="Task_MultiTaskContinuation_NullTask" xml:space="preserve">
+    <value>The tasks argument included a null value.</value>
+  </data>
+  <data name="Task_RunSynchronously_AlreadyStarted" xml:space="preserve">
+    <value>RunSynchronously may not be called on a task that was already started.</value>
+  </data>
+  <data name="Task_RunSynchronously_Continuation" xml:space="preserve">
+    <value>RunSynchronously may not be called on a continuation task.</value>
+  </data>
+  <data name="Task_RunSynchronously_Promise" xml:space="preserve">
+    <value>RunSynchronously may not be called on a task not bound to a delegate, such as the task returned from an asynchronous method.</value>
+  </data>
+  <data name="Task_RunSynchronously_TaskCompleted" xml:space="preserve">
+    <value>RunSynchronously may not be called on a task that has already completed.</value>
+  </data>
+  <data name="Task_Start_AlreadyStarted" xml:space="preserve">
+    <value>Start may not be called on a task that was already started.</value>
+  </data>
+  <data name="Task_Start_ContinuationTask" xml:space="preserve">
+    <value>Start may not be called on a continuation task.</value>
+  </data>
+  <data name="Task_Start_Promise" xml:space="preserve">
+    <value>Start may not be called on a promise-style task.</value>
+  </data>
+  <data name="Task_Start_TaskCompleted" xml:space="preserve">
+    <value>Start may not be called on a task that has completed.</value>
+  </data>
+  <data name="Task_ThrowIfDisposed" xml:space="preserve">
+    <value>The task has been disposed.</value>
+  </data>
+  <data name="Task_WaitMulti_NullTask" xml:space="preserve">
+    <value>The tasks array included at least one null element.</value>
+  </data>
+  <data name="TaskCompletionSourceT_TrySetException_NoExceptions" xml:space="preserve">
+    <value>The exceptions collection was empty.</value>
+  </data>
+  <data name="TaskCompletionSourceT_TrySetException_NullException" xml:space="preserve">
+    <value>The exceptions collection included at least one null element.</value>
+  </data>
+  <data name="TaskT_TransitionToFinal_AlreadyCompleted" xml:space="preserve">
+    <value>An attempt was made to transition a task to a final state when it had already completed.</value>
+  </data>
 </root>
+
