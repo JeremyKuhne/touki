@@ -17,6 +17,7 @@
   <Folder Name="/Solution Items/GitHub/">
     <File Path=".github/copilot-instructions.md" />
     <File Path=".github/workflows/dotnet.yml" />
+    <File Path=".github/workflows/publish.yml" />
   </Folder>
   <Project Path="touki.perf/touki.perf.csproj">
     <Platform Project="x64" />

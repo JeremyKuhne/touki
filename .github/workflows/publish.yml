@@ -1,0 +1,31 @@
+# Publishes a .NET package to NuGet when a new tag is pushed.
+
+name: publish-package
+
+on:
+  push:
+    tags: ['v*.*.*']        # fires on v0.1.0, v0.1.0-rc.1, etc.
+
+jobs:
+  publish:
+    name: ".NET / Publish"
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with: { fetch-depth: 0 }
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build -c Release --no-restore
+    - name: Pack
+      run: dotnet pack  -c Release --no-build -o ./artifacts
+    - name: Publish to NuGet
+      run: dotnet nuget push ./artifacts/*.nupkg \
+           --api-key ${{ secrets.NUGET_API_KEY }} \
+           --source https://api.nuget.org/v3/index.json \
+           --skip-duplicate

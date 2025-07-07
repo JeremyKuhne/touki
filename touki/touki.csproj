@@ -28,17 +28,32 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Copyright>Copyright (c) Jeremy W. Kuhne. All rights reserved.</Copyright>
 
-    <!-- Publish the repository URL in the built .nupkg (in the NuSpec <repository> element) -->
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
 
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
 
+    <!-- MinVer related -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+
     <!--
      Modifying default items to exclude the Framework items if not building for .NET Framework.
     -->
     <DefaultItemExcludes Condition="'$(TargetFramework)' != 'net472'">$(DefaultItemExcludes);**/Framework/**/*</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <!-- SourceLink related -->
+  <PropertyGroup>
+    <!-- Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+    <!-- Embed source files that are not tracked by the source control manager in the PDB -->
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+    <!-- Embed symbols containing Source Link in the dll -->
+    <DebugType>embedded</DebugType>
+
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
   <PropertyGroup>
