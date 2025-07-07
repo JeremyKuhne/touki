@@ -28,6 +28,9 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Copyright>Copyright (c) Jeremy W. Kuhne. All rights reserved.</Copyright>
 
+    <!-- Publish the repository URL in the built .nupkg (in the NuSpec <repository> element) -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
@@ -55,6 +58,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
     <PackageReference Include="MinVer" Version="6.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
