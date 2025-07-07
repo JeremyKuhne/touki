@@ -1,6 +1,7 @@
 ﻿# Touki (登器): Code for .NET and .NET Framework
 
 [![Build](https://github.com/JeremyKuhne/touki/actions/workflows/dotnet.yml/badge.svg)](https://github.com/JeremyKuhne/touki/actions/workflows/dotnet.yml)
+[![NuGet](https://img.shields.io/nuget/v/KlutzyNinja.Touki.svg)](https://www.nuget.org/packages/KlutzyNinja.Touki/)
 
 Provides useful functionality both for .NET and .NET Framework applications.
 
@@ -13,16 +14,32 @@ Some of the design goals include:
 - Avoiding unnecessary allocations
 - Avoiding code that prevents AOT compilation on .NET
 
-Features:
+## Features
 
 - Non allocating interpolated string support on .NET Framework (`$"Age: {age}"`)
+- Formatting directly into `Stream` and `TextWriter` without unnecessary allocations
+- Robust and performant `StringSegment` struct for working with substrings without allocations
+- `SpanReader` and `SpanWriter` for efficient reading and writing of data in spans
+- `BufferScope<T>` for easy management of temporary `ArrayPool` and stack based buffers
+- `Value` struct for creating strongly typed arbitrary collections of values without boxing most primitives
+- Much more!
+
+## Installation
+
+Using the .NET CLI:
+
+```
+dotnet add package KlutzyNinja.Touki
+```
+
+Or with the NuGet Package Manager:
+
+```
+PM> Install-Package KlutzyNinja.Touki
+```
+
+[View on NuGet.org](https://www.nuget.org/packages/KlutzyNinja.Touki/)
+
+## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING) for more information on how to contribute to this project.
-
-## Environment setup
-
-Run `setup.sh` once after cloning the repository to automatically install the .NET 9 SDK and configure your PATH. The script updates `~/.bashrc` so that the SDK is available in future sessions.
-
-```bash
-./setup.sh
-```
