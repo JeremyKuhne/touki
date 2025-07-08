@@ -7,6 +7,7 @@ using Touki.Io;
 
 namespace touki.perf;
 
+
 [MemoryDiagnoser]
 public class MsBuildEnumeratePerf
 {

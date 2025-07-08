@@ -6,3 +6,9 @@ dotnet_diagnostic.CS1591.severity = none
 
 # CA1852: Seal internal types
 dotnet_diagnostic.CA1852.severity = none
+
+# CA1051: Do not declare visible instance fields
+dotnet_diagnostic.CA1051.severity = none
+
+# CA5394: Do not use insecure randomness
+dotnet_diagnostic.CA5394.severity = none
