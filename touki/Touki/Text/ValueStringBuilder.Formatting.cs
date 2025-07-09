@@ -100,6 +100,10 @@ public ref partial struct ValueStringBuilder
         AppendFormat(format, new ReadOnlySpan<Value>(Values, 0, 4));
     }
 
+#if false
+    // This is much easier to read, but the performance isn't too great on .NET Framework as it isn't able to
+    // optimize quite as well. Leaving the code for reference.
+
     /// <summary>
     ///  Appends a formatted string to the current instance using the specified format and arguments.
     /// </summary>
@@ -198,9 +202,10 @@ public ref partial struct ValueStringBuilder
             AppendFormatted(args[(int)index], alignment, formatSpan);
         }
     }
+#endif
 
     /// <summary>
-    ///  Optimized version of <see cref="AppendFormatReader{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>.
+    ///  Appends a formatted string to the current instance using the specified format and arguments.
     /// </summary>
     public void AppendFormat<TArgument>(ReadOnlySpan<char> format, ReadOnlySpan<TArgument> args)
     {
@@ -210,47 +215,62 @@ public ref partial struct ValueStringBuilder
             int braceIndex = remaining.IndexOfAny('{', '}');
             if (braceIndex < 0)
             {
+                // No more braces, just append the rest of the string.
                 Append(remaining);
                 break;
             }
 
+            // We found a '{' or '}'.
+
             if (braceIndex > 0)
             {
+                // Append any literal before the next hole.
                 Append(remaining[..braceIndex]);
             }
 
-            remaining = remaining[braceIndex..];
-            char c = remaining[0];
-            remaining = remaining[1..];
-
-            if (c == '}')
+            char brace = remaining[braceIndex];
+            remaining = remaining[(braceIndex + 1)..];
+            if (remaining.IsEmpty)
             {
-                if (!remaining.IsEmpty && remaining[0] == '}')
-                {
-                    Append('}');
-                    remaining = remaining[1..];
-                    continue;
-                }
-
+                // We're in a hole or an escaped character, but there is nothing left to read.
                 FormatError();
             }
-            else if (!remaining.IsEmpty && remaining[0] == '{')
+
+            // If the next character is a bracket, we need to consider it escaped.
+
+            // If we found a '}' in the find any, the only legitimate case at this point is that it is an escaped bracket.
+            // Grab the next character and check if it is an '}'. If it is, we append it and continue to the next iteration.
+            // It is possible that we hit a poorly formatted string, such as "{}}0:5", we'll let it fail out in further
+            // processing, rather than trying to check for every possible malformed case here.
+
+            char next = remaining[0];
+            if (next is '}' or '{')
             {
-                Append('{');
+                if (brace != next)
+                {
+                    FormatError();
+                }
+
+                Append(brace);
                 remaining = remaining[1..];
                 continue;
             }
 
-            if (remaining.IsEmpty || (uint)(remaining[0] - '0') > 9)
+            // Get our index for the hole argument.
+
+            uint index = (uint)(next - '0');
+            if (index > 9)
             {
+                // Invalid index digit, throw an error.
                 FormatError();
             }
 
-            uint index = (uint)(remaining[0] - '0');
+            uint digit;
+
             remaining = remaining[1..];
-            while (!remaining.IsEmpty && (uint)(remaining[0] - '0') <= 9)
+            while (!remaining.IsEmpty && (digit = (uint)(remaining[0] - '0')) <= 9)
             {
-                index = index * 10 + (uint)(remaining[0] - '0');
+                index = index * 10 + digit;
                 remaining = remaining[1..];
             }
 
@@ -262,6 +282,8 @@ public ref partial struct ValueStringBuilder
             int alignment = 0;
             if (remaining[0] == ',')
             {
+                // Optional alignment, read it.
+
                 remaining = remaining[1..];
                 bool negative = false;
                 if (!remaining.IsEmpty && remaining[0] == '-')
@@ -270,20 +292,22 @@ public ref partial struct ValueStringBuilder
                     remaining = remaining[1..];
                 }
 
-                uint width = 0;
-                bool gotDigit = false;
-                while (!remaining.IsEmpty && (uint)(remaining[0] - '0') <= 9)
+                uint width = (uint)(remaining[0] - '0');
+                if (width > 9)
                 {
-                    width = width * 10 + (uint)(remaining[0] - '0');
-                    remaining = remaining[1..];
-                    gotDigit = true;
-                    if (width >= WidthLimit)
-                    {
-                        FormatError();
-                    }
+                    // Invalid index digit, throw an error.
+                    FormatError();
                 }
 
-                if (!gotDigit || remaining.IsEmpty)
+                remaining = remaining[1..];
+
+                while (!remaining.IsEmpty && (digit = (uint)(remaining[0] - '0')) <= 9)
+                {
+                    width = width * 10 + digit;
+                    remaining = remaining[1..];
+                }
+
+                if (remaining.IsEmpty || width >= WidthLimit)
                 {
                     FormatError();
                 }
@@ -294,6 +318,8 @@ public ref partial struct ValueStringBuilder
             ReadOnlySpan<char> itemFormat = default;
             if (remaining[0] == ':')
             {
+                // Optional formatting, read it.
+
                 remaining = remaining[1..];
                 int end = remaining.IndexOf('}');
                 if (end < 0)
@@ -405,12 +431,12 @@ public ref partial struct ValueStringBuilder
                 // validate that it doesn't box for value types in my unit tests. Have tried every combination of code I can think
                 // of without success. If the boxing is unavoidable, then other options can be considered, such as type checking for
                 // frequently used runtime types and calling a constrained method directly.
-                while (!((ISpanFormattable)value!).TryFormat(_chars[_position..], out charsWritten, default, _formatProvider))
+                while (!((ISpanFormattable)value!).TryFormat(_chars[_length..], out charsWritten, default, _formatProvider))
                 {
                     DoubleRemaining();
                 }
 
-                _position += charsWritten;
+                _length += charsWritten;
                 return;
             }
 
@@ -473,12 +499,12 @@ public ref partial struct ValueStringBuilder
                 // validate that it doesn't box for value types in my unit tests. Have tried every combination of code I can think
                 // of without success. If the boxing is unavoidable, then other options can be considered, such as type checking for
                 // frequently used runtime types and calling a constrained method directly.
-                while (!((ISpanFormattable)value!).TryFormat(_chars[_position..], out charsWritten, format, _formatProvider))
+                while (!((ISpanFormattable)value!).TryFormat(_chars[_length..], out charsWritten, format, _formatProvider))
                 {
                     DoubleRemaining();
                 }
 
-                _position += charsWritten;
+                _length += charsWritten;
                 return;
             }
 
@@ -497,7 +523,7 @@ public ref partial struct ValueStringBuilder
     /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
     public void AppendFormatted<T>(T value, int alignment)
     {
-        int startingPos = _position;
+        int startingPos = _length;
         AppendFormatted(value);
         if (alignment != 0)
         {
@@ -508,7 +534,7 @@ public ref partial struct ValueStringBuilder
     /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
     public void AppendFormatted<T>(T value, int alignment, StringSpan format)
     {
-        int startingPos = _position;
+        int startingPos = _length;
         AppendFormatted(value, format);
         if (alignment != 0)
         {
@@ -545,17 +571,17 @@ public ref partial struct ValueStringBuilder
 
         if (leftAlign)
         {
-            value.CopyTo(_chars[_position..]);
-            _position += value.Length;
-            _chars.Slice(_position, paddingRequired).Fill(' ');
-            _position += paddingRequired;
+            value.CopyTo(_chars[_length..]);
+            _length += value.Length;
+            _chars.Slice(_length, paddingRequired).Fill(' ');
+            _length += paddingRequired;
         }
         else
         {
-            _chars.Slice(_position, paddingRequired).Fill(' ');
-            _position += paddingRequired;
-            value.CopyTo(_chars[_position..]);
-            _position += value.Length;
+            _chars.Slice(_length, paddingRequired).Fill(' ');
+            _length += paddingRequired;
+            value.CopyTo(_chars[_length..]);
+            _length += value.Length;
         }
     }
 
@@ -593,10 +619,10 @@ public ref partial struct ValueStringBuilder
     /// </param>
     private void AppendOrInsertAlignmentIfNeeded(int startingPosition, int alignment)
     {
-        Debug.Assert(startingPosition >= 0 && startingPosition <= _position);
+        Debug.Assert(startingPosition >= 0 && startingPosition <= _length);
         Debug.Assert(alignment != 0);
 
-        int charsWritten = _position - startingPosition;
+        int charsWritten = _length - startingPosition;
 
         bool leftAlign = false;
         if (alignment < 0)
@@ -612,7 +638,7 @@ public ref partial struct ValueStringBuilder
 
             if (leftAlign)
             {
-                _chars.Slice(_position, paddingNeeded).Fill(' ');
+                _chars.Slice(_length, paddingNeeded).Fill(' ');
             }
             else
             {
@@ -620,7 +646,7 @@ public ref partial struct ValueStringBuilder
                 _chars.Slice(startingPosition, paddingNeeded).Fill(' ');
             }
 
-            _position += paddingNeeded;
+            _length += paddingNeeded;
         }
     }
 }

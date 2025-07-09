@@ -3,10 +3,13 @@
 // See LICENSE file in the project root for full license information
 
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Jobs;
+using Touki;
 
 namespace touki.perf;
 
 [MemoryDiagnoser]
+[SimpleJob(RuntimeMoniker.HostProcess, warmupCount: 1, iterationCount: 3, launchCount: 1)]
 public class StringFormattingAs8DigitHex
 {
     private readonly int _value = 42;
@@ -22,6 +25,13 @@ public class StringFormattingAs8DigitHex
     {
         // Using "X8" to format the integer as an 8-digit hexadecimal string.
         return string.Format("The answer is {0:X8}.", _value);
+    }
+
+    [Benchmark]
+    public string StringsFormat()
+    {
+        // Using "X8" to format the integer as an 8-digit hexadecimal string.
+        return Strings.Format("The answer is {0:X8}.", _value);
     }
 
     [Benchmark]

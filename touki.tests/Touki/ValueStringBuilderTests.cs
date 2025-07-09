@@ -302,7 +302,7 @@ public unsafe class ValueStringBuilderTests
         using ValueStringBuilder builder = new(stackalloc char[20]);
         builder.Append("Hello World");
 
-        ReadOnlySpan<char> span = builder.AsSpan(6);
+        ReadOnlySpan<char> span = builder.Slice(6);
         span.ToString().Should().Be("World");
         span.Length.Should().Be(5);
     }
@@ -313,13 +313,13 @@ public unsafe class ValueStringBuilderTests
         using ValueStringBuilder builder = new(stackalloc char[20]);
         builder.Append("Hello World");
 
-        ReadOnlySpan<char> span = builder.AsSpan(0, 5);
+        ReadOnlySpan<char> span = builder.Slice(0, 5);
         span.ToString().Should().Be("Hello");
         span.Length.Should().Be(5);
     }
 
     [Fact]
-    public void AsSpan_WithTerminate()
+    public unsafe void AsSpan_WithTerminate()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
         builder.Append("Hello");
@@ -328,7 +328,10 @@ public unsafe class ValueStringBuilderTests
         span.ToString().Should().Be("Hello");
 
         // Check that null terminator was added (though not included in the span)
-        builder.RawChars[5].Should().Be('\0');
+        fixed (char* ptr = builder)
+        {
+            (*(ptr + 5)).Should().Be('\0');
+        }
     }
 
     [Fact]
@@ -375,30 +378,16 @@ public unsafe class ValueStringBuilderTests
     }
 
     [Fact]
-    public void GetPinnableReference_WithTerminate()
+    public unsafe void GetPinnableReference_WithTerminate()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
         builder.Append("Test");
 
-        ref char reference = ref builder.GetPinnableReference(terminate: true);
+        ref char reference = ref builder.GetPinnableReference();
         reference.Should().Be('T');
 
         // Check that null terminator was added
-        builder.RawChars[4].Should().Be('\0');
-    }
-
-    [Fact]
-    public void RawChars_Property()
-    {
-        using ValueStringBuilder builder = new(stackalloc char[10]);
-        builder.Append("Test");
-
-        Span<char> rawChars = builder.RawChars;
-        rawChars.Length.Should().Be(10);
-        rawChars[0].Should().Be('T');
-        rawChars[1].Should().Be('e');
-        rawChars[2].Should().Be('s');
-        rawChars[3].Should().Be('t');
+        Unsafe.Add(ref reference, 4).Should().Be('\0');
     }
 
     [Fact]
@@ -2024,5 +2013,202 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("UndefinedFlags: 128");
         string expected = string.Format("UndefinedFlags: {0}", undefinedFlags);
         builder.ToString().Should().Be(expected);
+    }
+
+    [Fact]
+    public void AppendFormat_InvalidFormatString_MissingClosingBrace()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+
+        // Test format string with unclosed brace
+        bool threwException = false;
+        try
+        {
+            builder.AppendFormat("Value: {0", 42);
+        }
+        catch (FormatException)
+        {
+            threwException = true;
+        }
+        threwException.Should().BeTrue("Format string with unclosed brace should throw FormatException");
+    }
+
+    [Fact]
+    public void AppendFormat_InvalidFormatString_InvalidAlignment()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+
+        // Test format string with invalid alignment (non-numeric)
+        bool threwException = false;
+        try
+        {
+            builder.AppendFormat("Value: {0,abc}", 42);
+        }
+        catch (FormatException)
+        {
+            threwException = true;
+        }
+        threwException.Should().BeTrue("Format string with invalid alignment should throw FormatException");
+    }
+
+    [Fact]
+    public void AppendFormat_InvalidFormatString_CloseBraceWithoutOpen()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+
+        // Test format string with unexpected closing brace
+        bool threwException = false;
+        try
+        {
+            builder.AppendFormat("Value: }", 42);
+        }
+        catch (FormatException)
+        {
+            threwException = true;
+        }
+        threwException.Should().BeTrue("Format string with unexpected closing brace should throw FormatException");
+    }
+
+    [Fact]
+    public void Dispose_AccessAfterDispose()
+    {
+        ValueStringBuilder builder = new(stackalloc char[20]);
+        builder.Append("Test");
+
+        // First dispose should succeed
+        builder.Dispose();
+
+        // Second dispose should not throw
+        builder.Dispose();
+
+        // Attempting to use after dispose - fields should be cleared
+        builder.Length.Should().Be(0);
+        builder.Capacity.Should().Be(0);
+    }
+
+    [Fact]
+    public void EnsureCapacity_NegativeCapacity()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[10]);
+
+        // Negative capacity should throw
+        try
+        {
+            builder.EnsureCapacity(-1);
+            Assert.Fail("Expected ArgumentOutOfRangeException for negative capacity");
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            ex.ParamName.Should().Be("capacity");
+        }
+    }
+
+    [Fact]
+    public void AppendFormat_ComplexNestedBraces()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        // Test complex nested braces format
+        builder.AppendFormat("{{{{Nested}}}} {0} {{Escaped}} {1:D5}", 42, 123);
+
+        builder.ToString().Should().Be("{{Nested}} 42 {Escaped} 00123");
+    }
+
+    [Fact]
+    public void AppendFormat_ManyConsecutiveEscapedBraces()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[50]);
+
+        // Test many consecutive escaped braces
+        builder.AppendFormat("{{{{{{{0}}}}}}}", 42);
+
+        builder.ToString().Should().Be("{{{42}}}");
+    }
+
+    [Fact]
+    public void Append_AfterLengthManipulation()
+    {
+        ValueStringBuilder builder = new(stackalloc char[20]);
+
+        builder.Append("Hello");
+        builder.Length = 2;     // Truncate to "He"
+        builder.Append("llo");  // Should append to truncated string
+
+        builder.ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void Length_InvalidValues()
+    {
+        ValueStringBuilder builder = new(stackalloc char[10]);
+        builder.Append("Test");
+
+        // Attempting to set negative length should throw
+        try
+        {
+            builder.Length = -1;
+            Assert.Fail("Expected ArgumentOutOfRangeException for negative length");
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            ex.ParamName.Should().Be("value");
+        }
+
+        // Attempting to set length > capacity should throw
+        try
+        {
+            builder.Length = builder.Capacity + 1;
+            Assert.Fail("Expected ArgumentOutOfRangeException for length greater than capacity");
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            ex.ParamName.Should().Be("value");
+        }
+
+        builder.Dispose();
+    }
+
+    [Fact]
+    public void AppendFormat_MaximumArgumentIndex()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[100]);
+
+        // Create a format string with highest valid index (int.MaxValue - 1)
+        string formatWithMaxIndex = "{2147483646}";
+
+        // Create an array with that many elements + 1
+        // This would cause memory issues, so we'll mock it with a smaller array
+        // and test the exception logic instead
+        Value[] args = [new Value(42)];
+
+        bool threwException = false;
+        try
+        {
+            builder.AppendFormat(formatWithMaxIndex.AsSpan(), args.AsSpan());
+        }
+        catch (FormatException)
+        {
+            threwException = true;
+        }
+
+        threwException.Should().BeTrue("Index beyond array bounds should throw FormatException");
+    }
+
+    [Fact]
+    public void AppendFormat_WithExtremelyLargeInput()
+    {
+        // Test with very large input to ensure memory management works properly
+        using ValueStringBuilder builder = new(10);
+
+        // Create a large string (10,000 characters)
+        string largeString = new string('A', 10000);
+
+        // Append it
+        builder.AppendFormat("Large: {0}", new Value(largeString));
+
+        // Verify
+        builder.Length.Should().Be(10007); // "Large: " + 10000 chars
+        builder.ToString().Should().StartWith("Large: AAAAA");
+        builder.ToString().Should().EndWith("AAAAA");
     }
 }

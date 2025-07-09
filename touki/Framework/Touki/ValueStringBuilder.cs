@@ -11,7 +11,7 @@ public ref partial struct ValueStringBuilder
     private readonly Span<char> Remaining
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _chars[_position..];
+        get => _chars[_length..];
     }
 
     private bool TryAppendFormattedPrimitives<T>(T value, ReadOnlySpan<char> format, IFormatProvider? formatProvider)
@@ -37,7 +37,7 @@ public ref partial struct ValueStringBuilder
 
             if (Number.TryFormatInt32(Unsafe.As<T, int>(ref value), 0xFF, format, formatProvider, Remaining, out int charsWritten))
             {
-                _position += charsWritten;
+                _length += charsWritten;
                 return true;
             }
 
@@ -50,7 +50,7 @@ public ref partial struct ValueStringBuilder
 
             if (Number.TryFormatInt32(Unsafe.As<T, int>(ref value), 0xFFFF, format, formatProvider, Remaining, out int charsWritten))
             {
-                _position += charsWritten;
+                _length += charsWritten;
                 return true;
             }
 
@@ -63,7 +63,7 @@ public ref partial struct ValueStringBuilder
 
             if (Number.TryFormatInt32(Unsafe.As<T, int>(ref value), ~0, format, formatProvider, Remaining, out int charsWritten))
             {
-                _position += charsWritten;
+                _length += charsWritten;
                 return true;
             }
 
@@ -84,7 +84,7 @@ public ref partial struct ValueStringBuilder
 
             if (Number.TryFormatUInt32(Unsafe.As<T, uint>(ref value), format, formatProvider, Remaining, out int charsWritten))
             {
-                _position += charsWritten;
+                _length += charsWritten;
                 return true;
             }
 
@@ -97,7 +97,7 @@ public ref partial struct ValueStringBuilder
 
             if (Number.TryFormatInt64(Unsafe.As<T, long>(ref value), format, formatProvider, Remaining, out int charsWritten))
             {
-                _position += charsWritten;
+                _length += charsWritten;
                 return true;
             }
 
@@ -110,7 +110,7 @@ public ref partial struct ValueStringBuilder
 
             if (Number.TryFormatUInt64(Unsafe.As<T, ulong>(ref value), format, formatProvider, Remaining, out int charsWritten))
             {
-                _position += charsWritten;
+                _length += charsWritten;
                 return true;
             }
 
@@ -128,7 +128,7 @@ public ref partial struct ValueStringBuilder
                 Remaining,
                 out int charsWritten))
             {
-                _position += charsWritten;
+                _length += charsWritten;
                 return true;
             }
 
@@ -219,7 +219,7 @@ public ref partial struct ValueStringBuilder
         bool firstTime = true;
         ulong saveResult = result;
 
-        int startPosition = _position;
+        int startPosition = _length;
 
         // We will not optimize this code further to keep it maintainable. There are some boundary checks that can be applied
         // to minimize the comparsions required. This code works the same for the best/worst case. In general the number of
@@ -249,7 +249,7 @@ public ref partial struct ValueStringBuilder
         // We were unable to represent this number as a bitwise or of valid flags
         if (result != 0)
         {
-            _position = startPosition;
+            _length = startPosition;
             bool success = signed
                 ? TryAppendFormattedPrimitives((long)value, default, default)
                 : TryAppendFormattedPrimitives(value, default, default);
