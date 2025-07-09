@@ -2,16 +2,27 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+// For just CompareOrdinalIgnoreCaseAscii()
+//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.ComponentModel;
+using System.Globalization;
 
 namespace Touki;
 
 /// <summary>
 ///  Span like <see langword="string"/> section wrapper that allows using like a span but also storing as a field in a class.
+///  Attempts to behave equivalently to a <see langword="string"/> in most cases.
 /// </summary>
 /// <remarks>
 ///  <para>
 ///   The segment is immutable and does not allocate a new <see langword="string"/> unless necessary.
+///  </para>
+///  <para>
+///   Comparison defaults to <see cref="StringComparison.Ordinal"/>, unlike <see langword="string"/> which defaults to
+///   <see cref="StringComparison.CurrentCulture"/>.
 ///  </para>
 ///  <para>
 ///   <see cref="ReadOnlyMemory{T}"/> (created via <see cref="MemoryExtensions.AsMemory(string?)"/> provides
@@ -23,7 +34,11 @@ namespace Touki;
 ///   as this one and does not have as much functionality.
 ///  </para>
 /// </remarks>
-public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<string>
+public readonly struct StringSegment :
+    IEquatable<StringSegment>,
+    IEquatable<string>,
+    IComparable<StringSegment>,
+    IComparable<string>
 {
     private readonly string _value;
     private readonly int _startIndex;
@@ -623,10 +638,10 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
     public static implicit operator ReadOnlySpan<char>(StringSegment segment) => segment.AsSpan();
 
     /// <summary>
-    ///  Implicitly converts a <see cref="StringSegment"/> to a string.
+    ///  Explicitly converts a <see cref="StringSegment"/> to a string.
     /// </summary>
     /// <param name="segment">The segment to convert.</param>
-    public static implicit operator string(StringSegment segment) => segment.ToString();
+    public static explicit operator string(StringSegment segment) => segment.ToString();
 
     /// <summary>
     ///  Implicitly converts a <see cref="string"/> to a <see cref="StringSegment"/>.
@@ -709,6 +724,159 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
         return ref MemoryMarshal.GetReference(AsSpan());
     }
 
+    /// <inheritdoc cref="IComparable{StringSegment}.CompareTo(StringSegment)"/>
+    /// <remarks>
+    ///  <para>
+    ///   Unlike <see langword="string"/>, this method is an ordinal compare.
+    ///  </para>
+    /// </remarks>
+    public int CompareTo(StringSegment other) => CompareTo(other, StringComparison.Ordinal);
+
+    /// <inheritdoc cref="IComparable{StringSegment}.CompareTo(StringSegment)"/>
+    /// <param name="comparison">The comparison type to use.</param>
+    public int CompareTo(StringSegment other, StringComparison comparison) => comparison switch
+    {
+        StringComparison.Ordinal => Strings.CompareOrdinalAsString(AsSpan(), other.AsSpan()),
+        StringComparison.OrdinalIgnoreCase => CompareToOrdinalIgnoreCase(other._value, other._startIndex, other._length),
+        StringComparison.CurrentCulture =>
+            CultureInfo.CurrentCulture.CompareInfo.Compare(_value, _startIndex, _length, other._value, other._startIndex, other._length, CompareOptions.None),
+        StringComparison.CurrentCultureIgnoreCase =>
+            CultureInfo.CurrentCulture.CompareInfo.Compare(_value, _startIndex, _length, other._value, other._startIndex, other._length, CompareOptions.IgnoreCase),
+        StringComparison.InvariantCulture =>
+            CultureInfo.InvariantCulture.CompareInfo.Compare(_value, _startIndex, _length, other._value, other._startIndex, other._length, CompareOptions.None),
+        StringComparison.InvariantCultureIgnoreCase =>
+            CultureInfo.InvariantCulture.CompareInfo.Compare(_value, _startIndex, _length, other._value, other._startIndex, other._length, CompareOptions.IgnoreCase),
+        _ => throw new ArgumentOutOfRangeException(nameof(comparison), "Unsupported comparison type."),
+    };
+
+    /// <inheritdoc cref="CompareTo(StringSegment)"/>
+    public int CompareTo(string? other)
+        => other is not null
+            ? CompareTo(other, StringComparison.Ordinal)
+            : _length == 0 ? 0 : -1;
+
+    /// <inheritdoc cref="CompareTo(StringSegment, StringComparison)"/>
+    public int CompareTo(string other, StringComparison comparison) => comparison switch
+    {
+        StringComparison.Ordinal => Strings.CompareOrdinalAsString(AsSpan(), other.AsSpan()),
+        StringComparison.OrdinalIgnoreCase => CompareToOrdinalIgnoreCase(other, 0, other.Length),
+        StringComparison.CurrentCulture =>
+            CultureInfo.CurrentCulture.CompareInfo.Compare(_value, _startIndex, _length, other, 0, other.Length, CompareOptions.None),
+        StringComparison.CurrentCultureIgnoreCase =>
+            CultureInfo.CurrentCulture.CompareInfo.Compare(_value, _startIndex, _length, other, 0, other.Length, CompareOptions.IgnoreCase),
+        StringComparison.InvariantCulture =>
+            CultureInfo.InvariantCulture.CompareInfo.Compare(_value, _startIndex, _length, other, 0, other.Length, CompareOptions.None),
+        StringComparison.InvariantCultureIgnoreCase =>
+            CultureInfo.InvariantCulture.CompareInfo.Compare(_value, _startIndex, _length, other, 0, other.Length, CompareOptions.IgnoreCase),
+        _ => throw new ArgumentOutOfRangeException(nameof(comparison), "Unsupported comparison type."),
+    };
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private unsafe int CompareToOrdinalIgnoreCase(StringSegment other)
+    {
+        int result;
+
+        fixed (char* a = _value)
+        fixed (char* b = other._value)
+        {
+            if (CompareOrdinalIgnoreCaseAscii(a + _startIndex, _length, b + other._startIndex, other._length, out result))
+            {
+                return result;
+            }
+        }
+
+        // If the ASCII comparison didn't succeed, we need to use the CultureInfo.CompareInfo for whatever is left
+        result = CultureInfo.InvariantCulture.CompareInfo.Compare(
+            _value,
+            _startIndex + result,
+            _length - result,
+            other._value,
+            other._startIndex + result,
+            other._length - result,
+            CompareOptions.IgnoreCase);
+
+        return result;
+
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private unsafe int CompareToOrdinalIgnoreCase(string other, int otherStartIndex, int otherLength)
+    {
+        // We're trying to make a best effort to match `string.Compare(string, string, StringComparison.OrdinalIgnoreCase)`.
+        // This means we need to replicate the logic where the string is compared in ASCII first,
+
+        int result;
+
+        fixed (char* a = _value)
+        fixed (char* b = other)
+        {
+            if (CompareOrdinalIgnoreCaseAscii(a + _startIndex, _length, b + otherStartIndex, otherLength, out result))
+            {
+                return result;
+            }
+        }
+
+        // If the ASCII comparison didn't succeed, we need to use the CultureInfo.CompareInfo for whatever is left
+        result = CultureInfo.InvariantCulture.CompareInfo.Compare(
+            _value,
+            _startIndex + result,
+            _length - result,
+            other,
+            otherStartIndex + result,
+            otherLength - result,
+            CompareOptions.IgnoreCase);
+
+        return result;
+    }
+
+    private static unsafe bool CompareOrdinalIgnoreCaseAscii(char* a, int lengthA, char* b, int lengthB, out int result)
+    {
+        // Copied and modified from the .NET source
+
+        int remainingSharedCount = Math.Min(lengthA, lengthB);
+        int initialCount = remainingSharedCount;
+
+        while (remainingSharedCount != 0)
+        {
+            int charA = *a;
+            int charB = *b;
+
+            if ((charA | charB) > 0x7F)
+            {
+                // Non ascii character, result is chars to skip
+                result = initialCount - remainingSharedCount;
+                return false;
+            }
+
+            // Uppercase both chars - notice that we need just one compare per char
+            if ((uint)(charA - 'a') <= 'z' - 'a')
+            {
+                charA -= 0x20;
+            }
+
+            if ((uint)(charB - 'a') <= 'z' - 'a')
+            {
+                charB -= 0x20;
+            }
+
+            // Return the (case-insensitive) difference between them.
+            if (charA != charB)
+            {
+                result = charA - charB;
+                return true;
+            }
+
+            // Next char
+            a++;
+            b++;
+            remainingSharedCount--;
+        }
+
+        result = lengthA - lengthB;
+        return true;
+    }
+
+
     /// <summary>
     ///  Gets a value indicating whether two segments are equal.
     /// </summary>
@@ -724,4 +892,68 @@ public readonly struct StringSegment : IEquatable<StringSegment>, IEquatable<str
     /// <param name="right">The second segment.</param>
     /// <returns><see langword="true"/> if the segments are not equal; otherwise, <see langword="false"/>.</returns>
     public static bool operator !=(StringSegment left, StringSegment right) => !left.Equals(right);
+
+    /// <summary>
+    ///  Gets a value indicating whether the left segment is less than the right segment.
+    /// </summary>
+    /// <param name="left">The first segment.</param>
+    /// <param name="right">The second segment.</param>
+    /// <returns><see langword="true"/> if the left segment is less than the right segment; otherwise, <see langword="false"/>.</returns>
+    public static bool operator <(StringSegment left, StringSegment right) => left.CompareTo(right) < 0;
+
+    /// <summary>
+    ///  Gets a value indicating whether the left segment is less than or equal to the right segment.
+    /// </summary>
+    /// <param name="left">The first segment.</param>
+    /// <param name="right">The second segment.</param>
+    /// <returns><see langword="true"/> if the left segment is less than or equal to the right segment; otherwise, <see langword="false"/>.</returns>
+    public static bool operator <=(StringSegment left, StringSegment right) => left.CompareTo(right) <= 0;
+
+    /// <summary>
+    ///  Gets a value indicating whether the left segment is greater than the right segment.
+    /// </summary>
+    /// <param name="left">The first segment.</param>
+    /// <param name="right">The second segment.</param>
+    /// <returns><see langword="true"/> if the left segment is greater than the right segment; otherwise, <see langword="false"/>.</returns>
+    public static bool operator >(StringSegment left, StringSegment right) => left.CompareTo(right) > 0;
+
+    /// <summary>
+    ///  Gets a value indicating whether the left segment is greater than or equal to the right segment.
+    /// </summary>
+    /// <param name="left">The first segment.</param>
+    /// <param name="right">The second segment.</param>
+    /// <returns><see langword="true"/> if the left segment is greater than or equal to the right segment; otherwise, <see langword="false"/>.</returns>
+    public static bool operator >=(StringSegment left, StringSegment right) => left.CompareTo(right) >= 0;
+
+    /// <summary>
+    ///  Gets a value indicating whether the segment is less than the specified string.
+    /// </summary>
+    /// <param name="left">The segment.</param>
+    /// <param name="right">The string to compare with.</param>
+    /// <returns><see langword="true"/> if the segment is less than the string; otherwise, <see langword="false"/>.</returns>
+    public static bool operator <(StringSegment left, string right) => left.CompareTo(right) < 0;
+
+    /// <summary>
+    ///  Gets a value indicating whether the segment is less than or equal to the specified string.
+    /// </summary>
+    /// <param name="left">The segment.</param>
+    /// <param name="right">The string to compare with.</param>
+    /// <returns><see langword="true"/> if the segment is less than or equal to the string; otherwise, <see langword="false"/>.</returns>
+    public static bool operator <=(StringSegment left, string right) => left.CompareTo(right) <= 0;
+
+    /// <summary>
+    ///  Gets a value indicating whether the segment is greater than the specified string.
+    /// </summary>
+    /// <param name="left">The segment.</param>
+    /// <param name="right">The string to compare with.</param>
+    /// <returns><see langword="true"/> if the segment is greater than the string; otherwise, <see langword="false"/>.</returns>
+    public static bool operator >(StringSegment left, string right) => left.CompareTo(right) > 0;
+
+    /// <summary>
+    ///  Gets a value indicating whether the segment is greater than or equal to the specified string.
+    /// </summary>
+    /// <param name="left">The segment.</param>
+    /// <param name="right">The string to compare with.</param>
+    /// <returns><see langword="true"/> if the segment is greater than or equal to the string; otherwise, <see langword="false"/>.</returns>
+    public static bool operator >=(StringSegment left, string right) => left.CompareTo(right) >= 0;
 }

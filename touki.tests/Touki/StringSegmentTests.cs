@@ -242,7 +242,7 @@ public class StringSegmentTests
     {
         StringSegment segment = new("Hello");
         StringSegment replaced = segment.Replace('z', 'x');
-        replaced.ToString().Should().BeSameAs(segment);
+        replaced.ToString().Should().BeSameAs((string)segment);
     }
 
     [Fact]
@@ -278,10 +278,10 @@ public class StringSegmentTests
     }
 
     [Fact]
-    public void ImplicitConversion_ToString_Succeeds()
+    public void ExplicitConversion_ToString_Succeeds()
     {
         StringSegment segment = new("Hello");
-        string value = segment;
+        string value = (string)segment;
         value.Should().Be("Hello");
     }
 
@@ -600,11 +600,11 @@ public class StringSegmentTests
     }
 
     [Fact]
-    public void EmptySegment_ImplicitConversions_WorkCorrectly()
+    public void EmptySegment_Conversions_WorkCorrectly()
     {
         StringSegment empty = new();
 
-        string str = empty;
+        string str = (string)empty;
         str.Should().Be(string.Empty);
 
         ReadOnlySpan<char> span = empty;
@@ -783,7 +783,7 @@ public class StringSegmentTests
     {
         StringSegment segment = new("HelloWorld");
         StringSegment trimmed = segment.TrimStart();
-        trimmed.ToString().Should().BeSameAs(segment);
+        trimmed.ToString().Should().BeSameAs((string)segment);
     }
 
     [Fact]
@@ -791,7 +791,7 @@ public class StringSegmentTests
     {
         StringSegment segment = new("HelloWorld");
         StringSegment trimmed = segment.TrimEnd();
-        trimmed.ToString().Should().BeSameAs(segment);
+        trimmed.ToString().Should().BeSameAs((string)segment);
     }
 
     [Fact]
@@ -1116,7 +1116,7 @@ public class StringSegmentTests
     {
         StringSegment segment = new("Hello World");
         StringSegment trimmed = segment.Trim('#', '*');
-        trimmed.ToString().Should().BeSameAs(segment);
+        trimmed.ToString().Should().BeSameAs((string)segment);
     }
 
     [Fact]
@@ -1140,7 +1140,7 @@ public class StringSegmentTests
     {
         StringSegment segment = new("Hello World");
         StringSegment trimmed = segment.TrimStart('#');
-        trimmed.ToString().Should().BeSameAs(segment);
+        trimmed.ToString().Should().BeSameAs((string)segment);
     }
 
     [Fact]
@@ -1164,7 +1164,7 @@ public class StringSegmentTests
     {
         StringSegment segment = new("Hello World");
         StringSegment trimmed = segment.TrimStart('#', '*');
-        trimmed.ToString().Should().BeSameAs(segment);
+        trimmed.ToString().Should().BeSameAs((string)segment);
     }
 
     [Fact]
@@ -1188,7 +1188,7 @@ public class StringSegmentTests
     {
         StringSegment segment = new("Hello World");
         StringSegment trimmed = segment.TrimEnd('#');
-        trimmed.ToString().Should().BeSameAs(segment);
+        trimmed.ToString().Should().BeSameAs((string)segment);
     }
 
     [Fact]
@@ -1212,7 +1212,7 @@ public class StringSegmentTests
     {
         StringSegment segment = new("Hello World");
         StringSegment trimmed = segment.TrimEnd('#', '*');
-        trimmed.ToString().Should().BeSameAs(segment);
+        trimmed.ToString().Should().BeSameAs((string)segment);
     }
 
     [Fact]
@@ -1452,5 +1452,535 @@ public class StringSegmentTests
         string partialString = unicodeString[..5];
 
         partialSegment.GetHashCode().Should().Be(partialString.GetHashCode());
+    }
+
+    [Fact]
+    public void CompareTo_StringSegment_Ordinal_WorksCorrectly()
+    {
+        // Test segments with different positions
+        StringSegment segment1 = new("Hello World", 0, 5);  // "Hello"
+        StringSegment segment2 = new("Hello World", 6, 5);  // "World"
+        StringSegment segment3 = new("Hello World", 0, 11); // "Hello World"
+        StringSegment segment4 = new("Hello", 0, 5);        // "Hello"
+        StringSegment segment5 = new("hello", 0, 5);        // "hello"
+        StringSegment empty = new();
+
+        // Same content from different sources
+        segment1.CompareTo(segment4).Should().Be(
+            string.Compare("Hello", "Hello", StringComparison.Ordinal));
+
+        // Different content
+        segment1.CompareTo(segment2).Should().Be(
+            string.Compare("Hello", "World", StringComparison.Ordinal));
+        segment2.CompareTo(segment1).Should().Be(
+            string.Compare("World", "Hello", StringComparison.Ordinal));
+
+        // Comparing with whole string
+        segment1.CompareTo(segment3).Should().Be(
+            string.Compare("Hello", "Hello World", StringComparison.Ordinal));
+        segment3.CompareTo(segment1).Should().Be(
+            string.Compare("Hello World", "Hello", StringComparison.Ordinal));
+
+        // Case sensitivity (ordinal is case-sensitive)
+        segment1.CompareTo(segment5).Should().Be(
+            string.Compare("Hello", "hello", StringComparison.Ordinal));
+        segment5.CompareTo(segment1).Should().Be(
+            string.Compare("hello", "Hello", StringComparison.Ordinal));
+
+        // Empty segment
+        empty.CompareTo(segment1).Should().Be(
+            string.Compare("", "Hello", StringComparison.Ordinal));
+        segment1.CompareTo(empty).Should().Be(
+            string.Compare("Hello", "", StringComparison.Ordinal));
+        empty.CompareTo(empty).Should().Be(
+            string.Compare("", "", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void CompareTo_StringSegment_WithComparison_WorksCorrectly()
+    {
+        StringSegment segment1 = new("Hello World", 0, 5);  // "Hello"
+        StringSegment segment2 = new("hello world", 0, 5);  // "hello"
+
+        // Ordinal (case-sensitive)
+        segment1.CompareTo(segment2, StringComparison.Ordinal).Should().Be(
+            string.Compare("Hello", "hello", StringComparison.Ordinal));
+
+        // OrdinalIgnoreCase
+        segment1.CompareTo(segment2, StringComparison.OrdinalIgnoreCase).Should().Be(
+            string.Compare("Hello", "hello", StringComparison.OrdinalIgnoreCase));
+
+        // CurrentCulture
+        segment1.CompareTo(segment2, StringComparison.CurrentCulture).Should().Be(
+            string.Compare("Hello", "hello", StringComparison.CurrentCulture));
+
+        // CurrentCultureIgnoreCase
+        segment1.CompareTo(segment2, StringComparison.CurrentCultureIgnoreCase).Should().Be(
+            string.Compare("Hello", "hello", StringComparison.CurrentCultureIgnoreCase));
+
+        // InvariantCulture
+        segment1.CompareTo(segment2, StringComparison.InvariantCulture).Should().Be(
+            string.Compare("Hello", "hello", StringComparison.InvariantCulture));
+
+        // InvariantCultureIgnoreCase
+        segment1.CompareTo(segment2, StringComparison.InvariantCultureIgnoreCase).Should().Be(
+            string.Compare("Hello", "hello", StringComparison.InvariantCultureIgnoreCase));
+    }
+
+    [Fact]
+    public void CompareTo_String_Ordinal_WorksCorrectly()
+    {
+        // Test segments with different positions
+        StringSegment fullSegment = new("Hello World");
+        StringSegment startSegment = new("Hello World", 0, 5);   // "Hello"
+        StringSegment middleSegment = new("Hello World", 3, 5);  // "lo Wo"
+        StringSegment endSegment = new("Hello World", 6, 5);     // "World"
+        StringSegment empty = new();
+
+        // Full segment comparison
+        fullSegment.CompareTo("Hello World").Should().Be(
+            string.Compare("Hello World", "Hello World", StringComparison.Ordinal));
+        fullSegment.CompareTo("Hello").Should().Be(
+            string.Compare("Hello World", "Hello", StringComparison.Ordinal));
+        fullSegment.CompareTo("Zebra").Should().Be(
+            string.Compare("Hello World", "Zebra", StringComparison.Ordinal));
+
+        // Start segment comparison
+        startSegment.CompareTo("Hello").Should().Be(
+            string.Compare("Hello", "Hello", StringComparison.Ordinal));
+        startSegment.CompareTo("Help").Should().Be(
+            string.Compare("Hello", "Help", StringComparison.Ordinal));
+        startSegment.CompareTo("Hel").Should().Be(
+            string.Compare("Hello", "Hel", StringComparison.Ordinal));
+
+        // Middle segment comparison
+        middleSegment.CompareTo("lo Wo").Should().Be(
+            string.Compare("lo Wo", "lo Wo", StringComparison.Ordinal));
+
+        middleSegment.CompareTo("lo").Should().Be(
+            string.Compare("lo Wo", "lo", StringComparison.Ordinal));
+        middleSegment.CompareTo("lo Wp").Should().Be(
+            string.Compare("lo Wo", "lo Wp", StringComparison.Ordinal));
+
+        // End segment comparison
+        endSegment.CompareTo("World").Should().Be(
+            string.Compare("World", "World", StringComparison.Ordinal));
+        endSegment.CompareTo("Worle").Should().Be(
+            string.Compare("World", "Worle", StringComparison.Ordinal));
+        endSegment.CompareTo("Worl").Should().Be(
+            string.Compare("World", "Worl", StringComparison.Ordinal));
+
+        // Empty segment
+        empty.CompareTo("").Should().Be(
+            string.Compare("", "", StringComparison.Ordinal));
+        empty.CompareTo("Hello").Should().Be(
+            string.Compare("", "Hello", StringComparison.Ordinal));
+    }
+
+
+    [Fact]
+    public void CompareTo_String_WithComparison_WorksCorrectly()
+    {
+        StringSegment segment = new("Hello World", 0, 5);  // "Hello"
+
+        // Ordinal
+        segment.CompareTo("hello", StringComparison.Ordinal).Should().Be(
+            string.Compare("Hello", "hello", StringComparison.Ordinal));
+        segment.CompareTo("Hello", StringComparison.Ordinal).Should().Be(
+            string.Compare("Hello", "Hello", StringComparison.Ordinal));
+
+        // OrdinalIgnoreCase
+        segment.CompareTo("hello", StringComparison.OrdinalIgnoreCase).Should().Be(
+            string.Compare("Hello", "hello", StringComparison.OrdinalIgnoreCase));
+        segment.CompareTo("help", StringComparison.OrdinalIgnoreCase).Should().Be(
+            string.Compare("Hello", "help", StringComparison.OrdinalIgnoreCase));
+
+        // CurrentCulture
+        int expected = string.Compare("Hello", "hello", StringComparison.CurrentCulture);
+        segment.CompareTo("hello", StringComparison.CurrentCulture).Should().Be(expected);
+        segment.CompareTo("Hello", StringComparison.CurrentCulture).Should().Be(
+            string.Compare("Hello", "Hello", StringComparison.CurrentCulture));
+
+        // CurrentCultureIgnoreCase
+        segment.CompareTo("hello", StringComparison.CurrentCultureIgnoreCase).Should().Be(
+            string.Compare("Hello", "hello", StringComparison.CurrentCultureIgnoreCase));
+
+        // InvariantCulture
+        segment.CompareTo("hello", StringComparison.InvariantCulture).Should().Be(
+            string.Compare("Hello", "hello", StringComparison.InvariantCulture));
+        segment.CompareTo("Hello", StringComparison.InvariantCulture).Should().Be(
+            string.Compare("Hello", "Hello", StringComparison.InvariantCulture));
+
+        // InvariantCultureIgnoreCase
+        segment.CompareTo("hello", StringComparison.InvariantCultureIgnoreCase).Should().Be(
+            string.Compare("Hello", "hello", StringComparison.InvariantCultureIgnoreCase));
+
+        // Different lengths
+        segment.CompareTo("Hell", StringComparison.Ordinal).Should().Be(
+            string.Compare("Hello", "Hell", StringComparison.Ordinal));
+        segment.CompareTo("Helloz", StringComparison.Ordinal).Should().Be(
+            string.Compare("Hello", "Helloz", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ComparisonOperators_WithStringSegments_WorkCorrectly()
+    {
+        StringSegment segment1 = new("Hello");
+        StringSegment segment2 = new("World");
+        StringSegment segment3 = new("Hello");
+        StringSegment empty = new();
+
+        // Equality operators
+        (segment1 == segment3).Should().BeTrue();
+        (segment1 != segment2).Should().BeTrue();
+
+        // Less than
+        (segment1 < segment2).Should().BeTrue();
+        (segment2 < segment1).Should().BeFalse();
+
+        // Less than or equal
+        (segment1 <= segment3).Should().BeTrue();
+        (segment1 <= segment2).Should().BeTrue();
+        (segment2 <= segment1).Should().BeFalse();
+
+        // Greater than
+        (segment2 > segment1).Should().BeTrue();
+        (segment1 > segment2).Should().BeFalse();
+
+        // Greater than or equal
+        (segment1 >= segment3).Should().BeTrue();
+        (segment2 >= segment1).Should().BeTrue();
+        (segment1 >= segment2).Should().BeFalse();
+
+        // Empty comparisons
+        (empty < segment1).Should().BeTrue();
+        (segment1 > empty).Should().BeTrue();
+#pragma warning disable CS1718 // Comparison made to same variable
+        (empty == empty).Should().BeTrue();
+#pragma warning restore CS1718 // Comparison made to same variable
+
+        // Verify against string comparisons
+        (segment1 < segment2).Should().Be(string.Compare("Hello", "World", StringComparison.Ordinal) < 0);
+        (segment2 > segment1).Should().Be(string.Compare("World", "Hello", StringComparison.Ordinal) > 0);
+    }
+
+    [Fact]
+    public void ComparisonOperators_WithStrings_WorkCorrectly()
+    {
+        StringSegment segment = new("Hello");
+
+        // Less than
+        (segment < "World").Should().BeTrue();
+        (segment < "Hello").Should().BeFalse();
+
+        // Less than or equal
+        (segment <= "Hello").Should().BeTrue();
+        (segment <= "World").Should().BeTrue();
+        (segment <= "Hel").Should().BeFalse();
+
+        // Greater than
+        (segment > "Hel").Should().BeTrue();
+        (segment > "Hello").Should().BeFalse();
+
+        // Greater than or equal
+        (segment >= "Hello").Should().BeTrue();
+        (segment >= "Hel").Should().BeTrue();
+        (segment >= "World").Should().BeFalse();
+
+        // Verify against string comparisons
+        (segment < "World").Should().Be(string.Compare("Hello", "World", StringComparison.Ordinal) < 0);
+        (segment > "Hel").Should().Be(string.Compare("Hello", "Hel", StringComparison.Ordinal) > 0);
+    }
+
+    [Fact]
+    public void CompareTo_WithDifferentPositions_MatchesStringCompare()
+    {
+        string original = "This is a test string for comparison tests";
+
+        // Test segments at different positions
+        TestSegmentCompare(original, 0, 4);     // "This"
+        TestSegmentCompare(original, 5, 2);     // "is"
+        TestSegmentCompare(original, 10, 4);    // "test"
+        TestSegmentCompare(original, 22, 9);    // "for compa"
+        TestSegmentCompare(original, 32, 5);    // "rison"
+
+        // Local helper function
+        static void TestSegmentCompare(string source, int start, int length)
+        {
+            StringSegment segment = new(source, start, length);
+            string substring = source.Substring(start, length);
+
+            // Compare against multiple targets
+            string[] targets =
+            [
+                "a",
+                "z",
+                substring,
+                substring.ToLowerInvariant(),
+                substring.ToUpperInvariant(),
+                substring + "x"
+            ];
+
+            foreach (string target in targets)
+            {
+                // Test ordinal comparison
+                segment.CompareTo(target).Should().Be(
+                    string.Compare(substring, target, StringComparison.Ordinal),
+                    $"Segment '{segment}' compared to '{target}' should match string comparison");
+
+                // Test comparison with explicit comparison type
+                segment.CompareTo(target, StringComparison.OrdinalIgnoreCase).Should().Be(
+                    string.Compare(substring, target, StringComparison.OrdinalIgnoreCase),
+                    $"Segment '{segment}' compared to '{target}' with OrdinalIgnoreCase should match string comparison");
+            }
+        }
+    }
+
+    [Fact]
+    public void CompareTo_WithSpecialCases_WorksCorrectly()
+    {
+        // Unicode characters
+        StringSegment unicodeSegment = new("こんにちは世界"); // "Hello World" in Japanese
+        StringSegment partialUnicode = new("こんにちは世界", 0, 5); // "こんにちは" (Hello)
+
+        unicodeSegment.CompareTo("こんにちは世界").Should().Be(
+            string.Compare("こんにちは世界", "こんにちは世界", StringComparison.Ordinal),
+            "Full Unicode segment comparison should match string.Compare");
+
+        partialUnicode.CompareTo("こんにちは").Should().Be(
+            string.Compare("こんにちは", "こんにちは", StringComparison.Ordinal),
+            "Partial Unicode segment comparison should match string.Compare");
+
+        unicodeSegment.CompareTo("こんにちは").Should().Be(
+            string.Compare("こんにちは世界", "こんにちは", StringComparison.Ordinal),
+            "Unicode segment compared to shorter string should match string.Compare");
+
+        // Same prefix but different lengths
+        StringSegment abcSegment = new("abcdef", 0, 3); // "abc"
+
+        abcSegment.CompareTo("abc").Should().Be(
+            string.Compare("abc", "abc", StringComparison.Ordinal),
+            "Equal length comparison should match string.Compare");
+
+        abcSegment.CompareTo("ab").Should().Be(
+            string.Compare("abc", "ab", StringComparison.Ordinal),
+            "Comparison with shorter string should match string.Compare");
+
+        abcSegment.CompareTo("abcd").Should().Be(
+            string.Compare("abc", "abcd", StringComparison.Ordinal),
+            "Comparison with longer string should match string.Compare");
+
+        // Empty segment
+        StringSegment empty = new();
+
+        empty.CompareTo("").Should().Be(
+            string.Compare(string.Empty, "", StringComparison.Ordinal),
+            "Empty segment compared to empty string should match string.Compare");
+
+        empty.CompareTo("a").Should().Be(
+            string.Compare(string.Empty, "a", StringComparison.Ordinal),
+            "Empty segment compared to non-empty string should match string.Compare");
+
+        empty.CompareTo(empty).Should().Be(
+            string.Compare(string.Empty, string.Empty, StringComparison.Ordinal),
+            "Empty segment compared to itself should match string.Compare");
+    }
+
+    [Fact]
+    public void CompareTo_StringComparison_InvalidValue_ThrowsArgumentOutOfRangeException()
+    {
+        StringSegment segment = new("test");
+        string other = "test";
+
+        // Cast to an invalid StringComparison value
+        StringComparison invalidComparison = (StringComparison)99;
+
+        // Should throw for invalid comparison value
+        Action action = () => segment.CompareTo(other, invalidComparison);
+        action.Should().Throw<ArgumentOutOfRangeException>()
+              .WithMessage("*Unsupported comparison type*");
+    }
+
+    [Fact]
+    public void CompareTo_WithMixedAsciiAndNonAscii_WorksCorrectly()
+    {
+        // Strings with ASCII and non-ASCII
+        StringSegment ascii = new("abcdef");
+        StringSegment nonAscii = new("abcд");  // Cyrillic д (U+0434)
+        StringSegment mixed = new("abc\u00E9f"); // é (U+00E9)
+        StringSegment mixedSame = new("abc\u00E9f"); // same as above
+
+        // Compare ASCII vs mixed
+        ascii.CompareTo(mixed).Should().Be(
+            string.Compare("abcdef", "abc\u00E9f", StringComparison.Ordinal),
+            "ASCII and mixed comparison should match string.Compare");
+
+        // Compare mixed vs same mixed
+        mixed.CompareTo(mixedSame).Should().Be(0,
+            "Identical mixed strings should compare as equal");
+
+        // Compare mixed vs non-ASCII
+        mixed.CompareTo(nonAscii).Should().Be(
+            string.Compare("abc\u00E9f", "abcд", StringComparison.Ordinal),
+            "Mixed and non-ASCII comparison should match string.Compare");
+
+        // Comparison with strings differing in ASCII portion
+        StringSegment mixedAsciiDiff = new("abd\u00E9f");
+        mixed.CompareTo(mixedAsciiDiff).Should().Be(
+            string.Compare("abc\u00E9f", "abd\u00E9f", StringComparison.Ordinal),
+            "Strings differing in ASCII portion should compare correctly");
+
+        // Comparison with strings differing in non-ASCII portion
+        StringSegment mixedNonAsciiDiff = new("abc\u00EAf"); // ê (U+00EA) instead of é
+        mixed.CompareTo(mixedNonAsciiDiff).Should().Be(
+            string.Compare("abc\u00E9f", "abc\u00EAf", StringComparison.Ordinal),
+            "Strings differing in non-ASCII portion should compare correctly");
+    }
+
+    [Fact]
+    public void CompareTo_AsciiToNonAsciiTransition_WorksCorrectly()
+    {
+        // Test strings that differ at the transition from ASCII to non-ASCII
+        StringSegment ascii1 = new("abcde");
+        StringSegment ascii2 = new("abcdf");
+        StringSegment transitionA = new("abcd\u00E9"); // é (U+00E9)
+        StringSegment transitionB = new("abcd\u00EA"); // ê (U+00EA)
+
+        // ASCII comparison before the transition point
+        ascii1.CompareTo(ascii2).Should().Be(
+            string.Compare("abcde", "abcdf", StringComparison.Ordinal),
+            "ASCII strings should compare correctly");
+
+        // Comparison at the transition point (ASCII to non-ASCII)
+        ascii1.CompareTo(transitionA).Should().Be(
+            string.Compare("abcde", "abcd\u00E9", StringComparison.Ordinal),
+            "ASCII to non-ASCII transition should compare correctly");
+
+        ascii2.CompareTo(transitionA).Should().Be(
+            string.Compare("abcdf", "abcd\u00E9", StringComparison.Ordinal),
+            "ASCII to non-ASCII transition should compare correctly");
+
+        // Comparison between different non-ASCII transitions
+        transitionA.CompareTo(transitionB).Should().Be(
+            string.Compare("abcd\u00E9", "abcd\u00EA", StringComparison.Ordinal),
+            "Different non-ASCII transitions should compare correctly");
+
+        // Test with a partial segment
+        StringSegment partialTransition = new("xxabcd\u00E9yy", 2, 5); // "abcd\u00E9"
+        partialTransition.CompareTo(transitionA).Should().Be(0,
+            "Partial segment with transition should compare correctly");
+    }
+
+    [Fact]
+    public void CompareTo_OrdinalIgnoreCase_WithMixedCharacters_WorksCorrectly()
+    {
+        // Case differences with ASCII and non-ASCII characters
+        StringSegment lower = new("abcdef");
+        StringSegment upper = new("ABCDEF");
+        StringSegment mixedCase = new("aBcDeF");
+
+        StringSegment lowerWithNonAscii = new("abcdé"); // é (U+00E9)
+        StringSegment upperWithNonAscii = new("ABCDé"); // é (U+00E9)
+        StringSegment upperNonAsciiCase = new("abcdÉ"); // É (U+00C9)
+
+        // ASCII case-insensitive comparison
+        lower.CompareTo(upper, StringComparison.OrdinalIgnoreCase).Should().Be(0,
+            "ASCII case-insensitive comparison should work correctly");
+
+        lower.CompareTo(mixedCase, StringComparison.OrdinalIgnoreCase).Should().Be(0,
+            "Mixed case ASCII should compare as equal with case-insensitive comparison");
+
+        // Non-ASCII case-insensitive comparison
+        lowerWithNonAscii.CompareTo(upperWithNonAscii, StringComparison.OrdinalIgnoreCase).Should().Be(0,
+            "Case-insensitive comparison with non-ASCII should work correctly for ASCII part");
+
+        lowerWithNonAscii.CompareTo(upperNonAsciiCase, StringComparison.OrdinalIgnoreCase).Should().Be(0,
+            "Case-insensitive comparison with non-ASCII should work correctly for non-ASCII part");
+
+        // Mixed ASCII/non-ASCII with case differences
+        StringSegment complexLower = new("abc\u00E9\u00F1xyz"); // abcéñxyz
+        StringSegment complexUpper = new("ABC\u00C9\u00D1XYZ"); // ABCÉÑxyz
+
+        complexLower.CompareTo(complexUpper, StringComparison.OrdinalIgnoreCase).Should().Be(0,
+            "Complex mixed case comparison should work correctly");
+
+        // Different strings that should not be equal even with case-insensitive comparison
+        StringSegment differAtAscii = new("abd\u00E9\u00F1xyz"); // abdéñxyz
+        complexLower.CompareTo(differAtAscii, StringComparison.OrdinalIgnoreCase).Should().NotBe(0,
+            "Different strings should not be equal with case-insensitive comparison");
+
+        StringSegment differAtNonAscii = new("abc\u00EA\u00F1xyz"); // abcêñxyz
+        complexLower.CompareTo(differAtNonAscii, StringComparison.OrdinalIgnoreCase).Should().NotBe(0,
+            "Strings differing at non-ASCII should not be equal with case-insensitive comparison");
+    }
+
+    [Fact]
+    public void CompareTo_HalfAsciiOptimization_WorksCorrectly()
+    {
+        // Test the half-ASCII optimization in OrdinalIgnoreCase comparison
+        // The implementation first compares ASCII characters with a fast path,
+        // then falls back to culture-aware comparison for the rest
+
+        // Strings that are identical in their ASCII part but differ after
+        StringSegment asciiSameNonAsciiDiff1 = new("abc\u00E9xyz");  // abcéxyz
+        StringSegment asciiSameNonAsciiDiff2 = new("abc\u00EAxyz");  // abcêxyz
+
+        // Should compare correctly with ordinal
+        asciiSameNonAsciiDiff1.CompareTo(asciiSameNonAsciiDiff2, StringComparison.Ordinal)
+            .Should().Be(
+                string.Compare("abc\u00E9xyz", "abc\u00EAxyz", StringComparison.Ordinal),
+                "Strings with same ASCII part should compare correctly with Ordinal");
+
+        // Should compare correctly with ordinal ignore case
+        asciiSameNonAsciiDiff1.CompareTo(asciiSameNonAsciiDiff2, StringComparison.OrdinalIgnoreCase)
+            .Should().Be(
+                string.Compare("abc\u00E9xyz", "abc\u00EAxyz", StringComparison.OrdinalIgnoreCase),
+                "Strings with same ASCII part should compare correctly with OrdinalIgnoreCase");
+
+        // Test with case differences in ASCII part and differences in non-ASCII part
+        StringSegment mixedCase1 = new("aBc\u00E9xyz");  // aBcéxyz
+        StringSegment mixedCase2 = new("AbC\u00EAxyz");  // AbCêxyz
+
+        mixedCase1.CompareTo(mixedCase2, StringComparison.OrdinalIgnoreCase)
+            .Should().Be(
+                string.Compare("aBc\u00E9xyz", "AbC\u00EAxyz", StringComparison.OrdinalIgnoreCase),
+                "Strings with case differences in ASCII and differences in non-ASCII should compare correctly");
+    }
+
+    [Fact]
+    public void CompareTo_WithAsciiPrefixNonAsciiSuffix_OrdinalIgnoreCase()
+    {
+        // This tests the specific case where string comparison switches from the
+        // ASCII-optimized path to the culture-aware path in OrdinalIgnoreCase
+
+        // Create strings with identical ASCII prefix but different non-ASCII suffix
+        StringSegment segment1 = new("hello\u00E9"); // helloé
+        StringSegment segment2 = new("hello\u00EA"); // helloê
+        StringSegment segment3 = new("HELLO\u00E9"); // HELLOé
+
+        // Ordinal comparison should detect the difference
+        segment1.CompareTo(segment2, StringComparison.Ordinal).Should().Be(
+            string.Compare("hello\u00E9", "hello\u00EA", StringComparison.Ordinal),
+            "Ordinal comparison should detect difference in non-ASCII suffix");
+
+        // OrdinalIgnoreCase should ignore case in ASCII part but detect difference in non-ASCII
+        segment1.CompareTo(segment3, StringComparison.OrdinalIgnoreCase).Should().Be(0,
+            "OrdinalIgnoreCase should consider different case ASCII with same non-ASCII as equal");
+
+        segment1.CompareTo(segment2, StringComparison.OrdinalIgnoreCase).Should().Be(
+            string.Compare("hello\u00E9", "hello\u00EA", StringComparison.OrdinalIgnoreCase),
+            "OrdinalIgnoreCase should detect difference in non-ASCII suffix");
+
+        // Test with characters that need surrogate pairs (outside BMP)
+        StringSegment surrogate1 = new("hello\U0001F600"); // hello😀 (GRINNING FACE)
+        StringSegment surrogate2 = new("hello\U0001F601"); // hello😁 (GRINNING FACE WITH SMILING EYES)
+        StringSegment surrogate3 = new("HELLO\U0001F600"); // HELLO😀
+
+        surrogate1.CompareTo(surrogate2, StringComparison.Ordinal).Should().Be(
+            string.Compare("hello\U0001F600", "hello\U0001F601", StringComparison.Ordinal),
+            "Ordinal comparison should detect difference in surrogate pairs");
+
+        surrogate1.CompareTo(surrogate3, StringComparison.OrdinalIgnoreCase).Should().Be(0,
+            "OrdinalIgnoreCase should consider different case ASCII with same surrogate pairs as equal");
     }
 }
