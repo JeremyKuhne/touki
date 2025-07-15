@@ -12,10 +12,6 @@ public abstract class ArrayBackedList<T> : ContiguousList<T> where T : notnull
     private T[] _items = [];
     private int _count;
 
-    // TODO: Need a mechanism to ref count this list so that it can't be disposed while enumerating in derived cla
-    // (Don't want to return arrays to the pool while we're still enumerating.) Could wrap the enumerator in another
-    // enumerator that keeps a handle to this?
-
     /// <summary>
     ///  Constructs a new instance of the <see cref="ArrayBackedList{T}"/> class with an initial array.
     /// </summary>

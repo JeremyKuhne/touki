@@ -263,7 +263,6 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
         }
     }
 
-
     /// <inheritdoc/>
     public override Span<T> UnsafeValues
     {
