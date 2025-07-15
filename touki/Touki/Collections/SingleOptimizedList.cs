@@ -5,7 +5,7 @@
 namespace Touki.Collections;
 
 /// <summary>
-///  List implementation for scenarios when you frequently have a single item in the list. Grows to an
+///  List implementation for scenarios where you frequently have a single item in the list. Grows to an
 ///  ArrayPool backed list when more than one item is added.
 /// </summary>
 /// <remarks>
@@ -13,8 +13,10 @@ namespace Touki.Collections;
 ///   Make sure to dispose this class when you are done with it to avoid leaking the backing list.
 ///  </para>
 /// </remarks>
-public sealed class SingleOptimizedList<T> : ListBase<T> where T : notnull
+public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
 {
+    // Once the backing list has been created, always use it.
+
     private bool _hasItem;
     private T _item;
     private ArrayPoolList<T>? _backingList;
@@ -36,44 +38,53 @@ public sealed class SingleOptimizedList<T> : ListBase<T> where T : notnull
         {
             if (!_hasItem)
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRange(nameof(index));
             }
 
-            if (_hasItem && _backingList is null)
+            if (_backingList is { } list)
             {
-                ArgumentOutOfRange.ThrowIfNotEqual(index, 0);
-                return _item;
+                return list[index];
             }
 
-            Debug.Assert(_backingList is not null);
-            return _backingList![index];
+            ArgumentOutOfRange.ThrowIfNotEqual(index, 0);
+            return _item;
         }
         set
         {
+            ArgumentNull.ThrowIfNull(value);
+
             if (!_hasItem)
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRange(nameof(index));
             }
 
-            if (_hasItem && _backingList is null)
+            if (_backingList is { } list)
             {
-                ArgumentOutOfRange.ThrowIfNotEqual(index, 0);
-                _item = value;
+                list[index] = value;
                 return;
             }
 
-            Debug.Assert(_backingList is not null);
-            _backingList![index] = value;
+            ArgumentOutOfRange.ThrowIfNotEqual(index, 0);
+            _item = value;
         }
     }
 
     /// <inheritdoc/>
-    public override int Count => _backingList?.Count ?? (_hasItem ? 1 : 0);
+    public override int Count
+    {
+        get
+        {
+            int count = _backingList?.Count ?? 0;
+            return count == 0 && _hasItem ? 1 : count;
+        }
+    }
 
     /// <inheritdoc/>
     public override void Add(T item)
     {
-        if (!_hasItem)
+        ArgumentNull.ThrowIfNull(item);
+
+        if (!_hasItem && _backingList is null)
         {
             _item = item;
             _hasItem = true;
@@ -88,6 +99,7 @@ public sealed class SingleOptimizedList<T> : ListBase<T> where T : notnull
             _item = default!;
         }
 
+        _hasItem = true;
         _backingList.Add(item);
     }
 
@@ -96,8 +108,7 @@ public sealed class SingleOptimizedList<T> : ListBase<T> where T : notnull
     {
         _hasItem = false;
         _item = default!;
-        _backingList?.Dispose();
-        _backingList = null;
+        _backingList?.Clear();
     }
 
     /// <inheritdoc/>
@@ -111,13 +122,19 @@ public sealed class SingleOptimizedList<T> : ListBase<T> where T : notnull
             throw new ArgumentException("Destination array is not long enough to copy all the items in the collection.");
         }
 
-        if (_backingList is null && _hasItem)
+        if (!_hasItem)
+        {
+            Debug.Assert(Count == 0);
+            return;
+        }
+
+        if (_backingList is null)
         {
             array[arrayIndex] = _item;
             return;
         }
 
-        _backingList?.CopyTo(array, arrayIndex);
+        _backingList.CopyTo(array, arrayIndex);
     }
 
     /// <inheritdoc/>
@@ -131,89 +148,85 @@ public sealed class SingleOptimizedList<T> : ListBase<T> where T : notnull
             throw new ArgumentException("Destination array is not long enough to copy all the items in the collection.");
         }
 
-        if (_backingList is null && _hasItem)
+        if (!_hasItem)
+        {
+            Debug.Assert(Count == 0);
+            return;
+        }
+
+        if (_backingList is null)
         {
             array.SetValue(_item, index);
             return;
         }
 
-        _backingList?.CopyTo(array, index);
+        _backingList.CopyTo(array, index);
     }
 
     /// <inheritdoc/>
-    public override int IndexOf(T item) =>
-        _hasItem && _backingList is null && _item.Equals(item) ? 0 : _backingList?.IndexOf(item) ?? -1;
+    public override int IndexOf(T item)
+    {
+        if (!_hasItem)
+        {
+            return -1;
+        }
+
+        return _backingList is { } list && list.Count > 0
+            ? list.IndexOf(item)
+            : _item.Equals(item) ? 0 : -1;
+    }
 
     /// <inheritdoc/>
     public override void Insert(int index, T item)
     {
-        ArgumentOutOfRange.ThrowIfLessThan(index, 0);
+        ArgumentNull.ThrowIfNull(item);
+        ArgumentOutOfRange.ThrowIfGreaterThan((uint)index, (uint)Count);
 
-        // If we have no items at all
-        if (!_hasItem && (_backingList is null || _backingList.Count == 0))
+        if (!_hasItem)
         {
-            ArgumentOutOfRange.ThrowIfNotEqual(index, 0);
-            _item = item;
-            _hasItem = true;
+            // No items, just add it.
+            Debug.Assert(index == 0);
+            Add(item);
             return;
         }
 
-        // If we have just one item and no backing list
-        if (_hasItem && _backingList is null)
+        if (_backingList is { } list)
         {
-            ArgumentOutOfRange.ThrowIfGreaterThan(index, 1);
-
-            _backingList = [];
-
-            if (index == 0)
-            {
-                _backingList.Add(item);
-                _backingList.Add(_item);
-            }
-            else // index == 1
-            {
-                _backingList.Add(_item);
-                _backingList.Add(item);
-            }
-
+            Debug.Assert(list.Count != 0);
+            list.Insert(index, item);
             return;
         }
 
-        // We have a backing list
-        Debug.Assert(_backingList is not null);
-        _backingList!.Insert(index, item);
+        Debug.Assert(index is 0 or 1);
+        _backingList = [];
+        if (index == 0)
+        {
+            _backingList.Add(item);
+            _backingList.Add(_item);
+        }
+        else
+        {
+            _backingList.Add(_item);
+            _backingList.Add(item);
+        }
+
+        _item = default!;
     }
 
     /// <inheritdoc/>
     public override void RemoveAt(int index)
     {
-        ArgumentOutOfRange.ThrowIfNegative(index);
+        ArgumentOutOfRange.ThrowIfGreaterThanOrEqual((uint)index, (uint)Count);
 
-        // If we have just one item and no backing list
-        if (_hasItem && _backingList is null)
+        if (_backingList is { } list)
         {
-            ArgumentOutOfRange.ThrowIfNotEqual(index, 0);
-            _hasItem = false;
-            _item = default!;
+            Debug.Assert(list.Count != 0);
+            list.RemoveAt(index);
             return;
         }
 
-        // If we have a backing list
-        if (_backingList is null || index >= _backingList.Count)
-        {
-            throw new ArgumentOutOfRangeException(nameof(index));
-        }
-
-        _backingList.RemoveAt(index);
-
-        // If we now have no items, mark as empty
-        if (_backingList.Count == 0)
-        {
-            _backingList.Dispose();
-            _backingList = null;
-            _hasItem = false;
-            _item = default!;
-        }
+        _hasItem = false;
+        _item = default!;
     }
 
     /// <inheritdoc/>
@@ -226,18 +239,52 @@ public sealed class SingleOptimizedList<T> : ListBase<T> where T : notnull
     }
 
     /// <inheritdoc/>
-    protected override IEnumerator<T> GetIEnumerableEnumerator()
+    public override ReadOnlySpan<T> Values
     {
-        if (_backingList is not null && _backingList.Count > 0)
+        get
         {
-            foreach (T item in _backingList)
+            if (!_hasItem)
             {
-                yield return item;
+                return [];
             }
+
+            if (_backingList is null)
+            {
+#if NET
+                return MemoryMarshal.CreateReadOnlySpan(ref _item, 1);
+#else
+                _backingList = [];
+                _backingList.Add(_item);
+                _item = default!;
+#endif
+            }
+
+            return _backingList.Values;
         }
-        else if (_hasItem)
+    }
+
+    /// <inheritdoc/>
+    public override Span<T> UnsafeValues
+    {
+        get
         {
-            yield return _item;
+            if (!_hasItem)
+            {
+                return [];
+            }
+
+            if (_backingList is null)
+            {
+#if NET
+                return MemoryMarshal.CreateSpan(ref _item, 1);
+#else
+                _backingList = [];
+                _backingList.Add(_item);
+                _item = default!;
+#endif
+            }
+
+            return _backingList.UnsafeValues;
         }
     }
 }

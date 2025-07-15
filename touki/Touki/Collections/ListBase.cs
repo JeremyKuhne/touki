@@ -14,8 +14,23 @@ namespace Touki.Collections;
 ///   The goal here is to avoid boilerplate non generic code.
 ///  </para>
 /// </remarks>
-public abstract class ListBase<T> : DisposableBase, IList<T>, IReadOnlyList<T>, IList where T : notnull
+public abstract partial class ListBase<T> : DisposableBase, IList<T>, IReadOnlyList<T>, IList
+    where T : notnull
 {
+    private int _enumerationCount;
+
+    /// <summary>
+    ///  Returns <see langword="true"/> if the list is currently being enumerated, otherwise <see langword="false"/>.
+    /// </summary>
+    protected bool Enumerating
+    {
+        get
+        {
+            Debug.Assert(_enumerationCount >= 0);
+            return _enumerationCount > 0;
+        }
+    }
+
     /// <inheritdoc/>
     public abstract T this[int index] { get; set; }
 
@@ -32,13 +47,34 @@ public abstract class ListBase<T> : DisposableBase, IList<T>, IReadOnlyList<T>, 
     public abstract void Clear();
 
     /// <inheritdoc/>
-    public virtual bool Contains(T item) => IndexOf(item) >= 0;
+    public bool Contains(T item) => IndexOf(item) >= 0;
 
     /// <inheritdoc/>
     public abstract void CopyTo(T[] array, int arrayIndex);
 
     /// <inheritdoc/>
     public abstract int IndexOf(T item);
+
+    /// <inheritdoc/>
+    public virtual int IndexOf(T item, IEqualityComparer<T> comparer)
+    {
+        // .NET 10 is getting a number of extensions for IEqualityComparer for spans, which will
+        // allow optimizing this method to use those extensions in derived classes.
+        //
+        // https://github.com/dotnet/runtime/issues/28934
+
+        ArgumentNull.ThrowIfNull(comparer);
+
+        for (int i = 0; i < Count; i++)
+        {
+            if (comparer.Equals(this[i], item))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
 
     /// <inheritdoc/>
     public abstract void Insert(int index, T item);
@@ -59,9 +95,40 @@ public abstract class ListBase<T> : DisposableBase, IList<T>, IReadOnlyList<T>, 
     /// <inheritdoc/>
     public abstract void RemoveAt(int index);
 
+    /// <inheritdoc cref="List{T}.RemoveAll(Predicate{T})"/>
+    public virtual int RemoveAll(Predicate<T> match)
+    {
+        ArgumentNull.ThrowIfNull(match);
+        int removedCount = 0;
+        for (int i = Count - 1; i >= 0; i--)
+        {
+            if (match(this[i]))
+            {
+                RemoveAt(i);
+                removedCount++;
+            }
+        }
+
+        return removedCount;
+    }
+
     /// <inheritdoc/>
     public abstract void CopyTo(Array array, int index);
 
+    /// <inheritdoc/>
+    IEnumerator<T> IEnumerable<T>.GetEnumerator()
+    {
+        Debug.Assert(
+            !DebugOnly.CallerIsInToukiAssembly(),
+            "We should be attempting to not use this method, but it is required for the interface.");
+
+        return new Enumerator<T>(this);
+    }
+
+    /// <inheritdoc cref="IEnumerable{T}.GetEnumerator"/>
+    public Enumerator GetEnumerator() => new Enumerator(this);
+
+    #region Non generic interface methods
     object? IList.this[int index]
     {
         get => this[index];
@@ -117,18 +184,15 @@ public abstract class ListBase<T> : DisposableBase, IList<T>, IReadOnlyList<T>, 
 
     object ICollection.SyncRoot => this;
 
-    /// <inheritdoc/>
-    IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetIEnumerableEnumerator();
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        Debug.Assert(
+            !DebugOnly.CallerIsInToukiAssembly(),
+            "We should be attempting to not use this method, but it is required for the interface.");
 
-    /// <inheritdoc cref="IEnumerable{T}.GetEnumerator"/>
-    /// <remarks>
-    ///  <para>
-    ///   This is necessary to allow the derived classes to provide a pattern matched value type enumerator.
-    ///  </para>
-    /// </remarks>
-    protected abstract IEnumerator<T> GetIEnumerableEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => GetIEnumerableEnumerator();
+        return new Enumerator<T>(this);
+    }
 
     bool IList.Contains(object? value) => value is T item && Contains(item);
+    #endregion
 }

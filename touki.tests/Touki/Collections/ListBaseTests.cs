@@ -25,13 +25,9 @@ public class ListBaseTests
 
         public override void Clear() => _items.Clear();
 
-        public override bool Contains(T item) => _items.Contains(item);
-
         public override void CopyTo(T[] array, int arrayIndex) => _items.CopyTo(array, arrayIndex);
 
         public override void CopyTo(Array array, int index) => ((ICollection)_items).CopyTo(array, index);
-
-        protected override IEnumerator<T> GetIEnumerableEnumerator() => _items.GetEnumerator();
 
         public override int IndexOf(T item) => _items.IndexOf(item);
 

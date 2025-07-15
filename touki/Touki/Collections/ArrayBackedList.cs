@@ -7,7 +7,7 @@ namespace Touki.Collections;
 /// <summary>
 ///  Base list implementation that uses an array as its backing storage. Does not allow nulls.
 /// </summary>
-public abstract class ArrayBackedList<T> : ListBase<T> where T : notnull
+public abstract class ArrayBackedList<T> : ContiguousList<T> where T : notnull
 {
     private T[] _items = [];
     private int _count;
@@ -98,6 +98,51 @@ public abstract class ArrayBackedList<T> : ListBase<T> where T : notnull
         _items[_count] = default!;
     }
 
+    /// <inheritdoc/>
+    public override int RemoveAll(Predicate<T> match)
+    {
+        ArgumentNull.ThrowIfNull(match);
+
+        int freeIndex = 0;   // the first free slot in items array
+
+        // Find the first item which needs to be removed.
+        while (freeIndex < _count && !match(_items[freeIndex]))
+        {
+            freeIndex++;
+        }
+
+        if (freeIndex >= _count)
+        {
+            return 0;
+        }
+
+        int current = freeIndex + 1;
+        while (current < _count)
+        {
+            // Find the first item which needs to be kept.
+            while (current < _count && match(_items[current]))
+            {
+                current++;
+            }
+
+            if (current < _count)
+            {
+                // Copy item to the free slot.
+                _items[freeIndex++] = _items[current++];
+            }
+        }
+
+        if (TypeInfo<T>.IsReferenceOrContainsReferences())
+        {
+            // Clear the elements so that the gc can reclaim the references.
+            Array.Clear(_items, freeIndex, _count - freeIndex);
+        }
+
+        int result = _count - freeIndex;
+        _count = freeIndex;
+        return result;
+    }
+
     /// <summary>
     ///  Ensures that the list can hold at least the specified number of elements.
     /// </summary>
@@ -129,7 +174,7 @@ public abstract class ArrayBackedList<T> : ListBase<T> where T : notnull
 
         if (_items.Length > 0)
         {
-            ReturnArray(_items);
+            ReturnArrayInternal(_items);
         }
 
         _items = newArray;
@@ -159,6 +204,16 @@ public abstract class ArrayBackedList<T> : ListBase<T> where T : notnull
     /// <param name="mininumCapacity">The array needs to be at leas this size.</param>
     protected abstract T[] GetNewArray(int mininumCapacity);
 
+    private void ReturnArrayInternal(T[] array)
+    {
+        if (Enumerating)
+        {
+            ThrowHelper.ThrowInvalidOperation("Cannot return array while enumerating.");
+        }
+
+        ReturnArray(array);
+    }
+
     /// <summary>
     ///  Override to provide the logic for dealing with an array that is no longer needed
     /// </summary>
@@ -183,7 +238,7 @@ public abstract class ArrayBackedList<T> : ListBase<T> where T : notnull
     {
         if ((array is not null) && (array.Rank != 1))
         {
-            ThrowHelper.ThrowArgumentException("Multidimensional arrays are not supported.");
+            ThrowHelper.ThrowArgument(nameof(array), "Multidimensional arrays are not supported.");
         }
 
         // Delegate other error checking to Array.Copy.
@@ -203,28 +258,20 @@ public abstract class ArrayBackedList<T> : ListBase<T> where T : notnull
         Array.Copy(_items, index, array, arrayIndex, count);
     }
 
-    /// <summary>
-    ///  Returns an enumerator that iterates through the list.
-    /// </summary>
-    /// <returns>An enumerator for the list.</returns>
-    /// <remarks>
-    ///  <para>
-    ///   This is pattern matched by C# for optimized `foreach` behavior.
-    ///  </para>
-    /// </remarks>
-    public ArraySegmentEnumerator<T> GetEnumerator() => new(new(_items, 0, _count));
-
-    /// <inheritdoc/>
-    protected override IEnumerator<T> GetIEnumerableEnumerator() => GetEnumerator();
-
     /// <inheritdoc/>
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            ReturnArray(_items);
+            ReturnArrayInternal(_items);
             _items = [];
             _count = 0;
         }
     }
+
+    /// <inheritdoc/>
+    public override Span<T> UnsafeValues => new(_items, 0, _count);
+
+    /// <inheritdoc/>
+    public override ReadOnlySpan<T> Values => new(_items, 0, _count);
 }
