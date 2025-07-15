@@ -4,11 +4,25 @@
 
 namespace Touki;
 
-internal static class ThrowHelper
+/// <summary>
+///  Helper class for throwing exceptions.
+/// </summary>
+public static class ThrowHelper
 {
+    /// <inheritdoc cref="InvalidOperationException(string)"/>
     [DoesNotReturn]
-    internal static void ThrowArgumentException(string? paramName = null, string? message = null)
-    {
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void ThrowInvalidOperation(string message) => throw new InvalidOperationException(message);
+
+    /// <inheritdoc cref="ArgumentException(string, string)"/>
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void ThrowArgument(string paramName, string? message = null) =>
         throw new ArgumentException(message, paramName);
-    }
+
+    /// <inheritdoc cref="ArgumentOutOfRangeException(string, string)"/>
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void ThrowArgumentOutOfRange(string paramName, string? message = null) =>
+        throw new ArgumentOutOfRangeException(paramName, message);
 }

@@ -31,7 +31,7 @@ public static class StringExtensions
         }
         else
         {
-            ThrowHelper.ThrowArgumentException(nameof(destination));
+            ThrowHelper.ThrowArgument(nameof(destination));
         }
     }
 }

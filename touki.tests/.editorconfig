@@ -12,3 +12,6 @@ dotnet_diagnostic.CA1861.severity = none
 
 # CA1510: Use ArgumentNullException throw helper
 dotnet_diagnostic.CA1510.severity = none
+
+# CA1859: Use concrete types when possible for improved performance
+dotnet_diagnostic.CA1859.severity = silent
