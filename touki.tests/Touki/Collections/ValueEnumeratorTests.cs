@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information
 
 using System.Collections;
+using System.Reflection;
 
 namespace Touki.Collections;
 
@@ -139,7 +140,13 @@ public class ValueEnumeratorTests
         Type type = typeof(ValueEnumerator<,>);
 
         type.IsValueType.Should().BeTrue();
+#if NET5_0_OR_GREATER
         type.IsByRefLike.Should().BeTrue();
+#else
+        // IsByRefLike is not available in .NET Framework, but we can verify it's a value type
+        // The ref struct constraint is enforced by the compiler
+        type.IsValueType.Should().BeTrue();
+#endif
     }
 
     [Fact]
@@ -218,7 +225,7 @@ public class ValueEnumeratorTests
     }
 
     [Fact]
-    public void ValueEnumerator_ReadonlyMethods_WorkCorrectly()
+    public void ValueEnumerator_Methods_WorkCorrectly()
     {
         int[] items = [100, 200];
         TestEnumerator<int> innerEnumerator = new(items);
@@ -226,7 +233,7 @@ public class ValueEnumeratorTests
 
         enumerator.MoveNext();
 
-        // Current and MoveNext are readonly methods - test they can be called on readonly reference
+        // Current is readonly and can be called on readonly reference
         int current = enumerator.Current;
         bool canMoveNext = enumerator.MoveNext();
 
@@ -271,8 +278,10 @@ public class ValueEnumeratorTests
         Type valueType = genericArguments[1];
 
         // First generic parameter (TEnumerator) should have struct constraint and interface constraints
+#if NET5_0_OR_GREATER
         GenericParameterAttributes attributes = enumeratorType.GenericParameterAttributes;
         attributes.Should().HaveFlag(GenericParameterAttributes.NotNullableValueTypeConstraint);
+#endif
 
         Type[] constraints = enumeratorType.GetGenericParameterConstraints();
         constraints.Should().Contain(typeof(IDisposable));

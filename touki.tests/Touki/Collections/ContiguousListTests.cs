@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information
 
 using System.ComponentModel;
+using System.Reflection;
 
 namespace Touki.Collections;
 
@@ -213,16 +214,29 @@ public class ContiguousListTests
         PropertyInfo? property = type.GetProperty(nameof(ContiguousList<int>.UnsafeValues));
 
         property.Should().NotBeNull();
+        
+        PropertyInfo propertyInfo = property!;
 
-        // Check for EditorBrowsable attribute
-        EditorBrowsableAttribute? editorBrowsable = property!.GetCustomAttribute<EditorBrowsableAttribute>();
+        // Check for EditorBrowsable attribute - use conditional compilation for compatibility
+#if NET5_0_OR_GREATER
+        EditorBrowsableAttribute? editorBrowsable = propertyInfo.GetCustomAttribute<EditorBrowsableAttribute>();
         editorBrowsable.Should().NotBeNull();
         editorBrowsable!.State.Should().Be(EditorBrowsableState.Never);
 
         // Check for Browsable attribute
-        BrowsableAttribute? browsable = property.GetCustomAttribute<BrowsableAttribute>();
+        BrowsableAttribute? browsable = propertyInfo.GetCustomAttribute<BrowsableAttribute>();
         browsable.Should().NotBeNull();
         browsable!.Browsable.Should().BeFalse();
+#else
+        // For .NET Framework, check attributes using standard reflection
+        object[] editorBrowsableAttrs = propertyInfo.GetCustomAttributes(typeof(EditorBrowsableAttribute), false);
+        editorBrowsableAttrs.Should().HaveCount(1);
+        ((EditorBrowsableAttribute)editorBrowsableAttrs[0]).State.Should().Be(EditorBrowsableState.Never);
+
+        object[] browsableAttrs = propertyInfo.GetCustomAttributes(typeof(BrowsableAttribute), false);
+        browsableAttrs.Should().HaveCount(1);
+        ((BrowsableAttribute)browsableAttrs[0]).Browsable.Should().BeFalse();
+#endif
     }
 
     [Fact]
@@ -327,10 +341,12 @@ public class ContiguousListTests
         Type[] constraints = listType.GetGenericArguments()[0].GetGenericParameterConstraints();
 
         // In .NET 6+, the notnull constraint is represented as a GenericParameterAttributes flag
+#if NET5_0_OR_GREATER
         GenericParameterAttributes attributes = listType.GetGenericArguments()[0].GenericParameterAttributes;
         bool hasNotNullConstraint = (attributes & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0 ||
-                                    listType.GetGenericArguments()[0].GetCustomAttributes()
+                                    listType.GetGenericArguments()[0].GetCustomAttributes(false)
                                         .Any(attr => attr.GetType().Name.Contains("NotNull"));
+#endif
 
         // At minimum, we know the constraint is enforced by the compiler
         // so we can test that the type compiles with value types and reference types

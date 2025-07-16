@@ -101,7 +101,7 @@ public class ArraySegmentEnumeratorTests
         ArraySegmentEnumerator<int> enumerator = new(segment);
         IEnumerator nonGenericEnumerator = enumerator;
 
-        enumerator.MoveNext();
+        nonGenericEnumerator.MoveNext();
         object? current = nonGenericEnumerator.Current;
 
         current.Should().Be(84);
