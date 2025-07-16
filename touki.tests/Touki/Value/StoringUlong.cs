@@ -55,7 +55,7 @@ public class StoringULong
     [MemberData(nameof(ULongData))]
     public void ULongInOut(ulong @ulong)
     {
-        Value value = new(@ulong);
+        Value value = @ulong;
         bool success = value.TryGetValue(out ulong result);
         Assert.True(success);
         Assert.Equal(@ulong, result);
@@ -69,7 +69,7 @@ public class StoringULong
     public void NullableULongInULongOut(ulong @ulong)
     {
         ulong? source = @ulong;
-        Value value = new(source);
+        Value value = source;
 
         bool success = value.TryGetValue(out ulong result);
         Assert.True(success);
@@ -85,7 +85,7 @@ public class StoringULong
     public void ULongInNullableULongOut(ulong @ulong)
     {
         ulong source = @ulong;
-        Value value = new(source);
+        Value value = source;
         bool success = value.TryGetValue(out ulong? result);
         Assert.True(success);
         Assert.Equal(@ulong, result);
@@ -99,7 +99,7 @@ public class StoringULong
     {
         ulong i = @ulong;
         object o = i;
-        Value value = new(o);
+        Value value = Value.Create(o);
 
         Assert.Equal(typeof(ulong), value.Type);
         Assert.True(value.TryGetValue(out ulong result));
@@ -110,7 +110,7 @@ public class StoringULong
 
         ulong? n = @ulong;
         o = n;
-        value = new(o);
+        value = Value.Create(o);
 
         Assert.Equal(typeof(ulong), value.Type);
         Assert.True(value.TryGetValue(out result));
@@ -133,13 +133,13 @@ public class StoringULong
     [MemberData(nameof(ULongData))]
     public void OutAsObject(ulong @ulong)
     {
-        Value value = new(@ulong);
+        Value value = @ulong;
         object o = value.As<object>();
         Assert.Equal(typeof(ulong), o.GetType());
         Assert.Equal(@ulong, (ulong)o);
 
         ulong? n = @ulong;
-        value = new(n);
+        value = n;
         o = value.As<object>();
         Assert.Equal(typeof(ulong), o.GetType());
         Assert.Equal(@ulong, (ulong)o);

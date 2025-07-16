@@ -56,7 +56,7 @@ public class StoringSByte
     [MemberData(nameof(SByteData))]
     public void SByteInOut(sbyte @sbyte)
     {
-        Value value = new(@sbyte);
+        Value value = @sbyte;
         bool success = value.TryGetValue(out sbyte result);
         Assert.True(success);
         Assert.Equal(@sbyte, result);
@@ -70,7 +70,7 @@ public class StoringSByte
     public void NullableSByteInSByteOut(sbyte @sbyte)
     {
         sbyte? source = @sbyte;
-        Value value = new(source);
+        Value value = source;
 
         bool success = value.TryGetValue(out sbyte result);
         Assert.True(success);
@@ -86,7 +86,7 @@ public class StoringSByte
     public void SByteInNullableSByteOut(sbyte @sbyte)
     {
         sbyte source = @sbyte;
-        Value value = new(source);
+        Value value = source;
         bool success = value.TryGetValue(out sbyte? result);
         Assert.True(success);
         Assert.Equal(@sbyte, result);
@@ -108,13 +108,13 @@ public class StoringSByte
     [MemberData(nameof(SByteData))]
     public void OutAsObject(sbyte @sbyte)
     {
-        Value value = new(@sbyte);
+        Value value = @sbyte;
         object o = value.As<object>();
         Assert.Equal(typeof(sbyte), o.GetType());
         Assert.Equal(@sbyte, (sbyte)o);
 
         sbyte? n = @sbyte;
-        value = new(n);
+        value = n;
         o = value.As<object>();
         Assert.Equal(typeof(sbyte), o.GetType());
         Assert.Equal(@sbyte, (sbyte)o);

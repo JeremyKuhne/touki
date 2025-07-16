@@ -16,13 +16,13 @@ public class StoringDateTimeOffset
 
     [Theory]
     [MemberData(nameof(DateTimeOffsetData))]
-    public void DateTimeOffsetImplicit(DateTimeOffset @DateTimeOffset)
+    public void DateTimeOffsetImplicit(DateTimeOffset dateTimeOffset)
     {
-        Value value = @DateTimeOffset;
-        Assert.Equal(@DateTimeOffset, value.As<DateTimeOffset>());
+        Value value = dateTimeOffset;
+        Assert.Equal(dateTimeOffset, value.As<DateTimeOffset>());
         Assert.Equal(typeof(DateTimeOffset), value.Type);
 
-        DateTimeOffset? source = @DateTimeOffset;
+        DateTimeOffset? source = dateTimeOffset;
         value = source;
         Assert.Equal(source, value.As<DateTimeOffset?>());
         Assert.Equal(typeof(DateTimeOffset), value.Type);
@@ -30,44 +30,44 @@ public class StoringDateTimeOffset
 
     [Theory]
     [MemberData(nameof(DateTimeOffsetData))]
-    public void DateTimeOffsetInOut(DateTimeOffset @DateTimeOffset)
+    public void DateTimeOffsetInOut(DateTimeOffset dateTimeOffset)
     {
-        Value value = new(@DateTimeOffset);
+        Value value = dateTimeOffset;
         bool success = value.TryGetValue(out DateTimeOffset result);
         Assert.True(success);
-        Assert.Equal(@DateTimeOffset, result);
+        Assert.Equal(dateTimeOffset, result);
 
-        Assert.Equal(@DateTimeOffset, value.As<DateTimeOffset>());
-        Assert.Equal(@DateTimeOffset, (DateTimeOffset)value);
+        Assert.Equal(dateTimeOffset, value.As<DateTimeOffset>());
+        Assert.Equal(dateTimeOffset, (DateTimeOffset)value);
     }
 
     [Theory]
     [MemberData(nameof(DateTimeOffsetData))]
-    public void NullableDateTimeOffsetInDateTimeOffsetOut(DateTimeOffset @DateTimeOffset)
+    public void NullableDateTimeOffsetInDateTimeOffsetOut(DateTimeOffset dateTimeOffset)
     {
-        DateTimeOffset? source = @DateTimeOffset;
-        Value value = new(source);
+        DateTimeOffset? source = dateTimeOffset;
+        Value value = source;
 
         bool success = value.TryGetValue(out DateTimeOffset result);
         Assert.True(success);
-        Assert.Equal(@DateTimeOffset, result);
+        Assert.Equal(dateTimeOffset, result);
 
-        Assert.Equal(@DateTimeOffset, value.As<DateTimeOffset>());
+        Assert.Equal(dateTimeOffset, value.As<DateTimeOffset>());
 
-        Assert.Equal(@DateTimeOffset, (DateTimeOffset)value);
+        Assert.Equal(dateTimeOffset, (DateTimeOffset)value);
     }
 
     [Theory]
     [MemberData(nameof(DateTimeOffsetData))]
-    public void DateTimeOffsetInNullableDateTimeOffsetOut(DateTimeOffset @DateTimeOffset)
+    public void DateTimeOffsetInNullableDateTimeOffsetOut(DateTimeOffset dateTimeOffset)
     {
-        DateTimeOffset source = @DateTimeOffset;
-        Value value = new(source);
+        DateTimeOffset source = dateTimeOffset;
+        Value value = source;
         bool success = value.TryGetValue(out DateTimeOffset? result);
         Assert.True(success);
-        Assert.Equal(@DateTimeOffset, result);
+        Assert.Equal(dateTimeOffset, result);
 
-        Assert.Equal(@DateTimeOffset, (DateTimeOffset?)value);
+        Assert.Equal(dateTimeOffset, (DateTimeOffset?)value);
     }
 
     [Fact]
@@ -82,17 +82,17 @@ public class StoringDateTimeOffset
 
     [Theory]
     [MemberData(nameof(DateTimeOffsetData))]
-    public void OutAsObject(DateTimeOffset @DateTimeOffset)
+    public void OutAsObject(DateTimeOffset dateTimeOffset)
     {
-        Value value = new(@DateTimeOffset);
+        Value value = dateTimeOffset;
         object o = value.As<object>();
         Assert.Equal(typeof(DateTimeOffset), o.GetType());
-        Assert.Equal(@DateTimeOffset, (DateTimeOffset)o);
+        Assert.Equal(dateTimeOffset, (DateTimeOffset)o);
 
-        DateTimeOffset? n = @DateTimeOffset;
-        value = new(n);
+        DateTimeOffset? n = dateTimeOffset;
+        value = n;
         o = value.As<object>();
         Assert.Equal(typeof(DateTimeOffset), o.GetType());
-        Assert.Equal(@DateTimeOffset, (DateTimeOffset)o);
+        Assert.Equal(dateTimeOffset, (DateTimeOffset)o);
     }
 }

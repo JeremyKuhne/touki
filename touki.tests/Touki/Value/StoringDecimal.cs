@@ -30,7 +30,7 @@ public class StoringDecimal
     [MemberData(nameof(DecimalData))]
     public void DecimalInOut(decimal @decimal)
     {
-        Value value = new(@decimal);
+        Value value = @decimal;
         bool success = value.TryGetValue(out decimal result);
         Assert.True(success);
         Assert.Equal(@decimal, result);
@@ -44,7 +44,7 @@ public class StoringDecimal
     public void NullableDecimalInDecimalOut(decimal @decimal)
     {
         decimal? source = @decimal;
-        Value value = new(source);
+        Value value = Value.Create(source);
 
         bool success = value.TryGetValue(out decimal result);
         Assert.True(success);
@@ -60,7 +60,7 @@ public class StoringDecimal
     public void DecimalInNullableDecimalOut(decimal @decimal)
     {
         decimal source = @decimal;
-        Value value = new(source);
+        Value value = Value.Create(source);
         bool success = value.TryGetValue(out decimal? result);
         Assert.True(success);
         Assert.Equal(@decimal, result);
@@ -82,13 +82,13 @@ public class StoringDecimal
     [MemberData(nameof(DecimalData))]
     public void OutAsObject(decimal @decimal)
     {
-        Value value = new(@decimal);
+        Value value = Value.Create(@decimal);
         object o = value.As<object>();
         Assert.Equal(typeof(decimal), o.GetType());
         Assert.Equal(@decimal, (decimal)o);
 
         decimal? n = @decimal;
-        value = new(n);
+        value = n;
         o = value.As<object>();
         Assert.Equal(typeof(decimal), o.GetType());
         Assert.Equal(@decimal, (decimal)o);

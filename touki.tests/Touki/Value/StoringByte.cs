@@ -55,7 +55,7 @@ public class StoringByte
     [MemberData(nameof(ByteData))]
     public void ByteInOut(byte @byte)
     {
-        Value value = new(@byte);
+        Value value = @byte;
         bool success = value.TryGetValue(out byte result);
         Assert.True(success);
         Assert.Equal(@byte, result);
@@ -69,7 +69,7 @@ public class StoringByte
     public void NullableByteInByteOut(byte @byte)
     {
         byte? source = @byte;
-        Value value = new(source);
+        Value value = source;
 
         bool success = value.TryGetValue(out byte result);
         Assert.True(success);
@@ -85,7 +85,7 @@ public class StoringByte
     public void ByteInNullableByteOut(byte @byte)
     {
         byte source = @byte;
-        Value value = new(source);
+        Value value = source;
         bool success = value.TryGetValue(out byte? result);
         Assert.True(success);
         Assert.Equal(@byte, result);
@@ -99,7 +99,7 @@ public class StoringByte
     {
         byte i = @byte;
         object o = i;
-        Value value = new(o);
+        Value value = Value.Create(o);
 
         Assert.Equal(typeof(byte), value.Type);
         Assert.True(value.TryGetValue(out byte result));
@@ -110,7 +110,7 @@ public class StoringByte
 
         byte? n = @byte;
         o = n;
-        value = new(o);
+        value = Value.Create(o);
 
         Assert.Equal(typeof(byte), value.Type);
         Assert.True(value.TryGetValue(out result));
@@ -133,13 +133,13 @@ public class StoringByte
     [MemberData(nameof(ByteData))]
     public void OutAsObject(byte @byte)
     {
-        Value value = new(@byte);
+        Value value = @byte;
         object o = value.As<object>();
         Assert.Equal(typeof(byte), o.GetType());
         Assert.Equal(@byte, (byte)o);
 
         byte? n = @byte;
-        value = new(n);
+        value = n;
         o = value.As<object>();
         Assert.Equal(typeof(byte), o.GetType());
         Assert.Equal(@byte, (byte)o);

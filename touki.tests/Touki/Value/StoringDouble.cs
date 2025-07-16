@@ -59,7 +59,7 @@ public class StoringDouble
     [MemberData(nameof(DoubleData))]
     public void DoubleInOut(double @double)
     {
-        Value value = new(@double);
+        Value value = @double;
         bool success = value.TryGetValue(out double result);
         Assert.True(success);
         Assert.Equal(@double, result);
@@ -73,7 +73,7 @@ public class StoringDouble
     public void NullableDoubleInDoubleOut(double @double)
     {
         double? source = @double;
-        Value value = new(source);
+        Value value = source;
 
         bool success = value.TryGetValue(out double result);
         Assert.True(success);
@@ -89,7 +89,7 @@ public class StoringDouble
     public void DoubleInNullableDoubleOut(double @double)
     {
         double source = @double;
-        Value value = new(source);
+        Value value = source;
         bool success = value.TryGetValue(out double? result);
         Assert.True(success);
         Assert.Equal(@double, result);
@@ -103,7 +103,7 @@ public class StoringDouble
     {
         double i = @double;
         object o = i;
-        Value value = new(o);
+        Value value = Value.Create(o);
 
         Assert.Equal(typeof(double), value.Type);
         Assert.True(value.TryGetValue(out double result));
@@ -114,7 +114,7 @@ public class StoringDouble
 
         double? n = @double;
         o = n;
-        value = new(o);
+        value = Value.Create(o);
 
         Assert.Equal(typeof(double), value.Type);
         Assert.True(value.TryGetValue(out result));
@@ -137,13 +137,13 @@ public class StoringDouble
     [MemberData(nameof(DoubleData))]
     public void OutAsObject(double @double)
     {
-        Value value = new(@double);
+        Value value = @double;
         object o = value.As<object>();
         Assert.Equal(typeof(double), o.GetType());
         Assert.Equal(@double, (double)o);
 
         double? n = @double;
-        value = new(n);
+        value = n;
         o = value.As<object>();
         Assert.Equal(typeof(double), o.GetType());
         Assert.Equal(@double, (double)o);

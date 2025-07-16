@@ -55,7 +55,7 @@ public class StoringUInt
     [MemberData(nameof(UIntData))]
     public void UIntInOut(uint @uint)
     {
-        Value value = new(@uint);
+        Value value = @uint;
         bool success = value.TryGetValue(out uint result);
         Assert.True(success);
         Assert.Equal(@uint, result);
@@ -69,7 +69,7 @@ public class StoringUInt
     public void NullableUIntInUIntOut(uint @uint)
     {
         uint? source = @uint;
-        Value value = new(source);
+        Value value = source;
 
         bool success = value.TryGetValue(out uint result);
         Assert.True(success);
@@ -85,7 +85,7 @@ public class StoringUInt
     public void UIntInNullableUIntOut(uint @uint)
     {
         uint source = @uint;
-        Value value = new(source);
+        Value value = source;
         bool success = value.TryGetValue(out uint? result);
         Assert.True(success);
         Assert.Equal(@uint, result);
@@ -99,7 +99,7 @@ public class StoringUInt
     {
         uint i = @uint;
         object o = i;
-        Value value = new(o);
+        Value value = Value.Create(o);
 
         Assert.Equal(typeof(uint), value.Type);
         Assert.True(value.TryGetValue(out uint result));
@@ -110,7 +110,7 @@ public class StoringUInt
 
         uint? n = @uint;
         o = n;
-        value = new(o);
+        value = Value.Create(o);
 
         Assert.Equal(typeof(uint), value.Type);
         Assert.True(value.TryGetValue(out result));
@@ -133,13 +133,13 @@ public class StoringUInt
     [MemberData(nameof(UIntData))]
     public void OutAsObject(uint @uint)
     {
-        Value value = new(@uint);
+        Value value = @uint;
         object o = value.As<object>();
         Assert.Equal(typeof(uint), o.GetType());
         Assert.Equal(@uint, (uint)o);
 
         uint? n = @uint;
-        value = new(n);
+        value = n;
         o = value.As<object>();
         Assert.Equal(typeof(uint), o.GetType());
         Assert.Equal(@uint, (uint)o);

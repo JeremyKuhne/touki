@@ -9,7 +9,7 @@ public class StoringNull
     [Fact]
     public void GetIntFromStoredNull()
     {
-        Value nullFastValue = new((object?)null);
+        Value nullFastValue = Value.Create((object?)null);
         Assert.Throws<InvalidCastException>(() => _ = nullFastValue.As<int>());
 
         bool success = nullFastValue.TryGetValue(out int result);

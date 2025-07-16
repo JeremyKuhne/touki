@@ -68,7 +68,7 @@ public class StoringBoolean
 
         using (MemoryWatch.Create)
         {
-            value = new(@bool);
+            value = @bool;
             success = value.TryGetValue(out result);
         }
 
@@ -90,7 +90,7 @@ public class StoringBoolean
 
         using (MemoryWatch.Create)
         {
-            value = new(source);
+            value = source;
             success = value.TryGetValue(out result);
         }
 
@@ -107,7 +107,7 @@ public class StoringBoolean
     public void BooleanInNullableBooleanOut(bool @bool)
     {
         bool source = @bool;
-        Value value = new(source);
+        Value value = source;
         bool success = value.TryGetValue(out bool? result);
         Assert.True(success);
         Assert.Equal(@bool, result);
@@ -121,7 +121,7 @@ public class StoringBoolean
     {
         bool i = @bool;
         object o = i;
-        Value value = new(o);
+        Value value = Value.Create(o);
 
         Assert.Equal(typeof(bool), value.Type);
         Assert.True(value.TryGetValue(out bool result));
@@ -132,7 +132,7 @@ public class StoringBoolean
 
         bool? n = @bool;
         o = n;
-        value = new(o);
+        value = Value.Create(o);
 
         Assert.Equal(typeof(bool), value.Type);
         Assert.True(value.TryGetValue(out result));
@@ -161,13 +161,13 @@ public class StoringBoolean
     [MemberData(nameof(BoolData))]
     public void OutAsObject(bool @bool)
     {
-        Value value = new(@bool);
+        Value value = @bool;
         object o = value.As<object>();
         Assert.Equal(typeof(bool), o.GetType());
         Assert.Equal(@bool, (bool)o);
 
         bool? n = @bool;
-        value = new(n);
+        value = n;
         o = value.As<object>();
         Assert.Equal(typeof(bool), o.GetType());
         Assert.Equal(@bool, (bool)o);

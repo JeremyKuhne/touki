@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using System.Runtime.CompilerServices;
-
 namespace Touki.ValueTests;
 
 public class StoringEnum
@@ -52,11 +50,11 @@ public class StoringEnum
     public void BoxedEnum()
     {
         DayOfWeek day = DayOfWeek.Monday;
-        Value value = new(day);
+        Value value = Value.Create((object)day);
         Assert.True(value.TryGetValue(out DayOfWeek? nullDay));
         Assert.Equal(day, nullDay);
 
-        value = new((DayOfWeek?)day);
+        value = Value.Create((object)(DayOfWeek?)day);
         Assert.True(value.TryGetValue(out DayOfWeek outDay));
         Assert.Equal(day, outDay);
     }
@@ -78,12 +76,12 @@ public class StoringEnum
         Assert.Equal(@enum, nullResult!.Value);
 
         // Create boxed
-        value = new(@enum);
+        value = Value.Create((object)@enum);
         Assert.True(value.TryGetValue(out result));
         Assert.Equal(@enum, result);
         Assert.True(value.TryGetValue(out nullResult));
         Assert.Equal(@enum, nullResult!.Value);
-        value = new((ByteEnum?)@enum);
+        value = Value.Create((object)(ByteEnum?)@enum);
         Assert.True(value.TryGetValue(out result));
         Assert.Equal(@enum, result);
         Assert.True(value.TryGetValue(out nullResult));
@@ -107,12 +105,12 @@ public class StoringEnum
         Assert.Equal(@enum, nullResult!.Value);
 
         // Create boxed
-        value = new(@enum);
+        value = Value.Create((object)@enum);
         Assert.True(value.TryGetValue(out result));
         Assert.Equal(@enum, result);
         Assert.True(value.TryGetValue(out nullResult));
         Assert.Equal(@enum, nullResult!.Value);
-        value = new((ShortEnum?)@enum);
+        value = Value.Create((object)(ShortEnum?)@enum);
         Assert.True(value.TryGetValue(out result));
         Assert.Equal(@enum, result);
         Assert.True(value.TryGetValue(out nullResult));
@@ -136,12 +134,12 @@ public class StoringEnum
         Assert.Equal(@enum, nullResult!.Value);
 
         // Create boxed
-        value = new(@enum);
+        value = Value.Create((object)@enum);
         Assert.True(value.TryGetValue(out result));
         Assert.Equal(@enum, result);
         Assert.True(value.TryGetValue(out nullResult));
         Assert.Equal(@enum, nullResult!.Value);
-        value = new((LongEnum?)@enum);
+        value = Value.Create((object)(LongEnum?)@enum);
         Assert.True(value.TryGetValue(out result));
         Assert.Equal(@enum, result);
         Assert.True(value.TryGetValue(out nullResult));
