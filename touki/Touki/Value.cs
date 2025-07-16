@@ -23,7 +23,7 @@ namespace Touki;
 ///  </para>
 ///  <para>
 ///   The class contains implicit and explicit operators for converting between <see cref="Value"/> and various types,
-///   but it avoid implicit boxing it does not implicitly convert from <see langword="object"/> to <see cref="Value"/>.
+///   but it avoids implicit boxing, so it does not implicitly convert from <see langword="object"/> to <see cref="Value"/>.
 ///   Use <see cref="Create{T}(T)"/> to create instances for types that do not have implicit conversion.
 ///  </para>
 /// </remarks>
