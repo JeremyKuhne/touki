@@ -19,17 +19,33 @@
 - Avoid putting comments at the end of lines.
 - Comments should be before the code they describe, or inside blocks to describe the condition the block is handling.
 - Create XML comment documentation for all public methods, properties, and types.
+- Use `<para>` blocks in `<remarks>` to separate different sections of remarks.
+- Indent XML comments by one space for each level of nesting:
+```c#
+/// <summary>
+///  This is the summary.
+/// </summary>
+/// <remarks>
+///  <para>
+///   This is a remark.
+///  </para>
+/// </remarks>
+```
+- Use `<inheritdoc/>` and `<inheritdoc cref="..."/>` to inherit documentation from base classes, interfaces where applicable.
+- For method overloads, use `<inheritdoc cref="MethodName"/>` to inherit documentation from the method with the most arguments,
+  overriding tags where they differ.
 
 # Line breaks and white space
 - Never put multiple statements on a single line.
 - Ensure that there is always a single blank line between methods and properties.
 - Ensure line formatting is correct when making changes to existing code.
 - Preserve existing spaces and line breaks when making edits, except when fixing whitespace issues.
-- Indents are 4 spaces for all code except for XML, which should be indented by one space.
+- Indents are 4 spaces for all code except for XML (including XML comments in sources), which should have nested tags
+  and content indented by a space for each level.
 - Lines should never end in or contain only spaces or tabs.
-- Lines should be broken at 80 characters if they would otherwise exceed 120 characters.
-- When breaking lines, next lines should be indented.
-- When breaking lines, operators (e.g., `+`, `-`, `&&`, `||`, `or`, `and`) should not be at the end of the previous line, except for `=>`.
+- Lines should be broken before 120 characters if they would otherwise exceed 150 characters.
+- When breaking statements, the next lines should be indented.
+- When breaking statements, operators (e.g., `+`, `-`, `&&`, `||`, `or`, `and`) should not be at the end of the previous line, except for `=>`.
 - When breaking lines in a method call, all parameters should be indented on their own lines.
 
 # Testing
