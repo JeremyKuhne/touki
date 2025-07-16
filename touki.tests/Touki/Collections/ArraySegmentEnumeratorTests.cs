@@ -21,7 +21,7 @@ public class ArraySegmentEnumeratorTests
     [Fact]
     public void Constructor_WithNullArray_ThrowsArgumentNullException()
     {
-        ArraySegment<int> segment = new(null, 0, 0);
+        ArraySegment<int> segment = default;
         Action act = () => new ArraySegmentEnumerator<int>(segment);
         act.Should().Throw<ArgumentNullException>();
     }
