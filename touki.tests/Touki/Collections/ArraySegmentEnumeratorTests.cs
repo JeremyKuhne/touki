@@ -11,7 +11,7 @@ public class ArraySegmentEnumeratorTests
     [Fact]
     public void Constructor_WithValidArraySegment_InitializesCorrectly()
     {
-        int[] array = new int[] { 1, 2, 3, 4, 5 };
+        int[] array = [1, 2, 3, 4, 5];
         ArraySegment<int> segment = new(array, 1, 3);
         ArraySegmentEnumerator<int> enumerator = new(segment);
 
@@ -29,7 +29,7 @@ public class ArraySegmentEnumeratorTests
     [Fact]
     public void MoveNext_WithEmptySegment_ReturnsFalse()
     {
-        int[] array = new int[] { 1, 2, 3 };
+        int[] array = [1, 2, 3];
         ArraySegment<int> segment = new(array, 1, 0);
         ArraySegmentEnumerator<int> enumerator = new(segment);
 
@@ -42,7 +42,7 @@ public class ArraySegmentEnumeratorTests
     [Fact]
     public void MoveNext_WithValidSegment_EnumeratesCorrectly()
     {
-        int[] array = new int[] { 10, 20, 30, 40, 50 };
+        int[] array = [10, 20, 30, 40, 50];
         ArraySegment<int> segment = new(array, 1, 3);
         ArraySegmentEnumerator<int> enumerator = new(segment);
 
@@ -66,7 +66,7 @@ public class ArraySegmentEnumeratorTests
     [Fact]
     public void MoveNext_CalledAfterEnd_ConsistentlyReturnsFalse()
     {
-        int[] array = new int[] { 1, 2 };
+        int[] array = [1, 2];
         ArraySegment<int> segment = new(array, 0, 1);
         ArraySegmentEnumerator<int> enumerator = new(segment);
 
@@ -79,7 +79,7 @@ public class ArraySegmentEnumeratorTests
     [Fact]
     public void Reset_ResetsEnumeratorToInitialState()
     {
-        int[] array = new int[] { 100, 200, 300 };
+        int[] array = [100, 200, 300];
         ArraySegment<int> segment = new(array, 0, 2);
         ArraySegmentEnumerator<int> enumerator = new(segment);
 
@@ -96,7 +96,7 @@ public class ArraySegmentEnumeratorTests
     [Fact]
     public void Current_NonGeneric_ReturnsCurrentElement()
     {
-        int[] array = new int[] { 42, 84, 126 };
+        int[] array = [42, 84, 126];
         ArraySegment<int> segment = new(array, 1, 1);
         ArraySegmentEnumerator<int> enumerator = new(segment);
         IEnumerator nonGenericEnumerator = enumerator;
@@ -110,7 +110,7 @@ public class ArraySegmentEnumeratorTests
     [Fact]
     public void Current_NonGeneric_BeforeMoveNext_ReturnsDefault()
     {
-        int[] array = new int[] { 1, 2, 3 };
+        int[] array = [1, 2, 3];
         ArraySegment<int> segment = new(array, 0, 1);
         ArraySegmentEnumerator<int> enumerator = new(segment);
         IEnumerator nonGenericEnumerator = enumerator;
@@ -123,7 +123,7 @@ public class ArraySegmentEnumeratorTests
     [Fact]
     public void Dispose_DoesNotThrow()
     {
-        int[] array = new int[] { 1, 2, 3 };
+        int[] array = [1, 2, 3];
         ArraySegment<int> segment = new(array, 0, 2);
         ArraySegmentEnumerator<int> enumerator = new(segment);
 
@@ -134,39 +134,39 @@ public class ArraySegmentEnumeratorTests
     [Fact]
     public void EnumerateReferenceTypes_WorksCorrectly()
     {
-        string[] array = new string[] { "zero", "one", "two", "three", "four" };
+        string[] array = ["zero", "one", "two", "three", "four"];
         ArraySegment<string> segment = new(array, 2, 2);
         ArraySegmentEnumerator<string> enumerator = new(segment);
 
-        List<string> results = new List<string>();
+        List<string> results = [];
         while (enumerator.MoveNext())
         {
             results.Add(enumerator.Current);
         }
 
-        results.Should().Equal(new string[] { "two", "three" });
+        results.Should().Equal(["two", "three"]);
     }
 
     [Fact]
     public void EnumerateWithOffsetAndCount_WorksCorrectly()
     {
-        char[] array = new char[] { 'a', 'b', 'c', 'd', 'e', 'f' };
+        char[] array = ['a', 'b', 'c', 'd', 'e', 'f'];
         ArraySegment<char> segment = new(array, 2, 3);
         ArraySegmentEnumerator<char> enumerator = new(segment);
 
-        List<char> results = new List<char>();
+        List<char> results = [];
         while (enumerator.MoveNext())
         {
             results.Add(enumerator.Current);
         }
 
-        results.Should().Equal(new char[] { 'c', 'd', 'e' });
+        results.Should().Equal(['c', 'd', 'e']);
     }
 
     [Fact]
     public void EnumerateSingleElement_WorksCorrectly()
     {
-        double[] array = new double[] { 1.1, 2.2, 3.3 };
+        double[] array = [1.1, 2.2, 3.3];
         ArraySegment<double> segment = new(array, 1, 1);
         ArraySegmentEnumerator<double> enumerator = new(segment);
 

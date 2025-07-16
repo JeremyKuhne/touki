@@ -43,7 +43,7 @@ public class ValueEnumeratorTests
     [Fact]
     public void Constructor_WithValidEnumerator_InitializesCorrectly()
     {
-        int[] items = new int[] { 1, 2, 3 };
+        int[] items = [1, 2, 3];
         TestEnumerator<int> innerEnumerator = new(items);
         ValueEnumerator<TestEnumerator<int>, int> enumerator = new(innerEnumerator);
 
@@ -53,7 +53,7 @@ public class ValueEnumeratorTests
     [Fact]
     public void Current_ReturnsInnerEnumeratorCurrent()
     {
-        string[] items = new string[] { "hello", "world" };
+        string[] items = ["hello", "world"];
         TestEnumerator<string> innerEnumerator = new(items);
         ValueEnumerator<TestEnumerator<string>, string> enumerator = new(innerEnumerator);
 
@@ -66,7 +66,7 @@ public class ValueEnumeratorTests
     [Fact]
     public void MoveNext_DelegatesToInnerEnumerator()
     {
-        int[] items = new int[] { 10, 20, 30 };
+        int[] items = [10, 20, 30];
         TestEnumerator<int> innerEnumerator = new(items);
         ValueEnumerator<TestEnumerator<int>, int> enumerator = new(innerEnumerator);
 
@@ -89,7 +89,7 @@ public class ValueEnumeratorTests
     [Fact]
     public void MoveNext_WithEmptyEnumerator_ReturnsFalse()
     {
-        int[] items = new int[0];
+        int[] items = [];
         TestEnumerator<int> innerEnumerator = new(items);
         ValueEnumerator<TestEnumerator<int>, int> enumerator = new(innerEnumerator);
 
@@ -101,7 +101,7 @@ public class ValueEnumeratorTests
     [Fact]
     public void Reset_DelegatesToInnerEnumerator()
     {
-        double[] items = new double[] { 1.1, 2.2 };
+        double[] items = [1.1, 2.2];
         TestEnumerator<double> innerEnumerator = new(items);
         ValueEnumerator<TestEnumerator<double>, double> enumerator = new(innerEnumerator);
 
@@ -118,11 +118,11 @@ public class ValueEnumeratorTests
     [Fact]
     public void ValueEnumerator_CanBeUsedInForeachPattern()
     {
-        char[] items = new char[] { 'a', 'b', 'c', 'd' };
+        char[] items = ['a', 'b', 'c', 'd'];
         TestEnumerator<char> innerEnumerator = new(items);
         ValueEnumerator<TestEnumerator<char>, char> enumerator = new(innerEnumerator);
 
-        List<char> results = new List<char>();
+        List<char> results = [];
 
         // Manual foreach pattern (compiler would generate similar code)
         while (enumerator.MoveNext())
@@ -130,7 +130,7 @@ public class ValueEnumeratorTests
             results.Add(enumerator.Current);
         }
 
-        results.Should().Equal(new char[] { 'a', 'b', 'c', 'd' });
+        results.Should().Equal(['a', 'b', 'c', 'd']);
     }
 
     [Fact]
@@ -146,55 +146,55 @@ public class ValueEnumeratorTests
     public void ValueEnumerator_WithValueTypeEnumerator_OptimizesCorrectly()
     {
         // ValueEnumerator is designed to work with value type enumerators to avoid boxing
-        byte[] items = new byte[] { 1, 2, 3 };
+        byte[] items = [1, 2, 3];
         TestEnumerator<byte> innerEnumerator = new(items);
         ValueEnumerator<TestEnumerator<byte>, byte> enumerator = new(innerEnumerator);
 
-        List<byte> results = new List<byte>();
+        List<byte> results = [];
         while (enumerator.MoveNext())
         {
             results.Add(enumerator.Current);
         }
 
-        results.Should().Equal(new byte[] { 1, 2, 3 });
+        results.Should().Equal([1, 2, 3]);
     }
 
     [Fact]
     public void ValueEnumerator_WithReferenceTypes_WorksCorrectly()
     {
-        string[] items = new string[] { "first", "second", "third" };
+        string[] items = ["first", "second", "third"];
         TestEnumerator<string> innerEnumerator = new(items);
         ValueEnumerator<TestEnumerator<string>, string> enumerator = new(innerEnumerator);
 
-        List<string> results = new List<string>();
+        List<string> results = [];
         while (enumerator.MoveNext())
         {
             results.Add(enumerator.Current);
         }
 
-        results.Should().Equal(new string[] { "first", "second", "third" });
+        results.Should().Equal(["first", "second", "third"]);
     }
 
     [Fact]
     public void ValueEnumerator_HandlesNullValues()
     {
-        string?[] items = new string?[] { "test", null, "value" };
+        string?[] items = ["test", null, "value"];
         TestEnumerator<string?> innerEnumerator = new(items);
         ValueEnumerator<TestEnumerator<string?>, string?> enumerator = new(innerEnumerator);
 
-        List<string?> results = new List<string?>();
+        List<string?> results = [];
         while (enumerator.MoveNext())
         {
             results.Add(enumerator.Current);
         }
 
-        results.Should().Equal(new string?[] { "test", null, "value" });
+        results.Should().Equal(["test", null, "value"]);
     }
 
     [Fact]
     public void Current_BeforeMoveNext_ReturnsDefault()
     {
-        int[] items = new int[] { 42 };
+        int[] items = [42];
         TestEnumerator<int> innerEnumerator = new(items);
         ValueEnumerator<TestEnumerator<int>, int> enumerator = new(innerEnumerator);
 
@@ -206,7 +206,7 @@ public class ValueEnumeratorTests
     [Fact]
     public void Current_AfterReset_ReturnsDefault()
     {
-        bool[] items = new bool[] { true, false };
+        bool[] items = [true, false];
         TestEnumerator<bool> innerEnumerator = new(items);
         ValueEnumerator<TestEnumerator<bool>, bool> enumerator = new(innerEnumerator);
 
@@ -220,7 +220,7 @@ public class ValueEnumeratorTests
     [Fact]
     public void ValueEnumerator_ReadonlyMethods_WorkCorrectly()
     {
-        int[] items = new int[] { 100, 200 };
+        int[] items = [100, 200];
         TestEnumerator<int> innerEnumerator = new(items);
         ValueEnumerator<TestEnumerator<int>, int> enumerator = new(innerEnumerator);
 
@@ -238,26 +238,26 @@ public class ValueEnumeratorTests
     [Fact]
     public void ValueEnumerator_MultipleIterations_WorksCorrectly()
     {
-        int[] items = new int[] { 5, 10, 15 };
+        int[] items = [5, 10, 15];
         TestEnumerator<int> innerEnumerator = new(items);
         ValueEnumerator<TestEnumerator<int>, int> enumerator = new(innerEnumerator);
 
         // First iteration
-        List<int> firstResults = new List<int>();
+        List<int> firstResults = [];
         while (enumerator.MoveNext())
         {
             firstResults.Add(enumerator.Current);
         }
-        firstResults.Should().Equal(new int[] { 5, 10, 15 });
+        firstResults.Should().Equal([5, 10, 15]);
 
         // Reset and iterate again
         enumerator.Reset();
-        List<int> secondResults = new List<int>();
+        List<int> secondResults = [];
         while (enumerator.MoveNext())
         {
             secondResults.Add(enumerator.Current);
         }
-        secondResults.Should().Equal(new int[] { 5, 10, 15 });
+        secondResults.Should().Equal([5, 10, 15]);
     }
 
     [Fact]
