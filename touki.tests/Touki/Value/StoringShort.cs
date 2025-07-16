@@ -56,7 +56,7 @@ public class StoringShort
     [MemberData(nameof(ShortData))]
     public void ShortInOut(short @short)
     {
-        Value value = new(@short);
+        Value value = @short;
         bool success = value.TryGetValue(out short result);
         Assert.True(success);
         Assert.Equal(@short, result);
@@ -70,7 +70,7 @@ public class StoringShort
     public void NullableShortInShortOut(short @short)
     {
         short? source = @short;
-        Value value = new(source);
+        Value value = source;
 
         bool success = value.TryGetValue(out short result);
         Assert.True(success);
@@ -86,7 +86,7 @@ public class StoringShort
     public void ShortInNullableShortOut(short @short)
     {
         short source = @short;
-        Value value = new(source);
+        Value value = source;
         bool success = value.TryGetValue(out short? result);
         Assert.True(success);
         Assert.Equal(@short, result);
@@ -100,7 +100,7 @@ public class StoringShort
     {
         short i = @short;
         object o = i;
-        Value value = new(o);
+        Value value = Value.Create(o);
 
         Assert.Equal(typeof(short), value.Type);
         Assert.True(value.TryGetValue(out short result));
@@ -111,7 +111,7 @@ public class StoringShort
 
         short? n = @short;
         o = n;
-        value = new(o);
+        value = Value.Create(o);
 
         Assert.Equal(typeof(short), value.Type);
         Assert.True(value.TryGetValue(out result));
@@ -134,13 +134,13 @@ public class StoringShort
     [MemberData(nameof(ShortData))]
     public void OutAsObject(short @short)
     {
-        Value value = new(@short);
+        Value value = @short;
         object o = value.As<object>();
         Assert.Equal(typeof(short), o.GetType());
         Assert.Equal(@short, (short)o);
 
         short? n = @short;
-        value = new(n);
+        value = n;
         o = value.As<object>();
         Assert.Equal(typeof(short), o.GetType());
         Assert.Equal(@short, (short)o);

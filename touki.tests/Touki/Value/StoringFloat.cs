@@ -59,7 +59,7 @@ public class StoringFloat
     [MemberData(nameof(FloatData))]
     public void FloatInOut(float @float)
     {
-        Value value = new(@float);
+        Value value = @float;
         bool success = value.TryGetValue(out float result);
         Assert.True(success);
         Assert.Equal(@float, result);
@@ -73,7 +73,7 @@ public class StoringFloat
     public void NullableFloatInFloatOut(float @float)
     {
         float? source = @float;
-        Value value = new(source);
+        Value value = source;
 
         bool success = value.TryGetValue(out float result);
         Assert.True(success);
@@ -89,7 +89,7 @@ public class StoringFloat
     public void FloatInNullableFloatOut(float @float)
     {
         float source = @float;
-        Value value = new(source);
+        Value value = source;
         bool success = value.TryGetValue(out float? result);
         Assert.True(success);
         Assert.Equal(@float, result);
@@ -103,7 +103,7 @@ public class StoringFloat
     {
         float i = @float;
         object o = i;
-        Value value = new(o);
+        Value value = Value.Create(o);
 
         Assert.Equal(typeof(float), value.Type);
         Assert.True(value.TryGetValue(out float result));
@@ -114,7 +114,7 @@ public class StoringFloat
 
         float? n = @float;
         o = n;
-        value = new(o);
+        value = Value.Create(o);
 
         Assert.Equal(typeof(float), value.Type);
         Assert.True(value.TryGetValue(out result));
@@ -137,13 +137,13 @@ public class StoringFloat
     [MemberData(nameof(FloatData))]
     public void OutAsObject(float @float)
     {
-        Value value = new(@float);
+        Value value = @float;
         object o = value.As<object>();
         Assert.Equal(typeof(float), o.GetType());
         Assert.Equal(@float, (float)o);
 
         float? n = @float;
-        value = new(n);
+        value = n;
         o = value.As<object>();
         Assert.Equal(typeof(float), o.GetType());
         Assert.Equal(@float, (float)o);

@@ -556,7 +556,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_SingleArg_String()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
-        builder.AppendFormat("Hello {0}!", new Value("World"));
+        builder.AppendFormat("Hello {0}!", Value.Create("World"));
         builder.ToString().Should().Be("Hello World!");
     }
 
@@ -693,7 +693,7 @@ public unsafe class ValueStringBuilderTests
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
         object obj = "Hello World";
-        builder.AppendFormat("Object: {0}", new Value(obj));
+        builder.AppendFormat("Object: {0}", Value.Create(obj));
         builder.ToString().Should().Be("Object: Hello World");
     }
 
@@ -701,7 +701,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_TwoArgs()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
-        builder.AppendFormat("Name: {0}, Age: {1}", new Value("John"), 25);
+        builder.AppendFormat("Name: {0}, Age: {1}", "John", 25);
         builder.ToString().Should().Be("Name: John, Age: 25");
     }
 
@@ -709,7 +709,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_TwoArgs_ReversedOrder()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
-        builder.AppendFormat("Age: {1}, Name: {0}", new Value("Alice"), 30);
+        builder.AppendFormat("Age: {1}, Name: {0}", "Alice", 30);
         builder.ToString().Should().Be("Age: 30, Name: Alice");
     }
 
@@ -717,7 +717,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_ThreeArgs()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
-        builder.AppendFormat("Name: {0}, Age: {1}, City: {2}", new Value("Bob"), 35, new Value("Seattle"));
+        builder.AppendFormat("Name: {0}, Age: {1}, City: {2}", "Bob", 35, "Seattle");
         builder.ToString().Should().Be("Name: Bob, Age: 35, City: Seattle");
     }
 
@@ -725,7 +725,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_FourArgs()
     {
         using ValueStringBuilder builder = new(stackalloc char[150]);
-        builder.AppendFormat("Name: {0}, Age: {1}, City: {2}, Country: {3}", new Value("Charlie"), 40, new Value("London"), new Value("UK"));
+        builder.AppendFormat("Name: {0}, Age: {1}, City: {2}, Country: {3}", "Charlie", 40, "London", "UK");
         builder.ToString().Should().Be("Name: Charlie, Age: 40, City: London, Country: UK");
     }
 
@@ -747,7 +747,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_WithAlignment()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
-        builder.AppendFormat("Left: '{0,-10}' Right: '{1,10}'", new Value("Hello"), new Value("World"));
+        builder.AppendFormat("Left: '{0,-10}' Right: '{1,10}'", "Hello", "World");
         builder.ToString().Should().Be("Left: 'Hello     ' Right: '     World'");
     }
 
@@ -764,7 +764,7 @@ public unsafe class ValueStringBuilderTests
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
 
-        Value[] args = [42, new Value("Hello"), 3.14, true];
+        Value[] args = [42, "Hello", 3.14, true];
         builder.AppendFormat("Int: {0}, String: {1}, Double: {2}, Bool: {3}".AsSpan(), args.AsSpan());
         builder.ToString().Should().Be("Int: 42, String: Hello, Double: 3.14, Bool: True");
     }
@@ -893,7 +893,7 @@ public unsafe class ValueStringBuilderTests
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
 
-        Value[] args = [new Value("First"), new Value("Second"), new Value("Third"), new Value("Fourth")];
+        Value[] args = ["First", "Second", "Third", "Fourth"];
         string formatString = $"Value: {{{argIndex}}}";
 
         builder.AppendFormat(formatString.AsSpan(), args.AsSpan());
@@ -929,7 +929,7 @@ public unsafe class ValueStringBuilderTests
         string expected = string.Format("String: {0}, Int: {1:D5}, Double: {2:F2}, Bool: {3}, Date: {4:yyyy-MM-dd}",
             stringVal, intVal, doubleVal, boolVal, dateVal);
 
-        Value[] args = [new Value(stringVal), intVal, doubleVal, boolVal, dateVal];
+        Value[] args = [stringVal, intVal, doubleVal, boolVal, dateVal];
         builder.AppendFormat("String: {0}, Int: {1:D5}, Double: {2:F2}, Bool: {3}, Date: {4:yyyy-MM-dd}".AsSpan(), args.AsSpan());
 
         builder.ToString().Should().Be(expected);
@@ -1026,7 +1026,7 @@ public unsafe class ValueStringBuilderTests
         using ValueStringBuilder builder = new(stackalloc char[100]);
 
         string specialString = "Hello\tWorld\nNew Line\r\nCarriage Return";
-        builder.AppendFormat("Special: '{0}'", new Value(specialString));
+        builder.AppendFormat("Special: '{0}'", specialString);
         builder.ToString().Should().Be($"Special: '{specialString}'");
     }
 
@@ -1035,7 +1035,7 @@ public unsafe class ValueStringBuilderTests
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
 
-        Value nullValue = new((object?)null);
+        Value nullValue = Value.Create((object?)null);
         builder.AppendFormat("Null value: '{0}'", nullValue);
         builder.ToString().Should().Be("Null value: ''");
     }
@@ -1048,7 +1048,7 @@ public unsafe class ValueStringBuilderTests
         string longString = new('A', 500);
         string expected = $"Long: {longString}";
 
-        builder.AppendFormat("Long: {0}", new Value(longString));
+        builder.AppendFormat("Long: {0}", longString);
         builder.ToString().Should().Be(expected);
     }
 
@@ -1060,7 +1060,7 @@ public unsafe class ValueStringBuilderTests
         // Test multiple AppendFormat calls in sequence
         builder.AppendFormat("First: {0}", 1);
         builder.AppendFormat(", Second: {0}", 2);
-        builder.AppendFormat(", Third: {0}", new Value("three"));
+        builder.AppendFormat(", Third: {0}", "three");
 
         builder.ToString().Should().Be("First: 1, Second: 2, Third: three");
     }
@@ -1084,7 +1084,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_EscapedBraces_AtBeginning()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
-        builder.AppendFormat("{{Start}} {0}", new Value("value"));
+        builder.AppendFormat("{{Start}} {0}", "value");
         builder.ToString().Should().Be("{Start} value");
     }
 
@@ -1092,7 +1092,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_EscapedBraces_AtEnd()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
-        builder.AppendFormat("{0} {{End}}", new Value("value"));
+        builder.AppendFormat("{0} {{End}}", "value");
         builder.ToString().Should().Be("value {End}");
     }
 
@@ -1108,7 +1108,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_EscapedBraces_Multiple()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
-        builder.AppendFormat("{{First}} {0} {{Second}} {1} {{Third}}", new Value("arg1"), new Value("arg2"));
+        builder.AppendFormat("{{First}} {0} {{Second}} {1} {{Third}}", "arg1", "arg2");
         builder.ToString().Should().Be("{First} arg1 {Second} arg2 {Third}");
     }
 
@@ -1124,7 +1124,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_EscapedBraces_Mixed()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
-        builder.AppendFormat("Value is {{0: {0}}} and {{1: {1}}}", 42, new Value("test"));
+        builder.AppendFormat("Value is {{0: {0}}} and {{1: {1}}}", 42, "test");
         builder.ToString().Should().Be("Value is {0: 42} and {1: test}");
     }
 
@@ -1140,7 +1140,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_EscapedBraces_WithAlignment()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
-        builder.AppendFormat("{{Padded: {0,10}}}", new Value("test"));
+        builder.AppendFormat("{{Padded: {0,10}}}", "test");
         builder.ToString().Should().Be("{Padded:       test}");
     }
 
@@ -1156,7 +1156,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_EscapedBraces_ComplexPattern()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
-        builder.AppendFormat("{{obj: {{ name: \"{0}\", value: {1} }}}}", new Value("test"), 42);
+        builder.AppendFormat("{{obj: {{ name: \"{0}\", value: {1} }}}}", "test", 42);
         builder.ToString().Should().Be("{obj: { name: \"test\", value: 42 }}");
     }
 
@@ -1172,7 +1172,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_EscapedBraces_EmptyBetween()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
-        builder.AppendFormat("{{}}{0}{{}}", new Value("middle"));
+        builder.AppendFormat("{{}}{0}{{}}", "middle");
         builder.ToString().Should().Be("{}middle{}");
     }
 
@@ -1196,7 +1196,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_EscapedBraces_NestedPattern()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
-        builder.AppendFormat("{{outer {{inner {0}}} outer}}", new Value("value"));
+        builder.AppendFormat("{{outer {{inner {0}}} outer}}", "value");
         builder.ToString().Should().Be("{outer {inner value} outer}");
     }
 
@@ -1204,7 +1204,7 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_EscapedBraces_AllTypesOfEscaping()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
-        builder.AppendFormat("{{}} {{ }} {0} }} {{ {{", new Value("test"));
+        builder.AppendFormat("{{}} {{ }} {0} }} {{ {{", "test");
         builder.ToString().Should().Be("{} { } test } { {");
     }
 
@@ -1413,7 +1413,12 @@ public unsafe class ValueStringBuilderTests
         using ValueStringBuilder builder = new(stackalloc char[100]);
 
         string expected = string.Format("Values: {0}, {1}, {2}", TestEnum.First, TestFlagsEnum.Flag1And2, DayOfWeek.Monday);
-        builder.AppendFormat("Values: {0}, {1}, {2}", new Value(TestEnum.First), new Value(TestFlagsEnum.Flag1And2), new Value(DayOfWeek.Monday));
+        builder.AppendFormat(
+            "Values: {0}, {1}, {2}",
+            Value.Create(TestEnum.First),
+            Value.Create(TestFlagsEnum.Flag1And2),
+            Value.Create(DayOfWeek.Monday));
+
         builder.ToString().Should().Be("Values: First, Flag1And2, Monday");
         builder.ToString().Should().Be(expected);
     }
@@ -1574,7 +1579,7 @@ public unsafe class ValueStringBuilderTests
         builder.Clear();
 
         // Test Value-wrapped enum formatting
-        builder.AppendFormat("Value: {0}", new Value(ByteEnum.ByteMax));
+        builder.AppendFormat("Value: {0}", Value.Create(ByteEnum.ByteMax));
         builder.ToString().Should().Be("Value: ByteMax");
 
         builder.Clear();
@@ -1983,7 +1988,7 @@ public unsafe class ValueStringBuilderTests
         builder.Clear();
 
         // Test long-backed enums via Value
-        builder.AppendFormat("Long: {0}, ULong: {1}", new Value(Int64Enum.Max), new Value(UInt64Enum.Max));
+        builder.AppendFormat("Long: {0}, ULong: {1}", Value.Create(Int64Enum.Max), Value.Create(UInt64Enum.Max));
         string expected = string.Format("Long: {0}, ULong: {1}", Int64Enum.Max, UInt64Enum.Max);
         builder.ToString().Should().Be(expected);
 
@@ -2009,7 +2014,7 @@ public unsafe class ValueStringBuilderTests
 
         // Test undefined flags
         UInt64FlagsEnum undefinedFlags = (UInt64FlagsEnum)128;
-        builder.AppendFormat("UndefinedFlags: {0}", new Value(undefinedFlags));
+        builder.AppendFormat("UndefinedFlags: {0}", Value.Create(undefinedFlags));
         builder.ToString().Should().Be("UndefinedFlags: 128");
         string expected = string.Format("UndefinedFlags: {0}", undefinedFlags);
         builder.ToString().Should().Be(expected);
@@ -2179,7 +2184,7 @@ public unsafe class ValueStringBuilderTests
         // Create an array with that many elements + 1
         // This would cause memory issues, so we'll mock it with a smaller array
         // and test the exception logic instead
-        Value[] args = [new Value(42)];
+        Value[] args = [42];
 
         bool threwException = false;
         try
@@ -2204,7 +2209,7 @@ public unsafe class ValueStringBuilderTests
         string largeString = new string('A', 10000);
 
         // Append it
-        builder.AppendFormat("Large: {0}", new Value(largeString));
+        builder.AppendFormat("Large: {0}", Value.Create(largeString));
 
         // Verify
         builder.Length.Should().Be(10007); // "Large: " + 10000 chars

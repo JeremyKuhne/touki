@@ -21,6 +21,60 @@ public class ArrayBackedListTests
     }
 
     [Fact]
+    public void Add_MultipleItems_IncrementsCount()
+    {
+        using TestArrayBackedList<int> list = new();
+        for (int i = 0; i < 100; i++)
+        {
+            list.Add(i);
+        }
+
+        list.Count.Should().Be(100);
+        for (int i = 0; i < 100; i++)
+        {
+            list[i].Should().Be(i);
+        }
+    }
+
+    [Fact]
+    public void Add_NullItem_ThrowsArgumentNullException()
+    {
+        using TestArrayBackedList<string> list = new();
+        Action act = () => list.Add(null!);
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Add_SingleItem_IncrementsCount()
+    {
+        using TestArrayBackedList<int> list = new()
+        {
+            42
+        };
+
+        list.Should().ContainSingle();
+        list[0].Should().Be(42);
+        list.Empty.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Clear_RemovesAllItems()
+    {
+        using TestArrayBackedList<int> list = new()
+        {
+            1,
+            2,
+            3
+        };
+
+        list.Clear();
+
+        list.Should().BeEmpty();
+        list.Empty.Should().BeTrue();
+        list.Count.Should().Be(0);
+    }
+
+    [Fact]
     public void Constructor_WithEmptyArray_InitializesCorrectly()
     {
         using TestArrayBackedList<int> list = new();
@@ -47,40 +101,172 @@ public class ArrayBackedListTests
     }
 
     [Fact]
-    public void Add_SingleItem_IncrementsCount()
+    public void Contains_ExistingItem_ReturnsTrue()
     {
         using TestArrayBackedList<int> list = new()
         {
-            42
+            1,
+            2,
+            3
         };
 
-        list.Should().ContainSingle();
-        list[0].Should().Be(42);
-        list.Empty.Should().BeFalse();
+        list.Should().Contain(2);
+        list.Contains(2).Should().BeTrue();
     }
 
     [Fact]
-    public void Add_NullItem_ThrowsArgumentNullException()
+    public void Contains_NonExistingItem_ReturnsFalse()
     {
-        using TestArrayBackedList<string> list = new();
-        Action act = () => list.Add(null!);
-        act.Should().Throw<ArgumentNullException>();
+        using TestArrayBackedList<int> list = new()
+        {
+            1,
+            3
+        };
+
+        list.Should().NotContain(2);
+        list.Contains(2).Should().BeFalse();
     }
 
     [Fact]
-    public void Add_MultipleItems_IncrementsCount()
+    public void CopyTo_CopiesAllElements()
+    {
+        using TestArrayBackedList<int> list = new()
+        {
+            1,
+            2,
+            3
+        };
+
+        int[] array = new int[5];
+        list.CopyTo(array, 1);
+
+        array[0].Should().Be(0);
+        array[1].Should().Be(1);
+        array[2].Should().Be(2);
+        array[3].Should().Be(3);
+        array[4].Should().Be(0);
+    }
+
+    [Fact]
+    public void CopyTo_GenericArray_CopiesAllElements()
+    {
+        using TestArrayBackedList<int> list = new()
+        {
+            1,
+            2,
+            3
+        };
+
+        Array array = new int[5];
+        list.CopyTo(array, 1);
+
+        array.GetValue(0).Should().Be(0);
+        array.GetValue(1).Should().Be(1);
+        array.GetValue(2).Should().Be(2);
+        array.GetValue(3).Should().Be(3);
+        array.GetValue(4).Should().Be(0);
+    }
+
+    [Fact]
+    public void CopyTo_GenericArrayWithInvalidRank_ThrowsArgumentException()
+    {
+        using TestArrayBackedList<int> list = new()
+        {
+            1,
+            2,
+            3
+        };
+
+        Array array = new int[2, 2];
+        Action act = () => list.CopyTo(array, 0);
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void CopyTo_WithRangeParameters_CopiesCorrectElements()
+    {
+        using TestArrayBackedList<int> list = new()
+        {
+            1,
+            2,
+            3,
+            4
+        };
+
+        int[] array = new int[3];
+        list.CopyTo(1, array, 0, 2);
+
+        array[0].Should().Be(2);
+        array[1].Should().Be(3);
+        array[2].Should().Be(0);
+    }
+
+    [Fact]
+    public void Dispose_ClearsArrayAndCount()
+    {
+        TestArrayBackedList<int> list = new()
+        {
+            1,
+            2
+        };
+
+        list.Dispose();
+
+        list.Count.Should().Be(0);
+        list.Empty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void EnsureCapacity_GrowsCapacity()
     {
         using TestArrayBackedList<int> list = new();
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 5; i++)
         {
             list.Add(i);
         }
 
-        list.Count.Should().Be(100);
-        for (int i = 0; i < 100; i++)
+        int newCapacity = list.EnsureCapacity(20);
+        newCapacity.Should().BeGreaterThanOrEqualTo(20);
+
+        // Verify we can add more items
+        for (int i = 5; i < 15; i++)
         {
-            list[i].Should().Be(i);
+            list.Add(i);
         }
+
+        list.Count.Should().Be(15);
+    }
+
+    [Fact]
+    public void EnsureCapacity_NegativeOrZeroCapacity_ThrowsArgumentOutOfRangeException()
+    {
+        using TestArrayBackedList<int> list = new();
+
+        Action actNegative = () => list.EnsureCapacity(-1);
+        actNegative.Should().Throw<ArgumentOutOfRangeException>();
+
+        Action actZero = () => list.EnsureCapacity(0);
+        actZero.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void Enumeration_WorksCorrectly()
+    {
+        using TestArrayBackedList<int> list = new()
+        {
+            1,
+            2,
+            3
+        };
+
+        int index = 0;
+        foreach (int item in list)
+        {
+            item.Should().Be(index + 1);
+            index++;
+        }
+
+        index.Should().Be(3);
     }
 
     [Fact]
@@ -114,6 +300,38 @@ public class ArrayBackedListTests
     }
 
     [Fact]
+    public void IndexOf_EmptyList_ReturnsNegativeOne()
+    {
+        using TestArrayBackedList<int> list = new();
+        list.IndexOf(1).Should().Be(-1);
+    }
+
+    [Fact]
+    public void IndexOf_ExistingItem_ReturnsIndex()
+    {
+        using TestArrayBackedList<int> list = new()
+        {
+            1,
+            2,
+            3
+        };
+
+        list.IndexOf(2).Should().Be(1);
+    }
+
+    [Fact]
+    public void IndexOf_NonExistingItem_ReturnsNegativeOne()
+    {
+        using TestArrayBackedList<int> list = new()
+        {
+            1,
+            3
+        };
+
+        list.IndexOf(2).Should().Be(-1);
+    }
+
+    [Fact]
     public void Insert_AtValidPositions_ShiftsItems()
     {
         using TestArrayBackedList<int> list = new()
@@ -130,21 +348,6 @@ public class ArrayBackedListTests
     }
 
     [Fact]
-    public void Insert_WithInvalidIndex_ThrowsArgumentOutOfRangeException()
-    {
-        using TestArrayBackedList<int> list = new()
-        {
-            1
-        };
-
-        Action actNegative = () => list.Insert(-1, 0);
-        actNegative.Should().Throw<ArgumentOutOfRangeException>();
-
-        Action actTooLarge = () => list.Insert(2, 0);
-        actTooLarge.Should().Throw<ArgumentOutOfRangeException>();
-    }
-
-    [Fact]
     public void Insert_NullItem_ThrowsArgumentNullException()
     {
         using TestArrayBackedList<string> list = new()
@@ -157,34 +360,17 @@ public class ArrayBackedListTests
     }
 
     [Fact]
-    public void RemoveAt_ValidIndex_RemovesItem()
-    {
-        using TestArrayBackedList<int> list = new()
-        {
-            1,
-            2,
-            3
-        };
-
-        list.RemoveAt(1);
-
-        list.Count.Should().Be(2);
-        list[0].Should().Be(1);
-        list[1].Should().Be(3);
-    }
-
-    [Fact]
-    public void RemoveAt_InvalidIndex_ThrowsArgumentOutOfRangeException()
+    public void Insert_WithInvalidIndex_ThrowsArgumentOutOfRangeException()
     {
         using TestArrayBackedList<int> list = new()
         {
             1
         };
 
-        Action actNegative = () => list.RemoveAt(-1);
+        Action actNegative = () => list.Insert(-1, 0);
         actNegative.Should().Throw<ArgumentOutOfRangeException>();
 
-        Action actTooLarge = () => list.RemoveAt(1);
+        Action actTooLarge = () => list.Insert(2, 0);
         actTooLarge.Should().Throw<ArgumentOutOfRangeException>();
     }
 
@@ -222,123 +408,82 @@ public class ArrayBackedListTests
     }
 
     [Fact]
-    public void Contains_ExistingItem_ReturnsTrue()
+    public void RemoveAll_AllMatchingItems_ClearsList()
     {
         using TestArrayBackedList<int> list = new()
         {
-            1,
             2,
-            3
+            4,
+            6
         };
 
-        list.Should().Contain(2);
-        list.Contains(2).Should().BeTrue();
-    }
+        int removedCount = list.RemoveAll(i => i % 2 == 0);
 
-    [Fact]
-    public void Contains_NonExistingItem_ReturnsFalse()
-    {
-        using TestArrayBackedList<int> list = new()
-        {
-            1,
-            3
-        };
-
-        list.Should().NotContain(2);
-        list.Contains(2).Should().BeFalse();
-    }
-
-    [Fact]
-    public void Clear_RemovesAllItems()
-    {
-        using TestArrayBackedList<int> list = new()
-        {
-            1,
-            2,
-            3
-        };
-
-        list.Clear();
-
+        removedCount.Should().Be(3);
         list.Should().BeEmpty();
-        list.Empty.Should().BeTrue();
-        list.Count.Should().Be(0);
     }
 
     [Fact]
-    public void EnsureCapacity_GrowsCapacity()
-    {
-        using TestArrayBackedList<int> list = new();
-        for (int i = 0; i < 5; i++)
-        {
-            list.Add(i);
-        }
-
-        int newCapacity = list.EnsureCapacity(20);
-        newCapacity.Should().BeGreaterThanOrEqualTo(20);
-
-        // Verify we can add more items
-        for (int i = 5; i < 15; i++)
-        {
-            list.Add(i);
-        }
-
-        list.Count.Should().Be(15);
-    }
-
-    [Fact]
-    public void EnsureCapacity_NegativeOrZeroCapacity_ThrowsArgumentOutOfRangeException()
-    {
-        using TestArrayBackedList<int> list = new();
-
-        Action actNegative = () => list.EnsureCapacity(-1);
-        actNegative.Should().Throw<ArgumentOutOfRangeException>();
-
-        Action actZero = () => list.EnsureCapacity(0);
-        actZero.Should().Throw<ArgumentOutOfRangeException>();
-    }
-
-    [Fact]
-    public void CopyTo_CopiesAllElements()
+    public void RemoveAll_NoMatchingItems_DoesNothing()
     {
         using TestArrayBackedList<int> list = new()
         {
             1,
-            2,
-            3
+            3,
+            5
         };
 
-        int[] array = new int[5];
-        list.CopyTo(array, 1);
+        int removedCount = list.RemoveAll(i => i % 2 == 0);
 
-        array[0].Should().Be(0);
-        array[1].Should().Be(1);
-        array[2].Should().Be(2);
-        array[3].Should().Be(3);
-        array[4].Should().Be(0);
+        removedCount.Should().Be(0);
+        list.Count.Should().Be(3);
+        list.Should().Equal([1, 3, 5]);
     }
 
     [Fact]
-    public void CopyTo_WithRangeParameters_CopiesCorrectElements()
+    public void RemoveAll_NullMatch_ThrowsArgumentNullException()
+    {
+        using TestArrayBackedList<int> list = new();
+        Action act = () => list.RemoveAll(null!);
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void RemoveAll_RemovesMatchingItems()
     {
         using TestArrayBackedList<int> list = new()
         {
             1,
             2,
             3,
-            4
+            4,
+            5
         };
 
-        int[] array = new int[3];
-        list.CopyTo(1, array, 0, 2);
+        int removedCount = list.RemoveAll(i => i % 2 == 0);
 
-        array[0].Should().Be(2);
-        array[1].Should().Be(3);
-        array[2].Should().Be(0);
+        removedCount.Should().Be(2);
+        list.Count.Should().Be(3);
+        list.Should().Equal([1, 3, 5]);
     }
 
     [Fact]
-    public void Enumeration_WorksCorrectly()
+    public void RemoveAt_InvalidIndex_ThrowsArgumentOutOfRangeException()
+    {
+        using TestArrayBackedList<int> list = new()
+        {
+            1
+        };
+
+        Action actNegative = () => list.RemoveAt(-1);
+        actNegative.Should().Throw<ArgumentOutOfRangeException>();
+
+        Action actTooLarge = () => list.RemoveAt(1);
+        actTooLarge.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void RemoveAt_ValidIndex_RemovesItem()
     {
         using TestArrayBackedList<int> list = new()
         {
@@ -347,28 +492,42 @@ public class ArrayBackedListTests
             3
         };
 
-        int index = 0;
-        foreach (int item in list)
-        {
-            item.Should().Be(index + 1);
-            index++;
-        }
+        list.RemoveAt(1);
 
-        index.Should().Be(3);
+        list.Count.Should().Be(2);
+        list[0].Should().Be(1);
+        list[1].Should().Be(3);
     }
 
     [Fact]
-    public void Dispose_ClearsArrayAndCount()
+    public void UnsafeValues_CanBeModified()
     {
-        TestArrayBackedList<int> list = new()
-        {
-            1,
-            2
-        };
+        using TestArrayBackedList<int> list = new() { 1, 2, 3 };
+        Span<int> values = list.UnsafeValues;
+        values[1] = 42;
+        list[1].Should().Be(42);
+    }
 
-        list.Dispose();
+    [Fact]
+    public void UnsafeValues_EmptyList_ReturnsEmptySpan()
+    {
+        using TestArrayBackedList<int> list = new();
+        list.UnsafeValues.IsEmpty.Should().BeTrue();
+    }
 
-        list.Count.Should().Be(0);
-        list.Empty.Should().BeTrue();
+    [Fact]
+    public void Values_EmptyList_ReturnsEmptySpan()
+    {
+        using TestArrayBackedList<int> list = new();
+        list.Values.IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Values_ReturnsCorrectData()
+    {
+        using TestArrayBackedList<int> list = new() { 1, 2, 3 };
+        ReadOnlySpan<int> values = list.Values;
+        values.Length.Should().Be(3);
+        values.ToArray().Should().Equal([1, 2, 3]);
     }
 }

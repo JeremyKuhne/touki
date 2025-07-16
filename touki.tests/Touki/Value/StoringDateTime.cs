@@ -16,13 +16,13 @@ public class StoringDateTime
 
     [Theory]
     [MemberData(nameof(DateTimeData))]
-    public void DateTimeImplicit(DateTime @DateTime)
+    public void DateTimeImplicit(DateTime dateTime)
     {
-        Value value = @DateTime;
-        Assert.Equal(@DateTime, value.As<DateTime>());
+        Value value = dateTime;
+        Assert.Equal(dateTime, value.As<DateTime>());
         Assert.Equal(typeof(DateTime), value.Type);
 
-        DateTime? source = @DateTime;
+        DateTime? source = dateTime;
         value = source;
         Assert.Equal(source, value.As<DateTime?>());
         Assert.Equal(typeof(DateTime), value.Type);
@@ -30,44 +30,44 @@ public class StoringDateTime
 
     [Theory]
     [MemberData(nameof(DateTimeData))]
-    public void DateTimeInOut(DateTime @DateTime)
+    public void DateTimeInOut(DateTime dateTime)
     {
-        Value value = new(@DateTime);
+        Value value = dateTime;
         bool success = value.TryGetValue(out DateTime result);
         Assert.True(success);
-        Assert.Equal(@DateTime, result);
+        Assert.Equal(dateTime, result);
 
-        Assert.Equal(@DateTime, value.As<DateTime>());
-        Assert.Equal(@DateTime, (DateTime)value);
+        Assert.Equal(dateTime, value.As<DateTime>());
+        Assert.Equal(dateTime, (DateTime)value);
     }
 
     [Theory]
     [MemberData(nameof(DateTimeData))]
-    public void NullableDateTimeInDateTimeOut(DateTime @DateTime)
+    public void NullableDateTimeInDateTimeOut(DateTime dateTime)
     {
-        DateTime? source = @DateTime;
-        Value value = new(source);
+        DateTime? source = dateTime;
+        Value value = source;
 
         bool success = value.TryGetValue(out DateTime result);
         Assert.True(success);
-        Assert.Equal(@DateTime, result);
+        Assert.Equal(dateTime, result);
 
-        Assert.Equal(@DateTime, value.As<DateTime>());
+        Assert.Equal(dateTime, value.As<DateTime>());
 
-        Assert.Equal(@DateTime, (DateTime)value);
+        Assert.Equal(dateTime, (DateTime)value);
     }
 
     [Theory]
     [MemberData(nameof(DateTimeData))]
-    public void DateTimeInNullableDateTimeOut(DateTime @DateTime)
+    public void DateTimeInNullableDateTimeOut(DateTime dateTime)
     {
-        DateTime source = @DateTime;
-        Value value = new(source);
+        DateTime source = dateTime;
+        Value value = source;
         bool success = value.TryGetValue(out DateTime? result);
         Assert.True(success);
-        Assert.Equal(@DateTime, result);
+        Assert.Equal(dateTime, result);
 
-        Assert.Equal(@DateTime, (DateTime?)value);
+        Assert.Equal(dateTime, (DateTime?)value);
     }
 
     [Fact]
@@ -82,17 +82,17 @@ public class StoringDateTime
 
     [Theory]
     [MemberData(nameof(DateTimeData))]
-    public void OutAsObject(DateTime @DateTime)
+    public void OutAsObject(DateTime dateTime)
     {
-        Value value = new(@DateTime);
+        Value value = dateTime;
         object o = value.As<object>();
         Assert.Equal(typeof(DateTime), o.GetType());
-        Assert.Equal(@DateTime, (DateTime)o);
+        Assert.Equal(dateTime, (DateTime)o);
 
-        DateTime? n = @DateTime;
-        value = new(n);
+        DateTime? n = dateTime;
+        value = n;
         o = value.As<object>();
         Assert.Equal(typeof(DateTime), o.GetType());
-        Assert.Equal(@DateTime, (DateTime)o);
+        Assert.Equal(dateTime, (DateTime)o);
     }
 }

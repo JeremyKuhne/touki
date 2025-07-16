@@ -56,7 +56,7 @@ public class StoringLong
     [MemberData(nameof(LongData))]
     public void LongInOut(long @long)
     {
-        Value value = new(@long);
+        Value value = @long;
         bool success = value.TryGetValue(out long result);
         Assert.True(success);
         Assert.Equal(@long, result);
@@ -70,7 +70,7 @@ public class StoringLong
     public void NullableLongInLongOut(long @long)
     {
         long? source = @long;
-        Value value = new(source);
+        Value value = source;
 
         bool success = value.TryGetValue(out long result);
         Assert.True(success);
@@ -86,7 +86,7 @@ public class StoringLong
     public void LongInNullableLongOut(long @long)
     {
         long source = @long;
-        Value value = new(source);
+        Value value = source;
         bool success = value.TryGetValue(out long? result);
         Assert.True(success);
         Assert.Equal(@long, result);
@@ -100,7 +100,7 @@ public class StoringLong
     {
         long i = @long;
         object o = i;
-        Value value = new(o);
+        Value value = Value.Create(o);
 
         Assert.Equal(typeof(long), value.Type);
         Assert.True(value.TryGetValue(out long result));
@@ -111,7 +111,7 @@ public class StoringLong
 
         long? n = @long;
         o = n;
-        value = new(o);
+        value = Value.Create(o);
 
         Assert.Equal(typeof(long), value.Type);
         Assert.True(value.TryGetValue(out result));
@@ -134,13 +134,13 @@ public class StoringLong
     [MemberData(nameof(LongData))]
     public void OutAsObject(long @long)
     {
-        Value value = new(@long);
+        Value value = @long;
         object o = value.As<object>();
         Assert.Equal(typeof(long), o.GetType());
         Assert.Equal(@long, (long)o);
 
         long? n = @long;
-        value = new(n);
+        value = n;
         o = value.As<object>();
         Assert.Equal(typeof(long), o.GetType());
         Assert.Equal(@long, (long)o);

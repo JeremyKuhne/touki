@@ -55,7 +55,7 @@ public class StoringUShort
     [MemberData(nameof(UShortData))]
     public void UShortInOut(ushort @ushort)
     {
-        Value value = new(@ushort);
+        Value value = @ushort;
         bool success = value.TryGetValue(out ushort result);
         Assert.True(success);
         Assert.Equal(@ushort, result);
@@ -69,7 +69,7 @@ public class StoringUShort
     public void NullableUShortInUShortOut(ushort @ushort)
     {
         ushort? source = @ushort;
-        Value value = new(source);
+        Value value = source;
 
         bool success = value.TryGetValue(out ushort result);
         Assert.True(success);
@@ -85,7 +85,7 @@ public class StoringUShort
     public void UShortInNullableUShortOut(ushort @ushort)
     {
         ushort source = @ushort;
-        Value value = new(source);
+        Value value = source;
         bool success = value.TryGetValue(out ushort? result);
         Assert.True(success);
         Assert.Equal(@ushort, result);
@@ -99,7 +99,7 @@ public class StoringUShort
     {
         ushort i = @ushort;
         object o = i;
-        Value value = new(o);
+        Value value = Value.Create(o);
 
         Assert.Equal(typeof(ushort), value.Type);
         Assert.True(value.TryGetValue(out ushort result));
@@ -110,7 +110,7 @@ public class StoringUShort
 
         ushort? n = @ushort;
         o = n;
-        value = new(o);
+        value = Value.Create(o);
 
         Assert.Equal(typeof(ushort), value.Type);
         Assert.True(value.TryGetValue(out result));
@@ -133,13 +133,13 @@ public class StoringUShort
     [MemberData(nameof(UShortData))]
     public void OutAsObject(ushort @ushort)
     {
-        Value value = new(@ushort);
+        Value value = @ushort;
         object o = value.As<object>();
         Assert.Equal(typeof(ushort), o.GetType());
         Assert.Equal(@ushort, (ushort)o);
 
         ushort? n = @ushort;
-        value = new(n);
+        value = n;
         o = value.As<object>();
         Assert.Equal(typeof(ushort), o.GetType());
         Assert.Equal(@ushort, (ushort)o);

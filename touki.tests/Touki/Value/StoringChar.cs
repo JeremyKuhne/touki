@@ -55,7 +55,7 @@ public class StoringChar
     [MemberData(nameof(CharData))]
     public void CharInOut(char @char)
     {
-        Value value = new(@char);
+        Value value = @char;
         bool success = value.TryGetValue(out char result);
         Assert.True(success);
         Assert.Equal(@char, result);
@@ -69,7 +69,7 @@ public class StoringChar
     public void NullableCharInCharOut(char @char)
     {
         char? source = @char;
-        Value value = new(source);
+        Value value = source;
 
         bool success = value.TryGetValue(out char result);
         Assert.True(success);
@@ -85,7 +85,7 @@ public class StoringChar
     public void CharInNullableCharOut(char @char)
     {
         char source = @char;
-        Value value = new(source);
+        Value value = source;
         bool success = value.TryGetValue(out char? result);
         Assert.True(success);
         Assert.Equal(@char, result);
@@ -99,7 +99,7 @@ public class StoringChar
     {
         char i = @char;
         object o = i;
-        Value value = new(o);
+        Value value = Value.Create(o);
 
         Assert.Equal(typeof(char), value.Type);
         Assert.True(value.TryGetValue(out char result));
@@ -110,7 +110,7 @@ public class StoringChar
 
         char? n = @char;
         o = n;
-        value = new(o);
+        value = Value.Create(o);
 
         Assert.Equal(typeof(char), value.Type);
         Assert.True(value.TryGetValue(out result));
@@ -133,13 +133,13 @@ public class StoringChar
     [MemberData(nameof(CharData))]
     public void OutAsObject(char @char)
     {
-        Value value = new(@char);
+        Value value = @char;
         object o = value.As<object>();
         Assert.Equal(typeof(char), o.GetType());
         Assert.Equal(@char, (char)o);
 
         char? n = @char;
-        value = new(n);
+        value = n;
         o = value.As<object>();
         Assert.Equal(typeof(char), o.GetType());
         Assert.Equal(@char, (char)o);

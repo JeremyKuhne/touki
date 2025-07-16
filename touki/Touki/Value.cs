@@ -21,6 +21,11 @@ namespace Touki;
 ///   nullable types, <see cref="DateTime"/>, see <see cref="DateTimeOffset"/>, enums, and array segments. It also
 ///   supports all other types by boxing them into an object.
 ///  </para>
+///  <para>
+///   The class contains implicit and explicit operators for converting between <see cref="Value"/> and various types,
+///   but it avoid implicit boxing it does not implicitly convert from <see langword="object"/> to <see cref="Value"/>.
+///   Use <see cref="Create{T}(T)"/> to create instances for types that do not have implicit conversion.
+///  </para>
 /// </remarks>
 public readonly partial struct Value
 {
@@ -30,16 +35,22 @@ public readonly partial struct Value
     /// <summary>
     ///  Creates a new <see cref="Value"/> instance with the specified value.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This is private to help ensure that we don't box for value types.
+    ///  </para>
+    /// </remarks>
     /// <param name="value">The value to store.</param>
-    public Value(object? value)
+    private Value(object? value)
     {
         _object = value;
         _union = default;
     }
 
-    // Generally speaking we want to avoid implicit operators for most reference types to avoid accidental boxing.
-    // In particular this will happen with `object`. `string` is a common reference type that would be passed as
-    // a formatting argument and is somewhat unlikely to have implicit conversions from other reference types.
+    // Generally speaking we want to avoid implicit operators for most reference types to avoid accidental boxing from
+    // value types that have implicit conversions. In particular this will happen with `object`. `string` is a common
+    // reference type that would be passed as a formatting argument and is somewhat unlikely to have implicit
+    // conversions from other value types.
 
     /// <summary>
     ///  Implicitly converts a <see langword="string"/> value to a <see cref="Value"/>.
@@ -111,7 +122,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified <see langword="byte"/> value.
     /// </summary>
     /// <param name="value">The <see langword="byte"/> value to store.</param>
-    public Value(byte value)
+    private Value(byte value)
     {
         _object = TypeFlags.Byte;
         _union.Byte = value;
@@ -121,7 +132,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see langword="byte"/> value.
     /// </summary>
     /// <param name="value">The nullable <see langword="byte"/> value to store.</param>
-    public Value(byte? value)
+    private Value(byte? value)
     {
         if (value.HasValue)
         {
@@ -170,7 +181,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified <see langword="sbyte"/> value.
     /// </summary>
     /// <param name="value">The <see langword="sbyte"/> value to store.</param>
-    public Value(sbyte value)
+    private Value(sbyte value)
     {
         _object = TypeFlags.SByte;
         _union.SByte = value;
@@ -180,7 +191,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see langword="sbyte"/> value.
     /// </summary>
     /// <param name="value">The nullable <see langword="sbyte"/> value to store.</param>
-    public Value(sbyte? value)
+    private Value(sbyte? value)
     {
         if (value.HasValue)
         {
@@ -229,7 +240,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified <see langword="bool"/> value.
     /// </summary>
     /// <param name="value">The <see langword="bool"/> value to store.</param>
-    public Value(bool value)
+    private Value(bool value)
     {
         _object = TypeFlags.Boolean;
         _union.Boolean = value;
@@ -239,7 +250,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see langword="bool"/> value.
     /// </summary>
     /// <param name="value">The nullable <see langword="bool"/> value to store.</param>
-    public Value(bool? value)
+    private Value(bool? value)
     {
         if (value.HasValue)
         {
@@ -288,7 +299,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified <see langword="char"/> value.
     /// </summary>
     /// <param name="value">The <see langword="char"/> value to store.</param>
-    public Value(char value)
+    private Value(char value)
     {
         _object = TypeFlags.Char;
         _union.Char = value;
@@ -298,7 +309,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see langword="char"/> value.
     /// </summary>
     /// <param name="value">The nullable <see langword="char"/> value to store.</param>
-    public Value(char? value)
+    private Value(char? value)
     {
         if (value.HasValue)
         {
@@ -347,7 +358,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified <see langword="short"/> value.
     /// </summary>
     /// <param name="value">The <see langword="short"/> value to store.</param>
-    public Value(short value)
+    private Value(short value)
     {
         _object = TypeFlags.Int16;
         _union.Int16 = value;
@@ -357,7 +368,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see langword="short"/> value.
     /// </summary>
     /// <param name="value">The nullable <see langword="short"/> value to store.</param>
-    public Value(short? value)
+    private Value(short? value)
     {
         if (value.HasValue)
         {
@@ -406,7 +417,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified <see langword="int"/> value.
     /// </summary>
     /// <param name="value">The <see langword="int"/> value to store.</param>
-    public Value(int value)
+    private Value(int value)
     {
         _object = TypeFlags.Int32;
         _union.Int32 = value;
@@ -416,7 +427,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see langword="int"/> value.
     /// </summary>
     /// <param name="value">The nullable <see langword="int"/> value to store.</param>
-    public Value(int? value)
+    private Value(int? value)
     {
         if (value.HasValue)
         {
@@ -465,7 +476,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified <see langword="long"/> value.
     /// </summary>
     /// <param name="value">The <see langword="long"/> value to store.</param>
-    public Value(long value)
+    private Value(long value)
     {
         _object = TypeFlags.Int64;
         _union.Int64 = value;
@@ -475,7 +486,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see langword="long"/> value.
     /// </summary>
     /// <param name="value">The nullable <see langword="long"/> value to store.</param>
-    public Value(long? value)
+    private Value(long? value)
     {
         if (value.HasValue)
         {
@@ -524,7 +535,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified <see langword="ushort"/> value.
     /// </summary>
     /// <param name="value">The <see langword="ushort"/> value to store.</param>
-    public Value(ushort value)
+    private Value(ushort value)
     {
         _object = TypeFlags.UInt16;
         _union.UInt16 = value;
@@ -534,7 +545,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see langword="ushort"/> value.
     /// </summary>
     /// <param name="value">The nullable <see langword="ushort"/> value to store.</param>
-    public Value(ushort? value)
+    private Value(ushort? value)
     {
         if (value.HasValue)
         {
@@ -583,7 +594,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified <see langword="uint"/> value.
     /// </summary>
     /// <param name="value">The <see langword="uint"/> value to store.</param>
-    public Value(uint value)
+    private Value(uint value)
     {
         _object = TypeFlags.UInt32;
         _union.UInt32 = value;
@@ -593,7 +604,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see langword="uint"/> value.
     /// </summary>
     /// <param name="value">The nullable <see langword="uint"/> value to store.</param>
-    public Value(uint? value)
+    private Value(uint? value)
     {
         if (value.HasValue)
         {
@@ -642,7 +653,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified <see langword="ulong"/> value.
     /// </summary>
     /// <param name="value">The <see langword="ulong"/> value to store.</param>
-    public Value(ulong value)
+    private Value(ulong value)
     {
         _object = TypeFlags.UInt64;
         _union.UInt64 = value;
@@ -652,7 +663,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see langword="ulong"/> value.
     /// </summary>
     /// <param name="value">The nullable <see langword="ulong"/> value to store.</param>
-    public Value(ulong? value)
+    private Value(ulong? value)
     {
         if (value.HasValue)
         {
@@ -701,7 +712,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified <see langword="float"/> value.
     /// </summary>
     /// <param name="value">The <see langword="float"/> value to store.</param>
-    public Value(float value)
+    private Value(float value)
     {
         _object = TypeFlags.Single;
         _union.Single = value;
@@ -711,7 +722,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see langword="float"/> value.
     /// </summary>
     /// <param name="value">The nullable <see langword="float"/> value to store.</param>
-    public Value(float? value)
+    private Value(float? value)
     {
         if (value.HasValue)
         {
@@ -760,7 +771,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified <see langword="double"/> value.
     /// </summary>
     /// <param name="value">The <see langword="double"/> value to store.</param>
-    public Value(double value)
+    private Value(double value)
     {
         _object = TypeFlags.Double;
         _union.Double = value;
@@ -770,7 +781,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see langword="double"/> value.
     /// </summary>
     /// <param name="value">The nullable <see langword="double"/> value to store.</param>
-    public Value(double? value)
+    private Value(double? value)
     {
         if (value.HasValue)
         {
@@ -819,7 +830,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified <see cref="DateTimeOffset"/> value.
     /// </summary>
     /// <param name="value">The <see cref="DateTimeOffset"/> value to store.</param>
-    public Value(DateTimeOffset value)
+    private Value(DateTimeOffset value)
     {
         TimeSpan offset = value.Offset;
         if (offset.Ticks == 0)
@@ -843,7 +854,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see cref="DateTimeOffset"/> value.
     /// </summary>
     /// <param name="value">The nullable <see cref="DateTimeOffset"/> value to store.</param>
-    public Value(DateTimeOffset? value)
+    private Value(DateTimeOffset? value)
     {
         if (!value.HasValue)
         {
@@ -891,7 +902,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified <see cref="DateTime"/> value.
     /// </summary>
     /// <param name="value">The <see cref="DateTime"/> value to store.</param>
-    public Value(DateTime value)
+    private Value(DateTime value)
     {
         _union.DateTime = value;
         _object = TypeFlags.DateTime;
@@ -901,7 +912,7 @@ public readonly partial struct Value
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see cref="DateTime"/> value.
     /// </summary>
     /// <param name="value">The nullable <see cref="DateTime"/> value to store.</param>
-    public Value(DateTime? value)
+    private Value(DateTime? value)
     {
         if (value.HasValue)
         {
@@ -951,7 +962,7 @@ public readonly partial struct Value
     /// </summary>
     /// <param name="segment">The <see cref="ArraySegment{Byte}"/> value to store.</param>
     /// <exception cref="ArgumentNullException">The array of the segment is null.</exception>
-    public Value(ArraySegment<byte> segment)
+    private Value(ArraySegment<byte> segment)
     {
         byte[]? array = segment.Array;
         if (array is null)
@@ -990,7 +1001,7 @@ public readonly partial struct Value
     /// </summary>
     /// <param name="segment">The ArraySegment&lt;char&gt; value to store.</param>
     /// <exception cref="ArgumentNullException">The array of the segment is null.</exception>
-    public Value(ArraySegment<char> segment)
+    private Value(ArraySegment<char> segment)
     {
         char[]? array = segment.Array;
         if (array is null)

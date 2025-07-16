@@ -10,7 +10,7 @@ public class StoringObject
     public void BasicStorage()
     {
         A a = new();
-        Value value = new(a);
+        Value value = Value.Create(a);
         Assert.Equal(typeof(A), value.Type);
         Assert.Same(a, value.As<A>());
 
@@ -23,7 +23,7 @@ public class StoringObject
     public void DerivedRetrieval()
     {
         B b = new();
-        Value value = new(b);
+        Value value = Value.Create(b);
         Assert.Equal(typeof(B), value.Type);
         Assert.Same(b, value.As<A>());
         Assert.Same(b, value.As<B>());
@@ -35,7 +35,7 @@ public class StoringObject
         Assert.Throws<InvalidCastException>(() => value.As<C>());
 
         A a = new B();
-        value = new(a);
+        value = Value.Create(a);
         Assert.Equal(typeof(B), value.Type);
     }
 
@@ -43,7 +43,7 @@ public class StoringObject
     public void AsInterface()
     {
         I a = new A();
-        Value value = new(a);
+        Value value = Value.Create(a);
         Assert.Equal(typeof(A), value.Type);
 
         Assert.Same(a, value.As<A>());
