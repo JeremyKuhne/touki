@@ -215,7 +215,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
         // Handle empty filename edge cases
 
         if (IsSimpleRecursiveMatch
-            || (WildPath.Length > 2 && WildPath[^3] == Path.PathSeparator && WildPath[^2] == '*' && WildPath[^1] == '*'))
+            || (WildPath.Length > 2 && WildPath[^3] == Path.DirectorySeparatorChar && WildPath[^2] == '*' && WildPath[^1] == '*'))
         {
             // Wildcard is "**" or ends with "**", so the filename is "*".
             // (This would potentially happen with "foo/bar/**/").

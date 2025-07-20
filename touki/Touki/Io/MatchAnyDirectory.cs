@@ -10,7 +10,7 @@ namespace Touki.Io;
 public sealed class MatchAnyDirectory : MatchAnyBase
 {
     /// <summary>
-    ///  Constructs a new <see cref="MatchAnyFile"/> with a primary file name expression.
+    ///  Constructs a new <see cref="MatchAnyDirectory"/> with a primary directory name expression.
     /// </summary>
     /// <inheritdoc/>
     public MatchAnyDirectory(

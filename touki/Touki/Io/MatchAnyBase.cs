@@ -92,7 +92,8 @@ public abstract class MatchAnyBase : DisposableBase, IEnumerationMatcher
     protected virtual bool MatchesDirectory(ReadOnlySpan<char> directoryName) => true;
 
     /// <summary>
-    ///  Returns true if the given <paramref name="name"/> 
+    ///  Returns true if the given <paramref name="name"/> matches any of the expressions in <see cref="_expressions"/>
+    ///  using the specified <see cref="MatchCasing"/> and <see cref="MatchType"/>.
     /// </summary>
     protected bool MatchesName(ReadOnlySpan<char> name)
     {
