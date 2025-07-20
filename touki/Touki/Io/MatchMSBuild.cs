@@ -9,7 +9,7 @@ namespace Touki.Io;
 /// <summary>
 ///  Represents a specification for matching files and directories in an MSBuild project.
 /// </summary>
-public class MSBuildSpec : DisposableBase
+public class MatchMSBuild : DisposableBase, IEnumerationMatcher
 {
     private readonly StringSegment _directorySpec;
     private readonly StringSegment _fileNameSpec;
@@ -34,7 +34,7 @@ public class MSBuildSpec : DisposableBase
     private readonly ArrayPoolList<SpecSegment> _specSegments = [];
 
     /// <summary>
-    ///  Constructs a new <see cref="MSBuildSpec"/> from a full path specification, start directory, match type, and match casing.
+    ///  Constructs a new <see cref="MatchMSBuild"/> from a full path specification, start directory, match type, and match casing.
     /// </summary>
     /// <param name="fullPathSpec">
     ///  The full path specification to match against, which can include wildcards. Must be normalized for the current
@@ -46,11 +46,11 @@ public class MSBuildSpec : DisposableBase
     /// </param>
     /// <param name="matchType">The type of matching to use for the specification.</param>
     /// <param name="matchCasing">The case sensitivity to use.</param>
-    public MSBuildSpec(string fullPathSpec, string startDirectory, MatchType matchType, MatchCasing matchCasing)
+    public MatchMSBuild(string fullPathSpec, string startDirectory, MatchType matchType, MatchCasing matchCasing)
     {
         _startDirectoryLength = startDirectory.Length;
         _matchType = matchType;
-        _matchCasing = GetFinalCasing(matchCasing);
+        _matchCasing = Paths.GetFinalCasing(matchCasing);
 
         // Parse pattern segments
         _directorySpec = new(fullPathSpec, _startDirectoryLength + 1);
@@ -92,43 +92,15 @@ public class MSBuildSpec : DisposableBase
         }
     }
 
-    /// <summary>
-    ///  Given <paramref name="matchCasing"/>, ensure that it is set to a specific casing.
-    /// </summary>
-    private static MatchCasing GetFinalCasing(MatchCasing matchCasing) => matchCasing switch
-    {
-        MatchCasing.CaseSensitive => MatchCasing.CaseSensitive,
-        MatchCasing.CaseInsensitive => MatchCasing.CaseInsensitive,
-        _ =>
-#if NETFRAMEWORK
-            MatchCasing.CaseInsensitive
-#else
-            OperatingSystem.IsWindows()
-                || OperatingSystem.IsMacOS()
-                || OperatingSystem.IsIOS()
-                || OperatingSystem.IsTvOS()
-                || OperatingSystem.IsWatchOS()
-                    ? MatchCasing.CaseInsensitive
-                    : MatchCasing.CaseSensitive
-#endif
-    };
-
-
-    /// <summary>
-    ///  Invalidates the cache. This should be called whenever the current directory being
-    ///  processed changes.
-    /// </summary>
-    public void InvalidateCache()
+    /// <inheritdoc/>
+    public void DirectoryFinished()
     {
         // Invalidate the cache when we finish processing a directory
         _cacheValid = false;
     }
 
-    /// <summary>
-    ///  Returns <see langword="true"/> if the specified <paramref name="directoryName"/> should be recursed into from
-    ///  the specified <paramref name="currentDirectory"/>.
-    /// </summary>
-    public bool ShouldRecurseIntoDirectory(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> directoryName)
+    /// <inheritdoc/>
+    public bool MatchesDirectory(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> directoryName)
     {
         if (AlwaysRecurse)
         {
@@ -159,14 +131,20 @@ public class MSBuildSpec : DisposableBase
         // Check if recursing into this directory would match the pattern
         // Combine relative path and entry filename into a VirtualPath to avoid string allocation
 
-        VirtualPath virtualPath = new(relativePath, directoryName);
-        return MatchDirectorySegments(ref virtualPath);
+        PathSegmentEnumerator virtualPath = new(relativePath, directoryName);
+
+        if (virtualPath.Length == 0)
+        {
+            // No relative directory path, recurse if there are no spec segments or if the first segment is "**".
+            return _specSegments.Count == 0 || _specSegments[0].IsAnyDirectory;
+        }
+
+        // Should recurse if we've fully or partially matched.
+        return MatchSegments(ref virtualPath) != PathMatchState.NoMatch;
     }
 
-    /// <summary>
-    ///  Returns <see langword="true"/> if the specified <paramref name="fileName"/> should be included in the results.
-    /// </summary>
-    public bool ShouldIncludeFile(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> fileName)
+    /// <inheritdoc/>
+    public bool MatchesFile(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> fileName)
     {
         // Get the relative path from start directory to this file's directory
         ReadOnlySpan<char> relativePath = GetRelativeDirectoryPath(currentDirectory);
@@ -178,7 +156,7 @@ public class MSBuildSpec : DisposableBase
 
         // Check if the current directory fully matches the pattern and the file name matches
         // Use cached result since we'll be called multiple times for files in the same directory
-        return _cachedFullyMatches && MatchSpec(fileName, _fileNameSpec);
+        return _cachedFullyMatches && Paths.MatchesExpression(fileName, _fileNameSpec, _matchCasing, _matchType);
     }
 
     private void UpdateCachedMatchState(ReadOnlySpan<char> relativePath)
@@ -189,8 +167,8 @@ public class MSBuildSpec : DisposableBase
         }
         else
         {
-            VirtualPath virtualPath = new(relativePath);
-            MatchSegments(ref virtualPath, out _cachedFullyMatches);
+            PathSegmentEnumerator virtualPath = new(relativePath);
+            _cachedFullyMatches = MatchSegments(ref virtualPath) == PathMatchState.FullMatch;
         }
 
         _cacheValid = true;
@@ -200,97 +178,117 @@ public class MSBuildSpec : DisposableBase
         // Remove the start directory prefix to get the relative path
         fullDirectory.Length <= _startDirectoryLength ? default : fullDirectory[(_startDirectoryLength + 1)..];
 
-    private bool MatchDirectorySegments(ref VirtualPath virtualPath)
+    private enum PathMatchState
     {
-        if (virtualPath.Length == 0)
-        {
-            // No relative directory path, match if there are no spec segments or if the first segment is "**".
-            return _specSegments.Count == 0 || _specSegments[0].IsAnyDirectory;
-        }
+        /// <summary>
+        ///  The path does not match the specification, and there is no possibility of a match in a subdirectory.
+        /// </summary>
+        NoMatch,
 
-        return MatchSegments(ref virtualPath, out _);
+        /// <summary>
+        ///  The path partially matches the specification, meaning it could match in a subdirectory, but files within
+        ///  the specified path do not match.
+        /// </summary>
+        PartialMatch,
+
+        /// <summary>
+        ///  The path fully matches the specification, meaning it matches all segments and files within the
+        ///  specified path.
+        /// </summary>
+        FullMatch
     }
 
-    private bool MatchSegments(ref VirtualPath virtualPath, out bool fullMatch)
+    /// <summary>
+    ///  Matches the given path segments against the specification segments.
+    /// </summary>
+    /// <returns>
+    ///  <see langword="true"/> for partial match if the current directory does not fully match the specification, but
+    ///  could match on a subdirectory. <see langword="true"/> for full match if the current directory fully matches
+    ///  the specification (and therefore, the file names should be matched).
+    /// </returns>
+    private PathMatchState MatchSegments(ref PathSegmentEnumerator pathSegments)
     {
         int specIndex = 0;
 
-        while (specIndex < _specSegments.Count && virtualPath.MoveNextSegment())
+        while (specIndex < _specSegments.Count && pathSegments.MoveNext())
         {
             SpecSegment currentSpec = _specSegments[specIndex];
 
-            if (currentSpec.IsAnyDirectory)
+            if (!currentSpec.IsAnyDirectory)
             {
-                // Current is match any, need to greedily look forward for a valid match for the next (not "**") spec.
-                specIndex++;
-
-                if (specIndex >= _specSegments.Count)
+                // Regular match, not "**". We have to exactly match to the current segment.
+                if (!Paths.MatchesExpression(pathSegments.Current, currentSpec, _matchCasing, _matchType))
                 {
-                    // Already at the end.
+                    return PathMatchState.NoMatch;
+                }
+
+                specIndex++;
+                continue;
+            }
+
+            // Current is match any ("**"), need to greedily look forward for a valid match for the next (not "**") spec.
+            // For example, if the specification is "a/**/b/c.txt", we need to move to the "b" segment to attempt to
+            // *fully* satisfy the specification.
+            if (++specIndex == _specSegments.Count)
+            {
+                // Already at the end.
+                break;
+            }
+
+            currentSpec = _specSegments[specIndex];
+            Debug.Assert(!currentSpec.IsAnyDirectory, "Duplicate ** should have been filtered out.");
+
+            bool matched = false;
+            do
+            {
+                if (Paths.MatchesExpression(pathSegments.Current, currentSpec, _matchCasing, _matchType))
+                {
+                    // Found a match in the path for the current specification segment, need to continue to the next
+                    // specification segment.
+                    matched = true;
+                    specIndex++;
                     break;
                 }
+            } while (pathSegments.MoveNext());
 
-                SpecSegment nextSpec = _specSegments[specIndex];
-
-                bool matched = false;
-                do
-                {
-                    if (MatchSpec(virtualPath.CurrentSegment, nextSpec))
-                    {
-                        // Found one, match it and continue.
-                        matched = true;
-                        specIndex++;
-                        break;
-                    }
-                } while (virtualPath.MoveNextSegment());
-
-                if (!matched)
-                {
-                    // No match found for the next non "**" spec, which means we can't fully match this path.
-                    // If we are at the end of the path, we can still consider it a partial match.
-                    fullMatch = false;
-                    return virtualPath.End;
-                }
-            }
-            else
+            if (!matched)
             {
-                // Regular match, not "**".
-                if (!MatchSpec(virtualPath.CurrentSegment, currentSpec))
-                {
-                    fullMatch = false;
-                    return false;
-                }
-
-                specIndex++;
+                // No match found for the next non "**" spec, which means we can't *fully* match this path. We might
+                // be able to fully match on a subdirectory of the current path. With the prior example of "a/**/b/c.txt",
+                // if the current directory is "a/c/d", we don't have a match for the current directory, but we will
+                // be able to match "a/c/d/b/c.txt" if we recurse into "a/c/d/b".
+                return PathMatchState.PartialMatch;
             }
         }
 
-        // We've successfully matched all segments that we could.
+        // We've successfully matched all segments that we could. We have a few states at this point.
+        //
+        //  Matched Spec | Matched Path |                 |
+        //  Segments     | Segments     | Partial Match   | Full Match
+        //  -------------|--------------|-----------------|----------------
+        //  All          | All          | true            | true
+        //  All          | Some         | spec ends in ** | spec ends in **
+        //  Some         | All          | true            | false
+        //  Some         | Some         | false           | false
+        //
+        // "All" for matched spec segments means everything up to a final "**" segment, if any.
 
         bool specsRemaining = specIndex < _specSegments.Count;
-        bool pathRemaining = !virtualPath.End;
+        bool pathRemaining = !pathSegments.End;
 
-        // We're fully matched if the spec ends in "**" and we've matched all segments, otherwise
-        // we need to have matched both the path and spec segments completely.
-        fullMatch = EndsInAnyDirectory
+        // We're fully matched if the specification ends in "**" and we've matched all other specification segments
+        // (as *anything* matches from that point). If it doesn't end in "**", then we need to have matched all path
+        // segments to all specification segments.
+        bool fullMatch = EndsInAnyDirectory
             ? specIndex >= _specSegments.Count - 1
             : !pathRemaining && !specsRemaining;
 
-        // We have a partial, *possible* full match when we've matched all of the path segments.
-        return !pathRemaining;
+        return fullMatch
+            ? PathMatchState.FullMatch
+            : pathRemaining
+                ? PathMatchState.NoMatch
+                : PathMatchState.PartialMatch;
     }
-
-    private bool MatchSpec(ReadOnlySpan<char> name, ReadOnlySpan<char> spec) => _matchType switch
-    {
-        MatchType.Win32 => FileSystemName.MatchesWin32Expression(
-            spec,
-            name,
-            ignoreCase: _matchCasing == MatchCasing.CaseInsensitive),
-        _ => FileSystemName.MatchesSimpleExpression(
-            spec,
-            name,
-            ignoreCase: _matchCasing == MatchCasing.CaseInsensitive)
-    };
 
     /// <inheritdoc/>
     protected override void Dispose(bool disposing)

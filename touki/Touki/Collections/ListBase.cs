@@ -49,13 +49,19 @@ public abstract partial class ListBase<T> : DisposableBase, IList<T>, IReadOnlyL
     /// <inheritdoc/>
     public bool Contains(T item) => IndexOf(item) >= 0;
 
+    /// <inheritdoc cref="Contains(T)"/>
+    /// <inheritdoc cref="IndexOf(T, IEqualityComparer{T})"/>
+    public bool Contains(T item, IEqualityComparer<T> comparer) => IndexOf(item, comparer) >= 0;
+
     /// <inheritdoc/>
     public abstract void CopyTo(T[] array, int arrayIndex);
 
     /// <inheritdoc/>
     public abstract int IndexOf(T item);
 
-    /// <inheritdoc/>
+    /// <inheritdoc cref="IndexOf(T)"/>
+    /// <param name="comparer">The comparer to use.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="comparer"/> is null.</exception>
     public virtual int IndexOf(T item, IEqualityComparer<T> comparer)
     {
         // .NET 10 is getting a number of extensions for IEqualityComparer for spans, which will

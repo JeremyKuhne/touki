@@ -112,7 +112,7 @@ public abstract partial class MSBuildEnumerator : FileSystemEnumerator<string>
         string startDirectory = fullPath[..lastSeparator].ToString();
 
         return new SingleSpec(
-            new MSBuildSpec(fullPathSpec, startDirectory, options.MatchType, options.MatchCasing),
+            new MatchMSBuild(fullPathSpec, startDirectory, options.MatchType, options.MatchCasing),
             projectDirectory,
             !Path.IsPathFullyQualified(fileSpec),
             startDirectory,

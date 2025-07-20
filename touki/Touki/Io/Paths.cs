@@ -25,8 +25,13 @@ public static class Paths
     /// </remarks>
     public const int MaxShortPath = 260;
 
-#if !NETFRAMEWORK
-    private static MatchCasing DefaultMatchCasing { get; } =
+    /// <summary>
+    ///  The default match casing for the current operating system.
+    /// </summary>
+    public static MatchCasing OSDefaultMatchCasing { get; } =
+#if NETFRAMEWORK
+        MatchCasing.CaseInsensitive;
+#else
         OperatingSystem.IsWindows()
             || OperatingSystem.IsMacOS()
             || OperatingSystem.IsIOS()
@@ -37,18 +42,14 @@ public static class Paths
 #endif
 
     /// <summary>
-    ///  Given <paramref name="matchCasing"/>, ensure that it is set to a specific casing.
+    ///  Given <paramref name="matchCasing"/>, ensure that it is set to a specific casing. The default is
+    ///  to get the default casing for the current operating system.
     /// </summary>
     public static MatchCasing GetFinalCasing(MatchCasing matchCasing) => matchCasing switch
     {
         MatchCasing.CaseSensitive => MatchCasing.CaseSensitive,
         MatchCasing.CaseInsensitive => MatchCasing.CaseInsensitive,
-        _ =>
-#if NETFRAMEWORK
-            MatchCasing.CaseInsensitive
-#else
-            DefaultMatchCasing
-#endif
+        _ => OSDefaultMatchCasing
     };
 
     /// <summary>
@@ -98,12 +99,13 @@ public static class Paths
     }
 
     /// <inheritdoc cref="RemoveRelativeSegments(ReadOnlySpan{char}, ref ValueStringBuilder)"/>
-    public static string RemoveRelativeSegments(string path)
+    public static StringSegment RemoveRelativeSegments(StringSegment path)
     {
         var sb = new ValueStringBuilder(stackalloc char[260]);
 
         if (RemoveRelativeSegments(path.AsSpan(), ref sb))
         {
+            // This could potentially be optimized to slice if the original path starts with the result.
             path = sb.ToString();
         }
 
@@ -111,12 +113,27 @@ public static class Paths
         return path;
     }
 
-    // RemoveRelativeSegments is originally from the .NET runtime. I wrote most of the code when I owned System.IO.
+    /// <summary>
+    ///  Converts all alternate directory separators in the given path to the primary directory separator.
+    /// </summary>
+    public static string ChangeAlternateDirectorySeparators(string path)
+    {
+        ArgumentNull.ThrowIfNull(path);
+        if (Path.DirectorySeparatorChar == Path.AltDirectorySeparatorChar)
+        {
+            // No need to change anything.
+            return path;
+        }
+
+        return path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+    }
+
+    // RemoveRelativeSegments is originally from the .NET runtime. I was one of the primary authors of the orignal code.
     // This version flips some of the logic so it can handle paths that aren't fully qualified without losing context.
 
     /// <summary>
-    ///  Try to remove relative segments from the given path (without combining with a root). Only primary directory
-    ///  separators are considered (not <see cref="Path.AltDirectorySeparatorChar"/>).
+    ///  Try to remove relative segments from the given path (without combining with a root). Collapses runs of directory
+    ///  separators. Only primary directory separators are considered (<see cref="Path.DirectorySeparatorChar"/>).
     /// </summary>
     /// <param name="path">The path to simplify.</param>
     /// <param name="builder">String builder that will store the result.</param>
