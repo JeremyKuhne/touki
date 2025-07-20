@@ -7,45 +7,45 @@ namespace Touki.Io;
 public abstract partial class MSBuildEnumerator
 {
     /// <summary>
-    ///  Enumerator for the simplest scenario where a single <see cref="MSBuildSpec"/> is used.
+    ///  Enumerator for the simplest scenario where a single <see cref="MatchMSBuild"/> is used.
     /// </summary>
     private sealed class SingleSpec : MSBuildEnumerator
     {
-        private readonly MSBuildSpec _spec;
+        private readonly IEnumerationMatcher _matcher;
 
         /// <summary>
         ///  Initializes a new instance of the <see cref="SingleSpec"/> class.
         /// </summary>
         public SingleSpec(
-            MSBuildSpec includeSpec,
+            IEnumerationMatcher includeMatcher,
             string? projectDirectory,
             bool stripProjectDirectory,
             string startDirectory,
             EnumerationOptions options)
             : base(projectDirectory, stripProjectDirectory, startDirectory, options)
         {
-            _spec = includeSpec;
+            _matcher = includeMatcher;
         }
 
         /// <inheritdoc/>
         protected override void OnDirectoryFinished(ReadOnlySpan<char> directory) =>
             // Clear the cache when we finish processing a directory
-            _spec.InvalidateCache();
+            _matcher.DirectoryFinished();
 
         /// <inheritdoc/>
         protected override bool ShouldRecurseIntoEntry(ref FileSystemEntry entry) =>
-            _spec.ShouldRecurseIntoDirectory(entry.Directory, entry.FileName);
+            _matcher.MatchesDirectory(entry.Directory, entry.FileName);
 
         /// <inheritdoc/>
         protected override bool ShouldIncludeEntry(ref FileSystemEntry entry) =>
-            !entry.IsDirectory && _spec.ShouldIncludeFile(entry.Directory, entry.FileName);
+            !entry.IsDirectory && _matcher.MatchesFile(entry.Directory, entry.FileName);
 
         /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                _spec.Dispose();
+                _matcher.Dispose();
             }
 
             base.Dispose(disposing);

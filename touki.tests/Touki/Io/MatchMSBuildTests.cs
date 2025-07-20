@@ -6,9 +6,9 @@ using System.Collections;
 
 namespace Touki.Io;
 
-public class MSBuildSpecTests
+public class MatchMSBuildTests
 {
-    private static MSBuildSpec CreateSpec(string pattern, string root)
+    private static MatchMSBuild CreateSpec(string pattern, string root)
     {
         string rootDirectory = Path.GetFullPath(root);
         string fullPathSpec = Path.GetFullPath(pattern, rootDirectory);
@@ -28,42 +28,23 @@ public class MSBuildSpecTests
 
         string startDirectory = fullPath[..lastSeparator].ToString();
 
-        MatchCasing casing =
-#if NETFRAMEWORK
-            MatchCasing.CaseInsensitive;
-#else
-            OperatingSystem.IsWindows()
-            || OperatingSystem.IsMacOS()
-            || OperatingSystem.IsIOS()
-            || OperatingSystem.IsTvOS()
-            || OperatingSystem.IsWatchOS()
-                ? MatchCasing.CaseInsensitive
-                : MatchCasing.CaseSensitive;
-#endif
+        MatchCasing casing = Paths.OSDefaultMatchCasing;
         MatchType matchType = MatchType.Simple;
 
-        return new MSBuildSpec(fullPathSpec, startDirectory, matchType, casing);
+        return new MatchMSBuild(fullPathSpec, startDirectory, matchType, casing);
     }
 
     private static IEnumerable<string> Enumerate(string pattern, string root, params string[] files)
     {
-        MSBuildSpec spec = CreateSpec(pattern, root);
+        MatchMSBuild spec = CreateSpec(pattern, root);
         EnumeratorMock enumerator = new(root, files, spec);
         return enumerator.Enumerate().Select(result => result.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
     }
 
     public static TheoryData<string, string[], string[]> EnumerationData()
     {
-        bool insensitive;
-#if NETFRAMEWORK
-        insensitive = true;
-#else
-        insensitive = OperatingSystem.IsWindows()
-            || OperatingSystem.IsMacOS()
-            || OperatingSystem.IsIOS()
-            || OperatingSystem.IsTvOS()
-            || OperatingSystem.IsWatchOS();
-#endif
+        bool insensitive = Paths.OSDefaultMatchCasing == MatchCasing.CaseInsensitive;
+
         return new TheoryData<string, string[], string[]>()
         {
             { "*.txt", ["file1.txt", "file2.txt", "file3.md"], ["file1.txt", "file2.txt"] },
@@ -125,7 +106,7 @@ public class MSBuildSpecTests
     public void Constructor_InitializesCorrectFields(string fullPathSpec, string startDirectory, MatchType matchType, MatchCasing matchCasing)
     {
         // Create the spec with the provided parameters
-        MSBuildSpec spec = new(fullPathSpec, startDirectory, matchType, matchCasing);
+        MatchMSBuild spec = new(fullPathSpec, startDirectory, matchType, matchCasing);
 
         // Access internal state through TestAccessor
         dynamic accessor = spec.TestAccessor().Dynamic;
@@ -145,7 +126,7 @@ public class MSBuildSpecTests
     {
         // Use a common directory and matching options
         string startDirectory = "C:/temp";
-        MSBuildSpec spec = new(
+        MatchMSBuild spec = new(
             fullPathSpec.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
             startDirectory.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
             MatchType.Simple,
@@ -164,7 +145,7 @@ public class MSBuildSpecTests
     public void Constructor_CreatesExpectedSpecSegments(string fullPathSpec, int expectedSegmentCount)
     {
         string startDirectory = "C:/temp";
-        MSBuildSpec spec = new(
+        MatchMSBuild spec = new(
             fullPathSpec.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
             startDirectory.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
             MatchType.Simple,
@@ -187,7 +168,7 @@ public class MSBuildSpecTests
         string expectedFirstSegment)
     {
         fullPathSpec = fullPathSpec.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-        MSBuildSpec spec = new(
+        MatchMSBuild spec = new(
             fullPathSpec,
             startDirectory.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
             MatchType.Simple,
@@ -212,7 +193,7 @@ public class MSBuildSpecTests
     [Fact]
     public void CacheInvalidation_WorksCorrectly()
     {
-        MSBuildSpec spec = new("C:/temp/*.txt", "C:/temp", MatchType.Simple, MatchCasing.CaseInsensitive);
+        MatchMSBuild spec = new("C:/temp/*.txt", "C:/temp", MatchType.Simple, MatchCasing.CaseInsensitive);
 
         dynamic accessor = spec.TestAccessor().Dynamic;
 
@@ -224,7 +205,7 @@ public class MSBuildSpecTests
         accessor._cachedFullyMatches = true;
 
         // Invalidate the cache
-        spec.InvalidateCache();
+        spec.DirectoryFinished();
 
         // Verify cache is invalidated
         Assert.False(accessor._cacheValid);

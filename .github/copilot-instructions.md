@@ -1,7 +1,7 @@
 # CoPilot instructions for this repository
 
 # Coding
-- Use modern C# features where appropriate.
+- Use the latest C# features (C# 13) where applicable.
 - Always use C# keywords for types (e.g., `int`, `string`, `bool`) instead of their aliases (e.g., `Int32`, `String`, `Boolean`).
 - Always use `nint` and `nuint` for native integer types (not `IntPtr` and `UIntPtr`).
 - Avoid using `var` - always use explicit type declarations.
@@ -34,6 +34,7 @@
 - Use `<inheritdoc/>` and `<inheritdoc cref="..."/>` to inherit documentation from base classes, interfaces where applicable.
 - For method overloads, use `<inheritdoc cref="MethodName"/>` to inherit documentation from the method with the most arguments,
   overriding tags where they differ.
+- Use see langword tags for language keywords in comments (e.g. `<see langword='true'/>` instead of `true`).
 
 # Line breaks and white space
 - Never put multiple statements on a single line.

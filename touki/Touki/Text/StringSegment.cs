@@ -182,9 +182,19 @@ public readonly struct StringSegment :
     /// <summary>
     ///  Splits on the next separator, or returns the entire segment if no separator is found.
     /// </summary>
-    /// <returns>
-    ///  <see langword="false"/> if the current segment is empty, otherwise <see langword="true"/>.
-    /// </returns>
+    /// <param name="left">The left side of the split.</param>
+    /// <param name="right">The right side of the split, if any.</param>
+    /// <returns><see langword="false"/> if the current segment is empty, otherwise <see langword="true"/>.</returns>
+    /// <remarks>
+    ///  <para>
+    ///   Example usage:
+    ///   <code>
+    ///    <![CDATA[StringSegment right = segment;
+    ///    while (right.TrySplit(';', out StringSegment left, out right)) { /* Do something with left */ }
+    ///    ]]>
+    ///   </code>
+    ///  </para>
+    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TrySplit(char delimiter, out StringSegment left, out StringSegment right)
     {

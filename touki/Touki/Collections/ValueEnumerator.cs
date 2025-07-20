@@ -17,7 +17,9 @@ public ref struct ValueEnumerator<TEnumerator, TValue>
 #endif
 {
     // When TEnumerator is a value type, the JIT will devirtualize the calls to it (no boxing).
+#pragma warning disable IDE0044 // Add readonly modifier - must be mutable to support MoveNext and Reset.
     private TEnumerator _enumerator;
+#pragma warning restore IDE0044
 
     /// <summary>
     ///  Constructs a new instance of the <see cref="ValueEnumerator{TEnumerator, TValue}"/> struct.

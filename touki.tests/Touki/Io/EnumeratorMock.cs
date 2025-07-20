@@ -13,11 +13,11 @@ internal sealed class EnumeratorMock
     }
 
     private readonly string _root;
-    private readonly MSBuildSpec _spec;
+    private readonly MatchMSBuild _spec;
     private readonly DirectoryNode _rootNode = new();
     private readonly List<string> _included = [];
 
-    public EnumeratorMock(string root, IEnumerable<string> files, MSBuildSpec spec)
+    public EnumeratorMock(string root, IEnumerable<string> files, MatchMSBuild spec)
     {
         _root = root;
         _spec = spec;
@@ -65,7 +65,7 @@ internal sealed class EnumeratorMock
             // Process files in current directory
             foreach (string file in currentNode.Files)
             {
-                if (_spec.ShouldIncludeFile(currentPath.AsSpan(), file.AsSpan()))
+                if (_spec.MatchesFile(currentPath.AsSpan(), file.AsSpan()))
                 {
                     _included.Add(Path.GetRelativePath(_root, Path.Join(currentPath, file)));
                 }
@@ -76,13 +76,13 @@ internal sealed class EnumeratorMock
             {
                 string name = pair.Key;
                 DirectoryNode child = pair.Value;
-                if (_spec.ShouldRecurseIntoDirectory(currentPath.AsSpan(), name.AsSpan()))
+                if (_spec.MatchesDirectory(currentPath.AsSpan(), name.AsSpan()))
                 {
                     directoryQueue.Enqueue((child, Path.Join(currentPath, name)));
                 }
             }
 
-            _spec.InvalidateCache();
+            _spec.DirectoryFinished();
         }
 
         return _included;

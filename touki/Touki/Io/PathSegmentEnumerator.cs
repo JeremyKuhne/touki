@@ -5,27 +5,37 @@
 namespace Touki.Io;
 
 /// <summary>
-///  Allows combining two path segments into a virtual path to avoid allocating.
+///  Allows walking segments of a path. Can combine two path segments into a virtual path to help avoid allocating.
 /// </summary>
-public ref struct VirtualPath
+public ref struct PathSegmentEnumerator
 {
     private readonly ReadOnlySpan<char> _firstPath;
     private readonly ReadOnlySpan<char> _secondPath;
-    private readonly bool _needsSeparator;
     private ReadOnlySpan<char> _currentSegment;
     private int _position;
+    private readonly bool _needsSeparator;
 
     /// <summary>
     ///  Constructs a virtual path from a single segment.
     /// </summary>
-    public VirtualPath(ReadOnlySpan<char> path) : this(path, [])
+    public PathSegmentEnumerator(ReadOnlySpan<char> path) : this(path, [])
+    {
+    }
+
+    /// <inheritdoc cref="PathSegmentEnumerator(ReadOnlySpan{char})"/>
+    public PathSegmentEnumerator(string path) : this(path.AsSpan(), [])
+    {
+    }
+
+    /// <inheritdoc cref="PathSegmentEnumerator(ReadOnlySpan{char}, ReadOnlySpan{char})"/>
+    public PathSegmentEnumerator(string firstPath, string secondPath) : this(firstPath.AsSpan(), secondPath.AsSpan())
     {
     }
 
     /// <summary>
     ///  Constructs a virtual path from two segments.
     /// </summary>
-    public VirtualPath(ReadOnlySpan<char> firstPath, ReadOnlySpan<char> secondPath)
+    public PathSegmentEnumerator(ReadOnlySpan<char> firstPath, ReadOnlySpan<char> secondPath)
     {
         _firstPath = firstPath;
         _secondPath = secondPath;
@@ -75,9 +85,9 @@ public ref struct VirtualPath
 
     /// <summary>
     ///  Moves to the next segment (between <see cref="Path.DirectorySeparatorChar"/>)
-    ///  in the virtual path, returns false if there are no more segments.
+    ///  in the virtual path, returns <see langword="false"/> if there are no more segments.
     /// </summary>
-    public bool MoveNextSegment()
+    public bool MoveNext()
     {
         // Total logical length assumes a separator between paths
         int totalLogicalLength = _firstPath.Length + _secondPath.Length;
@@ -111,7 +121,7 @@ public ref struct VirtualPath
         {
             // Found separator at start, skip it and try again
             _position++;
-            return MoveNextSegment();
+            return MoveNext();
         }
 
         if (separatorIndex == -1)
@@ -133,7 +143,7 @@ public ref struct VirtualPath
     /// <summary>
     ///  Returns the current path segment, if any.
     /// </summary>
-    public readonly ReadOnlySpan<char> CurrentSegment => _currentSegment;
+    public readonly ReadOnlySpan<char> Current => _currentSegment;
 
     /// <summary>
     ///  <see langword="true"/> if there are no more segments to process.
