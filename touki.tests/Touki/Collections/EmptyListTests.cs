@@ -65,7 +65,7 @@ public class EmptyListTests
     [Fact]
     public void Clear_Called_DoesNotThrow()
     {
-        Action act = () => EmptyList<int>.Instance.Clear();
+        Action act = EmptyList<int>.Instance.Clear;
         act.Should().NotThrow();
     }
 
