@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Jeremy W Kuhne
+﻿// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -136,10 +136,12 @@ public class ContiguousListTests
     [Fact]
     public void UnsafeValues_WithItems_ReturnsCorrectSpan()
     {
-        using TestContiguousList<int> list = new();
-        list.Add(10);
-        list.Add(20);
-        list.Add(30);
+        using TestContiguousList<int> list = new()
+        {
+            10,
+            20,
+            30
+        };
 
         Span<int> values = list.UnsafeValues;
 
@@ -152,9 +154,11 @@ public class ContiguousListTests
     [Fact]
     public void UnsafeValues_CanModifyUnderlyingData()
     {
-        using TestContiguousList<int> list = new();
-        list.Add(100);
-        list.Add(200);
+        using TestContiguousList<int> list = new()
+        {
+            100,
+            200
+        };
 
         Span<int> values = list.UnsafeValues;
         values[0] = 999;
@@ -178,10 +182,12 @@ public class ContiguousListTests
     [Fact]
     public void Values_WithItems_ReturnsCorrectReadOnlySpan()
     {
-        using TestContiguousList<string> list = new();
-        list.Add("first");
-        list.Add("second");
-        list.Add("third");
+        using TestContiguousList<string> list = new()
+        {
+            "first",
+            "second",
+            "third"
+        };
 
         ReadOnlySpan<string> values = list.Values;
 
@@ -194,9 +200,11 @@ public class ContiguousListTests
     [Fact]
     public void Values_ReflectsListChanges()
     {
-        using TestContiguousList<double> list = new();
-        list.Add(1.1);
-        list.Add(2.2);
+        using TestContiguousList<double> list = new()
+        {
+            1.1,
+            2.2
+        };
 
         ReadOnlySpan<double> values1 = list.Values;
         values1.Length.Should().Be(2);
@@ -214,7 +222,7 @@ public class ContiguousListTests
         PropertyInfo? property = type.GetProperty(nameof(ContiguousList<int>.UnsafeValues));
 
         property.Should().NotBeNull();
-        
+
         PropertyInfo propertyInfo = property!;
 
         // Check for EditorBrowsable attribute - use conditional compilation for compatibility
@@ -242,8 +250,10 @@ public class ContiguousListTests
     [Fact]
     public void Values_IsReadOnly()
     {
-        using TestContiguousList<int> list = new();
-        list.Add(42);
+        using TestContiguousList<int> list = new()
+        {
+            42
+        };
 
         ReadOnlySpan<int> values = list.Values;
 
@@ -263,10 +273,12 @@ public class ContiguousListTests
     [Fact]
     public void SpanAccess_WithReferenceTypes_WorksCorrectly()
     {
-        using TestContiguousList<string> list = new();
-        list.Add("alpha");
-        list.Add("beta");
-        list.Add("gamma");
+        using TestContiguousList<string> list = new()
+        {
+            "alpha",
+            "beta",
+            "gamma"
+        };
 
         Span<string> unsafeValues = list.UnsafeValues;
         ReadOnlySpan<string> values = list.Values;
@@ -284,10 +296,12 @@ public class ContiguousListTests
     [Fact]
     public void SpanAccess_AfterClear_ReturnsEmptySpan()
     {
-        using TestContiguousList<int> list = new();
-        list.Add(1);
-        list.Add(2);
-        list.Add(3);
+        using TestContiguousList<int> list = new()
+        {
+            1,
+            2,
+            3
+        };
 
         list.Clear();
 
@@ -301,10 +315,12 @@ public class ContiguousListTests
     [Fact]
     public void SpanAccess_AfterRemoval_ReflectsChanges()
     {
-        using TestContiguousList<int> list = new();
-        list.Add(10);
-        list.Add(20);
-        list.Add(30);
+        using TestContiguousList<int> list = new()
+        {
+            10,
+            20,
+            30
+        };
 
         list.RemoveAt(1); // Remove 20
 
@@ -319,9 +335,11 @@ public class ContiguousListTests
     {
         // The "Unsafe" prefix indicates that modifications to the list after getting
         // the span can lead to undefined behavior. This test documents that concern.
-        using TestContiguousList<int> list = new();
-        list.Add(1);
-        list.Add(2);
+        using TestContiguousList<int> list = new()
+        {
+            1,
+            2
+        };
 
         Span<int> unsafeSpan = list.UnsafeValues;
         int originalLength = unsafeSpan.Length;

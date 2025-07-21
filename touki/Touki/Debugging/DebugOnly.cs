@@ -4,10 +4,10 @@
 
 namespace Touki;
 
-#if DEBUG
 internal static class DebugOnly
 {
-    public static bool CallerIsInToukiAssembly()
+    internal static bool CallerIsInToukiAssembly()
+#if DEBUG
     {
         StackTrace stackTrace = new(skipFrames: 2, fNeedFileInfo: false);
         if (stackTrace.GetFrame(0) is not { } frame
@@ -18,5 +18,9 @@ internal static class DebugOnly
 
         return declaringType.Assembly == typeof(DebugOnly).Assembly;
     }
-}
+#else
+    {
+        throw new InvalidOperationException();
+    }
 #endif
+}
