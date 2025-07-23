@@ -24,6 +24,10 @@ Some of the design goals include:
 - `Value` struct for creating strongly typed arbitrary collections of values without boxing most primitives
 - Much more!
 
+## Overviews
+
+- [Reducing String Allocations with Touki](docs/strings.md)
+
 ## Installation
 
 Using the .NET CLI:

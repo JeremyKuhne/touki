@@ -4,14 +4,16 @@
 
 using System.Threading;
 using System.Threading.Tasks;
-using Touki;
+#if !NET
+using System.IO;
+#endif
 
-namespace System.IO;
+namespace Touki.IO;
 
 /// <summary>
 ///  Extension methods for <see cref="Stream"/>.
 /// </summary>
-public static class StreamExtensions
+public static partial class StreamExtensions
 {
     /// <summary>
     ///  Reads a sequence of bytes from the current stream and advances the position
@@ -90,4 +92,14 @@ public static class StreamExtensions
             builder.Clear();
         }
     }
+
+    /// <summary>
+    ///  Allows writing a <see cref="StringSegment"/> to a <see cref="TextWriter"/>.
+    /// </summary>
+    public static void Write(this TextWriter writer, StringSegment value) => writer.Write(value.AsSpan());
+
+    /// <summary>
+    ///  Allows writing a <see cref="StringSegment"/> to a <see cref="TextWriter"/>.
+    /// </summary>
+    public static void WriteLine(this TextWriter writer, StringSegment value) => writer.WriteLine(value.AsSpan());
 }

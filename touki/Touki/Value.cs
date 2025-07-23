@@ -37,7 +37,7 @@ public readonly partial struct Value
     /// </summary>
     /// <remarks>
     ///  <para>
-    ///   This is private to help ensure that we don't box for value types.
+    ///   This is private to help ensure that users don't unknowingly box for value types.
     ///  </para>
     /// </remarks>
     /// <param name="value">The value to store.</param>
@@ -1076,8 +1076,10 @@ public readonly partial struct Value
     /// <param name="value">The value to store.</param>
     /// <returns>A <see cref="Value"/> containing the specified value.</returns>
     /// <remarks>
-    ///  This method automatically determines the best storage strategy for the specified type,
-    ///  using unboxed storage for supported primitive types and boxing for other types.
+    ///  <para>
+    ///   This method automatically determines the best storage strategy for the specified type,
+    ///   using unboxed storage for supported primitive types and boxing for other types.
+    ///  </para>
     /// </remarks>
     public static Value Create<T>(T value)
     {
@@ -1161,6 +1163,11 @@ public readonly partial struct Value
 
         return new Value(value);
     }
+
+    /// <summary>
+    ///  To avoid a generic instantion for an unsupported <see cref="Create{T}(T)"/>, this method can be used.
+    /// </summary>
+    public static Value Box(object? value) => new Value(value);
 
     private Value(object o, ulong u)
     {

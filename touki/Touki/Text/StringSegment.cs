@@ -782,34 +782,6 @@ public readonly struct StringSegment :
     };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private unsafe int CompareToOrdinalIgnoreCase(StringSegment other)
-    {
-        int result;
-
-        fixed (char* a = _value)
-        fixed (char* b = other._value)
-        {
-            if (CompareOrdinalIgnoreCaseAscii(a + _startIndex, _length, b + other._startIndex, other._length, out result))
-            {
-                return result;
-            }
-        }
-
-        // If the ASCII comparison didn't succeed, we need to use the CultureInfo.CompareInfo for whatever is left
-        result = CultureInfo.InvariantCulture.CompareInfo.Compare(
-            _value,
-            _startIndex + result,
-            _length - result,
-            other._value,
-            other._startIndex + result,
-            other._length - result,
-            CompareOptions.IgnoreCase);
-
-        return result;
-
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private unsafe int CompareToOrdinalIgnoreCase(string other, int otherStartIndex, int otherLength)
     {
         // We're trying to make a best effort to match `string.Compare(string, string, StringComparison.OrdinalIgnoreCase)`.
