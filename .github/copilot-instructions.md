@@ -58,9 +58,11 @@
 - Do not add "Arrange, Act, Assert" comments in tests.
 - Ref structs can not be used in lambdas, use try/finally blocks to validate error cases.
 - Use FluentAssertions for assertions in tests.
+- FluentAssertions and Xunit are already global usings, don't add new usings for these to test files.
 
 # General Guidance
 
 - Ensure code is cross-compatible with both .NET 9 and .NET Framework 4.7.2.
 - Adhere to the repository's license and copyright.
 - PowerShell is the terminal environment for building and testing.
+- Check GlobalUsings.cs for global usings and don't add unnecessary usings.
