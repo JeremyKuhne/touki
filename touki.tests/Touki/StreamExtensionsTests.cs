@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information
 
 using System.Text;
+using Touki.IO;
 #if NETFRAMEWORK
 using System.IO;
 #endif
@@ -215,5 +216,53 @@ public class StreamExtensionsTests
         writer.Flush();
 
         stream.Length.Should().Be(length);
+    }
+
+    [Fact]
+    public void Write_ReadOnlySpan_WritesToTextWriter()
+    {
+        StringWriter writer = new();
+        ReadOnlySpan<char> span = "Hello Span World".AsSpan();
+
+        writer.Write(span);
+
+        string result = writer.ToString();
+        result.Should().Be("Hello Span World");
+    }
+
+    [Fact]
+    public void Write_EmptyReadOnlySpan_WritesNothing()
+    {
+        StringWriter writer = new();
+        ReadOnlySpan<char> span = [];
+
+        writer.Write(span);
+
+        string result = writer.ToString();
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void WriteLine_ReadOnlySpan_WritesToTextWriterWithNewLine()
+    {
+        StringWriter writer = new();
+        ReadOnlySpan<char> span = "Hello Span Line".AsSpan();
+
+        writer.WriteLine(span);
+
+        string result = writer.ToString();
+        result.Should().Be($"Hello Span Line{Environment.NewLine}");
+    }
+
+    [Fact]
+    public void WriteLine_EmptyReadOnlySpan_WritesOnlyNewLine()
+    {
+        StringWriter writer = new();
+        ReadOnlySpan<char> span = [];
+
+        writer.WriteLine(span);
+
+        string result = writer.ToString();
+        result.Should().Be(Environment.NewLine);
     }
 }

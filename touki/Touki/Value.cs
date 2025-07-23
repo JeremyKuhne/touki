@@ -1165,8 +1165,7 @@ public readonly partial struct Value
     }
 
     /// <summary>
-    ///  To avoid a generic instantion for an unsupported <see cref="Create{T}(T)"/>, this method can be used.
-    /// </summary>
+    ///  Use this method to avoid generic instantiation for an unsupported value type (T) on <see cref="Create{T}(T)"/>    /// </summary>
     public static Value Box(object? value) => new Value(value);
 
     private Value(object o, ulong u)

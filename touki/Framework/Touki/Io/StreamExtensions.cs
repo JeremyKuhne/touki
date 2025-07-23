@@ -22,6 +22,7 @@ public static partial class StreamExtensions
             char[] buffer = ArrayPool<char>.Shared.Rent(value.Length);
             value.CopyTo(buffer);
             writer.Write(buffer, 0, value.Length);
+            ArrayPool<char>.Shared.Return(buffer);
         }
     }
 
@@ -35,6 +36,7 @@ public static partial class StreamExtensions
             char[] buffer = ArrayPool<char>.Shared.Rent(value.Length);
             value.CopyTo(buffer);
             writer.Write(buffer, 0, value.Length);
+            ArrayPool<char>.Shared.Return(buffer);
         }
 
         writer.WriteLine();
