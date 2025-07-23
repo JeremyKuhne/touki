@@ -45,9 +45,9 @@ double num = 3.14159;
 string result = Strings.Format(fmt, 42, num);
 ```
 
-### `StringSegment: efficient substring handling
+### `StringSegment`: efficient substring handling
 
-**`StringSegment`** ([source](https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Text/StringSegment.cs)) wraps a section of an existing string in a normal (non-ref) struct that can be stored off of the stack:
+`StringSegment` ([source](https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Text/StringSegment.cs)) wraps a section of an existing string in a normal (non-ref) struct that can be stored off of the stack:
 
 ```csharp
 string csv = "apple,banana,cherry";

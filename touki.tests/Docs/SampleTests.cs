@@ -18,11 +18,16 @@ public class SampleTests
 
         first.Should().Be("apple");
 
+        List<string> segments = [];
+
         StringSegment right = full;
-        while (right.TrySplit(';', out StringSegment left, out right))
+        while (right.TrySplit(',', out StringSegment left, out right))
         {
             // left will be "apple", "banana", "cherry" in each iteration
+            segments.Add(left.ToString());
         }
+
+        segments.Should().BeEquivalentTo(["apple", "banana", "cherry"]);
     }
 
     [Fact]
