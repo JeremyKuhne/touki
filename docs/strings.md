@@ -64,8 +64,6 @@ while (right.TrySplit(';', out StringSegment left, out right))
 }
 ```
 
-### **`StringSpan`** ([source](https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Text/StringSpan.cs)) wraps either a `ReadOnlySpan<char>` or a `string` as a "span", so APIs can accept both with the ability to extract the original string.
-
 ### `Value` struct: variant values without boxing
 
 Touki’s `Value` struct ([source](https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Value.cs)) holds primitive, nullable and enum types without boxing. `Strings.Format` overloads take `Value` to avoid boxing even when argument types vary:
