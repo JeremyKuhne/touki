@@ -175,6 +175,17 @@ public ref partial struct ValueStringBuilder
 
             return true;
         }
+        else if (typeof(T) == typeof(DateTime))
+        {
+            DateTimeFormat.Format(Unsafe.As<T, DateTime>(ref value), format, _formatProvider, ref this);
+            return true;
+        }
+        else if (typeof(T) == typeof(DateTimeOffset))
+        {
+            DateTimeOffset dateTimeOffset = Unsafe.As<T, DateTimeOffset>(ref value);
+            DateTimeFormat.Format(dateTimeOffset.DateTime, format, _formatProvider, dateTimeOffset.Offset, ref this);
+            return true;
+        }
 
         // We could handle very common enums so that they don't need to allocate like crazy.
         if (typeof(T).IsEnum

@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using System.Runtime.CompilerServices;
-
 namespace Touki;
 
 public unsafe class InterpolatedStringHandlerTests

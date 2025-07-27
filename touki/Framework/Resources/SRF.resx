@@ -475,5 +475,8 @@
   <data name="TaskT_TransitionToFinal_AlreadyCompleted" xml:space="preserve">
     <value>An attempt was made to transition a task to a final state when it had already completed.</value>
   </data>
+  <data name="Format_BadQuote" xml:space="preserve">
+    <value>Cannot find a matching quote character for the character '{0}'.</value>
+  </data>
 </root>
 
