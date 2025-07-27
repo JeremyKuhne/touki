@@ -59,6 +59,8 @@
 - Ref structs can not be used in lambdas, use try/finally blocks to validate error cases.
 - Use FluentAssertions for assertions in tests.
 - FluentAssertions and Xunit are already global usings, don't add new usings for these to test files.
+- Tests have access to internals via InternalsVisibleTo, so you can test internal methods and properties directly.
+- When needing to test private members, use the `TestAccessor` and `TestAccesors` extension method.
 
 # General Guidance
 
