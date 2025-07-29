@@ -5,7 +5,7 @@
 using System.Buffers;
 using System.IO;
 
-namespace Touki.IO;
+namespace Touki.Io;
 
 /// <summary>
 ///  Extension methods for <see cref="Stream"/>.

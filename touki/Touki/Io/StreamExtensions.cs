@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.IO;
 #endif
 
-namespace Touki.IO;
+namespace Touki.Io;
 
 /// <summary>
 ///  Extension methods for <see cref="Stream"/>.

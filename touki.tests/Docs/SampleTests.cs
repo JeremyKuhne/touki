@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using Touki.IO;
+using Touki.Io;
 
 namespace Touki.Docs;
 
