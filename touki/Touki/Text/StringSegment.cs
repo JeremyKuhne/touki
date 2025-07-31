@@ -38,11 +38,14 @@ public readonly struct StringSegment :
     IEquatable<StringSegment>,
     IEquatable<string>,
     IComparable<StringSegment>,
-    IComparable<string>
+    IComparable<string>,
+    ISpanFormattable
 {
-    private readonly string _value;
-    private readonly int _startIndex;
-    private readonly int _length;
+    private readonly string? _value;
+    internal readonly int _startIndex;
+    internal readonly int _length;
+
+    internal string Value => _value ?? string.Empty;
 
     /// <summary>
     ///  Gets the length of the segment.
@@ -59,7 +62,7 @@ public readonly struct StringSegment :
     /// </summary>
     public StringSegment()
     {
-        _value = string.Empty;
+        _value = null;
         _startIndex = 0;
         _length = 0;
     }
@@ -70,9 +73,10 @@ public readonly struct StringSegment :
     /// <param name="value">The string to wrap.</param>
     public StringSegment(string value)
     {
+        value ??= string.Empty;
         _value = value;
         _startIndex = 0;
-        _length = value.Length;
+        _length = _value.Length;
     }
 
     /// <summary>
@@ -136,7 +140,7 @@ public readonly struct StringSegment :
     /// <exception cref="IndexOutOfRangeException">
     ///  Thrown if <paramref name="index"/> is negative or greater than or equal to <see cref="Length"/>.
     /// </exception>
-    public char this[int index] => _value![_startIndex + index];
+    public char this[int index] => _value?[_startIndex + index] ?? string.Empty[index];
 
     /// <summary>
     ///  Gets a segment from a range of this segment.
@@ -148,7 +152,7 @@ public readonly struct StringSegment :
         get
         {
             (int offset, int length) = range.GetOffsetAndLength(_length);
-            return new StringSegment(_startIndex + offset, length, _value);
+            return new StringSegment(_startIndex + offset, length, _value ?? string.Empty);
         }
     }
 
@@ -162,7 +166,7 @@ public readonly struct StringSegment :
     /// </exception>
     public StringSegment Slice(int startIndex) => (uint)startIndex > (uint)_length
         ? throw new ArgumentOutOfRangeException(nameof(startIndex))
-        : new StringSegment(_startIndex + startIndex, _length - startIndex, _value);
+        : new StringSegment(_startIndex + startIndex, _length - startIndex, _value ?? string.Empty);
 
     /// <summary>
     ///  Slices the segment to create a new segment starting at a specified index with the specified length.
@@ -177,7 +181,7 @@ public readonly struct StringSegment :
     public StringSegment Slice(int startIndex, int length) =>
         (uint)startIndex > (uint)_length || (uint)length > (uint)(_length - startIndex)
             ? throw new ArgumentOutOfRangeException(nameof(startIndex))
-            : new StringSegment(_startIndex + startIndex, length, _value);
+            : new StringSegment(_startIndex + startIndex, length, _value ?? string.Empty);
 
     /// <summary>
     ///  Splits on the next separator, or returns the entire segment if no separator is found.
@@ -264,7 +268,7 @@ public readonly struct StringSegment :
     /// </summary>
     public int IndexOf(char value)
     {
-        int index = _value.IndexOf(value, _startIndex, _length);
+        int index = _value?.IndexOf(value, _startIndex, _length) ?? -1;
         return index < 0 ? -1 : index - _startIndex;
     }
 
@@ -292,7 +296,7 @@ public readonly struct StringSegment :
     /// </summary>
     public int LastIndexOf(char value)
     {
-        if (_length == 0)
+        if (_length == 0 || _value is null)
         {
             return -1;
         }
@@ -323,32 +327,47 @@ public readonly struct StringSegment :
     /// <summary>
     ///  Returns <see langword="true"/> if the segment starts with the specified <see langword="string"/>,
     /// </summary>
-    public bool StartsWith(string value, StringComparison comparison = StringComparison.Ordinal) =>
-        value is not null && _length >= value.Length && string.Compare(_value, _startIndex, value, 0, value.Length, comparison) == 0;
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> was <see langword="null"/>.</exception>
+    public bool StartsWith(string value, StringComparison comparison = StringComparison.Ordinal)
+    {
+        ArgumentNull.ThrowIfNull(value);
+        return value.Length == 0 || (_length >= value.Length
+            && string.Compare(_value, _startIndex, value, 0, value.Length, comparison) == 0);
+    }
 
     /// <summary>
     ///  Returns <see langword="true"/> if the segment starts with the specified <see cref="StringSegment"/>,
     /// </summary>
     public bool StartsWith(StringSegment value, StringComparison comparison = StringComparison.Ordinal) =>
-        value._length <= _length && string.Compare(_value, _startIndex, value._value, value._startIndex, value._length, comparison) == 0;
+        value._length == 0 || (value._length <= _length
+            && string.Compare(_value, _startIndex, value._value, value._startIndex, value._length, comparison) == 0);
 
     /// <summary>
     ///  Returns <see langword="true"/> if the segment starts with the specified <see cref="ReadOnlySpan{Char}"/>.
     /// </summary>
     public bool StartsWith(ReadOnlySpan<char> value, StringComparison comparison = StringComparison.Ordinal) =>
-        value.Length <= _length && AsSpan().StartsWith(value, comparison);
+        value.Length == 0 || (value.Length <= _length && AsSpan().StartsWith(value, comparison));
 
     /// <summary>
     ///  Returns <see langword="true"/> if the segment ends with the specified <see langword="string"/>,
     /// </summary>
-    public bool EndsWith(string value, StringComparison comparison = StringComparison.Ordinal) =>
-        value is not null && _length >= value.Length && string.Compare(_value, _startIndex + _length - value.Length, value, 0, value.Length, comparison) == 0;
+    public bool EndsWith(string value, StringComparison comparison = StringComparison.Ordinal)
+    {
+        ArgumentNull.ThrowIfNull(value);
+        return value.Length == 0
+            || (_length >= value.Length
+                && string.Compare(_value, _startIndex + _length - value.Length, value, 0, value.Length, comparison) == 0);
+    }
 
     /// <summary>
     ///  Returns <see langword="true"/> if the segment ends with the specified <see cref="StringSegment"/>,
     /// </summary>
-    public bool EndsWith(StringSegment value, StringComparison comparison = StringComparison.Ordinal) =>
-        value._length <= _length && string.Compare(_value, _startIndex + _length - value._length, value._value, value._startIndex, value._length, comparison) == 0;
+    public bool EndsWith(StringSegment value, StringComparison comparison = StringComparison.Ordinal)
+    {
+        return value.Length == 0
+            || (value._length <= _length
+                && string.Compare(_value, _startIndex + _length - value._length, value._value, value._startIndex, value._length, comparison) == 0);
+    }
 
     /// <summary>
     ///  Returns <see langword="true"/> if the segment ends with the specified <see cref="ReadOnlySpan{Char}"/>.
@@ -400,7 +419,7 @@ public readonly struct StringSegment :
     /// </remarks>
     public unsafe StringSegment Trim()
     {
-        if (_length == 0)
+        if (_length == 0 || _value is null)
         {
             return this;
         }
@@ -432,7 +451,7 @@ public readonly struct StringSegment :
     /// </remarks>
     public StringSegment Trim(char trimChar)
     {
-        if (_length == 0)
+        if (_length == 0 || _value is null)
         {
             return this;
         }
@@ -459,7 +478,7 @@ public readonly struct StringSegment :
     /// <inheritdoc cref="Trim(char)"/>
     public StringSegment Trim(char trimChar0, char trimChar1)
     {
-        if (_length == 0)
+        if (_length == 0 || _value is null)
         {
             return this;
         }
@@ -486,7 +505,7 @@ public readonly struct StringSegment :
     /// <inheritdoc cref="Trim()"/>
     public StringSegment TrimStart()
     {
-        if (_length == 0)
+        if (_length == 0 || _value is null)
         {
             return this;
         }
@@ -507,7 +526,7 @@ public readonly struct StringSegment :
     /// <inheritdoc cref="Trim(char)"/>
     public StringSegment TrimStart(char trimChar)
     {
-        if (_length == 0)
+        if (_length == 0 || _value is null)
         {
             return this;
         }
@@ -528,7 +547,7 @@ public readonly struct StringSegment :
     /// <inheritdoc cref="Trim(char)"/>
     public StringSegment TrimStart(char trimChar0, char trimChar1)
     {
-        if (_length == 0)
+        if (_length == 0 || _value is null)
         {
             return this;
         }
@@ -548,7 +567,7 @@ public readonly struct StringSegment :
     /// <inheritdoc cref="Trim()"/>
     public unsafe StringSegment TrimEnd()
     {
-        if (_length == 0)
+        if (_length == 0 || _value is null)
         {
             return this;
         }
@@ -569,7 +588,7 @@ public readonly struct StringSegment :
     /// <inheritdoc cref="Trim(char)"/>
     public StringSegment TrimEnd(char trimChar)
     {
-        if (_length == 0)
+        if (_length == 0 || _value is null)
         {
             return this;
         }
@@ -589,7 +608,7 @@ public readonly struct StringSegment :
     /// <inheritdoc cref="Trim(char)"/>
     public StringSegment TrimEnd(char trimChar0, char trimChar1)
     {
-        if (_length == 0)
+        if (_length == 0 || _value is null)
         {
             return this;
         }
@@ -633,13 +652,36 @@ public readonly struct StringSegment :
     ///  Returns a <see langword="string"/> that represents the current segment.
     /// </summary>
     /// <returns>A <see langword="string"/> that represents the current segment.</returns>
-    public override string ToString() => _length == 0
+    public override string ToString() => _length == 0 || _value is null
         ? string.Empty
         : _startIndex switch
         {
             0 when _length == _value.Length => _value,
             _ => _value.Substring(_startIndex, _length)
         };
+
+    bool ISpanFormattable.TryFormat(
+        Span<char> destination,
+        out int charsWritten,
+        ReadOnlySpan<char> format,
+        IFormatProvider? provider)
+    {
+        if (_length > destination.Length)
+        {
+            charsWritten = 0;
+            return false;
+        }
+
+        // String ignores format providers (see string.ToString(provider)), but it doesn't support IFormattable, so
+        // it is unclear what the "right" behavior should be here. It seems vanishingly remote that someone would
+        // want to take advantage of a custom formatter for a StringSegment so we just ignore it here.
+
+        AsSpan().CopyTo(destination);
+        charsWritten = _length;
+        return true;
+    }
+
+    string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString();
 
     /// <summary>
     ///  Implicitly converts a <see cref="StringSegment"/> to a <see cref="ReadOnlySpan{T}"/> of <see cref="char"/>.
@@ -689,7 +731,9 @@ public readonly struct StringSegment :
     /// <returns><see langword="true"/> if the values are equal; otherwise, <see langword="false"/>.</returns>
     public bool Equals(StringSegment other, StringComparison comparison) =>
         _length == other.Length
-            && string.Compare(_value, _startIndex, other._value, other._startIndex, _length, comparison) == 0;
+            // If they're both empty, there is nothing to do.
+            && (_length == 0
+                || string.Compare(_value, _startIndex, other._value, other._startIndex, _length, comparison) == 0);
 
     /// <summary>
     ///  Gets a value indicating whether the segment equals the specified span.
@@ -747,23 +791,21 @@ public readonly struct StringSegment :
     public int CompareTo(StringSegment other, StringComparison comparison) => comparison switch
     {
         StringComparison.Ordinal => Strings.CompareOrdinalAsString(AsSpan(), other.AsSpan()),
-        StringComparison.OrdinalIgnoreCase => CompareToOrdinalIgnoreCase(other._value, other._startIndex, other._length),
+        StringComparison.OrdinalIgnoreCase => CompareToOrdinalIgnoreCase(other.Value, other._startIndex, other._length),
         StringComparison.CurrentCulture =>
-            CultureInfo.CurrentCulture.CompareInfo.Compare(_value, _startIndex, _length, other._value, other._startIndex, other._length, CompareOptions.None),
+            CultureInfo.CurrentCulture.CompareInfo.Compare(Value, _startIndex, _length, other.Value, other._startIndex, other._length, CompareOptions.None),
         StringComparison.CurrentCultureIgnoreCase =>
-            CultureInfo.CurrentCulture.CompareInfo.Compare(_value, _startIndex, _length, other._value, other._startIndex, other._length, CompareOptions.IgnoreCase),
+            CultureInfo.CurrentCulture.CompareInfo.Compare(Value, _startIndex, _length, other.Value, other._startIndex, other._length, CompareOptions.IgnoreCase),
         StringComparison.InvariantCulture =>
-            CultureInfo.InvariantCulture.CompareInfo.Compare(_value, _startIndex, _length, other._value, other._startIndex, other._length, CompareOptions.None),
+            CultureInfo.InvariantCulture.CompareInfo.Compare(Value, _startIndex, _length, other.Value, other._startIndex, other._length, CompareOptions.None),
         StringComparison.InvariantCultureIgnoreCase =>
-            CultureInfo.InvariantCulture.CompareInfo.Compare(_value, _startIndex, _length, other._value, other._startIndex, other._length, CompareOptions.IgnoreCase),
+            CultureInfo.InvariantCulture.CompareInfo.Compare(Value, _startIndex, _length, other.Value, other._startIndex, other._length, CompareOptions.IgnoreCase),
         _ => throw new ArgumentOutOfRangeException(nameof(comparison), "Unsupported comparison type."),
     };
 
     /// <inheritdoc cref="CompareTo(StringSegment)"/>
     public int CompareTo(string? other)
-        => other is not null
-            ? CompareTo(other, StringComparison.Ordinal)
-            : _length == 0 ? 0 : -1;
+        => other is null ? 1 : CompareTo(other, StringComparison.Ordinal);
 
     /// <inheritdoc cref="CompareTo(StringSegment, StringComparison)"/>
     public int CompareTo(string other, StringComparison comparison) => comparison switch
@@ -857,7 +899,6 @@ public readonly struct StringSegment :
         result = lengthA - lengthB;
         return true;
     }
-
 
     /// <summary>
     ///  Gets a value indicating whether two segments are equal.

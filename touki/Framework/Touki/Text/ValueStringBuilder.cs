@@ -3,11 +3,57 @@
 // See LICENSE file in the project root for full license information
 
 using System.Globalization;
+using System.Reflection;
 
-namespace Touki;
+namespace Touki.Text;
 
 public ref partial struct ValueStringBuilder
 {
+    private delegate bool TryFormatDelegate<T>(
+        in T value,
+        Span<char> destination,
+        out int charsWritten,
+        ReadOnlySpan<char> format,
+        IFormatProvider? provider);
+
+    private static class FormatterHelper<T>
+    {
+        private static TryFormatDelegate<T>? s_tryFormatWithoutBoxing;
+
+        /// <summary>
+        ///  Delegate that can be used to format a value of type <typeparamref name="T"/> without boxing.
+        /// </summary>
+        internal static TryFormatDelegate<T>? TryFormatWithoutBoxing => s_tryFormatWithoutBoxing ??= Init();
+
+        private static TryFormatDelegate<T>? Init()
+        {
+            // Dynamically check if T implements ISpanFormattable (e.g., via reflection or a known flag).
+            if (!typeof(ISpanFormattable).IsAssignableFrom(typeof(T)))
+            {
+                return null;
+            }
+
+            // Shouldn't be using this for reference types.
+            Debug.Assert(typeof(T).IsValueType);
+
+            MethodInfo method = typeof(FormatterHelper<T>).GetMethod(
+                nameof(TryFormat),
+                BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(typeof(T));
+
+            return (TryFormatDelegate<T>)Delegate.CreateDelegate(typeof(TryFormatDelegate<T>), method);
+        }
+
+        private static bool TryFormat<TFormat>(
+            in TFormat value,
+            Span<char> destination,
+            out int charsWritten,
+            ReadOnlySpan<char> format,
+            IFormatProvider? provider) where TFormat : struct, ISpanFormattable
+        {
+            return value.TryFormat(destination, out charsWritten, format, provider);
+        }
+    }
+
     private readonly Span<char> Remaining
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -184,6 +230,18 @@ public ref partial struct ValueStringBuilder
         {
             DateTimeOffset dateTimeOffset = Unsafe.As<T, DateTimeOffset>(ref value);
             DateTimeFormat.Format(dateTimeOffset.DateTime, format, _formatProvider, dateTimeOffset.Offset, ref this);
+            return true;
+        }
+        else if (typeof(T) == typeof(StringSegment))
+        {
+            // StringSegment implements ISpanFormattable and will format without boxing or allocations if we let it
+            // through, but the peformance is significantly better if we explicitly handle it here.
+            StringSegment segment = Unsafe.As<T, StringSegment>(ref value);
+            if (!segment.IsEmpty)
+            {
+                Append(segment.AsSpan());
+            }
+
             return true;
         }
 
