@@ -4,7 +4,7 @@
 
 using System.Text;
 
-namespace Touki;
+namespace Touki.Text;
 
 /// <summary>
 ///  Extensions for <see cref="StringBuilder"/> to provide additional functionality.

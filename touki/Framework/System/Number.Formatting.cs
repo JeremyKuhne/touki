@@ -9,6 +9,7 @@ using System.Buffers.Text;
 using System.Globalization;
 using Touki;
 using Touki.Resources;
+using Touki.Text;
 
 namespace System;
 

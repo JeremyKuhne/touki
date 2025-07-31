@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-namespace Touki;
+namespace Touki.Text;
 
 /// <summary>
 /// Tests for ValueStringBuilder enum formatting with all integer backing types.

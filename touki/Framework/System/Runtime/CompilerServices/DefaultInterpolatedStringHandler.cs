@@ -8,6 +8,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Touki;
+using Touki.Text;
 
 namespace System.Runtime.CompilerServices;
 
@@ -49,8 +50,11 @@ public ref struct DefaultInterpolatedStringHandler
     /// <inheritdoc cref="ValueStringBuilder.Append(string)"/>
     public void AppendLiteral(string s) => _builder.Append(s);
 
-    /// <inheritdoc cref="ValueStringBuilder.AppendFormatted{T}(T)"/>
+    /// <inheritdoc cref="ValueStringBuilder.AppendFormatted{T}(T, StringSpan)"/>
     public void AppendFormatted<T>(T value) => _builder.AppendFormatted(value);
+
+    /// <inheritdoc cref="ValueStringBuilder.AppendFormatted{T}(T, StringSpan)"/>
+    public void AppendFormatted(Value value) => _builder.AppendFormatted(value);
 
     /// <inheritdoc cref="ValueStringBuilder.AppendFormatted{T}(T, string?)"/>
     public void AppendFormatted<T>(T value, string? format) => _builder.AppendFormatted(value, format);

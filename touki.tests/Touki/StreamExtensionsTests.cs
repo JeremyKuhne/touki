@@ -4,6 +4,7 @@
 
 using System.Text;
 using Touki.Io;
+using Touki.Text;
 #if NETFRAMEWORK
 using System.IO;
 #endif

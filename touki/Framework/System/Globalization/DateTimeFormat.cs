@@ -7,6 +7,7 @@
 
 using System.Globalization;
 using Touki;
+using Touki.Text;
 using Touki.Framework.Resources;
 
 namespace System;

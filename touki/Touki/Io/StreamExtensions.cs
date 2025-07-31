@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 #if !NET
 using System.IO;
 #endif
+using Touki.Text;
 
 namespace Touki.Io;
 

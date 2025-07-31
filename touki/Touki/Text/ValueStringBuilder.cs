@@ -10,7 +10,7 @@
 using System.Buffers;
 using System.Globalization;
 
-namespace Touki;
+namespace Touki.Text;
 
 /// <summary>
 ///  String builder struct that can be used to build strings in a memory-efficient way.

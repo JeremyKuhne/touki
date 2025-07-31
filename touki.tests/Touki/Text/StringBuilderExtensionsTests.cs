@@ -4,7 +4,7 @@
 
 using System.Text;
 
-namespace Touki;
+namespace Touki.Text;
 
 /// <summary>
 ///  Tests for <see cref="StringBuilderExtensions"/> AppendFormatted methods.

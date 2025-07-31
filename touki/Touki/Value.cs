@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Touki.Text;
+
 namespace Touki;
 
 /// <summary>
@@ -57,7 +59,7 @@ public readonly partial struct Value
     /// </summary>
     /// <param name="value">The <see langword="string"/> value to convert.</param>
     /// <returns>A <see cref="Value"/> containing the specified <see langword="string"/> value.</returns>
-    public static implicit operator Value(string value) => new(value);
+    public static implicit operator Value(string value) => new((object)value);
 
     /// <summary>
     ///  Gets the type of the value stored in this instance.
@@ -86,7 +88,7 @@ public readonly partial struct Value
 
                 if (_union.UInt64 != 0)
                 {
-                    Debug.Assert(type.IsArray);
+                    Debug.Assert(type.IsArray || type == typeof(string));
 
                     // We have an ArraySegment
                     if (type == typeof(byte[]))
@@ -96,6 +98,10 @@ public readonly partial struct Value
                     else if (type == typeof(char[]))
                     {
                         type = typeof(ArraySegment<char>);
+                    }
+                    else if (type == typeof(string))
+                    {
+                        type = typeof(StringSegment);
                     }
                     else
                     {
@@ -956,6 +962,40 @@ public readonly partial struct Value
     public static explicit operator DateTime?(in Value value) => value.As<DateTime?>();
     #endregion
 
+    #region StringSegment
+    /// <summary>
+    ///  Creates a new <see cref="Value"/> instance with the specified <see cref="StringSegment"/> value.
+    /// </summary>
+    /// <param name="segment">The <see cref="StringSegment"/> value to store.</param>
+    private Value(in StringSegment segment)
+    {
+        _object = segment.Value;
+        if (segment._startIndex == 0 && segment._length == 0)
+        {
+            _union.UInt64 = ulong.MaxValue;
+        }
+        else
+        {
+            _union.Segment = (segment._startIndex, segment._length);
+        }
+    }
+
+    /// <summary>
+    ///  Implicitly converts a <see cref="StringSegment"/> value to a <see cref="Value"/>.
+    /// </summary>
+    /// <param name="value">The <see cref="StringSegment"/> value to convert.</param>
+    /// <returns>A <see cref="Value"/> containing the specified <see cref="StringSegment"/> value.</returns>
+    public static implicit operator Value(in StringSegment value) => new(value);
+
+    /// <summary>
+    ///  Explicitly converts a <see cref="Value"/> to a <see cref="StringSegment"/>.
+    /// </summary>
+    /// <param name="value">The <see cref="Value"/> to convert.</param>
+    /// <returns>The <see cref="StringSegment"/> value stored in the <see cref="Value"/>.</returns>
+    /// <exception cref="InvalidCastException">The stored value is not an <see cref="StringSegment"/>.</exception>
+    public static explicit operator StringSegment(in Value value) => value.As<StringSegment>();
+    #endregion
+
     #region ArraySegment
     /// <summary>
     ///  Creates a new <see cref="Value"/> instance with the specified <see cref="ArraySegment{Byte}"/> value.
@@ -982,24 +1022,24 @@ public readonly partial struct Value
     }
 
     /// <summary>
-    ///  Implicitly converts an ArraySegment&lt;byte&gt; value to a <see cref="Value"/>.
+    ///  Implicitly converts an <see cref="ArraySegment{Byte}"/> value to a <see cref="Value"/>.
     /// </summary>
-    /// <param name="value">The ArraySegment&lt;byte&gt; value to convert.</param>
-    /// <returns>A <see cref="Value"/> containing the specified ArraySegment&lt;byte&gt; value.</returns>
+    /// <param name="value">The <see cref="ArraySegment{Byte}"/> value to convert.</param>
+    /// <returns>A <see cref="Value"/> containing the specified <see cref="ArraySegment{Byte}"/> value.</returns>
     public static implicit operator Value(ArraySegment<byte> value) => new(value);
 
     /// <summary>
-    ///  Explicitly converts a <see cref="Value"/> to an ArraySegment&lt;byte&gt;.
+    ///  Explicitly converts a <see cref="Value"/> to an <see cref="ArraySegment{Byte}"/>.
     /// </summary>
     /// <param name="value">The <see cref="Value"/> to convert.</param>
-    /// <returns>The ArraySegment&lt;byte&gt; value stored in the <see cref="Value"/>.</returns>
-    /// <exception cref="InvalidCastException">The stored value is not an ArraySegment&lt;byte&gt;.</exception>
+    /// <returns>The <see cref="ArraySegment{Byte}"/> value stored in the <see cref="Value"/>.</returns>
+    /// <exception cref="InvalidCastException">The stored value is not an <see cref="ArraySegment{Byte}"/>.</exception>
     public static explicit operator ArraySegment<byte>(in Value value) => value.As<ArraySegment<byte>>();
 
     /// <summary>
-    ///  Creates a new <see cref="Value"/> instance with the specified ArraySegment&lt;char&gt; value.
+    ///  Creates a new <see cref="Value"/> instance with the specified <see cref="ArraySegment{Char}"/> value.
     /// </summary>
-    /// <param name="segment">The ArraySegment&lt;char&gt; value to store.</param>
+    /// <param name="segment">The <see cref="ArraySegment{Char}"/> value to store.</param>
     /// <exception cref="ArgumentNullException">The array of the segment is null.</exception>
     private Value(ArraySegment<char> segment)
     {
@@ -1021,18 +1061,18 @@ public readonly partial struct Value
     }
 
     /// <summary>
-    ///  Implicitly converts an ArraySegment&lt;char&gt; value to a <see cref="Value"/>.
+    ///  Implicitly converts an <see cref="ArraySegment{Char}"/> value to a <see cref="Value"/>.
     /// </summary>
-    /// <param name="value">The ArraySegment&lt;char&gt; value to convert.</param>
-    /// <returns>A <see cref="Value"/> containing the specified ArraySegment&lt;char&gt; value.</returns>
+    /// <param name="value">The <see cref="ArraySegment{Char}"/> value to convert.</param>
+    /// <returns>A <see cref="Value"/> containing the specified <see cref="ArraySegment{Char}"/> value.</returns>
     public static implicit operator Value(ArraySegment<char> value) => new(value);
 
     /// <summary>
-    ///  Explicitly converts a <see cref="Value"/> to an ArraySegment&lt;char&gt;.
+    ///  Explicitly converts a <see cref="Value"/> to an <see cref="ArraySegment{Char}"/>.
     /// </summary>
     /// <param name="value">The <see cref="Value"/> to convert.</param>
-    /// <returns>The ArraySegment&lt;char&gt; value stored in the <see cref="Value"/>.</returns>
-    /// <exception cref="InvalidCastException">The stored value is not an ArraySegment&lt;char&gt;.</exception>
+    /// <returns>The <see cref="ArraySegment{Char}"/> value stored in the <see cref="Value"/>.</returns>
+    /// <exception cref="InvalidCastException">The stored value is not an <see cref="ArraySegment{Char}"/>.</exception>
     public static explicit operator ArraySegment<char>(in Value value) => value.As<ArraySegment<char>>();
     #endregion
 
@@ -1146,6 +1186,8 @@ public readonly partial struct Value
             return new(Unsafe.As<T, ArraySegment<byte>>(ref Unsafe.AsRef(in value)));
         if (typeof(T) == typeof(ArraySegment<char>))
             return new(Unsafe.As<T, ArraySegment<char>>(ref Unsafe.AsRef(in value)));
+        if (typeof(T) == typeof(StringSegment))
+            return new(Unsafe.As<T, StringSegment>(ref Unsafe.AsRef(in value)));
 
         if (typeof(T).IsEnum)
         {
@@ -1247,6 +1289,22 @@ public readonly partial struct Value
         {
             value = t;
             result = true;
+        }
+        else if (typeof(T) == typeof(StringSegment))
+        {
+            ulong bits = _union.UInt64;
+            if (bits != 0 && _object is string str)
+            {
+                StringSegment segment = bits != ulong.MaxValue
+                    ? new(str, _union.Segment.Offset, _union.Segment.Count)
+                    : new(str, 0, 0);
+                value = Unsafe.As<StringSegment, T>(ref segment);
+                result = true;
+            }
+            else
+            {
+                value = default!;
+            }
         }
         else if (typeof(T) == typeof(ArraySegment<byte>))
         {
@@ -1430,6 +1488,20 @@ public readonly partial struct Value
         {
             value = default!;
         }
+        else if (typeof(T) == typeof(string))
+        {
+            if (_union.UInt64 == 0 && _object is string str)
+            {
+                value = (T)(object)str;
+                result = true;
+            }
+            else
+            {
+                // Don't allow "implicit" cast to string if we stored a segment.
+                value = default!;
+                result = false;
+            }
+        }
         else if (typeof(T) == typeof(char[]))
         {
             if (_union.UInt64 == 0 && _object is char[])
@@ -1464,6 +1536,13 @@ public readonly partial struct Value
             if (_object is TypeFlag flag)
             {
                 value = (T)flag.ToObject(this);
+                result = true;
+            }
+            else if (_union.UInt64 != 0 && _object is string stringValue)
+            {
+                value = _union.UInt64 != ulong.MaxValue
+                    ? (T)(object)new StringSegment(stringValue, _union.Segment.Offset, _union.Segment.Count)
+                    : (T)(object)new StringSegment(stringValue, 0, 0);
                 result = true;
             }
             else if (_union.UInt64 != 0 && _object is char[] chars)
@@ -1565,11 +1644,11 @@ public readonly partial struct Value
             }
             else
             {
-                // Need to special case ArraySegment<byte> and ArraySegment<char>
+                // Need to special case ArraySegment<byte>, ArraySegment<char>, and StringSegment
 
-                Debug.Assert(objectType.IsArray);
+                Debug.Assert(objectType.IsArray || objectType == typeof(StringSegment));
 
-                // We have an ArraySegment
+                // We have an ArraySegment or StringSegment
                 if (objectType == typeof(byte[]))
                 {
                     destination.AppendFormatted(As<ArraySegment<byte>>(), format);
@@ -1577,6 +1656,10 @@ public readonly partial struct Value
                 else if (objectType == typeof(char[]))
                 {
                     destination.AppendFormatted(As<ArraySegment<char>>(), format);
+                }
+                else if (objectType == typeof(string))
+                {
+                    destination.AppendFormatted(As<StringSegment>(), format);
                 }
                 else
                 {

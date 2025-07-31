@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information
 
 using System.Text;
+using Touki.Text;
 
 namespace Touki;
 

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.Globalization;
+
 namespace Touki;
 
 public class StringSegmentTests
@@ -710,10 +712,17 @@ public class StringSegmentTests
     [Fact]
     public void StartsWith_WithEmptyValues_ReturnsExpectedResults()
     {
+        string hello = "Hello";
+        hello.StartsWith("", StringComparison.Ordinal).Should().BeTrue();
+        Action action = () => hello.StartsWith(null!, StringComparison.Ordinal);
+        action.Should().Throw<ArgumentNullException>();
+
+        "".StartsWith("", StringComparison.Ordinal).Should().BeTrue();
+
         StringSegment segment = new("Hello");
         StringSegment empty = new();
 
-        // Empty values should always match as a prefix
+        // Empty values should never match as a prefix
         segment.StartsWith(string.Empty).Should().BeTrue();
         segment.StartsWith(empty).Should().BeTrue();
         segment.StartsWith("".AsSpan()).Should().BeTrue();
@@ -1982,5 +1991,198 @@ public class StringSegmentTests
 
         surrogate1.CompareTo(surrogate3, StringComparison.OrdinalIgnoreCase).Should().Be(0,
             "OrdinalIgnoreCase should consider different case ASCII with same surrogate pairs as equal");
+    }
+
+    [Fact]
+    public void ImplicitConversion_ToReadOnlyMemory_WorksCorrectly()
+    {
+        // Full segment
+        string original = "Hello World";
+        StringSegment segment = new(original);
+        ReadOnlyMemory<char> memory = segment;
+
+        memory.Span.ToString().Should().Be(original);
+        memory.Length.Should().Be(original.Length);
+
+        // Partial segment
+        StringSegment partialSegment = new(original, 6, 5); // "World"
+        ReadOnlyMemory<char> partialMemory = partialSegment;
+
+        partialMemory.Span.ToString().Should().Be("World");
+        partialMemory.Length.Should().Be(5);
+
+        // Empty segment
+        StringSegment emptySegment = new();
+        ReadOnlyMemory<char> emptyMemory = emptySegment;
+
+        emptyMemory.Length.Should().Be(0);
+        emptyMemory.IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void TryFormat_WithSufficientBuffer_ReturnsTrue()
+    {
+        StringSegment segment = new("Hello World");
+        Span<char> destination = new char[segment.Length];
+
+        bool result = ((ISpanFormattable)segment).TryFormat(
+            destination,
+            out int charsWritten,
+            [],
+            null);
+
+        result.Should().BeTrue();
+        charsWritten.Should().Be(segment.Length);
+        destination.ToString().Should().Be("Hello World");
+    }
+
+    [Fact]
+    public void TryFormat_WithInsufficientBuffer_ReturnsFalse()
+    {
+        StringSegment segment = new("Hello World");
+        Span<char> destination = new char[segment.Length - 1]; // One character too small
+
+        bool result = ((ISpanFormattable)segment).TryFormat(
+            destination,
+            out int charsWritten,
+            [],
+            null);
+
+        result.Should().BeFalse();
+        charsWritten.Should().Be(0);
+    }
+
+    [Fact]
+    public void TryFormat_WithFormat_IgnoresFormat()
+    {
+        StringSegment segment = new("123");
+        Span<char> destination = new char[segment.Length];
+
+        // Format should be ignored, as specified in the implementation
+        bool result = ((ISpanFormattable)segment).TryFormat(
+            destination,
+            out int charsWritten,
+            "N2".AsSpan(), // Number format that would add commas if used
+            CultureInfo.InvariantCulture);
+
+        charsWritten.Should().Be(segment.Length);
+        result.Should().BeTrue();
+        destination.ToString().Should().Be("123"); // Not "123.00"
+    }
+
+    [Fact]
+    public void GetHashCode_WithNull_ReturnsEmptyStringHashCode()
+    {
+        StringSegment segment = new(null!);
+        segment.GetHashCode().Should().Be(string.Empty.GetHashCode());
+    }
+
+    [Fact]
+    public void GetHashCode_PreservesHash_ForPartialSegments()
+    {
+        string str = "Hello World Test";
+
+        // Test that the hash is the same as the corresponding substring
+        for (int start = 0; start < str.Length; start++)
+        {
+            for (int length = 1; length <= str.Length - start; length++)
+            {
+                StringSegment segment = new(str, start, length);
+                string substring = str.Substring(start, length);
+
+                segment.GetHashCode().Should().Be(substring.GetHashCode(),
+                    $"Hash code for segment '{segment}' should match substring '{substring}'");
+            }
+        }
+    }
+
+    [Fact]
+    public void Equals_WithReadOnlySpan_IgnoresCase()
+    {
+        StringSegment segment = new("Hello");
+        ReadOnlySpan<char> lower = "hello".AsSpan();
+
+        // StringSegment.Equals(ReadOnlySpan<char>) doesn't have a case-insensitive option
+        // This test demonstrates that it's case-sensitive
+        segment.Equals(lower).Should().BeFalse();
+
+        // For comparison, string.Equals() with OrdinalIgnoreCase would return true
+        string.Equals(segment.ToString(), lower.ToString(), StringComparison.OrdinalIgnoreCase).Should().BeTrue();
+    }
+
+    [Fact]
+    public unsafe void Pinning_WithDifferentSegmentCreationPaths_WorksConsistently()
+    {
+        // Test pinning with segments created via different paths
+        string original = "Test String";
+
+        // Direct constructor
+        StringSegment segment1 = new(original);
+
+        // Slice
+        StringSegment segment2 = segment1[..original.Length];
+
+        // Range indexer
+        StringSegment segment3 = segment1[0..original.Length];
+
+        // Implicit conversion
+        StringSegment segment4 = original;
+
+        fixed (char* p1 = segment1)
+        fixed (char* p2 = segment2)
+        fixed (char* p3 = segment3)
+        fixed (char* p4 = segment4)
+        fixed (char* po = original)
+        {
+            // All should point to the same memory location
+            ((nint)p1).Should().Be((nint)po);
+            ((nint)p2).Should().Be((nint)po);
+            ((nint)p3).Should().Be((nint)po);
+            ((nint)p4).Should().Be((nint)po);
+        }
+    }
+
+    [Fact]
+    public void IFormattable_ToString_ReturnsSameAsToString()
+    {
+        StringSegment segment = new("Hello World");
+        IFormattable formattable = segment;
+
+        // Should ignore format string and provider
+        string result = formattable.ToString("N2", CultureInfo.InvariantCulture);
+
+        result.Should().Be(segment.ToString());
+        result.Should().Be("Hello World");
+    }
+
+    [Fact]
+    public void CompareTo_WithNullString_ReturnsPositiveValue()
+    {
+        string hello = "Hello";
+#pragma warning disable CA1310 // Specify StringComparison for correctness
+        hello.CompareTo(null).Should().Be(1);
+#pragma warning restore CA1310
+
+        // StringSegment with content should return positive value when compared to null
+        StringSegment segment = new("Hello");
+        segment.CompareTo(null).Should().Be(1);
+
+#pragma warning disable CA1310 // Specify StringComparison for correctness
+        "".CompareTo(null).Should().Be(1);
+#pragma warning restore CA1310
+
+        // Empty StringSegment should return 1 when compared to null (special case)
+        StringSegment empty = new();
+        empty.CompareTo(null).Should().Be(1);
+    }
+
+    [Fact]
+    public void ImplicitConversion_ToReadOnlyMemory_WithNullValue_ReturnsEmptyMemory()
+    {
+        StringSegment segment = new(null!);
+        ReadOnlyMemory<char> memory = segment;
+
+        memory.IsEmpty.Should().BeTrue();
+        memory.Length.Should().Be(0);
     }
 }

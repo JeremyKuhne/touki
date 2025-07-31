@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-namespace Touki;
+namespace Touki.Text;
 
 public ref partial struct ValueStringBuilder
 {
@@ -337,7 +337,27 @@ public ref partial struct ValueStringBuilder
             }
 
             remaining = remaining[1..];
-            AppendFormatted(args[(int)index], alignment, itemFormat);
+
+            if (typeof(TArgument) == typeof(Value))
+            {
+                // Avoid a few method calls by directly formatting from the Value type.
+                int startingPos = _length;
+
+                Unsafe.As<TArgument, Value>(ref Unsafe.AsRef(in args[(int)index])).Format(
+                    ref this,
+                    itemFormat);
+
+                if (alignment != 0)
+                {
+                    AppendOrInsertAlignmentIfNeeded(startingPos, alignment);
+                }
+
+                continue;
+            }
+            else
+            {
+                AppendFormatted(args[(int)index], alignment, itemFormat);
+            }
         }
     }
 
@@ -368,95 +388,44 @@ public ref partial struct ValueStringBuilder
     }
 
     /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
-    public void AppendFormatted(string? value, int alignment = 0, string? format = null) =>
+    public void AppendFormatted(string? value, int alignment, string? format) =>
         // Format is meaningless for strings and doesn't make sense for someone to specify.  We have the overload
         // simply to disambiguate between ROS<char> and object, just in case someone does specify a format, as
         // string is implicitly convertible to both. Just delegate to the T-based implementation.
         AppendFormatted<object?>(value, alignment, format);
 
     /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
-    public void AppendFormatted(object? value, int alignment = 0, string? format = null) =>
+    public void AppendFormatted(object? value) => AppendFormatted(value, alignment: 0, format: null);
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    public void AppendFormatted(object? value, int alignment, string? format) =>
         // This overload is expected to be used rarely, only if either a) something strongly typed as object is
         // formatted with both an alignment and a format, or b) the compiler is unable to target type to T. It
         // exists purely to help make cases from (b) compile. Just delegate to the T-based implementation.
         AppendFormatted<object?>(value, alignment, format);
 
     /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
-    public void AppendFormatted<T>(T value)
-    {
-        // This method could delegate to AppendFormatted with a null format, but explicitly passing
-        // default as the format to TryFormat helps to improve code quality in some cases when TryFormat is inlined,
-        // e.g. for Int32 it enables the JIT to eliminate code in the inlined method based on a length check on the format.
-
-        // If there's a custom formatter, always use it.
-        if (_hasCustomFormatter)
-        {
-            AppendCustomFormatter(value, format: null);
-            return;
-        }
-
-        if (value is null)
-        {
-            // If the value is null, just leave it blank.
-            return;
-        }
-
-        // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
-        // requires the former.  For value types, it won't matter as the type checks devolve into
-        // JIT-time constants.  For reference types, they're more likely to implement IFormattable
-        // than they are to implement ISpanFormattable: if they don't implement either, we save an
-        // interface check over first checking for ISpanFormattable and then for IFormattable, and
-        // if it only implements IFormattable, we come out even: only if it implements both do we
-        // end up paying for an extra interface check.
-
-#if NETFRAMEWORK
-        // On .NET Framework, directly format with the copy of the .NET 6 formatting code.
-        if (TryAppendFormattedPrimitives(value, [], _formatProvider))
-        {
-            return;
-        }
-#endif
-
-        // Attempting to avoid boxing by casting inline to allow constrained calls.
-#pragma warning disable IDE0038 // Use pattern matching
-        if (value is IFormattable)
-        {
-            if (value is ISpanFormattable)
-            {
-                int charsWritten;
-
-                // The intent here is to avoid boxing for value types that implement ISpanFormattable by enabling a constrained call.
-                //
-                // Having difficulty validating this in unit tests. The .NET libraries code does the exact same thing, and I can
-                // validate that it doesn't box for value types in my unit tests. Have tried every combination of code I can think
-                // of without success. If the boxing is unavoidable, then other options can be considered, such as type checking for
-                // frequently used runtime types and calling a constrained method directly.
-                while (!((ISpanFormattable)value!).TryFormat(_chars[_length..], out charsWritten, default, _formatProvider))
-                {
-                    DoubleRemaining();
-                }
-
-                _length += charsWritten;
-                return;
-            }
-
-            Append(((IFormattable)value).ToString(format: null, _formatProvider));
-            return;
-        }
-#pragma warning restore IDE0038
-
-        if (value.ToString() is string asString)
-        {
-            Append(asString);
-            return;
-        }
-    }
-
-    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
     public void AppendFormatted<T>(T value, string? format) => AppendFormatted(value, (StringSpan)format);
 
     /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
-    public void AppendFormatted<T>(T value, StringSpan format)
+    public void AppendFormatted(Value value, string? format) => AppendFormatted(value, (StringSpan)format);
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    public void AppendFormatted(Value value, StringSpan format = default)
+    {
+        // If there's a custom formatter, always use it.
+        if (_hasCustomFormatter)
+        {
+            AppendCustomFormatter(value, format);
+            return;
+        }
+
+        value.Format(ref this, format);
+    }
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AppendFormatted<T>(T value, StringSpan format = default)
     {
         if (value is null)
         {
@@ -478,27 +447,44 @@ public ref partial struct ValueStringBuilder
         }
 
 #if NETFRAMEWORK
-        // On .NET Framework, directly format with the copy of the .NET 6 formatting code.
+        // On .NET Framework, attempt to  directly format with the copy of the .NET 6 formatting code,
+        // as we can't add ISpanFormattable to the runtime types.
         if (TryAppendFormattedPrimitives(value, format, _formatProvider))
         {
             return;
         }
 #endif
 
-        // Attempting to avoid boxing by casting inline to allow constrained calls.
-#pragma warning disable IDE0038 // Use pattern matching
+        AppendFormattedSlow(value, format);
+    }
+
+    private void AppendFormattedSlow<T>(T value, StringSpan format)
+    {
+        int charsWritten;
+
+#if NETFRAMEWORK
+        // 'is' always boxes on .NET Framework. Checking IsAssignableFrom avoids that, but also doesn't work for
+        // boxed value types, so we need to fall through for a second check against ISpanFormattable if we're not a
+        // value type.
+        if (typeof(T).IsValueType && typeof(ISpanFormattable).IsAssignableFrom(typeof(T)))
+        {
+            while (!FormatterHelper<T>.TryFormatWithoutBoxing!(in value, _chars[_length..], out charsWritten, format, _formatProvider))
+            {
+                DoubleRemaining();
+            }
+
+            _length += charsWritten;
+            return;
+        }
+#endif
+
+#pragma warning disable IDE0038 // Use pattern matching - assigning to a local won't let us get a constrained call on .NET 9.
         if (value is IFormattable)
         {
             if (value is ISpanFormattable)
             {
-                int charsWritten;
-
-                // The intent here is to avoid boxing for value types that implement ISpanFormattable by enabling a constrained call.
-                //
-                // Having difficulty validating this in unit tests. The .NET libraries code does the exact same thing, and I can
-                // validate that it doesn't box for value types in my unit tests. Have tried every combination of code I can think
-                // of without success. If the boxing is unavoidable, then other options can be considered, such as type checking for
-                // frequently used runtime types and calling a constrained method directly.
+#pragma warning restore IDE0038
+                // This will be a constrained call on .NET (won't box value types).
                 while (!((ISpanFormattable)value!).TryFormat(_chars[_length..], out charsWritten, format, _formatProvider))
                 {
                     DoubleRemaining();
@@ -508,10 +494,9 @@ public ref partial struct ValueStringBuilder
                 return;
             }
 
-            Append(((IFormattable)value).ToString(format.ToStringOrNull(), _formatProvider));
+            Append(((IFormattable)value!).ToString(format.ToStringOrNull(), _formatProvider));
             return;
         }
-#pragma warning restore IDE0038
 
         if (value?.ToString() is string asString)
         {
