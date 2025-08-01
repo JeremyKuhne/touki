@@ -20,9 +20,6 @@
     <!-- Would rather have this blank by default, but it messes with resource generation. -->
     <RootNamespace>Touki</RootNamespace>
 
-    <!-- Package related information. -->
-
-
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
@@ -47,6 +44,10 @@
     <!-- This provides Range and Index support downlevel -->
     <PackageReference Include="Microsoft.Bcl.Memory" Version="9.0.6" />
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.183">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <!--
@@ -62,6 +63,8 @@
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Copyright>Copyright (c) Jeremy W. Kuhne. All rights reserved.</Copyright>
+    <!-- Publish the repository URL in the built .nupkg (in the NuSpec <repository> element) -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
     <None Include="../README.md" Pack="true" PackagePath="" />
