@@ -1,0 +1,5 @@
+GetCurrentThreadId
+WaitForMultipleObjectsEx
+WIN32_ERROR
+E_HANDLE
+Sleep
