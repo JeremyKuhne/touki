@@ -10,7 +10,10 @@ using System.Threading;
 namespace Framework.Touki;
 
 /// <summary>Provides atomic operations for variables that are shared by multiple threads.</summary>
-internal static class Interlock
+/// <remarks>
+/// <para>Contains the methods .NET Framework does not have in <see cref="Interlocked"/>.</para>
+/// </remarks>
+public static class Interlock
 {
     /// <summary>Increments a specified variable and stores the result, as an atomic operation.</summary>
     /// <param name="location">The variable whose value is to be incremented.</param>
@@ -105,4 +108,124 @@ internal static class Interlock
     /// <returns>The loaded value.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ulong Read(ref readonly ulong location) => CompareExchange(ref Unsafe.AsRef(in location), 0, 0);
+
+    /// <summary>Bitwise "ands" two 32-bit signed integers and replaces the first integer with the result, as an atomic operation.</summary>
+    /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+    /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+    /// <returns>The original value in <paramref name="location1"/>.</returns>
+    /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int And(ref int location1, int value)
+    {
+        int current = location1;
+        while (true)
+        {
+            int newValue = current & value;
+            int oldValue = Interlocked.CompareExchange(ref location1, newValue, current);
+            if (oldValue == current)
+            {
+                return oldValue;
+            }
+            current = oldValue;
+        }
+    }
+
+    /// <summary>Bitwise "ands" two 32-bit unsigned integers and replaces the first integer with the result, as an atomic operation.</summary>
+    /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+    /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+    /// <returns>The original value in <paramref name="location1"/>.</returns>
+    /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static uint And(ref uint location1, uint value) =>
+        (uint)And(ref Unsafe.As<uint, int>(ref location1), (int)value);
+
+    /// <summary>Bitwise "ands" two 64-bit signed integers and replaces the first integer with the result, as an atomic operation.</summary>
+    /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+    /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+    /// <returns>The original value in <paramref name="location1"/>.</returns>
+    /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static long And(ref long location1, long value)
+    {
+        long current = location1;
+        while (true)
+        {
+            long newValue = current & value;
+            long oldValue = Interlocked.CompareExchange(ref location1, newValue, current);
+            if (oldValue == current)
+            {
+                return oldValue;
+            }
+            current = oldValue;
+        }
+    }
+
+    /// <summary>Bitwise "ands" two 64-bit unsigned integers and replaces the first integer with the result, as an atomic operation.</summary>
+    /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+    /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+    /// <returns>The original value in <paramref name="location1"/>.</returns>
+    /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ulong And(ref ulong location1, ulong value) =>
+        (ulong)And(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+
+    /// <summary>Bitwise "ors" two 32-bit signed integers and replaces the first integer with the result, as an atomic operation.</summary>
+    /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+    /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+    /// <returns>The original value in <paramref name="location1"/>.</returns>
+    /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int Or(ref int location1, int value)
+    {
+        int current = location1;
+        while (true)
+        {
+            int newValue = current | value;
+            int oldValue = Interlocked.CompareExchange(ref location1, newValue, current);
+            if (oldValue == current)
+            {
+                return oldValue;
+            }
+            current = oldValue;
+        }
+    }
+
+    /// <summary>Bitwise "ors" two 32-bit unsigned integers and replaces the first integer with the result, as an atomic operation.</summary>
+    /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+    /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+    /// <returns>The original value in <paramref name="location1"/>.</returns>
+    /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static uint Or(ref uint location1, uint value) =>
+        (uint)Or(ref Unsafe.As<uint, int>(ref location1), (int)value);
+
+    /// <summary>Bitwise "ors" two 64-bit signed integers and replaces the first integer with the result, as an atomic operation.</summary>
+    /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+    /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+    /// <returns>The original value in <paramref name="location1"/>.</returns>
+    /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static long Or(ref long location1, long value)
+    {
+        long current = location1;
+        while (true)
+        {
+            long newValue = current | value;
+            long oldValue = Interlocked.CompareExchange(ref location1, newValue, current);
+            if (oldValue == current)
+            {
+                return oldValue;
+            }
+            current = oldValue;
+        }
+    }
+
+    /// <summary>Bitwise "ors" two 64-bit unsigned integers and replaces the first integer with the result, as an atomic operation.</summary>
+    /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+    /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+    /// <returns>The original value in <paramref name="location1"/>.</returns>
+    /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ulong Or(ref ulong location1, ulong value) =>
+        (ulong)Or(ref Unsafe.As<ulong, long>(ref location1), (long)value);
 }
