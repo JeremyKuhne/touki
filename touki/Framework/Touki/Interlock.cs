@@ -10,7 +10,9 @@ using System.Threading;
 namespace Framework.Touki;
 
 /// <summary>Provides atomic operations for variables that are shared by multiple threads.</summary>
-/// <remarks>Contains the methods .NET Framework does not have in <see cref="Interlocked"/>.</remarks>
+/// <remarks>
+/// <para>Contains the methods .NET Framework does not have in <see cref="Interlocked"/>.</para>
+/// </remarks>
 public static class Interlock
 {
     /// <summary>Increments a specified variable and stores the result, as an atomic operation.</summary>
