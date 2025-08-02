@@ -42,11 +42,12 @@ public static unsafe partial class NativeMemory
     {
         if (!BitOperations.IsPow2(alignment))
         {
-            // The C standard doesn't define what a valid alignment is, however Windows and POSIX The Windows implementation requires a power of 2
-            ThrowHelper.ThrowArgument(SRF.Argument_AlignmentMustBePow2);
+            // The C standard doesn't define what a valid alignment is, however the Windows and POSIX implementation requires a power of 2
+            ThrowHelper.ThrowArgument(nameof(alignment), SRF.Argument_AlignmentMustBePow2);
         }
 
-        // Unlike the C standard and POSIX, Windows does not requires size to be a multiple of alignment. However, we do want an "empty" allocation for zero
+        // Unlike the C standard and POSIX, Windows does not require size to be a multiple of alignment.
+        // However, we do want an "empty" allocation for zero.
         void* result = _aligned_malloc((byteCount != 0) ? byteCount : 1, alignment);
 
         if (result is null)
@@ -88,11 +89,12 @@ public static unsafe partial class NativeMemory
     {
         if (!BitOperations.IsPow2(alignment))
         {
-            // The C standard doesn't define what a valid alignment is, however Windows and POSIX The Windows implementation requires a power of 2
-            ThrowHelper.ThrowArgument(SRF.Argument_AlignmentMustBePow2);
+            // The C standard doesn't define what a valid alignment is, however the Windows and POSIX implementation requires a power of 2
+            ThrowHelper.ThrowArgument(nameof(alignment), SRF.Argument_AlignmentMustBePow2);
         }
 
-        // Unlike the C standard and POSIX, Windows does not requires size to be a multiple of alignment. However, we do want an "empty" allocation for zero
+        // Unlike the C standard and POSIX, Windows does not require size to be a multiple of alignment.
+        // However, we do want an "empty" allocation for zero.
         void* result = _aligned_realloc(ptr, (byteCount != 0) ? byteCount : 1, alignment);
 
         if (result is null)
@@ -132,10 +134,7 @@ public static unsafe partial class NativeMemory
     ///  <para>This method allows <paramref name="byteCount" /> to be <c>0</c> and will return a valid pointer that should not be dereferenced and that should be passed to free to avoid memory leaks.</para>
     ///  <para>This method is a thin wrapper over the C <c>calloc</c> API.</para>
     /// </remarks>
-    public static void* AllocZeroed(nuint byteCount)
-    {
-        return AllocZeroed(byteCount, elementSize: 1);
-    }
+    public static void* AllocZeroed(nuint byteCount) => AllocZeroed(byteCount, elementSize: 1);
 
     /// <summary>Allocates and zeroes a block of memory of the specified size, in elements.</summary>
     /// <param name="elementCount">The count, in elements, of the block to allocate.</param>
