@@ -25,4 +25,12 @@ public static class ThrowHelper
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void ThrowArgumentOutOfRange(string paramName, string? message = null) =>
         throw new ArgumentOutOfRangeException(paramName, message);
+
+    /// <inheritdoc cref="OutOfMemoryException"/>
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void ThrowOutOfMemory() =>
+#pragma warning disable CA2201 // Do not raise reserved exception types
+        throw new OutOfMemoryException();
+#pragma warning restore CA2201
 }
