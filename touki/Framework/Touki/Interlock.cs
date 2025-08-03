@@ -65,6 +65,36 @@ public static class Interlock
     public static ulong Exchange(ref ulong location1, ulong value) =>
         (ulong)Interlocked.Exchange(ref Unsafe.As<ulong, long>(ref location1), (long)value);
 
+    /// <summary>Sets a platform-specific handle or pointer to a specified value and returns the original value, as an atomic operation.</summary>
+    /// <param name="location1">The variable to set to the specified value.</param>
+    /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+    /// <returns>The original value of <paramref name="location1"/>.</returns>
+    /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static nint Exchange(ref nint location1, nint value)
+    {
+#if TARGET_64BIT
+        return (nint)Interlocked.Exchange(ref Unsafe.As<nint, long>(ref location1), (long)value);
+#else
+        return (nint)Exchange(ref Unsafe.As<nint, int>(ref location1), (int)value);
+#endif
+    }
+
+    /// <summary>Sets a platform-specific handle or pointer to a specified value and returns the original value, as an atomic operation.</summary>
+    /// <param name="location1">The variable to set to the specified value.</param>
+    /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+    /// <returns>The original value of <paramref name="location1"/>.</returns>
+    /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static nuint Exchange(ref nuint location1, nuint value)
+    {
+#if TARGET_64BIT
+        return (nuint)Interlocked.Exchange(ref Unsafe.As<nuint, long>(ref location1), (long)value);
+#else
+        return (nuint)Exchange(ref Unsafe.As<nuint, int>(ref location1), (int)value);
+#endif
+    }
+
     /// <summary>Compares two 32-bit unsigned integers for equality and, if they are equal, replaces the first value.</summary>
     /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
     /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
