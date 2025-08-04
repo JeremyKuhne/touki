@@ -34,8 +34,6 @@ public readonly partial struct Value
 
         private readonly ulong _data;
 
-        // public const long TicksPerHour = TicksPerMinute * 60;        // 36,000,000,000
-
         private PackedDateTimeOffset(ulong data) => _data = data;
 
         public static bool TryCreate(ulong ticks, short offsetMinutes, out PackedDateTimeOffset packed)
@@ -47,14 +45,13 @@ public readonly partial struct Value
                 && offsetMinutes >= MinOffsetMinutes
                 && offsetMinutes <= MaxOffsetMinutes)
             {
-                offsetMinutes += PositiveShiftMinutes; // Shift to make all values positive
-                int quotient = Math.DivRem(offsetMinutes + PositiveShiftMinutes, IncrementMinutes, out int remainder);
+                // Shift to make all values positive
+                offsetMinutes += PositiveShiftMinutes;
+                int quotient = Math.DivRem(offsetMinutes, IncrementMinutes, out int remainder);
 
                 // Validate: no remainder (30-min increment)
                 if (remainder == 0)
                 {
-                    // offsetMinutes += PositiveShiftMinutes; // Shift to make all values positive
-                    // int quotient = offsetMinutes / IncrementMinutes;
                     ulong data = ((ulong)quotient << MinuteShift);
                     data |= (ticks - BaseTicks);
                     packed = new(data);
