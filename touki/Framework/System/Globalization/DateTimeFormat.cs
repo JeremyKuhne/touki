@@ -135,14 +135,6 @@ internal static class DateTimeFormat
     private const char JapaneseEraStart = '\u5143';
     private const string Gmt = "GMT";
 
-    // Number of 100ns (10E-7 second) ticks per time unit
-    private const long TicksPerMillisecond = 10000;
-    private const long TicksPerSecond = TicksPerMillisecond * 1000;
-    private const long TicksPerMinute = TicksPerSecond * 60;
-    private const long TicksPerHour = TicksPerMinute * 60;
-    private const long TicksPerDay = TicksPerHour * 24;
-
-
     private static DateTimeFormatInfo InvariantFormatInfo { get; } = CultureInfo.InvariantCulture.DateTimeFormat;
     private static string[] InvariantAbbreviatedMonthNames { get; } = InvariantFormatInfo.AbbreviatedMonthNames;
     private static string[] InvariantAbbreviatedDayNames { get; } = InvariantFormatInfo.AbbreviatedDayNames;
@@ -509,7 +501,7 @@ internal static class DateTimeFormat
                     tokenLen = ParseRepeatPattern(format, i, ch);
                     if (tokenLen <= MaxSecondsFractionDigits)
                     {
-                        long fraction = dateTime.Ticks % TicksPerSecond;
+                        long fraction = dateTime.Ticks % TimeSpan.TicksPerSecond;
                         fraction /= (long)Math.Pow(10, 7 - tokenLen);
                         if (ch == 'f')
                         {
@@ -790,7 +782,7 @@ internal static class DateTimeFormat
         if (dateTimeFormat)
         {
             // No offset. The instance is a DateTime and the output should be the local time zone
-            if (timeOnly && dateTime.Ticks < TicksPerDay)
+            if (timeOnly && dateTime.Ticks < TimeSpan.TicksPerDay)
             {
                 // For time only format and a time only input, the time offset on 0001/01/01 is less
                 // accurate than the system's current offset because of daylight saving time.
@@ -950,7 +942,7 @@ internal static class DateTimeFormat
         if (format.Length == 0)
         {
             bool timeOnlySpecialCase = false;
-            if (dateTime.Ticks < TicksPerDay)
+            if (dateTime.Ticks < TimeSpan.TicksPerDay)
             {
                 // If the time is less than 1 day, consider it as time of day.
                 // Just print out the short time format.

@@ -2,10 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Jobs;
-using Touki;
-
 namespace touki.perf;
 
 [MemoryDiagnoser]

@@ -838,22 +838,40 @@ public readonly partial struct Value
     /// <param name="value">The <see cref="DateTimeOffset"/> value to store.</param>
     private Value(DateTimeOffset value)
     {
-        TimeSpan offset = value.Offset;
-        if (offset.Ticks == 0)
+        ref DateTimeOffsetAccessor accessor = ref Unsafe.As<DateTimeOffset, DateTimeOffsetAccessor>(ref value);
+        short offsetMinutes = accessor._offsetMinutes;
+        ulong ticks = accessor._dateTime._dateTimeData;
+
+        if (offsetMinutes == 0)
         {
             // This is a UTC time
-            _union.Ticks = value.Ticks;
+            _union.Ticks = (long)ticks;
             _object = TypeFlags.DateTimeOffset;
         }
-        else if (PackedDateTimeOffset.TryCreate(value, offset, out var packed))
+        else if (PackedDateTimeOffset.TryCreate(ticks, offsetMinutes, out var packed))
         {
             _union.PackedDateTimeOffset = packed;
             _object = TypeFlags.PackedDateTimeOffset;
         }
         else
         {
+            // Very unusual DateTimeOffset. Just box it.
+            _union.UInt64 = 0;
             _object = value;
         }
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    private struct DateTimeOffsetAccessor
+    {
+        internal DateTimeAccessor _dateTime;
+        internal short _offsetMinutes;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    private struct DateTimeAccessor
+    {
+        internal ulong _dateTimeData;
     }
 
     /// <summary>
