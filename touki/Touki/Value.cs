@@ -840,7 +840,7 @@ public readonly partial struct Value
     {
         ref DateTimeOffsetAccessor accessor = ref Unsafe.As<DateTimeOffset, DateTimeOffsetAccessor>(ref value);
         short offsetMinutes = accessor._offsetMinutes;
-        ulong ticks = accessor._dateTime._dateTimeData;
+        ulong ticks = accessor._dateTime._dateTimeData & DateTimeAccessor.TicksMask;
 
         if (offsetMinutes == 0)
         {
@@ -871,6 +871,7 @@ public readonly partial struct Value
     [StructLayout(LayoutKind.Auto)]
     private struct DateTimeAccessor
     {
+        internal const ulong TicksMask = 0x3FFFFFFFFFFFFFFF;
         internal ulong _dateTimeData;
     }
 
