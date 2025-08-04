@@ -8,52 +8,52 @@ public readonly partial struct Value
 {
     private readonly struct PackedDateTimeOffset
     {
-        // HHHHHMMT TTT...
-        //
-        // HHHHH   - hour bits 1-31
-        // MM      - minutes flag
-        // T       - ticks bit
-        //            00 - :00
-        //            01 - :15
-        //            10 - :30
-        //            11 - :45
+        // The maximum supported number of minutes is +/- 14 hours, but everything goes between -12:00 and +14:00 and
+        // almost all offsets are on :30 minute intervals.
 
-        // Base local tick time 1800 [DateTime(1800, 1, 1).Ticks]
-        private const ulong BaseTicks = 567709344000000000;
+        // Windows NT epoch is January 1, 1601. Unix epoch is January 1, 1970. The Gregorian calendar was introduced
+        // in 1582 (adopted by Britain in 1752). While it is sort of strange to have an offset that goes back that far,
+        // if we do, we still go forward 914 years from 1582 to 2496 (which is well beyond the current date).
+        //
+        // Our updated algorithm (which exludes offsets that do not fall on 30 minute intervals) gives us 914 years of
+        // "ticks" to work with (we did have 457).
+        private const ulong BaseTicks = 498283488000000000;
         private const ulong MaxTicks = BaseTicks + TickMask;
 
-        // Hours go from -14 to 14. We add 14 to get our number to store.
-        private const int HourOffset = 14;
+        private const ulong TickMask = 0b00000011_11111111_11111111_11111111__11111111_11111111_11111111_11111111;
 
-        private const ulong TickMask    = 0b00000001_11111111_11111111_11111111__11111111_11111111_11111111_11111111;
-        private const ulong MinuteMask  = 0b00000110_00000000_00000000_00000000__00000000_00000000_00000000_00000000;
-        private const ulong HourMask    = 0b11111000_00000000_00000000_00000000__00000000_00000000_00000000_00000000;
+        // Range constants
+        private const int MinOffsetMinutes = -840;  // UTC-14:00
+        private const int MaxOffsetMinutes = 840;   // UTC+14:00
+        private const int PositiveShiftMinutes = 840; // Shift to make all values positive
 
-        private const int MinuteShift = 57;
-        private const int HourShift = 59;
+        private const int MinuteShift = 58;
+
+        // Validation constants
+        private const int IncrementMinutes = 30;    // 30-minute intervals
 
         private readonly ulong _data;
 
         private PackedDateTimeOffset(ulong data) => _data = data;
 
-        public static bool TryCreate(DateTimeOffset dateTime, TimeSpan offset, out PackedDateTimeOffset packed)
+        public static bool TryCreate(ulong ticks, short offsetMinutes, out PackedDateTimeOffset packed)
         {
             bool result = false;
             packed = default;
 
-            ulong ticks = (ulong)dateTime.Ticks;
-            if (ticks is > BaseTicks and < MaxTicks)
+            if ((ticks is > BaseTicks and < MaxTicks)
+                && offsetMinutes >= MinOffsetMinutes
+                && offsetMinutes <= MaxOffsetMinutes)
             {
-                int minutes = offset.Minutes;
-                if (minutes % 15 == 0)
-                {
-                    ulong data = (ulong)(minutes / 15) << MinuteShift;
-                    int hours = offset.Hours + HourOffset;
+                // Shift to make all values positive
+                offsetMinutes += PositiveShiftMinutes;
+                int quotient = Math.DivRem(offsetMinutes, IncrementMinutes, out int remainder);
 
-                    // Only valid offset hours are -14 to 14
-                    Debug.Assert(hours is >= 0 and <= 28);
-                    data |= (ulong)hours << HourShift;
-                    data |= ticks - BaseTicks;
+                // Validate: no remainder (30-min increment)
+                if (remainder == 0)
+                {
+                    ulong data = ((ulong)quotient << MinuteShift);
+                    data |= (ticks - BaseTicks);
                     packed = new(data);
                     result = true;
                 }
@@ -64,12 +64,12 @@ public readonly partial struct Value
 
         public DateTimeOffset Extract()
         {
-            TimeSpan offset = new(
-                (int)(((_data & HourMask) >> HourShift) - HourOffset),
-                (int)((_data & MinuteMask) >> MinuteShift),
-                0);
+            DateTimeOffset dateTimeOffset = default;
+            ref DateTimeOffsetAccessor accessor = ref Unsafe.As<DateTimeOffset, DateTimeOffsetAccessor>(ref dateTimeOffset);
+            accessor._dateTime._dateTimeData = (_data & TickMask) + BaseTicks;
+            accessor._offsetMinutes = (short)(((int)(_data >> MinuteShift) * IncrementMinutes) - PositiveShiftMinutes);
 
-            return new((long)((_data & TickMask) + BaseTicks), offset);
+            return dateTimeOffset;
         }
     }
 }
