@@ -46,4 +46,4 @@ PM> Install-Package KlutzyNinja.Touki
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING) for more information on how to contribute to this project.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more information on how to contribute to this project.
