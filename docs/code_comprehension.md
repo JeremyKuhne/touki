@@ -2,6 +2,8 @@
 
 > **Scope.** This report synthesizes foundational and recent research (multiple languages; studies with both novice and professional developers) on factors that affect reading and understanding code. For each factor you'll find: what it means, how people have measured it, why it matters, concrete "risk ranges," and links to the evidence. Updated with cutting-edge neuroscience research and industry insights through 2025.
 
+Note: This was generated with the help of a few AI research models. Still iterating on it, defer to [coding guidelines](./coding_guidelines.md) with conflicts. Felt this was immensely useful to get up before I've fully gone through this.
+
 ---
 
 ## TL;DR table — where comprehension costs start to spike
