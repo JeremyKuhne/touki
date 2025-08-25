@@ -399,11 +399,9 @@ public unsafe class DefaultInterpolatedStringHandlerTests
 
     public static TheoryData<byte> ByteData { get; } =
     [
-        0,
         1,
         42,
         127,
-        255,
         byte.MaxValue,
         byte.MinValue
     ];
@@ -415,8 +413,6 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         -1,
         42,
         -42,
-        127,
-        -128,
         sbyte.MaxValue,
         sbyte.MinValue
     ];
@@ -436,7 +432,6 @@ public unsafe class DefaultInterpolatedStringHandlerTests
 
     public static TheoryData<ushort> UShortData { get; } =
     [
-        0,
         1,
         42,
         1000,
@@ -459,7 +454,6 @@ public unsafe class DefaultInterpolatedStringHandlerTests
 
     public static TheoryData<ulong> ULongData { get; } =
     [
-        0UL,
         1UL,
         42UL,
         1000000000000UL,
@@ -469,7 +463,6 @@ public unsafe class DefaultInterpolatedStringHandlerTests
 
     public static TheoryData<uint> UIntData { get; } =
     [
-        0U,
         1U,
         42U,
         1000000U,
