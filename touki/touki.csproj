@@ -24,6 +24,7 @@
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>../klutzyninja.snk</AssemblyOriginatorKeyFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <!--

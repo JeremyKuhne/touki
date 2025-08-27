@@ -135,8 +135,9 @@ public static class FileMatcherWrapper
     /// </summary>
     /// <param name="directoryPath">The root directory to search in</param>
     /// <param name="filespec">The file specification (glob pattern)</param>
+    /// <param name="excludespecs">List of file specifications to exclude</param>
     /// <returns>Result object containing files and additional information</returns>
-    public static GetFilesResult GetFiles(string directoryPath, string filespec)
+    public static GetFilesResult GetFiles(string directoryPath, string filespec, List<string>? excludespecs)
     {
 #pragma warning disable CA1510 // Use ArgumentNullException throw helper
         if (directoryPath is null)
@@ -148,7 +149,7 @@ public static class FileMatcherWrapper
         try
         {
             // Invoke the method and get the tuple return value
-            object? returnValue = s_getFilesMethodInfo.Invoke(s_defaultInstance, [directoryPath, filespec, null])
+            object? returnValue = s_getFilesMethodInfo.Invoke(s_defaultInstance, [directoryPath, filespec, excludespecs])
                 ?? throw new InvalidOperationException("GetFiles method returned null");
 
             // Extract tuple values using cached property info
@@ -184,7 +185,7 @@ public static class FileMatcherWrapper
     /// Simplified version that returns just the file list.
     /// </summary>
     public static string[] GetFilesSimple(string directoryPath, string filespec) =>
-        GetFiles(directoryPath, filespec).FileList;
+        GetFiles(directoryPath, filespec, excludespecs: null).FileList;
 
     /// <summary>
     /// Checks if FileMatcher reflection initialization was successful.

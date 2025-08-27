@@ -40,6 +40,8 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     /// </summary>
     public StringSegment FileName { get; }
 
+    public bool FileNameIsOnlyWildCard => FileName == "*" || FileName == "**";
+
     /// <summary>
     ///  <see langword="true"/> if the specification contains any wildcards.
     ///  May be in <see cref="WildPath"/> or <see cref="FileName"/>, or both.
@@ -51,6 +53,11 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///  once the primary <see cref="FixedPath"/> (if any) is matched.
     /// </summary>
     public bool IsSimpleRecursiveMatch { get; }
+
+    /// <summary>
+    /// If this spec ended with <c>\**</c> and nothing else, e.g. <c>foo/bar/**</c> or just <c>**</c>.
+    /// </summary>
+    public bool EndsInAnyDirectory => IsSimpleRecursiveMatch && FileNameIsOnlyWildCard;
 
     /// <summary>
     ///  <see langword="true"/> if the <see cref="Normalized"/> path is a nested relative path. This means that the path
@@ -78,6 +85,11 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///  </para>
     /// </remarks>
     public bool IsFullyQualified { get; }
+
+    /// <summary>
+    ///  <see langword="true"/> if the specification doesn't match any directory portions and only cares about the fileName.
+    /// </summary>
+    public bool OnlyCaresAboutFileName => FixedPath.IsEmpty && WildPath.IsEmpty && !FileName.IsEmpty;
 
     /// <inheritdoc cref="MSBuildSpecification(StringSegment)"/>
     public MSBuildSpecification(string original) : this(new StringSegment(original)) { }
