@@ -40,7 +40,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     /// </summary>
     public StringSegment FileName { get; }
 
-    public bool FileNameIsOnlyWildCard => FileName == "*" || FileName == "**";
+    public bool FileNameIsWildCard => FileName == "*";
 
     /// <summary>
     ///  <see langword="true"/> if the specification contains any wildcards.
@@ -55,9 +55,9 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     public bool IsSimpleRecursiveMatch { get; }
 
     /// <summary>
-    /// If this spec ended with <c>\**</c> and nothing else, e.g. <c>foo/bar/**</c> or just <c>**</c>.
+    /// If the directory portion of the spec ended with <c>\**</c> and nothing else, e.g. <c>foo/bar/**</c> or just <c>**</c>.
     /// </summary>
-    public bool EndsInAnyDirectory => IsSimpleRecursiveMatch && FileNameIsOnlyWildCard;
+    public bool EndsInAnyDirectory => IsSimpleRecursiveMatch || WildPath.EndsWith("**");
 
     /// <summary>
     ///  <see langword="true"/> if the <see cref="Normalized"/> path is a nested relative path. This means that the path

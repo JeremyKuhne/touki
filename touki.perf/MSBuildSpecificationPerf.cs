@@ -36,7 +36,7 @@ public class MsBuildSpecificationPerf
         var matchSet = new MatchSet(new MatchMSBuild(includeSpec, Directory, MatchType.Simple, MatchCasing.PlatformDefault));
         foreach (var e in s_excludeSpecs)
         {
-            matchSet.AddExclude(new MatchMSBuild(new MSBuildSpecification(e), Directory, MatchType.Simple, MatchCasing.PlatformDefault));
+            matchSet.AddExclude(new MatchMSBuild(new MSBuildSpecification(e), Directory, MatchType.Simple, MatchCasing.PlatformDefault, MatchMSBuild.SpecMode.Exclude));
         }
 
         using MatchEnumerator enumerator = new MatchEnumerator(Directory, matchSet, static (ref FileSystemEntry fse) => fse.FileName.ToString());
