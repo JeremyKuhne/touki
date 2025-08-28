@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Xunit.Abstractions;
+
 namespace Touki.Io;
 
 internal sealed class EnumeratorMock
@@ -14,14 +16,16 @@ internal sealed class EnumeratorMock
 
     private readonly string _root;
     private readonly MatchMSBuild _spec;
+    private readonly ITestOutputHelper _log;
     private readonly DirectoryNode _rootNode = new();
     private readonly List<string> _included = [];
 
-    public EnumeratorMock(string root, IEnumerable<string> files, MatchMSBuild spec)
+    public EnumeratorMock(string root, IEnumerable<string> files, MatchMSBuild spec, ITestOutputHelper log)
     {
         _root = root;
         _spec = spec;
-
+        _log = log;
+        _log.WriteLine($"Evaluating {spec._spec} in {root}");
         foreach (string file in files)
         {
             AddFile(file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
@@ -65,9 +69,15 @@ internal sealed class EnumeratorMock
             // Process files in current directory
             foreach (string file in currentNode.Files)
             {
+                _log.WriteLine($"Considering {Path.Join(currentPath, file)}:");
                 if (_spec.MatchesFile(currentPath.AsSpan(), file.AsSpan()))
                 {
+                    _log.WriteLine("\tmatches");
                     _included.Add(Path.GetRelativePath(_root, Path.Join(currentPath, file)));
+                }
+                else
+                {
+                    _log.WriteLine("\tdoes not match");
                 }
             }
 
@@ -76,9 +86,15 @@ internal sealed class EnumeratorMock
             {
                 string name = pair.Key;
                 DirectoryNode child = pair.Value;
+                _log.WriteLine($"Considering {Path.Join(currentPath, name)}:");
                 if (_spec.MatchesDirectory(currentPath.AsSpan(), name.AsSpan()))
                 {
+                    _log.WriteLine("\tqueued");
                     directoryQueue.Enqueue((child, Path.Join(currentPath, name)));
+                }
+                else
+                {
+                    _log.WriteLine("\tskipped");
                 }
             }
 

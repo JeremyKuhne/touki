@@ -2,42 +2,27 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using System.Collections;
+using Xunit.Abstractions;
 
 namespace Touki.Io;
 
-public class MatchMSBuildTests
+public class MatchMSBuildTests(ITestOutputHelper _log)
 {
     private static MatchMSBuild CreateSpec(string pattern, string root)
     {
+        var spec = new MSBuildSpecification(pattern);
         string rootDirectory = Path.GetFullPath(root);
-        string fullPathSpec = Path.GetFullPath(pattern, rootDirectory);
-
-        ReadOnlySpan<char> fullPath = fullPathSpec.AsSpan();
-        int firstWildcard = fullPath.IndexOfAny(['*', '?']);
-        if (firstWildcard > 0)
-        {
-            fullPath = fullPath[..firstWildcard];
-        }
-
-        int lastSeparator = fullPath.LastIndexOf(Path.DirectorySeparatorChar);
-        if (lastSeparator < 0)
-        {
-            throw new ArgumentException("Did not resolve to a full path.", nameof(pattern));
-        }
-
-        string startDirectory = fullPath[..lastSeparator].ToString();
 
         MatchCasing casing = Paths.OSDefaultMatchCasing;
         MatchType matchType = MatchType.Simple;
 
-        return new MatchMSBuild(fullPathSpec, startDirectory, matchType, casing);
+        return new MatchMSBuild(spec, rootDirectory, matchType, casing);
     }
 
-    private static IEnumerable<string> Enumerate(string pattern, string root, params string[] files)
+    private IEnumerable<string> Enumerate(string pattern, string root, params string[] files)
     {
         MatchMSBuild spec = CreateSpec(pattern, root);
-        EnumeratorMock enumerator = new(root, files, spec);
+        EnumeratorMock enumerator = new(root, files, spec, _log);
         return enumerator.Enumerate().Select(result => result.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
     }
 
@@ -118,16 +103,16 @@ public class MatchMSBuildTests
     }
 
     [Theory]
-    [InlineData("C:/temp/*.txt", false, false)]
-    [InlineData("C:/temp/**/*.txt", true, true)]
-    [InlineData("C:/temp/**", true, true)]
-    [InlineData("C:/temp/**/bin/*.dll", false, false)]
-    public void Constructor_SetsRecursionFlags(string fullPathSpec, bool expectedAlwaysRecurse, bool expectedEndsInAnyDirectory)
+    [InlineData("*.txt", false, false)]
+    [InlineData("**/*.txt", true, true)]
+    [InlineData("**", true, true)]
+    [InlineData("**/bin/*.dll", false, false)]
+    public void Constructor_SetsRecursionFlags(string msbuildIncludeSpec, bool expectedAlwaysRecurse, bool expectedEndsInAnyDirectory)
     {
         // Use a common directory and matching options
         string startDirectory = "C:/temp";
         MatchMSBuild spec = new(
-            fullPathSpec.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
+            msbuildIncludeSpec.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
             startDirectory.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
             MatchType.Simple,
             MatchCasing.CaseInsensitive);
@@ -135,59 +120,6 @@ public class MatchMSBuildTests
         // Verify public properties
         spec.AlwaysRecurse.Should().Be(expectedAlwaysRecurse);
         spec.EndsInAnyDirectory.Should().Be(expectedEndsInAnyDirectory);
-    }
-
-    [Theory]
-    [InlineData("C:/temp/*.txt", 0)]
-    [InlineData("C:/temp/test/*.cs", 1)]
-    [InlineData("C:/temp/**/bin/*.dll", 2)]
-    [InlineData("C:/temp/a/b/c/d/**/*.cs", 5)]
-    public void Constructor_CreatesExpectedSpecSegments(string fullPathSpec, int expectedSegmentCount)
-    {
-        string startDirectory = "C:/temp";
-        MatchMSBuild spec = new(
-            fullPathSpec.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
-            startDirectory.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
-            MatchType.Simple,
-            MatchCasing.CaseInsensitive);
-
-        // Access the private _specSegments list
-        IList segments = spec.TestAccessor().Dynamic._specSegments;
-        segments.Count.Should().Be(expectedSegmentCount);
-    }
-
-    [Theory]
-    [InlineData("C:/temp/file.txt", "C:/temp", "file.txt", "")]
-    [InlineData("C:/temp/*.txt", "C:/temp", "*.txt", "")]
-    [InlineData("C:/temp/test/*.cs", "C:/temp", "*.cs", "test")]
-    [InlineData("C:/temp/**/bin/*.dll", "C:/temp", "*.dll", "**")]
-    public void Constructor_ParsesDirectoryAndFileSpecs(
-        string fullPathSpec,
-        string startDirectory,
-        string expectedFileNameSpec,
-        string expectedFirstSegment)
-    {
-        fullPathSpec = fullPathSpec.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-        MatchMSBuild spec = new(
-            fullPathSpec,
-            startDirectory.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
-            MatchType.Simple,
-            MatchCasing.CaseInsensitive);
-
-        dynamic accessor = spec.TestAccessor().Dynamic;
-
-        Assert.Equal(accessor._fileNameSpec.ToString(), expectedFileNameSpec);
-        Assert.Equal(fullPathSpec[(startDirectory.Length + 1)..], accessor._directorySpec.ToString());
-
-        // If we have an expected first segment, check it
-        if (!string.IsNullOrEmpty(expectedFirstSegment))
-        {
-            IList list = (IList)accessor._specSegments;
-            if (list.Count > 0)
-            {
-                list[0]!.ToString()!.Should().Be(expectedFirstSegment);
-            }
-        }
     }
 
     [Fact]
@@ -209,5 +141,25 @@ public class MatchMSBuildTests
 
         // Verify cache is invalidated
         Assert.False(accessor._cacheValid);
+    }
+
+    [Fact]
+    public void Blah()
+    {
+        var Directory = @"d:\code\dotnet-sdk\";
+        var includeSpec = new MSBuildSpecification("**/src/**/*.cs");
+        string[] s_excludeSpecs = ["**/obj/**", "**/bin/**", "**/TestData/**", "**/Generated/**" ];
+        var matchSet = new MatchSet(new MatchMSBuild(includeSpec, Directory, MatchType.Simple, MatchCasing.PlatformDefault));
+        foreach (var e in s_excludeSpecs)
+        {
+            matchSet.AddExclude(new MatchMSBuild(new MSBuildSpecification(e), Directory, MatchType.Simple, MatchCasing.PlatformDefault, MatchMSBuild.SpecMode.Exclude));
+        }
+
+        using MatchEnumerator enumerator = new MatchEnumerator(Directory, matchSet, static (ref FileSystemEntry fse) => fse.FileName.ToString());
+        List<string> results = new();
+        while (enumerator.MoveNext())
+        {
+            results.Add(enumerator.Current);
+        }
     }
 }
