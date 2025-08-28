@@ -11,8 +11,7 @@ namespace Touki.Io;
 /// </summary>
 public class MatchMSBuild : DisposableBase, IEnumerationMatcher
 {
-    private readonly StringSegment _directorySpec;
-    private readonly StringSegment _fileNameSpec;
+    private readonly MSBuildSpecification _spec;
     private readonly int _startDirectoryLength;
     private readonly MatchType _matchType;
     private readonly MatchCasing _matchCasing;
@@ -31,7 +30,7 @@ public class MatchMSBuild : DisposableBase, IEnumerationMatcher
     private bool _cacheValid;
     private bool _cachedFullyMatches;
 
-    private readonly ArrayPoolList<SpecSegment> _specSegments = [];
+    private readonly ContiguousList<SpecSegment> _specSegments;
 
     /// <summary>
     ///  Constructs a new <see cref="MatchMSBuild"/> from a full path specification, start directory, match type, and match casing.
@@ -47,49 +46,50 @@ public class MatchMSBuild : DisposableBase, IEnumerationMatcher
     /// <param name="matchType">The type of matching to use for the specification.</param>
     /// <param name="matchCasing">The case sensitivity to use.</param>
     public MatchMSBuild(string fullPathSpec, string startDirectory, MatchType matchType, MatchCasing matchCasing)
+        : this(new MSBuildSpecification(fullPathSpec), startDirectory, matchType, matchCasing)
     {
+    }
+
+    /// <summary>
+    ///  Constructs a new <see cref="MatchMSBuild"/> from a parsed <see cref="MSBuildSpecification"/>, start directory, match type, and match casing.
+    /// </summary>
+    /// <param name="spec">The parsed specification.</param>
+    /// <param name="startDirectory">The directory within the <paramref name="spec"/> to start matching from.</param>
+    /// <param name="matchType">The type of matching to use for the specification.</param>
+    /// <param name="matchCasing">The case sensitivity to use.</param>
+    public MatchMSBuild(MSBuildSpecification spec, string startDirectory, MatchType matchType, MatchCasing matchCasing)
+    {
+        _spec = spec;
         _startDirectoryLength = startDirectory.Length;
         _matchType = matchType;
         _matchCasing = Paths.GetFinalCasing(matchCasing);
 
-        // Parse pattern segments
-        _directorySpec = new(fullPathSpec, _startDirectoryLength + 1);
-        StringSegment remainingSpec = _directorySpec;
-
-        while (true)
+        // Build directory spec segments from the spec's WildPath
+        if (!_spec.WildPath.IsEmpty)
         {
-            int nextSeparator = remainingSpec.IndexOf(Path.DirectorySeparatorChar);
-            if (nextSeparator < 0)
+            PathSegmentEnumerator enumerator = new(_spec.WildPath);
+            while (enumerator.MoveNext())
             {
-                _fileNameSpec = remainingSpec;
-                break;
-            }
-
-            StringSegment segment = remainingSpec[..nextSeparator];
-            if (_specSegments.Count == 0 || !segment.Equals("**") || !_specSegments[^1].IsAnyDirectory)
-            {
-                // Only add the segment if it's not a duplicate "**" at the end.
-                _specSegments.Add(new(segment));
-            }
-
-            remainingSpec = remainingSpec[(nextSeparator + 1)..];
-        }
-
-        if (_fileNameSpec.Equals("**"))
-        {
-            _fileNameSpec = "*";
-            if (_specSegments.Count == 0 || !_specSegments[^1].IsAnyDirectory)
-            {
-                _specSegments.Add(new("**"));
+                StringSegment segment = new(enumerator.Current.ToString());
+                _specSegments ??= new SingleOptimizedList<SpecSegment>();
+                if (_specSegments.Count == 0 || !segment.Equals("**") || !_specSegments[^1].IsAnyDirectory)
+                {
+                    _specSegments.Add(new(segment));
+                }
             }
         }
 
-        if (_specSegments.Count > 0 && _specSegments[^1].IsAnyDirectory)
+        _specSegments ??= EmptyList<SpecSegment>.Instance;
+
+        // Determine recursion flags from the parsed spec
+        AlwaysRecurse = _spec.IsSimpleRecursiveMatch;
+
+        bool endsInAny = false;
+        if (_specSegments.Count > 0)
         {
-            // Spec ends with "**"; always recurse only when it's the sole segment
-            AlwaysRecurse = _specSegments.Count == 1;
-            EndsInAnyDirectory = true;
+            endsInAny = _specSegments[^1].IsAnyDirectory;
         }
+        EndsInAnyDirectory = endsInAny;
     }
 
     /// <inheritdoc/>
@@ -111,6 +111,13 @@ public class MatchMSBuild : DisposableBase, IEnumerationMatcher
         if (_specSegments.Count == 0)
         {
             // No directory segments to match.
+            return false;
+        }
+
+        // Validate that the current directory is at or under the fixed path portion of the spec
+        bool ignoreCase = _matchCasing == MatchCasing.CaseInsensitive;
+        if (!_spec.FixedPath.IsEmpty && !Paths.IsSameOrSubdirectory(_spec.FixedPath, currentDirectory, ignoreCase))
+        {
             return false;
         }
 
@@ -146,6 +153,13 @@ public class MatchMSBuild : DisposableBase, IEnumerationMatcher
     /// <inheritdoc/>
     public bool MatchesFile(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> fileName)
     {
+        // Validate that the current directory is at or under the fixed path portion of the spec
+        bool ignoreCase = _matchCasing == MatchCasing.CaseInsensitive;
+        if (!_spec.FixedPath.IsEmpty && !Paths.IsSameOrSubdirectory(_spec.FixedPath, currentDirectory, ignoreCase))
+        {
+            return false;
+        }
+
         // Get the relative path from start directory to this file's directory
         ReadOnlySpan<char> relativePath = GetRelativeDirectoryPath(currentDirectory);
 
@@ -156,7 +170,7 @@ public class MatchMSBuild : DisposableBase, IEnumerationMatcher
 
         // Check if the current directory fully matches the pattern and the file name matches
         // Use cached result since we'll be called multiple times for files in the same directory
-        return _cachedFullyMatches && Paths.MatchesExpression(fileName, _fileNameSpec, _matchCasing, _matchType);
+        return _cachedFullyMatches && Paths.MatchesExpression(fileName, _spec.FileName, _matchCasing, _matchType);
     }
 
     private void UpdateCachedMatchState(ReadOnlySpan<char> relativePath)

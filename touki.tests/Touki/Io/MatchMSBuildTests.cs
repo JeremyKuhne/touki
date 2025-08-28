@@ -137,59 +137,6 @@ public class MatchMSBuildTests
         spec.EndsInAnyDirectory.Should().Be(expectedEndsInAnyDirectory);
     }
 
-    [Theory]
-    [InlineData("C:/temp/*.txt", 0)]
-    [InlineData("C:/temp/test/*.cs", 1)]
-    [InlineData("C:/temp/**/bin/*.dll", 2)]
-    [InlineData("C:/temp/a/b/c/d/**/*.cs", 5)]
-    public void Constructor_CreatesExpectedSpecSegments(string fullPathSpec, int expectedSegmentCount)
-    {
-        string startDirectory = "C:/temp";
-        MatchMSBuild spec = new(
-            fullPathSpec.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
-            startDirectory.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
-            MatchType.Simple,
-            MatchCasing.CaseInsensitive);
-
-        // Access the private _specSegments list
-        IList segments = spec.TestAccessor().Dynamic._specSegments;
-        segments.Count.Should().Be(expectedSegmentCount);
-    }
-
-    [Theory]
-    [InlineData("C:/temp/file.txt", "C:/temp", "file.txt", "")]
-    [InlineData("C:/temp/*.txt", "C:/temp", "*.txt", "")]
-    [InlineData("C:/temp/test/*.cs", "C:/temp", "*.cs", "test")]
-    [InlineData("C:/temp/**/bin/*.dll", "C:/temp", "*.dll", "**")]
-    public void Constructor_ParsesDirectoryAndFileSpecs(
-        string fullPathSpec,
-        string startDirectory,
-        string expectedFileNameSpec,
-        string expectedFirstSegment)
-    {
-        fullPathSpec = fullPathSpec.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-        MatchMSBuild spec = new(
-            fullPathSpec,
-            startDirectory.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
-            MatchType.Simple,
-            MatchCasing.CaseInsensitive);
-
-        dynamic accessor = spec.TestAccessor().Dynamic;
-
-        Assert.Equal(accessor._fileNameSpec.ToString(), expectedFileNameSpec);
-        Assert.Equal(fullPathSpec[(startDirectory.Length + 1)..], accessor._directorySpec.ToString());
-
-        // If we have an expected first segment, check it
-        if (!string.IsNullOrEmpty(expectedFirstSegment))
-        {
-            IList list = (IList)accessor._specSegments;
-            if (list.Count > 0)
-            {
-                list[0]!.ToString()!.Should().Be(expectedFirstSegment);
-            }
-        }
-    }
-
     [Fact]
     public void CacheInvalidation_WorksCorrectly()
     {
