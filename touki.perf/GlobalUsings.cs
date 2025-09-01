@@ -5,3 +5,9 @@
 global using BenchmarkDotNet.Attributes;
 global using BenchmarkDotNet.Jobs;
 global using Touki;
+
+#if NETFRAMEWORK
+global using Microsoft.IO;
+#else
+global using System.IO;
+#endif

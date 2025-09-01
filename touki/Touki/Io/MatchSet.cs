@@ -67,13 +67,16 @@ public sealed class MatchSet : DisposableBase, IEnumerationMatcher
         }
     }
 
-    bool IEnumerationMatcher.MatchesDirectory(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> directoryName)
+    bool IEnumerationMatcher.MatchesDirectory(
+        ReadOnlySpan<char> currentDirectory,
+        ReadOnlySpan<char> directoryName,
+        bool matchForExclusion)
     {
         if (_excludes is { } excludes)
         {
             foreach (IEnumerationMatcher matcher in excludes)
             {
-                if (matcher.MatchesDirectory(currentDirectory, directoryName))
+                if (matcher.MatchesDirectory(currentDirectory, directoryName, matchForExclusion: true))
                 {
                     // Excluded
                     return false;
@@ -83,7 +86,7 @@ public sealed class MatchSet : DisposableBase, IEnumerationMatcher
 
         foreach (IEnumerationMatcher matcher in _includes)
         {
-            if (matcher.MatchesDirectory(currentDirectory, directoryName))
+            if (matcher.MatchesDirectory(currentDirectory, directoryName, matchForExclusion: false))
             {
                 // Matched
                 return true;

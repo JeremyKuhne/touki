@@ -6,6 +6,8 @@ namespace Touki.Io;
 
 public class MSBuildEnumeratorTests
 {
+    private static string s_projectRoot = Path.GetFullPath(Path.Join(Environment.CurrentDirectory, "../../../../.."));
+
     [Fact]
     public void EnumerateFiles_WithGlobPattern_ReturnsMatchingFiles()
     {
@@ -883,5 +885,135 @@ public class MSBuildEnumeratorTests
 
         // This should be empty - bin.exe is not inside a bin directory
         files.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void EnumerateFiles_ToukiProject_SimpleCSharp()
+    {
+        string toukiFolder = Path.Join(s_projectRoot, "touki");
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/*.cs", toukiFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        IReadOnlyList<string> expected = FileMatcherWrapper.GetFilesSimple(toukiFolder, "**/*.cs");
+        files.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact]
+    public void EnumerateFiles_ToukiProject_CSharpOneExclude()
+    {
+        string toukiFolder = Path.Join(s_projectRoot, "touki");
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/*.cs", "bin/Debug/**;", toukiFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        List<string> excludes = ["bin/Debug/**;"];
+        IReadOnlyList<string> expected = FileMatcherWrapper.GetFilesSimple(toukiFolder, "**/*.cs", excludes);
+        files.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact(Skip = "Local testing")]
+    public void EnumerateFiles_ToukiProject_CSharpDefaultExclude()
+    {
+        string toukiFolder = Path.Join(s_projectRoot, "touki");
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(
+            "**/*.cs",
+            "bin/Debug/**;obj/Debug/**;bin/**;obj/**/;**/*.user;**/*.*proj;**/*.sln;**/*.slnx;**/*.vssscc;**/.DS_Store",
+            toukiFolder);
+
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        List<string> excludes =
+        [
+            "bin/Debug/**;",
+            "obj/Debug/**;",
+            "bin/**;",
+            "obj/**/;",
+            "**/*.user;",
+            "**/*.*proj;",
+            "**/*.sln;",
+            "**/*.slnx;",
+            "**/*.vssscc;",
+            "**/.DS_Store"
+        ];
+
+        IReadOnlyList<string> expected = FileMatcherWrapper.GetFilesSimple(toukiFolder, "**/*.cs", excludes);
+        files.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact(Skip = "Local testing")]
+    public void EnumerateFiles_RuntimeFolder_CSharpDefaultExclude()
+    {
+        string toukiFolder = @"n:\repos\runtime\";
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(
+            "**/*.cs",
+            "bin/Debug/**;obj/Debug/**;bin/**;obj/**/;**/*.user;**/*.*proj;**/*.sln;**/*.slnx;**/*.vssscc;**/.DS_Store",
+            toukiFolder);
+
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        List<string> excludes =
+        [
+            "bin/Debug/**;",
+            "obj/Debug/**;",
+            "bin/**;",
+            "obj/**/;",
+            "**/*.user;",
+            "**/*.*proj;",
+            "**/*.sln;",
+            "**/*.slnx;",
+            "**/*.vssscc;",
+            "**/.DS_Store"
+        ];
+
+        IReadOnlyList<string> expected = FileMatcherWrapper.GetFilesSimple(toukiFolder, "**/*.cs", excludes);
+        files.Count.Should().Be(expected.Count);
+    }
+
+    [Fact(Skip = "Local test")]
+    public void EnumerateFiles_RuntimeFolder_ComplexPath()
+    {
+        string rootFolder = @"n:\repos\runtime\";
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(
+            "**/src/**/*.cs",
+            //            "bin/Debug/**;obj/Debug/**;bin/**;obj/**/;**/*.user;**/*.*proj;**/*.sln;**/*.slnx;**/*.vssscc;**/.DS_Store",
+            rootFolder);
+
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        List<string> excludes =
+        [
+            "bin/Debug/**;",
+            "obj/Debug/**;",
+            "bin/**;",
+            "obj/**/;",
+            "**/*.user;",
+            "**/*.*proj;",
+            "**/*.sln;",
+            "**/*.slnx;",
+            "**/*.vssscc;",
+            "**/.DS_Store"
+        ];
+
+        IReadOnlyList<string> expected = FileMatcherWrapper.GetFilesSimple(rootFolder, "**/src/**/*.cs");//, excludes);
+        files.Count.Should().Be(expected.Count);
     }
 }

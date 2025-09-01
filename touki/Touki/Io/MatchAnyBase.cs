@@ -13,7 +13,7 @@ public abstract class MatchAnyBase : DisposableBase, IEnumerationMatcher
 {
     private readonly MatchType _matchType;
     private protected readonly MatchCasing _matchCasing;
-    private readonly StringSegment _rootPath;
+    private protected readonly StringSegment _rootPath;
 
     private readonly SingleOptimizedList<StringSegment> _expressions = [];
 
@@ -34,7 +34,9 @@ public abstract class MatchAnyBase : DisposableBase, IEnumerationMatcher
     {
         _matchType = matchType;
         _matchCasing = Paths.GetFinalCasing(matchCasing);
-        _rootPath = rootPath;
+
+        // The directories passed back don't have a directory separator on the end.
+        _rootPath = rootPath.TrimEnd(Path.DirectorySeparatorChar);
         AddSpec(expression);
     }
 
@@ -85,11 +87,14 @@ public abstract class MatchAnyBase : DisposableBase, IEnumerationMatcher
     /// <inheritdoc cref="IEnumerationMatcher.MatchesFile(ReadOnlySpan{char}, ReadOnlySpan{char})"/>
     protected virtual bool MatchesFile(ReadOnlySpan<char> fileName) => true;
 
-    bool IEnumerationMatcher.MatchesDirectory(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> directoryName) =>
-        MatchesRoot(currentDirectory) && MatchesDirectory(directoryName);
+    bool IEnumerationMatcher.MatchesDirectory(
+        ReadOnlySpan<char> currentDirectory,
+        ReadOnlySpan<char> directoryName,
+        bool matchForExclusion) =>
+        MatchesRoot(currentDirectory) && MatchesDirectory(directoryName, matchForExclusion);
 
-    /// <inheritdoc cref="IEnumerationMatcher.MatchesDirectory(ReadOnlySpan{char}, ReadOnlySpan{char})"/>
-    protected virtual bool MatchesDirectory(ReadOnlySpan<char> directoryName) => true;
+    /// <inheritdoc cref="IEnumerationMatcher.MatchesDirectory(ReadOnlySpan{char}, ReadOnlySpan{char}, bool)"/>
+    protected virtual bool MatchesDirectory(ReadOnlySpan<char> directoryName, bool matchForExclusion) => true;
 
     /// <summary>
     ///  Returns true if the given <paramref name="name"/> matches any of the expressions in <see cref="_expressions"/>
@@ -121,7 +126,15 @@ public abstract class MatchAnyBase : DisposableBase, IEnumerationMatcher
             return _nestingMatched.Value;
         }
 
-        _nestingMatched = currentDirectory.StartsWith(_rootPath);
+        _nestingMatched = Paths.IsSameOrSubdirectory(
+            _rootPath,
+            currentDirectory,
+            ignoreCase: _matchCasing == MatchCasing.CaseInsensitive);
+
+        // It would be nice to short-circuit if start an enumeration with a path that matches the root
+        // (as all subsequent directories will also match). We'd need to express enumeration start and end
+        // in the interface for that and other similar optimizations.
+
         return _nestingMatched.Value;
     }
 

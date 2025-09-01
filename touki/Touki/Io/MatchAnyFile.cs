@@ -33,5 +33,11 @@ public sealed class MatchAnyFile : MatchAnyBase
     }
 
     /// <inheritdoc/>
+    protected override bool MatchesDirectory(ReadOnlySpan<char> directoryName, bool matchForExclusion) =>
+        // When excluding file matches we don't want to exclude directories. Doing so would prevent
+        // recursion into directories which might contain files we do want to include via other matchers.
+        !matchForExclusion && base.MatchesDirectory(directoryName, matchForExclusion);
+
+    /// <inheritdoc/>
     protected override bool MatchesFile(ReadOnlySpan<char> fileName) => MatchesName(fileName);
 }

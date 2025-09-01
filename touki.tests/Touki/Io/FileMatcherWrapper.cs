@@ -6,6 +6,7 @@ using System.Reflection;
 using Microsoft.Build.Globbing;
 
 namespace Touki.Io;
+
 /// <summary>
 ///  Provides access to internal FileMatcher functionality through reflection.
 /// </summary>
@@ -20,7 +21,7 @@ public static class FileMatcherWrapper
     }
 
     /// <summary>
-    /// Result of the GetFiles method containing all returned information.
+    ///  Result of the GetFiles method containing all returned information.
     /// </summary>
     public readonly struct GetFilesResult
     {
@@ -78,55 +79,43 @@ public static class FileMatcherWrapper
             }
 
             // Get the Default static field
-            s_defaultFieldInfo = fileMatcherType.GetField("Default",
-                BindingFlags.Public | BindingFlags.Static)!;
-
-            if (s_defaultFieldInfo is null)
-            {
-                throw new InvalidOperationException("Could not find Default field on FileMatcher");
-            }
+            s_defaultFieldInfo = fileMatcherType.GetField(
+                "Default",
+                BindingFlags.Public | BindingFlags.Static)
+                ?? throw new InvalidOperationException("Could not find Default field on FileMatcher");
 
             // Get the Default instance
-            s_defaultInstance = s_defaultFieldInfo.GetValue(null)!;
-
-            if (s_defaultInstance is null)
-            {
-                throw new InvalidOperationException("Default instance of FileMatcher is null");
-            }
+            s_defaultInstance = s_defaultFieldInfo.GetValue(null)
+                ?? throw new InvalidOperationException("Default instance of FileMatcher is null");
 
             // Get the GetFiles method
             s_getFilesMethodInfo = fileMatcherType.GetMethod("GetFiles",
                 BindingFlags.NonPublic | BindingFlags.Instance,
                 null,
                 [typeof(string), typeof(string), typeof(List<string>)],
-                null)!;
-
-            if (s_getFilesMethodInfo is null)
-            {
-                throw new InvalidOperationException(
+                null)
+                ?? throw new InvalidOperationException(
                     "Could not find GetFiles(string, string, List<string>) method on FileMatcher");
-            }
 
             // Cache the return type information
             s_returnTupleType = s_getFilesMethodInfo.ReturnType;
 
             // Cache tuple item property getters
-            s_fileListField = s_returnTupleType.GetField("Item1") ??
-                throw new InvalidOperationException("Could not find Item1 property on return tuple");
+            s_fileListField = s_returnTupleType.GetField("Item1")
+                ?? throw new InvalidOperationException("Could not find Item1 property on return tuple");
 
-            s_searchActionField = s_returnTupleType.GetField("Item2") ??
-                throw new InvalidOperationException("Could not find Item2 property on return tuple");
+            s_searchActionField = s_returnTupleType.GetField("Item2")
+                ?? throw new InvalidOperationException("Could not find Item2 property on return tuple");
 
-            s_excludeFileSpecField = s_returnTupleType.GetField("Item3") ??
-                throw new InvalidOperationException("Could not find Item3 property on return tuple");
+            s_excludeFileSpecField = s_returnTupleType.GetField("Item3")
+                ?? throw new InvalidOperationException("Could not find Item3 property on return tuple");
 
-            s_globFailureField = s_returnTupleType.GetField("Item4") ??
-                throw new InvalidOperationException("Could not find Item4 property on return tuple");
+            s_globFailureField = s_returnTupleType.GetField("Item4")
+                ?? throw new InvalidOperationException("Could not find Item4 property on return tuple");
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException(
-                "Failed to initialize FileMatcher reflection wrapper", ex);
+            throw new InvalidOperationException("Failed to initialize FileMatcher reflection wrapper", ex);
         }
     }
 
@@ -135,8 +124,9 @@ public static class FileMatcherWrapper
     /// </summary>
     /// <param name="directoryPath">The root directory to search in</param>
     /// <param name="filespec">The file specification (glob pattern)</param>
+    /// <param name="excludeSpecs">Specs to exclude.</param>
     /// <returns>Result object containing files and additional information</returns>
-    public static GetFilesResult GetFiles(string directoryPath, string filespec)
+    public static GetFilesResult GetFiles(string directoryPath, string filespec, List<string>? excludeSpecs = null)
     {
 #pragma warning disable CA1510 // Use ArgumentNullException throw helper
         if (directoryPath is null)
@@ -148,7 +138,7 @@ public static class FileMatcherWrapper
         try
         {
             // Invoke the method and get the tuple return value
-            object? returnValue = s_getFilesMethodInfo.Invoke(s_defaultInstance, [directoryPath, filespec, null])
+            object? returnValue = s_getFilesMethodInfo.Invoke(s_defaultInstance, [directoryPath, filespec, excludeSpecs])
                 ?? throw new InvalidOperationException("GetFiles method returned null");
 
             // Extract tuple values using cached property info
@@ -171,7 +161,7 @@ public static class FileMatcherWrapper
         catch (TargetInvocationException tie)
         {
             // Unwrap the inner exception
-            if (tie.InnerException != null)
+            if (tie.InnerException is not null)
             {
                 throw tie.InnerException;
             }
@@ -181,13 +171,14 @@ public static class FileMatcherWrapper
     }
 
     /// <summary>
-    /// Simplified version that returns just the file list.
+    ///  Simplified version that returns just the file list.
     /// </summary>
-    public static string[] GetFilesSimple(string directoryPath, string filespec) =>
-        GetFiles(directoryPath, filespec).FileList;
+    /// <inheritdoc cref="GetFiles(string, string, List{string}?)"/>
+    public static string[] GetFilesSimple(string directoryPath, string filespec, List<string>? excludeSpecs = null) =>
+        GetFiles(directoryPath, filespec, excludeSpecs).FileList;
 
     /// <summary>
-    /// Checks if FileMatcher reflection initialization was successful.
+    ///  Checks if FileMatcher reflection initialization was successful.
     /// </summary>
-    public static bool IsAvailable => s_getFilesMethodInfo != null && s_defaultInstance != null;
+    public static bool IsAvailable => s_getFilesMethodInfo is not null && s_defaultInstance is not null;
 }

@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using System.Collections;
-
 namespace Touki.Io;
 
 public class MatchMSBuildTests
@@ -13,25 +11,12 @@ public class MatchMSBuildTests
         string rootDirectory = Path.GetFullPath(root);
         string fullPathSpec = Path.GetFullPath(pattern, rootDirectory);
 
-        ReadOnlySpan<char> fullPath = fullPathSpec.AsSpan();
-        int firstWildcard = fullPath.IndexOfAny(['*', '?']);
-        if (firstWildcard > 0)
-        {
-            fullPath = fullPath[..firstWildcard];
-        }
-
-        int lastSeparator = fullPath.LastIndexOf(Path.DirectorySeparatorChar);
-        if (lastSeparator < 0)
-        {
-            throw new ArgumentException("Did not resolve to a full path.", nameof(pattern));
-        }
-
-        string startDirectory = fullPath[..lastSeparator].ToString();
+        MSBuildSpecification specification = new(fullPathSpec);
 
         MatchCasing casing = Paths.OSDefaultMatchCasing;
         MatchType matchType = MatchType.Simple;
 
-        return new MatchMSBuild(fullPathSpec, startDirectory, matchType, casing);
+        return new MatchMSBuild(specification, matchType, casing);
     }
 
     private static IEnumerable<string> Enumerate(string pattern, string root, params string[] files)
@@ -87,6 +72,11 @@ public class MatchMSBuildTests
             { "???/*.cs", ["src/a.cs"], ["src/a.cs"] },
             { "???/v1/*.cs", ["src/v1/a.cs"], ["src/v1/a.cs"] },
             { "**/bin/*.exe", ["bin.exe"], [] },
+            {
+                "**/src/**/*.cs",
+                ["src/tests/tracing/runtimeeventsource/NativeRuntimeEventSourceTest.cs"],
+                ["src/tests/tracing/runtimeeventsource/NativeRuntimeEventSourceTest.cs"]
+            },
         };
     }
 
@@ -106,10 +96,11 @@ public class MatchMSBuildTests
     public void Constructor_InitializesCorrectFields(string fullPathSpec, string startDirectory, MatchType matchType, MatchCasing matchCasing)
     {
         // Create the spec with the provided parameters
-        MatchMSBuild spec = new(fullPathSpec, startDirectory, matchType, matchCasing);
+        MSBuildSpecification specification = new(fullPathSpec.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
+        MatchMSBuild match = new(specification, matchType, matchCasing);
 
         // Access internal state through TestAccessor
-        dynamic accessor = spec.TestAccessor().Dynamic;
+        dynamic accessor = match.TestAccessor().Dynamic;
 
         // Verify the internal state
         Assert.Equal(matchType, accessor._matchType);
@@ -125,24 +116,22 @@ public class MatchMSBuildTests
     public void Constructor_SetsRecursionFlags(string fullPathSpec, bool expectedAlwaysRecurse, bool expectedEndsInAnyDirectory)
     {
         // Use a common directory and matching options
-        string startDirectory = "C:/temp";
-        MatchMSBuild spec = new(
-            fullPathSpec.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
-            startDirectory.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
-            MatchType.Simple,
-            MatchCasing.CaseInsensitive);
+        MSBuildSpecification specification = new(fullPathSpec.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
+
+        MatchMSBuild match = new(specification, MatchType.Simple, MatchCasing.CaseInsensitive);
 
         // Verify public properties
-        spec.AlwaysRecurse.Should().Be(expectedAlwaysRecurse);
-        spec.EndsInAnyDirectory.Should().Be(expectedEndsInAnyDirectory);
+        match.AlwaysRecurse.Should().Be(expectedAlwaysRecurse);
+        match.EndsInAnyDirectory.Should().Be(expectedEndsInAnyDirectory);
     }
 
     [Fact]
     public void CacheInvalidation_WorksCorrectly()
     {
-        MatchMSBuild spec = new("C:/temp/*.txt", "C:/temp", MatchType.Simple, MatchCasing.CaseInsensitive);
+        MSBuildSpecification specification = new("C:/temp/*.txt".Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
+        MatchMSBuild match = new(specification, MatchType.Simple, MatchCasing.CaseInsensitive);
 
-        dynamic accessor = spec.TestAccessor().Dynamic;
+        dynamic accessor = match.TestAccessor().Dynamic;
 
         // Initially the cache should not be valid
         Assert.False(accessor._cacheValid);
@@ -152,7 +141,7 @@ public class MatchMSBuildTests
         accessor._cachedFullyMatches = true;
 
         // Invalidate the cache
-        spec.DirectoryFinished();
+        match.DirectoryFinished();
 
         // Verify cache is invalidated
         Assert.False(accessor._cacheValid);

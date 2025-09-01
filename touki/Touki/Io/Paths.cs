@@ -248,4 +248,92 @@ public static class Paths
 
         return true;
     }
+
+    /// <summary>
+    ///  Returns <see langword="true"/> if <paramref name="pattern1"/> can never match <paramref name="pattern2"/>
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   When this returns <see langword="false"/>, it is still possible that the patterns do not overlap. To
+    ///   be reasonably performant, this method only proves the most obvious cases of exclusivity.
+    ///  </para>
+    /// </remarks>
+    public static bool AreExpressionsExclusive(
+        StringSegment pattern1,
+        StringSegment pattern2,
+        MatchType matchType = MatchType.Simple,
+        MatchCasing matchCasing = MatchCasing.PlatformDefault)
+    {
+        // Scan pattern1 first (optimized for common *.ext patterns)
+        int firstFirstWild = pattern1.IndexOfAny('*', '?');
+
+        // Check if pattern1 is universal wildcard
+        if ((firstFirstWild == 0 && pattern1.Length == 1 && pattern1[0] == '*') ||
+            (matchType == MatchType.Win32 && pattern1 == "*.*"))
+        {
+            return false;
+        }
+
+        // Now scan pattern2
+        int secondFirstWild = pattern2.IndexOfAny('*', '?');
+
+        // Check if pattern2 is universal wildcard
+        if ((secondFirstWild == 0 && pattern2.Length == 1 && pattern2[0] == '*') ||
+            (matchType == MatchType.Win32 && pattern2 == "*.*"))
+        {
+            return false;
+        }
+
+        matchCasing = GetFinalCasing(matchCasing);
+        bool ignoreCase = matchCasing == MatchCasing.CaseInsensitive;
+
+        if (firstFirstWild == -1 && secondFirstWild == -1)
+        {
+            // Both are literal - quick length check first
+            return pattern1.Length != pattern2.Length || !pattern1.Equals(pattern2, ignoreCase: ignoreCase);
+        }
+
+        if (firstFirstWild == -1)
+        {
+            // First is literal, second has wildcards
+            return !MatchesExpression(pattern1.AsSpan(), pattern2.AsSpan(), matchCasing, matchType);
+        }
+
+        if (secondFirstWild == -1)
+        {
+            // Second is literal, first has wildcards
+            return !MatchesExpression(pattern2.AsSpan(), pattern1.AsSpan(), matchCasing, matchType);
+        }
+
+        // Check prefixes first (no additional scanning needed)
+        if (firstFirstWild > 0 && secondFirstWild > 0)
+        {
+            var prefix1 = pattern1[..firstFirstWild];
+            var prefix2 = pattern2[..secondFirstWild];
+            if (!prefix1.Equals(prefix2, ignoreCase))
+            {
+                // Exclusive based on prefixes - no need to check suffixes
+                return true;
+            }
+        }
+
+        // Both have wildcards
+        int firstLastWild = pattern1.LastIndexOfAny('*', '?');
+        int secondLastWild = pattern2.LastIndexOfAny('*', '?');
+
+
+        // Check suffixes if both patterns have them
+        if (firstLastWild < pattern1.Length - 1 && secondLastWild < pattern2.Length - 1)
+        {
+            var suffix1 = pattern1[(firstLastWild + 1)..];
+            var suffix2 = pattern2[(secondLastWild + 1)..];
+            if (!suffix1.Equals(suffix2, ignoreCase))
+            {
+                return true;
+            }
+        }
+
+        // We cannot prove exclusivity with simple prefix/suffix analysis.
+        return false;
+    }
 }

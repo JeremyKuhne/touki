@@ -24,7 +24,10 @@ public class MatchAnyTests
             matchType,
             matchCasing);
 
-        matcher.MatchesDirectory("".AsSpan(), directoryName.AsSpan()).Should().Be(expectedResult);
+        // Include (matchForExclusion = false)
+        matcher.MatchesDirectory("".AsSpan(), directoryName.AsSpan(), false).Should().Be(expectedResult);
+        // Exclude (matchForExclusion = true) — directory matcher result should be the same
+        matcher.MatchesDirectory("".AsSpan(), directoryName.AsSpan(), true).Should().Be(expectedResult);
     }
 
     [Fact]
@@ -39,12 +42,20 @@ public class MatchAnyTests
         matcher.AddSpec("build*");
 
         IEnumerationMatcher iMatcher = matcher;
-        iMatcher.MatchesDirectory("".AsSpan(), "docs".AsSpan()).Should().BeTrue();
-        iMatcher.MatchesDirectory("".AsSpan(), "src".AsSpan()).Should().BeTrue();
-        iMatcher.MatchesDirectory("".AsSpan(), "build".AsSpan()).Should().BeTrue();
-        iMatcher.MatchesDirectory("".AsSpan(), "build-output".AsSpan()).Should().BeTrue();
-        iMatcher.MatchesDirectory("".AsSpan(), "tests".AsSpan()).Should().BeFalse();
-        iMatcher.MatchesDirectory("".AsSpan(), "SRC".AsSpan()).Should().BeFalse();
+        // Include
+        iMatcher.MatchesDirectory("".AsSpan(), "docs".AsSpan(), false).Should().BeTrue();
+        iMatcher.MatchesDirectory("".AsSpan(), "src".AsSpan(), false).Should().BeTrue();
+        iMatcher.MatchesDirectory("".AsSpan(), "build".AsSpan(), false).Should().BeTrue();
+        iMatcher.MatchesDirectory("".AsSpan(), "build-output".AsSpan(), false).Should().BeTrue();
+        iMatcher.MatchesDirectory("".AsSpan(), "tests".AsSpan(), false).Should().BeFalse();
+        iMatcher.MatchesDirectory("".AsSpan(), "SRC".AsSpan(), false).Should().BeFalse();
+        // Exclude — same results for directory matcher
+        iMatcher.MatchesDirectory("".AsSpan(), "docs".AsSpan(), true).Should().BeTrue();
+        iMatcher.MatchesDirectory("".AsSpan(), "src".AsSpan(), true).Should().BeTrue();
+        iMatcher.MatchesDirectory("".AsSpan(), "build".AsSpan(), true).Should().BeTrue();
+        iMatcher.MatchesDirectory("".AsSpan(), "build-output".AsSpan(), true).Should().BeTrue();
+        iMatcher.MatchesDirectory("".AsSpan(), "tests".AsSpan(), true).Should().BeFalse();
+        iMatcher.MatchesDirectory("".AsSpan(), "SRC".AsSpan(), true).Should().BeFalse();
     }
 
     [Fact]
@@ -61,10 +72,16 @@ public class MatchAnyTests
         matcher.AddSpec("docs").Should().BeFalse();
 
         IEnumerationMatcher iMatcher = matcher;
-        iMatcher.MatchesDirectory("".AsSpan(), "src".AsSpan()).Should().BeTrue();
-        iMatcher.MatchesDirectory("".AsSpan(), "SRC".AsSpan()).Should().BeTrue();
-        iMatcher.MatchesDirectory("".AsSpan(), "docs".AsSpan()).Should().BeTrue();
-        iMatcher.MatchesDirectory("".AsSpan(), "build".AsSpan()).Should().BeFalse();
+        // Include
+        iMatcher.MatchesDirectory("".AsSpan(), "src".AsSpan(), false).Should().BeTrue();
+        iMatcher.MatchesDirectory("".AsSpan(), "SRC".AsSpan(), false).Should().BeTrue();
+        iMatcher.MatchesDirectory("".AsSpan(), "docs".AsSpan(), false).Should().BeTrue();
+        iMatcher.MatchesDirectory("".AsSpan(), "build".AsSpan(), false).Should().BeFalse();
+        // Exclude — same results for directory matcher
+        iMatcher.MatchesDirectory("".AsSpan(), "src".AsSpan(), true).Should().BeTrue();
+        iMatcher.MatchesDirectory("".AsSpan(), "SRC".AsSpan(), true).Should().BeTrue();
+        iMatcher.MatchesDirectory("".AsSpan(), "docs".AsSpan(), true).Should().BeTrue();
+        iMatcher.MatchesDirectory("".AsSpan(), "build".AsSpan(), true).Should().BeFalse();
     }
 
     [Fact]
@@ -142,14 +159,17 @@ public class MatchAnyTests
     }
 
     [Fact]
-    public void MatchAnyFile_MatchesDirectory_AlwaysReturnsTrue()
+    public void MatchAnyFile_MatchesDirectory_ReturnsTrueWhenIncludingAndFalseWhenExcluding()
     {
         IEnumerationMatcher matcher = new MatchAnyFile(
             "any",
             MatchType.Simple,
             MatchCasing.CaseSensitive);
 
-        matcher.MatchesDirectory("".AsSpan(), "dir".AsSpan()).Should().BeTrue();
+        // Include allows recursion into directories
+        matcher.MatchesDirectory("".AsSpan(), "dir".AsSpan(), false).Should().BeTrue();
+        // Exclude does not block recursion into directories for file matchers
+        matcher.MatchesDirectory("".AsSpan(), "dir".AsSpan(), true).Should().BeFalse();
     }
 
     [Theory]
@@ -167,6 +187,9 @@ public class MatchAnyTests
         MatchCasing matchCasing,
         bool expectedResult)
     {
+        rootPath = Paths.ChangeAlternateDirectorySeparators(rootPath);
+        currentDir = Paths.ChangeAlternateDirectorySeparators(currentDir);
+
         IEnumerationMatcher matcher = new MatchAnyFile(
             pattern,
             rootPath,
@@ -179,15 +202,31 @@ public class MatchAnyTests
     [Fact]
     public void MatchAnyFile_MatchesDirectory_ReturnsExpectedResult()
     {
+        string root = Paths.ChangeAlternateDirectorySeparators("/root");
+        string foo = Paths.ChangeAlternateDirectorySeparators("/foo");
+
         IEnumerationMatcher matcher = new MatchAnyFile(
             "*.txt",
-            "/root",
+            root,
             MatchType.Simple,
             MatchCasing.CaseSensitive);
 
-        matcher.MatchesDirectory("/root".AsSpan(), "subdir".AsSpan()).Should().BeTrue();
+        // Include within root
+        matcher.MatchesDirectory(root.AsSpan(), "subdir".AsSpan(), matchForExclusion: false).Should().BeTrue();
+
+        // Exclude within root — file matcher should return false when excluding directories
+        matcher.MatchesDirectory(root.AsSpan(), "subdir".AsSpan(), matchForExclusion: true).Should().BeFalse();
         matcher.DirectoryFinished();
-        matcher.MatchesDirectory("/foo".AsSpan(), "subdir".AsSpan()).Should().BeFalse();
+
+        // Outside root, include returns false and exclude also returns false
+        matcher.MatchesDirectory(
+            Paths.ChangeAlternateDirectorySeparators(foo).AsSpan(),
+            "subdir".AsSpan(),
+            matchForExclusion: false).Should().BeFalse();
+        matcher.MatchesDirectory(
+            Paths.ChangeAlternateDirectorySeparators(foo).AsSpan(),
+            "subdir".AsSpan(),
+            matchForExclusion: true).Should().BeFalse();
     }
 
 
@@ -206,13 +245,19 @@ public class MatchAnyTests
         MatchCasing matchCasing,
         bool expectedResult)
     {
+        rootPath = Paths.ChangeAlternateDirectorySeparators(rootPath);
+        currentDir = Paths.ChangeAlternateDirectorySeparators(currentDir);
+
         IEnumerationMatcher matcher = new MatchAnyDirectory(
             pattern,
             rootPath,
             matchType,
             matchCasing);
 
-        matcher.MatchesDirectory(currentDir.AsSpan(), dirName.AsSpan()).Should().Be(expectedResult);
+        // Include (matchForExclusion = false)
+        matcher.MatchesDirectory(currentDir.AsSpan(), dirName.AsSpan(), false).Should().Be(expectedResult);
+        // Exclude (matchForExclusion = true) — directory matcher result should be the same
+        matcher.MatchesDirectory(currentDir.AsSpan(), dirName.AsSpan(), true).Should().Be(expectedResult);
     }
 
     [Fact]

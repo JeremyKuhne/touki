@@ -70,11 +70,9 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     /// </summary>
     /// <remarks>
     ///  <para>
-    ///   In effect this means that the path is completely normalized and can be compared directly against any normalized
-    ///   full path (something that has been passed to <see cref="Path.GetFullPath(string)"/> or other <see cref="IsFullyQualified"/>
-    ///   specs. When this isn't <see langword="true"/> and <see cref="Normalized"/> is not <see cref="IsNestedRelative"/>
-    ///   it is unsafe to compare without first resolving against the current directory with <see cref="Path.GetFullPath(string)"/>,
-    ///   or <see cref="Path.GetFullPath(string, string)"/>.
+    ///   When <see langword="true"/> this means that the <see cref="FixedPath"/> can be compared safely to any other path.
+    ///   When this <see langword="false"/> you can compare other <see cref="MSBuildSpecification"/> instances that have
+    ///   the exact same <see cref="FixedPath"/>.
     ///  </para>
     /// </remarks>
     public bool IsFullyQualified { get; }
@@ -233,6 +231,30 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
         IsSimpleRecursiveMatch = true;
     }
 
+    private MSBuildSpecification(string rootPath, MSBuildSpecification existing)
+    {
+        Debug.Assert(!existing.IsFullyQualified);
+
+        WildPath = existing.WildPath;
+        FileName = existing.FileName;
+        HasAnyWildCards = existing.HasAnyWildCards;
+        IsSimpleRecursiveMatch = existing.IsSimpleRecursiveMatch;
+        Original = existing.Original;
+        IsFullyQualified = true;
+        IsNestedRelative = false;
+        Normalized = existing.Normalized;
+        FixedPath = Path.GetFullPath(existing.FixedPath.ToString(), rootPath);
+    }
+
+    /// <summary>
+    ///  If the specification is not fully qualified, resolves it against the given <paramref name="rootPath"/>.
+    /// </summary>
+    public MSBuildSpecification FullyQualify(string rootPath)
+    {
+        ArgumentNull.ThrowIfNull(rootPath);
+        return IsFullyQualified ? this : new MSBuildSpecification(rootPath, this);
+    }
+
     /// <summary>
     ///  Unescapes the given <paramref name="specification"/> if needed. `%` is used to escape special characters
     ///  in MSBuild strings, such as `*`, `?`, and `%`.
@@ -388,7 +410,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     }
 
     /// <summary>
-    ///  Splits semicolon-separated MSBuild specifications and buckets them into wildcard and literal versions.
+    ///  Splits semicolon-separated MSBuild specifications.
     /// </summary>
     /// <param name="specs">
     ///  The possibly semicolon-separated MSBuild specification to split. In MSBuild this is processed unescaped, but
