@@ -984,7 +984,7 @@ public class MSBuildEnumeratorTests
         files.Count.Should().Be(expected.Count);
     }
 
-    [Fact()]
+    [Fact(Skip = "Local test")]
     public void EnumerateFiles_RuntimeFolder_ComplexPath()
     {
         string rootFolder = @"n:\repos\runtime\";
