@@ -57,7 +57,7 @@ public sealed class MatchEnumerator : FileSystemEnumerator<string>
 
     /// <inheritdoc/>
     protected override bool ShouldRecurseIntoEntry(ref FileSystemEntry entry) =>
-        _matcher.MatchesDirectory(entry.Directory, entry.FileName);
+        _matcher.MatchesDirectory(entry.Directory, entry.FileName, matchForExclusion: false);
 
     /// <inheritdoc/>
     protected override void OnDirectoryFinished(ReadOnlySpan<char> directory) => _matcher.DirectoryFinished();

@@ -660,6 +660,24 @@ public readonly struct StringSegment :
             _ => _value.Substring(_startIndex, _length)
         };
 
+    /// <inheritdoc cref="ToString()"/>
+    /// <param name="stringSegment">
+    ///  A <see cref="StringSegment"/> that wraps the returned <see langword="string"/>.
+    /// </param>
+    /// <remarks>
+    ///  <para>
+    ///   This overload is useful to avoid reallocating a new <see langword="string"/> if the current
+    ///   segment doesn't fully represent the backing <see langword="string"/>. If you expect to
+    ///   see multiple calls to <see cref="ToString()"/>, you can store the updated <paramref name="stringSegment"/>.
+    ///  </para>
+    /// </remarks>
+    public string ToString(out StringSegment stringSegment)
+    {
+        string value = ToString();
+        stringSegment = new(value);
+        return value;
+    }
+
     bool ISpanFormattable.TryFormat(
         Span<char> destination,
         out int charsWritten,

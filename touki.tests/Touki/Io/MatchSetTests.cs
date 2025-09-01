@@ -35,8 +35,8 @@ public class MatchSetTests
         using IEnumerationMatcher matcher = new MatchSet(
             new MatchAnyDirectory("src", MatchType.Simple, MatchCasing.CaseSensitive));
 
-        matcher.MatchesDirectory(string.Empty, "src").Should().BeTrue();
-        matcher.MatchesDirectory(string.Empty, "docs").Should().BeFalse();
+        matcher.MatchesDirectory(string.Empty, "src", false).Should().BeTrue();
+        matcher.MatchesDirectory(string.Empty, "docs", false).Should().BeFalse();
     }
 
     [Fact]
@@ -56,9 +56,9 @@ public class MatchSetTests
         matcher.AddInclude(new MatchAnyDirectory("docs", MatchType.Simple, MatchCasing.CaseSensitive));
 
         IEnumerationMatcher iMatcher = matcher;
-        iMatcher.MatchesDirectory(string.Empty, "src").Should().BeTrue();
-        iMatcher.MatchesDirectory(string.Empty, "docs").Should().BeTrue();
-        iMatcher.MatchesDirectory(string.Empty, "build").Should().BeFalse();
+        iMatcher.MatchesDirectory(string.Empty, "src", false).Should().BeTrue();
+        iMatcher.MatchesDirectory(string.Empty, "docs", false).Should().BeTrue();
+        iMatcher.MatchesDirectory(string.Empty, "build", false).Should().BeFalse();
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public class MatchSetTests
         matcher.AddExclude(new MatchAnyDirectory("src", MatchType.Simple, MatchCasing.CaseSensitive));
 
         IEnumerationMatcher iMatcher = matcher;
-        iMatcher.MatchesDirectory(string.Empty, "src").Should().BeFalse();
+        iMatcher.MatchesDirectory(string.Empty, "src", false).Should().BeFalse();
     }
 
     [Fact]
@@ -101,8 +101,8 @@ public class MatchSetTests
         matcher.AddExclude(new MatchAnyDirectory("docs", MatchType.Simple, MatchCasing.CaseSensitive));
 
         IEnumerationMatcher iMatcher = matcher;
-        iMatcher.MatchesDirectory(string.Empty, "src").Should().BeTrue();
-        iMatcher.MatchesDirectory(string.Empty, "docs").Should().BeFalse();
+        iMatcher.MatchesDirectory(string.Empty, "src", false).Should().BeTrue();
+        iMatcher.MatchesDirectory(string.Empty, "docs", false).Should().BeFalse();
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class MatchSetTests
         matcher.AddInclude(new MatchAnyDirectory("docs", MatchType.Simple, MatchCasing.CaseSensitive));
 
         IEnumerationMatcher iMatcher = matcher;
-        iMatcher.MatchesDirectory(string.Empty, "build").Should().BeFalse();
+        iMatcher.MatchesDirectory(string.Empty, "build", false).Should().BeFalse();
     }
 
     [Fact]
@@ -203,10 +203,10 @@ public class MatchSetTests
         matcher.AddExclude(new MatchAnyDirectory("test-utils", MatchType.Simple, MatchCasing.CaseSensitive));
 
         IEnumerationMatcher iMatcher = matcher;
-        iMatcher.MatchesDirectory(string.Empty, "src").Should().BeTrue();
-        iMatcher.MatchesDirectory(string.Empty, "tests").Should().BeTrue();
-        iMatcher.MatchesDirectory(string.Empty, "test-utils").Should().BeFalse();
-        iMatcher.MatchesDirectory(string.Empty, "docs").Should().BeFalse();
+        iMatcher.MatchesDirectory(string.Empty, "src", false).Should().BeTrue();
+        iMatcher.MatchesDirectory(string.Empty, "tests", false).Should().BeTrue();
+        iMatcher.MatchesDirectory(string.Empty, "test-utils", false).Should().BeFalse();
+        iMatcher.MatchesDirectory(string.Empty, "docs", false).Should().BeFalse();
     }
 
     [Fact]
@@ -238,10 +238,10 @@ public class MatchSetTests
         matcher.AddExclude(exclude2);
 
         IEnumerationMatcher iMatcher = matcher;
-        iMatcher.MatchesDirectory(string.Empty, "include1").Should().BeFalse(); // Excluded by exclude2
-        iMatcher.MatchesDirectory(string.Empty, "include2").Should().BeTrue();
-        iMatcher.MatchesDirectory(string.Empty, "exclude1").Should().BeFalse();
-        iMatcher.MatchesDirectory(string.Empty, "other").Should().BeFalse();
+        iMatcher.MatchesDirectory(string.Empty, "include1", false).Should().BeFalse(); // Excluded by exclude2
+        iMatcher.MatchesDirectory(string.Empty, "include2", false).Should().BeTrue();
+        iMatcher.MatchesDirectory(string.Empty, "exclude1", false).Should().BeFalse();
+        iMatcher.MatchesDirectory(string.Empty, "other", false).Should().BeFalse();
     }
 
     [Fact]
@@ -272,8 +272,8 @@ public class MatchSetTests
         using IEnumerationMatcher matcher = new MatchSet(
             new MatchAnyDirectory("", MatchType.Simple, MatchCasing.CaseSensitive));
 
-        matcher.MatchesDirectory(string.Empty, string.Empty).Should().BeFalse();
-        matcher.MatchesDirectory(string.Empty, "anydir").Should().BeFalse();
+        matcher.MatchesDirectory(string.Empty, string.Empty, false).Should().BeFalse();
+        matcher.MatchesDirectory(string.Empty, "anydir", false).Should().BeFalse();
     }
 
     [Fact]
@@ -297,7 +297,7 @@ public class MatchSetTests
 
         public void DirectoryFinished() => DirectoryFinishedCount++;
         public void Dispose() => IsDisposed = true;
-        public bool MatchesDirectory(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> directoryName) =>
+        public bool MatchesDirectory(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> directoryName, bool matchForExclusion) =>
             OnMatchesDirectory(currentDirectory.ToString(), directoryName.ToString());
         public bool MatchesFile(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> fileName) =>
             OnMatchesFile(currentDirectory.ToString(), fileName.ToString());

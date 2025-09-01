@@ -8,6 +8,76 @@ namespace Touki.Io;
 
 public class PathsTests
 {
+    [Theory]
+    [InlineData("foo", "foo", MatchCasing.CaseSensitive, false)]
+    [InlineData("foo", "FOO", MatchCasing.CaseSensitive, true)]
+    [InlineData("foo", "FOO", MatchCasing.CaseInsensitive, false)]
+    [InlineData("", "", MatchCasing.CaseSensitive, false)]
+    [InlineData("a", "b", MatchCasing.CaseSensitive, true)]
+    public void ArePatternsExclusive_LiteralVsLiteral_RespectsCasing(string p1, string p2, MatchCasing casing, bool expected)
+    {
+        Paths.AreExpressionsExclusive(p1, p2, MatchType.Simple, casing).Should().Be(expected);
+        Paths.AreExpressionsExclusive(p2, p1, MatchType.Simple, casing).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("foo", "f*", false)]
+    [InlineData("foo", "b*", true)]
+    [InlineData("bar", "?ar", false)]
+    [InlineData("bar", "?az", true)]
+    public void ArePatternsExclusive_LiteralVsWildcard_Basic(string literal, string wildcard, bool expected)
+    {
+        // Simple matching, explicit case-insensitive and case-sensitive should give same exclusivity for ASCII inputs
+        Paths.AreExpressionsExclusive(literal, wildcard, MatchType.Simple, MatchCasing.CaseSensitive).Should().Be(expected);
+        Paths.AreExpressionsExclusive(literal, wildcard, MatchType.Simple, MatchCasing.CaseInsensitive).Should().Be(expected);
+
+        // Swap order to exercise the alternate branch
+        Paths.AreExpressionsExclusive(wildcard, literal, MatchType.Simple, MatchCasing.CaseSensitive).Should().Be(expected);
+    }
+
+    [Fact]
+    public void ArePatternsExclusive_StarAndWin32DotStarDotStar_NeverExclusive()
+    {
+        // '*' against anything is never exclusive
+        Paths.AreExpressionsExclusive("*", "anything", MatchType.Simple, MatchCasing.CaseSensitive).Should().BeFalse();
+        Paths.AreExpressionsExclusive("anything", "*", MatchType.Simple, MatchCasing.CaseSensitive).Should().BeFalse();
+
+        // In Win32 semantics, '*.*' behaves like match-anything for exclusivity purposes
+        Paths.AreExpressionsExclusive("*.cs", "*.*", MatchType.Win32, MatchCasing.CaseSensitive).Should().BeFalse();
+        Paths.AreExpressionsExclusive("*.*", "*.cs", MatchType.Win32, MatchCasing.CaseSensitive).Should().BeFalse();
+        Paths.AreExpressionsExclusive("*.*", "*.*", MatchType.Win32, MatchCasing.CaseSensitive).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("ab*cd", "ab*ef")] // incompatible fixed suffixes
+    [InlineData("foo*", "bar*")]   // incompatible fixed prefixes
+    [InlineData("*foo", "*bar")]   // incompatible fixed suffixes
+    [InlineData("foo?", "bar?")]   // incompatible fixed prefixes with '?'
+    public void ArePatternsExclusive_BothWildcards_ObviousExclusiveCases(string p1, string p2)
+    {
+        Paths.AreExpressionsExclusive(p1, p2, MatchType.Simple, MatchCasing.CaseSensitive).Should().BeTrue();
+        Paths.AreExpressionsExclusive(p2, p1, MatchType.Simple, MatchCasing.CaseSensitive).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("*abc*", "*def*")] // could overlap (e.g., "abcdef")
+    [InlineData("*a*c*", "*b*d*")] // uncertain overlap; should not claim exclusive
+    [InlineData("pre*mid*suf", "pre*X*suf")] // same fixed prefix/suffix; not provably exclusive
+    public void ArePatternsExclusive_BothWildcards_OnlyProveObviousCases(string p1, string p2)
+    {
+        Paths.AreExpressionsExclusive(p1, p2, MatchType.Simple, MatchCasing.CaseSensitive).Should().BeFalse();
+        Paths.AreExpressionsExclusive(p2, p1, MatchType.Simple, MatchCasing.CaseSensitive).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("*.CS", "*.cs", MatchCasing.CaseSensitive, true)]
+    [InlineData("*.CS", "*.cs", MatchCasing.CaseInsensitive, false)]
+    public void ArePatternsExclusive_BothWildcards_RespectsCasing(string p1, string p2, MatchCasing casing, bool expected)
+    {
+        Paths.AreExpressionsExclusive(p1, p2, MatchType.Simple, casing).Should().Be(expected);
+        Paths.AreExpressionsExclusive(p2, p1, MatchType.Simple, casing).Should().Be(expected);
+    }
+
     public static TheoryData<string, string> RemoveRelativeSegmentsNotFullyQualifiedData => new TheoryData<string, string>
     {
         { @"git\runtime",               @"git\runtime"},

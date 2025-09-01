@@ -9,11 +9,21 @@ namespace Touki.Io;
 /// </summary>
 public static class EnumerationMatcherExtensions
 {
-    /// <inheritdoc cref="IEnumerationMatcher.MatchesDirectory(ReadOnlySpan{char}, ReadOnlySpan{char})"/>
+    /// <inheritdoc cref="IEnumerationMatcher.MatchesDirectory(ReadOnlySpan{char}, ReadOnlySpan{char}, bool)"/>
     public static bool MatchesDirectory(
         this IEnumerationMatcher matcher,
         string currentDirectory,
-        string directoryName) => matcher.MatchesDirectory(currentDirectory.AsSpan(), directoryName.AsSpan());
+        string directoryName,
+        bool matchForExclusion) => matcher.MatchesDirectory(currentDirectory.AsSpan(), directoryName.AsSpan(), matchForExclusion);
+
+    /// <summary>
+    ///  Convenience overload that defaults to inclusion semantics.
+    /// </summary>
+    /// <inheritdoc cref="IEnumerationMatcher.MatchesDirectory(ReadOnlySpan{char}, ReadOnlySpan{char}, bool)"/>
+    public static bool MatchesDirectory(
+        this IEnumerationMatcher matcher,
+        string currentDirectory,
+        string directoryName) => matcher.MatchesDirectory(currentDirectory.AsSpan(), directoryName.AsSpan(), false);
 
     /// <inheritdoc cref="IEnumerationMatcher.MatchesFile(ReadOnlySpan{char}, ReadOnlySpan{char})"/>
     public static bool MatchesFile(
