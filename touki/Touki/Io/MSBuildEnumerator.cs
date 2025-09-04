@@ -118,7 +118,7 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
     }
 
     /// <inheritdoc cref="Create(string, string?, EnumerationOptions?)"/>
-    /// <param name="excludeSpecs">Exclude specfications.</param>
+    /// <param name="excludeSpecs">Exclude specifications.</param>
     public static MSBuildEnumerator Create(
         string fileSpec,
         string excludeSpecs,
@@ -190,6 +190,22 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
 
         return $"{entry.Directory[_projectDirectoryLength..]}{Path.DirectorySeparatorChar}{entry.FileName}";
     }
+
+    // In a default .NET library project, here are the default ItemExcludes that are applied to the project.
+    // When looking for all *.cs files only TWO of these are relevant (exclude bin and obj).
+    //
+    // DefaultItemExcludes =
+    //
+    //  bin\Debug\/**;
+    //  obj\Debug\/**;
+    //  bin\/**;
+    //  obj\/**;
+    //  **/*.user;
+    //  **/*.*proj;
+    //  **/*.sln;
+    //  **/*.slnx;
+    //  **/*.vssscc;
+    //  **/.DS_Store
 
     /// <summary>
     ///  Generates an <see cref="IEnumerationMatcher"/> that encapsulates include and exclude MSBuild specifications
@@ -264,7 +280,7 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
 
         if (excludeSpecifications.Count == 0)
         {
-            // No exludes, the include is all we have
+            // No excludes, the include is all we have
             return include;
         }
 

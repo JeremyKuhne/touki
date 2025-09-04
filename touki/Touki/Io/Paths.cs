@@ -130,7 +130,7 @@ public static class Paths
         return path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
     }
 
-    // RemoveRelativeSegments is originally from the .NET runtime. I was one of the primary authors of the orignal code.
+    // RemoveRelativeSegments is originally from the .NET runtime. I was one of the primary authors of the original code.
     // This version flips some of the logic so it can handle paths that aren't fully qualified without losing context.
 
     /// <summary>
