@@ -8,6 +8,8 @@ namespace Touki.Io;
 
 public class PathsTests
 {
+    private static readonly char s_separator = Path.DirectorySeparatorChar;
+
     [Theory]
     [InlineData("foo", "foo", MatchCasing.CaseSensitive, false)]
     [InlineData("foo", "FOO", MatchCasing.CaseSensitive, true)]
@@ -78,7 +80,93 @@ public class PathsTests
         Paths.AreExpressionsExclusive(p2, p1, MatchType.Simple, casing).Should().Be(expected);
     }
 
-    public static TheoryData<string, string> RemoveRelativeSegmentsNotFullyQualifiedData => new TheoryData<string, string>
+    [Fact]
+    public void IsSameOrSubdirectory_SameDirectoryNoTrailingSeparator_ReturnsTrue()
+    {
+        Paths.IsSameOrSubdirectory("foo".AsSpan(), "foo".AsSpan(), ignoreCase: false).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsSameOrSubdirectory_SameDirectoryFirstHasTrailingSeparator_ReturnsTrue()
+    {
+        string first = $"foo{s_separator}";
+        Paths.IsSameOrSubdirectory(first.AsSpan(), "foo".AsSpan(), ignoreCase: false).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsSameOrSubdirectory_Subdirectory_ReturnsTrue()
+    {
+        string second = $"foo{s_separator}bar";
+        Paths.IsSameOrSubdirectory("foo".AsSpan(), second.AsSpan(), ignoreCase: false).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsSameOrSubdirectory_PrefixNotDirectoryBoundary_ReturnsFalse()
+    {
+        Paths.IsSameOrSubdirectory("foo".AsSpan(), "foobar".AsSpan(), ignoreCase: false).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsSameOrSubdirectory_CaseDifferenceIgnoredWhenIgnoringCase_ReturnsTrue()
+    {
+        string second = $"FOO{s_separator}BAR";
+        Paths.IsSameOrSubdirectory("foo".AsSpan(), second.AsSpan(), ignoreCase: true).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsSameOrSubdirectory_CaseDifferenceHonoredWhenNotIgnoringCase_ReturnsFalse()
+    {
+        string second = $"FOO{s_separator}BAR";
+        Paths.IsSameOrSubdirectory("foo".AsSpan(), second.AsSpan(), ignoreCase: false).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsSameOrSubdirectory_SecondHasTrailingSeparatorNotNormalized_ReturnsTrue()
+    {
+        string second = $"foo{s_separator}";
+        Paths.IsSameOrSubdirectory("foo".AsSpan(), second.AsSpan(), ignoreCase: false).Should().BeTrue();
+    }
+
+    public static TheoryData<string, string, bool> IsSameOrSubdirectoryEdgeCasesData => new TheoryData<string, string, bool>()
+    {
+        { "", "", true },
+        { "", "a", false },
+        { "", $"{s_separator}a", true },
+        { $"{s_separator}", $"{s_separator}", true },
+        { $"{s_separator}", $"{s_separator}child", true },
+        { $"{s_separator}", "a", false },
+        { $"{s_separator}", $"{s_separator}a", true },
+        { $"{s_separator}{s_separator}",$"{s_separator}", true },
+        {
+            Paths.ChangeAlternateDirectorySeparators("/foo/bar/"),
+            Paths.ChangeAlternateDirectorySeparators("/foo/barista"),
+            false
+        },
+        {
+            Paths.ChangeAlternateDirectorySeparators("/foo/bar"),
+            Paths.ChangeAlternateDirectorySeparators("/foo/barista"),
+            false
+        },
+        {
+            Paths.ChangeAlternateDirectorySeparators("/foo/bar/"),
+            Paths.ChangeAlternateDirectorySeparators("/foo/bar/ista"),
+            true
+        },
+        {
+            Paths.ChangeAlternateDirectorySeparators("/foo/bar"),
+            Paths.ChangeAlternateDirectorySeparators("/foo/bar/ista"),
+            true
+        }
+    };
+
+    [Theory]
+    [MemberData(nameof(IsSameOrSubdirectoryEdgeCasesData))]
+    public void IsSameOrSubdirectory_EdgeCases_ReturnsExpected(string first, string second, bool expected)
+    {
+        Paths.IsSameOrSubdirectory(first.AsSpan(), second.AsSpan(), ignoreCase: true).Should().Be(expected);
+    }
+
+    public static TheoryData<string, string> RemoveRelativeSegmentsNotFullyQualifiedData => new()
     {
         { @"git\runtime",               @"git\runtime"},
         { @"git\\runtime",              @"git\runtime"},
@@ -133,7 +221,7 @@ public class PathsTests
         firstNormalized.Should().Be(secondNormalized);
     }
 
-    public static TheoryData<string, string> RemoveRelativeSegmentsData => new TheoryData<string, string>
+    public static TheoryData<string, string> RemoveRelativeSegmentsData => new()
     {
         { @"C:\git\runtime",                @"C:\git\runtime"},
         { @"C:\\git\runtime",               @"C:\git\runtime"},
@@ -173,7 +261,7 @@ public class PathsTests
         { @"C:\.\tmp\home\.\.\",            @"C:\tmp\home\" },
     };
 
-    public static TheoryData<string, string> RemoveRelativeSegmentsFirstRelativeSegment => new TheoryData<string, string>
+    public static TheoryData<string, string> RemoveRelativeSegmentsFirstRelativeSegment => new()
     {
         { @"C:\.\git\runtime",              @"C:\git\runtime"},
         { @"C:\\.\git\.\runtime",           @"C:\git\runtime"},
@@ -206,7 +294,7 @@ public class PathsTests
         Assert.Equal(@"\\?\" + expected, Paths.RemoveRelativeSegments(@"\\?\" + path));
     }
 
-    public static TheoryData<string, string> RemoveRelativeSegmentsUncData => new TheoryData<string, string>
+    public static TheoryData<string, string> RemoveRelativeSegmentsUncData => new()
     {
         { @"Server\Share\git\runtime",             @"Server\Share\git\runtime"},
         { @"Server\Share\\git\runtime",            @"Server\Share\git\runtime"},
@@ -238,7 +326,7 @@ public class PathsTests
         Assert.Equal(@"\\?\UNC\" + expected, Paths.RemoveRelativeSegments(@"\\?\UNC\" + path));
     }
 
-    public static TheoryData<string, string> RemoveRelativeSegmentsDeviceData => new TheoryData<string, string>
+    public static TheoryData<string, string> RemoveRelativeSegmentsDeviceData => new()
     {
         { @"\\.\git\runtime",                @"\\.\git\runtime"},
         { @"\\.\git\\runtime",               @"\\.\git\runtime"},
@@ -311,7 +399,7 @@ public class PathsTests
         Assert.Equal(expected, Paths.RemoveRelativeSegments(path));
     }
 
-    public static TheoryData<string, string> RemoveRelativeSegmentUnixData => new TheoryData<string, string>
+    public static TheoryData<string, string> RemoveRelativeSegmentUnixData => new()
     {
         { "/tmp/home",                          "/tmp/home" },
         { "/tmp/..",                            "/" },

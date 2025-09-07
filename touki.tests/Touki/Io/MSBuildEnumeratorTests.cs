@@ -6,7 +6,7 @@ namespace Touki.Io;
 
 public class MSBuildEnumeratorTests
 {
-    private static string s_projectRoot = Path.GetFullPath(Path.Join(Environment.CurrentDirectory, "../../../../.."));
+    private static readonly string s_projectRoot = Path.GetFullPath(Path.Join(Environment.CurrentDirectory, "../../../../.."));
 
     [Fact]
     public void EnumerateFiles_WithGlobPattern_ReturnsMatchingFiles()

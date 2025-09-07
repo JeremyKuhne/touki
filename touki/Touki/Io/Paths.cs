@@ -78,26 +78,35 @@ public static class Paths
 
     /// <summary>
     ///  Returns <see langword="true"/> if the second directory is the same as or a subdirectory of the first directory.
-    ///  Paths must be fully normalized to get valid results.
+    ///  Paths must be fully normalized and qualified to get valid results.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This is only a string based comparison. It does not resolve symbolic links, junctions, or other file system
+    ///   redirections. Additionally, alternate directory separators are not considered.
+    ///  </para>
+    ///  <para>
+    ///   If both paths are normalized and fully qualified then comparisons will be correct. If either are rooted and
+    ///   are not fully qualified, results may be incorrect. If they are normalized
+    ///   <see cref="ChangeAlternateDirectorySeparators(string)"/> and <see cref="RemoveRelativeSegments(StringSegment)"/>"
+    ///   and both are not rooted and neither start with a ".." segment, they can be compared correctly.
+    ///  </para>
+    /// </remarks>
     public static bool IsSameOrSubdirectory(
         ReadOnlySpan<char> firstDirectory,
         ReadOnlySpan<char> secondDirectory,
         bool ignoreCase)
     {
-        bool endsInSeparator = Path.EndsInDirectorySeparator(firstDirectory);
-
-        if (secondDirectory.StartsWith(firstDirectory, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+        if (Path.EndsInDirectorySeparator(firstDirectory))
         {
-            if (endsInSeparator
-                || firstDirectory.Length == secondDirectory.Length
-                || secondDirectory[firstDirectory.Length] == Path.DirectorySeparatorChar)
-            {
-                return true;
-            }
+            // "/foo/bar/" and "/foo/bar" should still pass
+            firstDirectory = firstDirectory[..^1];
         }
 
-        return false;
+        return secondDirectory.StartsWith(firstDirectory, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)
+            // They must be the same length or we need to know that there is an explicit separator at the boundary.
+            && (firstDirectory.Length == secondDirectory.Length
+                || secondDirectory[firstDirectory.Length] == Path.DirectorySeparatorChar);
     }
 
     /// <inheritdoc cref="RemoveRelativeSegments(ReadOnlySpan{char}, ref ValueStringBuilder)"/>
