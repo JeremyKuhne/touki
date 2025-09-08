@@ -9,6 +9,7 @@
     -->
     <TargetFrameworks>net9.0;net481</TargetFrameworks>
     <DependencyTargetFramework>$(TargetFramework)</DependencyTargetFramework>
+    <OutputType>Exe</OutputType>
 
     <!-- Main project builds against 4.72 -->
     <DependencyTargetFramework Condition="'$(TargetFramework)' == 'net481'">net472</DependencyTargetFramework>
@@ -42,8 +43,8 @@
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
     <PackageReference Include="Microsoft.Build" Version="17.14.8" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
-    <PackageReference Include="xunit" Version="2.9.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="xunit.v3" Version="3.0.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
     <PackageReference Include="FluentAssertions" Version="6.12.2" />
   </ItemGroup>
 

@@ -538,7 +538,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         new DateTimeOffset(2025, 6, 17, 12, 0, 0, TimeSpan.FromMinutes(330)),
         DateTimeOffset.MinValue,
         DateTimeOffset.MaxValue,
-        DateTimeOffset.UtcNow.Date,
+        new DateTimeOffset(DateTimeOffset.UtcNow.Date),
         new DateTimeOffset(2025, 6, 17, 0, 0, 0, 123, TimeSpan.Zero)
     ];
 }
