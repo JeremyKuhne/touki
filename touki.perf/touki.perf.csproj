@@ -10,6 +10,7 @@
     <TargetFrameworks>net9.0;net481</TargetFrameworks>
     <DependencyTargetFramework>$(TargetFramework)</DependencyTargetFramework>
     <OutputType>exe</OutputType>
+    <StartupObject>touki.perf.Program</StartupObject>
 
     <!-- Main project builds against 4.72 -->
     <DependencyTargetFramework Condition="'$(TargetFramework)' == 'net481'">net472</DependencyTargetFramework>
@@ -27,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\touki.tests\touki.tests.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\touki.tests\touki.tests.csproj" />
     <ProjectReference Include="..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
   </ItemGroup>
 
