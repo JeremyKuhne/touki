@@ -32,14 +32,14 @@ public sealed class ArrayPoolList<T> : ArrayBackedList<T> where T : notnull
     }
 
     /// <inheritdoc/>
-    protected override T[] GetNewArray(int mininumCapacity)
+    protected override T[] GetNewArray(int minimumCapacity)
     {
-        if (mininumCapacity <= 0)
+        if (minimumCapacity <= 0)
         {
-            mininumCapacity = _minimumCapacity;
+            minimumCapacity = _minimumCapacity;
         }
 
-        return ArrayPool<T>.Shared.Rent(mininumCapacity);
+        return ArrayPool<T>.Shared.Rent(minimumCapacity);
     }
 
     /// <inheritdoc/>

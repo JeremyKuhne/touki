@@ -235,7 +235,7 @@ public ref partial struct ValueStringBuilder
         else if (typeof(T) == typeof(StringSegment))
         {
             // StringSegment implements ISpanFormattable and will format without boxing or allocations if we let it
-            // through, but the peformance is significantly better if we explicitly handle it here.
+            // through, but the performance is significantly better if we explicitly handle it here.
             StringSegment segment = Unsafe.As<T, StringSegment>(ref value);
             if (!segment.IsEmpty)
             {
@@ -291,7 +291,7 @@ public ref partial struct ValueStringBuilder
         int startPosition = _length;
 
         // We will not optimize this code further to keep it maintainable. There are some boundary checks that can be applied
-        // to minimize the comparsions required. This code works the same for the best/worst case. In general the number of
+        // to minimize the comparisons required. This code works the same for the best/worst case. In general the number of
         // items in an enum are sufficiently small and not worth the optimization.
         while (index >= 0)
         {

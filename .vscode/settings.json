@@ -1,8 +1,15 @@
 {
     "editor.trimAutoWhitespace": true,
     "cSpell.words": [
-        "Kuhne",
-        "slnx",
-        "Touki"
+      "comparand",
+      "devdoc",
+      "devirtualize",
+      "Finalizable",
+      "finalizer",
+      "Kuhne",
+      "NETFRAMEWORK",
+      "Pinnable",
+      "slnx",
+      "Touki"
     ]
 }

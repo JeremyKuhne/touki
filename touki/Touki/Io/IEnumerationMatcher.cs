@@ -9,7 +9,7 @@ namespace Touki.Io;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   This is designed to faciliate composition with <see cref="FileSystemEnumerator{TResult}"/>s.
+///   This is designed to facilitate composition with <see cref="FileSystemEnumerator{TResult}"/>s.
 ///   As such, names should always be passed breadth-first when enumerating directories.
 ///  </para>
 /// </remarks>
