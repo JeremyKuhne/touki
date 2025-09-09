@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\touki.tests\touki.tests.csproj" />
+    <ProjectReference Include="..\touki.tests\touki.tests.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
   </ItemGroup>
 
