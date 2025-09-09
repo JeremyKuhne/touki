@@ -15,7 +15,7 @@ public readonly partial struct Value
         // in 1582 (adopted by Britain in 1752). While it is sort of strange to have an offset that goes back that far,
         // if we do, we still go forward 914 years from 1582 to 2496 (which is well beyond the current date).
         //
-        // Our updated algorithm (which exludes offsets that do not fall on 30 minute intervals) gives us 914 years of
+        // Our updated algorithm (which excludes offsets that do not fall on 30 minute intervals) gives us 914 years of
         // "ticks" to work with (we did have 457).
         private const ulong BaseTicks = 498283488000000000;
         private const ulong MaxTicks = BaseTicks + TickMask;

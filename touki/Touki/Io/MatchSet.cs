@@ -43,12 +43,12 @@ public sealed class MatchSet : DisposableBase, IEnumerationMatcher
     /// <summary>
     ///  Adds an exclude matcher to the set.
     /// </summary>
-    /// <param name="excludematcher">This matcher will be considered to block consideration for matching.</param>
-    public void AddExclude(IEnumerationMatcher excludematcher)
+    /// <param name="excludeMatcher">This matcher will be considered to block consideration for matching.</param>
+    public void AddExclude(IEnumerationMatcher excludeMatcher)
     {
-        ArgumentNull.ThrowIfNull(excludematcher);
+        ArgumentNull.ThrowIfNull(excludeMatcher);
         _excludes ??= [];
-        _excludes.Add(excludematcher);
+        _excludes.Add(excludeMatcher);
     }
 
     void IEnumerationMatcher.DirectoryFinished()

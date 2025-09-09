@@ -7,10 +7,7 @@ namespace Touki;
 internal static class NotSupportedAdapter
 {
     [DoesNotReturn]
-    public static void Throw(string? message = null)
-    {
-        ThrowNotSupported(message);
-    }
+    public static void Throw(string? message = null) => ThrowNotSupported(message);
 
     [DoesNotReturn]
     private static void ThrowNotSupported(string? message) =>

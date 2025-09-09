@@ -7,13 +7,14 @@ This document shows how MSBuild processes item includes and excludes from XML to
 ## How Include/Exclude Patterns Flow Through MSBuild
 
 1. **Starting Point**: When you define items in a project file:
+
    ```xml
    <ItemGroup>
      <Compile Include="src/**/*.cs" Exclude="**/*.designer.cs" />
    </ItemGroup>
    ```
 
-2. **Pattern Splitting**: 
+2. **Pattern Splitting**:
    - Multiple patterns separated by semicolons are split
    - Each include pattern is processed individually
    - All exclude patterns are applied to each include result
@@ -25,7 +26,7 @@ This document shows how MSBuild processes item includes and excludes from XML to
 
 MSBuild breaks down each pattern into three parts:
 
-```
+```text
 src/foo/**/*.cs
   |      |    |
   |      |    └── File part (*.cs)
@@ -36,6 +37,7 @@ src/foo/**/*.cs
 ### Supported Wildcards
 
 MSBuild only natively supports three wildcards:
+
 - `*` - Matches zero or more characters (except directory separators)
 - `**` - Matches zero of more directories
 - `?` - Matches exactly one character
@@ -54,7 +56,6 @@ MSBuild uses different matching strategies depending on the pattern:
 2. **Only filename wildcards**: Directory listing with name matching
 3. **Special `**/{pattern}/**` optimization**: Directory name matching
 4. **Complex wildcards**: Regular expression matching (slowest)
-
 
 ## Exclude Handling
 
@@ -148,7 +149,7 @@ graph TD
 ### 4. FileMatcher Processing
 
 - **FileMatcher.GetFiles** receives:
-  - `directoryUnescaped`: Project directory 
+  - `directoryUnescaped`: Project directory
   - `filespecUnescaped`: Single Include pattern
   - `excludeSpecsUnescaped`: List of Exclude patterns
 
@@ -199,7 +200,6 @@ graph TD
 
 - Files matching any exclude pattern are removed from results
 - Path normalization ensures consistent handling of directory separators
-
 
 ## Noted Issues
 

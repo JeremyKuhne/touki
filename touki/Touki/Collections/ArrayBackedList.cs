@@ -201,8 +201,8 @@ public abstract class ArrayBackedList<T> : ContiguousList<T> where T : notnull
     /// <summary>
     ///  Override to provide the logic for obtaining the needed backing array.
     /// </summary>
-    /// <param name="mininumCapacity">The array needs to be at leas this size.</param>
-    protected abstract T[] GetNewArray(int mininumCapacity);
+    /// <param name="minimumCapacity">The array needs to be at leas this size.</param>
+    protected abstract T[] GetNewArray(int minimumCapacity);
 
     private void ReturnArrayInternal(T[] array)
     {

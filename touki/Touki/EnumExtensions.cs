@@ -25,7 +25,7 @@ public static unsafe partial class EnumExtensions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsOnlyOneFlagSet<T>(this T value, T flags) where T : unmanaged, Enum
     {
-        // This one doesn't inline without the aggressive inlining hint. Currently this comiles to this for int:
+        // This one doesn't inline without the aggressive inlining hint. Currently this compiles to this for int:
         //
         //  L0000: and ecx, edx
         //  L0002: je short L0010
