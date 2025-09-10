@@ -11,7 +11,7 @@ public class StoringStringSegment
         { new StringSegment("Hello, World!") },
         { new StringSegment("Hello, World!", 7, 5) },
         { new StringSegment(string.Empty) },
-        { default }
+        { default(StringSegment) }
     };
 
     [Theory]

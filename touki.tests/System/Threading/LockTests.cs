@@ -117,18 +117,19 @@ public static class LockTests
         {
             using (lockObj.EnterScope())
             {
-                b.SignalAndWait();
+                b.SignalAndWait(TestContext.Current.CancellationToken);
                 Assert.True(lockObj.IsHeldByCurrentThread);
-                b.SignalAndWait();
+                b.SignalAndWait(TestContext.Current.CancellationToken);
             }
-        });
+        },
+        TestContext.Current.CancellationToken);
 
-        b.SignalAndWait();
+        b.SignalAndWait(TestContext.Current.CancellationToken);
         Assert.False(lockObj.IsHeldByCurrentThread);
-        b.SignalAndWait();
+        b.SignalAndWait(TestContext.Current.CancellationToken);
 
 #pragma warning disable xUnit1031 // Do not use blocking task operations in test method
-        t.Wait();
+        t.Wait(TestContext.Current.CancellationToken);
 #pragma warning restore xUnit1031
     }
 
@@ -156,12 +157,13 @@ public static class LockTests
         {
             using (lockObj.EnterScope())
             {
-                b.SignalAndWait();
-                b.SignalAndWait();
+                b.SignalAndWait(TestContext.Current.CancellationToken);
+                b.SignalAndWait(TestContext.Current.CancellationToken);
             }
-        });
+        },
+        TestContext.Current.CancellationToken);
 
-        b.SignalAndWait();
+        b.SignalAndWait(TestContext.Current.CancellationToken);
 
         Assert.Throws<SynchronizationLockException>(lockObj.Exit);
 
@@ -180,9 +182,9 @@ public static class LockTests
             Assert.Fail($"Expected SynchronizationLockException but got a different exception instead: {ex}");
         }
 
-        b.SignalAndWait();
+        b.SignalAndWait(TestContext.Current.CancellationToken);
 #pragma warning disable xUnit1031 // Do not use blocking task operations in test method
-        t.Wait();
+        t.Wait(TestContext.Current.CancellationToken);
 #pragma warning restore xUnit1031
     }
 
@@ -251,7 +253,7 @@ public static class LockTests
 
             using (lockObj.EnterScope())
             {
-                readyBarrier.SignalAndWait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
+                readyBarrier.SignalAndWait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds, TestContext.Current.CancellationToken);
                 Thread.Sleep(ThreadTestHelpers.ExpectedTimeoutMilliseconds);
             }
             foreach (Action waitForThread in waitForThreadArray)
@@ -291,7 +293,7 @@ public static class LockTests
 
             using (lockObj.EnterScope())
             {
-                readyBarrier.SignalAndWait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
+                readyBarrier.SignalAndWait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds, TestContext.Current.CancellationToken);
                 foreach (Action waitForThread in waitForThreadArray)
                     waitForThread();
             }
@@ -335,17 +337,18 @@ public static class LockTests
                     barrier.SignalAndWait(); // Wait for all threads to be ready
                     lockObj.TryEnter(50); // Try to enter with timeout - will contend with main thread
                     barrier.SignalAndWait(); // Signal completion
-                });
+                },
+                TestContext.Current.CancellationToken);
             }
 
-            barrier.SignalAndWait(); // Let all threads try to acquire
+            barrier.SignalAndWait(TestContext.Current.CancellationToken); // Let all threads try to acquire
             Thread.Sleep(100); // Hold lock while other threads try to acquire it
         }
 
-        barrier.SignalAndWait(); // Wait for all threads to complete
+        barrier.SignalAndWait(TestContext.Current.CancellationToken); // Wait for all threads to complete
 
 #pragma warning disable xUnit1031 // Do not use blocking task operations in test method
-        Task.WaitAll(tasks);
+        Task.WaitAll(tasks, TestContext.Current.CancellationToken);
 #pragma warning restore xUnit1031
 
         // Contention count should have increased
@@ -378,7 +381,7 @@ public static class LockTests
 
             // Wait here until the background task has signaled that it's running.
             // This guarantees the lock is still held when TryEnter is called.
-            backgroundTaskStarted.Wait();
+            backgroundTaskStarted.Wait(TestContext.Current.CancellationToken);
 
 #pragma warning disable xUnit1031 // Do not use blocking task operations in test method
             (bool success, TimeSpan duration) = durationTask.Result;
@@ -429,16 +432,17 @@ public static class LockTests
 
                     Thread.Yield(); // Give other threads a chance
                 }
-            });
+            },
+            TestContext.Current.CancellationToken);
         }
 
         // Wait for all threads to be ready
-        ready.Wait();
+        ready.Wait(TestContext.Current.CancellationToken);
         // Start all threads simultaneously
         start.Set();
 
 #pragma warning disable xUnit1031 // Do not use blocking task operations in test method
-        Task.WaitAll(tasks);
+        Task.WaitAll(tasks, TestContext.Current.CancellationToken);
 #pragma warning restore xUnit1031
 
         // Verify total operations

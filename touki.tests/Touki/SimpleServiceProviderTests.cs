@@ -220,7 +220,8 @@ public class SimpleServiceProviderTests
                     // Small delay to simulate real work and increase the chance of thread interleaving
                     await Task.Delay(1).ConfigureAwait(continueOnCapturedContext: false);
                 }
-            }));
+            },
+            TestContext.Current.CancellationToken));
         }
 
         // Wait for all tasks to complete asynchronously

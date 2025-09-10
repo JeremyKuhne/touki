@@ -14,7 +14,7 @@ public class MsBuildEnumeratePerf2
     private const string Filespec = "**/*.cs";
     // private const string Filespec = "**/src/**// /*.cs";
 
-    private static readonly string s_unsplitExcludes = "bin/Debug/**;obj/Debug/**;bin/**;obj/**/;**/*.user;**/*.*proj;**/*.sln;**/*.slnx;**/*.vssscc;**/.DS_Store";
+    private const string UnsplitExcludes = "bin/Debug/**;obj/Debug/**;bin/**;obj/**/;**/*.user;**/*.*proj;**/*.sln;**/*.slnx;**/*.vssscc;**/.DS_Store";
 
     private static readonly List<string> s_excludes =
     [
@@ -40,7 +40,7 @@ public class MsBuildEnumeratePerf2
     [Benchmark]
     public IReadOnlyList<string> MsBuildEnumerator()
     {
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(Filespec, s_unsplitExcludes, Directory);
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(Filespec, UnsplitExcludes, Directory);
         List<string> results = [];
         while (enumerator.MoveNext())
         {

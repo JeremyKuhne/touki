@@ -189,7 +189,8 @@ public class InterlockTests
                 {
                     Interlock.Increment(ref value);
                 }
-            });
+            },
+            TestContext.Current.CancellationToken);
         }
 
         await Task.WhenAll(tasks);
@@ -212,7 +213,8 @@ public class InterlockTests
                 {
                     Interlock.Add(ref value, 1);
                 }
-            });
+            },
+            TestContext.Current.CancellationToken);
         }
 
         await Task.WhenAll(tasks);
@@ -239,7 +241,8 @@ public class InterlockTests
                         current = value;
                     } while (Interlock.CompareExchange(ref value, current + 1, current) != current);
                 }
-            });
+            },
+            TestContext.Current.CancellationToken);
         }
 
         await Task.WhenAll(tasks);
@@ -266,7 +269,8 @@ public class InterlockTests
                     Interlock.And(ref andValue, ~mask);
                     Interlock.Or(ref orValue, mask);
                 }
-            });
+            },
+            TestContext.Current.CancellationToken);
         }
 
         await Task.WhenAll(tasks);
