@@ -307,7 +307,7 @@ public class CacheTests
         }
 
         // Wait for all threads to finish
-        countdown.Wait();
+        countdown.Wait(TestContext.Current.CancellationToken);
 
         // Verify no exceptions occurred
         exceptions.Should().BeEmpty();

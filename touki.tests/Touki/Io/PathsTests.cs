@@ -289,9 +289,9 @@ public class PathsTests
         }
 #endif
 
-        Assert.Equal(expected, Paths.RemoveRelativeSegments(path));
-        Assert.Equal(@"\\.\" + expected, Paths.RemoveRelativeSegments(@"\\.\" + path));
-        Assert.Equal(@"\\?\" + expected, Paths.RemoveRelativeSegments(@"\\?\" + path));
+        Assert.Equal(expected, Paths.RemoveRelativeSegments(path).ToString());
+        Assert.Equal(@"\\.\" + expected, Paths.RemoveRelativeSegments(@"\\.\" + path).ToString());
+        Assert.Equal(@"\\?\" + expected, Paths.RemoveRelativeSegments(@"\\?\" + path).ToString());
     }
 
     public static TheoryData<string, string> RemoveRelativeSegmentsUncData => new()
@@ -321,9 +321,9 @@ public class PathsTests
         }
 #endif
 
-        Assert.Equal(@"\\" + expected, Paths.RemoveRelativeSegments(@"\\" + path));
-        Assert.Equal(@"\\.\UNC\" + expected, Paths.RemoveRelativeSegments(@"\\.\UNC\" + path));
-        Assert.Equal(@"\\?\UNC\" + expected, Paths.RemoveRelativeSegments(@"\\?\UNC\" + path));
+        Assert.Equal(@"\\" + expected, Paths.RemoveRelativeSegments(@"\\" + path).ToString());
+        Assert.Equal(@"\\.\UNC\" + expected, Paths.RemoveRelativeSegments(@"\\.\UNC\" + path).ToString());
+        Assert.Equal(@"\\?\UNC\" + expected, Paths.RemoveRelativeSegments(@"\\?\UNC\" + path).ToString());
     }
 
     public static TheoryData<string, string> RemoveRelativeSegmentsDeviceData => new()
@@ -388,7 +388,7 @@ public class PathsTests
         }
 #endif
 
-        Assert.Equal(expected, Paths.RemoveRelativeSegments(path));
+        Assert.Equal(expected, Paths.RemoveRelativeSegments(path).ToString());
         StringBuilder sb = new StringBuilder(expected);
         sb.Replace('.', '?', 0, 4);
         expected = sb.ToString();
@@ -396,7 +396,7 @@ public class PathsTests
         sb = new StringBuilder(path);
         sb.Replace('.', '?', 0, 4);
         path = sb.ToString();
-        Assert.Equal(expected, Paths.RemoveRelativeSegments(path));
+        Assert.Equal(expected, Paths.RemoveRelativeSegments(path).ToString());
     }
 
     public static TheoryData<string, string> RemoveRelativeSegmentUnixData => new()
@@ -443,7 +443,7 @@ public class PathsTests
             return;
         }
 
-        Assert.Equal(expected, Paths.RemoveRelativeSegments(path));
+        Assert.Equal(expected, Paths.RemoveRelativeSegments(path).ToString());
     }
 #endif
 

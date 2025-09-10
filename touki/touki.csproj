@@ -15,7 +15,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>13</LangVersion>
     <NeutralLanguage>en-US</NeutralLanguage>
 
     <!-- Would rather have this blank by default, but it messes with resource generation. -->
@@ -43,7 +43,7 @@
     <!-- This gets us Span. -->
     <PackageReference Include="System.Memory" Version="4.6.3" />
     <!-- This provides Range and Index support downlevel -->
-    <PackageReference Include="Microsoft.Bcl.Memory" Version="9.0.6" />
+    <PackageReference Include="Microsoft.Bcl.Memory" Version="9.0.9" />
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
     <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.183">
       <PrivateAssets>all</PrivateAssets>

@@ -36,11 +36,11 @@ public class StreamExtensionsTests
         byte[] data = [6, 7, 8, 9, 10];
 
         // Write asynchronously using ArraySegment
-        await memory.WriteAsync(new ArraySegment<byte>(data, 2, 2));
+        await memory.WriteAsync(new ArraySegment<byte>(data, 2, 2), TestContext.Current.CancellationToken);
         memory.Position = 0;
 
         byte[] readBuffer = new byte[2];
-        int read = await memory.ReadAsync(new ArraySegment<byte>(readBuffer));
+        int read = await memory.ReadAsync(new ArraySegment<byte>(readBuffer), TestContext.Current.CancellationToken);
         read.Should().Be(2);
         readBuffer.Should().BeEquivalentTo([8, 9]);
     }
@@ -68,16 +68,16 @@ public class StreamExtensionsTests
     {
         using MemoryStream memory = new();
 
-        await memory.WriteAsync(new ArraySegment<byte>());
+        await memory.WriteAsync(new ArraySegment<byte>(), TestContext.Current.CancellationToken);
         memory.Length.Should().Be(0);
 
         byte[] data = [4, 5];
-        await memory.WriteAsync(new ArraySegment<byte>(data));
+        await memory.WriteAsync(new ArraySegment<byte>(data), TestContext.Current.CancellationToken);
 
         memory.Position = 0;
 
         long initial = memory.Position;
-        int read = await memory.ReadAsync(new ArraySegment<byte>());
+        int read = await memory.ReadAsync(new ArraySegment<byte>(), TestContext.Current.CancellationToken);
         read.Should().Be(0);
         memory.Position.Should().Be(initial);
     }

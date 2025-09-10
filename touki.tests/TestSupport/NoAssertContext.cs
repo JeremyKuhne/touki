@@ -24,13 +24,13 @@ public sealed class NoAssertContext : IDisposable
 
     private static readonly Lock s_lock = new();
     private static bool s_hooked;
-    private static bool s_hasDefaultListener;
     private static bool s_hasThrowingListener;
 
     private static readonly ConcurrentDictionary<int, int> s_suppressedThreads = new();
 
     // "Default" is the listener that terminates the process when debug assertions fail.
     private static readonly TraceListener? s_defaultListener = Trace.Listeners["Default"];
+    private static readonly TraceListener? s_xunitListener = Trace.Listeners["xUnit.net"];
     private static readonly NoAssertListener s_noAssertListener = new();
 
     public NoAssertContext()
@@ -47,8 +47,12 @@ public sealed class NoAssertContext : IDisposable
                 Trace.Listeners.Add(s_noAssertListener);
                 if (s_defaultListener is not null && Trace.Listeners.Contains(s_defaultListener))
                 {
-                    s_hasDefaultListener = true;
                     Trace.Listeners.Remove(s_defaultListener);
+                }
+
+                if (s_xunitListener is not null && Trace.Listeners.Contains(s_xunitListener))
+                {
+                    Trace.Listeners.Remove(s_xunitListener);
                 }
 
                 if (Trace.Listeners.OfType<ThrowingTraceListener>().FirstOrDefault() is { } throwingTraceListener)
@@ -84,9 +88,14 @@ public sealed class NoAssertContext : IDisposable
             {
                 // We're the first to hit the need to unhook. Add the default listener back first to
                 // ensure we don't lose any asserts from other threads.
-                if (s_hasDefaultListener)
+                if (s_defaultListener is { } defaultListener)
                 {
-                    Trace.Listeners.Add(s_defaultListener!);
+                    Trace.Listeners.Add(defaultListener);
+                }
+
+                if (s_xunitListener is { } xunitListener)
+                {
+                    Trace.Listeners.Add(xunitListener);
                 }
 
                 if (s_hasThrowingListener)
@@ -117,7 +126,7 @@ public sealed class NoAssertContext : IDisposable
 
         private static TraceListener? DefaultListener => s_hasThrowingListener
             ? ThrowingTraceListener.Instance
-            : s_hasDefaultListener ? s_defaultListener : null;
+            : s_defaultListener;
 
         public override void Fail(string? message)
         {
