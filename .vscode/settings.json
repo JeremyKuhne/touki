@@ -1,5 +1,6 @@
 {
     "editor.trimAutoWhitespace": true,
+    "dotnet.testWindow.useTestingPlatformProtocol": true,
     "cSpell.words": [
       "comparand",
       "devdoc",
