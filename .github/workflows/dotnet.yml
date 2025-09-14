@@ -27,6 +27,33 @@ jobs:
     - name: Build release
       run: dotnet build --configuration Release --no-restore
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: |
+        $resultsDir = Join-Path $PWD.Path 'artifacts/test-results/debug'
+        New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
+
+        dotnet test --no-build `
+          -p:TestingPlatformCaptureOutput=false `
+          -- `
+          --results-directory "$resultsDir" `
+          --report-xunit-trx `
+          --show-live-output on
     - name: Test release
-      run: dotnet test --configuration Release --no-build --verbosity normal
+      run: |
+        $resultsDir = Join-Path $PWD.Path 'artifacts/test-results/release'
+        New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
+
+        dotnet test -c Release --no-build `
+          -p:TestingPlatformCaptureOutput=false `
+          -- `
+          --results-directory "$resultsDir" `
+          --report-xunit-trx `
+          --show-live-output on
+    - name: Upload raw logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: mtp-logs
+        path: |
+          artifacts/test-results/**/*.trx
+        if-no-files-found: warn
+        retention-days: 14
