@@ -5,22 +5,47 @@
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
           Condition="'$(ImportCommonProps)' == 'true' and Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
 
-  <!-- Common repo directories -->
   <PropertyGroup>
-    <RepoDir>$(MSBuildThisFileDirectory)</RepoDir>
-    <SourceDir>$(ProjectDir)src\</SourceDir>
+    <!--
+      Cross-platform targetting in .NET
+      https://learn.microsoft.com/dotnet/standard/library-guidance/cross-platform-targeting
+    -->
 
-    <!-- Output directories -->
-    <BinDir Condition="'$(BinDir)'==''">$(RepoDir)artifacts\</BinDir>
-    <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj\</ObjDir>
+    <!--
+      Want to keep current and support the most recent LTS.
+    -->
+    <DotNetCoreVersion>net10.0</DotNetCoreVersion>
 
-    <!-- Input Directories -->
-    <PackagesDir Condition="'$(PackagesDir)'==''">$(RepoDir)packages\</PackagesDir>
+    <!--
+      4.7.2 addresses issues when consuming .NET Standard 2.0 libraries from .NET Framework.
+
+      Windows 10 1803 and Server 2019 included 4.7.2 in the box. Most OSes have gone out of support that shipped with
+      earlier versions. The only exceptions are enterprise and server versions from 2016. We could support 4.6.2
+      instead if the need arises, but starting with 4.7.2 to be explicit about the best choice.
+      https://learn.microsoft.com/lifecycle/products/windows-81
+      https://learn.microsoft.com/lifecycle/products/windows-7
+      https://learn.microsoft.com/lifecycle/products/windows-server-2016
+      https://learn.microsoft.com/lifecycle/products/windows-10-2016-ltsb
+    -->
+    <DotNetFrameworkVersion>net472</DotNetFrameworkVersion>
+
+    <!-- C# Features -->
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- Common repo directories -->
+  <PropertyGroup>
+    <RepoDir>$(MSBuildThisFileDirectory)</RepoDir>
+    <SourceDir>$(ProjectDir)src\</SourceDir>
+
+    <BinDir Condition="'$(BinDir)'==''">$(RepoDir)artifacts\</BinDir>
+    <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj\</ObjDir>
+
+    <PackagesDir Condition="'$(PackagesDir)'==''">$(RepoDir)packages\</PackagesDir>
   </PropertyGroup>
 
   <!-- Set default Configuration and Platform -->
@@ -58,16 +83,16 @@
     <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(Platform)\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
 
     <!--
-        Putting the project at the root rather than after the platform/configuration allows usages of BaseIntermediateOutputPath
-        that implicitly expect it to be project isolated to work. $(ProjectAssetsFile) depends on this. (New to VS 2017)
+      Putting the project at the root rather than after the platform/configuration allows usages of BaseIntermediateOutputPath
+      that implicitly expect it to be project isolated to work. $(ProjectAssetsFile) depends on this. (New to VS 2017)
     -->
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)$(MSBuildProjectName)\</BaseIntermediateOutputPath>
     <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(Platform)\$(Configuration)\</IntermediateOutputRootPath>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)\</IntermediateOutputPath>
 
     <!--
-        Note that SDK targets add the target framework to $(IntermediateOutputPath) and $(OutputPath). (via Microsoft.NET.TargetFrameworkInference.targets)
-        $(AppendTargetFrameworkToOutputPath) can be used to skip this behavior.
+      Note that SDK targets add the target framework to $(IntermediateOutputPath) and $(OutputPath). (via Microsoft.NET.TargetFrameworkInference.targets)
+      $(AppendTargetFrameworkToOutputPath) can be used to skip this behavior.
     -->
   </PropertyGroup>
 

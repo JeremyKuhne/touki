@@ -2,21 +2,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!--
-      Multitarget .NET 9 and .NET Framework 4.8
-      (Doing 4.8 for tests to get test access to a few new APIs in .NET Framework)
-      https://learn.microsoft.com/dotnet/standard/frameworks
-    -->
-    <TargetFrameworks>net9.0;net481</TargetFrameworks>
+    <!-- Targeting 4.8.1 for tests to get some extra GC functionality -->
+    <TargetFrameworks>$(DotNetCoreVersion);net481</TargetFrameworks>
     <DependencyTargetFramework>$(TargetFramework)</DependencyTargetFramework>
     <OutputType>Exe</OutputType>
 
-    <!-- Main project builds against 4.72 -->
-    <DependencyTargetFramework Condition="'$(TargetFramework)' == 'net481'">net472</DependencyTargetFramework>
+    <!-- Make sure the main project builds against it's normal version. -->
+    <DependencyTargetFramework Condition="'$(TargetFramework)' == 'net481'">$(DotNetFrameworkVersion)</DependencyTargetFramework>
 
     <!--
      We don't want to have implicit usings as we're retargeting System.IO to Microsoft.IO
-     in our GlobalUsings.cs file for .NET 4.7.2.
+     in our GlobalUsings.cs file for .NET Framework.
     -->
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -46,14 +42,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.4">
+    <PackageReference Include="coverlet.collector">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Build" Version="17.14.8" />
-    <PackageReference Include="xunit.v3" Version="3.0.1" />
-    <PackageReference Include="FluentAssertions" Version="6.12.2" />
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="Microsoft.Build" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.CSharp" />
   </ItemGroup>
 
   <ItemGroup>
