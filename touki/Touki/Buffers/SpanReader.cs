@@ -242,7 +242,7 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryRead(int count, out ReadOnlySpan<T> span)
     {
-        ArgumentOutOfRange.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         bool success;
 
@@ -335,7 +335,7 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
             throw new ArgumentException($"The size of {nameof(TValue)} must be evenly divisible by the size of {nameof(T)}.");
         }
 
-        ArgumentOutOfRange.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         bool success;
 
@@ -438,7 +438,7 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     /// </exception>
     public void Rewind(int count)
     {
-        ArgumentOutOfRange.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
         _unread = Span[(Span.Length - _unread.Length - count)..];
     }
 

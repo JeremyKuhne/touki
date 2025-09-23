@@ -38,7 +38,7 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
         {
             if (!_hasItem)
             {
-                ThrowHelper.ThrowArgumentOutOfRange(nameof(index));
+                ArgumentOutOfRangeException.Throw(nameof(index));
             }
 
             if (_backingList is { } list)
@@ -46,16 +46,16 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
                 return list[index];
             }
 
-            ArgumentOutOfRange.ThrowIfNotEqual(index, 0);
+            ArgumentOutOfRangeException.ThrowIfNotEqual(index, 0);
             return _item;
         }
         set
         {
-            ArgumentNull.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(value);
 
             if (!_hasItem)
             {
-                ThrowHelper.ThrowArgumentOutOfRange(nameof(index));
+                ArgumentOutOfRangeException.Throw(nameof(index));
             }
 
             if (_backingList is { } list)
@@ -64,7 +64,7 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
                 return;
             }
 
-            ArgumentOutOfRange.ThrowIfNotEqual(index, 0);
+            ArgumentOutOfRangeException.ThrowIfNotEqual(index, 0);
             _item = value;
         }
     }
@@ -82,7 +82,7 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
     /// <inheritdoc/>
     public override void Add(T item)
     {
-        ArgumentNull.ThrowIfNull(item);
+        ArgumentNullException.ThrowIfNull(item);
 
         if (!_hasItem && _backingList is null)
         {
@@ -114,8 +114,8 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
     /// <inheritdoc/>
     public override void CopyTo(T[] array, int arrayIndex)
     {
-        ArgumentNull.ThrowIfNull(array);
-        ArgumentOutOfRange.ThrowIfNegative(arrayIndex);
+        ArgumentNullException.ThrowIfNull(array);
+        ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
 
         if (array.Length - arrayIndex < Count)
         {
@@ -140,8 +140,8 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
     /// <inheritdoc/>
     public override void CopyTo(Array array, int index)
     {
-        ArgumentNull.ThrowIfNull(array);
-        ArgumentOutOfRange.ThrowIfNegative(index);
+        ArgumentNullException.ThrowIfNull(array);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
 
         if (array.Length - index < Count)
         {
@@ -179,8 +179,8 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
     /// <inheritdoc/>
     public override void Insert(int index, T item)
     {
-        ArgumentNull.ThrowIfNull(item);
-        ArgumentOutOfRange.ThrowIfGreaterThan((uint)index, (uint)Count);
+        ArgumentNullException.ThrowIfNull(item);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)Count);
 
         if (!_hasItem)
         {
@@ -216,7 +216,7 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
     /// <inheritdoc/>
     public override void RemoveAt(int index)
     {
-        ArgumentOutOfRange.ThrowIfGreaterThanOrEqual((uint)index, (uint)Count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)Count);
 
         if (_backingList is { } list)
         {

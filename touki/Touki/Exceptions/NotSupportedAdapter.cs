@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-namespace Touki;
+namespace Touki.Exceptions;
 
-internal static class NotSupportedAdapter
+internal static class NotSupportedExtensions
 {
-    [DoesNotReturn]
-    public static void Throw(string? message = null) => ThrowNotSupported(message);
+    extension(NotSupportedException)
+    {
+        [DoesNotReturn]
+        public static void Throw(string? message = null) => ThrowNotSupported(message);
+    }
 
     [DoesNotReturn]
     private static void ThrowNotSupported(string? message) =>

@@ -69,7 +69,7 @@ public abstract partial class ListBase<T> : DisposableBase, IList<T>, IReadOnlyL
         //
         // https://github.com/dotnet/runtime/issues/28934
 
-        ArgumentNull.ThrowIfNull(comparer);
+        ArgumentNullException.ThrowIfNull(comparer);
 
         for (int i = 0; i < Count; i++)
         {
@@ -104,7 +104,7 @@ public abstract partial class ListBase<T> : DisposableBase, IList<T>, IReadOnlyL
     /// <inheritdoc cref="List{T}.RemoveAll(Predicate{T})"/>
     public virtual int RemoveAll(Predicate<T> match)
     {
-        ArgumentNull.ThrowIfNull(match);
+        ArgumentNullException.ThrowIfNull(match);
         int removedCount = 0;
         for (int i = Count - 1; i >= 0; i--)
         {
@@ -151,7 +151,7 @@ public abstract partial class ListBase<T> : DisposableBase, IList<T>, IReadOnlyL
 
     int IList.Add(object? value)
     {
-        ArgumentNull.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(value);
 
         if (value is not T item)
         {
@@ -166,7 +166,7 @@ public abstract partial class ListBase<T> : DisposableBase, IList<T>, IReadOnlyL
 
     void IList.Insert(int index, object? value)
     {
-        ArgumentNull.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(value);
 
         if (value is not T item)
         {

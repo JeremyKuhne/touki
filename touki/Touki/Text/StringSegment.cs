@@ -93,8 +93,8 @@ public readonly struct StringSegment :
     {
         value ??= string.Empty;
 
-        ArgumentOutOfRange.ThrowIfLessThan(startIndex, 0, nameof(startIndex));
-        ArgumentOutOfRange.ThrowIfLessThan(length, 0, nameof(length));
+        ArgumentOutOfRangeException.ThrowIfLessThan(startIndex, 0, nameof(startIndex));
+        ArgumentOutOfRangeException.ThrowIfLessThan(length, 0, nameof(length));
 
         if (startIndex > value.Length - length && (startIndex != 0 || length != 0))
         {
@@ -330,7 +330,7 @@ public readonly struct StringSegment :
     /// <exception cref="ArgumentNullException"><paramref name="value"/> was <see langword="null"/>.</exception>
     public bool StartsWith(string value, StringComparison comparison = StringComparison.Ordinal)
     {
-        ArgumentNull.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(value);
         return value.Length == 0 || (_length >= value.Length
             && string.Compare(_value, _startIndex, value, 0, value.Length, comparison) == 0);
     }
@@ -353,7 +353,7 @@ public readonly struct StringSegment :
     /// </summary>
     public bool EndsWith(string value, StringComparison comparison = StringComparison.Ordinal)
     {
-        ArgumentNull.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(value);
         return value.Length == 0
             || (_length >= value.Length
                 && string.Compare(_value, _startIndex + _length - value.Length, value, 0, value.Length, comparison) == 0);

@@ -96,7 +96,7 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
     /// </returns>
     public static MSBuildEnumerator Create(string fileSpec, string? projectDirectory, EnumerationOptions? options = null)
     {
-        ArgumentNull.ThrowIfNull(fileSpec);
+        ArgumentNullException.ThrowIfNull(fileSpec);
 
         options ??= DefaultOptions;
 
@@ -125,7 +125,7 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
         string? projectDirectory,
         EnumerationOptions? options = null)
     {
-        ArgumentNull.ThrowIfNull(fileSpec);
+        ArgumentNullException.ThrowIfNull(fileSpec);
 
         options ??= DefaultOptions;
         MatchCasing matchCasing = Paths.GetFinalCasing(options.MatchCasing);

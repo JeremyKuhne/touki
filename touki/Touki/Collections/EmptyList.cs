@@ -44,10 +44,10 @@ public sealed class EmptyList<T> : ContiguousList<T> where T : notnull
     public override void Clear() { }
 
     /// <inheritdoc/>
-    public override void CopyTo(T[] array, int arrayIndex) => ArgumentOutOfRange.ThrowIfNotEqual(arrayIndex, 0);
+    public override void CopyTo(T[] array, int arrayIndex) => ArgumentOutOfRangeException.ThrowIfNotEqual(arrayIndex, 0);
 
     /// <inheritdoc/>
-    public override void CopyTo(Array array, int index) => ArgumentOutOfRange.ThrowIfNotEqual(index, 0);
+    public override void CopyTo(Array array, int index) => ArgumentOutOfRangeException.ThrowIfNotEqual(index, 0);
 
     /// <inheritdoc/>
     public override int IndexOf(T item) => -1;

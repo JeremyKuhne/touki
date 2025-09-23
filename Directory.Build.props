@@ -32,7 +32,7 @@
     <!-- C# Features -->
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>14</LangVersion>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>

@@ -102,7 +102,7 @@ public ref partial struct ValueStringBuilder
     public ValueStringBuilder(int initialCapacity, IFormatProvider? provider = null)
     {
         _arrayToReturnToPool = ArrayPool<byte>.Shared.Rent(initialCapacity * sizeof(char));
-        _chars = MemoryMarshal.Cast<byte, char>(_arrayToReturnToPool);
+        _chars = MemoryMarshal.Cast<byte, char>((Span<byte>)_arrayToReturnToPool);
         _length = 0;
         _formatProvider = provider;
         _hasCustomFormatter = provider is not null && HasCustomFormatter(provider);
@@ -131,8 +131,8 @@ public ref partial struct ValueStringBuilder
         set
         {
             // Do not free if set to 0. This allows in-place building of strings.
-            ArgumentOutOfRange.ThrowIfNegative(value);
-            ArgumentOutOfRange.ThrowIfGreaterThan(value, _chars.Length);
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, _chars.Length);
             _length = value;
         }
     }
@@ -162,7 +162,7 @@ public ref partial struct ValueStringBuilder
     /// </remarks>
     public void EnsureCapacity(int capacity)
     {
-        ArgumentOutOfRange.ThrowIfNegative(capacity);
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         // If the caller has a bug and calls this with negative capacity, make sure to call Grow to throw an exception.
         if ((uint)capacity > (uint)_chars.Length)
@@ -195,7 +195,7 @@ public ref partial struct ValueStringBuilder
     {
         get
         {
-            ArgumentOutOfRange.ThrowIfGreaterThanOrEqual(index, _length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _length);
             return ref _chars[index];
         }
     }
@@ -255,8 +255,8 @@ public ref partial struct ValueStringBuilder
     /// <returns>A span that consists of the remaining elements from the buffer starting at <paramref name="start"/>.</returns>
     public readonly ReadOnlySpan<char> Slice(int start)
     {
-        ArgumentOutOfRange.ThrowIfNegative(start);
-        ArgumentOutOfRange.ThrowIfGreaterThanOrEqual(start, _length);
+        ArgumentOutOfRangeException.ThrowIfNegative(start);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(start, _length);
         return _chars[start.._length];
     }
 
@@ -268,10 +268,10 @@ public ref partial struct ValueStringBuilder
     /// <returns>A span that consists of <paramref name="length"/> elements from the buffer starting at <paramref name="start"/>.</returns>
     public readonly ReadOnlySpan<char> Slice(int start, int length)
     {
-        ArgumentOutOfRange.ThrowIfNegative(start);
-        ArgumentOutOfRange.ThrowIfGreaterThanOrEqual(start, _length);
-        ArgumentOutOfRange.ThrowIfNegative(length);
-        ArgumentOutOfRange.ThrowIfGreaterThan(start + length, _length);
+        ArgumentOutOfRangeException.ThrowIfNegative(start);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(start, _length);
+        ArgumentOutOfRangeException.ThrowIfNegative(length);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(start + length, _length);
 
         return _chars.Slice(start, length);
     }
@@ -283,7 +283,7 @@ public ref partial struct ValueStringBuilder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Span<char> AppendSpan(int length)
     {
-        ArgumentOutOfRange.ThrowIfNegative(length);
+        ArgumentOutOfRangeException.ThrowIfNegative(length);
 
         int originalLength = _length;
         if (originalLength > _chars.Length - length)
@@ -326,9 +326,9 @@ public ref partial struct ValueStringBuilder
     /// <param name="count">The number of times to insert the character.</param>
     public void Insert(int index, char value, int count)
     {
-        ArgumentOutOfRange.ThrowIfNegative(index);
-        ArgumentOutOfRange.ThrowIfGreaterThan(index, _length);
-        ArgumentOutOfRange.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _length);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (_length > _chars.Length - count)
         {
@@ -348,8 +348,8 @@ public ref partial struct ValueStringBuilder
     /// <param name="s">The string to insert. If <see langword="null"/>, this method does nothing.</param>
     public void Insert(int index, string? s)
     {
-        ArgumentOutOfRange.ThrowIfNegative(index);
-        ArgumentOutOfRange.ThrowIfGreaterThan(index, _length);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _length);
 
         if (s is null)
         {
@@ -541,10 +541,10 @@ public ref partial struct ValueStringBuilder
         // This could also go negative if the actual required length wraps around.
         byte[] poolArray = ArrayPool<byte>.Shared.Rent(newCapacity * sizeof(char));
 
-        _chars[.._length].CopyTo(MemoryMarshal.Cast<byte, char>(poolArray));
+        _chars[.._length].CopyTo(MemoryMarshal.Cast<byte, char>((Span<byte>)poolArray));
 
         byte[]? toReturn = _arrayToReturnToPool;
-        _chars = MemoryMarshal.Cast<byte, char>(poolArray);
+        _chars = MemoryMarshal.Cast<byte, char>((Span<byte>)poolArray);
         _arrayToReturnToPool = poolArray;
         if (toReturn is not null)
         {

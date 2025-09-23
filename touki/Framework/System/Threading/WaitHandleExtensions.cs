@@ -3,7 +3,6 @@
 // See LICENSE file in the project root for full license information
 
 using Microsoft.Win32.SafeHandles;
-using Touki.Exceptions;
 using Touki.Framework.Resources;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -23,7 +22,7 @@ internal static class WaitHandleExtensions
         // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
         // to ensure that one instance is used in all places in this method
         SafeWaitHandle? waitHandle = target.SafeWaitHandle;
-        ObjectDisposed.ThrowIf(waitHandle is null, target);
+        ObjectDisposedException.ThrowIf(waitHandle is null, target);
 
         bool success = false;
         try

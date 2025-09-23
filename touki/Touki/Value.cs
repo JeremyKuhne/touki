@@ -32,7 +32,7 @@ namespace Touki;
 public readonly partial struct Value
 {
     private readonly Union _union;
-    internal readonly object? _object;
+    private readonly object? _object;
 
     /// <summary>
     ///  Creates a new <see cref="Value"/> instance with the specified value.
