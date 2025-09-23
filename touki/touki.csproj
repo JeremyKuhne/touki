@@ -3,14 +3,14 @@
 
   <PropertyGroup>
     <!--
-      Multitarget .NET 9 and .NET Framework 4.72
+      Multitarget .NET Core and .NET Framework
       https://learn.microsoft.com/dotnet/standard/frameworks
     -->
-    <TargetFrameworks>net9.0;net472</TargetFrameworks>
+    <TargetFrameworks>$(DotNetCoreVersion);$(DotNetFrameworkVersion)</TargetFrameworks>
 
     <!--
       We don't want to have implicit usings as we're retargeting System.IO to Microsoft.IO
-      in our GlobalUsings.cs file for .NET 4.7.2.
+      in our GlobalUsings.cs file for .NET Framework.
     -->
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -31,21 +31,21 @@
   -->
   <PropertyGroup>
     <!-- Exclude Framework folder from non .NET Framework builds -->
-    <DefaultItemExcludes Condition="'$(TargetFramework)' != 'net472'">$(DefaultItemExcludes);**/Framework/**/*</DefaultItemExcludes>
+    <DefaultItemExcludes Condition="'$(TargetFramework)' != '$(DotNetFrameworkVersion)'">$(DefaultItemExcludes);**/Framework/**/*</DefaultItemExcludes>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'net472'">
+  <ItemGroup Condition="'$(TargetFramework)' != '$(DotNetFrameworkVersion)'">
     <!-- Include the Framework specific items as none so we can see them easily in the Solution Explorer. -->
     <None Include="**/Framework/**/*" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'">
     <!-- This gets us .NET 6 System.IO repackaged for .NET Framework. -->
-    <PackageReference Include="Microsoft.IO.Redist" Version="6.1.3" />
+    <PackageReference Include="Microsoft.IO.Redist" />
     <!-- This gets us Span. -->
-    <PackageReference Include="System.Memory" Version="4.6.3" />
+    <PackageReference Include="System.Memory" />
     <!-- This provides Range and Index support downlevel -->
-    <PackageReference Include="Microsoft.Bcl.Memory" Version="9.0.9" />
-    <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.183">
+    <PackageReference Include="Microsoft.Bcl.Memory" />
+    <PackageReference Include="Microsoft.Bcl.HashCode" />
+    <PackageReference Include="Microsoft.Windows.CsWin32" >
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -75,7 +75,7 @@
     SourceLink related
   -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
   </ItemGroup>
   <PropertyGroup>
     <!-- Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
@@ -97,8 +97,8 @@
   <PropertyGroup>
     <PolySharpUsePublicAccessibilityForGeneratedTypes>true</PolySharpUsePublicAccessibilityForGeneratedTypes>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
-    <PackageReference Include="PolySharp" Version="1.15.0">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'">
+    <PackageReference Include="PolySharp">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -109,7 +109,7 @@
   -->
   <ItemGroup>
     <!-- This allows source generating the strongly typed resources -->
-    <PackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator" Version="5.0.0-1.25277.114">
+    <PackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -123,7 +123,7 @@
     <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MinVer" Version="6.0.0">
+    <PackageReference Include="MinVer">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
