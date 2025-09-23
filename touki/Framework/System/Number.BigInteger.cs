@@ -471,7 +471,7 @@ internal static partial class Number
 
             if ((lhsLength == 1) && (rhsLength == 1))
             {
-                (uint quotient, uint remainder) = Maths.DivRem(lhs._blocks[0], rhs._blocks[0]);
+                (uint quotient, uint remainder) = Math.DivRem(lhs._blocks[0], rhs._blocks[0]);
                 SetUInt32(out quo, quotient);
                 SetUInt32(out rem, remainder);
                 return;
@@ -490,7 +490,7 @@ internal static partial class Number
                 {
                     ulong value = (carry << 32) | lhs._blocks[i];
                     ulong digit;
-                    (digit, carry) = Maths.DivRem(value, rhsValue);
+                    (digit, carry) = Math.DivRem(value, rhsValue);
 
                     if ((digit == 0) && (i == (quoLength - 1)))
                     {

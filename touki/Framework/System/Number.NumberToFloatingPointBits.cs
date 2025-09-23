@@ -260,7 +260,7 @@ internal unsafe partial class Number
             return AssembleFloatingPointBits(in info, value.ToUInt64(), baseExponent, !hasNonZeroFractionalPart);
         }
 
-        (uint topBlockIndex, uint topBlockBits) = Maths.DivRem(integerBitsOfPrecision, 32);
+        (uint topBlockIndex, uint topBlockBits) = Math.DivRem(integerBitsOfPrecision, 32);
         uint middleBlockIndex = topBlockIndex - 1;
         uint bottomBlockIndex = middleBlockIndex - 1;
 

@@ -12,7 +12,7 @@ namespace Touki.Exceptions;
 /// <summary>
 ///  Helper to allow using new patterns for throwing <see cref="ArgumentOutOfRangeException"/>s.
 /// </summary>
-public static class ArgumentOutOfRangeAdapter
+public static class ArgumentOutOfRangeExtensions
 {
     [DoesNotReturn]
     private static void ThrowZero<T>(T value, string? paramName) =>

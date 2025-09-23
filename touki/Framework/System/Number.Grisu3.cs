@@ -595,7 +595,7 @@ internal static partial class Number
             while (kappa > 0)
             {
                 uint digit;
-                (digit, integrals) = Maths.DivRem(integrals, divisor);
+                (digit, integrals) = Math.DivRem(integrals, divisor);
                 Debug.Assert(digit <= 9);
                 buffer[length] = (byte)('0' + digit);
 
@@ -774,7 +774,7 @@ internal static partial class Number
             while (kappa > 0)
             {
                 uint digit;
-                (digit, integrals) = Maths.DivRem(integrals, divisor);
+                (digit, integrals) = Math.DivRem(integrals, divisor);
                 Debug.Assert(digit <= 9);
                 buffer[length] = (byte)('0' + digit);
 

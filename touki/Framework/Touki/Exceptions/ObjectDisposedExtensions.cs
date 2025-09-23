@@ -7,7 +7,7 @@ namespace Touki.Exceptions;
 /// <summary>
 ///  ObjectDisposedException helper to allow using new patterns for throwing <see cref="ObjectDisposedException"/>s.
 /// </summary>
-public static class ObjectDisposedAdapter
+public static class ObjectDisposedExtensions
 {
     extension(ObjectDisposedException)
     {
