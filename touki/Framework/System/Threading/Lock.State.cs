@@ -6,7 +6,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Framework.Touki;
-using Touki.Exceptions;
 
 namespace System.Threading;
 
@@ -152,7 +151,7 @@ public sealed partial class Lock
         public override readonly int GetHashCode() => (int)_state;
 
         private static State CompareExchange(Lock lockObj, State toState, State fromState) =>
-            new State(Interlock.CompareExchange(ref lockObj._state, toState._state, fromState._state));
+            new State(Interlocked.CompareExchange(ref lockObj._state, toState._state, fromState._state));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryLock(Lock lockObj)
@@ -190,7 +189,7 @@ public sealed partial class Lock
         {
             Debug.Assert(IsLockedMask == 1);
 
-            var state = new State(Interlock.Decrement(ref lockObj._state));
+            var state = new State(Interlocked.Decrement(ref lockObj._state));
             Debug.Assert(!state.IsLocked);
             return state;
         }
@@ -311,7 +310,7 @@ public sealed partial class Lock
             // if it's available. If the lock is available, a spinner must acquire the lock along with unregistering itself,
             // because a lock releaser does not wake a waiter when there is a spinner registered.
 
-            var state = new State(Interlock.Add(ref lockObj._state, Neg(SpinnerCountIncrement)));
+            var state = new State(Interlocked.Add(ref lockObj._state, Neg(SpinnerCountIncrement)));
             Debug.Assert(new State(state._state + SpinnerCountIncrement).HasAnySpinners);
 
             while (true)
@@ -455,7 +454,7 @@ public sealed partial class Lock
             // when a waiter was signaled but the wake signal has not been observed. If the lock is acquired, the waiter
             // starvation start time is also updated.
 
-            var state = new State(Interlock.Add(ref lockObj._state, Neg(IsWaiterSignaledToWakeMask)));
+            var state = new State(Interlocked.Add(ref lockObj._state, Neg(IsWaiterSignaledToWakeMask)));
             Debug.Assert(new State(state._state + IsWaiterSignaledToWakeMask).IsWaiterSignaledToWake);
 
             bool waiterStartTimeWasRecorded = false;

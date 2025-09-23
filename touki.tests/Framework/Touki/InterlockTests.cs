@@ -10,7 +10,7 @@ public class InterlockTests
     public void Increment_UInt32_ShouldIncrementValue()
     {
         uint value = 0;
-        Interlock.Increment(ref value).Should().Be(1);
+        Interlocked.Increment(ref value).Should().Be(1);
         value.Should().Be(1);
     }
 
@@ -18,7 +18,7 @@ public class InterlockTests
     public void Increment_UInt64_ShouldIncrementValue()
     {
         ulong value = 0;
-        Interlock.Increment(ref value).Should().Be(1);
+        Interlocked.Increment(ref value).Should().Be(1);
         value.Should().Be(1);
     }
 
@@ -26,7 +26,7 @@ public class InterlockTests
     public void Decrement_UInt32_ShouldDecrementValue()
     {
         uint value = 2;
-        Interlock.Decrement(ref value).Should().Be(1);
+        Interlocked.Decrement(ref value).Should().Be(1);
         value.Should().Be(1);
     }
 
@@ -34,7 +34,7 @@ public class InterlockTests
     public void Decrement_UInt64_ShouldDecrementValue()
     {
         ulong value = 2;
-        Interlock.Decrement(ref value).Should().Be(1);
+        Interlocked.Decrement(ref value).Should().Be(1);
         value.Should().Be(1);
     }
 
@@ -42,7 +42,7 @@ public class InterlockTests
     public void Exchange_UInt32_ShouldExchangeValues()
     {
         uint value = 1;
-        Interlock.Exchange(ref value, 2).Should().Be(1);
+        Interlocked.Exchange(ref value, 2).Should().Be(1);
         value.Should().Be(2);
     }
 
@@ -50,7 +50,7 @@ public class InterlockTests
     public void Exchange_UInt64_ShouldExchangeValues()
     {
         ulong value = 1;
-        Interlock.Exchange(ref value, 2).Should().Be(1);
+        Interlocked.Exchange(ref value, 2).Should().Be(1);
         value.Should().Be(2);
     }
 
@@ -58,7 +58,7 @@ public class InterlockTests
     public void CompareExchange_UInt32_WhenValuesMatch_ShouldExchange()
     {
         uint value = 1;
-        Interlock.CompareExchange(ref value, 2, 1).Should().Be(1);
+        Interlocked.CompareExchange(ref value, 2, 1).Should().Be(1);
         value.Should().Be(2);
     }
 
@@ -66,7 +66,7 @@ public class InterlockTests
     public void CompareExchange_UInt32_WhenValuesDontMatch_ShouldNotExchange()
     {
         uint value = 1;
-        Interlock.CompareExchange(ref value, 2, 3).Should().Be(1);
+        Interlocked.CompareExchange(ref value, 2, 3).Should().Be(1);
         value.Should().Be(1);
     }
 
@@ -74,7 +74,7 @@ public class InterlockTests
     public void CompareExchange_UInt64_WhenValuesMatch_ShouldExchange()
     {
         ulong value = 1;
-        Interlock.CompareExchange(ref value, 2, 1).Should().Be(1);
+        Interlocked.CompareExchange(ref value, 2, 1).Should().Be(1);
         value.Should().Be(2);
     }
 
@@ -82,7 +82,7 @@ public class InterlockTests
     public void CompareExchange_UInt64_WhenValuesDontMatch_ShouldNotExchange()
     {
         ulong value = 1;
-        Interlock.CompareExchange(ref value, 2, 3).Should().Be(1);
+        Interlocked.CompareExchange(ref value, 2, 3).Should().Be(1);
         value.Should().Be(1);
     }
 
@@ -90,7 +90,7 @@ public class InterlockTests
     public void Add_UInt32_ShouldAddValues()
     {
         uint value = 1;
-        Interlock.Add(ref value, 2).Should().Be(3);
+        Interlocked.Add(ref value, 2).Should().Be(3);
         value.Should().Be(3);
     }
 
@@ -98,7 +98,7 @@ public class InterlockTests
     public void Add_UInt64_ShouldAddValues()
     {
         ulong value = 1;
-        Interlock.Add(ref value, 2).Should().Be(3);
+        Interlocked.Add(ref value, 2).Should().Be(3);
         value.Should().Be(3);
     }
 
@@ -106,14 +106,14 @@ public class InterlockTests
     public void Read_UInt64_ShouldReturnValue()
     {
         ulong value = 42;
-        Interlock.Read(ref value).Should().Be(42);
+        Interlocked.Read(ref value).Should().Be(42);
     }
 
     [Fact]
     public void And_Int32_ShouldPerformBitwiseAnd()
     {
         int value = 0b1111;
-        Interlock.And(ref value, 0b1010).Should().Be(0b1111);
+        Interlocked.And(ref value, 0b1010).Should().Be(0b1111);
         value.Should().Be(0b1010);
     }
 
@@ -121,7 +121,7 @@ public class InterlockTests
     public void And_UInt32_ShouldPerformBitwiseAnd()
     {
         uint value = 0b1111u;
-        Interlock.And(ref value, 0b1010u).Should().Be(0b1111u);
+        Interlocked.And(ref value, 0b1010u).Should().Be(0b1111u);
         value.Should().Be(0b1010u);
     }
 
@@ -129,7 +129,7 @@ public class InterlockTests
     public void And_Int64_ShouldPerformBitwiseAnd()
     {
         long value = 0b1111L;
-        Interlock.And(ref value, 0b1010L).Should().Be(0b1111L);
+        Interlocked.And(ref value, 0b1010L).Should().Be(0b1111L);
         value.Should().Be(0b1010L);
     }
 
@@ -137,7 +137,7 @@ public class InterlockTests
     public void And_UInt64_ShouldPerformBitwiseAnd()
     {
         ulong value = 0b1111UL;
-        Interlock.And(ref value, 0b1010UL).Should().Be(0b1111UL);
+        Interlocked.And(ref value, 0b1010UL).Should().Be(0b1111UL);
         value.Should().Be(0b1010UL);
     }
 
@@ -145,7 +145,7 @@ public class InterlockTests
     public void Or_Int32_ShouldPerformBitwiseOr()
     {
         int value = 0b1010;
-        Interlock.Or(ref value, 0b0101).Should().Be(0b1010);
+        Interlocked.Or(ref value, 0b0101).Should().Be(0b1010);
         value.Should().Be(0b1111);
     }
 
@@ -153,7 +153,7 @@ public class InterlockTests
     public void Or_UInt32_ShouldPerformBitwiseOr()
     {
         uint value = 0b1010u;
-        Interlock.Or(ref value, 0b0101u).Should().Be(0b1010u);
+        Interlocked.Or(ref value, 0b0101u).Should().Be(0b1010u);
         value.Should().Be(0b1111u);
     }
 
@@ -161,7 +161,7 @@ public class InterlockTests
     public void Or_Int64_ShouldPerformBitwiseOr()
     {
         long value = 0b1010L;
-        Interlock.Or(ref value, 0b0101L).Should().Be(0b1010L);
+        Interlocked.Or(ref value, 0b0101L).Should().Be(0b1010L);
         value.Should().Be(0b1111L);
     }
 
@@ -169,7 +169,7 @@ public class InterlockTests
     public void Or_UInt64_ShouldPerformBitwiseOr()
     {
         ulong value = 0b1010UL;
-        Interlock.Or(ref value, 0b0101UL).Should().Be(0b1010UL);
+        Interlocked.Or(ref value, 0b0101UL).Should().Be(0b1010UL);
         value.Should().Be(0b1111UL);
     }
 
@@ -187,7 +187,7 @@ public class InterlockTests
             {
                 for (int j = 0; j < iterations; j++)
                 {
-                    Interlock.Increment(ref value);
+                    Interlocked.Increment(ref value);
                 }
             },
             TestContext.Current.CancellationToken);
@@ -211,7 +211,7 @@ public class InterlockTests
             {
                 for (int j = 0; j < iterations; j++)
                 {
-                    Interlock.Add(ref value, 1);
+                    Interlocked.Add(ref value, 1);
                 }
             },
             TestContext.Current.CancellationToken);
@@ -239,7 +239,7 @@ public class InterlockTests
                     do
                     {
                         current = value;
-                    } while (Interlock.CompareExchange(ref value, current + 1, current) != current);
+                    } while (Interlocked.CompareExchange(ref value, current + 1, current) != current);
                 }
             },
             TestContext.Current.CancellationToken);
@@ -266,8 +266,8 @@ public class InterlockTests
             {
                 for (int j = 0; j < iterations; j++)
                 {
-                    Interlock.And(ref andValue, ~mask);
-                    Interlock.Or(ref orValue, mask);
+                    Interlocked.And(ref andValue, ~mask);
+                    Interlocked.Or(ref orValue, mask);
                 }
             },
             TestContext.Current.CancellationToken);

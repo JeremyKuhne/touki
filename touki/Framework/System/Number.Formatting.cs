@@ -983,7 +983,7 @@ internal static partial class Number
         while (--digits >= 0 || value != 0)
         {
             uint remainder;
-            (value, remainder) = Maths.DivRem(value, 10);
+            (value, remainder) = Math.DivRem(value, 10);
             *(--bufferEnd) = (byte)(remainder + '0');
         }
 
@@ -995,7 +995,7 @@ internal static partial class Number
         while (--digits >= 0 || value != 0)
         {
             uint remainder;
-            (value, remainder) = Maths.DivRem(value, 10);
+            (value, remainder) = Math.DivRem(value, 10);
             *(--bufferEnd) = (char)(remainder + '0');
         }
 
@@ -1020,7 +1020,7 @@ internal static partial class Number
                 do
                 {
                     uint remainder;
-                    (value, remainder) = Maths.DivRem(value, 10);
+                    (value, remainder) = Math.DivRem(value, 10);
                     *(--p) = (char)(remainder + '0');
                 }
                 while (value != 0);
