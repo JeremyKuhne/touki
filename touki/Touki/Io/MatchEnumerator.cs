@@ -45,8 +45,8 @@ public sealed class MatchEnumerator : FileSystemEnumerator<string>
         EnumerationOptions options)
         : base(directory, options)
     {
-        ArgumentNull.ThrowIfNull(directory);
-        ArgumentNull.ThrowIfNull(matcher);
+        ArgumentNullException.ThrowIfNull(directory);
+        ArgumentNullException.ThrowIfNull(matcher);
         _matcher = matcher;
         _findTransform = transform;
     }

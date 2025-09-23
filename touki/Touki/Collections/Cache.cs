@@ -60,7 +60,7 @@ public class Cache<T> : DisposableBase where T : class, new()
     /// </summary>
     public virtual void Release(T item)
     {
-        ObjectDisposed.ThrowIf(Disposed, this);
+        ObjectDisposedException.ThrowIf(Disposed, this);
 
         if (t_localItem is null)
         {

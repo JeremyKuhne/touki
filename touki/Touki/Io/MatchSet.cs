@@ -26,7 +26,7 @@ public sealed class MatchSet : DisposableBase, IEnumerationMatcher
     /// </summary>
     public MatchSet(IEnumerationMatcher includeMatcher)
     {
-        ArgumentNull.ThrowIfNull(includeMatcher);
+        ArgumentNullException.ThrowIfNull(includeMatcher);
         _includes.Add(includeMatcher);
     }
 
@@ -36,7 +36,7 @@ public sealed class MatchSet : DisposableBase, IEnumerationMatcher
     /// <param name="includeMatcher">If no excludes have been processed, this matcher will be considered for matches.</param>
     public void AddInclude(IEnumerationMatcher includeMatcher)
     {
-        ArgumentNull.ThrowIfNull(includeMatcher);
+        ArgumentNullException.ThrowIfNull(includeMatcher);
         _includes.Add(includeMatcher);
     }
 
@@ -46,7 +46,7 @@ public sealed class MatchSet : DisposableBase, IEnumerationMatcher
     /// <param name="excludeMatcher">This matcher will be considered to block consideration for matching.</param>
     public void AddExclude(IEnumerationMatcher excludeMatcher)
     {
-        ArgumentNull.ThrowIfNull(excludeMatcher);
+        ArgumentNullException.ThrowIfNull(excludeMatcher);
         _excludes ??= [];
         _excludes.Add(excludeMatcher);
     }

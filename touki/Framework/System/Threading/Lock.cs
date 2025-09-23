@@ -6,7 +6,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using Touki.Exceptions;
 using Touki.Framework.Resources;
 
 namespace System.Threading;
@@ -178,7 +177,7 @@ public sealed partial class Lock
     /// </exception>
     public bool TryEnter(int millisecondsTimeout)
     {
-        ArgumentOutOfRange.ThrowIfLessThan(millisecondsTimeout, -1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
         return TryEnter_Outlined(millisecondsTimeout);
     }
 
@@ -215,8 +214,8 @@ public sealed partial class Lock
     private static int ToTimeoutMilliseconds(TimeSpan timeout)
     {
         long timeoutMilliseconds = (long)timeout.TotalMilliseconds;
-        ArgumentOutOfRange.ThrowIfLessThan(timeoutMilliseconds, -1, nameof(timeout));
-        ArgumentOutOfRange.ThrowIfGreaterThan(timeoutMilliseconds, int.MaxValue, nameof(timeout));
+        ArgumentOutOfRangeException.ThrowIfLessThan(timeoutMilliseconds, -1, nameof(timeout));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(timeoutMilliseconds, int.MaxValue, nameof(timeout));
         return (int)timeoutMilliseconds;
     }
 

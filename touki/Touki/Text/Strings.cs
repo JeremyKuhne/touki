@@ -231,9 +231,9 @@ public static partial class Strings
         bool allowSurrogatePairs = false,
         Random? random = null)
     {
-        ArgumentOutOfRange.ThrowIfLessThanOrEqual(count, 0, nameof(count));
-        ArgumentOutOfRange.ThrowIfLessThanOrEqual(minLength, 0, nameof(minLength));
-        ArgumentOutOfRange.ThrowIfLessThan(maxLength, minLength, nameof(maxLength));
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(count, 0, nameof(count));
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(minLength, 0, nameof(minLength));
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxLength, minLength, nameof(maxLength));
 
         random ??= s_defaultRandom ??= new Random();
         List<string> result = new(count);

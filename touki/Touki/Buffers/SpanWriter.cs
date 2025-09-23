@@ -114,7 +114,7 @@ public unsafe ref struct SpanWriter<T>(Span<T> span) where T : unmanaged
     /// </exception>
     public void Rewind(int count)
     {
-        ArgumentOutOfRange.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
         _unwritten = Span[(Span.Length - _unwritten.Length - count)..];
     }
 

@@ -4,13 +4,20 @@
 
 namespace Touki.Exceptions;
 
-internal static class ObjectDisposedAdapter
+/// <summary>
+///  ObjectDisposedException helper to allow using new patterns for throwing <see cref="ObjectDisposedException"/>s.
+/// </summary>
+public static class ObjectDisposedAdapter
 {
-    public static void ThrowIf([DoesNotReturnIf(true)] bool condition, object instance)
+    extension(ObjectDisposedException)
     {
-        if (condition)
+        /// <summary>Throws an <see cref="ObjectDisposedException"/> if <paramref name="condition"/> is true.</summary>
+        public static void ThrowIf([DoesNotReturnIf(true)] bool condition, object instance)
         {
-            ThrowObjectDisposed(instance);
+            if (condition)
+            {
+                ThrowObjectDisposed(instance);
+            }
         }
     }
 

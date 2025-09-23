@@ -43,9 +43,10 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Threading;
+using Touki;
 using Touki.Framework.Resources;
 
-namespace Touki.Exceptions;
+namespace System;
 
 [StackTraceHidden]
 internal static class ThrowHelper

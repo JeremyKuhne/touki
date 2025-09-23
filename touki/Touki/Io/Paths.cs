@@ -129,7 +129,7 @@ public static class Paths
     /// </summary>
     public static string ChangeAlternateDirectorySeparators(string path)
     {
-        ArgumentNull.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(path);
         if (Path.DirectorySeparatorChar == Path.AltDirectorySeparatorChar)
         {
             // No need to change anything.

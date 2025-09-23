@@ -21,7 +21,7 @@ public static unsafe class Unsafes
     {
         if (sizeof(TFrom) != sizeof(TTo) || !typeof(TFrom).IsValueType || !typeof(TTo).IsValueType)
         {
-            NotSupported.Throw();
+            NotSupportedException.Throw();
         }
 
         return Unsafe.ReadUnaligned<TTo>(ref Unsafe.As<TFrom, byte>(ref source));

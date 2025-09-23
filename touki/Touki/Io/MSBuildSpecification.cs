@@ -251,7 +251,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     /// </summary>
     public MSBuildSpecification FullyQualify(string rootPath)
     {
-        ArgumentNull.ThrowIfNull(rootPath);
+        ArgumentNullException.ThrowIfNull(rootPath);
         return IsFullyQualified ? this : new MSBuildSpecification(rootPath, this);
     }
 

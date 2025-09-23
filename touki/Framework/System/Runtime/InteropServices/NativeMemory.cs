@@ -6,8 +6,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Numerics;
-using Touki.Framework.Resources;
-using Touki;
 
 namespace System.Runtime.InteropServices;
 
@@ -43,7 +41,7 @@ public static unsafe partial class NativeMemory
         if (!BitOperations.IsPow2(alignment))
         {
             // The C standard doesn't define what a valid alignment is, however the Windows and POSIX implementation requires a power of 2
-            ThrowHelper.ThrowArgument(nameof(alignment), SRF.Argument_AlignmentMustBePow2);
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_AlignmentMustBePow2);
         }
 
         // Unlike the C standard and POSIX, Windows does not require size to be a multiple of alignment.
@@ -52,7 +50,7 @@ public static unsafe partial class NativeMemory
 
         if (result is null)
         {
-            ThrowHelper.ThrowOutOfMemory();
+            ThrowHelper.ThrowOutOfMemoryException();
         }
 
         return result;
@@ -90,7 +88,7 @@ public static unsafe partial class NativeMemory
         if (!BitOperations.IsPow2(alignment))
         {
             // The C standard doesn't define what a valid alignment is, however the Windows and POSIX implementation requires a power of 2
-            ThrowHelper.ThrowArgument(nameof(alignment), SRF.Argument_AlignmentMustBePow2);
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_AlignmentMustBePow2);
         }
 
         // Unlike the C standard and POSIX, Windows does not require size to be a multiple of alignment.
@@ -99,7 +97,7 @@ public static unsafe partial class NativeMemory
 
         if (result is null)
         {
-            ThrowHelper.ThrowOutOfMemory();
+            ThrowHelper.ThrowOutOfMemoryException();
         }
 
         return result;
@@ -120,7 +118,7 @@ public static unsafe partial class NativeMemory
 
         if (result is null)
         {
-            ThrowHelper.ThrowOutOfMemory();
+            ThrowHelper.ThrowOutOfMemoryException();
         }
 
         return result;
@@ -152,7 +150,7 @@ public static unsafe partial class NativeMemory
 
         if (result is null)
         {
-            ThrowHelper.ThrowOutOfMemory();
+            ThrowHelper.ThrowOutOfMemoryException();
         }
 
         return result;
@@ -189,7 +187,7 @@ public static unsafe partial class NativeMemory
 
         if (result is null)
         {
-            ThrowHelper.ThrowOutOfMemory();
+            ThrowHelper.ThrowOutOfMemoryException();
         }
 
         return result;

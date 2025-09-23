@@ -27,7 +27,7 @@ public sealed class ArrayPoolList<T> : ArrayBackedList<T> where T : notnull
     public ArrayPoolList(int minimumCapacity = DefaultMinimumCapacity)
         : base([])
     {
-        ArgumentOutOfRange.ThrowIfNegative(minimumCapacity);
+        ArgumentOutOfRangeException.ThrowIfNegative(minimumCapacity);
         _minimumCapacity = minimumCapacity;
     }
 

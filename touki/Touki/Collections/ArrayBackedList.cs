@@ -20,7 +20,7 @@ public abstract class ArrayBackedList<T> : ContiguousList<T> where T : notnull
     /// </param>
     protected ArrayBackedList(T[] backingArray)
     {
-        ArgumentNull.ThrowIfNull(backingArray);
+        ArgumentNullException.ThrowIfNull(backingArray);
         _items = backingArray;
     }
 
@@ -49,7 +49,7 @@ public abstract class ArrayBackedList<T> : ContiguousList<T> where T : notnull
     /// <inheritdoc/>
     public override void Add(T item)
     {
-        ArgumentNull.ThrowIfNull(item);
+        ArgumentNullException.ThrowIfNull(item);
 
         if (_count == _items.Length)
         {
@@ -62,9 +62,9 @@ public abstract class ArrayBackedList<T> : ContiguousList<T> where T : notnull
     /// <inheritdoc/>
     public override void Insert(int index, T item)
     {
-        ArgumentOutOfRange.ThrowIfNegative(index);
-        ArgumentOutOfRange.ThrowIfGreaterThan(index, _count);
-        ArgumentNull.ThrowIfNull(item);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _count);
+        ArgumentNullException.ThrowIfNull(item);
 
         if (_count == _items.Length)
         {
@@ -101,7 +101,7 @@ public abstract class ArrayBackedList<T> : ContiguousList<T> where T : notnull
     /// <inheritdoc/>
     public override int RemoveAll(Predicate<T> match)
     {
-        ArgumentNull.ThrowIfNull(match);
+        ArgumentNullException.ThrowIfNull(match);
 
         int freeIndex = 0;   // the first free slot in items array
 
@@ -150,7 +150,7 @@ public abstract class ArrayBackedList<T> : ContiguousList<T> where T : notnull
     /// <returns>The new capacity of the list.</returns>
     public int EnsureCapacity(int capacity)
     {
-        ArgumentOutOfRange.ThrowIfNegativeOrZero(capacity);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
 
         return capacity <= _items.Length
             ? _items.Length
@@ -186,14 +186,14 @@ public abstract class ArrayBackedList<T> : ContiguousList<T> where T : notnull
     {
         get
         {
-            ArgumentOutOfRange.ThrowIfNegative(index);
-            ArgumentOutOfRange.ThrowIfGreaterThanOrEqual(index, _count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _count);
             return _items[index];
         }
         set
         {
-            ArgumentOutOfRange.ThrowIfNegative(index);
-            ArgumentOutOfRange.ThrowIfGreaterThanOrEqual(index, _count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _count);
             _items[index] = value;
         }
     }
@@ -208,7 +208,7 @@ public abstract class ArrayBackedList<T> : ContiguousList<T> where T : notnull
     {
         if (Enumerating)
         {
-            ThrowHelper.ThrowInvalidOperation("Cannot return array while enumerating.");
+            InvalidOperationException.Throw("Cannot return array while enumerating.");
         }
 
         ReturnArray(array);
@@ -238,7 +238,7 @@ public abstract class ArrayBackedList<T> : ContiguousList<T> where T : notnull
     {
         if ((array is not null) && (array.Rank != 1))
         {
-            ThrowHelper.ThrowArgument(nameof(array), "Multidimensional arrays are not supported.");
+            ArgumentOutOfRangeException.Throw(nameof(array), "Multidimensional arrays are not supported.");
         }
 
         // Delegate other error checking to Array.Copy.

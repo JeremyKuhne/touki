@@ -21,7 +21,7 @@ public struct ArraySegmentEnumerator<T> : IEnumerator<T>
     /// <param name="segment">The segment to enumerate.</param>
     internal ArraySegmentEnumerator(ArraySegment<T> segment)
     {
-        ArgumentNull.ThrowIfNull(segment.Array, nameof(segment));
+        ArgumentNullException.ThrowIfNull(segment.Array, nameof(segment));
         _segment = segment;
         _index = 0;
         _current = default!;
