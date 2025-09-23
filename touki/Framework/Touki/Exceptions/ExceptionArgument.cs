@@ -144,5 +144,6 @@ internal enum ExceptionArgument
     divisor,
     factor,
     set,
+    alignment
 }
 

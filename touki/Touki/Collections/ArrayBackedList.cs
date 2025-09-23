@@ -238,7 +238,7 @@ public abstract class ArrayBackedList<T> : ContiguousList<T> where T : notnull
     {
         if ((array is not null) && (array.Rank != 1))
         {
-            ArgumentOutOfRangeException.Throw(nameof(array), "Multidimensional arrays are not supported.");
+            ArgumentException.Throw(nameof(array), "Multidimensional arrays are not supported.");
         }
 
         // Delegate other error checking to Array.Copy.

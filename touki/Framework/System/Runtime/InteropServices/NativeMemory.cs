@@ -88,7 +88,7 @@ public static unsafe partial class NativeMemory
         if (!BitOperations.IsPow2(alignment))
         {
             // The C standard doesn't define what a valid alignment is, however the Windows and POSIX implementation requires a power of 2
-            ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_AlignmentMustBePow2);
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_AlignmentMustBePow2, ExceptionArgument.alignment);
         }
 
         // Unlike the C standard and POSIX, Windows does not require size to be a multiple of alignment.
