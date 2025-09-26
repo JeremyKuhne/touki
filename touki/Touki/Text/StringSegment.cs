@@ -393,7 +393,7 @@ public readonly struct StringSegment :
             return this;
         }
 
-        string newString = Strings.FastAllocateString(_length);
+        string newString = string.FastAllocateString(_length);
         fixed (char* pNewString = newString)
         {
             Span<char> rawString = new(pNewString, _length);
@@ -808,7 +808,7 @@ public readonly struct StringSegment :
     /// <param name="comparison">The comparison type to use.</param>
     public int CompareTo(StringSegment other, StringComparison comparison) => comparison switch
     {
-        StringComparison.Ordinal => Strings.CompareOrdinalAsString(AsSpan(), other.AsSpan()),
+        StringComparison.Ordinal => AsSpan().CompareOrdinalAsString(other),
         StringComparison.OrdinalIgnoreCase => CompareToOrdinalIgnoreCase(other.Value, other._startIndex, other._length),
         StringComparison.CurrentCulture =>
             CultureInfo.CurrentCulture.CompareInfo.Compare(Value, _startIndex, _length, other.Value, other._startIndex, other._length, CompareOptions.None),
@@ -828,7 +828,7 @@ public readonly struct StringSegment :
     /// <inheritdoc cref="CompareTo(StringSegment, StringComparison)"/>
     public int CompareTo(string other, StringComparison comparison) => comparison switch
     {
-        StringComparison.Ordinal => Strings.CompareOrdinalAsString(AsSpan(), other.AsSpan()),
+        StringComparison.Ordinal => AsSpan().CompareOrdinalAsString(other),
         StringComparison.OrdinalIgnoreCase => CompareToOrdinalIgnoreCase(other, 0, other.Length),
         StringComparison.CurrentCulture =>
             CultureInfo.CurrentCulture.CompareInfo.Compare(_value, _startIndex, _length, other, 0, other.Length, CompareOptions.None),
