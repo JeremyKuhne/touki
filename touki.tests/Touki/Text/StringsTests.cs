@@ -52,7 +52,7 @@ public class StringsTests
         ReadOnlySpan<char> span1 = first.AsSpan();
         ReadOnlySpan<char> span2 = second.AsSpan();
 
-        int actualResult = Strings.CompareOrdinalAsString(span1, span2);
+        int actualResult = span1.CompareOrdinalAsString(span2);
         int expectedResult = string.Compare(first, second, StringComparison.Ordinal);
 
         actualResult.Should().Be(expectedResult);
@@ -67,7 +67,7 @@ public class StringsTests
         ReadOnlySpan<char> span1 = source1.AsSpan(3, 5);
         ReadOnlySpan<char> span2 = source2.AsSpan(6, 5);
 
-        int actualResult = Strings.CompareOrdinalAsString(span1, span2);
+        int actualResult = span1.CompareOrdinalAsString(span2);
         int expectedResult = string.Compare(
             source1.Substring(3, 5),
             source2.Substring(6, 5),
@@ -86,7 +86,7 @@ public class StringsTests
         ReadOnlySpan<char> span1 = str1.AsSpan();
         ReadOnlySpan<char> span2 = str2.AsSpan();
 
-        int actualResult = Strings.CompareOrdinalAsString(span1, span2);
+        int actualResult = span1.CompareOrdinalAsString(span2);
         int expectedResult = string.Compare(str1, str2, StringComparison.Ordinal);
 
         actualResult.Should().Be(expectedResult);
@@ -101,7 +101,7 @@ public class StringsTests
         ReadOnlySpan<char> span1 = str1.AsSpan();
         ReadOnlySpan<char> span2 = str2.AsSpan();
 
-        int actualResult = Strings.CompareOrdinalAsString(span1, span2);
+        int actualResult = span1.CompareOrdinalAsString(span2);
         int expectedResult = string.Compare(str1, str2, StringComparison.Ordinal);
 
         actualResult.Should().Be(expectedResult);
@@ -115,7 +115,7 @@ public class StringsTests
         ReadOnlySpan<char> span1 = first.AsSpan();
         ReadOnlySpan<char> span2 = second.AsSpan();
 
-        int actualResult = Strings.CompareOrdinalAsString(span1, span2);
+        int actualResult = span1.CompareOrdinalAsString(span2);
         int expectedResult = string.Compare(first, second, StringComparison.Ordinal);
 
         actualResult.Should().Be(expectedResult);
@@ -129,7 +129,7 @@ public class StringsTests
         ReadOnlySpan<char> span1 = first.AsSpan();
         ReadOnlySpan<char> span2 = second.AsSpan();
 
-        int actualResult = Strings.CompareOrdinalAsString(span1, span2);
+        int actualResult = span1.CompareOrdinalAsString(span2);
         int expectedResult = string.Compare(first, second, StringComparison.Ordinal);
 
         actualResult.Should().Be(expectedResult);
@@ -143,7 +143,7 @@ public class StringsTests
         ReadOnlySpan<char> span1 = first.AsSpan();
         ReadOnlySpan<char> span2 = second.AsSpan();
 
-        int actualResult = Strings.CompareOrdinalAsString(span1, span2);
+        int actualResult = span1.CompareOrdinalAsString(span2);
         int expectedResult = string.Compare(first, second, StringComparison.Ordinal);
 
         actualResult.Should().Be(expectedResult);
@@ -159,7 +159,7 @@ public class StringsTests
         ReadOnlySpan<char> span1 = first.AsSpan();
         ReadOnlySpan<char> span2 = second.AsSpan();
 
-        int actualResult = Strings.CompareOrdinalAsString(span1, span2);
+        int actualResult = span1.CompareOrdinalAsString(span2);
         int expectedResult = string.Compare(first, second, StringComparison.Ordinal);
 
         actualResult.Should().Be(expectedResult);
@@ -174,7 +174,7 @@ public class StringsTests
         ReadOnlySpan<char> span1 = str1.AsSpan();
         ReadOnlySpan<char> span2 = str2.AsSpan();
 
-        int actualResult = Strings.CompareOrdinalAsString(span1, span2);
+        int actualResult = span1.CompareOrdinalAsString(span2);
         int expectedResult = string.Compare(str1, str2, StringComparison.Ordinal);
 
         actualResult.Should().Be(expectedResult);
@@ -190,7 +190,7 @@ public class StringsTests
         ReadOnlySpan<char> span1 = str1.AsSpan();
         ReadOnlySpan<char> span2 = str2.AsSpan();
 
-        int actualResult = Strings.CompareOrdinalAsString(span1, span2);
+        int actualResult = span1.CompareOrdinalAsString(span2);
         int expectedResult = string.Compare(str1, str2, StringComparison.Ordinal);
 
         actualResult.Should().Be(expectedResult);
@@ -201,7 +201,7 @@ public class StringsTests
     [InlineData(-1, 4, 8)]
     public void GenerateRandomStrings_CountLessThanOrEqualZero_Throws(int count, int minLength, int maxLength)
     {
-        Action action = () => Strings.GenerateRandomStrings(count, minLength, maxLength, allowSurrogatePairs: false, random: new Random(1));
+        Action action = () => string.GenerateRandomStrings(count, minLength, maxLength, allowSurrogatePairs: false, random: new Random(1));
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
@@ -210,7 +210,7 @@ public class StringsTests
     [InlineData(1, -5, 8)]
     public void GenerateRandomStrings_MinLengthLessThanOrEqualZero_Throws(int count, int minLength, int maxLength)
     {
-        Action action = () => Strings.GenerateRandomStrings(count, minLength, maxLength, allowSurrogatePairs: false, random: new Random(1));
+        Action action = () => string.GenerateRandomStrings(count, minLength, maxLength, allowSurrogatePairs: false, random: new Random(1));
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
@@ -219,7 +219,7 @@ public class StringsTests
     [InlineData(5, 10, 5)]
     public void GenerateRandomStrings_MaxLengthLessThanMinLength_Throws(int count, int minLength, int maxLength)
     {
-        Action action = () => Strings.GenerateRandomStrings(count, minLength, maxLength, allowSurrogatePairs: false, random: new Random(1));
+        Action action = () => string.GenerateRandomStrings(count, minLength, maxLength, allowSurrogatePairs: false, random: new Random(1));
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
@@ -231,7 +231,7 @@ public class StringsTests
         int maxLength = 40;
         Random random = new(12345);
 
-        List<string> result = Strings.GenerateRandomStrings(count, minLength, maxLength, allowSurrogatePairs: false, random: random);
+        List<string> result = string.GenerateRandomStrings(count, minLength, maxLength, allowSurrogatePairs: false, random: random);
 
         result.Should().HaveCount(count);
 
@@ -265,9 +265,9 @@ public class StringsTests
     [Fact]
     public void GenerateRandomStrings_DeterministicWithSameSeed_AndDifferentWithDifferentSeed()
     {
-        List<string> a = Strings.GenerateRandomStrings(10, 4, 10, allowSurrogatePairs: false, random: new Random(1));
-        List<string> b = Strings.GenerateRandomStrings(10, 4, 10, allowSurrogatePairs: false, random: new Random(1));
-        List<string> c = Strings.GenerateRandomStrings(10, 4, 10, allowSurrogatePairs: false, random: new Random(2));
+        List<string> a = string.GenerateRandomStrings(10, 4, 10, allowSurrogatePairs: false, random: new Random(1));
+        List<string> b = string.GenerateRandomStrings(10, 4, 10, allowSurrogatePairs: false, random: new Random(1));
+        List<string> c = string.GenerateRandomStrings(10, 4, 10, allowSurrogatePairs: false, random: new Random(2));
 
         a.Should().Equal(b);
         a.Should().NotEqual(c);
@@ -277,7 +277,7 @@ public class StringsTests
     public void GenerateRandomStrings_MinEqualsMax_ReturnsExactLength()
     {
         int exactLength = 8;
-        List<string> result = Strings.GenerateRandomStrings(50, exactLength, exactLength, allowSurrogatePairs: false, random: new Random(123));
+        List<string> result = string.GenerateRandomStrings(50, exactLength, exactLength, allowSurrogatePairs: false, random: new Random(123));
 
         foreach (string s in result)
         {
@@ -293,7 +293,7 @@ public class StringsTests
         int maxLength = 20;
         Random random = new(42);
 
-        List<string> result = Strings.GenerateRandomStrings(count, minLength, maxLength, allowSurrogatePairs: true, random: random);
+        List<string> result = string.GenerateRandomStrings(count, minLength, maxLength, allowSurrogatePairs: true, random: random);
 
         result.Should().HaveCount(count);
 
