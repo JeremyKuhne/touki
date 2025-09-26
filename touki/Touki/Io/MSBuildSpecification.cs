@@ -282,8 +282,8 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
             char c = specification[i];
             if (c != '%'
                 || i + 2 >= specification.Length
-                || !specification[i + 1].TryDecodeHexDigit(out int firstDigit)
-                || !specification[i + 2].TryDecodeHexDigit(out int secondDigit))
+                || !char.TryDecodeHexDigit(specification[i + 1], out int firstDigit)
+                || !char.TryDecodeHexDigit(specification[i + 2], out int secondDigit))
             {
                 builder.Append(c);
             }
