@@ -28,7 +28,7 @@ Touki’s polyfilled `DefaultInterpolatedStringHandler` for .NET 4.7.2 ([source]
 
 ### `Strings`: lower‑cost `Format` methods
 
-The static `Strings` class replaces `string.Format`. Its `Format` overloads accept either **unmanaged generic arguments** or **Touki’s `Value` struct** to avoid boxing (see [Strings.cs](https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Text/Strings.cs)). Internally it builds the result with a `ValueStringBuilder` and a lightly modified version of the runtime’s `StringBuilder.AppendFormatHelper` ([ValueStringBuilder.Formatting.cs](https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Text/ValueStringBuilder.Formatting.cs)) that:
+The static `StringExtensions` class augments `string.Format` methods. Its `FormatValue` overloads accept either **unmanaged generic arguments** or **Touki’s `Value` struct** to avoid boxing (see [Strings.cs](https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Text/Strings.cs)). Internally it builds the result with a `ValueStringBuilder` and a lightly modified version of the runtime’s `StringBuilder.AppendFormatHelper` ([ValueStringBuilder.Formatting.cs](https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Text/ValueStringBuilder.Formatting.cs)) that:
 
 1. Uses a small stack‑allocated span for formatting value types,
 2. Avoids the internal `ISpanFormattable` interface that doesn’t exist on .NET Framework,
@@ -36,13 +36,15 @@ The static `Strings` class replaces `string.Format`. Its `Format` overloads acce
 4. Works with `ReadOnlySpan<char>` and `ReadOnlySpan<Value>` so neither the format string nor argument array allocates.
 
 ```csharp
-using Touki;
+using Touki.Text;
+
+// ...
 
 string fmt = "{0} – {1:F2}";
 double num = 3.14159;
 
 // No boxing for either the string or the double, no intermediate strings
-string result = Strings.Format(fmt, 42, num);
+string result = string.FormatValues(fmt, 42, num);
 ```
 
 ### `StringSegment`: efficient substring handling
@@ -70,7 +72,7 @@ Touki’s `Value` struct ([source](https://github.com/JeremyKuhne/touki/blob/mai
 
 ```csharp
 string fmt = "{0} - {1} - {2}";
-string result = Strings.Format(fmt, 1, 2.5, "three"); // "1 - 2.5 - three"
+string result = string.FormatValues(fmt, 1, 2.5, "three"); // "1 - 2.5 - three"
 ```
 For fully supported types there are implicit conversions to `Value`. `Value.Create<T>()` creates for all other types. Note that *all* enums are also supported, but do not have implicit converters.
 

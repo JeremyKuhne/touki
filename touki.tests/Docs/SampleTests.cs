@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information
 
 using Touki.Io;
+using Touki.Text;
 
 namespace Touki.Docs;
 
@@ -35,7 +36,7 @@ public class SampleTests
     {
         Value[] args = [1, 2.5, "three"];
         string fmt = "{0} - {1} - {2}";
-        string result = Strings.Format(fmt, args);
+        string result = string.FormatValues(fmt, args);
         result.Should().Be("1 - 2.5 - three");
     }
 

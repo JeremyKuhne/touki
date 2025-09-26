@@ -10,7 +10,7 @@
 using System.ComponentModel;
 using System.Globalization;
 
-namespace Touki;
+namespace Touki.Text;
 
 /// <summary>
 ///  Span like <see langword="string"/> section wrapper that allows using like a span but also storing as a field in a class.
@@ -779,7 +779,7 @@ public readonly struct StringSegment :
     ///  Gets the hash code for the segment.
     /// </summary>
     /// <returns>A hash code for the segment.</returns>
-    public override int GetHashCode() => Strings.GetHashCode(AsSpan());
+    public override int GetHashCode() => string.GetHashCode(AsSpan());
 
     /// <summary>
     ///  The C# compiler pattern needed to pin the segment in memory.

@@ -348,7 +348,7 @@ internal static class DateTimeFormat
         if (!foundQuote)
         {
             // Here we can't find the matching quote.
-            throw new FormatException(Strings.Format(SRF.Format_BadQuote, quoteChar));
+            throw new FormatException(string.FormatValue(SRF.Format_BadQuote, quoteChar));
         }
 
         //

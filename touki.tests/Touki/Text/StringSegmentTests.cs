@@ -4,7 +4,7 @@
 
 using System.Globalization;
 
-namespace Touki;
+namespace Touki.Text;
 
 public class StringSegmentTests
 {
