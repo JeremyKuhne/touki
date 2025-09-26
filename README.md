@@ -13,6 +13,7 @@ Some of the design goals include:
 
 - Avoiding unnecessary allocations
 - Avoiding code that prevents AOT compilation on .NET
+- Leveraging the latest C# (14+) features to improve usability and performance
 
 ## Features
 
@@ -43,6 +44,11 @@ PM> Install-Package KlutzyNinja.Touki
 ```
 
 [View on NuGet.org](https://www.nuget.org/packages/KlutzyNinja.Touki/)
+
+## Requirements
+
+- .NET 10.0 or later **OR** .NET Framework 4.7.2 or later
+- C# 14.0 or later for the best experience
 
 ## Contributing
 

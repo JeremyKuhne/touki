@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-namespace Touki;
+namespace Touki.Text;
 
 public class StringsTests
 {
@@ -17,7 +17,7 @@ public class StringsTests
         ReadOnlySpan<char> span = value.AsSpan();
         value ??= "";
 
-        int hash1 = Strings.GetHashCode(span);
+        int hash1 = string.GetHashCode(span);
         int hash2 = value.GetHashCode();
 
         hash1.Should().Be(hash2);
@@ -29,7 +29,7 @@ public class StringsTests
         string test = "The quick brown fox jumps over the lazy dog.";
         ReadOnlySpan<char> span = test.AsSpan()[11..];
 
-        int hash1 = Strings.GetHashCode(span);
+        int hash1 = string.GetHashCode(span);
         int hash2 = span.ToString().GetHashCode();
 
         hash1.Should().Be(hash2);

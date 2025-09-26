@@ -45,6 +45,7 @@ using System.Runtime.Serialization;
 using System.Threading;
 using Touki;
 using Touki.Framework.Resources;
+using Touki.Text;
 
 namespace System;
 
@@ -62,7 +63,7 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType) =>
-        throw new ArgumentException(Strings.Format(SRF.Argument_InvalidTypeWithPointersNotSupported, targetType.ToString()));
+        throw new ArgumentException(string.Format(SRF.Argument_InvalidTypeWithPointersNotSupported, targetType.ToString()));
 
     [DoesNotReturn]
     internal static void ThrowIndexOutOfRangeException() => throw new IndexOutOfRangeException();
@@ -83,7 +84,7 @@ internal static class ThrowHelper
         TEnum value,
         [CallerArgumentExpression(nameof(value))] string argumentName = "") =>
         throw new ArgumentException(
-            Strings.Format(SRF.Argument_InvalidEnumValue, Value.Create(value), typeof(TEnum).Name),
+            string.FormatValues(SRF.Argument_InvalidEnumValue, Value.Create(value), typeof(TEnum).Name),
             argumentName);
 
     [DoesNotReturn]
@@ -100,7 +101,7 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_TupleIncorrectType(object obj) =>
-        throw new ArgumentException(Strings.Format(SRF.ArgumentException_ValueTupleIncorrectType, obj.GetType().ToString()), "other");
+        throw new ArgumentException(string.Format(SRF.ArgumentException_ValueTupleIncorrectType, obj.GetType().ToString()), "other");
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRange_IndexMustBeLessException() => throw GetArgumentOutOfRangeException(
@@ -115,7 +116,7 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_BadComparer(object? comparer) =>
-        throw new ArgumentException(Strings.Format(SRF.Arg_BogusIComparer, comparer?.ToString() ?? "null"));
+        throw new ArgumentException(string.Format(SRF.Arg_BogusIComparer, comparer?.ToString() ?? "null"));
 
     [DoesNotReturn]
     internal static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException() =>
@@ -186,7 +187,7 @@ internal static class ThrowHelper
         throw new ArgumentOutOfRangeException(
             parameterName,
             value,
-            Strings.Format(SRF.ArgumentOutOfRange_Range, Value.Create(minInclusive), Value.Create(maxInclusive)));
+            string.FormatValues(SRF.ArgumentOutOfRange_Range, Value.Create(minInclusive), Value.Create(maxInclusive)));
 
     [DoesNotReturn]
     internal static void ThrowOverflowException() => throw new OverflowException();
@@ -218,7 +219,7 @@ internal static class ThrowHelper
         throw GetWrongValueTypeArgumentException(value, targetType);
 
     private static ArgumentException GetAddingDuplicateWithKeyArgumentException(object? key) =>
-        new ArgumentException(Strings.Format(SRF.Argument_AddingDuplicateWithKey, key?.ToString() ?? "null"));
+        new ArgumentException(string.Format(SRF.Argument_AddingDuplicateWithKey, key?.ToString() ?? "null"));
 
     [DoesNotReturn]
     internal static void ThrowAddingDuplicateWithKeyArgumentException<T>(T key) =>
@@ -417,11 +418,11 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     internal static void ThrowFormatException_BadBoolean(ReadOnlySpan<char> value) =>
-        throw new FormatException(Strings.Format(SRF.Format_BadBoolean, value.ToString()));
+        throw new FormatException(string.Format(SRF.Format_BadBoolean, value.ToString()));
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge() =>
-        throw new ArgumentOutOfRangeException("precision", Strings.Format(SRF.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
+        throw new ArgumentOutOfRangeException("precision", string.FormatValue(SRF.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRangeException_SymbolDoesNotFit() =>
@@ -440,7 +441,7 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     internal static void ThrowFormatInvalidString(int offset, ExceptionResource resource) =>
-        throw new FormatException(Strings.Format(SRF.Format_InvalidStringWithOffsetAndReason, offset, GetResourceString(resource)));
+        throw new FormatException(string.FormatValues(SRF.Format_InvalidStringWithOffsetAndReason, offset, GetResourceString(resource)));
 
     [DoesNotReturn]
     internal static void ThrowFormatIndexOutOfRange() => throw new FormatException(SRF.Format_IndexOutOfRange);
@@ -453,14 +454,14 @@ internal static class ThrowHelper
     {
         Type? declaringType = memberInfo.DeclaringType;
         return new AmbiguousMatchException(
-            Strings.Format(SRF.Arg_AmbiguousMatchException_MemberInfo, declaringType.ToString(), memberInfo.ToString()));
+            string.Format(SRF.Arg_AmbiguousMatchException_MemberInfo, declaringType.ToString(), memberInfo.ToString()));
     }
 
     internal static AmbiguousMatchException GetAmbiguousMatchException(Attribute attribute) =>
-        new AmbiguousMatchException(Strings.Format(SRF.Arg_AmbiguousMatchException_Attribute, attribute.ToString()));
+        new AmbiguousMatchException(string.Format(SRF.Arg_AmbiguousMatchException_Attribute, attribute.ToString()));
 
     internal static AmbiguousMatchException GetAmbiguousMatchException(CustomAttributeData customAttributeData) =>
-        new AmbiguousMatchException(Strings.Format(SRF.Arg_AmbiguousMatchException_CustomAttributeData, customAttributeData.ToString()));
+        new AmbiguousMatchException(string.Format(SRF.Arg_AmbiguousMatchException_CustomAttributeData, customAttributeData.ToString()));
 
     private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
     {
@@ -483,16 +484,16 @@ internal static class ThrowHelper
 
     private static ArgumentException GetWrongKeyTypeArgumentException(object? key, Type targetType) =>
         new ArgumentException(
-            Strings.Format(SRF.Arg_WrongType, key?.ToString() ?? "null", targetType.ToString()),
+            string.Format(SRF.Arg_WrongType, key?.ToString() ?? "null", targetType.ToString()),
             nameof(key));
 
     private static ArgumentException GetWrongValueTypeArgumentException(object? value, Type targetType) =>
         new ArgumentException(
-            Strings.Format(SRF.Arg_WrongType, value?.ToString() ?? "null", targetType.ToString()),
+            string.Format(SRF.Arg_WrongType, value?.ToString() ?? "null", targetType.ToString()),
             nameof(value));
 
     private static KeyNotFoundException GetKeyNotFoundException(object? key) =>
-        new KeyNotFoundException(Strings.Format(SRF.Arg_KeyNotFoundWithKey, key?.ToString() ?? "null"));
+        new KeyNotFoundException(string.Format(SRF.Arg_KeyNotFoundWithKey, key?.ToString() ?? "null"));
 
     private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(
         ExceptionArgument argument,

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Touki.Text;
+
 namespace touki.perf;
 
 [MemoryDiagnoser]
@@ -24,6 +26,6 @@ public class StringFormattingFlagsEnum
     [Benchmark]
     public string StringsFormat()
     {
-        return Strings.Format("The answer is {0}.", _value);
+        return string.FormatValue("The answer is {0}.", _value);
     }
 }

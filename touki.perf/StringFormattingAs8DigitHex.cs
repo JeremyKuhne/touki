@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Touki.Text;
+
 namespace touki.perf;
 
 [MemoryDiagnoser]
@@ -27,7 +29,7 @@ public class StringFormattingAs8DigitHex
     public string StringsFormat()
     {
         // Using "X8" to format the integer as an 8-digit hexadecimal string.
-        return Strings.Format("The answer is {0:X8}.", _value);
+        return string.FormatValue("The answer is {0:X8}.", _value);
     }
 
     [Benchmark]

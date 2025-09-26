@@ -6,6 +6,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Touki.Framework.Resources;
+using Touki.Text;
 
 namespace Touki.Exceptions;
 
@@ -19,56 +20,56 @@ public static class ArgumentOutOfRangeExtensions
         throw new ArgumentOutOfRangeException(
             paramName,
             value,
-            Strings.Format(SRF.ArgumentOutOfRange_Generic_MustBeNonZero, Value.Create(paramName), Value.Create(value)));
+            string.FormatValues(SRF.ArgumentOutOfRange_Generic_MustBeNonZero, Value.Create(paramName), Value.Create(value)));
 
     [DoesNotReturn]
     private static void ThrowNegative<T>(T value, string? paramName) =>
         throw new ArgumentOutOfRangeException(
             paramName,
             value,
-            Strings.Format(SRF.ArgumentOutOfRange_Generic_MustBeNonNegative, Value.Create(paramName), Value.Create(value)));
+            string.FormatValues(SRF.ArgumentOutOfRange_Generic_MustBeNonNegative, Value.Create(paramName), Value.Create(value)));
 
     [DoesNotReturn]
     private static void ThrowNegativeOrZero<T>(T value, string? paramName) =>
         throw new ArgumentOutOfRangeException(
             paramName,
             value,
-            Strings.Format(SRF.ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero, Value.Create(paramName), Value.Create(value)));
+            string.FormatValues(SRF.ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero, Value.Create(paramName), Value.Create(value)));
 
     [DoesNotReturn]
     private static void ThrowGreater<T>(T value, T other, string? paramName) =>
         throw new ArgumentOutOfRangeException(
             paramName,
             value,
-            Strings.Format(SRF.ArgumentOutOfRange_Generic_MustBeLessOrEqual, Value.Create(paramName), Value.Create(value), Value.Create(other)));
+            string.FormatValues(SRF.ArgumentOutOfRange_Generic_MustBeLessOrEqual, Value.Create(paramName), Value.Create(value), Value.Create(other)));
 
     [DoesNotReturn]
     private static void ThrowGreaterEqual<T>(T value, T other, string? paramName) =>
         throw new ArgumentOutOfRangeException(
             paramName,
             value,
-            Strings.Format(SRF.ArgumentOutOfRange_Generic_MustBeLess, Value.Create(paramName), Value.Create(value), Value.Create(other)));
+            string.FormatValues(SRF.ArgumentOutOfRange_Generic_MustBeLess, Value.Create(paramName), Value.Create(value), Value.Create(other)));
 
     [DoesNotReturn]
     private static void ThrowLess<T>(T value, T other, string? paramName) =>
         throw new ArgumentOutOfRangeException(
             paramName,
             value,
-            Strings.Format(SRF.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, Value.Create(paramName), Value.Create(value), Value.Create(other)));
+            string.FormatValues(SRF.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, Value.Create(paramName), Value.Create(value), Value.Create(other)));
 
     [DoesNotReturn]
     private static void ThrowLessEqual<T>(T value, T other, string? paramName) =>
         throw new ArgumentOutOfRangeException(
             paramName,
             value,
-            Strings.Format(SRF.ArgumentOutOfRange_Generic_MustBeGreater, Value.Create(paramName), Value.Create(value), Value.Create(other)));
+            string.FormatValues(SRF.ArgumentOutOfRange_Generic_MustBeGreater, Value.Create(paramName), Value.Create(value), Value.Create(other)));
 
     [DoesNotReturn]
     private static void ThrowEqual<T>(T value, T other, string? paramName) =>
         throw new ArgumentOutOfRangeException(
             paramName,
             value,
-            Strings.Format(
+            string.FormatValues(
                 SRF.ArgumentOutOfRange_Generic_MustBeNotEqual,
                 Value.Create(paramName),
                 Value.Create((object?)value ?? "null"),
@@ -79,7 +80,7 @@ public static class ArgumentOutOfRangeExtensions
         throw new ArgumentOutOfRangeException(
             paramName,
             value,
-            Strings.Format(
+            string.FormatValues(
                 SRF.ArgumentOutOfRange_Generic_MustBeEqual,
                 Value.Create(paramName),
                 Value.Create((object?)value ?? "null"),

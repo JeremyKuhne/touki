@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Touki.Text;
+
 namespace touki.perf;
 
 [MemoryDiagnoser]
@@ -25,6 +27,6 @@ public class StringFormattingDateTime
     [Benchmark]
     public string StringsFormat()
     {
-        return Strings.Format("The time was {0}.", _value);
+        return string.FormatValue("The time was {0}.", _value);
     }
 }

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Touki.Text;
+
 namespace touki.perf;
 
 [MemoryDiagnoser]
@@ -38,6 +40,6 @@ public class StringsHashPerf
     [Benchmark]
     public int Custom()
     {
-        return Strings.GetHashCode(_data.AsSpan());
+        return string.GetHashCode(_data.AsSpan());
     }
 }
