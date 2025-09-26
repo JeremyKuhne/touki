@@ -18,7 +18,7 @@ public class CharExtensionsTests
     [InlineData('é', false)]
     public void IsAsciiLetter_Character_ReturnsExpectedResult(char c, bool expected)
     {
-        c.IsAsciiLetter().Should().Be(expected);
+        char.IsAsciiLetter(c).Should().Be(expected);
     }
 
     [Theory]
@@ -30,7 +30,7 @@ public class CharExtensionsTests
     [InlineData(' ', false)]
     public void IsAsciiLetterLower_Character_ReturnsExpectedResult(char c, bool expected)
     {
-        c.IsAsciiLetterLower().Should().Be(expected);
+        char.IsAsciiLetterLower(c).Should().Be(expected);
     }
 
     [Theory]
@@ -42,7 +42,7 @@ public class CharExtensionsTests
     [InlineData(' ', false)]
     public void IsAsciiLetterUpper_Character_ReturnsExpectedResult(char c, bool expected)
     {
-        c.IsAsciiLetterUpper().Should().Be(expected);
+        char.IsAsciiLetterUpper(c).Should().Be(expected);
     }
 
     [Theory]
@@ -53,7 +53,7 @@ public class CharExtensionsTests
     [InlineData(' ', false)]
     public void IsAsciiDigit_Character_ReturnsExpectedResult(char c, bool expected)
     {
-        c.IsAsciiDigit().Should().Be(expected);
+        char.IsAsciiDigit(c).Should().Be(expected);
     }
 
     [Theory]
@@ -65,7 +65,7 @@ public class CharExtensionsTests
     [InlineData('+', false)]
     public void IsAsciiLetterOrDigit_Character_ReturnsExpectedResult(char c, bool expected)
     {
-        c.IsAsciiLetterOrDigit().Should().Be(expected);
+        char.IsAsciiLetterOrDigit(c).Should().Be(expected);
     }
 
     [Theory]
@@ -80,7 +80,7 @@ public class CharExtensionsTests
     [InlineData(' ', false)]
     public void IsAsciiHexDigit_Character_ReturnsExpectedResult(char c, bool expected)
     {
-        c.IsAsciiHexDigit().Should().Be(expected);
+        char.IsAsciiHexDigit(c).Should().Be(expected);
     }
 
     [Theory]
@@ -94,7 +94,7 @@ public class CharExtensionsTests
     [InlineData(' ', false)]
     public void IsAsciiHexDigitUpper_Character_ReturnsExpectedResult(char c, bool expected)
     {
-        c.IsAsciiHexDigitUpper().Should().Be(expected);
+        char.IsAsciiHexDigitUpper(c).Should().Be(expected);
     }
 
     [Theory]
@@ -108,7 +108,7 @@ public class CharExtensionsTests
     [InlineData(' ', false)]
     public void IsAsciiHexDigitLower_Character_ReturnsExpectedResult(char c, bool expected)
     {
-        c.IsAsciiHexDigitLower().Should().Be(expected);
+        char.IsAsciiHexDigitLower(c).Should().Be(expected);
     }
 
     [Theory]
@@ -119,7 +119,7 @@ public class CharExtensionsTests
     [InlineData('d', 'a', 'c', false)]
     public void IsBetween_Character_ReturnsExpectedResult(char c, char min, char max, bool expected)
     {
-        c.IsBetween(min, max).Should().Be(expected);
+        char.IsBetween(c, min, max).Should().Be(expected);
     }
 
     [Theory]
@@ -134,7 +134,7 @@ public class CharExtensionsTests
     [InlineData(' ', false, 0)]
     public void TryDecodeHexDigit_Character_ReturnsExpectedResult(char c, bool expectedSuccess, int expectedValue)
     {
-        bool success = c.TryDecodeHexDigit(out int value);
+        bool success = char.TryDecodeHexDigit(c, out int value);
         success.Should().Be(expectedSuccess);
         if (expectedSuccess)
         {

@@ -140,7 +140,7 @@ public static partial class StringExtensions
                     // Optionally emit a surrogate pair (~25% chance) if space allows.
                     if (!allowSurrogatePairs || (length - position) < 2 || random.Next(4) != 0)
                     {
-                        buffer[position++] = Chars.GetRandomSimpleChar(random);
+                        buffer[position++] = char.GetRandomSimpleChar(random);
                         continue;
                     }
 

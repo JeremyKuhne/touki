@@ -8,151 +8,66 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace Touki;
+namespace Touki.Text;
 
 /// <summary>
 ///  Helper methods for <see cref="char"/> types.
 /// </summary>
-/// <remarks>
-///  <para>
-///   Provides extension method access to <see cref="char"/> functionality that is not available otherwise
-///   on .NET Framework.
-///  </para>
-/// </remarks>
-public static class CharExtensions
+public static partial class CharExtensions
 {
-    /// <summary>Indicates whether a character is categorized as an ASCII letter.</summary>
-    /// <param name="c">The character to evaluate.</param>
-    /// <returns>true if <paramref name="c"/> is an ASCII letter; otherwise, false.</returns>
-    /// <remarks>
-    /// This determines whether the character is in the range 'A' through 'Z', inclusive,
-    /// or 'a' through 'z', inclusive.
-    /// </remarks>
-    public static bool IsAsciiLetter(this char c) =>
-#if NETFRAMEWORK
-        (uint)((c | 0x20) - 'a') <= 'z' - 'a';
-#else
-        char.IsAsciiLetter(c);
-#endif
+    private static Random? s_defaultRandom;
 
-    /// <summary>Indicates whether a character is categorized as a lowercase ASCII letter.</summary>
-    /// <param name="c">The character to evaluate.</param>
-    /// <returns>true if <paramref name="c"/> is a lowercase ASCII letter; otherwise, false.</returns>
-    /// <remarks>
-    /// This determines whether the character is in the range 'a' through 'z', inclusive.
-    /// </remarks>
-    public static bool IsAsciiLetterLower(this char c) =>
-#if NETFRAMEWORK
-        IsBetween(c, 'a', 'z');
-#else
-        char.IsAsciiLetterLower(c);
-#endif
-
-    /// <summary>Indicates whether a character is categorized as an uppercase ASCII letter.</summary>
-    /// <param name="c">The character to evaluate.</param>
-    /// <returns>true if <paramref name="c"/> is an uppercase ASCII letter; otherwise, false.</returns>
-    /// <remarks>
-    /// This determines whether the character is in the range 'A' through 'Z', inclusive.
-    /// </remarks>
-    public static bool IsAsciiLetterUpper(this char c) =>
-#if NETFRAMEWORK
-        IsBetween(c, 'A', 'Z');
-#else
-        char.IsAsciiLetterUpper(c);
-#endif
-
-    /// <summary>Indicates whether a character is categorized as an ASCII digit.</summary>
-    /// <param name="c">The character to evaluate.</param>
-    /// <returns>true if <paramref name="c"/> is an ASCII digit; otherwise, false.</returns>
-    /// <remarks>
-    /// This determines whether the character is in the range '0' through '9', inclusive.
-    /// </remarks>
-    public static bool IsAsciiDigit(this char c) =>
-#if NETFRAMEWORK
-        IsBetween(c, '0', '9');
-#else
-        char.IsAsciiDigit(c);
-#endif
-
-    /// <summary>Indicates whether a character is categorized as an ASCII letter or digit.</summary>
-    /// <param name="c">The character to evaluate.</param>
-    /// <returns>true if <paramref name="c"/> is an ASCII letter or digit; otherwise, false.</returns>
-    /// <remarks>
-    /// This determines whether the character is in the range 'A' through 'Z', inclusive,
-    /// 'a' through 'z', inclusive, or '0' through '9', inclusive.
-    /// </remarks>
-    public static bool IsAsciiLetterOrDigit(this char c) =>
-#if NETFRAMEWORK
-    IsAsciiLetter(c) | IsBetween(c, '0', '9');
-#else
-        char.IsAsciiLetterOrDigit(c);
-#endif
-
-    /// <summary>Indicates whether a character is categorized as an ASCII hexadecimal digit.</summary>
-    /// <param name="c">The character to evaluate.</param>
-    /// <returns>true if <paramref name="c"/> is a hexadecimal digit; otherwise, false.</returns>
-    /// <remarks>
-    /// This determines whether the character is in the range '0' through '9', inclusive,
-    /// 'A' through 'F', inclusive, or 'a' through 'f', inclusive.
-    /// </remarks>
-    public static bool IsAsciiHexDigit(this char c) =>
-#if NETFRAMEWORK
-        System.HexConverter.IsHexChar(c);
-#else
-        char.IsAsciiHexDigit(c);
-#endif
-
-    /// <summary>Indicates whether a character is categorized as an ASCII upper-case hexadecimal digit.</summary>
-    /// <param name="c">The character to evaluate.</param>
-    /// <returns>true if <paramref name="c"/> is a hexadecimal digit; otherwise, false.</returns>
-    /// <remarks>
-    /// This determines whether the character is in the range '0' through '9', inclusive,
-    /// or 'A' through 'F', inclusive.
-    /// </remarks>
-    public static bool IsAsciiHexDigitUpper(this char c) =>
-#if NETFRAMEWORK
-        System.HexConverter.IsHexUpperChar(c);
-#else
-        char.IsAsciiHexDigitUpper(c);
-#endif
-
-    /// <summary>Indicates whether a character is categorized as an ASCII lower-case hexadecimal digit.</summary>
-    /// <param name="c">The character to evaluate.</param>
-    /// <returns>true if <paramref name="c"/> is a lower-case hexadecimal digit; otherwise, false.</returns>
-    /// <remarks>
-    /// This determines whether the character is in the range '0' through '9', inclusive,
-    /// or 'a' through 'f', inclusive.
-    /// </remarks>
-    public static bool IsAsciiHexDigitLower(this char c) =>
-#if NETFRAMEWORK
-        System.HexConverter.IsHexLowerChar(c);
-#else
-        char.IsAsciiHexDigitLower(c);
-#endif
-
-    /// <summary>Indicates whether a character is within the specified inclusive range.</summary>
-    /// <param name="c">The character to evaluate.</param>
-    /// <param name="minInclusive">The lower bound, inclusive.</param>
-    /// <param name="maxInclusive">The upper bound, inclusive.</param>
-    /// <returns>true if <paramref name="c"/> is within the specified range; otherwise, false.</returns>
-    /// <remarks>
-    /// The method does not validate that <paramref name="maxInclusive"/> is greater than or equal
-    /// to <paramref name="minInclusive"/>.  If <paramref name="maxInclusive"/> is less than
-    /// <paramref name="minInclusive"/>, the behavior is undefined.
-    /// </remarks>
-    public static bool IsBetween(this char c, char minInclusive, char maxInclusive) =>
-#if NETFRAMEWORK
-        (uint)(c - minInclusive) <= (uint)(maxInclusive - minInclusive);
-#else
-        char.IsBetween(c, minInclusive, maxInclusive);
-#endif
-
-    /// <summary>
-    ///  Tries to convert a hexadecimal character to its integer value.
-    /// </summary>
-    public static bool TryDecodeHexDigit(this char c, out int digit)
+    extension(char)
     {
-        digit = HexConverter.FromChar(c);
-        return digit != 0xFF;
+        /// <summary>
+        ///  Tries to convert a hexadecimal character to its integer value.
+        /// </summary>
+        public static bool TryDecodeHexDigit(char c, out int digit)
+        {
+            digit = HexConverter.FromChar(c);
+            return digit != 0xFF;
+        }
+
+        /// <summary>
+        ///  Gets a random character from the Basic Multilingual Plane (BMP) that is
+        ///  not a control character and is not a non-character.
+        /// </summary>
+        /// <remarks>
+        ///  <para>
+        ///   Allowed ranges: [0020..007E], [00A0..D7FF], [E000..FFFD], skipping FDD0..FDEF.
+        ///  </para>
+        /// </remarks>
+        public static char GetRandomSimpleChar(Random? random)
+        {
+            random ??= s_defaultRandom ??= new Random();
+
+            const int a1Start = 0x0020, a1End = 0x007E; // printable ASCII, excludes DEL (007F)
+            const int a2Start = 0x00A0, a2End = 0xD7FF; // skips C1 controls 0080..009F and surrogates
+            const int cStart = 0xE000, cEnd = 0xFFFD; // excludes FFFE/FFFF
+
+            int lenA1 = a1End - a1Start + 1;      // 95
+            int lenA2 = a2End - a2Start + 1;
+            int lenC = cEnd - cStart + 1;
+
+            while (true)
+            {
+#pragma warning disable CA5394 // Don't use random for cryptographic purposes
+                int pick = random.Next(lenA1 + lenA2 + lenC);
+#pragma warning restore CA5394
+                int code = (pick < lenA1)
+                    ? a1Start + pick
+                    : (pick < lenA1 + lenA2)
+                        ? a2Start + (pick - lenA1)
+                        : cStart + (pick - lenA1 - lenA2);
+
+                // Skip the 32 BMP noncharacters U+FDD0..U+FDEF to avoid oddities.
+                if (code is >= 0xFDD0 and <= 0xFDEF)
+                {
+                    continue;
+                }
+
+                return (char)code;
+            }
+        }
     }
 }

@@ -13,7 +13,7 @@ public class CharsTests
 
         for (int i = 0; i < samples; i++)
         {
-            char c = Chars.GetRandomSimpleChar(null);
+            char c = char.GetRandomSimpleChar(null);
             int code = c;
 
             bool inAsciiPrintable = code is >= 0x0020 and <= 0x007E;
@@ -36,7 +36,7 @@ public class CharsTests
 
         for (int i = 0; i < samples; i++)
         {
-            char c = Chars.GetRandomSimpleChar(random);
+            char c = char.GetRandomSimpleChar(random);
             int code = c;
 
             bool inAsciiPrintable = code is >= 0x0020 and <= 0x007E;
@@ -69,7 +69,7 @@ public class CharsTests
 
         for (int i = 0; i < samples; i++)
         {
-            char c = Chars.GetRandomSimpleChar(random);
+            char c = char.GetRandomSimpleChar(random);
             int code = c;
 
             bool inForbiddenNonCharacters = code is >= 0xFDD0 and <= 0xFDEF;
