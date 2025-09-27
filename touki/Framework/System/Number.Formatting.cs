@@ -625,7 +625,7 @@ internal static partial class Number
         // that the number actually roundtrips back to the original result.
 
         Debug.Assert(((precision != -1) && (precision < SinglePrecision))
-            || (BitConverters.SingleToInt32Bits(value) == BitConverters.SingleToInt32Bits(NumberToSingle(ref number))));
+            || (BitConverter.SingleToInt32Bits(value) == BitConverter.SingleToInt32Bits(NumberToSingle(ref number))));
 
         if (fmt != 0)
         {
@@ -2197,7 +2197,7 @@ internal static partial class Number
 
     private static ulong ExtractFractionAndBiasedExponent(double value, out int exponent)
     {
-        ulong bits = BitConverters.DoubleToUInt64Bits(value);
+        ulong bits = BitConverter.DoubleToUInt64Bits(value);
         ulong fraction = (bits & 0xFFFFFFFFFFFFF);
         exponent = ((int)(bits >> 52) & 0x7FF);
 
@@ -2229,7 +2229,7 @@ internal static partial class Number
 
     private static uint ExtractFractionAndBiasedExponent(float value, out int exponent)
     {
-        uint bits = BitConverters.SingleToUInt32Bits(value);
+        uint bits = BitConverter.SingleToUInt32Bits(value);
         uint fraction = (bits & 0x7FFFFF);
         exponent = ((int)(bits >> 23) & 0xFF);
 

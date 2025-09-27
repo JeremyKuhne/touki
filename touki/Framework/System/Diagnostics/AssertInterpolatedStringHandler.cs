@@ -41,7 +41,7 @@ public ref struct AssertInterpolatedStringHandler
         }
     }
 
-    /// <inheritdoc cref="Touki.Text.ValueStringBuilder.AppendFormatted{T}(T, Touki.StringSpan)"/>
+    /// <inheritdoc cref="Touki.Text.ValueStringBuilder.AppendFormatted{T}(T, Touki.Text.StringSpan)"/>
     public void AppendFormatted<T>(T value)
     {
         if (_shouldAppend)
@@ -59,7 +59,7 @@ public ref struct AssertInterpolatedStringHandler
         }
     }
 
-    /// <inheritdoc cref="Touki.Text.ValueStringBuilder.AppendFormatted{T}(T, int, Touki.StringSpan)"/>
+    /// <inheritdoc cref="Touki.Text.ValueStringBuilder.AppendFormatted{T}(T, int, Touki.Text.StringSpan)"/>
     public void AppendFormatted<T>(T value, int alignment, string? format)
     {
         if (_shouldAppend)
