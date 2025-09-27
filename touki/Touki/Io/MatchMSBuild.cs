@@ -78,7 +78,7 @@ public class MatchMSBuild : DisposableBase, IEnumerationMatcher
             while (enumerator.MoveNext())
             {
                 StringSegment segment = new(enumerator.Current.ToString());
-                _specSegments ??= new SingleOptimizedList<SpecSegment>();
+                _specSegments ??= new SingleOptimizedList<SpecSegment, ArrayPoolList<SpecSegment>>();
                 if (_specSegments.Count == 0 || !segment.Equals("**") || !_specSegments[^1].IsAnyDirectory)
                 {
                     _specSegments.Add(new(segment));

@@ -427,7 +427,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
         StringSegment specs,
         bool ignoreCase)
     {
-        SingleOptimizedList<MSBuildSpecification> splitSpecs = [];
+        SingleOptimizedList<MSBuildSpecification, ArrayPoolList<MSBuildSpecification>> splitSpecs = [];
 
         // MSBuild normally validates specifications after it splits each one into fixed, wildcard, and file parts.
         // None of the validation is strictly necessary, but would be done here if we wanted to roughly match.

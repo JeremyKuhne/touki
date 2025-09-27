@@ -8,21 +8,25 @@ namespace Touki.Collections;
 ///  List implementation for scenarios where you frequently have a single item in the list. Grows to an
 ///  ArrayPool backed list when more than one item is added.
 /// </summary>
+/// <typeparam name="TItem">The type of item in the list.</typeparam>
+/// <typeparam name="TList">The type of list to use as the backing store when more than one item is added.</typeparam>
 /// <remarks>
 ///  <para>
 ///   Make sure to dispose this class when you are done with it to avoid leaking the backing list.
 ///  </para>
 /// </remarks>
-public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
+public sealed class SingleOptimizedList<TItem, TList> : ContiguousList<TItem>
+    where TItem : notnull
+    where TList : ContiguousList<TItem>, new()
 {
     // Once the backing list has been created, always use it.
 
     private bool _hasItem;
-    private T _item;
-    private ArrayPoolList<T>? _backingList;
+    private TItem _item;
+    private TList? _backingList;
 
     /// <summary>
-    ///  Constructs a new instance of the <see cref="SingleOptimizedList{T}"/> class.
+    ///  Constructs a new instance of the <see cref="SingleOptimizedList{TItem, TList}"/> class.
     /// </summary>
     public SingleOptimizedList()
     {
@@ -32,7 +36,7 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
     }
 
     /// <inheritdoc/>
-    public override T this[int index]
+    public override TItem this[int index]
     {
         get
         {
@@ -80,7 +84,7 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
     }
 
     /// <inheritdoc/>
-    public override void Add(T item)
+    public override void Add(TItem item)
     {
         ArgumentNullException.ThrowIfNull(item);
 
@@ -112,7 +116,7 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
     }
 
     /// <inheritdoc/>
-    public override void CopyTo(T[] array, int arrayIndex)
+    public override void CopyTo(TItem[] array, int arrayIndex)
     {
         ArgumentNullException.ThrowIfNull(array);
         ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
@@ -164,7 +168,7 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
     }
 
     /// <inheritdoc/>
-    public override int IndexOf(T item)
+    public override int IndexOf(TItem item)
     {
         if (!_hasItem)
         {
@@ -177,7 +181,7 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
     }
 
     /// <inheritdoc/>
-    public override void Insert(int index, T item)
+    public override void Insert(int index, TItem item)
     {
         ArgumentNullException.ThrowIfNull(item);
         ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)Count);
@@ -239,7 +243,7 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
     }
 
     /// <inheritdoc/>
-    public override ReadOnlySpan<T> Values
+    public override ReadOnlySpan<TItem> Values
     {
         get
         {
@@ -264,7 +268,7 @@ public sealed class SingleOptimizedList<T> : ContiguousList<T> where T : notnull
     }
 
     /// <inheritdoc/>
-    public override Span<T> UnsafeValues
+    public override Span<TItem> UnsafeValues
     {
         get
         {

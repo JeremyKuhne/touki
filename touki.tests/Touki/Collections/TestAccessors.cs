@@ -7,15 +7,15 @@ namespace Touki.Collections;
 
 public static class TestAccessors
 {
-    public class SingleOptimizedArrayListAccessor<T> : TestAccessor<SingleOptimizedList<T>> where T : notnull
+    public class SingleOptimizedArrayListAccessor<T> : TestAccessor<SingleOptimizedList<T, ArrayPoolList<T>>> where T : notnull
     {
-        public SingleOptimizedArrayListAccessor(SingleOptimizedList<T> instance) : base(instance) { }
+        public SingleOptimizedArrayListAccessor(SingleOptimizedList<T, ArrayPoolList<T>> instance) : base(instance) { }
 
         public bool HasItem => Dynamic._hasItem;
         public T Item => Dynamic._item;
         public ArrayPoolList<T>? BackingList => Dynamic._backingList;
     }
 
-    public static SingleOptimizedArrayListAccessor<T> TestAccessor<T>(this SingleOptimizedList<T> list)
+    public static SingleOptimizedArrayListAccessor<T> TestAccessor<T>(this SingleOptimizedList<T, ArrayPoolList<T>> list)
         where T : notnull => new SingleOptimizedArrayListAccessor<T>(list);
 }

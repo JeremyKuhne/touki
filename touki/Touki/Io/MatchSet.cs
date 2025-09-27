@@ -18,8 +18,8 @@ namespace Touki.Io;
 /// </remarks>
 public sealed class MatchSet : DisposableBase, IEnumerationMatcher
 {
-    private readonly SingleOptimizedList<IEnumerationMatcher> _includes = [];
-    private SingleOptimizedList<IEnumerationMatcher>? _excludes;
+    private readonly SingleOptimizedList<IEnumerationMatcher, ArrayPoolList<IEnumerationMatcher>> _includes = [];
+    private SingleOptimizedList<IEnumerationMatcher, ArrayPoolList<IEnumerationMatcher>>? _excludes;
 
     /// <summary>
     ///  Constructs a new <see cref="MatchSet"/> with the specified primary match.
