@@ -30,30 +30,15 @@ public ref partial struct ValueStringBuilder
 
     private static char[] s_brackets { get; } = ['{', '}'];
 
-    // These overloads should be conditioned between .NET and .NET Framework to leverage the ability to create
-    // spans from refs in .NET.
-
-    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
-    public unsafe void AppendFormat(string format, ReadOnlySpan<Value> args)
-        => AppendFormat<Value>(format.AsSpan(), args);
-
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
     public unsafe void AppendFormat(ReadOnlySpan<char> format, ReadOnlySpan<Value> args)
         => AppendFormat<Value>(format, args);
-
-    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
-    public unsafe void AppendFormat<TArgument>(string format, TArgument arg) where TArgument : unmanaged
-        => AppendFormat(format.AsSpan(), arg);
 
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
     public unsafe void AppendFormat<TArgument>(ReadOnlySpan<char> format, TArgument arg) where TArgument : unmanaged
     {
         AppendFormat(format, new ReadOnlySpan<TArgument>(&arg, 1));
     }
-
-    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
-    public unsafe void AppendFormat(string format, Value arg)
-        => AppendFormat(format.AsSpan(), arg);
 
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
     public unsafe void AppendFormat(ReadOnlySpan<char> format, Value arg)
@@ -63,19 +48,12 @@ public ref partial struct ValueStringBuilder
     }
 
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
-    public unsafe void AppendFormat(string format, Value arg1, Value arg2) => AppendFormat(format.AsSpan(), arg1, arg2);
-
-    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
     public unsafe void AppendFormat(ReadOnlySpan<char> format, Value arg1, Value arg2)
     {
         Values[0] = arg1;
         Values[1] = arg2;
         AppendFormat(format, new ReadOnlySpan<Value>(Values, 0, 2));
     }
-
-    /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
-    public unsafe void AppendFormat(string format, Value arg1, Value arg2, Value arg3) =>
-        AppendFormat(format.AsSpan(), arg1, arg2, arg3);
 
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
     public unsafe void AppendFormat(ReadOnlySpan<char> format, Value arg1, Value arg2, Value arg3)

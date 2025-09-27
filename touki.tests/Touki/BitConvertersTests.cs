@@ -2,10 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-#if NET
-using BitConverters = System.BitConverter;
-#endif
-
 namespace Touki;
 
 public class BitConvertersTests
@@ -22,7 +18,7 @@ public class BitConvertersTests
     [InlineData(float.Epsilon, 0x00000001)]
     public void SingleToInt32Bits(float value, int expected)
     {
-        int bits = BitConverters.SingleToInt32Bits(value);
+        int bits = BitConverter.SingleToInt32Bits(value);
         bits.Should().Be(expected);
     }
 
@@ -38,7 +34,7 @@ public class BitConvertersTests
     [InlineData(float.Epsilon, 0x00000001u)]
     public void SingleToUInt32Bits(float value, uint expected)
     {
-        uint bits = BitConverters.SingleToUInt32Bits(value);
+        uint bits = BitConverter.SingleToUInt32Bits(value);
         bits.Should().Be(expected);
     }
 
@@ -46,7 +42,7 @@ public class BitConvertersTests
     public void DoubleToInt64Bits()
     {
         double value = 1.0;
-        long bits = BitConverters.DoubleToInt64Bits(value);
+        long bits = BitConverter.DoubleToInt64Bits(value);
         Assert.Equal(0x3FF0000000000000, bits); // 1.0 in IEEE 754 format
     }
 }

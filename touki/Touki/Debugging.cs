@@ -18,7 +18,7 @@ public static class Debugging
     public static void Assert([DoesNotReturnIf(false)] bool condition, string? message) => Debug.Assert(condition, message);
 
 #if NET9_0_OR_GREATER
-    /// <inheritdoc cref="Debug.Assert(bool,ref Debug.AssertInterpolatedStringHandler)"/>
+    /// <inheritdoc cref="Debug.Assert(bool, ref Debug.AssertInterpolatedStringHandler)"/>
     [Conditional("DEBUG")]
     public static void Assert([DoesNotReturnIf(false)] bool condition,
         [InterpolatedStringHandlerArgument(nameof(condition))] ref Debug.AssertInterpolatedStringHandler message)

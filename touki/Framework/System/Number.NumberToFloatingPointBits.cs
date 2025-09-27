@@ -387,7 +387,7 @@ internal unsafe partial class Number
                 result *= scale;
             }
 
-            return BitConverters.DoubleToUInt64Bits(result);
+            return BitConverter.DoubleToUInt64Bits(result);
         }
 
         return NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
@@ -449,7 +449,7 @@ internal unsafe partial class Number
                 result *= scale;
             }
 
-            return BitConverters.SingleToUInt32Bits(result);
+            return BitConverter.SingleToUInt32Bits(result);
         }
 
         if ((totalDigits <= 15) && (fastExponent <= 22))
@@ -466,7 +466,7 @@ internal unsafe partial class Number
                 result *= scale;
             }
 
-            return BitConverters.SingleToUInt32Bits((float)(result));
+            return BitConverter.SingleToUInt32Bits((float)(result));
         }
 
         return (uint)NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);

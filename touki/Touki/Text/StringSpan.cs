@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-namespace Touki;
+namespace Touki.Text;
 
 /// <summary>
 ///  Wrapper for a <see cref="string"/> or <see cref="ReadOnlySpan{Char}"/>.

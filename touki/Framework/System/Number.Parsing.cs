@@ -59,7 +59,7 @@ internal static partial class Number
         else
         {
             ulong bits = NumberToDoubleFloatingPointBits(ref number, in FloatingPointInfo.s_double);
-            result = BitConverters.UInt64BitsToDouble(bits);
+            result = BitConverter.UInt64BitsToDouble(bits);
         }
 
         return number.IsNegative ? -result : result;
@@ -81,7 +81,7 @@ internal static partial class Number
         else
         {
             uint bits = NumberToSingleFloatingPointBits(ref number, in FloatingPointInfo.s_single);
-            result = BitConverters.UInt32BitsToSingle(bits);
+            result = BitConverter.UInt32BitsToSingle(bits);
         }
 
         return number.IsNegative ? -result : result;
