@@ -16,7 +16,7 @@ public abstract class MatchAnyBase : DisposableBase, IEnumerationMatcher
     private protected readonly MatchCasing _matchCasing;
     private protected readonly StringSegment _rootPath;
 
-    private readonly SingleOptimizedList<StringSegment> _expressions = [];
+    private readonly SingleOptimizedList<StringSegment, ArrayPoolList<StringSegment>> _expressions = [];
 
     private bool? _nestingMatched;
 

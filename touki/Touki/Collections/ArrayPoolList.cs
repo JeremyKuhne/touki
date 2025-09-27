@@ -20,6 +20,11 @@ public sealed class ArrayPoolList<T> : ArrayBackedList<T> where T : notnull
 
     private const int DefaultMinimumCapacity = 64;
 
+    /// <inheritdoc cref="ArrayPoolList{T}(int)"/>
+    public ArrayPoolList() : this(DefaultMinimumCapacity)
+    {
+    }
+
     /// <summary>
     ///  Initializes a new instance of the <see cref="ArrayPoolList{T}"/> class.
     /// </summary>
