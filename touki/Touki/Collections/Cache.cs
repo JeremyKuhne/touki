@@ -4,7 +4,7 @@
 
 using System.Threading;
 
-namespace Touki;
+namespace Touki.Collections;
 
 /// <summary>
 ///  Light weight multithreaded fixed size cache class.
