@@ -49,6 +49,9 @@
     <PackageReference Include="Microsoft.Build" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="FluentAssertions" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net481'">
     <PackageReference Include="Microsoft.CSharp" />
   </ItemGroup>
 

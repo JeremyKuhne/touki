@@ -4,7 +4,7 @@
 
 using System.Collections.Concurrent;
 
-namespace Touki;
+namespace Touki.Collections;
 
 public class CacheTests
 {
