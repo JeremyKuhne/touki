@@ -1,3 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
+  <PropertyGroup>
+    <!-- Workaround for .NET 10 RC2 regression: https://github.com/dotnet/sdk/issues/51265 -->
+    <RestoreEnablePackagePruning Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">false</RestoreEnablePackagePruning>
+  </PropertyGroup>
 </Project>
