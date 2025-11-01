@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using static Microsoft.IO.StringExtensions;
+
 namespace Touki.Text;
 
 public static partial class StringExtensions
 {
-    extension(string)
+    extension(string stringValue)
     {
         /// <summary>
         ///  Generates a hash code for the specified string value that matches what <see langword="string"/> generates.
@@ -73,6 +75,97 @@ public static partial class StringExtensions
 
                 return hash1 + (hash2 * 1566083941);
             }
+        }
+
+        /// <summary>
+        ///  Creates a new <see langword="string"/> with a specific length and initializes it after creation by
+        ///  using the specified callback.
+        /// </summary>
+        /// <typeparam name="TState">Type of the state object to pass to <paramref name="action"/>.</typeparam>
+        /// <param name="length">The length of the string to create.</param>
+        /// <param name="state">The state object to pass to <paramref name="action"/>.</param>
+        /// <param name="action">A callback to initialize the string.</param>
+        /// <returns>The newly created <see langword="string"/>.</returns>
+        public static unsafe string Create<TState>(int length, TState state, SpanAction<char, TState> action)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+            if (length == 0)
+            {
+                return string.Empty;
+            }
+
+            string result = FastAllocateString(length);
+
+            fixed (char* ptr = result)
+            {
+                action(new Span<char>(ptr, length), state);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        ///  Creates a new string by using the specified provider to control the formatting of the specified interpolated string.
+        /// </summary>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <param name="handler">The interpolated string.</param>
+        /// <returns>The string that results for formatting the interpolated string using the specified format provider.</returns>
+        public static string Create(
+            IFormatProvider? provider,
+            [InterpolatedStringHandlerArgument("provider")] ref DefaultInterpolatedStringHandler handler) =>
+            handler.ToStringAndClear();
+
+        /// <summary>
+        ///  Creates a new string by using the specified provider to control the formatting of the specified interpolated string.
+        /// </summary>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <param name="initialBuffer">
+        ///  The initial buffer that may be used as temporary space as part of the formatting operation.
+        ///  The contents of this buffer may be overwritten.
+        /// </param>
+        /// <param name="handler">The interpolated string.</param>
+        /// <returns>The string that results for formatting the interpolated string using the specified format provider.</returns>
+        public static string Create(
+            IFormatProvider? provider,
+            Span<char> initialBuffer,
+            [InterpolatedStringHandlerArgument("provider", "initialBuffer")] ref DefaultInterpolatedStringHandler handler) =>
+            handler.ToStringAndClear();
+
+        /// <summary>
+        ///  Copies the contents of this string into the destination span.
+        /// </summary>
+        /// <param name="destination">The span into which to copy this string's contents.</param>
+        /// <exception cref="ArgumentException">The destination span is shorter than the source string.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void CopyTo(Span<char> destination)
+        {
+            if (destination.Length < stringValue.Length)
+            {
+                throw new ArgumentException("Destination span is too short to copy the string.", nameof(destination));
+            }
+
+            stringValue.AsSpan().CopyTo(destination);
+        }
+
+        /// <summary>
+        ///  Copies the contents of this string into the destination span.
+        /// </summary>
+        /// <param name="destination">The span to copy the string into.</param>
+        /// <returns>
+        ///  <see langword="true"/> if the data was copied;
+        ///  <see langword="false"/> if the destination was too short to fit the contents of the string.
+        /// </returns>
+        public bool TryCopyTo(Span<char> destination)
+        {
+            if (destination.Length < stringValue.Length)
+            {
+                return false;
+            }
+
+            stringValue.AsSpan().CopyTo(destination);
+            return true;
         }
     }
 }

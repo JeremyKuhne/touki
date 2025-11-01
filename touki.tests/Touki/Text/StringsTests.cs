@@ -2,8 +2,14 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.Globalization;
+
 namespace Touki.Text;
 
+/// <remarks>
+///  Running against both .NET Framework and .NET, even if there is an implemenation on .NET to
+///  ensure matching behavior.
+/// </remarks>
 public class StringsTests
 {
     [Theory]
@@ -33,6 +39,206 @@ public class StringsTests
         int hash2 = span.ToString().GetHashCode();
 
         hash1.Should().Be(hash2);
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    public void Create_NegativeLength_Throws(int length)
+    {
+        Action action = () => string.Create(length, 0, (span, state) => { });
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void Create_NullAction_Throws()
+    {
+        Action act = () => string.Create(10, 0, null!);
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Create_ZeroLength_ReturnsEmpty()
+    {
+        string result = string.Create(0, 0, (span, state) => { });
+        result.Should().BeEmpty();
+        result.Should().BeSameAs(string.Empty);
+    }
+
+    [Fact]
+    public void Create_WithState_CreatesStringCorrectly()
+    {
+        string result = string.Create(5, 'A', (span, state) =>
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                span[i] = state;
+            }
+        });
+
+        result.Should().Be("AAAAA");
+    }
+
+    [Fact]
+    public void Create_WithComplexState_CreatesStringCorrectly()
+    {
+        (int start, int count) state = (65, 5);
+        string result = string.Create(state.count, state, (span, s) =>
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                span[i] = (char)(s.start + i);
+            }
+        });
+
+        result.Should().Be("ABCDE");
+    }
+
+    [Fact]
+    public void Create_WithInterpolatedString_FormatsCorrectly()
+    {
+        int value = 42;
+        string name = "test";
+        string result = string.Create(CultureInfo.InvariantCulture, $"Value: {value}, Name: {name}");
+
+        result.Should().Be("Value: 42, Name: test");
+    }
+
+    [Fact]
+    public void Create_WithInterpolatedStringAndNull_FormatsCorrectly()
+    {
+        string? nullValue = null;
+        string result = string.Create(CultureInfo.InvariantCulture, $"Null: {nullValue}");
+
+        result.Should().Be("Null: ");
+    }
+
+    [Fact]
+    public void Create_WithInterpolatedStringAndFormat_FormatsCorrectly()
+    {
+        double value = 123.456;
+        string result = string.Create(CultureInfo.InvariantCulture, $"Value: {value:F2}");
+
+        result.Should().Be("Value: 123.46");
+    }
+
+    [Fact]
+    public void Create_WithInterpolatedStringAndCulture_FormatsCorrectly()
+    {
+        double value = 1234.56;
+        CultureInfo culture = new("de-DE");
+        string result = string.Create(culture, $"{value:N2}");
+
+        result.Should().Be("1.234,56");
+    }
+
+    [Fact]
+    public void CopyTo_SufficientDestination_CopiesSuccessfully()
+    {
+        string source = "Hello";
+        Span<char> destination = stackalloc char[10];
+
+        source.CopyTo(destination);
+
+        destination[..5].ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void CopyTo_ExactDestination_CopiesSuccessfully()
+    {
+        string source = "Test";
+        Span<char> destination = stackalloc char[4];
+
+        source.CopyTo(destination);
+
+        destination.ToString().Should().Be("Test");
+    }
+
+    [Fact]
+    public void CopyTo_EmptyString_DoesNotThrow()
+    {
+        string source = "";
+        Span<char> destination = stackalloc char[5];
+
+        source.CopyTo(destination);
+
+        destination[0].Should().Be('\0');
+    }
+
+    [Fact]
+    public void CopyTo_DestinationTooShort_Throws()
+    {
+        string source = "Hello";
+        Span<char> destination = stackalloc char[3];
+
+        try
+        {
+            source.CopyTo(destination);
+            Assert.Fail("Expected ArgumentException");
+        }
+        catch (ArgumentException)
+        {
+            // Expected
+        }
+    }
+
+    [Fact]
+    public void CopyTo_EmptyDestination_Throws()
+    {
+        string source = "Test";
+        Span<char> destination = [];
+
+        try
+        {
+            source.CopyTo(destination);
+            Assert.Fail("Expected ArgumentException");
+        }
+        catch (ArgumentException)
+        {
+            // Expected
+        }
+    }
+
+    [Fact]
+    public void TryCopyTo_SufficientDestination_ReturnsTrue()
+    {
+        string source = "Hello";
+        Span<char> destination = stackalloc char[10];
+        source.TryCopyTo(destination).Should().BeTrue();
+        destination[..5].ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void TryCopyTo_ExactDestination_ReturnsTrue()
+    {
+        string source = "Test";
+        Span<char> destination = stackalloc char[4];
+        source.TryCopyTo(destination).Should().BeTrue();
+        destination.ToString().Should().Be("Test");
+    }
+
+    [Fact]
+    public void TryCopyTo_DestinationTooShort_ReturnsFalse()
+    {
+        string source = "Hello";
+        Span<char> destination = stackalloc char[3];
+        source.TryCopyTo(destination).Should().BeFalse();
+    }
+
+    [Fact]
+    public void TryCopyTo_EmptyDestination_ReturnsFalse()
+    {
+        string source = "Test";
+        Span<char> destination = [];
+        source.TryCopyTo(destination).Should().BeFalse();
+    }
+
+    [Fact]
+    public void TryCopyTo_EmptyString_ReturnsTrue()
+    {
+        string source = "";
+        Span<char> destination = stackalloc char[5];
+        source.TryCopyTo(destination).Should().BeTrue();
     }
 
     [Theory]
