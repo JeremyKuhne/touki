@@ -540,4 +540,344 @@ public class StringsTests
             }
         }
     }
+
+    [Fact]
+    public void Concat_TwoSpans_EmptySpans_ReturnsEmpty()
+    {
+        ReadOnlySpan<char> str0 = [];
+        ReadOnlySpan<char> str1 = [];
+
+        string result = string.Concat(str0, str1);
+
+        result.Should().BeEmpty();
+        result.Should().BeSameAs(string.Empty);
+    }
+
+    [Fact]
+    public void Concat_TwoSpans_FirstEmpty_ReturnsSecond()
+    {
+        ReadOnlySpan<char> str0 = [];
+        ReadOnlySpan<char> str1 = "Hello".AsSpan();
+
+        string result = string.Concat(str0, str1);
+
+        result.Should().Be("Hello");
+    }
+
+    [Fact]
+    public void Concat_TwoSpans_SecondEmpty_ReturnsFirst()
+    {
+        ReadOnlySpan<char> str0 = "World".AsSpan();
+        ReadOnlySpan<char> str1 = [];
+
+        string result = string.Concat(str0, str1);
+
+        result.Should().Be("World");
+    }
+
+    [Fact]
+    public void Concat_TwoSpans_BothNonEmpty_ConcatenatesCorrectly()
+    {
+        ReadOnlySpan<char> str0 = "Hello".AsSpan();
+        ReadOnlySpan<char> str1 = "World".AsSpan();
+
+        string result = string.Concat(str0, str1);
+
+        result.Should().Be("HelloWorld");
+    }
+
+    [Fact]
+    public void Concat_TwoSpans_WithSlicedSpans_ConcatenatesCorrectly()
+    {
+        string source1 = "abcdefg";
+        string source2 = "123456";
+        ReadOnlySpan<char> str0 = source1.AsSpan(2, 3);
+        ReadOnlySpan<char> str1 = source2.AsSpan(1, 4);
+
+        string result = string.Concat(str0, str1);
+
+        result.Should().Be("cde2345");
+    }
+
+    [Fact]
+    public void Concat_ThreeSpans_AllEmpty_ReturnsEmpty()
+    {
+        ReadOnlySpan<char> str0 = [];
+        ReadOnlySpan<char> str1 = [];
+        ReadOnlySpan<char> str2 = [];
+
+        string result = string.Concat(str0, str1, str2);
+
+        result.Should().BeEmpty();
+        result.Should().BeSameAs(string.Empty);
+    }
+
+    [Fact]
+    public void Concat_ThreeSpans_SomeEmpty_ConcatenatesNonEmpty()
+    {
+        ReadOnlySpan<char> str0 = "Hello".AsSpan();
+        ReadOnlySpan<char> str1 = [];
+        ReadOnlySpan<char> str2 = "World".AsSpan();
+
+        string result = string.Concat(str0, str1, str2);
+
+        result.Should().Be("HelloWorld");
+    }
+
+    [Fact]
+    public void Concat_ThreeSpans_AllNonEmpty_ConcatenatesCorrectly()
+    {
+        ReadOnlySpan<char> str0 = "Hello".AsSpan();
+        ReadOnlySpan<char> str1 = " ".AsSpan();
+        ReadOnlySpan<char> str2 = "World".AsSpan();
+
+        string result = string.Concat(str0, str1, str2);
+
+        result.Should().Be("Hello World");
+    }
+
+    [Fact]
+    public void Concat_ThreeSpans_WithUnicode_ConcatenatesCorrectly()
+    {
+        ReadOnlySpan<char> str0 = "café".AsSpan();
+        ReadOnlySpan<char> str1 = " ♥ ".AsSpan();
+        ReadOnlySpan<char> str2 = "文字".AsSpan();
+
+        string result = string.Concat(str0, str1, str2);
+
+        result.Should().Be("café ♥ 文字");
+    }
+
+    [Fact]
+    public void Concat_FourSpans_AllEmpty_ReturnsEmpty()
+    {
+        ReadOnlySpan<char> str0 = [];
+        ReadOnlySpan<char> str1 = [];
+        ReadOnlySpan<char> str2 = [];
+        ReadOnlySpan<char> str3 = [];
+
+        string result = string.Concat(str0, str1, str2, str3);
+
+        result.Should().BeEmpty();
+        result.Should().BeSameAs(string.Empty);
+    }
+
+    [Fact]
+    public void Concat_FourSpans_SomeEmpty_ConcatenatesNonEmpty()
+    {
+        ReadOnlySpan<char> str0 = "The".AsSpan();
+        ReadOnlySpan<char> str1 = [];
+        ReadOnlySpan<char> str2 = "quick".AsSpan();
+        ReadOnlySpan<char> str3 = "fox".AsSpan();
+
+        string result = string.Concat(str0, str1, str2, str3);
+
+        result.Should().Be("Thequickfox");
+    }
+
+    [Fact]
+    public void Concat_FourSpans_AllNonEmpty_ConcatenatesCorrectly()
+    {
+        ReadOnlySpan<char> str0 = "The".AsSpan();
+        ReadOnlySpan<char> str1 = " quick".AsSpan();
+        ReadOnlySpan<char> str2 = " brown".AsSpan();
+        ReadOnlySpan<char> str3 = " fox".AsSpan();
+
+        string result = string.Concat(str0, str1, str2, str3);
+
+        result.Should().Be("The quick brown fox");
+    }
+
+    [Fact]
+    public void Concat_FourSpans_WithSurrogatePairs_ConcatenatesCorrectly()
+    {
+        ReadOnlySpan<char> str0 = "Test".AsSpan();
+        ReadOnlySpan<char> str1 = " \uD83D\uDE00".AsSpan();
+        ReadOnlySpan<char> str2 = " emoji".AsSpan();
+        ReadOnlySpan<char> str3 = " \uD83D\uDE01".AsSpan();
+
+        string result = string.Concat(str0, str1, str2, str3);
+
+        result.Should().Be("Test \uD83D\uDE00 emoji \uD83D\uDE01");
+    }
+
+    [Fact]
+    public void Concat_FourSpans_LargeStrings_ConcatenatesCorrectly()
+    {
+        string large1 = new('a', 1000);
+        string large2 = new('b', 1000);
+        string large3 = new('c', 1000);
+        string large4 = new('d', 1000);
+
+        string result = string.Concat(large1.AsSpan(), large2.AsSpan(), large3.AsSpan(), large4.AsSpan());
+
+        result.Length.Should().Be(4000);
+        result[..1000].Should().Be(large1);
+        result[1000..2000].Should().Be(large2);
+        result[2000..3000].Should().Be(large3);
+        result[3000..].Should().Be(large4);
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_NoNewlines_ReturnsSameString()
+    {
+        string input = "Hello World";
+        string result = input.ReplaceLineEndings();
+
+        result.Should().BeSameAs(input);
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_WithCRLF_ReplacesWithEnvironmentNewLine()
+    {
+        string input = "Hello\r\nWorld";
+        string result = input.ReplaceLineEndings();
+
+        result.Should().Be("Hello\r\nWorld");
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_WithLF_ReplacesWithEnvironmentNewLine()
+    {
+        string input = "Hello\nWorld";
+        string result = input.ReplaceLineEndings();
+
+        result.Should().Be("Hello\r\nWorld");
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_WithCR_ReplacesWithEnvironmentNewLine()
+    {
+        string input = "Hello\rWorld";
+        string result = input.ReplaceLineEndings();
+
+        result.Should().Be("Hello\r\nWorld");
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_WithFormFeed_ReplacesWithEnvironmentNewLine()
+    {
+        string input = "Hello\fWorld";
+        string result = input.ReplaceLineEndings();
+
+        result.Should().Be("Hello\r\nWorld");
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_WithNEL_ReplacesWithEnvironmentNewLine()
+    {
+        string input = "Hello\u0085World";
+        string result = input.ReplaceLineEndings();
+
+        result.Should().Be("Hello\r\nWorld");
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_WithLS_ReplacesWithEnvironmentNewLine()
+    {
+        string input = "Hello\u2028World";
+        string result = input.ReplaceLineEndings();
+
+        result.Should().Be("Hello\r\nWorld");
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_WithPS_ReplacesWithEnvironmentNewLine()
+    {
+        string input = "Hello\u2029World";
+        string result = input.ReplaceLineEndings();
+
+        result.Should().Be("Hello\r\nWorld");
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_WithMixedNewlines_ReplacesAll()
+    {
+        string input = "Line1\r\nLine2\nLine3\rLine4\fLine5";
+        string result = input.ReplaceLineEndings();
+
+        result.Should().Be("Line1\r\nLine2\r\nLine3\r\nLine4\r\nLine5");
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_WithCustomReplacement_ReplacesWithCustom()
+    {
+        string input = "Hello\r\nWorld\nTest";
+        string result = input.ReplaceLineEndings("||");
+
+        result.Should().Be("Hello||World||Test");
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_WithEmptyReplacement_RemovesNewlines()
+    {
+        string input = "Hello\r\nWorld\nTest";
+        string result = input.ReplaceLineEndings("");
+
+        result.Should().Be("HelloWorldTest");
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_WithLineFeed_UsesOptimizedPath()
+    {
+        string input = "Hello\r\nWorld\rTest\fEnd";
+        string result = input.ReplaceLineEndings("\n");
+
+        result.Should().Be("Hello\nWorld\nTest\nEnd");
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_EmptyString_ReturnsEmpty()
+    {
+        string input = "";
+        string result = input.ReplaceLineEndings();
+
+        result.Should().BeSameAs(input);
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_OnlyNewlines_ReplacesAll()
+    {
+        string input = "\r\n\n\r\f";
+        string result = input.ReplaceLineEndings("X");
+
+        result.Should().Be("XXXX");
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_ConsecutiveNewlines_ReplacesEach()
+    {
+        string input = "Hello\r\r\nWorld";
+        string result = input.ReplaceLineEndings("|");
+
+        result.Should().Be("Hello||World");
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_WithNullReplacement_Throws()
+    {
+        string input = "Hello\nWorld";
+        Action action = () => input.ReplaceLineEndings(null!);
+
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_MultipleUnicodeNewlines_ReplacesAll()
+    {
+        string input = "A\u0085B\u2028C\u2029D";
+        string result = input.ReplaceLineEndings("-");
+
+        result.Should().Be("A-B-C-D");
+    }
+
+    [Fact]
+    public void ReplaceLineEndings_LongStringWithManyNewlines_ReplacesAll()
+    {
+        string input = string.Join("\n", Enumerable.Range(0, 100).Select(i => $"Line{i}"));
+        string result = input.ReplaceLineEndings(" | ");
+
+        result.Should().Contain(" | ");
+        result.Should().NotContain("\n");
+    }
 }
