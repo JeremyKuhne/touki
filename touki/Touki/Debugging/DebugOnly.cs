@@ -7,20 +7,23 @@ namespace Touki;
 internal static class DebugOnly
 {
     internal static bool CallerIsInToukiAssembly()
-#if DEBUG
+#if !DEBUG
     {
-        StackTrace stackTrace = new(skipFrames: 2, fNeedFileInfo: false);
-        if (stackTrace.GetFrame(0) is not { } frame
-            || frame.GetMethod()?.DeclaringType is not { } declaringType)
-        {
-            return false;
-        }
-
-        return declaringType.Assembly == typeof(DebugOnly).Assembly;
+        // Shouldn't be using this in release builds
+        throw new InvalidOperationException();
     }
 #else
     {
-        throw new InvalidOperationException();
+        StackTrace stackTrace = new(skipFrames: 2, fNeedFileInfo: false);
+
+        return stackTrace.GetFrame(0) is { } frame
+#if NET
+            && DiagnosticMethodInfo.Create(frame)?.DeclaringAssemblyName is { } assemblyName
+            && assemblyName == typeof(DebugOnly).Assembly.FullName;
+#else
+            && frame.GetMethod()?.DeclaringType is { } declaringType
+            && declaringType.Assembly == typeof(DebugOnly).Assembly;
+#endif
     }
 #endif
 }
