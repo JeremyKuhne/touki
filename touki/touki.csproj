@@ -28,10 +28,18 @@
   <!--
     Target framework specific properties and items
   -->
-  <PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' != '$(DotNetFrameworkVersion)'">
+    <!--
+      Mark as Native AOT compatible. This will enable relevant analyzers.
+      https://learn.microsoft.com/dotnet/core/deploying/native-aot/#aot-compatibility-analyzers
+    -->
+    <IsAotCompatible>true</IsAotCompatible>
+
     <!-- Exclude Framework folder from non .NET Framework builds -->
-    <DefaultItemExcludes Condition="'$(TargetFramework)' != '$(DotNetFrameworkVersion)'">$(DefaultItemExcludes);**/Framework/**/*</DefaultItemExcludes>
+    <DefaultItemExcludes >$(DefaultItemExcludes);**/Framework/**/*</DefaultItemExcludes>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' != '$(DotNetFrameworkVersion)'">
     <!-- Include the Framework specific items as none so we can see them easily in the Solution Explorer. -->
     <None Include="**/Framework/**/*" />
