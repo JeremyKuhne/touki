@@ -18,6 +18,11 @@ public static class MathExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (int Quotient, int Remainder) DivRem(int left, int right)
         {
+            // Manually doing the math to facilitate better optimization by the JIT.
+            //
+            // int quotient = Math.DivRem(left, right, out int remainder);
+            // return (quotient, remainder);
+
             int quotient = left / right;
             return (quotient, left - (quotient * right));
         }
