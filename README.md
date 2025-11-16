@@ -27,9 +27,10 @@ Some of the design goals include:
 
 ## Overviews
 
+- [Configuring Your Project for Touki](sample/README.md)
 - [Reducing String Allocations with Touki](docs/strings.md)
 
-## Installation
+## Package Installation
 
 Using the .NET CLI:
 
@@ -42,6 +43,9 @@ Or with the NuGet Package Manager:
 ```
 PM> Install-Package KlutzyNinja.Touki
 ```
+
+
+
 
 [View on NuGet.org](https://www.nuget.org/packages/KlutzyNinja.Touki/)
 

@@ -333,12 +333,12 @@ internal static partial class Number
     {
         byte* buffer = number.GetDigitsPointer();
         number.DigitsCount = DecimalPrecision;
-        number.IsNegative = d.IsNegative();
+        number.IsNegative = decimal.IsNegative(d);
 
         byte* p = buffer + DecimalPrecision;
         while ((d.Mid() | d.High()) != 0)
         {
-            p = UInt32ToDecChars(p, d.DecDivMod1E9(), 9);
+            p = UInt32ToDecChars(p, decimal.DecDivMod1E9(ref d), 9);
         }
 
         p = UInt32ToDecChars(p, d.Low(), 0);
@@ -346,7 +346,7 @@ internal static partial class Number
         int i = (int)((buffer + DecimalPrecision) - p);
 
         number.DigitsCount = i;
-        number.Scale = i - d.Scale();
+        number.Scale = i - d.Scale;
 
         byte* dst = number.GetDigitsPointer();
         while (--i >= 0)

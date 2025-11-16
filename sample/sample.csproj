@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Multitarget .NET Core and .NET Framework
+      https://learn.microsoft.com/dotnet/standard/frameworks
+
+      In this repository, these come frm the Directory.Build.props file.
+
+      <DotNetCoreVersion>net10.0</DotNetCoreVersion>
+      <DotNetFrameworkVersion>net472</DotNetFrameworkVersion>
+
+      4.7.2 addresses issues when consuming .NET Standard 2.0 libraries from .NET Framework.
+
+      Windows 10 1803 and Server 2019 included 4.7.2 in the box. Most OSes have gone out of support that shipped with
+      earlier versions. The only exceptions are enterprise and server versions from 2016.
+
+      https://learn.microsoft.com/lifecycle/products/windows-81
+      https://learn.microsoft.com/lifecycle/products/windows-7
+      https://learn.microsoft.com/lifecycle/products/windows-server-2016
+      https://learn.microsoft.com/lifecycle/products/windows-10-2016-ltsb
+      -->
+      <TargetFrameworks>$(DotNetCoreVersion);$(DotNetFrameworkVersion)</TargetFrameworks>
+
+    <!--
+      We don't want to have implicit usings as we're retargeting System.IO to Microsoft.IO
+      in our GlobalUsings.cs file for .NET Framework.
+    -->
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <Nullable>enable</Nullable>
+
+    <!-- Want "Sample" rather than "sample". If this is explicitly set to blank it messes with resource generation. -->
+    <RootNamespace>Sample</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="KlutzyNinja.Touki" />
+  </ItemGroup>
+
+  <!--
+    Target framework specific properties and items
+  -->
+
+  <PropertyGroup Condition="'$(TargetFramework)' != '$(DotNetFrameworkVersion)'">
+    <!--
+      Mark as Native AOT compatible. This will enable relevant analyzers.
+      https://learn.microsoft.com/dotnet/core/deploying/native-aot/#aot-compatibility-analyzers
+    -->
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <!--
+    Resource related
+  -->
+
+  <PropertyGroup>
+    <NeutralLanguage>en-US</NeutralLanguage>
+  </PropertyGroup>
+  <ItemGroup>
+    <!--
+     Using the ResxSourceGenerator package is much more seamless for creating strongly typed resource access
+     from .resx files. There aren't any in this sample project, but this shows how to include the package.
+    -->
+    <PackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

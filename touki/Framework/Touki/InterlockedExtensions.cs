@@ -7,7 +7,7 @@
 
 using System.Threading;
 
-namespace Framework.Touki;
+namespace Touki;
 
 /// <summary>Provides atomic operations for variables that are shared by multiple threads.</summary>
 /// <remarks>

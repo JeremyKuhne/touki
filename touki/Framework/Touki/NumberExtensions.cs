@@ -15,52 +15,94 @@ namespace Touki;
 /// </summary>
 public static unsafe class NumberExtensions
 {
-    /// <summary>Determines whether the specified value is negative.</summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsNegative(this decimal d)
+    extension(decimal decimalValue)
     {
-        DecimalFields* p = (DecimalFields*)&d;
-        return (p->_flags & 0x80000000) != 0;
-    }
+        /// <summary>Determines whether the specified value is negative.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsNegative(decimal value)
+        {
+            DecimalFields* p = (DecimalFields*)&value;
+            return (p->_flags & 0x80000000) != 0;
+        }
 
-    /// <summary>
-    ///  Low bits of the decimal value.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static uint Low(this decimal d)
-    {
-        DecimalFields* p = (DecimalFields*)&d;
-        return p->_lo;
-    }
+        // The next three properties (Low, Mid, High) replicate internal decimal properties.
+        // Exposed as methods to avoid name ambiguity issues.
 
-    /// <summary>
-    ///  Mid bits of the decimal value.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static uint Mid(this decimal d)
-    {
-        DecimalFields* p = (DecimalFields*)&d;
-        return p->_mid;
-    }
+        /// <summary>
+        ///  Low bits of the decimal value.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public uint Low()
+        {
+            DecimalFields* p = (DecimalFields*)&decimalValue;
+            return p->_lo;
+        }
 
-    /// <summary>
-    ///  High bits of the decimal value.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static uint High(this decimal d)
-    {
-        DecimalFields* p = (DecimalFields*)&d;
-        return p->_hi;
-    }
+        /// <summary>
+        ///  Mid bits of the decimal value.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public uint Mid()
+        {
+            DecimalFields* p = (DecimalFields*)&decimalValue;
+            return p->_mid;
+        }
 
-    /// <summary>
-    ///  Returns the scale of the decimal value.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int Scale(this decimal d)
-    {
-        DecimalFields* p = (DecimalFields*)&d;
-        return (int)(p->_flags & 0x00FF0000) >> 16; // Extracting the scale from the flags
+        /// <summary>
+        ///  High bits of the decimal value.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public uint High()
+        {
+            DecimalFields* p = (DecimalFields*)&decimalValue;
+            return p->_hi;
+        }
+
+        /// <summary>
+        ///  Gets the scaling factor of the decimal, which is a number from 0 to 28 that represents
+        ///  the number of decimal digits.
+        /// </summary>
+        public byte Scale
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                DecimalFields* p = (DecimalFields*)&decimalValue;
+                return (byte)((p->_flags & 0x00FF0000) >> 16); // Extracting the scale from the flags
+            }
+        }
+
+        /// <summary>
+        ///  Divides the specified decimal value by 10^9 (1,000,000,000), updates the decimal
+        ///  with the quotient, and returns the remainder as a uint.
+        /// </summary>
+        /// <remarks>
+        ///  <para>
+        ///   This is primarily used for decimal formatting and arithmetic operations.
+        ///  </para>
+        ///  <para>
+        ///   Taken from .NET DecCalc struct.
+        ///  </para>
+        /// </remarks>
+        internal static uint DecDivMod1E9(ref decimal value)
+        {
+            const uint TenToPowerNine = 1000000000;
+
+            fixed (decimal* pValue = &value)
+            {
+                DecimalFields* pFields = (DecimalFields*)pValue;
+
+                ulong high64 = ((ulong)pFields->_hi << 32) + pFields->_mid;
+                ulong div64 = high64 / TenToPowerNine;
+                pFields->_hi = (uint)(div64 >> 32);
+                pFields->_mid = (uint)div64;
+
+                ulong num = ((high64 - (uint)div64 * TenToPowerNine) << 32) + pFields->_lo;
+                uint div = (uint)(num / TenToPowerNine);
+                pFields->_lo = div;
+                return (uint)num - div * TenToPowerNine;
+            }
+        }
     }
 
 #pragma warning disable CS0649 // Field 'DecimalFields._flags' is never assigned to, and will always have its default value 0
@@ -74,61 +116,35 @@ public static unsafe class NumberExtensions
     }
 #pragma warning restore CS0649
 
-    /// <summary>
-    ///  Divides the specified decimal value by 10^9 (1,000,000,000), updates the decimal
-    ///  with the quotient, and returns the remainder as a uint.
-    /// </summary>
-    /// <remarks>
-    ///  <para>
-    ///   This is primarily used for decimal formatting and arithmetic operations.
-    ///  </para>
-    ///  <para>
-    ///   Taken from .NET DecCalc struct.
-    ///  </para>
-    /// </remarks>
-    internal static uint DecDivMod1E9(this ref decimal value)
-    {
-        const uint TenToPowerNine = 1000000000;
-
-        fixed (decimal* pValue = &value)
-        {
-            DecimalFields* pFields = (DecimalFields*)pValue;
-
-            ulong high64 = ((ulong)pFields->_hi << 32) + pFields->_mid;
-            ulong div64 = high64 / TenToPowerNine;
-            pFields->_hi = (uint)(div64 >> 32);
-            pFields->_mid = (uint)div64;
-
-            ulong num = ((high64 - (uint)div64 * TenToPowerNine) << 32) + pFields->_lo;
-            uint div = (uint)(num / TenToPowerNine);
-            pFields->_lo = div;
-            return (uint)num - div * TenToPowerNine;
-        }
-    }
-
     // From here forward, code is from the .NET codebase, with minor modifications for clarity.
 
-    /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsFinite(this float f)
+    extension(float floatValue)
     {
-        int bits = *(int*)&f;
-        return (bits & 0x7FFFFFFF) < 0x7F800000;
+        /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsFinite()
+        {
+            int bits = *(int*)&floatValue;
+            return (bits & 0x7FFFFFFF) < 0x7F800000;
+        }
+
+        /// <summary>Determines whether the specified value is negative.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsNegative() => (*(int*)&floatValue) < 0;
     }
 
-    /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsFinite(this double d)
+    extension(double doubleValue)
     {
-        long bits = BitConverter.DoubleToInt64Bits(d);
-        return (bits & 0x7FFFFFFFFFFFFFFF) < 0x7FF0000000000000;
+        /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsFinite()
+        {
+            long bits = BitConverter.DoubleToInt64Bits(doubleValue);
+            return (bits & 0x7FFFFFFFFFFFFFFF) < 0x7FF0000000000000;
+        }
+
+        /// <summary>Determines whether the specified value is negative.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsNegative() => BitConverter.DoubleToInt64Bits(doubleValue) < 0;
     }
-
-    /// <summary>Determines whether the specified value is negative.</summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsNegative(this float f) => (*(int*)&f) < 0;
-
-    /// <summary>Determines whether the specified value is negative.</summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsNegative(this double d) => BitConverter.DoubleToInt64Bits(d) < 0;
 }

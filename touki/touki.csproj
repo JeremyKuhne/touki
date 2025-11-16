@@ -44,14 +44,19 @@
     <!-- Include the Framework specific items as none so we can see them easily in the Solution Explorer. -->
     <None Include="**/Framework/**/*" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'">
     <!-- This gets us .NET 6 System.IO repackaged for .NET Framework. -->
     <PackageReference Include="Microsoft.IO.Redist" />
     <!-- This gets us Span. -->
     <PackageReference Include="System.Memory" />
-    <!-- This provides Range and Index support downlevel -->
+    <!-- This provides Range and Index support downlevel. -->
     <PackageReference Include="Microsoft.Bcl.Memory" />
     <PackageReference Include="Microsoft.Bcl.HashCode" />
+    <!--
+      This is used to get us interop needed to backport some functionality.
+      Generated code is not publicly exposed.
+    -->
     <PackageReference Include="Microsoft.Windows.CsWin32">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -99,7 +104,7 @@
   </PropertyGroup>
 
   <!--
-    PolySharp related
+    PolySharp related (source generated polyfills for .NET Framework)
   -->
   <PropertyGroup>
     <PolySharpUsePublicAccessibilityForGeneratedTypes>true</PolySharpUsePublicAccessibilityForGeneratedTypes>
