@@ -46,6 +46,14 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'">
+    <!--
+      Need to explicitly reference System.ValueTuple to work around a few issues. See:
+
+      https://github.com/dotnet/maintenance-packages/issues/243
+      https://github.com/dotnet/msbuild/issues/12780
+    -->
+    <Reference Include="System.ValueTuple" SpecificVersion="true" />
+
     <!-- This gets us .NET 6 System.IO repackaged for .NET Framework. -->
     <PackageReference Include="Microsoft.IO.Redist" />
     <!-- This gets us Span. -->
