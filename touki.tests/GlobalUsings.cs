@@ -25,6 +25,8 @@ global using System.IO;
 global using System.IO.Enumeration;
 #endif
 
+global using Touki.Exceptions;
+
 #pragma warning restore IDE0005
 
 global using FluentAssertions;
