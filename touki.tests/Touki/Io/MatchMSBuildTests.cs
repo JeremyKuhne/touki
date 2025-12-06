@@ -100,7 +100,7 @@ public class MatchMSBuildTests
         MatchMSBuild match = new(specification, matchType, matchCasing);
 
         // Access internal state through TestAccessor
-        dynamic accessor = match.TestAccessor().Dynamic;
+        dynamic accessor = match.TestAccessor.Dynamic;
 
         // Verify the internal state
         Assert.Equal(matchType, accessor._matchType);
@@ -131,7 +131,7 @@ public class MatchMSBuildTests
         MSBuildSpecification specification = new("C:/temp/*.txt".Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
         MatchMSBuild match = new(specification, MatchType.Simple, MatchCasing.CaseInsensitive);
 
-        dynamic accessor = match.TestAccessor().Dynamic;
+        dynamic accessor = match.TestAccessor.Dynamic;
 
         // Initially the cache should not be valid
         Assert.False(accessor._cacheValid);

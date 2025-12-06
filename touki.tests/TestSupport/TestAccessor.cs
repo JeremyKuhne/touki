@@ -9,6 +9,7 @@
 
 using System.Dynamic;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 
 namespace System;
 
@@ -92,16 +93,14 @@ public class TestAccessor<T> : ITestAccessor
     {
         private readonly object? _instance;
 
-        public DynamicWrapper(object? instance)
-            => _instance = instance;
+        public DynamicWrapper(object? instance) => _instance = instance;
 
         public override bool TryInvokeMember(InvokeMemberBinder binder, object?[]? args, out object? result)
         {
+            ArgumentNullException.ThrowIfNull(args);
+            ArgumentNullException.ThrowIfNull(binder);
+
             result = null;
-            if (args is null)
-                throw new ArgumentNullException(nameof(args));
-            if (binder is null)
-                throw new ArgumentNullException(nameof(binder));
 
             MethodInfo? methodInfo = null;
             Type? type = s_type;
@@ -139,19 +138,51 @@ public class TestAccessor<T> : ITestAccessor
             while (true);
 
             if (methodInfo is null)
+            {
                 return false;
+            }
 
-            result = methodInfo.Invoke(_instance, args);
+            try
+            {
+                result = methodInfo.Invoke(_instance, args);
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is not null)
+            {
+                // Unwrap the inner exception to make it easier for callers to handle.
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            }
+
             return true;
         }
 
         public override bool TrySetMember(SetMemberBinder binder, object? value)
         {
-            MemberInfo? info = TestAccessor<T>.DynamicWrapper.GetFieldOrPropertyInfo(binder.Name);
-            if (info is null)
+            MemberInfo? memberInfo = TestAccessor<T>.DynamicWrapper.GetFieldOrPropertyInfo(binder.Name);
+            if (memberInfo is null)
+            {
                 return false;
+            }
 
-            SetValue(info, value);
+            try
+            {
+                switch (memberInfo)
+                {
+                    case FieldInfo fieldInfo:
+                        fieldInfo.SetValue(_instance, value);
+                        break;
+                    case PropertyInfo propertyInfo:
+                        propertyInfo.SetValue(_instance, value);
+                        break;
+                    default:
+                        throw new InvalidOperationException();
+                }
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is not null)
+            {
+                // Unwrap the inner exception to make it easier for callers to handle.
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            }
+
             return true;
         }
 
@@ -159,11 +190,27 @@ public class TestAccessor<T> : ITestAccessor
         {
             result = null;
 
-            MemberInfo? info = TestAccessor<T>.DynamicWrapper.GetFieldOrPropertyInfo(binder.Name);
-            if (info is null)
+            MemberInfo? memberInfo = TestAccessor<T>.DynamicWrapper.GetFieldOrPropertyInfo(binder.Name);
+            if (memberInfo is null)
+            {
                 return false;
+            }
 
-            result = GetValue(info);
+            try
+            {
+                result = memberInfo switch
+                {
+                    FieldInfo fieldInfo => fieldInfo.GetValue(_instance),
+                    PropertyInfo propertyInfo => propertyInfo.GetValue(_instance),
+                    _ => throw new InvalidOperationException()
+                };
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is not null)
+            {
+                // Unwrap the inner exception to make it easier for callers to handle.
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            }
+
             return true;
         }
 
@@ -193,29 +240,6 @@ public class TestAccessor<T> : ITestAccessor
             while (true);
 
             return info;
-        }
-
-        private object? GetValue(MemberInfo memberInfo)
-            => memberInfo switch
-            {
-                FieldInfo fieldInfo => fieldInfo.GetValue(_instance),
-                PropertyInfo propertyInfo => propertyInfo.GetValue(_instance),
-                _ => throw new InvalidOperationException()
-            };
-
-        private void SetValue(MemberInfo memberInfo, object? value)
-        {
-            switch (memberInfo)
-            {
-                case FieldInfo fieldInfo:
-                    fieldInfo.SetValue(_instance, value);
-                    break;
-                case PropertyInfo propertyInfo:
-                    propertyInfo.SetValue(_instance, value);
-                    break;
-                default:
-                    throw new InvalidOperationException();
-            }
         }
     }
 }

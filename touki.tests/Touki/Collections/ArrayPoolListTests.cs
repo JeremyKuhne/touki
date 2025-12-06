@@ -319,7 +319,7 @@ public class ArrayPoolListTests
 
         list.Dispose();
 
-        int[] array = list.TestAccessor().Dynamic._items;
+        int[] array = list.TestAccessor.Dynamic._items;
         array.Should().BeEmpty();
     }
 
