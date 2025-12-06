@@ -320,7 +320,7 @@ public static class LockTests
     public static void ContentionCount_IncreasesUnderContention()
     {
         Lock lockObj = new();
-        long initialCount = typeof(Lock).TestAccessor().Dynamic.ContentionCount;
+        long initialCount = typeof(Lock).TestAccessor.Dynamic.ContentionCount;
 
         const int threadCount = 5;
         var barrier = new Barrier(threadCount + 1);
@@ -352,7 +352,7 @@ public static class LockTests
 #pragma warning restore xUnit1031
 
         // Contention count should have increased
-        Assert.True(typeof(Lock).TestAccessor().Dynamic.ContentionCount > initialCount);
+        Assert.True(typeof(Lock).TestAccessor.Dynamic.ContentionCount > initialCount);
     }
 
     [Fact]

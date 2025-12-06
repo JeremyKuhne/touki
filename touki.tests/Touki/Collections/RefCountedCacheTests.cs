@@ -22,7 +22,7 @@ public class RefCountedCacheTests
             return key == entry.Data;
         }
 
-        public int Count => this.TestAccessor().Dynamic._list.Count;
+        public int Count => this.TestAccessor.Dynamic._list.Count;
     }
 
     private class TestCacheEntry : RefCountedCache<string, string, string>.CacheEntry
