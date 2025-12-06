@@ -164,9 +164,9 @@ public class TypeExtensionTests
         Type nestedType = parentType.GetFullNestedType("GenericNested", typeof(HashSet<bool>));
         nestedType.Should().NotBeNull();
         nestedType.GenericTypeArguments.Should().HaveCount(3);
-        nestedType.GenericTypeArguments[0].Should().Be(typeof(List<int>));
-        nestedType.GenericTypeArguments[1].Should().Be(typeof(Dictionary<string, double>));
-        nestedType.GenericTypeArguments[2].Should().Be(typeof(HashSet<bool>));
+        nestedType.GenericTypeArguments[0].Should().Be<List<int>>();
+        nestedType.GenericTypeArguments[1].Should().Be<Dictionary<string, double>>();
+        nestedType.GenericTypeArguments[2].Should().Be<HashSet<bool>>();
     }
 
     [Fact]
