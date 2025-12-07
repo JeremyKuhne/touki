@@ -9,9 +9,11 @@ namespace Touki;
 /// </summary>
 public static class TypeExtensions
 {
-    /// <summary>
-    ///  Determines whether the current type can be assigned to a variable of the specified <paramref name="targetType"/>.
-    /// </summary>
-    public static bool IsAssignableTo(this Type? type, Type? targetType) =>
-       targetType?.IsAssignableFrom(type) ?? false;
+    extension(Type? type)
+    {
+        /// <summary>
+        ///  Determines whether the current type can be assigned to a variable of the specified <paramref name="targetType"/>.
+        /// </summary>
+        public bool IsAssignableTo(Type? targetType) => targetType?.IsAssignableFrom(type) ?? false;
+    }
 }

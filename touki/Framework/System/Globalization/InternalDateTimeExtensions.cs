@@ -6,23 +6,26 @@ namespace System;
 
 internal static class InternalDateTimeExtensions
 {
-    // Exactly the same as GetDatePart, except computing all of
-    // year/month/day rather than just one of them. Used when all three
-    // are needed rather than redoing the computations for each.
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static void GetDate(this ref readonly DateTime dateTime, out int year, out int month, out int day) =>
-        Unsafe.As<DateTime, InternalDateTime>(ref Unsafe.AsRef(in dateTime)).GetDate(out year, out month, out day);
+    extension(ref readonly DateTime dateTime)
+    {
+        // Exactly the same as GetDatePart, except computing all of
+        // year/month/day rather than just one of them. Used when all three
+        // are needed rather than redoing the computations for each.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void GetDate(out int year, out int month, out int day) =>
+            Unsafe.As<DateTime, InternalDateTime>(ref Unsafe.AsRef(in dateTime)).GetDate(out year, out month, out day);
 
-    internal static void GetTime(this ref readonly DateTime dateTime, out int hour, out int minute, out int second) =>
-        Unsafe.As<DateTime, InternalDateTime>(ref Unsafe.AsRef(in dateTime)).GetTime(out hour, out minute, out second);
+        internal void GetTime(out int hour, out int minute, out int second) =>
+            Unsafe.As<DateTime, InternalDateTime>(ref Unsafe.AsRef(in dateTime)).GetTime(out hour, out minute, out second);
 
-    internal static void GetTime(this ref readonly DateTime dateTime, out int hour, out int minute, out int second, out int millisecond) =>
-        Unsafe.As<DateTime, InternalDateTime>(ref Unsafe.AsRef(in dateTime)).GetTime(out hour, out minute, out second, out millisecond);
+        internal void GetTime(out int hour, out int minute, out int second, out int millisecond) =>
+            Unsafe.As<DateTime, InternalDateTime>(ref Unsafe.AsRef(in dateTime)).GetTime(out hour, out minute, out second, out millisecond);
 
-    internal static void GetTimePrecise(this ref readonly DateTime dateTime, out int hour, out int minute, out int second, out int tick) =>
-        Unsafe.As<DateTime, InternalDateTime>(ref Unsafe.AsRef(in dateTime)).GetTimePrecise(out hour, out minute, out second, out tick);
+        internal void GetTimePrecise(out int hour, out int minute, out int second, out int tick) =>
+            Unsafe.As<DateTime, InternalDateTime>(ref Unsafe.AsRef(in dateTime)).GetTimePrecise(out hour, out minute, out second, out tick);
+    }
 
-    internal readonly struct InternalDateTime
+    private readonly struct InternalDateTime
     {
         // Number of 100ns ticks per time unit
         private const long TicksPerMillisecond = 10000;
