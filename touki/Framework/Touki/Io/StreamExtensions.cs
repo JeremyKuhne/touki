@@ -12,33 +12,36 @@ namespace Touki.Io;
 /// </summary>
 public static partial class StreamExtensions
 {
-    /// <summary>
-    ///  Allows writing a <see cref="ReadOnlySpan{Char}"/> to a <see cref="TextWriter"/>.
-    /// </summary>
-    public static void Write(this TextWriter writer, ReadOnlySpan<char> value)
+    extension(TextWriter writer)
     {
-        if (value.Length > 0)
+        /// <summary>
+        ///  Allows writing a <see cref="ReadOnlySpan{Char}"/> to a <see cref="TextWriter"/>.
+        /// </summary>
+        public void Write(ReadOnlySpan<char> value)
         {
-            char[] buffer = ArrayPool<char>.Shared.Rent(value.Length);
-            value.CopyTo(buffer);
-            writer.Write(buffer, 0, value.Length);
-            ArrayPool<char>.Shared.Return(buffer);
-        }
-    }
-
-    /// <summary>
-    ///  Allows writing a <see cref="ReadOnlySpan{Char}"/> to a <see cref="TextWriter"/>.
-    /// </summary>
-    public static void WriteLine(this TextWriter writer, ReadOnlySpan<char> value)
-    {
-        if (value.Length > 0)
-        {
-            char[] buffer = ArrayPool<char>.Shared.Rent(value.Length);
-            value.CopyTo(buffer);
-            writer.Write(buffer, 0, value.Length);
-            ArrayPool<char>.Shared.Return(buffer);
+            if (value.Length > 0)
+            {
+                char[] buffer = ArrayPool<char>.Shared.Rent(value.Length);
+                value.CopyTo(buffer);
+                writer.Write(buffer, 0, value.Length);
+                ArrayPool<char>.Shared.Return(buffer);
+            }
         }
 
-        writer.WriteLine();
+        /// <summary>
+        ///  Allows writing a <see cref="ReadOnlySpan{Char}"/> to a <see cref="TextWriter"/>.
+        /// </summary>
+        public void WriteLine(ReadOnlySpan<char> value)
+        {
+            if (value.Length > 0)
+            {
+                char[] buffer = ArrayPool<char>.Shared.Rent(value.Length);
+                value.CopyTo(buffer);
+                writer.Write(buffer, 0, value.Length);
+                ArrayPool<char>.Shared.Return(buffer);
+            }
+
+            writer.WriteLine();
+        }
     }
 }
