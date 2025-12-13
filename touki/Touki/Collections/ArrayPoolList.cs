@@ -52,7 +52,7 @@ public sealed class ArrayPoolList<T> : ArrayBackedList<T> where T : notnull
     {
         if (array is not null)
         {
-            ArrayPool<T>.Shared.Return(array, TypeInfo<T>.IsReferenceOrContainsReferences());
+            ArrayPool<T>.Shared.Return(array, clearArray: TypeInfo<T>.IsReferenceOrContainsReferences());
         }
     }
 }

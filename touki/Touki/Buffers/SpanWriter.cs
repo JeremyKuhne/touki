@@ -32,6 +32,11 @@ public unsafe ref struct SpanWriter<T>(Span<T> span) where T : unmanaged
     }
 
     /// <summary>
+    ///  Returns <see langword="true"/> if there is no remaining space in the span.
+    /// </summary>
+    public readonly bool End => _unwritten.IsEmpty;
+
+    /// <summary>
     ///  Gets the total length of the original span.
     /// </summary>
     public readonly int Length => Span.Length;
