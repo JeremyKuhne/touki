@@ -169,6 +169,81 @@ public class SpanWriterTests
     }
 
     [Fact]
+    public void SpanWriter_End_Property()
+    {
+        Span<byte> span = new byte[3];
+        SpanWriter<byte> writer = new(span);
+
+        writer.End.Should().BeFalse();
+
+        writer.TryWrite(1);
+        writer.End.Should().BeFalse();
+
+        writer.TryWrite(2);
+        writer.End.Should().BeFalse();
+
+        writer.TryWrite(3);
+        writer.End.Should().BeTrue();
+
+        writer.TryWrite(4).Should().BeFalse();
+        writer.End.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SpanWriter_End_EmptySpan()
+    {
+        Span<byte> span = [];
+        SpanWriter<byte> writer = new(span);
+
+        writer.End.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SpanWriter_End_AfterReset()
+    {
+        Span<byte> span = new byte[2];
+        SpanWriter<byte> writer = new(span);
+
+        writer.TryWrite([1, 2]);
+        writer.End.Should().BeTrue();
+
+        writer.Reset();
+        writer.End.Should().BeFalse();
+    }
+
+    [Fact]
+    public void SpanWriter_End_AfterRewind()
+    {
+        Span<byte> span = new byte[3];
+        SpanWriter<byte> writer = new(span);
+
+        writer.TryWrite([1, 2, 3]);
+        writer.End.Should().BeTrue();
+
+        writer.Rewind(1);
+        writer.End.Should().BeFalse();
+
+        writer.TryWrite(4);
+        writer.End.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SpanWriter_End_AfterPositionChange()
+    {
+        Span<byte> span = new byte[5];
+        SpanWriter<byte> writer = new(span);
+
+        writer.Position = 5;
+        writer.End.Should().BeTrue();
+
+        writer.Position = 3;
+        writer.End.Should().BeFalse();
+
+        writer.Position = 0;
+        writer.End.Should().BeFalse();
+    }
+
+    [Fact]
     public void SpanWriter_Span_Property()
     {
         Span<byte> span = new byte[5];

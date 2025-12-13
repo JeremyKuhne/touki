@@ -96,7 +96,7 @@ public ref struct BufferScope<T>
 
         if (_array is not null)
         {
-            ArrayPool<T>.Shared.Return(_array);
+            ArrayPool<T>.Shared.Return(_array, clearArray: TypeInfo<T>.IsReferenceOrContainsReferences());
         }
 
         _array = newArray;
@@ -171,7 +171,7 @@ public ref struct BufferScope<T>
 
         if (_array is not null)
         {
-            ArrayPool<T>.Shared.Return(_array!);
+            ArrayPool<T>.Shared.Return(_array, clearArray: TypeInfo<T>.IsReferenceOrContainsReferences());
         }
 
         _array = default;
