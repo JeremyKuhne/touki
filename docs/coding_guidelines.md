@@ -16,7 +16,7 @@ There are a few key things we strive for to attain our clarity goals:
 - All context captured in source (via code itself or comments).
 - Using modern language features to make the code easier to maintain and update in the longer term.
 
-A number of the following detailed guidelines are captured in our [`.editorconfig`](../.editorconfig) files and also in our [`copilot-instructions.md`](../.github/copilot-instructions.md) and to help get feedback on guidelines in Visual Studio and Visual Studio Code as well as better conformance with Copilot.
+A number of the following detailed guidelines are captured in our [`.editorconfig`](./../.editorconfig) files and also in our [`copilot-instructions.md`](./../.github/copilot-instructions.md) and to help get feedback on guidelines in Visual Studio and Visual Studio Code as well as better conformance with Copilot.
 
 ### Spacing
 

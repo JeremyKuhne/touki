@@ -1,0 +1,30 @@
+{
+  "_comment": "API metadata generation is currently disabled because docfx does not support C# 13 implicit extension types (extension keyword). Re-enable once docfx adds support.",
+  "build": {
+    "content": [
+      {
+        "files": [
+          "*.md",
+          "*.yml",
+          "how-to/**.md",
+          "how-to/**.yml",
+          "concepts/**.md"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [ "images/**", "logo.svg" ]
+      }
+    ],
+    "output": "_site",
+    "template": [
+      "default",
+      "templates/darkmode"
+    ],
+    "globalMetadata": {
+      "_appName": "Touki",
+      "_enableSearch": true
+    }
+  }
+}

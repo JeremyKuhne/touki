@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Reducing String Allocations with Touki </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Reducing String Allocations with Touki ">
+    
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <link rel="stylesheet" href="../styles/dark.css">
+      <meta property="docfx:navrel" content="../toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="Touki">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="reducing-string-allocations-with-touki">Reducing String Allocations with Touki</h1>
+
+<p>String creation is one of the most frequently executed operations in many .NET programs. Every time a string is built or modified a new instance is allocated and old instances eventually need to be reclaimed by the garbage collector.</p>
+<p>On modern .NET platforms (from .NET 6 onward) the compiler rewrites interpolated strings into a lower‑level representation using <strong>interpolated string handlers</strong> — see <em>String Interpolation in C# 10 and .NET 6</em> (<a href="https://devblogs.microsoft.com/dotnet/string-interpolation-in-c-10-and-net-6/">.NET Blog</a>). Benchmarks published in that post show a ~40 % throughput improvement and about a five‑fold reduction in memory allocation compared with <code>string.Format</code>.</p>
+<p>For developers who need to target .NET Framework 4.8 or earlier, these improvements are not available because the framework lacks the built‑in interpolated‑string handler and many of the supporting APIs. The <strong>Touki</strong> library bridges that gap by providing a default interpolated string handler and polyfills for .NET Framework 4.7.2 and later.</p>
+<p><strong>Touki</strong> also provides additional high‑performance text utilities on <strong>both</strong> .NET 9 <strong>and</strong> .NET Framework 4.7.2 and later so you can enjoy performant, lower allocation string handling while still supporting older frameworks.</p>
+<h2 id="why-reducing-allocations-matters">Why reducing allocations matters</h2>
+<p>Strings in .NET are immutable. Every time you use <code>string.Concat</code>, <code>StringBuilder.Append</code> or <code>string.Format</code>, a new string instance is created. Frequent allocations lead to:</p>
+<ul>
+<li><strong>Garbage‑collection pressure</strong> – short‑lived strings can quickly accumulate to dramatic weight on the GC.</li>
+<li><strong>Hidden boxing</strong> – <code>string.Format</code> boxes value‑type arguments into an <code>object[]</code> array and creates the array itself (see the .NET Blog post above), generating unnecessary heap activity.</li>
+<li><strong>Parsing costs</strong> – <code>string.Format</code> interprets the composite format string at run‑time, so when you don’t know the format string until run‑time you miss out on compile‑time parsing or optimized code paths.</li>
+</ul>
+<h2 id="toukis-approach">Touki’s approach</h2>
+<p>Touki (登器) provides low allocation interpolated‑string support for .NET Framework 4.7.2 and a number of additional helpers for <em>all</em> .NET versions. Touki ports portions of the .NET runtime under the MIT license and augments them with extra functionality. On .NET 9 it defers to the built‑in handler; on .NET Framework 4.7.2 it provides its own implementation.</p>
+<h3 id="valuestringbuilder-the-core-string-builder"><code>ValueStringBuilder</code>: the core string builder</h3>
+<p><code>ValueStringBuilder</code> is a <code>ref struct</code> that builds strings on the stack when small and rents from <code>ArrayPool&lt;char&gt;</code> when they grow (see source code (<a href="https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Text/ValueStringBuilder.cs">ValueStringBuilder.cs</a>)). It also serves as an <strong>interpolated‑string handler</strong> so helper methods can accept it directly. Based on the <code>ValueStringBuilder</code> .NET uses internally, you can now leverage it for your performance critical scenarios.</p>
+<p>Touki’s polyfilled <code>DefaultInterpolatedStringHandler</code> for .NET 4.7.2 (<a href="https://github.com/JeremyKuhne/touki/blob/main/touki/Framework/System/Runtime/CompilerServices/DefaultInterpolatedStringHandler.cs">source</a>) simply wraps a <code>ValueStringBuilder</code>. On .NET Framework the compiler targets interpolated strings to this handler, giving you the same low‑allocation benefits that newer runtimes provide.</p>
+<h3 id="strings-lowercost-format-methods"><code>Strings</code>: lower‑cost <code>Format</code> methods</h3>
+<p>The static <code>StringExtensions</code> class augments <code>string.Format</code> methods. Its <code>FormatValue</code> overloads accept either <strong>unmanaged generic arguments</strong> or <strong>Touki’s <code>Value</code> struct</strong> to avoid boxing (see <a href="https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Text/Strings.cs">Strings.cs</a>). Internally it builds the result with a <code>ValueStringBuilder</code> and a lightly modified version of the runtime’s <code>StringBuilder.AppendFormatHelper</code> (<a href="https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Text/ValueStringBuilder.Formatting.cs">ValueStringBuilder.Formatting.cs</a>) that:</p>
+<ol>
+<li>Uses a small stack‑allocated span for formatting value types,</li>
+<li>Avoids the internal <code>ISpanFormattable</code> interface that doesn’t exist on .NET Framework,</li>
+<li>Uses Touki’s <code>Value</code> struct to skip boxing,</li>
+<li>Works with <code>ReadOnlySpan&lt;char&gt;</code> and <code>ReadOnlySpan&lt;Value&gt;</code> so neither the format string nor argument array allocates.</li>
+</ol>
+<pre><code class="lang-csharp">using Touki.Text;
+
+// ...
+
+string fmt = &quot;{0} – {1:F2}&quot;;
+double num = 3.14159;
+
+// No boxing for either the string or the double, no intermediate strings
+string result = string.FormatValues(fmt, 42, num);
+</code></pre>
+<h3 id="stringsegment-efficient-substring-handling"><code>StringSegment</code>: efficient substring handling</h3>
+<p><code>StringSegment</code> (<a href="https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Text/StringSegment.cs">source</a>) wraps a section of an existing string in a normal (non-ref) struct that can be stored off of the stack:</p>
+<pre><code class="lang-csharp">string csv = &quot;apple,banana,cherry&quot;;
+StringSegment full = new(csv);
+int comma = full.IndexOf(',');
+StringSegment first = full[..comma]; // &quot;apple&quot;
+
+// or iterate via
+
+StringSegment right = full;
+while (right.TrySplit(';', out StringSegment left, out right))
+{
+    // left will be &quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot; in each iteration
+}
+</code></pre>
+<h3 id="value-struct-variant-values-without-boxing"><code>Value</code> struct: variant values without boxing</h3>
+<p>Touki’s <code>Value</code> struct (<a href="https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Value.cs">source</a>) holds primitive, nullable and enum types without boxing. <code>Strings.Format</code> overloads take <code>Value</code> to avoid boxing even when argument types vary:</p>
+<pre><code class="lang-csharp">string fmt = &quot;{0} - {1} - {2}&quot;;
+string result = string.FormatValues(fmt, 1, 2.5, &quot;three&quot;); // &quot;1 - 2.5 - three&quot;
+</code></pre>
+<p>For fully supported types there are implicit conversions to <code>Value</code>. <code>Value.Create&lt;T&gt;()</code> creates for all other types. Note that <em>all</em> enums are also supported, but do not have implicit converters.</p>
+<h3 id="stream-and-streamwriter-extensions"><code>Stream</code> and <code>StreamWriter</code> extensions</h3>
+<p><code>StreamExtensions</code> adds <code>WriteFormatted</code> so you can stream interpolated strings without an intermediate allocation (<a href="https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Io/StreamExtensions.cs">StreamExtensions.cs</a>). Unit tests demonstrate the pattern (<a href="https://github.com/JeremyKuhne/touki/blob/main/touki.tests/Touki/StreamExtensionsTests.cs">StreamExtensionsTests.cs</a>):</p>
+<pre><code class="lang-csharp">using MemoryStream stream = new();
+stream.WriteFormatted($&quot;Library: {name}, Version: {version}&quot;);
+
+textWriter.WriteFormatted($&quot;Library: {name}, Version: {version}&quot;)
+</code></pre>
+<p>The builder writes directly to the stream buffer, so no extra string is created.</p>
+<h2 id="bringing-modern-interpolation-to-netframework472">Bringing modern interpolation to .NET Framework 4.7.2</h2>
+<p>C# 10 lets you define <strong>custom interpolated‑string handlers</strong>. Touki supplies <code>DefaultInterpolatedStringHandler</code> and <code>AssertInterpolatedStringHandler</code> (<a href="https://github.com/JeremyKuhne/touki/blob/main/touki/Framework/System/Diagnostics/AssertInterpolatedStringHandler.cs">AssertInterpolatedStringHandler.cs</a>). The former is the special class C# looks for to implement interpolated strings. The latter is used to provide a low allocation cross compiled assertions in the <code>Debugging</code> class:</p>
+<pre><code class="lang-csharp">// Works on *both* .NET 9 and .NET Framework 4.7.2
+Debugging.Assert(count == 0, $&quot;The count should be 0, but is {count}.&quot;);
+</code></pre>
+<p>Touki ports span number formatting from .NET 6 to the .NET Framework 4.7.2 build to allow zero allocation number formatting.</p>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/JeremyKuhne/touki/blob/main/docs/how-to/strings.md/#L1" class="contribution-link">Edit this page</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      
+          </div>
+        </div>
+      </footer>
+      <script type="text/javascript" src="../styles/darkmode.js"></script>    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

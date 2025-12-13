@@ -1,0 +1,246 @@
+/* Dark Mode Styles */
+
+/* Main background and text */
+body.dark {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+/* Navigation bar */
+body.dark .navbar-inverse {
+    background-color: #252526;
+    border-color: #3e3e42;
+}
+
+body.dark .navbar-brand img#logo {
+    filter: brightness(1.2);
+}
+
+body.dark .navbar-inverse .navbar-nav > li > a {
+    color: #e0e0e0;
+}
+
+body.dark .navbar-inverse .navbar-nav > li > a:hover,
+body.dark .navbar-inverse .navbar-nav > li > a:focus {
+    color: #fff;
+    background-color: #3e3e42;
+}
+
+body.dark .subnav {
+    background-color: #2d2d30;
+    border-color: #3e3e42;
+}
+
+/* Content areas */
+body.dark article {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+body.dark .sideaffix,
+body.dark .affix {
+    background-color: #1e1e1e;
+}
+
+body.dark .toc,
+body.dark .sidetoc,
+body.dark .sidefilter,
+body.dark .sidetoggle {
+    background-color: #252526;
+    color: #e0e0e0;
+}
+
+body.dark .toc-filter {
+    background-color: #252526;
+    border-color: #3e3e42;
+    padding: 10px;
+    margin: 0;
+}
+
+body.dark .toc .nav > li > a,
+body.dark .sidetoc .nav > li > a {
+    color: #e0e0e0;
+    background-color: transparent;
+}
+
+body.dark .toc .nav > li > a:hover,
+body.dark .sidetoc .nav > li > a:hover,
+body.dark .toc .nav > li > a:focus,
+body.dark .sidetoc .nav > li > a:focus {
+    background-color: #3e3e42;
+    color: #fff;
+}
+
+body.dark .toc .nav > li.active > a,
+body.dark .sidetoc .nav > li.active > a {
+    background-color: #094771;
+    color: #fff;
+}
+
+body.dark .toc .level1 > li,
+body.dark .toc .level2 > li {
+    border-color: #3e3e42;
+}
+
+body.dark #toc_filter_input,
+body.dark input[type="text"].form-control {
+    background-color: #3e3e42 !important;
+    color: #e0e0e0 !important;
+    border-color: #3e3e42 !important;
+}
+
+body.dark #toc_filter_input::placeholder {
+    color: #999;
+}
+
+body.dark .toc-filter > input {
+    background-color: #3e3e42 !important;
+    color: #e0e0e0 !important;
+    border: 1px solid #3e3e42 !important;
+}
+
+/* Code blocks */
+body.dark pre,
+body.dark code {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    border-color: #3e3e42;
+}
+
+body.dark pre {
+    background-color: #1e1e1e !important;
+}
+
+body.dark .hljs {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+}
+
+/* Tables */
+body.dark table {
+    color: #e0e0e0;
+    background-color: #252526;
+    border-color: #3e3e42;
+}
+
+body.dark table thead {
+    background-color: #2d2d30;
+    color: #e0e0e0;
+}
+
+body.dark table tbody tr:hover {
+    background-color: #2d2d30;
+}
+
+body.dark table td,
+body.dark table th {
+    border-color: #3e3e42;
+}
+
+/* Links */
+body.dark a {
+    color: #569cd6;
+}
+
+body.dark a:hover {
+    color: #7fb6e5;
+}
+
+/* Search box */
+body.dark #search-query {
+    background-color: #3e3e42;
+    color: #e0e0e0;
+    border-color: #3e3e42;
+}
+
+body.dark #search-query::placeholder {
+    color: #999;
+}
+
+/* Breadcrumb */
+body.dark .breadcrumb {
+    background-color: #2d2d30;
+}
+
+body.dark .breadcrumb > li + li:before {
+    color: #999;
+}
+
+/* Footer */
+body.dark footer {
+    background-color: #252526;
+    border-color: #3e3e42;
+    color: #e0e0e0;
+}
+
+body.dark .footer {
+    background-color: #252526;
+    color: #e0e0e0;
+}
+
+body.dark .grad-bottom {
+    background: linear-gradient(rgba(0, 0, 0, 0), #252526 75%);
+}
+
+body.dark footer a {
+    color: #569cd6;
+}
+
+body.dark footer a:hover {
+    color: #7fb6e5;
+}
+
+/* Alerts and notifications */
+body.dark .alert {
+    background-color: #2d2d30;
+    border-color: #3e3e42;
+    color: #e0e0e0;
+}
+
+body.dark .alert-info {
+    background-color: #1e3a5f;
+    border-color: #2e5a8f;
+}
+
+body.dark .alert-warning {
+    background-color: #5f4d1e;
+    border-color: #8f7d2e;
+}
+
+body.dark .alert-danger {
+    background-color: #5f1e1e;
+    border-color: #8f2e2e;
+}
+
+/* Headings */
+body.dark h1,
+body.dark h2,
+body.dark h3,
+body.dark h4,
+body.dark h5,
+body.dark h6 {
+    color: #e0e0e0;
+}
+
+/* Horizontal rules */
+body.dark hr {
+    border-color: #3e3e42;
+}
+
+/* Blockquotes */
+body.dark blockquote {
+    border-left-color: #3e3e42;
+    color: #b0b0b0;
+}
+
+/* Form controls */
+body.dark .form-control {
+    background-color: #3e3e42;
+    color: #e0e0e0;
+    border-color: #3e3e42;
+}
+
+body.dark .form-control:focus {
+    background-color: #3e3e42;
+    border-color: #569cd6;
+}

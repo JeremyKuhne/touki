@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 50" width="240" height="50">
+  <style>
+    .emoji { font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; font-size: 32px; }
+    .kanji { font-family: 'Yu Gothic', 'MS Gothic', 'Hiragino Sans', sans-serif; font-size: 28px; font-weight: 500; fill: #337ab7; }
+    .text { font-family: 'Segoe UI', Arial, sans-serif; font-size: 24px; font-weight: 600; fill: #337ab7; }
+    @media (prefers-color-scheme: dark) {
+      .kanji, .text { fill: #569cd6; }
+    }
+  </style>
+  <text x="5" y="37" class="emoji">🥷🏽</text>
+  <text x="50" y="35" class="kanji">登器</text>
+  <text x="125" y="35" class="text">Touki</text>
+</svg>
