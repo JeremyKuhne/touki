@@ -152,5 +152,26 @@ public static unsafe partial class StringBuilderExtensions
             valueBuilder.AppendFormat(format, arg1, arg2, arg3, arg4);
             return builder.AppendFormatted(ref valueBuilder);
         }
+
+        /// <summary>
+        ///  Appends the values in the given span, separated by the specified separator character.
+        /// </summary>
+        public StringBuilder AppendJoin(char separator, params ReadOnlySpan<object?> values)
+        {
+            if (values.IsEmpty)
+            {
+                return builder;
+            }
+
+            builder.Append(values[0]);
+
+            for (int i = 1; i < values.Length; i++)
+            {
+                builder.Append(separator);
+                builder.Append(values[i]);
+            }
+
+            return builder;
+        }
     }
 }

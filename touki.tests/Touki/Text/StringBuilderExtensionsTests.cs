@@ -252,10 +252,196 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("No placeholders here");
     }
 
+    [Fact]
+    public void AppendJoin_EmptyValues_ReturnsUnchanged()
+    {
+        StringBuilder builder = new("Prefix");
+
+        builder.AppendJoin(',', (object?[])[]);
+
+        builder.ToString().Should().Be("Prefix");
+    }
+
+    [Fact]
+    public void AppendJoin_SingleValue_AppendsWithoutSeparator()
+    {
+        StringBuilder builder = new();
+
+        object?[] values = ["A"];
+        builder.AppendJoin(',', values);
+
+        builder.ToString().Should().Be("A");
+    }
+
+    [Fact]
+    public void AppendJoin_MultipleValues_AppendsWithSeparators()
+    {
+        StringBuilder builder = new();
+
+        object?[] values = ["A", "B", "C"];
+        builder.AppendJoin(',', values);
+
+        builder.ToString().Should().Be("A,B,C");
+    }
+
+    [Fact]
+    public void AppendJoin_NullValue_AppendsEmptyForNull()
+    {
+        StringBuilder builder = new();
+
+        object?[] values = ["A", null, "C"];
+        builder.AppendJoin(',', values);
+
+        builder.ToString().Should().Be("A,,C");
+    }
+
+    [Fact]
+    public void AppendJoin_ExistingContent_AppendsAfterExisting()
+    {
+        StringBuilder builder = new("Prefix:");
+
+        object?[] values = ["A", "B"];
+        builder.AppendJoin(' ', values);
+
+        builder.ToString().Should().Be("Prefix:A B");
+    }
+
     private enum TestEnum
     {
         First,
         Second,
         Third
+    }
+
+    [Fact]
+    public void GetChunks_NonFrameworkTarget_DoesNotHaveExtension()
+    {
+#if NET481
+        return;
+#else
+        typeof(StringBuilderExtensions)
+            .GetMethod("GetChunks")
+            .Should()
+            .BeNull();
+#endif
+    }
+
+    [Fact]
+    public void GetChunks_EmptyStringBuilder_MoveNextReturnsFalse()
+    {
+        StringBuilder builder = new();
+
+        int count = 0;
+        foreach (ReadOnlyMemory<char> _ in builder.GetChunks())
+        {
+            count++;
+        }
+
+        count.Should().Be(1);
+    }
+
+    [Fact]
+    public void GetChunks_BeforeMoveNext_CurrentThrowsInvalidOperation()
+    {
+        StringBuilder builder = new();
+
+        var chunks = builder.GetChunks();
+
+        Action action = () =>
+        {
+            _ = chunks.Current;
+        };
+
+        action.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void GetChunks_AfterEnd_CurrentReturnsLastChunk()
+    {
+        StringBuilder builder = new();
+        builder.Append("Hello");
+
+        var chunks = builder.GetChunks();
+
+        chunks.MoveNext().Should().BeTrue();
+        ReadOnlyMemory<char> first = chunks.Current;
+
+        chunks.MoveNext().Should().BeFalse();
+
+        chunks.Current.ToString().Should().Be(first.ToString());
+    }
+
+    [Fact]
+    public void GetChunks_SingleChunk_ReturnsSingleChunkThatMatchesToString()
+    {
+        StringBuilder builder = new();
+        builder.Append("Hello World");
+
+        List<string> chunkStrings = [];
+        foreach (ReadOnlyMemory<char> chunk in builder.GetChunks())
+        {
+            chunkStrings.Add(chunk.ToString());
+        }
+
+        chunkStrings.Should().Equal([builder.ToString()]);
+    }
+
+    [Fact]
+    public void GetChunks_ForcedMultipleChunks_ConcatenationMatchesToString()
+    {
+        StringBuilder builder = new(capacity: 8);
+
+        builder.Append('A', 8);
+        builder.Append('B', 8);
+        builder.Append('C', 8);
+
+        string expected = builder.ToString();
+
+        List<string> chunkStrings = [];
+        foreach (ReadOnlyMemory<char> chunk in builder.GetChunks())
+        {
+            chunkStrings.Add(chunk.ToString());
+        }
+
+        chunkStrings.Count.Should().BeGreaterThan(1);
+        string.Concat(chunkStrings).Should().Be(expected);
+    }
+
+    [Fact]
+    public void GetChunks_ManyChunks_ConcatenationMatchesToString()
+    {
+        StringBuilder builder = new(capacity: 16);
+
+        for (int i = 0; i < 64; i++)
+        {
+            // Insertion aggressively creates small chunks.
+            builder.Insert(0, (char)('A' + (i % 26)));
+            builder.Insert(0, "------------------------------");
+        }
+
+        string expected = builder.ToString();
+
+        List<string> chunkStrings = [];
+        foreach (ReadOnlyMemory<char> chunk in builder.GetChunks())
+        {
+            chunkStrings.Add(chunk.ToString());
+        }
+
+        chunkStrings.Count.Should().BeGreaterThan(8);
+        string.Concat(chunkStrings).Should().Be(expected);
+    }
+
+    [Fact]
+    public void GetChunks_AllChunks_NonEmpty()
+    {
+        StringBuilder builder = new(capacity: 8);
+
+        builder.Append('A', 8);
+        builder.Append('B', 8);
+
+        foreach (ReadOnlyMemory<char> chunk in builder.GetChunks())
+        {
+            chunk.Length.Should().BeGreaterThan(0);
+        }
     }
 }

@@ -21,13 +21,14 @@ global using System.IO;
 global using System.IO.Enumeration;
 #endif
 
-global using Stream = System.IO.Stream;
-global using FileAttributes = System.IO.FileAttributes;
-global using IOException = System.IO.IOException;
-global using FileNotFoundException = System.IO.FileNotFoundException;
 global using DirectoryNotFoundException = System.IO.DirectoryNotFoundException;
-global using PathTooLongException = System.IO.PathTooLongException;
 global using DriveNotFoundException = System.IO.DriveNotFoundException;
+global using FileAttributes = System.IO.FileAttributes;
+global using FileNotFoundException = System.IO.FileNotFoundException;
+global using IOException = System.IO.IOException;
+global using PathTooLongException = System.IO.PathTooLongException;
+global using Stream = System.IO.Stream;
+global using TextReader = System.IO.TextReader;
 
 global using Marshal = System.Runtime.InteropServices.Marshal;
 
