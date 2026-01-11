@@ -11,7 +11,7 @@ using System.Dynamic;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 
-namespace System;
+namespace Touki.TestSupport;
 
 /// <summary>
 ///  Internals (including privates) access wrapper for tests.

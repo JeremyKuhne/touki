@@ -9,7 +9,7 @@
 
 using System.Reflection;
 
-namespace System;
+namespace Touki.TestSupport;
 
 /// <summary>
 ///  Reflection helpers to assist with type discovery.

@@ -7,16 +7,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace System;
+using System.Reflection;
+
+namespace Touki.TestSupport;
 
 /// <summary>
-///  Extension methods for associating internals test accessors with
-///  types being tested.
+///  Object extension methods used for testing.
 /// </summary>
 /// <remarks>
 ///  <para>In the System namespace for implicit discovery.</para>
 /// </remarks>
-public static partial class TestAccessors
+public static partial class ObjectExtensions
 {
     // Need to pass a null parameter when constructing a static instance
     // of TestAccessor. As this is pretty common and never changes, caching
@@ -30,7 +31,7 @@ public static partial class TestAccessors
     {
         /// <summary>
         ///  Extension that creates a generic internals test accessor for a
-        ///  given instance or Type class (if only accessing statics).
+        ///  given instance or <see cref="Type"/> class (if only accessing statics).
         /// </summary>
         /// <remarks>
         ///  <para>
@@ -71,5 +72,22 @@ public static partial class TestAccessors
                     ?? throw new ArgumentException("Cannot create TestAccessor for Nullable<T> instances with no value.");
             }
         }
+    }
+
+    extension(object @object)
+    {
+        /// <summary>
+        ///  Invokes the finalizer of an object directly, bypassing the normal garbage collection process.
+        /// </summary>
+        public void InvokeFinalizer()
+        {
+            // Find the special finalizer method and invoke it directly
+            MethodInfo? finalizerMethod = @object.GetType().GetMethod(
+                "Finalize",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+
+            finalizerMethod?.Invoke(@object, null);
+        }
+
     }
 }

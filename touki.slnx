@@ -33,6 +33,9 @@
   <Project Path="touki.tests/touki.tests.csproj" Id="19ab971c-bbbf-45f9-8a09-11054caec775">
     <Platform Project="x64" />
   </Project>
+  <Project Path="touki.testsupport/touki.testsupport.csproj">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="touki/touki.csproj">
     <Platform Project="x64" />
   </Project>
