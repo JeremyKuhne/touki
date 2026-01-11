@@ -25,9 +25,9 @@ global using System.IO;
 global using System.IO.Enumeration;
 #endif
 
+global using Touki.Collections;
 global using Touki.Exceptions;
-global using Touki.TestSupport;
+global using Touki.Text;
+global using Touki.Io;
 
-#pragma warning restore IDE0005
-
-global using FluentAssertions;
+#pragma warning restore IDE0005 // Using directive is unnecessary.

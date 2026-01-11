@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Multitarget .NET Core and .NET Framework
+      https://learn.microsoft.com/dotnet/standard/frameworks
+    -->
+    <TargetFrameworks>$(DotNetCoreVersion);$(DotNetFrameworkVersion)</TargetFrameworks>
+    <OutputType>Library</OutputType>
+
+    <!--
+     We don't want to have implicit usings as we're retargeting System.IO to Microsoft.IO
+     in our GlobalUsings.cs file for .NET Framework.
+    -->
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Touki.TestSupport</RootNamespace>
+
+    <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+
+    <!--
+     Modifying default items to exclude the Framework items if not building for .NET Framework.
+    -->
+    <DefaultItemExcludes Condition="'$(TargetFramework)' != '$(DotNetFrameworkVersion)'">$(DefaultItemExcludes);**/Framework/**/*</DefaultItemExcludes>
+
+    <!-- Use the Microsoft Testing Platform -->
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+
+    <!-- This will no longer be needed for the .NET 10 SDK -->
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != '$(DotNetFrameworkVersion)'">
+    <!-- Include the Framework specific items as none so we can see them easily in the Solution Explorer. -->
+    <None Include="**/Framework/**/*" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'">
+    <PackageReference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\touki\touki.csproj" />
+  </ItemGroup>
+</Project>

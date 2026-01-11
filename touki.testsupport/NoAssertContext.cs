@@ -7,10 +7,10 @@
 
 using System.Collections.Concurrent;
 
-namespace System;
+namespace Touki.TestSupport;
 
 /// <summary>
-///  Use (within a using) to eat asserts.
+///  Use (within a using) to eat asserts. Currently supports xUnit v3.
 /// </summary>
 public sealed class NoAssertContext : IDisposable
 {
@@ -33,6 +33,9 @@ public sealed class NoAssertContext : IDisposable
     private static readonly TraceListener? s_xunitListener = Trace.Listeners["xUnit.net"];
     private static readonly NoAssertListener s_noAssertListener = new();
 
+    /// <summary>
+    ///  Instantiates a context that suppresses asserts on the current thread.
+    /// </summary>
     public NoAssertContext()
     {
         s_suppressedThreads.AddOrUpdate(Environment.CurrentManagedThreadId, 1, (key, oldValue) => oldValue + 1);
@@ -66,6 +69,9 @@ public sealed class NoAssertContext : IDisposable
         }
     }
 
+    /// <summary>
+    ///  Disposes the context, restoring assert behavior on the current thread.
+    /// </summary>
     public void Dispose()
     {
         GC.SuppressFinalize(this);
@@ -110,6 +116,9 @@ public sealed class NoAssertContext : IDisposable
     }
 
 #pragma warning disable CA1821 // Remove empty Finalizers
+    /// <summary>
+    ///  Finalizer to catch undisposed contexts.
+    /// </summary>
     ~NoAssertContext()
 #pragma warning restore CA1821
     {
@@ -117,7 +126,7 @@ public sealed class NoAssertContext : IDisposable
         throw new InvalidOperationException($"Did not dispose {nameof(NoAssertContext)}");
     }
 
-    private class NoAssertListener : TraceListener
+    private sealed class NoAssertListener : TraceListener
     {
         public NoAssertListener()
             : base(typeof(NoAssertListener).FullName)
