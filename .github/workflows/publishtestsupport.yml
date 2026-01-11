@@ -1,10 +1,8 @@
-﻿# Publishes a .NET package to NuGet when a new tag is pushed.
+﻿# Publishes a .NET package to NuGet.
 
-name: Publish NuGet Package
+name: Publish TestSupport NuGet Package
 
 on:
-  push:
-    tags: ['v*.*.*']        # fires on v0.1.0, v0.1.0-rc.1, etc.
   workflow_dispatch:
 
 jobs:
@@ -37,7 +35,7 @@ jobs:
         user: ${{ secrets.NUGET_USER }}
     - name: Publish to NuGet
       run: |
-        Get-ChildItem -Path ./artifacts -Filter KlutzyNinja.Touki.*.nupkg | ForEach-Object {
+        Get-ChildItem -Path ./artifacts -Filter KlutzyNinja.Touki.TestSupport.*.nupkg | ForEach-Object {
             dotnet nuget push $_.FullName `
                 --api-key ${{steps.login.outputs.NUGET_API_KEY}} `
                 --source https://api.nuget.org/v3/index.json `
