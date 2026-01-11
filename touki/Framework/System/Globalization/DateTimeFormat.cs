@@ -8,7 +8,7 @@
 using System.Globalization;
 using Touki;
 using Touki.Text;
-using Touki.Framework.Resources;
+using Touki.Standard.Resources;
 
 namespace System;
 
@@ -336,7 +336,7 @@ internal static class DateTimeFormat
                     //
                     // This means that '\' is at the end of the formatting string.
                     //
-                    throw new FormatException(SRF.Format_InvalidString);
+                    throw new FormatException(SRS.Format_InvalidString);
                 }
             }
             else
@@ -348,7 +348,7 @@ internal static class DateTimeFormat
         if (!foundQuote)
         {
             // Here we can't find the matching quote.
-            throw new FormatException(string.FormatValue(SRF.Format_BadQuote, quoteChar));
+            throw new FormatException(string.FormatValue(SRS.Format_BadQuote, quoteChar));
         }
 
         //
@@ -540,7 +540,7 @@ internal static class DateTimeFormat
                     }
                     else
                     {
-                        throw new FormatException(SRF.Format_InvalidString);
+                        throw new FormatException(SRS.Format_InvalidString);
                     }
 
                     break;
@@ -728,7 +728,7 @@ internal static class DateTimeFormat
                     {
                         // This means that '%' is at the end of the format string or
                         // "%%" appears in the format string.
-                        throw new FormatException(SRF.Format_InvalidString);
+                        throw new FormatException(SRS.Format_InvalidString);
                     }
 
                     break;
@@ -752,7 +752,7 @@ internal static class DateTimeFormat
                         //
                         // This means that '\' is at the end of the formatting string.
                         //
-                        throw new FormatException(SRF.Format_InvalidString);
+                        throw new FormatException(SRS.Format_InvalidString);
                     }
                     break;
                 default:
@@ -1013,7 +1013,7 @@ internal static class DateTimeFormat
                     if (offset.Ticks != NullOffset)
                     {
                         // This format is not supported by DateTimeOffset
-                        throw new FormatException(SRF.Format_InvalidString);
+                        throw new FormatException(SRS.Format_InvalidString);
                     }
 
                     // Universal time is always in Gregorian calendar.
@@ -1071,7 +1071,7 @@ internal static class DateTimeFormat
                     writer.TryWrite(formatInfo.LongTimePattern.AsSpan());
                     return buffer[..writer.Position];
                 default:
-                    throw new FormatException(SRF.Format_InvalidString);
+                    throw new FormatException(SRS.Format_InvalidString);
             }
         }
     }

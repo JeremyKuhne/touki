@@ -6,7 +6,7 @@
       Multitarget .NET Core and .NET Framework
       https://learn.microsoft.com/dotnet/standard/frameworks
     -->
-    <TargetFrameworks>$(DotNetCoreVersion);$(DotNetFrameworkVersion)</TargetFrameworks>
+    <TargetFrameworks>$(DotNetCoreVersion);$(DotNetFrameworkVersion);netstandard2.0</TargetFrameworks>
 
     <!--
       We don't want to have implicit usings as we're retargeting System.IO to Microsoft.IO
@@ -37,7 +37,7 @@
     <IsAotCompatible>true</IsAotCompatible>
 
     <!-- Exclude Framework folder from non .NET Framework builds -->
-    <DefaultItemExcludes >$(DefaultItemExcludes);**/Framework/**/*</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);**/Framework/**/*</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != '$(DotNetFrameworkVersion)'">
@@ -45,7 +45,20 @@
     <None Include="**/Framework/**/*" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == '$(DotNetCoreVersion)'">
+    <!-- Exclude .NET Standard folder from .NET Core builds -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);**/Standard/**/*</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(DotNetCoreVersion)'">
+    <!-- Include the .NET Standard specific items as none so we can see them easily in the Solution Explorer. -->
+    <None Include="**/Standard/**/*" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'">
+    <!-- This gets us .NET 6 System.IO repackaged for .NET Framework. -->
+    <PackageReference Include="Microsoft.IO.Redist" />
+
     <!--
       Need to explicitly reference System.ValueTuple to work around a few issues. See:
 
@@ -53,9 +66,8 @@
       https://github.com/dotnet/msbuild/issues/12780
     -->
     <Reference Include="System.ValueTuple" SpecificVersion="true" />
-
-    <!-- This gets us .NET 6 System.IO repackaged for .NET Framework. -->
-    <PackageReference Include="Microsoft.IO.Redist" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(DotNetCoreVersion)'">
     <!-- This gets us Span. -->
     <PackageReference Include="System.Memory" />
     <!-- This provides Range and Index support downlevel. -->
@@ -117,7 +129,7 @@
   <PropertyGroup>
     <PolySharpUsePublicAccessibilityForGeneratedTypes>true</PolySharpUsePublicAccessibilityForGeneratedTypes>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'">
+  <ItemGroup Condition="'$(TargetFramework)' != '$(DotNetCoreVersion)'">
     <PackageReference Include="PolySharp">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -147,6 +159,9 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Framework\System\Threading\" />
   </ItemGroup>
 
 </Project>

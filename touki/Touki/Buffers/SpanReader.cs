@@ -347,7 +347,7 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
         else
         {
             success = true;
-#if NETFRAMEWORK
+#if !NET
             ReadOnlySpan<T> current = _unread[..(sizeof(TValue) / sizeof(T) * count)];
             value = MemoryMarshal.Cast<T, TValue>(current);
 #else
@@ -458,7 +458,7 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     private static void UncheckedSliceTo(ref ReadOnlySpan<T> span, int length)
     {
         Debug.Assert((uint)length <= (uint)span.Length);
-#if NETFRAMEWORK
+#if !NET
         span = span[..length];
 #else
         span = MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetReference(span), length);
@@ -469,7 +469,7 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     private static void UncheckedSlice(ref ReadOnlySpan<T> span, int start, int length)
     {
         Debug.Assert((uint)start <= (uint)span.Length && (uint)length <= (uint)(span.Length - start));
-#if NETFRAMEWORK
+#if !NET
         span = span.Slice(start, length);
 #else
         span = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)start), length);

@@ -12,7 +12,7 @@
 // The old way to throw an exception generates quite a lot IL code and assembly code.
 // Following is an example:
 //     C# source
-//          throw new ArgumentNullException(nameof(key), SRF.ArgumentNull_Key);
+//          throw new ArgumentNullException(nameof(key), SRS.ArgumentNull_Key);
 //     IL code:
 //          IL_0003:  ldstr      "key"
 //          IL_0008:  ldstr      "ArgumentNull_Key"
@@ -39,12 +39,14 @@
 //
 
 using System.Buffers;
+#if !NETSTANDARD2_0
 using System.IO;
+#endif
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Threading;
 using Touki;
-using Touki.Framework.Resources;
+using Touki.Standard.Resources;
 using Touki.Text;
 
 namespace System;
@@ -63,7 +65,7 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType) =>
-        throw new ArgumentException(string.Format(SRF.Argument_InvalidTypeWithPointersNotSupported, targetType.ToString()));
+        throw new ArgumentException(string.Format(SRS.Argument_InvalidTypeWithPointersNotSupported, targetType.ToString()));
 
     [DoesNotReturn]
     internal static void ThrowIndexOutOfRangeException() => throw new IndexOutOfRangeException();
@@ -73,27 +75,27 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_DestinationTooShort() =>
-        throw new ArgumentException(SRF.Argument_DestinationTooShort, paramName: "destination");
+        throw new ArgumentException(SRS.Argument_DestinationTooShort, paramName: "destination");
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_InvalidTimeSpanStyles() =>
-        throw new ArgumentException(SRF.Argument_InvalidTimeSpanStyles, paramName: "styles");
+        throw new ArgumentException(SRS.Argument_InvalidTimeSpanStyles, paramName: "styles");
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_InvalidEnumValue<TEnum>(
         TEnum value,
         [CallerArgumentExpression(nameof(value))] string argumentName = "") =>
         throw new ArgumentException(
-            string.FormatValues(SRF.Argument_InvalidEnumValue, Value.Create(value), typeof(TEnum).Name),
+            string.FormatValues(SRS.Argument_InvalidEnumValue, Value.Create(value), typeof(TEnum).Name),
             argumentName);
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_OverlapAlignmentMismatch() =>
-        throw new ArgumentException(SRF.Argument_OverlapAlignmentMismatch);
+        throw new ArgumentException(SRS.Argument_OverlapAlignmentMismatch);
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_ArgumentNull_TypedRefType() =>
-        throw new ArgumentNullException("value", SRF.ArgumentNull_TypedRefType);
+        throw new ArgumentNullException("value", SRS.ArgumentNull_TypedRefType);
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_CannotExtractScalar(ExceptionArgument argument) =>
@@ -101,7 +103,7 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_TupleIncorrectType(object obj) =>
-        throw new ArgumentException(string.Format(SRF.ArgumentException_ValueTupleIncorrectType, obj.GetType().ToString()), "other");
+        throw new ArgumentException(string.Format(SRS.ArgumentException_ValueTupleIncorrectType, obj.GetType().ToString()), "other");
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRange_IndexMustBeLessException() => throw GetArgumentOutOfRangeException(
@@ -116,7 +118,7 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_BadComparer(object? comparer) =>
-        throw new ArgumentException(string.Format(SRF.Arg_BogusIComparer, comparer?.ToString() ?? "null"));
+        throw new ArgumentException(string.Format(SRS.Arg_BogusIComparer, comparer?.ToString() ?? "null"));
 
     [DoesNotReturn]
     internal static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException() =>
@@ -156,57 +158,57 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRange_Month(int month) =>
-        throw new ArgumentOutOfRangeException(nameof(month), month, SRF.ArgumentOutOfRange_Month);
+        throw new ArgumentOutOfRangeException(nameof(month), month, SRS.ArgumentOutOfRange_Month);
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRange_DayNumber(int dayNumber) =>
-        throw new ArgumentOutOfRangeException(nameof(dayNumber), dayNumber, SRF.ArgumentOutOfRange_DayNumber);
+        throw new ArgumentOutOfRangeException(nameof(dayNumber), dayNumber, SRS.ArgumentOutOfRange_DayNumber);
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRange_BadYearMonthDay() =>
-        throw new ArgumentOutOfRangeException(null, SRF.ArgumentOutOfRange_BadYearMonthDay);
+        throw new ArgumentOutOfRangeException(null, SRS.ArgumentOutOfRange_BadYearMonthDay);
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRange_BadHourMinuteSecond() =>
-        throw new ArgumentOutOfRangeException(null, SRF.ArgumentOutOfRange_BadHourMinuteSecond);
+        throw new ArgumentOutOfRangeException(null, SRS.ArgumentOutOfRange_BadHourMinuteSecond);
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRange_TimeSpanTooLong() =>
-        throw new ArgumentOutOfRangeException(null, SRF.Overflow_TimeSpanTooLong);
+        throw new ArgumentOutOfRangeException(null, SRS.Overflow_TimeSpanTooLong);
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRange_RoundingDigits(string name) =>
-        throw new ArgumentOutOfRangeException(name, SRF.ArgumentOutOfRange_RoundingDigits);
+        throw new ArgumentOutOfRangeException(name, SRS.ArgumentOutOfRange_RoundingDigits);
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRange_RoundingDigits_MathF(string name) =>
-        throw new ArgumentOutOfRangeException(name, SRF.ArgumentOutOfRange_RoundingDigits_MathF);
+        throw new ArgumentOutOfRangeException(name, SRS.ArgumentOutOfRange_RoundingDigits_MathF);
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRange_Range<T>(string parameterName, T value, T minInclusive, T maxInclusive) =>
         throw new ArgumentOutOfRangeException(
             parameterName,
             value,
-            string.FormatValues(SRF.ArgumentOutOfRange_Range, Value.Create(minInclusive), Value.Create(maxInclusive)));
+            string.FormatValues(SRS.ArgumentOutOfRange_Range, Value.Create(minInclusive), Value.Create(maxInclusive)));
 
     [DoesNotReturn]
     internal static void ThrowOverflowException() => throw new OverflowException();
 
     [DoesNotReturn]
-    internal static void ThrowOverflowException_NegateTwosCompNum() => throw new OverflowException(SRF.Overflow_NegateTwosCompNum);
+    internal static void ThrowOverflowException_NegateTwosCompNum() => throw new OverflowException(SRS.Overflow_NegateTwosCompNum);
 
     [DoesNotReturn]
-    internal static void ThrowOverflowException_TimeSpanTooLong() => throw new OverflowException(SRF.Overflow_TimeSpanTooLong);
+    internal static void ThrowOverflowException_TimeSpanTooLong() => throw new OverflowException(SRS.Overflow_TimeSpanTooLong);
 
     [DoesNotReturn]
-    internal static void ThrowOverflowException_TimeSpanDuration() => throw new OverflowException(SRF.Overflow_Duration);
+    internal static void ThrowOverflowException_TimeSpanDuration() => throw new OverflowException(SRS.Overflow_Duration);
 
     [DoesNotReturn]
-    internal static void ThrowArgumentException_Arg_CannotBeNaN() => throw new ArgumentException(SRF.Arg_CannotBeNaN);
+    internal static void ThrowArgumentException_Arg_CannotBeNaN() => throw new ArgumentException(SRS.Arg_CannotBeNaN);
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_Arg_CannotBeNaN(ExceptionArgument argument) =>
-        throw new ArgumentException(SRF.Arg_CannotBeNaN, paramName: GetArgumentName(argument));
+        throw new ArgumentException(SRS.Arg_CannotBeNaN, paramName: GetArgumentName(argument));
 
     [DoesNotReturn]
     internal static void ThrowWrongKeyTypeArgumentException<T>(T key, Type targetType) =>
@@ -219,7 +221,7 @@ internal static class ThrowHelper
         throw GetWrongValueTypeArgumentException(value, targetType);
 
     private static ArgumentException GetAddingDuplicateWithKeyArgumentException(object? key) =>
-        new ArgumentException(string.Format(SRF.Argument_AddingDuplicateWithKey, key?.ToString() ?? "null"));
+        new ArgumentException(string.Format(SRS.Argument_AddingDuplicateWithKey, key?.ToString() ?? "null"));
 
     [DoesNotReturn]
     internal static void ThrowAddingDuplicateWithKeyArgumentException<T>(T key) =>
@@ -240,11 +242,11 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_HandleNotSync(string paramName) =>
-        throw new ArgumentException(SRF.Arg_HandleNotSync, paramName: paramName);
+        throw new ArgumentException(SRS.Arg_HandleNotSync, paramName: paramName);
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_HandleNotAsync(string paramName) =>
-        throw new ArgumentException(SRF.Arg_HandleNotAsync, paramName: paramName);
+        throw new ArgumentException(SRS.Arg_HandleNotAsync, paramName: paramName);
 
     [DoesNotReturn]
     internal static void ThrowArgumentNullException(ExceptionArgument argument) =>
@@ -277,7 +279,7 @@ internal static class ThrowHelper
     internal static void ThrowEndOfFileException() => throw CreateEndOfFileException();
 
     internal static Exception CreateEndOfFileException() =>
-        new EndOfStreamException(SRF.IO_EOF_ReadBeyondEOF);
+        new EndOfStreamException(SRS.IO_EOF_ReadBeyondEOF);
 
     [DoesNotReturn]
     internal static void ThrowInvalidOperationException() => throw new InvalidOperationException();
@@ -291,7 +293,7 @@ internal static class ThrowHelper
         throw new InvalidOperationException(GetResourceString(resource), e);
 
     [DoesNotReturn]
-    internal static void ThrowNullReferenceException() => throw new NullReferenceException(SRF.Arg_NullArgumentNullRef);
+    internal static void ThrowNullReferenceException() => throw new NullReferenceException(SRS.Arg_NullArgumentNullRef);
 
     [DoesNotReturn]
     internal static void ThrowSerializationException(ExceptionResource resource) =>
@@ -307,15 +309,15 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     internal static void ThrowNotSupportedException_UnseekableStream() =>
-        throw new NotSupportedException(SRF.NotSupported_UnseekableStream);
+        throw new NotSupportedException(SRS.NotSupported_UnseekableStream);
 
     [DoesNotReturn]
     internal static void ThrowNotSupportedException_UnreadableStream() =>
-        throw new NotSupportedException(SRF.NotSupported_UnreadableStream);
+        throw new NotSupportedException(SRS.NotSupported_UnreadableStream);
 
     [DoesNotReturn]
     internal static void ThrowNotSupportedException_UnwritableStream() =>
-        throw new NotSupportedException(SRF.NotSupported_UnwritableStream);
+        throw new NotSupportedException(SRS.NotSupported_UnwritableStream);
 
     [DoesNotReturn]
     internal static void ThrowObjectDisposedException(object? instance) =>
@@ -326,11 +328,11 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     internal static void ThrowObjectDisposedException_StreamClosed(string? objectName) =>
-        throw new ObjectDisposedException(objectName, SRF.ObjectDisposed_StreamClosed);
+        throw new ObjectDisposedException(objectName, SRS.ObjectDisposed_StreamClosed);
 
     [DoesNotReturn]
     internal static void ThrowObjectDisposedException_FileClosed() =>
-        throw new ObjectDisposedException(null, SRF.ObjectDisposed_FileClosed);
+        throw new ObjectDisposedException(null, SRS.ObjectDisposed_FileClosed);
 
     [DoesNotReturn]
     internal static void ThrowObjectDisposedException(ExceptionResource resource) =>
@@ -349,31 +351,31 @@ internal static class ThrowHelper
     internal static void ThrowDivideByZeroException() => throw new DivideByZeroException();
 
     [DoesNotReturn]
-    internal static void ThrowOutOfMemoryException_StringTooLong() => throw new OutOfMemoryException(SRF.OutOfMemory_StringTooLong);
+    internal static void ThrowOutOfMemoryException_StringTooLong() => throw new OutOfMemoryException(SRS.OutOfMemory_StringTooLong);
 
     [DoesNotReturn]
     internal static void ThrowOutOfMemoryException_LockEnter_WaiterCountOverflow() =>
-        throw new OutOfMemoryException(SRF.Lock_Enter_WaiterCountOverflow_OutOfMemoryException);
+        throw new OutOfMemoryException(SRS.Lock_Enter_WaiterCountOverflow_OutOfMemoryException);
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_Argument_IncompatibleArrayType() =>
-        throw new ArgumentException(SRF.Argument_IncompatibleArrayType);
+        throw new ArgumentException(SRS.Argument_IncompatibleArrayType);
 
     [DoesNotReturn]
     internal static void ThrowArgumentException_InvalidHandle(string? paramName) =>
-        throw new ArgumentException(SRF.Arg_InvalidHandle, paramName: paramName);
+        throw new ArgumentException(SRS.Arg_InvalidHandle, paramName: paramName);
 
     [DoesNotReturn]
     internal static void ThrowUnexpectedStateForKnownCallback(object? state) =>
-        throw new ArgumentOutOfRangeException(nameof(state), state, SRF.Argument_UnexpectedStateForKnownCallback);
+        throw new ArgumentOutOfRangeException(nameof(state), state, SRS.Argument_UnexpectedStateForKnownCallback);
 
     [DoesNotReturn]
     internal static void ThrowInvalidOperationException_InvalidOperation_EnumNotStarted() =>
-        throw new InvalidOperationException(SRF.InvalidOperation_EnumNotStarted);
+        throw new InvalidOperationException(SRS.InvalidOperation_EnumNotStarted);
 
     [DoesNotReturn]
     internal static void ThrowInvalidOperationException_InvalidOperation_EnumEnded() =>
-        throw new InvalidOperationException(SRF.InvalidOperation_EnumEnded);
+        throw new InvalidOperationException(SRS.InvalidOperation_EnumEnded);
 
     [DoesNotReturn]
     internal static void ThrowInvalidOperationException_EnumCurrent(int index) =>
@@ -381,99 +383,99 @@ internal static class ThrowHelper
 
     [DoesNotReturn]
     internal static void ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion() =>
-        throw new InvalidOperationException(SRF.InvalidOperation_EnumFailedVersion);
+        throw new InvalidOperationException(SRS.InvalidOperation_EnumFailedVersion);
 
     [DoesNotReturn]
     internal static void ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen() =>
-        throw new InvalidOperationException(SRF.InvalidOperation_EnumOpCantHappen);
+        throw new InvalidOperationException(SRS.InvalidOperation_EnumOpCantHappen);
 
     [DoesNotReturn]
     internal static void ThrowInvalidOperationException_InvalidOperation_NoValue() =>
-        throw new InvalidOperationException(SRF.InvalidOperation_NoValue);
+        throw new InvalidOperationException(SRS.InvalidOperation_NoValue);
 
     [DoesNotReturn]
     internal static void ThrowInvalidOperationException_ConcurrentOperationsNotSupported() =>
-        throw new InvalidOperationException(SRF.InvalidOperation_ConcurrentOperationsNotSupported);
+        throw new InvalidOperationException(SRS.InvalidOperation_ConcurrentOperationsNotSupported);
 
     [DoesNotReturn]
     internal static void ThrowInvalidOperationException_HandleIsNotInitialized() =>
-        throw new InvalidOperationException(SRF.InvalidOperation_HandleIsNotInitialized);
+        throw new InvalidOperationException(SRS.InvalidOperation_HandleIsNotInitialized);
 
     [DoesNotReturn]
     internal static void ThrowInvalidOperationException_HandleIsNotPinned() =>
-        throw new InvalidOperationException(SRF.InvalidOperation_HandleIsNotPinned);
+        throw new InvalidOperationException(SRS.InvalidOperation_HandleIsNotPinned);
 
     [DoesNotReturn]
     internal static void ThrowArraySegmentCtorValidationFailedExceptions(Array? array, int offset, int count) =>
         throw GetArraySegmentCtorValidationFailedException(array, offset, count);
 
     [DoesNotReturn]
-    internal static void ThrowInvalidOperationException_InvalidUtf8() => throw new InvalidOperationException(SRF.InvalidOperation_InvalidUtf8);
+    internal static void ThrowInvalidOperationException_InvalidUtf8() => throw new InvalidOperationException(SRS.InvalidOperation_InvalidUtf8);
 
     [DoesNotReturn]
-    internal static void ThrowFormatException_BadFormatSpecifier() => throw new FormatException(SRF.Argument_BadFormatSpecifier);
+    internal static void ThrowFormatException_BadFormatSpecifier() => throw new FormatException(SRS.Argument_BadFormatSpecifier);
 
     [DoesNotReturn]
-    internal static void ThrowFormatException_NeedSingleChar() => throw new FormatException(SRF.Format_NeedSingleChar);
+    internal static void ThrowFormatException_NeedSingleChar() => throw new FormatException(SRS.Format_NeedSingleChar);
 
     [DoesNotReturn]
     internal static void ThrowFormatException_BadBoolean(ReadOnlySpan<char> value) =>
-        throw new FormatException(string.Format(SRF.Format_BadBoolean, value.ToString()));
+        throw new FormatException(string.Format(SRS.Format_BadBoolean, value.ToString()));
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge() =>
-        throw new ArgumentOutOfRangeException("precision", string.FormatValue(SRF.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
+        throw new ArgumentOutOfRangeException("precision", string.FormatValue(SRS.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRangeException_SymbolDoesNotFit() =>
-        throw new ArgumentOutOfRangeException("symbol", SRF.Argument_BadFormatSpecifier);
+        throw new ArgumentOutOfRangeException("symbol", SRS.Argument_BadFormatSpecifier);
 
     [DoesNotReturn]
     internal static void ThrowArgumentOutOfRangeException_NeedNonNegNum(string paramName) =>
-        throw new ArgumentOutOfRangeException(paramName, SRF.ArgumentOutOfRange_NeedNonNegNum);
+        throw new ArgumentOutOfRangeException(paramName, SRS.ArgumentOutOfRange_NeedNonNegNum);
 
     [DoesNotReturn]
     internal static void ArgumentOutOfRangeException_Enum_Value() =>
-        throw new ArgumentOutOfRangeException("value", SRF.ArgumentOutOfRange_Enum);
+        throw new ArgumentOutOfRangeException("value", SRS.ArgumentOutOfRange_Enum);
 
     [DoesNotReturn]
-    internal static void ThrowFormatInvalidString() => throw new FormatException(SRF.Format_InvalidString);
+    internal static void ThrowFormatInvalidString() => throw new FormatException(SRS.Format_InvalidString);
 
     [DoesNotReturn]
     internal static void ThrowFormatInvalidString(int offset, ExceptionResource resource) =>
-        throw new FormatException(string.FormatValues(SRF.Format_InvalidStringWithOffsetAndReason, offset, GetResourceString(resource)));
+        throw new FormatException(string.FormatValues(SRS.Format_InvalidStringWithOffsetAndReason, offset, GetResourceString(resource)));
 
     [DoesNotReturn]
-    internal static void ThrowFormatIndexOutOfRange() => throw new FormatException(SRF.Format_IndexOutOfRange);
+    internal static void ThrowFormatIndexOutOfRange() => throw new FormatException(SRS.Format_IndexOutOfRange);
 
     [DoesNotReturn]
     internal static void ThrowSynchronizationLockException_LockExit() =>
-        throw new SynchronizationLockException(SRF.Lock_Exit_SynchronizationLockException);
+        throw new SynchronizationLockException(SRS.Lock_Exit_SynchronizationLockException);
 
     internal static AmbiguousMatchException GetAmbiguousMatchException(MemberInfo memberInfo)
     {
         Type? declaringType = memberInfo.DeclaringType;
         return new AmbiguousMatchException(
-            string.Format(SRF.Arg_AmbiguousMatchException_MemberInfo, declaringType.ToString(), memberInfo.ToString()));
+            string.Format(SRS.Arg_AmbiguousMatchException_MemberInfo, declaringType.ToString(), memberInfo.ToString()));
     }
 
     internal static AmbiguousMatchException GetAmbiguousMatchException(Attribute attribute) =>
-        new AmbiguousMatchException(string.Format(SRF.Arg_AmbiguousMatchException_Attribute, attribute.ToString()));
+        new AmbiguousMatchException(string.Format(SRS.Arg_AmbiguousMatchException_Attribute, attribute.ToString()));
 
     internal static AmbiguousMatchException GetAmbiguousMatchException(CustomAttributeData customAttributeData) =>
-        new AmbiguousMatchException(string.Format(SRF.Arg_AmbiguousMatchException_CustomAttributeData, customAttributeData.ToString()));
+        new AmbiguousMatchException(string.Format(SRS.Arg_AmbiguousMatchException_CustomAttributeData, customAttributeData.ToString()));
 
     private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
     {
         if (array == null)
             return new ArgumentNullException(nameof(array));
         if (offset < 0)
-            return new ArgumentOutOfRangeException(nameof(offset), SRF.ArgumentOutOfRange_NeedNonNegNum);
+            return new ArgumentOutOfRangeException(nameof(offset), SRS.ArgumentOutOfRange_NeedNonNegNum);
         if (count < 0)
-            return new ArgumentOutOfRangeException(nameof(count), SRF.ArgumentOutOfRange_NeedNonNegNum);
+            return new ArgumentOutOfRangeException(nameof(count), SRS.ArgumentOutOfRange_NeedNonNegNum);
 
         Debug.Assert(array.Length - offset < count);
-        return new ArgumentException(SRF.Argument_InvalidOffLen);
+        return new ArgumentException(SRS.Argument_InvalidOffLen);
     }
 
     private static ArgumentException GetArgumentException(ExceptionResource resource) =>
@@ -484,16 +486,16 @@ internal static class ThrowHelper
 
     private static ArgumentException GetWrongKeyTypeArgumentException(object? key, Type targetType) =>
         new ArgumentException(
-            string.Format(SRF.Arg_WrongType, key?.ToString() ?? "null", targetType.ToString()),
+            string.Format(SRS.Arg_WrongType, key?.ToString() ?? "null", targetType.ToString()),
             nameof(key));
 
     private static ArgumentException GetWrongValueTypeArgumentException(object? value, Type targetType) =>
         new ArgumentException(
-            string.Format(SRF.Arg_WrongType, value?.ToString() ?? "null", targetType.ToString()),
+            string.Format(SRS.Arg_WrongType, value?.ToString() ?? "null", targetType.ToString()),
             nameof(value));
 
     private static KeyNotFoundException GetKeyNotFoundException(object? key) =>
-        new KeyNotFoundException(string.Format(SRF.Arg_KeyNotFoundWithKey, key?.ToString() ?? "null"));
+        new KeyNotFoundException(string.Format(SRS.Arg_KeyNotFoundWithKey, key?.ToString() ?? "null"));
 
     private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(
         ExceptionArgument argument,
@@ -511,8 +513,8 @@ internal static class ThrowHelper
 
     private static InvalidOperationException GetInvalidOperationException_EnumCurrent(int index) =>
         new InvalidOperationException(index < 0
-            ? SRF.InvalidOperation_EnumNotStarted
-            : SRF.InvalidOperation_EnumEnded);
+            ? SRS.InvalidOperation_EnumNotStarted
+            : SRS.InvalidOperation_EnumEnded);
 
     // Allow nulls for reference types and Nullable<U>, but not for value types.
     // Aggressively inline so the jit evaluates the if in place and either drops the call altogether
@@ -542,6 +544,6 @@ internal static class ThrowHelper
         Debug.Assert(Enum.IsDefined(typeof(ExceptionArgument), resource),
             "The enum value is not defined, please check the ExceptionResource Enum.");
 
-        return SRF.GetResourceString(resource.ToString())!;
+        return SRS.GetResourceString(resource.ToString())!;
     }
 }

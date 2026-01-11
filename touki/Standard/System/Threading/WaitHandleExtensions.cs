@@ -3,7 +3,7 @@
 // See LICENSE file in the project root for full license information
 
 using Microsoft.Win32.SafeHandles;
-using Touki.Framework.Resources;
+using Touki.Standard.Resources;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 
@@ -118,7 +118,7 @@ internal static class WaitHandleExtensions
         {
             throw errorCode switch
             {
-                WIN32_ERROR.ERROR_INVALID_HANDLE => new InvalidOperationHResultException(HRESULT.E_HANDLE, SRF.InvalidOperation_InvalidHandle),
+                WIN32_ERROR.ERROR_INVALID_HANDLE => new InvalidOperationHResultException(HRESULT.E_HANDLE, SRS.InvalidOperation_InvalidHandle),
                 WIN32_ERROR.ERROR_INVALID_PARAMETER => new ArgumentException(),
                 WIN32_ERROR.ERROR_ACCESS_DENIED => new UnauthorizedAccessException(),
                 WIN32_ERROR.ERROR_NOT_ENOUGH_MEMORY => new OutOfMemoryException(),
@@ -127,13 +127,13 @@ internal static class WaitHandleExtensions
                 // if the semahpore already has the maximum signal count, the Windows SignalObjectAndWait function does not
                 // return an error, but this code is kept for historical reasons and to convey the intent, since ideally,
                 // that should be an error.
-                WIN32_ERROR.ERROR_TOO_MANY_POSTS => new InvalidOperationException(SRF.Threading_WaitHandleTooManyPosts),
+                WIN32_ERROR.ERROR_TOO_MANY_POSTS => new InvalidOperationException(SRS.Threading_WaitHandleTooManyPosts),
 
                 // Only applicable to <see cref="WaitHandle.SignalAndWait(WaitHandle, WaitHandle)"/> when signaling a mutex
                 // that is locked by a different thread. Note that if the mutex is already unlocked, the Windows
                 // SignalObjectAndWait function does not return an error.
-                WIN32_ERROR.ERROR_NOT_OWNER => new ApplicationException(SRF.Arg_SynchronizationLockException),
-                WIN32_ERROR.ERROR_MUTANT_LIMIT_EXCEEDED => new OverflowException(SRF.Overflow_MutexReacquireCount),
+                WIN32_ERROR.ERROR_NOT_OWNER => new ApplicationException(SRS.Arg_SynchronizationLockException),
+                WIN32_ERROR.ERROR_MUTANT_LIMIT_EXCEEDED => new OverflowException(SRS.Overflow_MutexReacquireCount),
                 _ => new HResultException(new((int)errorCode)),
             };
         }

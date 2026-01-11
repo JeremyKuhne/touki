@@ -18,7 +18,9 @@ global using Microsoft.IO;
 global using Microsoft.IO.Enumeration;
 #else
 global using System.IO;
+#if NET
 global using System.IO.Enumeration;
+#endif
 #endif
 
 global using DirectoryNotFoundException = System.IO.DirectoryNotFoundException;

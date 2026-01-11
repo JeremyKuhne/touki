@@ -6,7 +6,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using Touki.Framework.Resources;
+using Touki.Standard.Resources;
 
 namespace System.Threading;
 
@@ -327,7 +327,7 @@ public sealed partial class Lock
                 return currentThreadId;
             }
 
-            throw new LockRecursionException(SRF.Lock_Enter_LockRecursionException);
+            throw new LockRecursionException(SRS.Lock_Enter_LockRecursionException);
         }
 
         if (timeoutMs == 0)

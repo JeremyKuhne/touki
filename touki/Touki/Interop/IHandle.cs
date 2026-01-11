@@ -53,7 +53,7 @@ public interface IHandle<THandle> where THandle : unmanaged
     ///   <see cref="IHandle{THandle}"/> is on a struct. See <see cref="HandleRef{THandle}"/> for a concrete usage.
     ///  </para>
     /// </remarks>
-#if NETFRAMEWORK
+#if !NET
     object? Wrapper { get; }
 #else
     object? Wrapper => this;
