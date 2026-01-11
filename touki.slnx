@@ -23,6 +23,7 @@
     <File Path=".github/copilot-instructions.md" />
     <File Path=".github/workflows/dotnet.yml" />
     <File Path=".github/workflows/publish.yml" />
+    <File Path=".github/workflows/publishtestsupport.yml" />
   </Folder>
   <Project Path="sample/sample.csproj">
     <Platform Project="x64" />

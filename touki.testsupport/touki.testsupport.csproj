@@ -15,7 +15,6 @@
     -->
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Touki.TestSupport</RootNamespace>
 
@@ -47,4 +46,55 @@
   <ItemGroup>
     <ProjectReference Include="..\touki\touki.csproj" />
   </ItemGroup>
+
+  <!--
+    SourceLink related
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+  </ItemGroup>
+  <PropertyGroup>
+    <!-- Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+    <!-- Embed source files that are not tracked by the source control manager in the PDB -->
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+    <!-- Embed symbols containing Source Link in the dll -->
+    <DebugType>embedded</DebugType>
+
+    <!-- To make source paths relative for the "official" builds -->
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <!--
+    Versioning
+  -->
+  <PropertyGroup>
+    <!-- Ensures that MinVer can find the tags we're using, which start with `v` -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MinVer">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!--
+    Pack (NuGet) related
+  -->
+  <PropertyGroup>
+    <PackageId>KlutzyNinja.Touki.TestSupport</PackageId>
+    <Description>Provides useful testing functionality both for .NET and .NET Framework applications.</Description>
+    <Authors>Jeremy W. Kuhne</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/JeremyKuhne/touki</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/JeremyKuhne/touki</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Copyright>Copyright (c) Jeremy W. Kuhne. All rights reserved.</Copyright>
+    <!-- Publish the repository URL in the built .nupkg (in the NuSpec <repository> element) -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  </PropertyGroup>
+
 </Project>
