@@ -7,8 +7,12 @@
 
 // Original source: .NET Runtime and Windows Forms source code.
 
-using System.Buffers;
+#if NETFRAMEWORK
+using System.CodeDom.Compiler;
+#endif
+
 using System.Globalization;
+using Touki.Io;
 
 namespace Touki.Text;
 
@@ -516,14 +520,14 @@ public ref partial struct ValueStringBuilder
     }
 
     /// <summary>
-    ///  Resize the internal buffer either by doubling current buffer size or
-    ///  by adding <paramref name="additionalCapacityBeyondPos"/> to
-    ///  <see cref="_length"/> whichever is greater.
+    ///  Resize the internal buffer either by doubling current buffer size or by adding
+    ///  <paramref name="additionalCapacityBeyondPos"/> to <see cref="_length"/> whichever is greater.
     /// </summary>
     /// <param name="additionalCapacityBeyondPos">
     ///  Number of chars requested beyond current position.
     /// </param>
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [MemberNotNull(nameof(_arrayToReturnToPool))]
     private void Grow(int additionalCapacityBeyondPos)
     {
         Debug.Assert(additionalCapacityBeyondPos > 0);
@@ -618,10 +622,17 @@ public ref partial struct ValueStringBuilder
     }
 
     /// <summary>
-    ///  Writes the string to the specified <see cref="System.IO.StreamWriter"/>.
+    ///  Writes the string to the specified <see cref="TextWriter"/>.
     /// </summary>
-    public void CopyTo<T>(T writer) where T : System.IO.StreamWriter
+    /// <remarks>
+    ///  <para>
+    ///   This attempts to make use of optimized paths for known <see cref="TextWriter"/> types.
+    ///  </para>
+    /// </remarks>
+    public void CopyTo(TextWriter writer)
     {
+        ArgumentNullException.ThrowIfNull(writer);
+
         if (_chars[.._length].IsEmpty)
         {
             return;
@@ -630,15 +641,32 @@ public ref partial struct ValueStringBuilder
 #if NET
         writer.Write(AsSpan());
 #else
-        if (typeof(T) != typeof(System.IO.StreamWriter))
+        if (writer is StringWriter stringWriter)
         {
-            throw new InvalidOperationException("Derived classes are not supported for safety.");
+            StringBuilder builder = stringWriter.GetStringBuilder();
+            builder.AppendSpan(AsSpan());
+            return;
+        }
+
+        if (writer is IndentedTextWriter indentedWriter)
+        {
+            // Get the writer to write out tabs if needed and hope that the nested writer has an optimized path.
+            indentedWriter.Write("");
+            CopyTo(indentedWriter.InnerWriter);
+            return;
+        }
+
+        if (writer is not StreamWriter streamWriter || writer.GetType() != typeof(StreamWriter))
+        {
+            // Have to call the extension, which will rent a char[] buffer.
+            writer.Write(AsSpan());
+            return;
         }
 
         if (_arrayToReturnToPool is null)
         {
             // If we don't have a rented array, we need to rent one.
-            EnsureCapacity(_chars.Length + 1);
+            Grow(_chars.Length - _length + 1);
         }
 
         // More details are above with _arrayToReturnToPool. This is a dangerous cast as the Length will be twice as
@@ -648,7 +676,7 @@ public ref partial struct ValueStringBuilder
 
         // Also not a terribly crazy idea to port the .NET implementation of StreamWriter, trim it down and seal it.
 
-        char[] chars = Unsafe.As<byte[], char[]>(ref _arrayToReturnToPool!);
+        char[] chars = Unsafe.As<byte[], char[]>(ref _arrayToReturnToPool);
         writer.Write(chars, 0, _length);
 #endif
     }

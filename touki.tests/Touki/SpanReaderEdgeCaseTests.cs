@@ -222,7 +222,7 @@ public class SpanReaderEdgeCaseTests
         {
             // Try to read a byte (1 byte) from ushort span (2-byte elements)
             // sizeof(byte) < sizeof(ushort) should trigger the exception
-            reader.TryRead<byte>(out byte _);
+            reader.TryRead(out byte _);
             Assert.Fail($"Expected {nameof(ArgumentException)}");
         }
         catch (ArgumentException ex)
@@ -240,7 +240,7 @@ public class SpanReaderEdgeCaseTests
         try
         {
             // Try to read bytes from ushort span - should throw because byte size < ushort size
-            reader.TryRead<byte>(2, out ReadOnlySpan<byte> _);
+            reader.TryRead(2, out ReadOnlySpan<byte> _);
             Assert.Fail($"Expected {nameof(ArgumentException)}");
         }
         catch (ArgumentException ex)
@@ -449,7 +449,7 @@ public class SpanReaderEdgeCaseTests
         SpanReader<byte> reader = new(span);
 
         // Test reading a 16-byte struct (should succeed)
-        bool result = reader.TryRead<decimal>(out decimal _);
+        bool result = reader.TryRead(out decimal _);
         result.Should().BeTrue();
         reader.Position.Should().Be(16);
         reader.End.Should().BeTrue();
@@ -469,7 +469,7 @@ public class SpanReaderEdgeCaseTests
         SpanReader<byte> reader = new(span);
 
         // Test reading exactly the maximum number of items that fit
-        bool result = reader.TryRead<uint>(4, out ReadOnlySpan<uint> values); // 4 * 4 = 16 bytes
+        bool result = reader.TryRead(4, out ReadOnlySpan<uint> values); // 4 * 4 = 16 bytes
         result.Should().BeTrue();
         values.Length.Should().Be(4);
         reader.Position.Should().Be(16);
@@ -478,7 +478,7 @@ public class SpanReaderEdgeCaseTests
         reader.Reset();
 
         // Test reading one more than what fits
-        result = reader.TryRead<uint>(5, out values); // 5 * 4 = 20 bytes (too much)
+        result = reader.TryRead(5, out values); // 5 * 4 = 20 bytes (too much)
         result.Should().BeFalse();
         values.Length.Should().Be(0);
         reader.Position.Should().Be(0);

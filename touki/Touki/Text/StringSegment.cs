@@ -7,7 +7,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Globalization;
 
 namespace Touki.Text;
@@ -997,4 +996,25 @@ public readonly struct StringSegment :
     /// <param name="right">The string to compare with.</param>
     /// <returns><see langword="true"/> if the segment is greater than or equal to the string; otherwise, <see langword="false"/>.</returns>
     public static bool operator >=(StringSegment left, string right) => left.CompareTo(right) >= 0;
+
+    /// <summary>
+    ///  Writes the segment to the specified <see cref="TextWriter"/>.
+    /// </summary>
+    public void WriteTo(TextWriter writer)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+
+        if (_length == 0)
+        {
+            return;
+        }
+
+        if (_value?.Length == _length)
+        {
+            writer.Write(_value);
+            return;
+        }
+
+        writer.Write(AsSpan());
+    }
 }
