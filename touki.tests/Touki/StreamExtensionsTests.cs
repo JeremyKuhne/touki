@@ -94,6 +94,18 @@ public class StreamExtensionsTests
         result.Should().Be("Hello World!");
     }
 
+#if NET
+    [Fact]
+    public void WriteFormatted_StringOverload_WritesUtf16Bytes()
+    {
+        using MemoryStream stream = new();
+
+        stream.WriteFormatted("Hi");
+
+        stream.ToArray().Should().BeEquivalentTo(Encoding.Unicode.GetBytes("Hi"));
+    }
+#endif
+
     [Fact]
     public void WriteFormatted_EmptyBuilder_WritesNothing()
     {
@@ -131,92 +143,6 @@ public class StreamExtensionsTests
         using StreamReader reader = new(stream, Encoding.Unicode);
         string result = reader.ReadToEnd();
         result.Should().Be("First part. Second part.");
-    }
-
-    [Fact]
-    public void WriteFormatted_StreamWriterUnicode_WritesCorrectly()
-    {
-        using MemoryStream stream = new();
-        StreamWriter writer = new(stream, Encoding.Unicode);
-
-#pragma warning disable IDE0082 // 'typeof' can be converted to 'nameof'
-        writer.WriteFormatted($"Hello from {typeof(StreamWriter).Name}!");
-#pragma warning restore IDE0082
-        writer.Flush();
-
-        stream.Position = 0;
-        StreamReader reader = new(stream, Encoding.Unicode);
-        string result = reader.ReadToEnd();
-
-        result.Should().Be("Hello from StreamWriter!");
-    }
-
-    [Fact]
-    public void WriteFormatted_StreamWriterUTF8_WritesCorrectly()
-    {
-        using MemoryStream stream = new();
-        StreamWriter writer = new(stream, Encoding.UTF8);
-
-        writer.WriteFormatted($"UTF-{8} Text");
-        writer.Flush();
-
-        stream.Position = 0;
-        StreamReader reader = new(stream, Encoding.UTF8);
-        string result = reader.ReadToEnd();
-
-        result.Should().Be("UTF-8 Text");
-    }
-
-    [Fact]
-    public void WriteFormatted_StreamWriterInterpolatedValues_WritesCorrectly()
-    {
-        using MemoryStream stream = new();
-        StreamWriter writer = new(stream, Encoding.UTF8);
-
-        string name = "StreamWriter";
-        int value = 123;
-        double pi = 3.14159;
-
-        writer.WriteFormatted($"Name: {name}, Value: {value}, Pi: {pi:F2}");
-        writer.Flush();
-
-        stream.Position = 0;
-        StreamReader reader = new(stream, Encoding.UTF8);
-        string result = reader.ReadToEnd();
-
-        result.Should().Be("Name: StreamWriter, Value: 123, Pi: 3.14");
-    }
-
-    [Fact]
-    public void WriteFormatted_StreamWriterMultipleWrites_AppendCorrectly()
-    {
-        using MemoryStream stream = new();
-        StreamWriter writer = new(stream, Encoding.Unicode);
-
-        writer.WriteFormatted($"Part one. ");
-        writer.WriteFormatted($"Part two.");
-        writer.Flush();
-
-        stream.Position = 0;
-        StreamReader reader = new(stream, Encoding.Unicode);
-        string result = reader.ReadToEnd();
-
-        result.Should().Be("Part one. Part two.");
-    }
-
-    [Fact]
-    public void WriteFormatted_StreamWriterEmptyBuilder_WritesNothing()
-    {
-        using MemoryStream stream = new();
-        StreamWriter writer = new(stream, Encoding.UTF8);
-        writer.Flush();
-        long length = stream.Length;
-
-        ValueStringBuilder builder = new();
-        writer.WriteFormatted(ref builder);
-        writer.Flush();
-
-        stream.Length.Should().Be(length);
     }
 
     [Fact]

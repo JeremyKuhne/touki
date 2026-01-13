@@ -4,17 +4,13 @@
 
 using System.Threading;
 using System.Threading.Tasks;
-#if !NET
-using System.IO;
-#endif
-using Touki.Text;
 
 namespace Touki.Io;
 
 /// <summary>
 ///  Extension methods for <see cref="Stream"/>.
 /// </summary>
-public static partial class StreamExtensions
+public static partial class TextWriterExtensions
 {
     /// <param name="stream">The target stream.</param>
     extension(Stream stream)
@@ -68,7 +64,7 @@ public static partial class StreamExtensions
                 : Task.CompletedTask;
 
         /// <summary>
-        ///  Writes an interpolated string directly to a stream.
+        ///  Writes an interpolated string directly to a <see cref="Stream"/>.
         /// </summary>
         public void WriteFormatted(ref ValueStringBuilder builder)
         {
@@ -78,33 +74,23 @@ public static partial class StreamExtensions
                 builder.Clear();
             }
         }
-    }
 
-    extension(StreamWriter writer)
-    {
+#if NET
         /// <summary>
-        ///  Writes an interpolated string directly to a <see cref="StreamWriter"/>.
+        ///  Writes a string directly to a <see cref="Stream"/>.
         /// </summary>
-        public void WriteFormatted(ref ValueStringBuilder builder)
+        /// <remarks>
+        ///  <para>
+        ///   Optimization overload that allows string literals to be used without creating a builder.
+        ///  </para>
+        /// </remarks>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void WriteFormatted(string value)
         {
-            if (builder.Length > 0)
-            {
-                builder.CopyTo(writer);
-                builder.Clear();
-            }
+            // While it would be nice to have this for .NET Framework, the only method we have on
+            // stream takes a byte[] buffer. We can't reinterpret the string as a byte[].
+            stream.Write(MemoryMarshal.AsBytes(value.AsSpan()));
         }
-    }
-
-    extension(TextWriter writer)
-    {
-        /// <summary>
-        ///  Allows writing a <see cref="StringSegment"/> to a <see cref="TextWriter"/>.
-        /// </summary>
-        public void Write(StringSegment value) => writer.Write(value.AsSpan());
-
-        /// <summary>
-        ///  Allows writing a <see cref="StringSegment"/> to a <see cref="TextWriter"/>.
-        /// </summary>
-        public void WriteLine(StringSegment value) => writer.WriteLine(value.AsSpan());
+#endif
     }
 }

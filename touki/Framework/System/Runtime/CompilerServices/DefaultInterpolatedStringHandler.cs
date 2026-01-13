@@ -8,7 +8,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Touki;
-using Touki.Text;
 
 namespace System.Runtime.CompilerServices;
 

@@ -1218,7 +1218,7 @@ public class SpanReaderTests
         SpanReader<byte> reader = new(span);
 
         // Test reading larger struct (ulong is 8 bytes)
-        reader.TryRead<ulong>(out ulong value).Should().BeTrue();
+        reader.TryRead(out ulong value).Should().BeTrue();
         reader.Position.Should().Be(8);
         reader.End.Should().BeTrue();
 
