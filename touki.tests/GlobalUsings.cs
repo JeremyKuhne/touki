@@ -30,4 +30,4 @@ global using Touki.TestSupport;
 
 #pragma warning restore IDE0005
 
-global using FluentAssertions;
+global using AwesomeAssertions;

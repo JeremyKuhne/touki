@@ -12,7 +12,6 @@ using System.CodeDom.Compiler;
 #endif
 
 using System.Globalization;
-using Touki.Io;
 
 namespace Touki.Text;
 

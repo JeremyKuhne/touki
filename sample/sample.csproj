@@ -51,6 +51,11 @@
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
+  <!-- Silence the security warning until we take an updated Touki -->
+  <ItemGroup Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'">
+    <PackageReference Include="Microsoft.Bcl.Memory" />
+  </ItemGroup>
+
   <!--
     Resource related
   -->

@@ -35,8 +35,8 @@ public class DiyFpTests
         // Basic sanity checks
         diyFp.f.Should().BeGreaterThan(0);
         // Exponent should be reasonable for double precision
-        diyFp.e.Should().BeGreaterOrEqualTo(-1074);
-        diyFp.e.Should().BeLessOrEqualTo(971); // Max exponent for double
+        diyFp.e.Should().BeGreaterThanOrEqualTo(-1074);
+        diyFp.e.Should().BeLessThanOrEqualTo(971); // Max exponent for double
     }
 
     [Theory]
@@ -52,8 +52,8 @@ public class DiyFpTests
         // Basic sanity checks
         diyFp.f.Should().BeGreaterThan(0);
         // Exponent should be reasonable for single precision
-        diyFp.e.Should().BeGreaterOrEqualTo(-149);
-        diyFp.e.Should().BeLessOrEqualTo(104); // Max exponent for float
+        diyFp.e.Should().BeGreaterThanOrEqualTo(-149);
+        diyFp.e.Should().BeLessThanOrEqualTo(104); // Max exponent for float
     }
 
     #endregion
@@ -326,7 +326,7 @@ public class DiyFpTests
         mMinus.f.Should().BeGreaterThan(0);
         mPlus.f.Should().BeGreaterThan(0);
         mMinus.e.Should().Be(mPlus.e);
-        mPlus.f.Should().BeGreaterOrEqualTo(mMinus.f);
+        mPlus.f.Should().BeGreaterThanOrEqualTo(mMinus.f);
     }
 
     [Theory]
@@ -348,7 +348,7 @@ public class DiyFpTests
         mMinus.f.Should().BeGreaterThan(0);
         mPlus.f.Should().BeGreaterThan(0);
         mMinus.e.Should().Be(mPlus.e);
-        mPlus.f.Should().BeGreaterOrEqualTo(mMinus.f);
+        mPlus.f.Should().BeGreaterThanOrEqualTo(mMinus.f);
     }
 
     #endregion
