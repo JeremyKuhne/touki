@@ -702,7 +702,7 @@ public class BigIntegerTests
 
         uint result = BigInteger.HeuristicDivide(ref dividend, ref divisor);
         result.Should().BeGreaterThan(0);
-        result.Should().BeLessOrEqualTo(4); // 100/30 = 3.33, heuristic should be close
+        result.Should().BeLessThanOrEqualTo(4); // 100/30 = 3.33, heuristic should be close
     }
 
     #endregion
@@ -727,7 +727,7 @@ public class BigIntegerTests
 
         // The result should either be correct or zero (overflow protection)
         // At minimum, it should not crash
-        result.GetLength().Should().BeGreaterOrEqualTo(0);
+        result.GetLength().Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -749,7 +749,7 @@ public class BigIntegerTests
         }
 
         // The result should either be a valid BigInteger or zero due to overflow protection
-        large.GetLength().Should().BeGreaterOrEqualTo(0);
+        large.GetLength().Should().BeGreaterThanOrEqualTo(0);
     }
     [Fact]
     public void ShiftLeft_ExtremeShift_ShouldHandleGracefully()
@@ -760,7 +760,7 @@ public class BigIntegerTests
         value.ShiftLeft(1000); // Large but reasonable shift
 
         // Should either work correctly or trigger overflow protection
-        value.GetLength().Should().BeGreaterOrEqualTo(0);
+        value.GetLength().Should().BeGreaterThanOrEqualTo(0);
 
         // If it didn't overflow, verify it's a power of 2
         if (!value.IsZero())

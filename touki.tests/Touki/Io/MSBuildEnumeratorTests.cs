@@ -463,7 +463,7 @@ public class MSBuildEnumeratorTests
         bool isWindows = Environment.OSVersion.Platform == PlatformID.Win32NT;
         if (isWindows)
         {
-            files.Should().HaveCountGreaterOrEqualTo(1);
+            files.Should().HaveCountGreaterThanOrEqualTo(1);
         }
         else
         {
