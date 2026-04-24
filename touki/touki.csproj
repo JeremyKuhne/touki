@@ -113,6 +113,7 @@
   -->
   <PropertyGroup>
     <PolySharpUsePublicAccessibilityForGeneratedTypes>true</PolySharpUsePublicAccessibilityForGeneratedTypes>
+    <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'">
     <PackageReference Include="PolySharp">
