@@ -1,0 +1,70 @@
+name: Agent files
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - AGENTS.md
+      - "**/AGENTS.md"
+      - .github/copilot-instructions.md
+      - .github/instructions/**
+      - .github/prompts/**
+      - .github/agents/**
+      - .agents/**
+      - docs/agent-customization.md
+      - tools/Validate-AgentFiles.ps1
+      - .markdownlint.jsonc
+      - .github/workflows/agent-files.yml
+  push:
+    branches: [main]
+    paths:
+      - AGENTS.md
+      - "**/AGENTS.md"
+      - .github/copilot-instructions.md
+      - .github/instructions/**
+      - .github/prompts/**
+      - .github/agents/**
+      - .agents/**
+      - docs/agent-customization.md
+      - tools/Validate-AgentFiles.ps1
+      - .markdownlint.jsonc
+      - .github/workflows/agent-files.yml
+
+jobs:
+  validate:
+    name: Validate agent customization files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate frontmatter, mirror, whitespace
+        shell: pwsh
+        run: pwsh tools/Validate-AgentFiles.ps1
+
+      - name: markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v18
+        with:
+          globs: |
+            AGENTS.md
+            .github/copilot-instructions.md
+            .github/instructions/**/*.md
+            .github/prompts/**/*.md
+            .github/agents/**/*.md
+            .agents/**/*.md
+            docs/agent-customization.md
+          config: .markdownlint.jsonc
+
+      - name: Link check
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --offline
+            AGENTS.md
+            .github/copilot-instructions.md
+            .github/instructions/**/*.md
+            .github/prompts/**/*.md
+            .github/agents/**/*.md
+            .agents/**/*.md
+            docs/agent-customization.md
+          fail: true
