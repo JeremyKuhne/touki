@@ -1,0 +1,11 @@
+{
+  // Used by .github/workflows/agent-files.yml to lint agent-customization Markdown.
+  // See https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+  "default": true,
+  "MD013": false,
+  "MD024": { "siblings_only": true },
+  "MD033": false,
+  "MD041": false,
+  "no-trailing-spaces": true,
+  "no-hard-tabs": true
+}

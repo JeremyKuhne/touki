@@ -14,6 +14,13 @@ irrevocable MIT license to use, modify, and redistribute it.
 
 See our [Coding Guidelines](docs/coding_guidelines.md) for details.
 
+### AI agent customizations
+
+Project-wide rules for AI coding agents live in [AGENTS.md](AGENTS.md) (the canonical
+source) and are mirrored to `.github/copilot-instructions.md`. To add path-specific
+instructions, reusable prompts, custom agents, or skills, see
+[docs/agent-customization.md](docs/agent-customization.md).
+
 ### Environment setup
 
 For an IDE experience, once you have the [.NET SDK](https://dotnet.microsoft.com/download) installed, open the root folder in Visual Studio Code on any platform.
