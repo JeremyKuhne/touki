@@ -6,7 +6,7 @@ Discovered by GitHub Copilot (VS Code, CLI, cloud agent) and Claude Code.
 
 ## Layout
 
-```
+```text
 .agents/skills/
   <skill-name>/
     SKILL.md           # required
