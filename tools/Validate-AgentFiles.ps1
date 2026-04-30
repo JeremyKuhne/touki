@@ -215,7 +215,11 @@ function Test-Agent([string]$Path) {
 
 function Test-Whitespace([string]$Path) {
     $rel = Get-RelativePath $Path
-    $lines = (Get-Content -Raw -LiteralPath $Path) -split "`r?`n"
+    $raw = Get-Content -Raw -LiteralPath $Path
+    if ($null -ne $raw -and $raw.Length -gt 0 -and -not $raw.EndsWith("`n")) {
+        Add-Error "${rel}: file must end with a single newline (markdownlint MD047)."
+    }
+    $lines = $raw -split "`r?`n"
     for ($i = 0; $i -lt $lines.Length; $i++) {
         $line = $lines[$i]
         $lineNum = $i + 1

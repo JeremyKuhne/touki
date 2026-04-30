@@ -94,19 +94,37 @@ customization file. The PR review history showed each of these caught a real bug
 - No trailing whitespace.
 - No whitespace-only lines (a "blank" line must be truly empty).
 - Tabs are forbidden in Markdown bodies.
+- **Files must end with a single newline character** (markdownlint MD047).
+  The validator now flags this; markdownlint enforces it in CI. New files
+  created via the standard editor tooling get this for free, but
+  hand-edited or copy-pasted content sometimes loses the final `\n`.
 - These rules are enforced both by the validator and by markdownlint.
 
 ## How to run the checks locally
 
+**Always run the validator before declaring a review complete or pushing
+agent-file changes.** It catches mirror drift, missing/invalid frontmatter,
+SKILL.md naming mistakes, missing trailing newlines, and trailing/empty-line
+whitespace &mdash; the same rules CI enforces.
+
 ```pwsh
-# Validate everything (frontmatter, mirror sync, dir-name match, whitespace).
+# Validate everything (frontmatter, mirror sync, dir-name match, whitespace,
+# trailing newline).
 pwsh tools/Validate-AgentFiles.ps1
 
 # Regenerate the mirror after editing AGENTS.md.
 pwsh tools/Validate-AgentFiles.ps1 -Fix
 ```
 
-If the validator passes locally but CI fails, the failure is almost always
+The validator does **not** reproduce markdownlint's full rule set. After it
+passes, sanity-check that your Markdown:
+
+- ends with exactly one newline (MD047);
+- has a language tag on every fenced code block, e.g. \`\`\`text or \`\`\`yaml
+  (MD040);
+- doesn't use tabs (no-hard-tabs).
+
+If CI fails after a local validator pass, the failure is almost always
 markdownlint (open the failing job's annotations) or the lychee link check
-(broken relative link &mdash; remember the mirror rewrites them, so test the
-form in AGENTS.md, not the rewritten copy).
+(broken relative link &mdash; remember the mirror rewrites links, so test
+the form in AGENTS.md, not the rewritten copy).
