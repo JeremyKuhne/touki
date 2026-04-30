@@ -5,8 +5,9 @@
 .DESCRIPTION
     Checks performed:
 
-    1. AGENTS.md is byte-equivalent to .github/copilot-instructions.md (after the single
-       DO-NOT-EDIT comment line at the top of the mirror).
+    1. AGENTS.md matches the text content of .github/copilot-instructions.md
+       (after the single DO-NOT-EDIT comment line at the top of the mirror, and
+       after rewriting relative Markdown links so they resolve from .github/).
     2. *.instructions.md files have a non-empty `applyTo` frontmatter value.
     3. SKILL.md files have `name` (^[a-z0-9-]{1,64}$, matching parent directory) and
        `description`.
@@ -62,15 +63,28 @@ function Get-RelativePath([string]$Path) {
 
 function Get-ExpectedMirror() {
     # Use the line-ending convention of AGENTS.md on disk so the result matches
-    # whatever Git's autocrlf produced on this checkout. This keeps the mirror
-    # byte-identical to AGENTS.md (modulo the prepended header line).
+    # whatever Git's autocrlf produced on this checkout.
     $agents = Get-Content -Raw -LiteralPath $AgentsMd
     $newline = if ($agents -match "`r`n") { "`r`n" } else { "`n" }
-    return $MirrorHeaderText + $newline + $agents
+    # Rewrite repo-relative Markdown links so they resolve from .github/, where
+    # the mirror lives. Links to .github/<x> become <x>; everything else gets
+    # ../ prepended. External URLs (http/https/mailto) and anchors are left
+    # alone, as are absolute paths starting with '/'.
+    $rewritten = [regex]::Replace($agents, '\]\(([^)]+)\)', {
+        param($m)
+        $target = $m.Groups[1].Value
+        if ($target -match '^(https?:|mailto:|#|/)') { return $m.Value }
+        if ($target.StartsWith('.github/')) {
+            return "](" + $target.Substring('.github/'.Length) + ")"
+        }
+        return "](../" + $target + ")"
+    })
+    return $MirrorHeaderText + $newline + $rewritten
 }
 
-# Parse a small subset of YAML frontmatter: flat scalars (`key: value`) and flat
-# inline lists (`key: [a, b]` or `key: ['a', 'b']`). Returns a hashtable, or $null
+# Parse a small subset of YAML frontmatter: flat scalars (`key: value`),
+# inline lists (`key: [a, b]` or `key: ['a', 'b']`), and block lists
+# (`key:` followed by indented `- item` lines). Returns a hashtable, or $null
 # if no frontmatter block is present.
 function Get-Frontmatter([string]$Path) {
     $text = Get-Content -Raw -LiteralPath $Path
@@ -86,15 +100,31 @@ function Get-Frontmatter([string]$Path) {
     if ($end -lt 0) { return $null }
 
     $result = @{}
-    for ($i = 1; $i -lt $end; $i++) {
+    $i = 1
+    while ($i -lt $end) {
         $line = $lines[$i]
-        if ($line -match '^\s*$' -or $line -match '^\s*#') { continue }
-        if ($line -notmatch '^([A-Za-z0-9_-]+)\s*:\s*(.*)$') { continue }
+        if ($line -match '^\s*$' -or $line -match '^\s*#') { $i++; continue }
+        if ($line -notmatch '^([A-Za-z0-9_-]+)\s*:\s*(.*)$') { $i++; continue }
         $key = $Matches[1]
         $rawValue = $Matches[2].Trim()
 
         if ($rawValue -eq '') {
+            # Could be an empty scalar or the start of a block list.
+            $blockItems = @()
+            $j = $i + 1
+            while ($j -lt $end -and $lines[$j] -match '^\s+-\s*(.*)$') {
+                $item = $Matches[1].Trim()
+                if ($item -match "^'(.*)'$" -or $item -match '^"(.*)"$') { $item = $Matches[1] }
+                $blockItems += $item
+                $j++
+            }
+            if ($blockItems.Count -gt 0) {
+                $result[$key] = @($blockItems)
+                $i = $j
+                continue
+            }
             $result[$key] = ''
+            $i++
             continue
         }
         # Inline list: [a, b, c] or ['a', "b"]
@@ -110,15 +140,18 @@ function Get-Frontmatter([string]$Path) {
                 }
                 $result[$key] = @($items)
             }
+            $i++
             continue
         }
         # Quoted scalar
         if ($rawValue -match "^'(.*)'\s*$" -or $rawValue -match '^"(.*)"\s*$') {
             $result[$key] = $Matches[1]
+            $i++
             continue
         }
         # Bare scalar
         $result[$key] = $rawValue
+        $i++
     }
     return $result
 }

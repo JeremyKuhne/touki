@@ -9,10 +9,10 @@ standard.
 This file is the single source of truth. `.github/copilot-instructions.md` mirrors this
 file for Copilot features that read it directly; do not edit the mirror by hand.
 
-For broader contributor guidance, see [CONTRIBUTING.md](CONTRIBUTING.md) and
-[docs/coding_guidelines.md](docs/coding_guidelines.md). For how to add or update agent
+For broader contributor guidance, see [CONTRIBUTING.md](../CONTRIBUTING.md) and
+[docs/coding_guidelines.md](../docs/coding_guidelines.md). For how to add or update agent
 customizations (skills, prompts, custom agents, path-specific instructions), see
-[docs/agent-customization.md](docs/agent-customization.md).
+[docs/agent-customization.md](../docs/agent-customization.md).
 
 ## Project overview
 
@@ -80,7 +80,7 @@ Top-level layout:
   classes and interfaces where applicable.
 - For method overloads, use `<inheritdoc cref="MethodName"/>` to inherit documentation
   from the method with the most arguments, overriding tags where they differ.
-- Use `<see langword=".."/>` for language keywords in comments
+- Use `<see langword="..."/>` tags for language keywords in comments
   (e.g. `<see langword="true"/>` instead of `true`).
 
 ## Line breaks and whitespace
@@ -120,7 +120,7 @@ Top-level layout:
   these to test files.
 - Tests have access to internals via `InternalsVisibleTo`, so you can test internal
   members directly.
-- For private members, use the `TestAccessor` and `TestAccessors` extension method.
+- For private members, use the `TestAccessor` and `TestAccessors` extension methods.
 
 ## General guidance
 
@@ -133,10 +133,10 @@ Top-level layout:
 ## Path-specific instructions
 
 Additional rules apply to specific file types and live under
-[.github/instructions/](.github/instructions/). Tools that support the
+[.github/instructions/](instructions/). Tools that support the
 `*.instructions.md` format (Copilot cloud agent, Copilot code review, VS Code) load them
 automatically based on each file's `applyTo` glob.
 
 Currently:
 
-- [.github/instructions/msbuild.instructions.md](.github/instructions/msbuild.instructions.md) &mdash; rules for `*.csproj`, `*.props`, `*.targets`.
+- [.github/instructions/msbuild.instructions.md](instructions/msbuild.instructions.md) &mdash; rules for `*.csproj`, `*.props`, `*.targets`.

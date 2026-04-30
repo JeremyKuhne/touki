@@ -1,7 +1,7 @@
 # Agent customization guide
 
 This repository supports several formats for customizing AI coding agents. Pick the
-right one for your need, place it in the right folder, and CI will validate it.
+right one for your needs, place it in the right folder, and CI will validate it.
 
 ## Decision matrix
 
@@ -34,7 +34,7 @@ features (path scoping, tool restrictions, slash-command UX, packaged scripts).
 | -------------------- | ------------------------------------- | ---------------------------------------------------------------------- |
 | `*.instructions.md`  | `applyTo` (non-empty string)          | Comma-separated globs relative to repo root.                           |
 | `*.prompt.md`        | none                                  | `description` recommended.                                             |
-| `*.agent.md`         | `description`                         | If `tools` is present it must be an array.                             |
+| `*.agent.md`         | `description`                         | If `tools` is present it must be a YAML list (inline `['a', 'b']` or block syntax). |
 | `SKILL.md`           | `name`, `description`                 | `name` must match parent directory name; `^[a-z0-9-]{1,64}$`.          |
 
 ## Authoring rules

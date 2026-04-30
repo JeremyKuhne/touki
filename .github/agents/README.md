@@ -9,9 +9,12 @@ and Visual Studio.
 ```markdown
 ---
 description: Brief description of what this agent does.
-tools: ['search', 'edit']        # optional; restrict available tools
-model: 'GPT-5 (copilot)'         # optional
-handoffs:                         # optional
+# Optional; restrict available tools
+tools: ['search', 'edit']
+# Optional
+model: 'GPT-5 (copilot)'
+# Optional
+handoffs:
   - label: Start Implementation
     agent: implementation
     prompt: Now implement the plan above.

@@ -79,7 +79,7 @@ Top-level layout:
   classes and interfaces where applicable.
 - For method overloads, use `<inheritdoc cref="MethodName"/>` to inherit documentation
   from the method with the most arguments, overriding tags where they differ.
-- Use `<see langword=".."/>` for language keywords in comments
+- Use `<see langword="..."/>` tags for language keywords in comments
   (e.g. `<see langword="true"/>` instead of `true`).
 
 ## Line breaks and whitespace
@@ -119,7 +119,7 @@ Top-level layout:
   these to test files.
 - Tests have access to internals via `InternalsVisibleTo`, so you can test internal
   members directly.
-- For private members, use the `TestAccessor` and `TestAccessors` extension method.
+- For private members, use the `TestAccessor` and `TestAccessors` extension methods.
 
 ## General guidance
 
