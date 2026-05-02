@@ -3,32 +3,8 @@ name: Agent files
 on:
   pull_request:
     branches: [main]
-    paths:
-      - AGENTS.md
-      - "**/AGENTS.md"
-      - .github/copilot-instructions.md
-      - .github/instructions/**
-      - .github/prompts/**
-      - .github/agents/**
-      - .agents/**
-      - docs/agent-customization.md
-      - tools/Validate-AgentFiles.ps1
-      - .markdownlint.jsonc
-      - .github/workflows/agent-files.yml
   push:
     branches: [main]
-    paths:
-      - AGENTS.md
-      - "**/AGENTS.md"
-      - .github/copilot-instructions.md
-      - .github/instructions/**
-      - .github/prompts/**
-      - .github/agents/**
-      - .agents/**
-      - docs/agent-customization.md
-      - tools/Validate-AgentFiles.ps1
-      - .markdownlint.jsonc
-      - .github/workflows/agent-files.yml
 
 jobs:
   validate:
@@ -37,11 +13,31 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Detect relevant changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            agent:
+              - AGENTS.md
+              - '**/AGENTS.md'
+              - .github/copilot-instructions.md
+              - .github/instructions/**
+              - .github/prompts/**
+              - .github/agents/**
+              - .agents/**
+              - docs/agent-customization.md
+              - tools/Validate-AgentFiles.ps1
+              - .markdownlint.jsonc
+              - .github/workflows/agent-files.yml
+
       - name: Validate frontmatter, mirror, whitespace
+        if: steps.changes.outputs.agent == 'true'
         shell: pwsh
         run: pwsh tools/Validate-AgentFiles.ps1
 
       - name: markdownlint
+        if: steps.changes.outputs.agent == 'true'
         uses: DavidAnson/markdownlint-cli2-action@v18
         with:
           globs: |
@@ -55,6 +51,7 @@ jobs:
           config: .markdownlint.jsonc
 
       - name: Link check
+        if: steps.changes.outputs.agent == 'true'
         uses: lycheeverse/lychee-action@v2
         with:
           args: >-
