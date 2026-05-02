@@ -444,4 +444,170 @@ public unsafe class StringBuilderExtensionsTests
             chunk.Length.Should().BeGreaterThan(0);
         }
     }
+
+    [Fact]
+    public void CopyTo_FullContent_CopiesAllCharacters()
+    {
+        StringBuilder builder = new("Hello, World!");
+        Span<char> destination = stackalloc char[13];
+
+        builder.CopyTo(0, destination, 13);
+
+        destination.ToString().Should().Be("Hello, World!");
+    }
+
+    [Fact]
+    public void CopyTo_PartialFromMiddle_CopiesRequestedRange()
+    {
+        StringBuilder builder = new("Hello, World!");
+        Span<char> destination = stackalloc char[5];
+
+        builder.CopyTo(7, destination, 5);
+
+        destination.ToString().Should().Be("World");
+    }
+
+    [Fact]
+    public void CopyTo_ZeroCount_CopiesNothing()
+    {
+        StringBuilder builder = new("Hello");
+        Span<char> destination = stackalloc char[5];
+        destination.Fill('X');
+
+        builder.CopyTo(0, destination, 0);
+
+        destination.ToString().Should().Be("XXXXX");
+    }
+
+    [Fact]
+    public void CopyTo_EmptyBuilder_ZeroCount_Succeeds()
+    {
+        StringBuilder builder = new();
+        Span<char> destination = Span<char>.Empty;
+
+        builder.CopyTo(0, destination, 0);
+    }
+
+    [Fact]
+    public void CopyTo_DestinationLargerThanCount_OnlyWritesCount()
+    {
+        StringBuilder builder = new("Hello");
+        Span<char> destination = stackalloc char[10];
+        destination.Fill('X');
+
+        builder.CopyTo(0, destination, 3);
+
+        destination.ToString().Should().Be("HelXXXXXXX");
+    }
+
+    [Fact]
+    public void CopyTo_AcrossMultipleChunks_CopiesContiguousData()
+    {
+        // Force multiple chunks by exceeding capacity.
+        StringBuilder builder = new(capacity: 4);
+        builder.Append("ABCD");
+        builder.Append("EFGH");
+        builder.Append("IJKL");
+        builder.Append("MNOP");
+
+        Span<char> destination = stackalloc char[16];
+        builder.CopyTo(0, destination, 16);
+        destination.ToString().Should().Be("ABCDEFGHIJKLMNOP");
+
+        Span<char> partial = stackalloc char[6];
+        builder.CopyTo(5, partial, 6);
+        partial.ToString().Should().Be("FGHIJK");
+    }
+
+    [Fact]
+    public void CopyTo_ManyChunks_CopiesContiguousData()
+    {
+        // Use the same pattern as GetChunks_ManyChunks_ConcatenationMatchesToString to
+        // reliably produce a chunk chain with more than 8 chunks (exercising the
+        // ManyChunkInfo path in ChunkEnumerator).
+        StringBuilder builder = new(capacity: 16);
+        for (int i = 0; i < 64; i++)
+        {
+            builder.Insert(0, (char)('A' + (i % 26)));
+            builder.Insert(0, "------------------------------");
+        }
+
+        int chunkCount = 0;
+        foreach (ReadOnlyMemory<char> chunk in builder.GetChunks())
+        {
+            chunkCount++;
+        }
+
+        chunkCount.Should().BeGreaterThan(8);
+
+        string expected = builder.ToString();
+        char[] destination = new char[expected.Length];
+        builder.CopyTo(0, destination, expected.Length);
+        new string(destination).Should().Be(expected);
+
+        char[] partial = new char[7];
+        builder.CopyTo(6, partial, 7);
+        new string(partial).Should().Be(expected.Substring(6, 7));
+
+        // Range that spans across multiple chunk boundaries near the end.
+        int sourceIndex = expected.Length - 50;
+        char[] tail = new char[40];
+        builder.CopyTo(sourceIndex, tail, 40);
+        new string(tail).Should().Be(expected.Substring(sourceIndex, 40));
+    }
+
+    [Fact]
+    public void CopyTo_NegativeCount_Throws()
+    {
+        StringBuilder builder = new("Hello");
+        char[] buffer = new char[5];
+
+        Action action = () => builder.CopyTo(0, buffer.AsSpan(), -1);
+
+        action.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("count");
+    }
+
+    [Fact]
+    public void CopyTo_NegativeSourceIndex_Throws()
+    {
+        StringBuilder builder = new("Hello");
+        char[] buffer = new char[5];
+
+        Action action = () => builder.CopyTo(-1, buffer.AsSpan(), 1);
+
+        action.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("sourceIndex");
+    }
+
+    [Fact]
+    public void CopyTo_SourceIndexBeyondLength_Throws()
+    {
+        StringBuilder builder = new("Hello");
+        char[] buffer = new char[5];
+
+        Action action = () => builder.CopyTo(6, buffer.AsSpan(), 0);
+
+        action.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("sourceIndex");
+    }
+
+    [Fact]
+    public void CopyTo_SourceIndexPlusCountExceedsLength_Throws()
+    {
+        StringBuilder builder = new("Hello");
+        char[] buffer = new char[10];
+
+        Action action = () => builder.CopyTo(3, buffer.AsSpan(), 5);
+
+        action.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void CopyTo_DestinationTooShort_Throws()
+    {
+        StringBuilder builder = new("Hello");
+        char[] buffer = new char[3];
+
+        Action action = () => builder.CopyTo(0, buffer.AsSpan(), 5);
+
+        action.Should().Throw<ArgumentException>();
+    }
 }
