@@ -30,8 +30,16 @@ Decide the PR base:
 - If the current branch is `main`, **do not commit on `main`**. Create a new
   branch from the current `HEAD` with a short, descriptive, kebab-case name
   derived from the change (e.g. `fix-span-enumerate-lines`,
-  `add-create-pr-skill`). Confirm the name with the user if it is not
-  obvious.
+  `add-create-pr-skill`).
+- When asking the user to confirm the branch name, use `vscode_askQuestions`
+  with the suggested name as a selectable option **and** allow free-form
+  input so the user can either accept the suggestion with one click or type
+  a different name. Example: a single question whose `options` contains the
+  suggested kebab-case name and whose `allowFreeformInput` is left at the
+  default (`true`). Note that `vscode_askQuestions` requires at least two
+  options or none — when offering a suggestion, pair it with a second
+  option such as `Use a different name` (which the user can ignore in favor
+  of free-form text), or omit `options` entirely and rely on free text.
 - Use `git switch -c <branch>` to move uncommitted changes onto the new
   branch.
 - If already on a non-`main` branch, keep using it.
@@ -61,23 +69,40 @@ Decide the PR base:
 
 ## 5. Open the PR
 
-Prefer the GitHub CLI (`gh`) when available. Determine the target with the
-rule from step 1:
+**Prefer the VS Code GitHub Pull Requests tool**
+(`github-pull-request_create_pull_request`) when it is available in the
+current tool set — it works without requiring `gh` to be installed and
+returns the PR number/URL directly. Fall back to the GitHub CLI (`gh`) if
+the VS Code tool is not available, and only fall back to a browser compare
+URL if neither is available.
 
-- **Upstream exists** — PR against the upstream repo. Resolve the upstream
-  `owner/repo` from `git remote get-url upstream`, then:
+Determine the target with the rule from step 1.
+
+### Option A — VS Code GitHub Pull Requests tool (preferred)
+
+Call `github-pull-request_create_pull_request` with:
+
+- `title`, `body` (see PR title/body guidance below),
+- `head` = the feature branch name (no owner prefix),
+- `base` = `main`,
+- For an upstream-targeted PR, set `repo` to `{ owner: <upstreamOwner>, name: <repo> }` and `headOwner` to the fork owner.
+- For an origin-only PR, omit `repo` and `headOwner` (they default correctly).
+
+### Option B — GitHub CLI fallback
+
+- **Upstream exists**:
 
   ```pwsh
   gh pr create --repo <upstreamOwner>/<repo> --base main --head <forkOwner>:<branch> --title "<title>" --body "<body>"
   ```
 
-- **No upstream** — PR within `origin`:
+- **No upstream**:
 
   ```pwsh
   gh pr create --base main --head <branch> --title "<title>" --body "<body>"
   ```
 
-PR title and body:
+### PR title and body
 
 - Title: same style as the commit subject; reference the area touched.
 - Body: brief summary of what changed and why, bullet list of notable
@@ -86,8 +111,9 @@ PR title and body:
 - If the user has not supplied a title/body, propose one and confirm before
   creating.
 
-If `gh` is unavailable, print the compare URL the user can open in a
-browser:
+### Option C — Browser fallback
+
+If neither the VS Code tool nor `gh` is available, print the compare URL:
 
 - Upstream: `https://github.com/<upstreamOwner>/<repo>/compare/main...<forkOwner>:<branch>?expand=1`
 - Origin only: `https://github.com/<originOwner>/<repo>/compare/main...<branch>?expand=1`
