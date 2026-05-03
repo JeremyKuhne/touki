@@ -24,7 +24,7 @@ namespace Touki.Text;
 ///   <see cref="StringComparison.CurrentCulture"/>.
 ///  </para>
 ///  <para>
-///   <see cref="ReadOnlyMemory{T}"/> (created via <see cref="MemoryExtensions.AsMemory(string?)"/> provides
+///   <see cref="ReadOnlyMemory{T}"/> (created via <see cref="System.MemoryExtensions.AsMemory(string?)"/>) provides
 ///   some functionality similar to <see cref="StringSegment"/>, but it is not as optimized for <see langword="string"/>
 ///   operations. This struct leverages <see langword="string"/> methods to get good performance on .NET Framework.
 ///  </para>

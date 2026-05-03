@@ -46,6 +46,12 @@ Top-level layout:
   (e.g. `List<string> list = new()` instead of `var list = new List<string>()`).
 - When instantiating objects, prefer `TypeName instance = new()` over
   `var instance = new TypeName()`.
+- Prefer
+  [collection expressions](https://learn.microsoft.com/dotnet/csharp/language-reference/operators/collection-expressions)
+  for array, list, and span literals (e.g. `int[] values = [1, 2, 3];` and
+  `Point[] points = [new(1, 2), new(5, 6)];`) over `new T[] { ... }` or
+  `new List<T> { ... }` initializers. Combine with target-typed `new()` for
+  element instantiation where the element type is reasonably obvious.
 - Use `is null` and `is not null` for null checks instead of `== null` or `!= null`.
 - For enums wrapped in `Value`, always call `Value.Create()` instead of `new Value()`.
 - Use the following header for all C# files:
