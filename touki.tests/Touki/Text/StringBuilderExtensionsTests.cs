@@ -483,7 +483,7 @@ public unsafe class StringBuilderExtensionsTests
     public void CopyTo_EmptyBuilder_ZeroCount_Succeeds()
     {
         StringBuilder builder = new();
-        Span<char> destination = Span<char>.Empty;
+        Span<char> destination = [];
 
         builder.CopyTo(0, destination, 0);
     }

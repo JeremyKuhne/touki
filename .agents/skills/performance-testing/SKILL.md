@@ -1,0 +1,216 @@
+---
+name: performance-testing
+description: Author and run BenchmarkDotNet performance tests in the `touki.perf` project. Use when adding new benchmarks, running existing ones, comparing implementations, or evaluating allocations / memory usage for code in the `touki` library.
+---
+
+# Performance testing in `touki.perf`
+
+The [touki.perf](../../../touki.perf/touki.perf.csproj) project hosts all
+[BenchmarkDotNet](https://benchmarkdotnet.org/) benchmarks for the library. It
+multi-targets the current modern .NET version (see `$(DotNetCoreVersion)` in
+[Directory.Build.props](../../../Directory.Build.props), currently `net10.0`) and
+`net481`, so benchmarks run on both .NET and .NET Framework. It references both the
+main library and the test project (so internal helpers used in tests are also
+available to perf code).
+
+Note: code under `touki/Framework/` is only compiled for the .NET Framework target.
+References to those types from a benchmark must be guarded with `#if NETFRAMEWORK`.
+
+## 1. Authoring a benchmark
+
+### File and class layout
+
+- One benchmark class per file, file named after the class
+  (e.g. [StoreInteger.cs](../../../touki.perf/StoreInteger.cs)).
+- Namespace is always `touki.perf`.
+- Class is `public` (BenchmarkDotNet requires this) and contains one or more methods
+  marked `[Benchmark]`.
+- Use the standard repo file header.
+- Follow the repo coding style (no `var`, target-typed `new()`, C# keyword type names,
+  `is null` / `is not null`, indented XML docs, etc.). See
+  [AGENTS.md](../../../AGENTS.md).
+
+### Globals already imported
+
+[GlobalUsings.cs](../../../touki.perf/GlobalUsings.cs) already provides:
+
+- `BenchmarkDotNet.Attributes` &mdash; `[Benchmark]`, `[MemoryDiagnoser]`, `[Params]`,
+  `[GlobalSetup]`, etc.
+- `BenchmarkDotNet.Jobs` &mdash; `RuntimeMoniker`, `[SimpleJob]`.
+- `Touki` &mdash; the library root namespace.
+- `Microsoft.IO` (on NETFRAMEWORK) or `System.IO` otherwise.
+
+Do not re-import these.
+
+### Required attributes for memory evaluation
+
+Always annotate the class with `[MemoryDiagnoser]` so allocations are reported. This
+adds three columns to the results table: **Gen0 / Gen1 / Gen2** (collections per 1000
+ops) and **Allocated** (bytes per op). Without it you only get timings.
+
+```c#
+[MemoryDiagnoser]
+public class StringFormatting
+{
+    [Benchmark(Baseline = true)]
+    public string StringFormat() => string.Format("The answer is {0}.", _value);
+
+    [Benchmark]
+    public string StringsFormat() => string.FormatValue("The answer is {0}.", _value);
+}
+```
+
+Mark one method `[Benchmark(Baseline = true)]` whenever you are comparing
+alternative implementations &mdash; the report adds a **Ratio** and
+**RatioSD** column relative to that baseline.
+
+### Optional attributes
+
+- `[SimpleJob(RuntimeMoniker.HostProcess, warmupCount: 1, iterationCount: 3, launchCount: 1)]`
+  &mdash; cuts run time when iterating on a benchmark. Use only while developing; remove
+  (or revert to defaults) before checking in stable measurements. See
+  [StoreInteger.cs](../../../touki.perf/StoreInteger.cs) for an example.
+- `[Params(...)]` on a public field/property to run the benchmark for each value.
+- `[GlobalSetup]` for one-time setup outside the measured region.
+- `[Arguments(...)]` to pass per-method parameters.
+
+### What a benchmark method must do
+
+- **Return a value.** Per the
+  [BenchmarkDotNet good practices](https://benchmarkdotnet.org/articles/guides/good-practices.html),
+  a `void` benchmark whose work has no observable side effect can be entirely
+  dead-code-eliminated by the JIT, producing meaningless near-zero timings. Always
+  return a representative scalar (length, hash, last element, accumulated sum, etc.)
+  so the result escapes the method. BenchmarkDotNet consumes the return value to
+  prevent elimination.
+- For methods that mutate a buffer in place (e.g. `Span<T>.Replace`), return
+  `span.Length`, `span[0]`, or a digest computed from the buffer rather than `void`.
+- Be cheap to call repeatedly &mdash; BenchmarkDotNet will invoke it millions of times.
+- Avoid per-call setup; move setup into `[GlobalSetup]` or readonly fields.
+- Avoid wrapping the system-under-test in a helper method just to satisfy the type
+  system &mdash; the helper's overhead (extra call frame, type check, generic
+  instantiation) shows up in the measurement. If you cannot call the target API
+  directly because of overload resolution, either rename one overload temporarily
+  while measuring, or factor the test into two separate benchmark classes.
+- Ref structs cannot be returned from `[Benchmark]` methods; consume them inside the
+  method and return a representative scalar (e.g. a length or hash).
+
+## 2. Running benchmarks
+
+The project's `Program.Main` uses `BenchmarkSwitcher.FromAssembly(...)` so all CLI
+arguments are forwarded to BenchmarkDotNet. Run from the repo root in PowerShell.
+
+### Specifying the target framework is required
+
+Because `touki.perf` is multi-targeted, **`dotnet run` requires `-f <tfm>`** &mdash;
+the SDK will not pick one for you and the run fails with NETSDK1005 or an ambiguous
+target error if you omit it. Always pass `-f net10.0` or `-f net481` (or whatever
+`$(DotNetCoreVersion)` currently resolves to).
+
+```powershell
+# Modern .NET
+dotnet run -c Release -f net10.0 --project touki.perf -- --filter *StoreInteger*
+
+# .NET Framework 4.8.1
+dotnet run -c Release -f net481 --project touki.perf -- --filter *StoreInteger*
+```
+
+`-c Release` is **mandatory**. Debug builds are not representative and BenchmarkDotNet
+will warn loudly.
+
+When a change touches code that compiles for both targets, **run both TFMs**. The
+results often differ dramatically &mdash; the modern runtime has vectorized BCL APIs
+that .NET Framework lacks, so a hand-tuned net481 fast path may look identical to the
+generic path on net10.
+
+### Run a single class or method
+
+```powershell
+# All benchmarks in StoreInteger
+dotnet run -c Release -f net10.0 --project touki.perf -- --filter *StoreInteger*
+
+# A single method
+dotnet run -c Release -f net10.0 --project touki.perf -- --filter *StoreInteger.As
+```
+
+### Interactive picker
+
+```powershell
+dotnet run -c Release --project touki.perf
+```
+
+With no `--filter`, BenchmarkSwitcher prints a numbered menu. Useful when exploring.
+
+### Useful extra switches
+
+- `--job short` &mdash; very fast, low-confidence run; good for smoke-testing a new
+  benchmark before committing to a full run.
+- `--memory` &mdash; enables the memory diagnoser for this run even if the class is not
+  decorated. Prefer the attribute.
+- `--exporters github` &mdash; emits a GitHub-flavored Markdown report alongside the
+  default outputs.
+
+## 3. Evaluating memory usage
+
+With `[MemoryDiagnoser]` (or `--memory`), each row of the results table includes:
+
+| Column      | Meaning                                                      |
+| ----------- | ------------------------------------------------------------ |
+| `Gen0`      | Gen0 collections per 1000 operations.                        |
+| `Gen1`      | Gen1 collections per 1000 operations.                        |
+| `Gen2`      | Gen2 collections per 1000 operations.                        |
+| `Allocated` | Managed bytes allocated per single operation.                |
+
+### Reading the numbers
+
+- **`Allocated` is the primary signal.** A method that should be allocation-free must
+  report `-` or `0 B`. Anything else is a regression.
+- A `Ratio` column appears when one method is `Baseline = true`. Use it together with
+  `Allocated` to confirm a perf change is not just trading CPU for allocations (or
+  vice versa).
+- `Gen0` ticking up while `Allocated` stays flat usually means you allocated a lot of
+  short-lived objects on previous iterations &mdash; recheck `[GlobalSetup]`.
+- Stack-only types (`Span<T>`, `ref struct`s, `stackalloc`) do not contribute to
+  `Allocated`. Boxing of value types does &mdash; watch for accidental boxing through
+  `object`, non-generic interfaces, or `string.Format`.
+- On `net481` the JIT and BCL allocate differently than on the modern .NET target
+  (`net10.0`). Always run both before declaring a win.
+
+### Where the report lives
+
+After each run BenchmarkDotNet writes artifacts under
+`BenchmarkDotNet.Artifacts/results/` next to the executable, including:
+
+- `*.md` &mdash; GitHub-friendly Markdown table (paste this into PR descriptions).
+- `*.csv` and `*.html` &mdash; for spreadsheets / browser viewing.
+- `*-report-full.json` &mdash; raw measurements; useful for diffing two runs
+  programmatically.
+
+The same table is also printed to the console at the end of the run.
+
+## 4. Workflow checklist for a new benchmark
+
+1. Add a `<Name>.cs` file under `touki.perf/` with a `public` class in `touki.perf`.
+2. Decorate the class with `[MemoryDiagnoser]`.
+3. Add `[Benchmark(Baseline = true)]` to the reference implementation and `[Benchmark]`
+   to each variant.
+4. Make every benchmark method **return a value** derived from the work, never `void`.
+5. Avoid helper-method indirection between the benchmark and the system-under-test.
+   If overload resolution forces it, temporarily rename one overload in source while
+   measuring, then revert.
+6. Build Release: `dotnet build -c Release touki.perf`.
+7. Smoke-test with `--job short --filter *<Name>*` on each target framework
+   individually using `-f net10.0` and `-f net481`.
+8. Run the full benchmark on both target frameworks (drop `--job short`).
+9. Inspect `Allocated` and `Ratio` columns; copy the Markdown report into the PR.
+
+## 5. Codegen-level optimization rules
+
+For decisions about *how to write* a hot path &mdash; whether to specialize a
+generic for primitives, choose between scalar/unrolled forms, defer to BCL
+primitives like `IndexOf` / `SequenceEqual`, or interpret a `net481`-vs-`net10`
+divergence &mdash; see the
+[framework-jit-optimization](../framework-jit-optimization/SKILL.md) skill.
+That skill is the right entry point for "this loop is slow on `net481`, what
+should I try?" questions, while this one is about authoring and running the
+benchmarks themselves.

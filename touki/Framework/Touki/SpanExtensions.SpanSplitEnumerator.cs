@@ -16,44 +16,41 @@ public static partial class SpanExtensions
     private const string WhiteSpaceChars =
         "\t\n\v\f\r\u0020\u0085\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000";
 
-    /// <summary>
-    /// Returns a type that allows for enumeration of each element within a split span
-    /// using the provided separator character.
-    /// </summary>
-    /// <typeparam name="T">The type of the elements.</typeparam>
-    /// <param name="source">The source span to be enumerated.</param>
-    /// <param name="separator">The separator character to be used to split the provided span.</param>
-    /// <returns>Returns a <see cref="SpanSplitEnumerator{T}"/>.</returns>
-    public static SpanSplitEnumerator<T> Split<T>(this ReadOnlySpan<T> source, T separator) where T : IEquatable<T> =>
-        new SpanSplitEnumerator<T>(source, separator);
+    extension<T>(ReadOnlySpan<T> source) where T : IEquatable<T>
+    {
+        /// <summary>
+        ///  Returns a type that allows for enumeration of each element within a split span
+        ///  using the provided separator character.
+        /// </summary>
+        /// <param name="separator">The separator character to be used to split the provided span.</param>
+        /// <returns>Returns a <see cref="SpanSplitEnumerator{T}"/>.</returns>
+        public SpanSplitEnumerator<T> Split(T separator) => new(source, separator);
 
-    /// <summary>
-    /// Returns a type that allows for enumeration of each element within a split span
-    /// using the provided separator span.
-    /// </summary>
-    /// <typeparam name="T">The type of the elements.</typeparam>
-    /// <param name="source">The source span to be enumerated.</param>
-    /// <param name="separator">The separator span to be used to split the provided span.</param>
-    /// <returns>Returns a <see cref="SpanSplitEnumerator{T}"/>.</returns>
-    public static SpanSplitEnumerator<T> Split<T>(this ReadOnlySpan<T> source, ReadOnlySpan<T> separator) where T : IEquatable<T> =>
-        new SpanSplitEnumerator<T>(source, separator, treatAsSingleSeparator: true);
+        /// <summary>
+        ///  Returns a type that allows for enumeration of each element within a split span
+        ///  using the provided separator span.
+        /// </summary>
+        /// <param name="separator">The separator span to be used to split the provided span.</param>
+        /// <returns>Returns a <see cref="SpanSplitEnumerator{T}"/>.</returns>
+        public SpanSplitEnumerator<T> Split(ReadOnlySpan<T> separator) =>
+            new(source, separator, treatAsSingleSeparator: true);
 
-    /// <summary>
-    /// Returns a type that allows for enumeration of each element within a split span
-    /// using any of the provided elements.
-    /// </summary>
-    /// <typeparam name="T">The type of the elements.</typeparam>
-    /// <param name="source">The source span to be enumerated.</param>
-    /// <param name="separators">The separators to be used to split the provided span.</param>
-    /// <returns>Returns a <see cref="SpanSplitEnumerator{T}"/>.</returns>
-    /// <remarks>
-    /// If <typeparamref name="T"/> is <see cref="char"/> and if <paramref name="separators"/> is empty,
-    /// all Unicode whitespace characters are used as the separators. This matches the behavior of when
-    /// <see cref="string.Split(char[])"/> and related overloads are used with an empty separator array.
-    /// </remarks>
-    public static SpanSplitEnumerator<T> SplitAny<T>(
-        this ReadOnlySpan<T> source,
-        [UnscopedRef] params ReadOnlySpan<T> separators) where T : IEquatable<T> => new SpanSplitEnumerator<T>(source, separators);
+        /// <summary>
+        ///  Returns a type that allows for enumeration of each element within a split span
+        ///  using any of the provided elements.
+        /// </summary>
+        /// <param name="separators">The separators to be used to split the provided span.</param>
+        /// <returns>Returns a <see cref="SpanSplitEnumerator{T}"/>.</returns>
+        /// <remarks>
+        ///  <para>
+        ///   If <typeparamref name="T"/> is <see cref="char"/> and if <paramref name="separators"/> is empty,
+        ///   all Unicode whitespace characters are used as the separators. This matches the behavior of when
+        ///   <see cref="string.Split(char[])"/> and related overloads are used with an empty separator array.
+        ///  </para>
+        /// </remarks>
+        public SpanSplitEnumerator<T> SplitAny([UnscopedRef] params ReadOnlySpan<T> separators) =>
+            new(source, separators);
+    }
 
     /// <summary>
     ///  Enables enumerating each split within a <see cref="ReadOnlySpan{T}"/> that has been divided using one or more separators.
