@@ -1438,7 +1438,12 @@ dotnet_diagnostic.IDE0077.severity = warning
 dotnet_diagnostic.IDE0078.severity = warning
 
 # IDE0180: Use tuple to swap values
-dotnet_diagnostic.IDE0180.severity = warning
+# Tuple-deconstruction swap regresses hot paths on both net481 RyuJIT (~25%
+# slower) and modern .NET 10 RyuJIT (~47% slower) versus the explicit
+# temp-variable form. Measured by touki.perf/SpanSwapPerf.cs. Since all
+# library code targets .NET Framework, disable globally rather than only
+# under touki/Framework/.
+dotnet_diagnostic.IDE0180.severity = none
 
 # IDE0251: Make member 'readonly'
 dotnet_diagnostic.IDE0251.severity = warning
@@ -1624,14 +1629,3 @@ end_of_line = crlf
 [**/*Extensions.cs]
 dotnet_diagnostic.IDE0051.severity = none
 dotnet_diagnostic.IDE0052.severity = none
-
-# ----------------------------------------------------------------------------
-# Framework polyfill perf-vs-style suppressions
-# ----------------------------------------------------------------------------
-# Code under touki/Framework/ targets net472/net481 RyuJIT, which does not
-# optimize tuple-deconstruction swaps as well as a manual temp-variable swap.
-# Measured (touki.perf/SpanSwapPerf.cs): tuple swap is ~25% slower on net481
-# and ~47% slower on net10 for hot-path span swaps. Keep the explicit form.
-
-[touki/Framework/**.cs]
-dotnet_diagnostic.IDE0180.severity = none
