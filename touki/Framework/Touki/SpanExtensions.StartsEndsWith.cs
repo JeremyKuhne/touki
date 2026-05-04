@@ -11,18 +11,17 @@ public static partial class SpanExtensions
         /// <summary>
         ///  Returns <see langword="true"/> if the span begins with <paramref name="value"/>.
         /// </summary>
-        /// <remarks>
-        ///  <para>
-        ///   Uses <see cref="EqualityComparer{T}.Default"/> which RyuJIT devirtualizes
-        ///   for sealed value types, so this is allocation-free and matches the BCL's
-        ///   primitive throughput without resorting to <c>Unsafe</c> reinterpretation
-        ///   (which has been observed to mis-read the parameter byte under aggressive
-        ///   Release-mode inlining for negative-valued signed primitives).
-        ///  </para>
-        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool StartsWith(T value) =>
-            span.Length != 0 && EqualityComparer<T>.Default.Equals(span[0], value);
+        public bool StartsWith(T value)
+        {
+            if (span.Length == 0)
+            {
+                return false;
+            }
+
+            T first = span[0];
+            return value is null ? first is null : value.Equals(first);
+        }
 
         /// <summary>
         ///  Returns <see langword="true"/> if the span ends with <paramref name="value"/>.
@@ -31,7 +30,13 @@ public static partial class SpanExtensions
         public bool EndsWith(T value)
         {
             int length = span.Length;
-            return length != 0 && EqualityComparer<T>.Default.Equals(span[length - 1], value);
+            if (length == 0)
+            {
+                return false;
+            }
+
+            T last = span[length - 1];
+            return value is null ? last is null : value.Equals(last);
         }
     }
 
