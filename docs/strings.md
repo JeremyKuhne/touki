@@ -24,7 +24,7 @@ Touki (登器) provides low allocation interpolated‑string support for .NET F
 
 `ValueStringBuilder` is a `ref struct` that builds strings on the stack when small and rents from `ArrayPool<char>` when they grow (see source code ([ValueStringBuilder.cs](https://github.com/JeremyKuhne/touki/blob/main/touki/Touki/Text/ValueStringBuilder.cs))). It also serves as an **interpolated‑string handler** so helper methods can accept it directly. Based on the `ValueStringBuilder` .NET uses internally, you can now leverage it for your performance critical scenarios.
 
-Touki’s polyfilled `DefaultInterpolatedStringHandler` for .NET 4.7.2 ([source](https://github.com/JeremyKuhne/touki/blob/main/touki/Framework/System/Runtime/CompilerServices/DefaultInterpolatedStringHandler.cs)) simply wraps a `ValueStringBuilder`. On .NET Framework the compiler targets interpolated strings to this handler, giving you the same low‑allocation benefits that newer runtimes provide.
+Touki’s polyfilled `DefaultInterpolatedStringHandler` for .NET 4.7.2 ([source](https://github.com/JeremyKuhne/touki/blob/main/touki/Framework/Polyfills/System.Runtime.CompilerServices/DefaultInterpolatedStringHandler.cs)) simply wraps a `ValueStringBuilder`. On .NET Framework the compiler targets interpolated strings to this handler, giving you the same low‐allocation benefits that newer runtimes provide.
 
 ### `Strings`: lower‑cost `Format` methods
 
@@ -91,7 +91,7 @@ The builder writes directly to the stream buffer, so no extra string is created.
 
 ## Bringing modern interpolation to .NET Framework 4.7.2
 
-C# 10 lets you define **custom interpolated‑string handlers**. Touki supplies `DefaultInterpolatedStringHandler` and `AssertInterpolatedStringHandler` ([AssertInterpolatedStringHandler.cs](https://github.com/JeremyKuhne/touki/blob/main/touki/Framework/System/Diagnostics/AssertInterpolatedStringHandler.cs)). The former is the special class C# looks for to implement interpolated strings. The latter is used to provide a low allocation cross compiled assertions in the `Debugging` class:
+C# 10 lets you define **custom interpolated‐string handlers**. Touki supplies `DefaultInterpolatedStringHandler` and `AssertInterpolatedStringHandler` ([AssertInterpolatedStringHandler.cs](https://github.com/JeremyKuhne/touki/blob/main/touki/Framework/Polyfills/System.Diagnostics/AssertInterpolatedStringHandler.cs)). The former is the special class C# looks for to implement interpolated strings. The latter is used to provide a low allocation cross compiled assertions in the `Debugging` class:
 
 ```csharp
 // Works on *both* .NET 9 and .NET Framework 4.7.2

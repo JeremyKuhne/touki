@@ -66,22 +66,32 @@ The repo enables:
 
 Don't hand-write attribute polyfills; PolySharp generates them.
 
-### 3. Hand-rolled polyfill in `touki/Framework/`
+### 3. Hand-rolled polyfill in `touki/Framework/Polyfills/<BclNamespace>/`
 
 Last resort, when a runtime member (instance method, static helper,
 ctor) isn't supplied by a package and isn't an attribute. Polyfill only
 when there's a real caller; "completeness" polyfills bloat the surface.
 
-- **Mirror the BCL namespace.** `System.Convert` &rarr;
-  `touki/Framework/System/ConvertExtensions.cs`. `System.Text.Encoding`
-  &rarr; `touki/Framework/System/Text/EncodingExtensions.cs`. Callers
-  hit the polyfill via the same `using` they already had.
+- **Folder = BCL namespace, dotted.** `System.Convert` &rarr;
+  `touki/Framework/Polyfills/System/ConvertExtensions.cs`.
+  `System.Text.Encoding` &rarr;
+  `touki/Framework/Polyfills/System.Text/EncodingExtensions.cs`.
+  `System.Security.Cryptography.CryptographicOperations` &rarr;
+  `touki/Framework/Polyfills/System.Security.Cryptography/CryptographicOperations.cs`.
+- **`namespace` matches the folder.** `Polyfills/System/Foo.cs` declares
+  `namespace System;`, `Polyfills/System.Text/Foo.cs` declares
+  `namespace System.Text;`. Callers reach the polyfill through the same
+  `using` they already had for the BCL type.
 - **Use C# 14 `extension` blocks** (e.g. `extension(Encoding encoding) { ... }`)
   rather than static-class extension methods. Lookup picks the BCL
   member on modern .NET and the polyfill on net472. See
-  [ConvertExtensions.cs](../../../touki/Framework/System/ConvertExtensions.cs).
+  [ConvertExtensions.cs](../../../touki/Framework/Polyfills/System/ConvertExtensions.cs).
 - **Don't `#if NETFRAMEWORK` inside `touki/Framework/`** &mdash; the
   whole folder is already framework-only.
+- **Touki-specific helpers (not polyfills)** live in
+  `touki/Framework/Touki/...` with `Touki.*` namespaces. If your file
+  isn't shadowing a public modern .NET BCL member, it doesn't go under
+  `Polyfills/`.
 
 ## Design rules every hand polyfill must satisfy
 
@@ -95,7 +105,7 @@ when there's a real caller; "completeness" polyfills bloat the surface.
 - For overridable members (`Random.NextBytes`, `Encoding.GetBytes`),
   only take a fast path when `typeof(BaseType) == obj.GetType()`;
   subclasses dispatch through the virtual member. See
-  [RandomExtensions.NextBytes](../../../touki/Framework/System/RandomExtensions.cs).
+  [RandomExtensions.NextBytes](../../../touki/Framework/Polyfills/System/RandomExtensions.cs).
 - Stateful types (`HashCode`, `Random`): match the documented contract,
   not observable cross-runtime output. `HashCode` is process-local.
 
@@ -116,7 +126,7 @@ before inventing new ones:
   methods (`Convert.ToHexString`, `string.Concat(ROS<char>...)`).
 - **Pinned `unsafe` pass-through to BCL `T*` overloads** when no span
   variant exists; see
-  [EncodingExtensions](../../../touki/Framework/System/Text/EncodingExtensions.cs).
+  [EncodingExtensions](../../../touki/Framework/Polyfills/System.Text/EncodingExtensions.cs).
   Watch the empty-span null-pinnable foot-gun (Gotchas &sect;1).
 - **`MemoryMarshal.AsBytes` / `AsRef` / `GetReference`** for zero-copy
   reinterpretation.
@@ -142,7 +152,7 @@ and comment which BCL surface is targeted and why.
 ### Argument validation
 
 - `ArgumentNullException.ThrowIfNull(arg)` &mdash; the polyfill at
-  [`ArgumentNullExtensions`](../../../touki/Framework/Touki/Exceptions/ArgumentNullExtensions.cs)
+  [`ArgumentNullExtensions`](../../../touki/Framework/Polyfills/System/ArgumentNullExtensions.cs)
   covers net472.
 - `ThrowIfNegative` / `ThrowIfGreaterThan` / etc. when available;
   fall back to `(uint)x > (uint)max`.
@@ -153,7 +163,7 @@ and comment which BCL surface is targeted and why.
 Wrap any sum of input lengths used to size an allocation in `checked()`.
 Unchecked overflow allocates the wrong-sized buffer and surfaces failure
 later from `CopyTo`.
-[`StringExtensions.Concat`](../../../touki/Framework/System/StringExtensions.cs)
+[`StringExtensions.Concat`](../../../touki/Framework/Polyfills/System/StringExtensions.cs)
 is the reference pattern.
 
 ### Coexistence with future BCL polyfills
@@ -164,10 +174,19 @@ extension; the polyfill goes silently inert. No `extern alias` needed.
 
 The exception is when the polyfill defines a **new type** in `System.*`
 (e.g.
-[CryptographicOperations](../../../touki/Framework/System/Security/Cryptography/CryptographicOperations.cs)).
+[CryptographicOperations](../../../touki/Framework/Polyfills/System.Security.Cryptography/CryptographicOperations.cs)).
 A future Microsoft polyfill for that exact type collides (CS0436/CS0433)
-and callers need `extern alias`. Prefer extension members over new
-`System.*` types when feasible.
+and callers need `extern alias`. The recipe and the list of new-type
+polyfills lives in
+[docs/polyfill-layout.md](../../../docs/polyfill-layout.md). Prefer
+extension members over new `System.*` types when feasible.
+
+Touki's stated commitment is to **defer to Microsoft-shipped polyfills
+when they ship**: a future Touki release will reference the official
+package and remove (or thin-forward) the duplicate type, so callers
+upgrade automatically. See
+[docs/polyfill-layout.md](../../../docs/polyfill-layout.md) for the
+user-facing version of that policy.
 
 ## Gotchas seen in past PRs
 
@@ -180,7 +199,7 @@ enforces these; this section explains *why*.
    overloads typically throw `ArgumentNullException` instead of the
    canonical "destination too short". Handle empty source / empty
    destination separately before pinning. See
-   [EncodingExtensions.GetBytes](../../../touki/Framework/System/Text/EncodingExtensions.cs).
+   [EncodingExtensions.GetBytes](../../../touki/Framework/Polyfills/System.Text/EncodingExtensions.cs).
 
 2. **`Unsafe.As<T,...>(ref param)` mis-reads negative-signed primitives
    in Release on net481.** RyuJIT can keep the parameter in a register
@@ -197,7 +216,7 @@ enforces these; this section explains *why*.
    ~1.2&times; on big buffers despite saving the alloc). Use a pinned
    pointer loop and only on the type-exact fast path; subclasses go
    through the array overload. See
-   [RandomExtensions](../../../touki/Framework/System/RandomExtensions.cs).
+   [RandomExtensions](../../../touki/Framework/Polyfills/System/RandomExtensions.cs).
 
 4. **`HashCode` is process-local.** No cross-runtime parity contract;
    only assert within-process determinism.
@@ -227,10 +246,10 @@ enforces these; this section explains *why*.
 | `Span<T>.IndexOf` / `Contains` | `System.Memory` | &mdash; |
 | `HashCode` | `Microsoft.Bcl.HashCode` | &mdash; |
 | `IsExternalInit`, `CallerArgumentExpression` | PolySharp | &mdash; |
-| `ROS<T>.StartsWith(T)` (single element) | hand | [SpanExtensions.StartsEndsWith.cs](../../../touki/Framework/Touki/SpanExtensions.StartsEndsWith.cs) |
-| `Convert.ToHexString` / `FromHexString` | hand | [ConvertExtensions.cs](../../../touki/Framework/System/ConvertExtensions.cs) |
-| `Random.NextBytes(Span<byte>)` | hand | [RandomExtensions.cs](../../../touki/Framework/System/RandomExtensions.cs) |
-| `string.Concat(ROS<char>...)` | hand | [StringExtensions.cs](../../../touki/Framework/System/StringExtensions.cs) |
-| `HashCode.AddBytes(ROS<byte>)` | hand | [HashCodeExtensions.cs](../../../touki/Framework/System/HashCodeExtensions.cs) |
-| `CryptographicOperations.FixedTimeEquals` | hand | [CryptographicOperations.cs](../../../touki/Framework/System/Security/Cryptography/CryptographicOperations.cs) |
-| `Encoding.GetBytes(ROS<char>, Span<byte>)` ... | hand | [EncodingExtensions.cs](../../../touki/Framework/System/Text/EncodingExtensions.cs) |
+| `ROS<T>.StartsWith(T)` (single element) | hand | [SpanExtensions.StartsEndsWith.cs](../../../touki/Framework/Polyfills/System/SpanExtensions.StartsEndsWith.cs) |
+| `Convert.ToHexString` / `FromHexString` | hand | [ConvertExtensions.cs](../../../touki/Framework/Polyfills/System/ConvertExtensions.cs) |
+| `Random.NextBytes(Span<byte>)` | hand | [RandomExtensions.cs](../../../touki/Framework/Polyfills/System/RandomExtensions.cs) |
+| `string.Concat(ROS<char>...)` | hand | [StringExtensions.cs](../../../touki/Framework/Polyfills/System/StringExtensions.cs) |
+| `HashCode.AddBytes(ROS<byte>)` | hand | [HashCodeExtensions.cs](../../../touki/Framework/Polyfills/System/HashCodeExtensions.cs) |
+| `CryptographicOperations.FixedTimeEquals` | hand | [CryptographicOperations.cs](../../../touki/Framework/Polyfills/System.Security.Cryptography/CryptographicOperations.cs) |
+| `Encoding.GetBytes(ROS<char>, Span<byte>)` ... | hand | [EncodingExtensions.cs](../../../touki/Framework/Polyfills/System.Text/EncodingExtensions.cs) |

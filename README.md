@@ -29,6 +29,7 @@ Some of the design goals include:
 
 - [Configuring Your Project for Touki](sample/README.md)
 - [Reducing String Allocations with Touki](docs/strings.md)
+- [.NET Framework Polyfill Layout & Disambiguation](docs/polyfill-layout.md)
 
 ## Package Installation
 

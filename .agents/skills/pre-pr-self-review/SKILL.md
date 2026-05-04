@@ -101,16 +101,16 @@ new one):
   references).
 - **Pinned write into `new string('\0', length)`.** Allocates one final
   string with no temp `char[]`; see
-  [`StringExtensions.Concat`](../../../touki/Framework/System/StringExtensions.cs)
+  [`StringExtensions.Concat`](../../../touki/Framework/Polyfills/System/StringExtensions.cs)
   and `Convert.ToHexString` for the `fixed (char* p = result)` pattern.
 - **Pinned `unsafe` pass-through to BCL `T*` overloads** when the BCL
   doesn't expose a span variant. See
-  [`EncodingExtensions`](../../../touki/Framework/System/Text/EncodingExtensions.cs).
+  [`EncodingExtensions`](../../../touki/Framework/Polyfills/System.Text/EncodingExtensions.cs).
 - **`MemoryMarshal.AsBytes` / `AsRef` / `GetArrayDataReference`** to
   reinterpret without copying.
 - **Type-exact runtime check + inline path for the base type**, with
   fallback through the virtual member for subclasses (see
-  [`RandomExtensions.NextBytes`](../../../touki/Framework/System/RandomExtensions.cs)).
+  [`RandomExtensions.NextBytes`](../../../touki/Framework/Polyfills/System/RandomExtensions.cs)).
 - **`InternalsVisibleTo` to the test project** so you can test
   internal helpers directly without exposing them in the public API.
 
