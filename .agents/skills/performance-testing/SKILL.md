@@ -86,9 +86,11 @@ alternative implementations &mdash; the report adds a **Ratio** and
   result escapes the method &mdash; BenchmarkDotNet consumes the return value to
   prevent elimination.
 - For methods that mutate a buffer in place (e.g. `Span<T>.Replace`, `Random.NextBytes`,
-  `Encoding.GetBytes`), return `buffer[0]`, `buffer[buffer.Length - 1]`, an XOR /
-  sum digest of the buffer, or `buffer.Length`. Do **not** return `void` and do
-  **not** return a constant unrelated to the work.
+  `Encoding.GetBytes`), return `buffer[0]`, `buffer[buffer.Length - 1]`, or an XOR /
+  sum digest of the buffer &mdash; some value that depends on the work the method
+  actually performed. Do **not** return `void`, do **not** return a constant, and
+  do **not** return `buffer.Length` or any other value the JIT can prove is
+  invariant of the body's execution.
 - Symptoms of forgetting this: the "optimized" variant looks slower than the
   baseline because the baseline got eliminated entirely; ratios that vary wildly
   (>50% StdDev) between runs; near-zero timings for non-trivial work.

@@ -42,9 +42,20 @@ public static class EncodingExtensions
             }
 
             fixed (char* charPtr = &MemoryMarshal.GetReference(chars))
-            fixed (byte* bytePtr = &MemoryMarshal.GetReference(bytes))
             {
-                return encoding.GetBytes(charPtr, chars.Length, bytePtr, bytes.Length);
+                // For an empty destination span pass a non-null stack pointer with length 0.
+                // The BCL pointer overload will then surface the canonical "destination too
+                // short" ArgumentException rather than throwing on the null pinnable reference.
+                if (bytes.IsEmpty)
+                {
+                    byte stackByte = 0;
+                    return encoding.GetBytes(charPtr, chars.Length, &stackByte, 0);
+                }
+
+                fixed (byte* bytePtr = &MemoryMarshal.GetReference(bytes))
+                {
+                    return encoding.GetBytes(charPtr, chars.Length, bytePtr, bytes.Length);
+                }
             }
         }
 
@@ -79,9 +90,17 @@ public static class EncodingExtensions
             }
 
             fixed (byte* bytePtr = &MemoryMarshal.GetReference(bytes))
-            fixed (char* charPtr = &MemoryMarshal.GetReference(chars))
             {
-                return encoding.GetChars(bytePtr, bytes.Length, charPtr, chars.Length);
+                if (chars.IsEmpty)
+                {
+                    char stackChar = '\0';
+                    return encoding.GetChars(bytePtr, bytes.Length, &stackChar, 0);
+                }
+
+                fixed (char* charPtr = &MemoryMarshal.GetReference(chars))
+                {
+                    return encoding.GetChars(bytePtr, bytes.Length, charPtr, chars.Length);
+                }
             }
         }
 

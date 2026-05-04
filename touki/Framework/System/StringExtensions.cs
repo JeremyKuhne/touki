@@ -16,7 +16,7 @@ public static class StringExtensions
         /// </summary>
         public static unsafe string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1)
         {
-            int length = str0.Length + str1.Length;
+            int length = checked(str0.Length + str1.Length);
             if (length == 0)
             {
                 return string.Empty;
@@ -38,7 +38,7 @@ public static class StringExtensions
         /// </summary>
         public static unsafe string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1, ReadOnlySpan<char> str2)
         {
-            int length = str0.Length + str1.Length + str2.Length;
+            int length = checked(str0.Length + str1.Length + str2.Length);
             if (length == 0)
             {
                 return string.Empty;
@@ -67,7 +67,7 @@ public static class StringExtensions
             ReadOnlySpan<char> str2,
             ReadOnlySpan<char> str3)
         {
-            int length = str0.Length + str1.Length + str2.Length + str3.Length;
+            int length = checked(str0.Length + str1.Length + str2.Length + str3.Length);
             if (length == 0)
             {
                 return string.Empty;
