@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.Globalization;
+
 namespace System;
 
 public class InternalDateTimeExtensionsTests
