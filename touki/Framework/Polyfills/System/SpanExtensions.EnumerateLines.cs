@@ -2,28 +2,14 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-namespace Touki;
+using Touki;
+
+namespace System;
 
 public static partial class SpanExtensions
 {
     extension(ReadOnlySpan<char> span)
     {
-        /// <summary>
-        ///  Indicates whether the specified span is empty or contains only whitespace characters.
-        /// </summary>
-        public bool IsWhiteSpace()
-        {
-            for (int i = 0; i < span.Length; i++)
-            {
-                if (!char.IsWhiteSpace(span[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         /// <summary>
         ///  Returns an enumeration of lines over the provided span.
         /// </summary>

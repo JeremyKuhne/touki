@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-namespace Touki;
+using Touki;
+
+namespace System;
 
 /// <summary>
 ///  Memory&lt;T&gt; / ReadOnlyMemory&lt;T&gt; extensions for trimming.

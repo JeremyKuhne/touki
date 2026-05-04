@@ -5,7 +5,9 @@
 // Algorithm adapted from dotnet/runtime ArraySortHelper (MIT licensed).
 // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Collections/Generic/ArraySortHelper.cs
 
-namespace Touki;
+using Touki;
+
+namespace System;
 
 public static partial class SpanExtensions
 {
