@@ -268,4 +268,3 @@ with a localized pragma rather than re-enabling the rule globally:
 Do **not** apply this to code under `touki/Framework/` (compiled only for
 .NET Framework) or to code shared across both targets without a
 `#if NET` / `#else` split &mdash; the .NET Framework branch will regress.
-
