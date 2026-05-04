@@ -78,6 +78,81 @@ public class SpanSwapPerf
         return keys[0] ^ values[0];
     }
 
+    /// <summary>
+    ///  Swap two local <see langword="ref"/>-pointed values, no Span indexing.
+    ///  Isolates whether tuple-swap regressions come from the deconstruction
+    ///  itself or from re-indexing the span.
+    /// </summary>
+    [Benchmark]
+    public int RefLocals_Temp()
+    {
+        int[] keys = _keys;
+        int sum = 0;
+        for (int i = 0; i < keys.Length - 1; i++)
+        {
+            ref int a = ref keys[i];
+            ref int b = ref keys[i + 1];
+            int temp = a;
+            a = b;
+            b = temp;
+            sum ^= a;
+        }
+
+        return sum;
+    }
+
+    [Benchmark]
+    public int RefLocals_Tuple()
+    {
+        int[] keys = _keys;
+        int sum = 0;
+        for (int i = 0; i < keys.Length - 1; i++)
+        {
+            ref int a = ref keys[i];
+            ref int b = ref keys[i + 1];
+            (a, b) = (b, a);
+            sum ^= a;
+        }
+
+        return sum;
+    }
+
+    /// <summary>
+    ///  Swap two local value-type variables. Pure deconstruction overhead,
+    ///  no memory traffic, no indexing.
+    /// </summary>
+    [Benchmark]
+    public int Locals_Temp()
+    {
+        int a = 0;
+        int b = 1;
+        int sum = 0;
+        for (int i = 0; i < Length; i++)
+        {
+            int temp = a;
+            a = b;
+            b = temp;
+            sum ^= a;
+        }
+
+        return sum;
+    }
+
+    [Benchmark]
+    public int Locals_Tuple()
+    {
+        int a = 0;
+        int b = 1;
+        int sum = 0;
+        for (int i = 0; i < Length; i++)
+        {
+            (a, b) = (b, a);
+            sum ^= a;
+        }
+
+        return sum;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void SwapTemp<T>(Span<T> span, int i, int j)
     {

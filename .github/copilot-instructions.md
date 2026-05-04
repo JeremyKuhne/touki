@@ -133,9 +133,14 @@ Top-level layout:
 These rules exist because they have been violated and cost a review round-trip.
 Treat them as hard requirements.
 
-- **Stop after fixing a failing build/test/CI run.** Describe the fix and wait
-  for explicit approval before `git commit` or `git push`. Do not stack
-  follow-up commits trying to "make CI green".
+- **Never `git commit` or `git push` without explicit user approval, period.**
+  This applies to: fixing a failing build/test/CI run, addressing PR review
+  comments, follow-up cleanup, "obvious" small changes, and anything else.
+  After making changes, describe what you did and stop. Wait for the user
+  to say "commit", "push", "ship it", or equivalent. "Address the review
+  comments" is **not** approval to commit or push &mdash; it is approval to
+  edit files. Do not stack follow-up commits trying to "make CI green" or
+  "finish the review pass".
 - **Stage by path, never `git add -A`/`git add .`** when the working tree spans
   more than one logical change set. Run `git status --short` first; if topics
   are intermingled, ask how to split before staging.
