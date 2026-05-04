@@ -159,7 +159,14 @@ Treat them as hard requirements.
   [`polyfill-dotnet-api`](.agents/skills/polyfill-dotnet-api/SKILL.md) skill:
   prefer Microsoft-shipped packages (`System.Memory`, `Microsoft.Bcl.*`,
   `Microsoft.IO.Redist`), then PolySharp source-gen for compiler attributes,
-  and only hand-roll under `touki/Framework/` as a last resort.
+  and only hand-roll under `touki/Framework/Polyfills/<BclNamespace>/` as a
+  last resort. Hand-rolled polyfills declare the BCL namespace they're
+  polyfilling (`Polyfills/System/Foo.cs` &rarr; `namespace System;`,
+  `Polyfills/System.Text/Foo.cs` &rarr; `namespace System.Text;`).
+  Touki-specific code that does not polyfill a modern .NET API stays under
+  `touki/Framework/Touki/...` with `Touki.*` namespaces. See
+  [docs/polyfill-layout.md](docs/polyfill-layout.md) for the user-facing
+  description and the `extern alias` recipe for type-name conflicts.
 
 ## Path-specific instructions
 
