@@ -156,6 +156,11 @@ Treat them as hard requirements.
 - PowerShell is the terminal environment for building and testing.
 - Check `GlobalUsings.cs` for global usings and don't add unnecessary usings.
 - Write XML documentation for public APIs.
+- When adding a polyfill for a modern .NET API on .NET Framework, follow the
+  [`polyfill-dotnet-api`](../.agents/skills/polyfill-dotnet-api/SKILL.md) skill:
+  prefer Microsoft-shipped packages (`System.Memory`, `Microsoft.Bcl.*`,
+  `Microsoft.IO.Redist`), then PolySharp source-gen for compiler attributes,
+  and only hand-roll under `touki/Framework/` as a last resort.
 
 ## Path-specific instructions
 
