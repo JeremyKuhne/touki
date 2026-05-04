@@ -127,6 +127,27 @@ Top-level layout:
   members directly.
 - For private members, use the `TestAccessor` and `TestAccessors` extension methods.
 
+## Working with the user on changes
+
+These rules exist because they have been violated and cost a review round-trip.
+Treat them as hard requirements.
+
+- **Stop after fixing a failing build/test/CI run.** Describe the fix and wait
+  for explicit approval before `git commit` or `git push`. Do not stack
+  follow-up commits trying to "make CI green".
+- **Stage by path, never `git add -A`/`git add .`** when the working tree spans
+  more than one logical change set. Run `git status --short` first; if topics
+  are intermingled, ask how to split before staging.
+- **Name the JIT in performance claims.** ".NET Framework 4.8.1 RyuJIT" (older,
+  no `EqualityComparer<T>.Default` intrinsic, no tiered JIT, weaker inlining)
+  vs **modern .NET RyuJIT** (.NET 6+, devirtualization, tiered JIT, dynamic
+  PGO). Unqualified "RyuJIT" claims are wrong about half the time. Code
+  changes in `touki/Framework/` driven by such claims need a benchmark or an
+  explicit "not measured" note.
+- **Run `dotnet test -c Release` before declaring a fix done.** Release-mode
+  inlining surfaces bugs Debug doesn't &mdash; `Unsafe.As` on a method
+  parameter is a known foot-gun on net481 RyuJIT.
+
 ## General guidance
 
 - Ensure code is cross-compatible with both .NET 9 and .NET Framework 4.7.2.

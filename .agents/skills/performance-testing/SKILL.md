@@ -76,15 +76,24 @@ alternative implementations &mdash; the report adds a **Ratio** and
 
 ### What a benchmark method must do
 
-- **Return a value.** Per the
+- **Return a value. ALWAYS. Even when measuring `void`-returning APIs that mutate a
+  buffer.** This is the single most common mistake: writing a `[Benchmark]` method
+  that returns `void` (or returns the same constant every iteration) lets the JIT
+  dead-code-eliminate the entire body, producing meaningless near-zero or wildly
+  inconsistent timings. Per the
   [BenchmarkDotNet good practices](https://benchmarkdotnet.org/articles/guides/good-practices.html),
-  a `void` benchmark whose work has no observable side effect can be entirely
-  dead-code-eliminated by the JIT, producing meaningless near-zero timings. Always
-  return a representative scalar (length, hash, last element, accumulated sum, etc.)
-  so the result escapes the method. BenchmarkDotNet consumes the return value to
+  every benchmark method must produce a value derived from the work performed so the
+  result escapes the method &mdash; BenchmarkDotNet consumes the return value to
   prevent elimination.
-- For methods that mutate a buffer in place (e.g. `Span<T>.Replace`), return
-  `span.Length`, `span[0]`, or a digest computed from the buffer rather than `void`.
+- For methods that mutate a buffer in place (e.g. `Span<T>.Replace`, `Random.NextBytes`,
+  `Encoding.GetBytes`), return `buffer[0]`, `buffer[buffer.Length - 1]`, or an XOR /
+  sum digest of the buffer &mdash; some value that depends on the work the method
+  actually performed. Do **not** return `void`, do **not** return a constant, and
+  do **not** return `buffer.Length` or any other value the JIT can prove is
+  invariant of the body's execution.
+- Symptoms of forgetting this: the "optimized" variant looks slower than the
+  baseline because the baseline got eliminated entirely; ratios that vary wildly
+  (>50% StdDev) between runs; near-zero timings for non-trivial work.
 - Be cheap to call repeatedly &mdash; BenchmarkDotNet will invoke it millions of times.
 - Avoid per-call setup; move setup into `[GlobalSetup]` or readonly fields.
 - Avoid wrapping the system-under-test in a helper method just to satisfy the type
