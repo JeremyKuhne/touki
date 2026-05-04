@@ -1,8 +1,10 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-namespace Touki;
+using Touki;
+
+namespace System;
 
 /// <summary>
 ///  <see cref="BitConverter"/> methods that don't have a direct equivalent in the .NET Framework build.
