@@ -5,7 +5,9 @@
 // Algorithms in this file are adapted from dotnet/runtime (MIT licensed).
 // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/SpanHelpers.T.cs
 
-namespace Touki;
+using Touki;
+
+namespace System;
 
 public static partial class SpanExtensions
 {

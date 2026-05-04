@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -38,7 +38,9 @@
 // multiple times for different instantiation.
 //
 
-namespace Touki.Exceptions;
+using Touki;
+
+namespace System;
 
 //
 // The convention for this enum is using the argument name as the enum name
