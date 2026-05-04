@@ -533,7 +533,7 @@ public unsafe class StringBuilderExtensionsTests
         }
 
         int chunkCount = 0;
-        foreach (ReadOnlyMemory<char> chunk in builder.GetChunks())
+        foreach (ReadOnlyMemory<char> _ in builder.GetChunks())
         {
             chunkCount++;
         }

@@ -3,7 +3,9 @@
 // See LICENSE file in the project root for full license information
 
 using System.Collections;
+#if NET5_0_OR_GREATER
 using System.Reflection;
+#endif
 
 namespace Touki.Collections;
 

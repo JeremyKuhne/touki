@@ -5,8 +5,6 @@
 // Algorithm adapted from dotnet/runtime ArraySortHelper (MIT licensed).
 // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Collections/Generic/ArraySortHelper.cs
 
-using Touki;
-
 namespace System;
 
 public static partial class SpanExtensions
@@ -300,12 +298,8 @@ public static partial class SpanExtensions
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void Swap<T>(Span<T> span, int i, int j)
-    {
-        T temp = span[i];
-        span[i] = span[j];
-        span[j] = temp;
-    }
+    private static void Swap<T>(Span<T> span, int i, int j) =>
+        (span[i], span[j]) = (span[j], span[i]);
 
     // -----------------------------------------------------------------------
     //  Paired-span IntroSort (sorts items in tandem with keys)
@@ -493,11 +487,7 @@ public static partial class SpanExtensions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Swap<TKey, TValue>(Span<TKey> keys, Span<TValue> items, int i, int j)
     {
-        TKey tk = keys[i];
-        keys[i] = keys[j];
-        keys[j] = tk;
-        TValue tv = items[i];
-        items[i] = items[j];
-        items[j] = tv;
+        (keys[i], keys[j]) = (keys[j], keys[i]);
+        (items[i], items[j]) = (items[j], items[i]);
     }
 }

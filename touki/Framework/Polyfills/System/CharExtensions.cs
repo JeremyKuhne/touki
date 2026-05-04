@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using Touki;
-
 namespace System;
 
 public static partial class CharExtensions
@@ -65,7 +63,7 @@ public static partial class CharExtensions
         /// 'A' through 'F', inclusive, or 'a' through 'f', inclusive.
         /// </remarks>
         public static bool IsAsciiHexDigit(char c) =>
-            System.HexConverter.IsHexChar(c);
+            HexConverter.IsHexChar(c);
 
         /// <summary>Indicates whether a character is categorized as an ASCII upper-case hexadecimal digit.</summary>
         /// <param name="c">The character to evaluate.</param>
@@ -75,7 +73,7 @@ public static partial class CharExtensions
         /// or 'A' through 'F', inclusive.
         /// </remarks>
         public static bool IsAsciiHexDigitUpper(char c) =>
-            System.HexConverter.IsHexUpperChar(c);
+            HexConverter.IsHexUpperChar(c);
 
         /// <summary>Indicates whether a character is categorized as an ASCII lower-case hexadecimal digit.</summary>
         /// <param name="c">The character to evaluate.</param>
@@ -85,7 +83,7 @@ public static partial class CharExtensions
         /// or 'a' through 'f', inclusive.
         /// </remarks>
         public static bool IsAsciiHexDigitLower(char c) =>
-            System.HexConverter.IsHexLowerChar(c);
+            HexConverter.IsHexLowerChar(c);
 
         /// <summary>Indicates whether a character is within the specified inclusive range.</summary>
         /// <param name="c">The character to evaluate.</param>

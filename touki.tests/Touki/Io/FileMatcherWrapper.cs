@@ -50,7 +50,6 @@ public static class FileMatcherWrapper
     private static readonly FieldInfo s_defaultFieldInfo;
     private static readonly MethodInfo s_getFilesMethodInfo;
     private static readonly object s_defaultInstance;
-    private static readonly Type s_searchActionType;
 
     // Cache the return type information
     private static readonly Type s_returnTupleType;
@@ -70,13 +69,9 @@ public static class FileMatcherWrapper
                 ?? throw new InvalidOperationException("Could not find FileMatcher type");
 
             // Find the SearchAction enum type
-            s_searchActionType = fileMatcherType.Assembly.GetType("Microsoft.Build.Shared.SearchAction")
-                ?? fileMatcherType.Assembly.GetType("Microsoft.Build.Shared.FileMatcher+SearchAction")!;
-
-            if (s_searchActionType is null)
-            {
-                throw new InvalidOperationException("Could not find SearchAction enum type");
-            }
+            _ = fileMatcherType.Assembly.GetType("Microsoft.Build.Shared.SearchAction")
+                ?? fileMatcherType.Assembly.GetType("Microsoft.Build.Shared.FileMatcher+SearchAction")
+                ?? throw new InvalidOperationException("Could not find SearchAction enum type");
 
             // Get the Default static field
             s_defaultFieldInfo = fileMatcherType.GetField(

@@ -35,6 +35,9 @@
     <LangVersion>14</LangVersion>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Surface .editorconfig IDE rules (unused usings, type simplification, etc.) as build diagnostics. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
   <!-- Common repo directories -->

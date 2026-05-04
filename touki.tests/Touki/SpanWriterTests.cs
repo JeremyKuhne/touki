@@ -231,9 +231,11 @@ public class SpanWriterTests
     public void SpanWriter_End_AfterPositionChange()
     {
         Span<byte> span = new byte[5];
-        SpanWriter<byte> writer = new(span);
+        SpanWriter<byte> writer = new(span)
+        {
+            Position = 5
+        };
 
-        writer.Position = 5;
         writer.End.Should().BeTrue();
 
         writer.Position = 3;

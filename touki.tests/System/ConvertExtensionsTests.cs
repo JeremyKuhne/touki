@@ -9,7 +9,7 @@ public class ConvertExtensionsTests
     [Fact]
     public void ToHexString_Empty_ReturnsEmpty()
     {
-        Convert.ToHexString(ReadOnlySpan<byte>.Empty).Should().BeEmpty();
+        Convert.ToHexString([]).Should().BeEmpty();
     }
 
     [Fact]

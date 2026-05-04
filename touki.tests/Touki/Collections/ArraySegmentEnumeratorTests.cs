@@ -127,7 +127,7 @@ public class ArraySegmentEnumeratorTests
         ArraySegment<int> segment = new(array, 0, 2);
         ArraySegmentEnumerator<int> enumerator = new(segment);
 
-        Action act = () => enumerator.Dispose();
+        Action act = enumerator.Dispose;
         act.Should().NotThrow();
     }
 

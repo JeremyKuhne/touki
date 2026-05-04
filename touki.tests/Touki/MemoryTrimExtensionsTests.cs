@@ -67,7 +67,7 @@ public class MemoryTrimExtensionsTests
     public void Trim_Set_Memory_RemovesAnyOfSet()
     {
         Memory<int> memory = new int[] { 0, 1, 5, 2, 1, 0 };
-        Memory<int> trimmed = memory.Trim(new int[] { 0, 1 }.AsSpan());
+        Memory<int> trimmed = memory.Trim([0, 1]);
         trimmed.ToArray().Should().Equal(5, 2);
     }
 
@@ -82,7 +82,7 @@ public class MemoryTrimExtensionsTests
     public void TrimEnd_Set_Memory_RemovesTrailing()
     {
         Memory<int> memory = new int[] { 5, 1, 2, 0, 1 };
-        memory.TrimEnd(new int[] { 0, 1 }.AsSpan()).ToArray().Should().Equal(5, 1, 2);
+        memory.TrimEnd([0, 1]).ToArray().Should().Equal(5, 1, 2);
     }
 
     // -----------------------------------------------------------------------
@@ -107,7 +107,7 @@ public class MemoryTrimExtensionsTests
     public void TrimEnd_Set_ReadOnlyMemory_RemovesTrailing()
     {
         ReadOnlyMemory<int> memory = new int[] { 5, 1, 2, 0, 1 };
-        memory.TrimEnd(new int[] { 0, 1 }.AsSpan()).ToArray().Should().Equal(5, 1, 2);
+        memory.TrimEnd([0, 1]).ToArray().Should().Equal(5, 1, 2);
     }
 
     // -----------------------------------------------------------------------

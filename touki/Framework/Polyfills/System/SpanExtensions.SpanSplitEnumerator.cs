@@ -9,8 +9,6 @@
 
 using System.Collections;
 
-using Touki;
-
 namespace System;
 
 public static partial class SpanExtensions
