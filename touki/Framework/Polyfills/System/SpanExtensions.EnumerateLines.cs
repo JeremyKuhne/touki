@@ -4,6 +4,11 @@
 
 namespace System;
 
+/// <summary>
+///  Polyfills for <see cref="Span{T}"/> and <see cref="ReadOnlySpan{T}"/>
+///  instance APIs added in modern .NET, exposed to .NET Framework via C#
+///  extension types.
+/// </summary>
 public static partial class SpanExtensions
 {
     extension(ReadOnlySpan<char> span)

@@ -1626,11 +1626,13 @@ end_of_line = crlf
 # in fact used by the extension members.
 #
 # By convention every file that declares an `extension(...)` block in this
-# repo is named `*Extensions.cs`, so the glob below covers them. If/when the
-# analyzer learns to see through extension types, narrow or delete this
-# section. Other analyzer false positives produced by extension types should
-# be added here as additional `dotnet_diagnostic.*.severity = none` lines.
+# repo has `Extensions` in its name, so the glob below covers them
+# (including partial-class splits such as `MemoryExtensions.Trim.cs` and
+# `StringExtensions_DotNetFoundation.cs`). If/when the analyzer learns to
+# see through extension types, narrow or delete this section. Other analyzer
+# false positives produced by extension types should be added here as
+# additional `dotnet_diagnostic.*.severity = none` lines.
 
-[**/*Extensions.cs]
+[**/*Extensions*.cs]
 dotnet_diagnostic.IDE0051.severity = none
 dotnet_diagnostic.IDE0052.severity = none

@@ -38,6 +38,9 @@
 
     <!-- Surface .editorconfig IDE rules (unused usings, type simplification, etc.) as build diagnostics. -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Treat all compiler/analyzer warnings as build errors so style and correctness issues fail fast. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <!-- Common repo directories -->

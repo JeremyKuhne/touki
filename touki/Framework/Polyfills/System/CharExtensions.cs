@@ -4,6 +4,10 @@
 
 namespace System;
 
+/// <summary>
+///  Polyfills for <see cref="char"/> static APIs added in modern .NET, exposed
+///  to .NET Framework via C# extension types.
+/// </summary>
 public static partial class CharExtensions
 {
     extension(char)

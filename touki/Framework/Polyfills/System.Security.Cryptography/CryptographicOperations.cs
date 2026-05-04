@@ -15,7 +15,7 @@ public static class CryptographicOperations
     /// <remarks>
     ///  <para>
     ///   The runtime of this method is independent of the contents of the inputs (assuming
-    ///   equal lengths). Use this method instead of <see cref="MemoryExtensions.SequenceEqual{T}(ReadOnlySpan{T}, ReadOnlySpan{T})"/>
+    ///   equal lengths). Use this method instead of <c>MemoryExtensions.SequenceEqual</c>
     ///   or equivalent to avoid timing side channels when comparing security tokens.
     ///  </para>
     /// </remarks>
