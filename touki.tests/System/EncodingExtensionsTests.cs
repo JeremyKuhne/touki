@@ -18,7 +18,7 @@ public class EncodingExtensionsTests
     [Fact]
     public void GetByteCount_EmptySpan_ReturnsZero()
     {
-        Encoding.UTF8.GetByteCount(ReadOnlySpan<char>.Empty).Should().Be(0);
+        Encoding.UTF8.GetByteCount([]).Should().Be(0);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class EncodingExtensionsTests
     public void GetBytes_EmptySource_ReturnsZero()
     {
         Span<byte> dst = stackalloc byte[4];
-        Encoding.UTF8.GetBytes(ReadOnlySpan<char>.Empty, dst).Should().Be(0);
+        Encoding.UTF8.GetBytes([], dst).Should().Be(0);
     }
 
     [Fact]
@@ -68,6 +68,6 @@ public class EncodingExtensionsTests
     [Fact]
     public void GetString_EmptySpan_ReturnsEmpty()
     {
-        Encoding.UTF8.GetString(ReadOnlySpan<byte>.Empty).Should().BeEmpty();
+        Encoding.UTF8.GetString([]).Should().BeEmpty();
     }
 }

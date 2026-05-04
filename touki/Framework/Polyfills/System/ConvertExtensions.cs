@@ -65,7 +65,7 @@ public static class ConvertExtensions
             string result = new('\0', charCount);
             fixed (char* resultPtr = result)
             {
-                ConvertExtensions.EncodeToUtf16(bytes, new Span<char>(resultPtr, charCount), casing: 0);
+                EncodeToUtf16(bytes, new Span<char>(resultPtr, charCount), casing: 0);
             }
 
             return result;
@@ -98,7 +98,7 @@ public static class ConvertExtensions
             }
 
             byte[] result = new byte[chars.Length >> 1];
-            if (!ConvertExtensions.TryDecodeFromUtf16(chars, result))
+            if (!TryDecodeFromUtf16(chars, result))
             {
                 throw new FormatException("The input is not a valid hexadecimal string as it contains a non-hexadecimal character.");
             }

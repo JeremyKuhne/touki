@@ -4,8 +4,6 @@
 
 // Adapted from dotnet/runtime MemoryExtensions.TryWriteInterpolatedStringHandler.cs (MIT licensed).
 
-using Touki;
-
 namespace System;
 
 public static partial class MemoryExtensions

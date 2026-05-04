@@ -47,7 +47,7 @@ public class RandomExtensionsTests
     public void NextBytes_EmptySpan_NoOp()
     {
         Random r = new(1);
-        r.NextBytes(Span<byte>.Empty);
+        r.NextBytes([]);
     }
 
 #if NETFRAMEWORK

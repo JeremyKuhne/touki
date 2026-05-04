@@ -44,7 +44,6 @@ using System.Runtime.Serialization;
 using System.Threading;
 using Touki;
 using Touki.Framework.Resources;
-using Touki.Text;
 
 namespace System;
 

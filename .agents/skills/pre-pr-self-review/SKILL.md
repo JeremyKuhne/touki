@@ -72,7 +72,7 @@ for the canonical `OverflowException` test pattern.
 
 - Null guards use `ArgumentNullException.ThrowIfNull(arg)` &mdash; the
   polyfill at
-  [touki/Framework/Touki/Exceptions/ArgumentNullExtensions.cs](../../../touki/Framework/Touki/Exceptions/ArgumentNullExtensions.cs)
+  [touki/Framework/Polyfills/System/ArgumentNullExtensions.cs](../../../touki/Framework/Polyfills/System/ArgumentNullExtensions.cs)
   covers net472.
 - Range checks use `ThrowIfNegative` / `ThrowIfGreaterThan` / etc. when
   available; fall back to `(uint)x > (uint)max`.

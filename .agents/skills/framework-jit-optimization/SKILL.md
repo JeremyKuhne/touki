@@ -87,6 +87,9 @@ a PR.
 | BCL `IndexOf` for `Replace` (full-scan) | 2.18&ndash;3.08&times; slower than specialized scalar |
 | BCL `IndexOf` for `Count` (sparse matches, 1/64 density) | 2&ndash;3&times; **faster** than full-scan specialization |
 | Exponential `SequenceEqual` probe for `CommonPrefixLength` (4096, full match) | 3.3&times; faster than per-element scalar |
+| Tuple swap `(a, b) = (b, a)` for plain locals | **~23% slower** than `T t = a; a = b; b = t;` |
+| Tuple swap on paired `Span<T>` indexed swap (sort hot path) | **~9% slower** than explicit temps |
+| Tuple swap on a single `Span<T>` indexed swap or two `ref` locals | Equivalent (within noise) |
 
 The two BCL rows look contradictory. They aren't. See
 [bcl-tradeoffs.md](bcl-tradeoffs.md).

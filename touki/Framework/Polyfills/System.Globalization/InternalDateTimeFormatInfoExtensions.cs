@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using System.Globalization;
 using System.Reflection;
 
 namespace System.Globalization;

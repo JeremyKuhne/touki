@@ -234,3 +234,37 @@ divergence &mdash; see the
 That skill is the right entry point for "this loop is slow on `net481`, what
 should I try?" questions, while this one is about authoring and running the
 benchmarks themselves.
+
+## 6. Tuple-swap on .NET Core hot paths
+
+`IDE0180` ("use tuple to swap values") is disabled globally in
+[.editorconfig](../../../.editorconfig) because the auto-fix is unsafe on
+`net481` &mdash; see [SpanSwapPerf.cs](../../../touki.perf/SpanSwapPerf.cs)
+for the measurements. The summary is:
+
+| Form | net481 RyuJIT | .NET 10 RyuJIT |
+| --- | --- | --- |
+| Plain-local `(a, b) = (b, a)` | ~23% slower | equivalent |
+| Paired `Span<T>` indexed deconstruction | ~9% slower | ~13% **faster** |
+| Single `Span<T>` indexed or `ref` local deconstruction | equivalent | equivalent |
+
+That means a `#if NET` (modern-only) hot path that performs paired indexed
+swaps is one of the few cases where tuple swap is genuinely worth it. If a
+benchmark in `touki.perf/` confirms the win for a specific call site, opt in
+with a localized pragma rather than re-enabling the rule globally:
+
+```c#
+#if NET
+#pragma warning disable IDE0180 // Tuple swap measured faster on .NET 10 RyuJIT
+        (keys[i], keys[j], items[i], items[j]) =
+            (keys[j], keys[i], items[j], items[i]);
+#pragma warning restore IDE0180
+#else
+        TKey tk = keys[i]; keys[i] = keys[j]; keys[j] = tk;
+        TValue tv = items[i]; items[i] = items[j]; items[j] = tv;
+#endif
+```
+
+Do **not** apply this to code under `touki/Framework/` (compiled only for
+.NET Framework) or to code shared across both targets without a
+`#if NET` / `#else` split &mdash; the .NET Framework branch will regress.

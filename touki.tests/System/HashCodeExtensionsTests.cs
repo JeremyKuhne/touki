@@ -10,7 +10,7 @@ public class HashCodeExtensionsTests
     public void AddBytes_Empty_DoesNotThrow()
     {
         HashCode h = default;
-        h.AddBytes(ReadOnlySpan<byte>.Empty);
+        h.AddBytes([]);
         _ = h.ToHashCode();
     }
 
