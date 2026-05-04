@@ -12,8 +12,8 @@ public class CryptographicOperationsTests
     public void FixedTimeEquals_BothEmpty_ReturnsTrue()
     {
         CryptographicOperations.FixedTimeEquals(
-            ReadOnlySpan<byte>.Empty,
-            ReadOnlySpan<byte>.Empty).Should().BeTrue();
+            [],
+            []).Should().BeTrue();
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public class CryptographicOperationsTests
     [Fact]
     public void FixedTimeEquals_OneEmpty_ReturnsFalse()
     {
-        ReadOnlySpan<byte> a = ReadOnlySpan<byte>.Empty;
+        ReadOnlySpan<byte> a = [];
         ReadOnlySpan<byte> b = [1];
         CryptographicOperations.FixedTimeEquals(a, b).Should().BeFalse();
         CryptographicOperations.FixedTimeEquals(b, a).Should().BeFalse();
