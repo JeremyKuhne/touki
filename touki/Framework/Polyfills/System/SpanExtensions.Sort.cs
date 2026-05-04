@@ -298,8 +298,12 @@ public static partial class SpanExtensions
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void Swap<T>(Span<T> span, int i, int j) =>
-        (span[i], span[j]) = (span[j], span[i]);
+    private static void Swap<T>(Span<T> span, int i, int j)
+    {
+        T temp = span[i];
+        span[i] = span[j];
+        span[j] = temp;
+    }
 
     // -----------------------------------------------------------------------
     //  Paired-span IntroSort (sorts items in tandem with keys)
@@ -487,7 +491,11 @@ public static partial class SpanExtensions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Swap<TKey, TValue>(Span<TKey> keys, Span<TValue> items, int i, int j)
     {
-        (keys[i], keys[j]) = (keys[j], keys[i]);
-        (items[i], items[j]) = (items[j], items[i]);
+        TKey tk = keys[i];
+        keys[i] = keys[j];
+        keys[j] = tk;
+        TValue tv = items[i];
+        items[i] = items[j];
+        items[j] = tv;
     }
 }

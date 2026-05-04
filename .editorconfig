@@ -1624,3 +1624,14 @@ end_of_line = crlf
 [**/*Extensions.cs]
 dotnet_diagnostic.IDE0051.severity = none
 dotnet_diagnostic.IDE0052.severity = none
+
+# ----------------------------------------------------------------------------
+# Framework polyfill perf-vs-style suppressions
+# ----------------------------------------------------------------------------
+# Code under touki/Framework/ targets net472/net481 RyuJIT, which does not
+# optimize tuple-deconstruction swaps as well as a manual temp-variable swap.
+# Measured (touki.perf/SpanSwapPerf.cs): tuple swap is ~25% slower on net481
+# and ~47% slower on net10 for hot-path span swaps. Keep the explicit form.
+
+[touki/Framework/**.cs]
+dotnet_diagnostic.IDE0180.severity = none
