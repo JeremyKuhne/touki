@@ -16,6 +16,17 @@ available to perf code).
 Note: code under `touki/Framework/` is only compiled for the .NET Framework target.
 References to those types from a benchmark must be guarded with `#if NETFRAMEWORK`.
 
+**Related skills:**
+
+- [`polyfill-dotnet-api`](../polyfill-dotnet-api/SKILL.md) &mdash; reasons
+  to add a polyfill (and therefore a benchmark) in the first place.
+- [`framework-jit-optimization`](../framework-jit-optimization/SKILL.md) &mdash;
+  decisions about specialization, unrolling, and BCL-delegation on net481 that the
+  benchmarks here exist to validate.
+- [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) &mdash; requires a benchmark
+  in `touki.perf/` (or an explicit "not measured" note) for any perf claim that
+  drives a code change in `touki/Framework/`.
+
 ## 1. Authoring a benchmark
 
 ### File and class layout

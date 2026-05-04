@@ -12,7 +12,17 @@ is excluded from the modern build, so it only ever runs on the older RyuJIT. Tre
 This skill captures decisions distilled from real benchmarks under
 [touki.perf/](../../../touki.perf/). Always validate with the
 [performance-testing](../performance-testing/SKILL.md) skill workflow before
-committing a change.
+committing a change. Run the
+[`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) checklist before
+opening a PR &mdash; in particular &sect;5 (allocation-free over raw speed)
+and &sect;7 (perf claims must name the JIT and be measured) apply directly
+to changes guided by this skill.
+
+For the broader "how do I polyfill API X for net472?" question (which
+packages to prefer, when to hand-roll), see the
+[`polyfill-dotnet-api`](../polyfill-dotnet-api/SKILL.md) skill. This
+skill picks up after that decision is already made and the polyfill
+lives in `touki/Framework/`.
 
 ## What is and isn't available on `net481`
 

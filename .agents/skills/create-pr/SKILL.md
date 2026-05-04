@@ -9,6 +9,14 @@ Follow these steps in order. Stop and ask the user if any check is ambiguous;
 do not force-push, rewrite history, or delete branches without explicit
 confirmation.
 
+Before running this workflow, walk through the
+[`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) checklist &mdash; it
+catches the test, allocation, overflow-arithmetic, and TFM-phrasing mistakes
+that have repeatedly cost a review round-trip on this repo. If the change
+polyfills a .NET API for .NET Framework, the
+[`polyfill-dotnet-api`](../polyfill-dotnet-api/SKILL.md) skill defines the
+design rules the self-review then validates against.
+
 ## 1. Inspect repository state
 
 Run these (read-only) checks first:
