@@ -166,6 +166,18 @@ the overhead in `<remarks>` and keep the benchmark file in `touki.perf/`.
 - `git status --short` &mdash; delete leftover probe / scratch files;
   confirm every listed file belongs in the change set.
 - `git diff --check` &mdash; whitespace.
+- **Rebase onto the canonical `main` if the branch trails it.** Use
+  `upstream/main` when working from a fork (the canonical repo lives at
+  `upstream`), `origin/main` when cloning the canonical repo directly.
+  Recently-merged sister PRs may have introduced files this PR
+  cross-references; running off a stale base point makes those links look
+  broken to the offline lychee check that gates `.agents/**`, `AGENTS.md`,
+  and `*.instructions.md` changes. PR #110 lost a review round to exactly
+  this.
+- For changes that touch `.agents/`, `AGENTS.md`, or `.github/copilot-instructions.md`,
+  also run `pwsh tools/Test-AgentFileLinks.ps1` (see
+  [`agent-files-review`](../agent-files-review/SKILL.md) &sect;7 for
+  options including `-ChangedOnly` and `-Base`).
 - Build both TFMs.
 - Run `dotnet test` in **both Debug and Release**. Release-mode RyuJIT
   inlining surfaces bugs Debug doesn't &mdash; e.g.

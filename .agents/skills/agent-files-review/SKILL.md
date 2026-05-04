@@ -89,7 +89,54 @@ customization file. The PR review history showed each of these caught a real bug
 - The CI job runs on `ubuntu-latest`. PowerShell is preinstalled; no `pip`
   step is needed.
 
-## 7. Whitespace (applies to every file in scope)
+## 7. Relative Markdown links must resolve in this branch
+
+The CI link check is **offline lychee** &mdash; it only follows links that
+resolve to files in the current working tree. A link to a file that exists
+on the canonical repo's `main` but not in your branch will fail.
+
+- **Before opening a PR with agent-file changes, run
+  [`tools/Test-AgentFileLinks.ps1`](../../../tools/Test-AgentFileLinks.ps1).**
+  Without arguments, it scans every Markdown file in CI's lychee scope and
+  reports any relative link whose target doesn't exist on disk:
+
+  ```pwsh
+  pwsh tools/Test-AgentFileLinks.ps1
+  ```
+
+  The script auto-detects the PR base ref when used with `-ChangedOnly`:
+  it picks `upstream/main` if a remote literally named `upstream` exists
+  (the fork-PR workflow, where `origin` is your fork and `upstream` is the
+  canonical repo) and `origin/main` otherwise (working directly on a clone
+  of the canonical repo). Override with `-Base <ref>` if needed:
+
+  ```pwsh
+  # Audit only files changed on this branch vs the auto-detected base.
+  pwsh tools/Test-AgentFileLinks.ps1 -ChangedOnly
+
+  # Override the base explicitly.
+  pwsh tools/Test-AgentFileLinks.ps1 -Base origin/feature
+  ```
+
+- **If you cite files added by a different in-flight or just-merged PR,
+  rebase your branch on the canonical `main`** (`upstream/main` from a
+  fork, or `origin/main` from a direct clone) so those files exist
+  locally. PR #110's review feedback was triggered by exactly this
+  scenario: the branch predated PR #109 (which added the polyfill files),
+  so every cross-reference to `ConvertExtensions.cs`, `RandomExtensions.cs`,
+  `StringExtensions.cs`, `EncodingExtensions.cs`, `HashCodeExtensions.cs`,
+  `CryptographicOperations.cs`, `SpanExtensions.StartsEndsWith.cs`,
+  `StartsWithPerf.cs`, and `StringExtensionsConcatTests.cs` failed lychee
+  even though those files existed on the canonical `main`.
+- The lychee check runs against the merged tree on `main` only after a
+  push, so a stale branch can still ship broken links into your PR. Treat
+  rebase-then-link-audit as a single step before pushing any agent-file
+  change that references code added elsewhere.
+- Don't downgrade a real link to backticks just to silence the checker.
+  Either fix the link or rebase. Backtick references work as a last resort
+  when the file truly does not exist in any branch yet.
+
+## 8. Whitespace (applies to every file in scope)
 
 - No trailing whitespace.
 - No whitespace-only lines (a "blank" line must be truly empty).
