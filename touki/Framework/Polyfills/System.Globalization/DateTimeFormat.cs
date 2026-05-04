@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -10,8 +10,7 @@ using Touki;
 using Touki.Text;
 using Touki.Framework.Resources;
 
-namespace System;
-
+namespace System.Globalization;
 /*
  Customized format patterns:
  P.S. Format in the table below is the internal number format used to display the pattern.
