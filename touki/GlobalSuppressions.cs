@@ -6,5 +6,5 @@
 [assembly: SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Thread local", Scope = "member", Target = "~F:Touki.Text.ValueStringBuilder.t_values")]
 
 #if NETFRAMEWORK
-[assembly: SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Thread local", Scope = "member", Target = "~F:Touki.EnumExtensions.t_params")]
+[assembly: SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Thread local", Scope = "member", Target = "~F:Touki.EnumDataCache.t_params")]
 #endif

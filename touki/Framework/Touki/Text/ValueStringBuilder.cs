@@ -248,7 +248,7 @@ public ref partial struct ValueStringBuilder
         // We could handle very common enums so that they don't need to allocate like crazy.
         if (typeof(T).IsEnum
             && format.IsEmpty
-            && EnumExtensions.GetEnumData(typeof(T)) is var enumData
+            && EnumDataCache.GetEnumData(typeof(T)) is var enumData
             && enumData.UnderlyingType is Type underlyingType
             && underlyingType == typeof(int))
         {
@@ -277,7 +277,7 @@ public ref partial struct ValueStringBuilder
         return false;
     }
 
-    internal void InternalFlagsFormat(ulong value, bool signed, EnumExtensions.EnumData enumData)
+    internal void InternalFlagsFormat(ulong value, bool signed, EnumDataCache.EnumData enumData)
     {
         ulong result = value;
 

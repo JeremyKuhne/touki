@@ -236,7 +236,9 @@ enforces these; this section explains *why*.
 3. Add tests under [`touki.tests/`](../../../touki.tests/) running on
    both TFMs. Identical observable behavior to modern BCL for matching
    inputs.
-4. Run [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) before
+4. Consult [`dotnet/runtime`](https://github.com/dotnet/runtime) tests
+   for additional edge cases. Location pattern is `src/libraries/<AreaName>/tests/...`.
+5. Run [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) and get user approval before
    invoking [`create-pr`](../create-pr/SKILL.md).
 
 ## Examples in this repo
