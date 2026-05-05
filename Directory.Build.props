@@ -38,6 +38,15 @@
 
     <!-- Surface .editorconfig IDE rules (unused usings, type simplification, etc.) as build diagnostics. -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!--
+      Treat all compiler/analyzer warnings as build errors so style and correctness issues fail fast.
+      Exclude the NuGet audit / deprecation codes (NU1900-NU1904) so an upstream package advisory
+      cannot break CI without a source change. The advisories still appear as warnings in the build
+      log; act on them by upgrading or replacing the package, not by ignoring them.
+    -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900;NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
   </PropertyGroup>
 
   <!-- Common repo directories -->

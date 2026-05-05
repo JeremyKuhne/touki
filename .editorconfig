@@ -1625,12 +1625,19 @@ end_of_line = crlf
 # ("private member assigned but never read") diagnostics for helpers that are
 # in fact used by the extension members.
 #
-# By convention every file that declares an `extension(...)` block in this
-# repo is named `*Extensions.cs`, so the glob below covers them. If/when the
-# analyzer learns to see through extension types, narrow or delete this
-# section. Other analyzer false positives produced by extension types should
-# be added here as additional `dotnet_diagnostic.*.severity = none` lines.
+# By convention single-file extension types are named `*Extensions.cs`, so
+# the first glob below covers them. The second glob lists the multi-file
+# partial-class splits where at least one partial declares an `extension(...)`
+# block; only those exact filenames are included so non-extension siblings
+# in the same family (e.g. `MemoryExtensions.TryWrite.cs`,
+# `SpanExtensions.SpanSplitEnumeratorMode.cs`) keep IDE0051/IDE0052 active.
+# If/when the analyzer learns to see through extension types, narrow or
+# delete this section.
 
 [**/*Extensions.cs]
+dotnet_diagnostic.IDE0051.severity = none
+dotnet_diagnostic.IDE0052.severity = none
+
+[**/{MemoryExtensions.Trim,SpanExtensions.EnumerateLines,SpanExtensions.InRange,SpanExtensions.Replace,SpanExtensions.Search,SpanExtensions.Sort,SpanExtensions.SpanSplitEnumerator,SpanExtensions.SplitRanges,SpanExtensions.StartsEndsWith,StringExtensions_DotNetFoundation}.cs]
 dotnet_diagnostic.IDE0051.severity = none
 dotnet_diagnostic.IDE0052.severity = none

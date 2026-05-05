@@ -2,6 +2,15 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+// CS8500 ("takes the address of, gets the size of, or declares a pointer to
+// a managed type") fires on every `fixed (T* ...)` and `(<primitive>*)p` cast
+// in this file. Each one is statically dominated by an `if (typeof(T) ==
+// typeof(<primitive>))` runtime check, which guarantees `T` is an unmanaged
+// primitive on every path that reaches the pointer. The compiler cannot see
+// through the typeof check, so the warning is structurally unavoidable here
+// without rewriting the specialization in a way that defeats its purpose.
+#pragma warning disable CS8500
+
 namespace System;
 
 public static partial class SpanExtensions
