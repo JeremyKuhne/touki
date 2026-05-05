@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using Touki;
-
 namespace System;
 
 /// <summary>
@@ -102,14 +100,26 @@ public static class EnumExtensions
         ///  Tries to convert the span representation of the name or numeric value of one or more enumerated constants
         ///  to an equivalent enumerated object.
         /// </summary>
+        /// <remarks>
+        ///  <para>
+        ///   Matches the BCL contract: invalid <paramref name="enumType"/> (null or not an enum) throws;
+        ///   only failure to parse <paramref name="value"/> returns <see langword="false"/>.
+        ///  </para>
+        /// </remarks>
         public static bool TryParse(Type enumType, ReadOnlySpan<char> value, out object? result)
         {
+            ValidateEnumType(enumType);
             try
             {
                 result = Enum.Parse(enumType, value.ToString());
                 return true;
             }
-            catch
+            catch (ArgumentException)
+            {
+                result = null;
+                return false;
+            }
+            catch (OverflowException)
             {
                 result = null;
                 return false;
@@ -125,16 +135,31 @@ public static class EnumExtensions
         /// <param name="result">When this method returns, contains the parsed value, or <see langword="null"/> on failure.</param>
         public static bool TryParse(Type enumType, ReadOnlySpan<char> value, bool ignoreCase, out object? result)
         {
+            ValidateEnumType(enumType);
             try
             {
                 result = Enum.Parse(enumType, value.ToString(), ignoreCase);
                 return true;
             }
-            catch
+            catch (ArgumentException)
             {
                 result = null;
                 return false;
             }
+            catch (OverflowException)
+            {
+                result = null;
+                return false;
+            }
+        }
+    }
+
+    private static void ValidateEnumType(Type enumType)
+    {
+        ArgumentNullException.ThrowIfNull(enumType);
+        if (!enumType.IsEnum)
+        {
+            throw new ArgumentException("Type provided must be an Enum.", nameof(enumType));
         }
     }
 }

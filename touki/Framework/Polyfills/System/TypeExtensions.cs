@@ -34,13 +34,15 @@ public static class TypeExtensions
         ///  <para>
         ///   Reads from <see cref="Enum"/>'s internal <c>GetCachedValuesAndNames</c> cache via
         ///   reflection; faster than <see cref="Enum.GetValues(Type)"/> + <see cref="Enum.GetNames(Type)"/>
-        ///   on .NET Framework. Returned arrays are the cached references - do not mutate.
+        ///   on .NET Framework. Returned arrays are the cached references - do not mutate. Internal
+        ///   to keep the public surface identical between net472 and modern .NET targets and to
+        ///   prevent consumers from accidentally mutating the framework's cached arrays.
         ///  </para>
         /// </remarks>
         /// <exception cref="ArgumentException">
         ///  <paramref name="type"/> is not an enum type.
         /// </exception>
-        public (ulong[] Values, string[] Names) GetEnumValuesAndNames() =>
+        internal (ulong[] Values, string[] Names) GetEnumValuesAndNames() =>
             EnumDataCache.GetEnumValuesAndNames(type);
     }
 }

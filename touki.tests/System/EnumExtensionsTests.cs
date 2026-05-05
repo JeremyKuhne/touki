@@ -290,6 +290,35 @@ public class EnumExtensionsTests
         value.Should().Be(Color.Green);
     }
 
+    [Fact]
+    public void TryParse_NonGeneric_NullEnumType_Throws()
+    {
+        // BCL contract: invalid enumType throws even from TryParse.
+        Action action = () => Enum.TryParse(null!, "Red".AsSpan(), out object? _);
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void TryParse_NonGeneric_NonEnumType_Throws()
+    {
+        Action action = () => Enum.TryParse(typeof(int), "1".AsSpan(), out object? _);
+        action.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void TryParse_NonGeneric_IgnoreCase_NullEnumType_Throws()
+    {
+        Action action = () => Enum.TryParse(null!, "Red".AsSpan(), ignoreCase: true, out object? _);
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void TryParse_NonGeneric_IgnoreCase_NonEnumType_Throws()
+    {
+        Action action = () => Enum.TryParse(typeof(int), "1".AsSpan(), ignoreCase: true, out object? _);
+        action.Should().Throw<ArgumentException>();
+    }
+
     // ---- Whitespace handling (matches BCL: leading/trailing whitespace trimmed) ----
 
     [Theory]
@@ -326,9 +355,12 @@ public class EnumExtensionsTests
     [Fact]
     public void Parse_Generic_NegativeNumeric_Unsigned_Throws()
     {
-        // Unsigned enum can't take a negative literal.
+        // Unsigned enum can't take a negative literal. The exact exception type depends on TFM:
+        // older runtimes throw ArgumentException via the parser; modern runtimes throw OverflowException.
         Action action = () => Enum.Parse<UInt32Enum>("-1".AsSpan());
-        action.Should().Throw<Exception>(); // OverflowException or ArgumentException
+        Exception? exception = Record.Exception(action);
+        exception.Should().NotBeNull();
+        (exception is OverflowException or ArgumentException).Should().BeTrue();
     }
 
     // ---- Multiple underlying integral types ----
