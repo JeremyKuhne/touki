@@ -116,6 +116,132 @@ public static class ArgumentOutOfRangeExtensions
                 ThrowNegativeOrZero(value, paramName);
         }
 
+        /// <inheritdoc cref="ThrowIfZero(int, string?)"/>
+        public static void ThrowIfZero(long value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value == 0)
+                ThrowZero(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfZero(int, string?)"/>
+        public static void ThrowIfZero(uint value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value == 0)
+                ThrowZero(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfZero(int, string?)"/>
+        public static void ThrowIfZero(ulong value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value == 0)
+                ThrowZero(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfZero(int, string?)"/>
+        public static void ThrowIfZero(nint value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value == 0)
+                ThrowZero(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfZero(int, string?)"/>
+        public static void ThrowIfZero(nuint value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value == 0)
+                ThrowZero(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfZero(int, string?)"/>
+        public static void ThrowIfZero(float value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value == 0)
+                ThrowZero(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfZero(int, string?)"/>
+        public static void ThrowIfZero(double value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value == 0)
+                ThrowZero(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfZero(int, string?)"/>
+        public static void ThrowIfZero(decimal value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value == 0)
+                ThrowZero(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfNegative(int, string?)"/>
+        public static void ThrowIfNegative(long value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value < 0)
+                ThrowNegative(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfNegative(int, string?)"/>
+        public static void ThrowIfNegative(nint value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value < 0)
+                ThrowNegative(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfNegative(int, string?)"/>
+        public static void ThrowIfNegative(float value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value < 0)
+                ThrowNegative(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfNegative(int, string?)"/>
+        public static void ThrowIfNegative(double value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value < 0)
+                ThrowNegative(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfNegative(int, string?)"/>
+        public static void ThrowIfNegative(decimal value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value < 0)
+                ThrowNegative(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfNegativeOrZero(int, string?)"/>
+        public static void ThrowIfNegativeOrZero(long value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value <= 0)
+                ThrowNegativeOrZero(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfNegativeOrZero(int, string?)"/>
+        public static void ThrowIfNegativeOrZero(nint value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value <= 0)
+                ThrowNegativeOrZero(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfNegativeOrZero(int, string?)"/>
+        public static void ThrowIfNegativeOrZero(float value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value <= 0)
+                ThrowNegativeOrZero(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfNegativeOrZero(int, string?)"/>
+        public static void ThrowIfNegativeOrZero(double value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value <= 0)
+                ThrowNegativeOrZero(value, paramName);
+        }
+
+        /// <inheritdoc cref="ThrowIfNegativeOrZero(int, string?)"/>
+        public static void ThrowIfNegativeOrZero(decimal value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            if (value <= 0)
+                ThrowNegativeOrZero(value, paramName);
+        }
+
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is equal to <paramref name="other"/>.</summary>
         /// <param name="value">The argument to validate as not equal to <paramref name="other"/>.</param>
         /// <param name="other">The value to compare with <paramref name="value"/>.</param>
