@@ -16,6 +16,8 @@ the skill whenever a reviewer flags something not yet listed.
   this checklist then validates.
 - [`create-pr`](../create-pr/SKILL.md) &mdash; the workflow this checklist
   precedes.
+- [`address-pr-feedback`](../address-pr-feedback/SKILL.md) &mdash; the
+  follow-up workflow that re-runs this checklist after review comments.
 - [`performance-testing`](../performance-testing/SKILL.md) &mdash; benchmark
   authoring required by &sect;7 when a perf claim drives a code change.
 - [`framework-jit-optimization`](../framework-jit-optimization/SKILL.md)

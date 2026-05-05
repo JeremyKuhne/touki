@@ -134,6 +134,11 @@ Tell the user:
 - The base the PR targets (`upstream/main` or `origin/main`).
 - The PR URL (from `gh pr create` output) or the compare URL fallback.
 
+Once the PR exists, this skill is done. Subsequent rounds of edits in
+response to review comments, requested changes, or CI failures go through
+the [`address-pr-feedback`](../address-pr-feedback/SKILL.md) skill, which
+has different commit/push approval semantics.
+
 ## Guardrails
 
 - Never commit directly to `main`, even if the user is currently on it —
