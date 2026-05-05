@@ -94,9 +94,28 @@ public class MathExtensionsTests
     }
 
     [Fact]
+    public void Acosh_LargeValue_DoesNotOverflow()
+    {
+        // d*d would overflow for d=1e308; result must be finite (~ Log(2*1e308)).
+        double result = Math.Acosh(1e308);
+        result.Should().BeGreaterThan(0.0);
+        double.IsFinite(result).Should().BeTrue();
+    }
+
+    [Fact]
     public void Asinh_OfZero_IsZero()
     {
         Math.Asinh(0.0).Should().Be(0.0);
+    }
+
+    [Fact]
+    public void Asinh_LargeMagnitude_DoesNotOverflow()
+    {
+        double pos = Math.Asinh(1e308);
+        double neg = Math.Asinh(-1e308);
+        double.IsFinite(pos).Should().BeTrue();
+        double.IsFinite(neg).Should().BeTrue();
+        neg.Should().Be(-pos);
     }
 
     [Fact]
@@ -118,6 +137,15 @@ public class MathExtensionsTests
     public void Cbrt_Negative_ReturnsNegative()
     {
         Math.Cbrt(-8.0).Should().BeApproximately(-2.0, 1e-12);
+    }
+
+    [Fact]
+    public void Cbrt_NegativeZero_PreservesSign()
+    {
+        double negativeZero = BitConverter.Int64BitsToDouble(unchecked((long)0x8000_0000_0000_0000UL));
+        double result = Math.Cbrt(negativeZero);
+        result.Should().Be(0.0);
+        double.IsNegative(result).Should().BeTrue();
     }
 
     [Fact]

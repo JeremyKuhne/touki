@@ -215,18 +215,44 @@ public static class MathExtensions
         }
 
         /// <summary>Returns the angle whose hyperbolic cosine is the specified number.</summary>
-        public static double Acosh(double d) => Math.Log(d + Math.Sqrt((d * d) - 1.0));
+        public static double Acosh(double d)
+        {
+            // Stable form: for very large d, d*d overflows. Switch to Log(2d) = Log(d) + Log(2)
+            // when d is large enough that 1 is negligible compared to d*d.
+            const double LargeThreshold = 268435456.0; // 2^28
+            if (d >= LargeThreshold)
+            {
+                return Math.Log(d) + Math.Log(2.0);
+            }
+
+            // Sqrt((d-1)*(d+1)) is preferred over Sqrt(d*d - 1) near d == 1 to avoid loss of precision.
+            return Math.Log(d + Math.Sqrt((d - 1.0) * (d + 1.0)));
+        }
 
         /// <summary>Returns the angle whose hyperbolic sine is the specified number.</summary>
         public static double Asinh(double d)
         {
-            // Equivalent to Log(d + Sqrt(d * d + 1)) but more accurate for large |d|.
-            if (double.IsNegativeInfinity(d))
+            if (double.IsNaN(d) || double.IsInfinity(d) || d == 0.0)
             {
-                return double.NegativeInfinity;
+                return d;
             }
 
-            return Math.Log(d + Math.Sqrt((d * d) + 1.0));
+            // Operate on the magnitude and apply the sign at the end so we avoid
+            // catastrophic cancellation for large negative values.
+            double abs = Math.Abs(d);
+            double result;
+            const double LargeThreshold = 268435456.0; // 2^28
+            if (abs >= LargeThreshold)
+            {
+                // For large |d|, abs*abs overflows; use Asinh(x) ~= Log(2*|x|).
+                result = Math.Log(abs) + Math.Log(2.0);
+            }
+            else
+            {
+                result = Math.Log(abs + Math.Sqrt((abs * abs) + 1.0));
+            }
+
+            return d < 0 ? -result : result;
         }
 
         /// <summary>Returns the angle whose hyperbolic tangent is the specified number.</summary>
@@ -235,6 +261,12 @@ public static class MathExtensions
         /// <summary>Returns the cube root of a specified number.</summary>
         public static double Cbrt(double d)
         {
+            // Preserve the sign of zero (Math.Cbrt(-0.0) must return -0.0).
+            if (d == 0.0)
+            {
+                return d;
+            }
+
             if (d < 0)
             {
                 return -Math.Pow(-d, 1.0 / 3.0);
@@ -449,7 +481,10 @@ public static class MathExtensions
         /// <summary>Produces the full product of two 32-bit signed numbers.</summary>
         public static long BigMul(int a, int b) => (long)a * b;
 
-        /// <summary>Produces the full product of two 64-bit signed numbers, returning the lower 64 bits and the upper 64 bits via <paramref name="low"/>.</summary>
+        /// <summary>
+        ///  Produces the full product of two 64-bit signed numbers. Returns the upper 64 bits of the
+        ///  product; the lower 64 bits are written to <paramref name="low"/>.
+        /// </summary>
         public static long BigMul(long a, long b, out long low)
         {
             // Split each operand into 32-bit halves and recombine the 128-bit product.
@@ -482,7 +517,10 @@ public static class MathExtensions
             return high;
         }
 
-        /// <summary>Produces the full product of two 64-bit unsigned numbers, returning the lower 64 bits and the upper 64 bits via <paramref name="low"/>.</summary>
+        /// <summary>
+        ///  Produces the full product of two 64-bit unsigned numbers. Returns the upper 64 bits of the
+        ///  product; the lower 64 bits are written to <paramref name="low"/>.
+        /// </summary>
         public static ulong BigMul(ulong a, ulong b, out ulong low)
         {
             ulong al = a & 0xFFFFFFFF;
@@ -501,5 +539,5 @@ public static class MathExtensions
 
     [DoesNotReturn]
     private static void ThrowMinMaxException<T>(T min, T max) =>
-        throw new ArgumentException($"'{min}' cannot be greater than {max}.");
+        throw new ArgumentException($"'{min}' cannot be greater than {max}.", nameof(min));
 }
