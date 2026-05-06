@@ -105,6 +105,113 @@ public static class ConvertExtensions
 
             return result;
         }
+
+        /// <summary>
+        ///  Converts a span of 8-bit unsigned integers to its equivalent string representation that is
+        ///  encoded with base-64 digits.
+        /// </summary>
+        public static string ToBase64String(ReadOnlySpan<byte> bytes) =>
+            ToBase64String(bytes, Base64FormattingOptions.None);
+
+        /// <summary>
+        ///  Converts a span of 8-bit unsigned integers to its equivalent string representation that is
+        ///  encoded with base-64 digits, with optional formatting.
+        /// </summary>
+        public static string ToBase64String(ReadOnlySpan<byte> bytes, Base64FormattingOptions options)
+        {
+            if (bytes.IsEmpty)
+            {
+                return string.Empty;
+            }
+
+            byte[] rented = ArrayPool<byte>.Shared.Rent(bytes.Length);
+            try
+            {
+                bytes.CopyTo(rented);
+                return Convert.ToBase64String(rented, 0, bytes.Length, options);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+        }
+
+        /// <summary>
+        ///  Tries to convert the 8-bit unsigned integers inside <paramref name="bytes"/> to their equivalent
+        ///  string representation that is encoded with base-64 digits, writing the result into the provided
+        ///  character span.
+        /// </summary>
+        public static bool TryToBase64Chars(ReadOnlySpan<byte> bytes, Span<char> chars, out int charsWritten) =>
+            TryToBase64Chars(bytes, chars, out charsWritten, Base64FormattingOptions.None);
+
+        /// <inheritdoc cref="TryToBase64Chars(ReadOnlySpan{byte}, Span{char}, out int)"/>
+        /// <param name="bytes">The bytes to convert.</param>
+        /// <param name="chars">Destination buffer that receives the encoded chars.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of chars written.</param>
+        /// <param name="options">Formatting options.</param>
+        public static bool TryToBase64Chars(
+            ReadOnlySpan<byte> bytes,
+            Span<char> chars,
+            out int charsWritten,
+            Base64FormattingOptions options)
+        {
+            if (bytes.IsEmpty)
+            {
+                charsWritten = 0;
+                return true;
+            }
+
+            string encoded = ToBase64String(bytes, options);
+            if (encoded.Length > chars.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            encoded.AsSpan().CopyTo(chars);
+            charsWritten = encoded.Length;
+            return true;
+        }
+
+        /// <summary>
+        ///  Tries to decode the base-64 characters in <paramref name="chars"/> into <paramref name="bytes"/>.
+        /// </summary>
+        public static bool TryFromBase64Chars(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
+        {
+            if (chars.IsEmpty)
+            {
+                bytesWritten = 0;
+                return true;
+            }
+
+            try
+            {
+                byte[] decoded = Convert.FromBase64CharArray(chars.ToArray(), 0, chars.Length);
+                if (decoded.Length > bytes.Length)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                decoded.AsSpan().CopyTo(bytes);
+                bytesWritten = decoded.Length;
+                return true;
+            }
+            catch (FormatException)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <summary>
+        ///  Tries to decode the base-64 string <paramref name="s"/> into <paramref name="bytes"/>.
+        /// </summary>
+        public static bool TryFromBase64String(string s, Span<byte> bytes, out int bytesWritten)
+        {
+            ArgumentNullException.ThrowIfNull(s);
+            return TryFromBase64Chars(s.AsSpan(), bytes, out bytesWritten);
+        }
     }
 
     private static void EncodeToUtf16(ReadOnlySpan<byte> bytes, Span<char> chars, uint casing)
