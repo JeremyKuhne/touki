@@ -55,10 +55,23 @@ jobs:
     - name: Generate coverage report
       if: always()
       run: |
-        dotnet tool install -g dotnet-reportgenerator-globaltool
-        $reports = Get-ChildItem -Path artifacts -Recurse -Filter '*.cobertura.xml' |
-          ForEach-Object { $_.FullName }
-        if (-not $reports) {
+        $reportGeneratorVersion = '5.5.9'
+        if (dotnet tool list -g | Select-String -SimpleMatch 'dotnet-reportgenerator-globaltool') {
+          dotnet tool update -g dotnet-reportgenerator-globaltool --version $reportGeneratorVersion
+        }
+        else {
+          dotnet tool install -g dotnet-reportgenerator-globaltool --version $reportGeneratorVersion
+        }
+
+        if (-not (Test-Path artifacts)) {
+          Write-Warning 'No artifacts directory found; skipping report generation.'
+          exit 0
+        }
+        $reports = @(
+          Get-ChildItem -Path artifacts -Recurse -Filter '*.cobertura.xml' -ErrorAction SilentlyContinue |
+            ForEach-Object { $_.FullName }
+        )
+        if ($reports.Count -eq 0) {
           Write-Warning 'No cobertura reports found; skipping report generation.'
           exit 0
         }
