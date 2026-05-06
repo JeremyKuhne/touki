@@ -15,8 +15,8 @@ customizations (skills, prompts, custom agents, path-specific instructions), see
 
 ## Project overview
 
-`touki` is a C# library that targets both **.NET 9** and **.NET Framework 4.7.2**. All
-code must compile and behave correctly on both targets.
+`touki` is a C# library that targets both **.NET 10** and **.NET Framework 4.7.2**.
+All code must compile and behave correctly on both targets.
 
 Top-level layout:
 
@@ -29,14 +29,14 @@ Top-level layout:
 
 ## Environment setup
 
-- On Unix, run `./setup.sh` once after cloning to install the .NET 9 SDK and update PATH.
+- On Unix, run `./setup.sh` once after cloning to install the .NET 10 SDK and update PATH.
 - On Windows, install the .NET SDK from <https://dotnet.microsoft.com/download> and use
   `dotnet` directly. PowerShell is the preferred terminal.
 - Use the `dotnet` CLI for building and testing. CI runs `dotnet build` and `dotnet test`.
 
 ## Coding style
 
-- Use the latest C# features (C# 13) where applicable.
+- Use the latest C# features (C# 14) where applicable.
 - Always use C# keywords for types (`int`, `string`, `bool`) instead of their aliases
   (`Int32`, `String`, `Boolean`).
 - Always use `nint` and `nuint` for native integer types (not `IntPtr` and `UIntPtr`).
@@ -167,11 +167,8 @@ Treat them as hard requirements.
 
 ## General guidance
 
-- Ensure code is cross-compatible with both .NET 9 and .NET Framework 4.7.2.
-- Adhere to the repository's MIT license and copyright.
-- PowerShell is the terminal environment for building and testing.
+- Ensure code is cross-compatible with both .NET 10 and .NET Framework 4.7.2.
 - Check `GlobalUsings.cs` for global usings and don't add unnecessary usings.
-- Write XML documentation for public APIs.
 - When adding a polyfill for a modern .NET API on .NET Framework, follow the
   [`polyfill-dotnet-api`](.agents/skills/polyfill-dotnet-api/SKILL.md) skill:
   prefer Microsoft-shipped packages (`System.Memory`, `Microsoft.Bcl.*`,

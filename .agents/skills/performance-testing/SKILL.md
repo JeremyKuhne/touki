@@ -55,9 +55,10 @@ Do not re-import these.
 
 ### Required attributes for memory evaluation
 
-Always annotate the class with `[MemoryDiagnoser]` so allocations are reported. This
-adds three columns to the results table: **Gen0 / Gen1 / Gen2** (collections per 1000
-ops) and **Allocated** (bytes per op). Without it you only get timings.
+Always annotate every benchmark class with `[MemoryDiagnoser]`, regardless of
+its purpose. This adds three columns to the results table:
+**Gen0 / Gen1 / Gen2** (collections per 1000 ops) and **Allocated** (bytes
+per op). Without it you only get timings.
 
 ```c#
 [MemoryDiagnoser]
@@ -87,33 +88,26 @@ alternative implementations &mdash; the report adds a **Ratio** and
 
 ### What a benchmark method must do
 
-- **Return a value. ALWAYS. Even when measuring `void`-returning APIs that mutate a
-  buffer.** This is the single most common mistake: writing a `[Benchmark]` method
-  that returns `void` (or returns the same constant every iteration) lets the JIT
-  dead-code-eliminate the entire body, producing meaningless near-zero or wildly
-  inconsistent timings. Per the
-  [BenchmarkDotNet good practices](https://benchmarkdotnet.org/articles/guides/good-practices.html),
-  every benchmark method must produce a value derived from the work performed so the
-  result escapes the method &mdash; BenchmarkDotNet consumes the return value to
-  prevent elimination.
-- For methods that mutate a buffer in place (e.g. `Span<T>.Replace`, `Random.NextBytes`,
-  `Encoding.GetBytes`), return `buffer[0]`, `buffer[buffer.Length - 1]`, or an XOR /
-  sum digest of the buffer &mdash; some value that depends on the work the method
-  actually performed. Do **not** return `void`, do **not** return a constant, and
-  do **not** return `buffer.Length` or any other value the JIT can prove is
-  invariant of the body's execution.
-- Symptoms of forgetting this: the "optimized" variant looks slower than the
-  baseline because the baseline got eliminated entirely; ratios that vary wildly
-  (>50% StdDev) between runs; near-zero timings for non-trivial work.
-- Be cheap to call repeatedly &mdash; BenchmarkDotNet will invoke it millions of times.
+- **Return a value derived from the measured work, even when measuring
+  `void`-returning APIs.** Returning `void` (or a constant the JIT can
+  prove invariant) lets dead-code elimination wipe the body, producing
+  meaningless near-zero or wildly inconsistent timings. BenchmarkDotNet
+  consumes the return value to prevent that. For buffer-mutating APIs
+  (`Span<T>.Replace`, `Random.NextBytes`, `Encoding.GetBytes`) return
+  `buffer[0]`, the last element, or an XOR/sum digest of the buffer
+  &mdash; not `buffer.Length` or any other value invariant of execution.
+  Symptoms of forgetting: "optimized" variants slower than the baseline
+  (because the baseline got eliminated), >50% StdDev between runs,
+  near-zero timings for non-trivial work. See
+  [BenchmarkDotNet good practices](https://benchmarkdotnet.org/articles/guides/good-practices.html).
+- Be cheap to call repeatedly &mdash; BenchmarkDotNet invokes it millions of times.
 - Avoid per-call setup; move setup into `[GlobalSetup]` or readonly fields.
-- Avoid wrapping the system-under-test in a helper method just to satisfy the type
-  system &mdash; the helper's overhead (extra call frame, type check, generic
-  instantiation) shows up in the measurement. If you cannot call the target API
-  directly because of overload resolution, either rename one overload temporarily
-  while measuring, or factor the test into two separate benchmark classes.
-- Ref structs cannot be returned from `[Benchmark]` methods; consume them inside the
-  method and return a representative scalar (e.g. a length or hash).
+- Avoid wrapping the system-under-test in a helper method just to satisfy
+  overload resolution &mdash; the helper's call frame, type check, and
+  generic instantiation show up in the measurement. Either rename one
+  overload temporarily while measuring, or split into two benchmark classes.
+- Ref structs cannot be returned from `[Benchmark]` methods; consume them
+  inside the method and return a representative scalar (length or hash).
 
 ## 2. Running benchmarks
 

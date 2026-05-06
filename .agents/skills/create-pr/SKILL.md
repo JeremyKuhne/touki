@@ -47,15 +47,10 @@ Decide the PR base:
   branch from the current `HEAD` with a short, descriptive, kebab-case name
   derived from the change (e.g. `fix-span-enumerate-lines`,
   `add-create-pr-skill`).
-- When asking the user to confirm the branch name, use `vscode_askQuestions`
-  with the suggested name as a selectable option **and** allow free-form
-  input so the user can either accept the suggestion with one click or type
-  a different name. Example: a single question whose `options` contains the
-  suggested kebab-case name and whose `allowFreeformInput` is left at the
-  default (`true`). Note that `vscode_askQuestions` requires at least two
-  options or none — when offering a suggestion, pair it with a second
-  option such as `Use a different name` (which the user can ignore in favor
-  of free-form text), or omit `options` entirely and rely on free text.
+- Confirm the branch name with `vscode_askQuestions` before creating it,
+  using the suggested name as one option and free-form text for an override.
+  (`vscode_askQuestions` requires either zero options or two-plus, so pair
+  the suggestion with `Use a different name` or omit `options` entirely.)
 - Use `git switch -c <branch>` to move uncommitted changes onto the new
   branch.
 - If already on a non-`main` branch, keep using it.
@@ -74,11 +69,12 @@ Decide the PR base:
 ### Approval checkpoint
 
 **Stop here.** Show the user the staged diff (or summarize it) and the
-proposed commit message. Wait for an explicit publishing verb before
-running `git commit`. If the user already said "commit" / "push" /
-"ship it" in the message that triggered this skill, that is sufficient;
-otherwise ask. Do not infer approval from the original "open a PR"
-request.
+proposed commit message. Wait for the user to explicitly say `commit`,
+`push`, or `ship it` (or one of the other verbs listed in AGENTS.md
+§ "Working with the user on changes") before running `git commit`. If
+the user already used one of those verbs in the message that triggered
+this skill, proceed without asking again. Do not infer approval from the
+original "open a PR" request.
 
 ## 4. Push the branch
 
