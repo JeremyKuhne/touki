@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Touki.Text;
+
 namespace Touki.ValueTests;
 
 public ref struct MemoryWatch
@@ -33,6 +35,7 @@ public ref struct MemoryWatch
         Value.Create((double)default).As<double>();
         Value.Create((DateTime)default).As<DateTime>();
         Value.Create((DateTimeOffset)default).As<DateTimeOffset>();
+        Value.Create(default(StringSegment)).As<StringSegment>();
 
         Value.Create((bool?)default).As<bool?>();
         Value.Create((byte?)default).As<byte?>();
@@ -66,6 +69,7 @@ public ref struct MemoryWatch
         value.TryGetValue(out double _);
         value.TryGetValue(out DateTime _);
         value.TryGetValue(out DateTimeOffset _);
+        value.TryGetValue(out StringSegment _);
 
         s_jit = true;
     }
