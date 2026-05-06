@@ -11,11 +11,11 @@ confirmation.
 
 **Approval scope.** A request to "open / make / create a PR" authorizes the
 *work* of preparing one. It does **not** authorize the commit or the push.
-Stop after step 3 (with changes staged but not committed) and wait for an
-explicit publishing verb &mdash; `commit`, `push`, `ship it`, or equivalent
-&mdash; before performing steps 4 and onward. See AGENTS.md § "Working with
-the user on changes" for the canonical rule and the recurring
-not-approval phrasings.
+The **Approval checkpoint** inside step 3 (Commit changes) is the gate:
+staging happens before it, `git commit` and everything after happen only
+once the user supplies an explicit publishing verb &mdash; `commit`, `push`,
+`ship it`, or equivalent. See AGENTS.md § "Working with the user on
+changes" for the canonical rule and the recurring not-approval phrasings.
 
 Before running this workflow, walk through the
 [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) checklist &mdash; it

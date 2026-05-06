@@ -6,12 +6,15 @@ description: Address feedback on an existing pull request &mdash; review comment
 # Address PR feedback
 
 This skill is the post-PR counterpart to [`create-pr`](../create-pr/SKILL.md).
-The crucial difference between the two:
+Both skills share the **same** publish gate: neither `git commit` nor
+`git push` runs without an explicit publishing verb from the user. The
+difference is what each skill authorizes you to *edit*:
 
-- In `create-pr` the user asked you to publish work, so the request itself
-  authorizes the push at the end of the workflow.
-- In this skill the user asked you to *respond to feedback*. That
-  authorizes editing files and **nothing more**.
+- `create-pr` authorizes preparing a new PR from in-progress work —
+  branching, staging, proposing a commit message. The commit and push
+  still wait on approval.
+- This skill authorizes editing files in response to review feedback or
+  CI failures on an existing PR. Same approval gate before commit/push.
 
 The
 ["Working with the user on changes"](../../../AGENTS.md#working-with-the-user-on-changes)
