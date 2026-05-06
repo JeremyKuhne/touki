@@ -48,7 +48,47 @@ jobs:
           -- `
           --results-directory "$resultsDir" `
           --report-xunit-trx `
-          --show-live-output on
+          --show-live-output on `
+          --coverage `
+          --coverage-output-format cobertura `
+          --coverage-settings "$PWD/.config/coverage.settings.xml"
+    - name: Generate coverage report
+      if: always()
+      run: |
+        dotnet tool install -g dotnet-reportgenerator-globaltool
+        $reports = Get-ChildItem -Path artifacts -Recurse -Filter '*.cobertura.xml' |
+          ForEach-Object { $_.FullName }
+        if (-not $reports) {
+          Write-Warning 'No cobertura reports found; skipping report generation.'
+          exit 0
+        }
+        $reportsArg = ($reports -join ';')
+        New-Item -ItemType Directory -Force -Path artifacts/coverage | Out-Null
+        reportgenerator `
+          "-reports:$reportsArg" `
+          -targetdir:artifacts/coverage `
+          -reporttypes:'Cobertura;HtmlInline;MarkdownSummaryGithub' `
+          -title:'touki'
+        if (Test-Path artifacts/coverage/SummaryGithub.md) {
+          Get-Content artifacts/coverage/SummaryGithub.md |
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY
+        }
+    - name: Upload coverage report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: artifacts/coverage
+        if-no-files-found: warn
+        retention-days: 14
+    - name: Upload coverage to Codecov
+      if: always()
+      uses: codecov/codecov-action@v5
+      with:
+        files: artifacts/coverage/Cobertura.xml
+        fail_ci_if_error: false
+        disable_search: true
+        token: ${{ secrets.CODECOV_TOKEN }}
     - name: Upload raw logs
       if: always()
       uses: actions/upload-artifact@v4

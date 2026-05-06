@@ -143,6 +143,8 @@ _TeamCity*
 coverage*.json
 coverage*.xml
 coverage*.info
+# But keep the dotnet-coverage settings file checked in
+!.config/coverage.settings.xml
 
 # Visual Studio code coverage results
 *.coverage
