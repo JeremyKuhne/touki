@@ -26,7 +26,7 @@ public class HResultExceptionTests
     }
 
     [Fact]
-    public void HResultException_PositiveSuccessHResult_PreservesValue()
+    public void HResultException_ZeroSuccessHResult_PreservesValue()
     {
         HRESULT hresult = (HRESULT)0;
         HResultException exception = new(hresult);
