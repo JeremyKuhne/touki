@@ -133,14 +133,26 @@ Top-level layout:
 These rules exist because they have been violated and cost a review round-trip.
 Treat them as hard requirements.
 
-- **Never `git commit` or `git push` without explicit user approval, period.**
-  This applies to: fixing a failing build/test/CI run, addressing PR review
-  comments, follow-up cleanup, "obvious" small changes, and anything else.
-  After making changes, describe what you did and stop. Wait for the user
-  to say "commit", "push", "ship it", or equivalent. "Address the review
-  comments" is **not** approval to commit or push &mdash; it is approval to
-  edit files. Do not stack follow-up commits trying to "make CI green" or
-  "finish the review pass".
+- **Never `git commit` or `git push` without explicit user approval, every
+  time.** No exceptions. This applies to: opening the initial PR, fixing a
+  failing build/test/CI run, addressing PR review comments, follow-up
+  cleanup, "obvious" small changes, and anything else. After making
+  changes, describe what you did and stop. Wait for the user to say
+  "commit", "push", "ship it", or an equivalent **publishing verb**.
+
+  Phrasings that are **not** approval (recurring violations on this repo):
+  - "open a PR" / "make a PR" / "create the PR" &mdash; these authorize the
+    work, not the publish. Stage and propose a commit message, then stop.
+  - "address the review comments" / "fix the comments" / "reply to the
+    comments" &mdash; edit-only.
+  - "do the next step" / "finish the rollout" / "go ahead to the next
+    thing" / a bare "go ahead" attached to a task description &mdash;
+    selects which task to work on, not whether to publish it.
+  - "fix the CI failure" &mdash; edit-only.
+
+  When in doubt, it is **not** approval. Ask one short yes/no question.
+  Do not stack follow-up commits trying to "make CI green" or "finish
+  the review pass".
 - **Stage by path, never `git add -A`/`git add .`** when the working tree spans
   more than one logical change set. Run `git status --short` first; if topics
   are intermingled, ask how to split before staging.
