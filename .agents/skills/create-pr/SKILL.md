@@ -47,10 +47,11 @@ Decide the PR base:
   branch from the current `HEAD` with a short, descriptive, kebab-case name
   derived from the change (e.g. `fix-span-enumerate-lines`,
   `add-create-pr-skill`).
-- Confirm the branch name with `vscode_askQuestions` before creating it,
-  using the suggested name as one option and free-form text for an override.
-  (`vscode_askQuestions` requires either zero options or two-plus, so pair
-  the suggestion with `Use a different name` or omit `options` entirely.)
+- Confirm the branch name with `vscode_askQuestions` before creating it.
+  Pass two `options`: the suggested kebab-case name and `Use a different
+  name`. Free-form text is allowed by default, so the user can either
+  click the suggestion or type an override.
+  (`vscode_askQuestions` requires either zero options or two-plus.)
 - Use `git switch -c <branch>` to move uncommitted changes onto the new
   branch.
 - If already on a non-`main` branch, keep using it.
