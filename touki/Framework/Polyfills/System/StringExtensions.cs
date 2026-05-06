@@ -144,8 +144,12 @@ public static class StringExtensions
         ///  Returns a value indicating whether a specified character occurs within this string,
         ///  using the specified comparison rules.
         /// </summary>
-        public bool Contains(char value, StringComparison comparisonType) =>
-            source.IndexOf(value.ToString(), comparisonType) >= 0;
+        public bool Contains(char value, StringComparison comparisonType)
+        {
+            // Avoid the per-call 1-character string allocation by going straight through CompareInfo.
+            (CompareInfo info, CompareOptions options) = ComparisonToCompareInfo(comparisonType);
+            return info.IndexOf(source, value, 0, source.Length, options) >= 0;
+        }
 
         /// <summary>
         ///  Returns a value indicating whether a specified substring occurs within this string,
@@ -192,48 +196,27 @@ public static class StringExtensions
                 throw new ArgumentException("String cannot be of zero length.", nameof(oldValue));
             }
 
-            // Fast path for ordinal: defer to BCL.
-            if (comparisonType == StringComparison.Ordinal && newValue is not null)
+            // Fast path for ordinal: defer to BCL. The BCL treats null newValue as empty.
+            if (comparisonType == StringComparison.Ordinal)
             {
-                return source.Replace(oldValue, newValue);
+                return source.Replace(oldValue, newValue ?? string.Empty);
             }
 
             newValue ??= string.Empty;
-            CompareInfo compareInfo;
-            CompareOptions options;
-            switch (comparisonType)
+            (CompareInfo compareInfo, CompareOptions options) = ComparisonToCompareInfo(comparisonType);
+
+            // Early-exit: if no match exists at all, return source unchanged so we don't allocate a builder.
+            int firstMatch = compareInfo.IndexOf(source, oldValue, 0, source.Length, options);
+            if (firstMatch < 0)
             {
-                case StringComparison.CurrentCulture:
-                    compareInfo = CultureInfo.CurrentCulture.CompareInfo;
-                    options = CompareOptions.None;
-                    break;
-                case StringComparison.CurrentCultureIgnoreCase:
-                    compareInfo = CultureInfo.CurrentCulture.CompareInfo;
-                    options = CompareOptions.IgnoreCase;
-                    break;
-                case StringComparison.InvariantCulture:
-                    compareInfo = CultureInfo.InvariantCulture.CompareInfo;
-                    options = CompareOptions.None;
-                    break;
-                case StringComparison.InvariantCultureIgnoreCase:
-                    compareInfo = CultureInfo.InvariantCulture.CompareInfo;
-                    options = CompareOptions.IgnoreCase;
-                    break;
-                case StringComparison.Ordinal:
-                    compareInfo = CultureInfo.InvariantCulture.CompareInfo;
-                    options = CompareOptions.Ordinal;
-                    break;
-                case StringComparison.OrdinalIgnoreCase:
-                    compareInfo = CultureInfo.InvariantCulture.CompareInfo;
-                    options = CompareOptions.OrdinalIgnoreCase;
-                    break;
-                default:
-                    throw new ArgumentException("Unsupported comparison.", nameof(comparisonType));
+                return source;
             }
 
             ValueStringBuilder builder = new(stackalloc char[256]);
             builder.EnsureCapacity(source.Length);
-            int start = 0;
+            builder.Append(source.AsSpan(0, firstMatch));
+            builder.Append(newValue);
+            int start = firstMatch + oldValue.Length;
             while (start <= source.Length)
             {
                 int matchStart = compareInfo.IndexOf(source, oldValue, start, source.Length - start, options);
@@ -377,6 +360,17 @@ public static class StringExtensions
         StringComparison.InvariantCultureIgnoreCase => StringComparer.InvariantCultureIgnoreCase,
         StringComparison.Ordinal => StringComparer.Ordinal,
         StringComparison.OrdinalIgnoreCase => StringComparer.OrdinalIgnoreCase,
+        _ => throw new ArgumentException("Unsupported comparison.", nameof(comparisonType))
+    };
+
+    private static (CompareInfo Info, CompareOptions Options) ComparisonToCompareInfo(StringComparison comparisonType) => comparisonType switch
+    {
+        StringComparison.CurrentCulture => (CultureInfo.CurrentCulture.CompareInfo, CompareOptions.None),
+        StringComparison.CurrentCultureIgnoreCase => (CultureInfo.CurrentCulture.CompareInfo, CompareOptions.IgnoreCase),
+        StringComparison.InvariantCulture => (CultureInfo.InvariantCulture.CompareInfo, CompareOptions.None),
+        StringComparison.InvariantCultureIgnoreCase => (CultureInfo.InvariantCulture.CompareInfo, CompareOptions.IgnoreCase),
+        StringComparison.Ordinal => (CultureInfo.InvariantCulture.CompareInfo, CompareOptions.Ordinal),
+        StringComparison.OrdinalIgnoreCase => (CultureInfo.InvariantCulture.CompareInfo, CompareOptions.OrdinalIgnoreCase),
         _ => throw new ArgumentException("Unsupported comparison.", nameof(comparisonType))
     };
 }

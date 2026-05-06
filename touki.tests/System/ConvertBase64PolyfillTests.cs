@@ -115,8 +115,6 @@ public class ConvertBase64PolyfillTests
     [Fact]
     public void TryFromBase64String_NullString_Throws()
     {
-        Span<byte> dest = new byte[8];
-        // Force the call to a no-default destination overload to ensure null is checked.
         byte[] destArray = new byte[8];
         Action action = () => Convert.TryFromBase64String(null!, destArray, out _);
         action.Should().Throw<ArgumentNullException>();
