@@ -47,7 +47,10 @@ using Touki.Framework.Resources;
 
 namespace System;
 
+// Throw-only helpers; every method ends with throw new ... and is [DoesNotReturn]. Coverage is exercised transitively
+// via the throwing call sites.
 [StackTraceHidden]
+[ExcludeFromCodeCoverage]
 internal static class ThrowHelper
 {
     [DoesNotReturn]

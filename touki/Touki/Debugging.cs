@@ -7,6 +7,8 @@ namespace Touki;
 /// <summary>
 ///  Helper methods that mirror <see cref="Debug"/>.
 /// </summary>
+// All members are [Conditional("DEBUG")] and unreachable in Release coverage runs.
+[ExcludeFromCodeCoverage]
 public static class Debugging
 {
     /// <inheritdoc cref="Debug.Assert(bool)"/>

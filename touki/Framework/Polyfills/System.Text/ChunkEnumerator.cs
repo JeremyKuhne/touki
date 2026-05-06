@@ -25,6 +25,8 @@ public struct ChunkEnumerator
     // Accessor type to get at the private fields of StringBuilder. We could use reflection, but
     // there would be significant overhead to call through the FieldInfo APIs. Using Unsafe.As
     // as on .NET Framework we don't expect the initial fields to change.
+    // Layout-only Unsafe.As shim; members are reinterpreted, never directly executed.
+    [ExcludeFromCodeCoverage]
     private class StringBuilderAccessor
     {
 #pragma warning disable IDE1006 // Naming Styles
