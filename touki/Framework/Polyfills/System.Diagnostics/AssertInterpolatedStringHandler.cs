@@ -7,7 +7,9 @@ namespace System.Diagnostics;
 /// <summary>
 ///  Provides an interpolated string handler for <see cref="Debug.Assert(bool)"/> that only formats when the assert fails.
 /// </summary>
+// Only invoked from Debug.Assert overloads, which are [Conditional("DEBUG")] and unreachable in Release coverage runs.
 [InterpolatedStringHandler]
+[ExcludeFromCodeCoverage]
 public ref struct AssertInterpolatedStringHandler
 {
     private Touki.Text.ValueStringBuilder _builder;

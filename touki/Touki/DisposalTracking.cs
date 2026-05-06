@@ -14,6 +14,9 @@ namespace Touki;
 /// <summary>
 ///  Helper for tracking disposal of objects in debug builds.
 /// </summary>
+// Debug-only diagnostics: SuppressFinalize is [Conditional("DEBUG")] and the Tracker finalizer fires only when an
+// object leaks.
+[ExcludeFromCodeCoverage]
 public static class DisposalTracking
 {
     /// <summary>
