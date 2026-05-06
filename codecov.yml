@@ -1,6 +1,9 @@
-# Codecov configuration. Lenient initial settings while we establish a
-# baseline; tighten once a few PRs have run through CI and we know the
-# uploaded number is stable.
+# Codecov configuration. Initial gates after a stable baseline was confirmed:
+#   - project: auto target with a 1%% threshold (tolerate small drops on noisy PRs)
+#   - patch:   80%% of changed lines must be covered
+#
+# Both statuses are now blocking (informational removed). Adjust here when the
+# floor needs to be ratcheted up or down.
 #
 # Reference: https://docs.codecov.com/docs/codecovyml-reference
 
@@ -12,11 +15,11 @@ coverage:
     project:
       default:
         target: auto
-        threshold: 5%
-        informational: true
+        threshold: 1%
     patch:
       default:
-        informational: true
+        target: 80%
+        threshold: 0%
 
 comment:
   layout: "reach, diff, flags, files"
