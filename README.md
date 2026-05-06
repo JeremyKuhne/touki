@@ -1,6 +1,7 @@
 ﻿# Touki (登器): Code for .NET and .NET Framework
 
 [![Build](https://github.com/JeremyKuhne/touki/actions/workflows/dotnet.yml/badge.svg)](https://github.com/JeremyKuhne/touki/actions/workflows/dotnet.yml)
+[![codecov](https://codecov.io/gh/JeremyKuhne/touki/branch/main/graph/badge.svg)](https://codecov.io/gh/JeremyKuhne/touki)
 [![NuGet](https://img.shields.io/nuget/v/KlutzyNinja.Touki.svg)](https://www.nuget.org/packages/KlutzyNinja.Touki/)
 
 Provides useful functionality both for .NET and .NET Framework applications.
