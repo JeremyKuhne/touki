@@ -24,8 +24,9 @@ decision-point reminder, not a replacement.
 
 ## Recognizing approval
 
-Skim the most recent user message for an explicit publishing verb before
-you stage, commit, or push. Pattern-match the words, do not infer intent.
+Carefully read the most recent user message and identify whether it
+contains an explicit publishing verb before you stage, commit, or push.
+Pattern-match the words, do not infer intent.
 
 **Approval** &mdash; verbs that authorize publishing the current change:
 `commit`, `push`, `update the PR`, `ship it`, `send it`, `yes push`, or
@@ -34,17 +35,14 @@ direct synonyms when paired with a publishing intent.
 **Not approval** &mdash; everything else, including these phrasings that
 have caused violations on this repo:
 
-- "Address the review comments."
-- "Reply to the comments on the PR."
-- "Fix the comments / fix the CI failure."
+- "Address the review comments." / "Reply to the comments on the PR." /
+  "Fix the comments / fix the CI failure."
 - "Look at Copilot's feedback / see what they said."
-- "See what you can do about this."
-- "Try a different approach."
-- "What about &lt;suggestion&gt;?"
+- "See what you can do about this." / "Try a different approach."
 - "Do the next step" / "finish the rollout" / "go ahead to the next
   thing" / a bare "go ahead" attached to a task description.
-- A reviewer (human or Copilot) leaving a new comment.
-- A failing check on the PR.
+- A reviewer (human or Copilot) leaving a new comment, or a failing
+  check on the PR.
 
 If you are uncertain whether a phrase is approval, **it is not approval**.
 Stop and ask one short yes/no question.

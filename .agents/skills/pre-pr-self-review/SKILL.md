@@ -146,8 +146,9 @@ For code changes in `touki/Framework/` driven by a perf claim:
 
 - Add a benchmark in `touki.perf/` per the
   [`performance-testing`](../performance-testing/SKILL.md) skill, *or*
-- State explicitly in the commit / PR / `<remarks>` that you have not
-  measured.
+- Include a statement in the commit message, the PR description, or the
+  method's `<remarks>` explicitly indicating that no performance
+  measurements were conducted.
 
 If a polyfill is slower than the array-taking BCL it shadows, quantify
 the overhead in `<remarks>` and keep the benchmark file in `touki.perf/`.
