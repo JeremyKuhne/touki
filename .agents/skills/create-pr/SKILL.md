@@ -9,6 +9,14 @@ Follow these steps in order. Stop and ask the user if any check is ambiguous;
 do not force-push, rewrite history, or delete branches without explicit
 confirmation.
 
+**Approval scope.** A request to "open / make / create a PR" authorizes the
+*work* of preparing one. It does **not** authorize the commit or the push.
+The **Approval checkpoint** inside step 3 (Commit changes) is the gate:
+staging happens before it, `git commit` and everything after happen only
+once the user supplies an explicit publishing verb &mdash; `commit`, `push`,
+`ship it`, or equivalent. See AGENTS.md § "Working with the user on
+changes" for the canonical rule and the recurring not-approval phrasings.
+
 Before running this workflow, walk through the
 [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) checklist &mdash; it
 catches the test, allocation, overflow-arithmetic, and TFM-phrasing mistakes
@@ -62,6 +70,15 @@ Decide the PR base:
   commits (`git log --oneline -20`).
 - Do not amend or rebase published commits without explicit user approval.
 - Do not pass `--no-verify`; let hooks run.
+
+### Approval checkpoint
+
+**Stop here.** Show the user the staged diff (or summarize it) and the
+proposed commit message. Wait for an explicit publishing verb before
+running `git commit`. If the user already said "commit" / "push" /
+"ship it" in the message that triggered this skill, that is sufficient;
+otherwise ask. Do not infer approval from the original "open a PR"
+request.
 
 ## 4. Push the branch
 

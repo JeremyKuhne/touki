@@ -6,12 +6,15 @@ description: Address feedback on an existing pull request &mdash; review comment
 # Address PR feedback
 
 This skill is the post-PR counterpart to [`create-pr`](../create-pr/SKILL.md).
-The crucial difference between the two:
+Both skills share the **same** publish gate: neither `git commit` nor
+`git push` runs without an explicit publishing verb from the user. The
+difference is what each skill authorizes you to *edit*:
 
-- In `create-pr` the user asked you to publish work, so the request itself
-  authorizes the push at the end of the workflow.
-- In this skill the user asked you to *respond to feedback*. That
-  authorizes editing files and **nothing more**.
+- `create-pr` authorizes preparing a new PR from in-progress work —
+  branching, staging, proposing a commit message. The commit and push
+  still wait on approval.
+- This skill authorizes editing files in response to review feedback or
+  CI failures on an existing PR. Same approval gate before commit/push.
 
 The
 ["Working with the user on changes"](../../../AGENTS.md#working-with-the-user-on-changes)
@@ -25,23 +28,26 @@ Skim the most recent user message for an explicit publishing verb before
 you stage, commit, or push. Pattern-match the words, do not infer intent.
 
 **Approval** &mdash; verbs that authorize publishing the current change:
-`commit`, `push`, `update the PR`, `ship it`, `go ahead`, `send it`, or
-direct synonyms in context.
+`commit`, `push`, `update the PR`, `ship it`, `send it`, `yes push`, or
+direct synonyms when paired with a publishing intent.
 
 **Not approval** &mdash; everything else, including these phrasings that
 have caused violations on this repo:
 
 - "Address the review comments."
+- "Reply to the comments on the PR."
 - "Fix the comments / fix the CI failure."
 - "Look at Copilot's feedback / see what they said."
 - "See what you can do about this."
 - "Try a different approach."
 - "What about &lt;suggestion&gt;?"
+- "Do the next step" / "finish the rollout" / "go ahead to the next
+  thing" / a bare "go ahead" attached to a task description.
 - A reviewer (human or Copilot) leaving a new comment.
 - A failing check on the PR.
 
 If you are uncertain whether a phrase is approval, **it is not approval**.
-Stop and ask.
+Stop and ask one short yes/no question.
 
 ## Workflow
 
