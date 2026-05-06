@@ -1736,7 +1736,7 @@ public readonly partial struct Value
 #if NETFRAMEWORK
         else if (typeFlag is IEnumType enumType
             && format.Length == 0
-            && EnumExtensions.GetEnumData(type) is var enumData)
+            && EnumDataCache.GetEnumData(type) is var enumData)
         {
             ulong value = enumType.AsUlong(in this);
             bool signed = enumType.IsSigned;

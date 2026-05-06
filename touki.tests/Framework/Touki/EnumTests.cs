@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using Touki;
-
 namespace Framework.Touki;
 
 public class EnumTests
@@ -14,7 +12,7 @@ public class EnumTests
         var expectedValues = new ulong[] { 0, 1, 2, 3, 4, 5, 6 };
         var expectedNames = new string[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
 
-        var (values, names) = EnumExtensions.GetValuesAndNames<DayOfWeek>();
+        var (values, names) = typeof(DayOfWeek).GetEnumValuesAndNames();
 
         values.Should().BeEquivalentTo(expectedValues);
         names.Should().BeEquivalentTo(expectedNames);

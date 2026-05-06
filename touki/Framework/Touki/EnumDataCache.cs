@@ -7,12 +7,19 @@ using System.Reflection;
 
 namespace Touki;
 
-public static unsafe partial class EnumExtensions
+/// <summary>
+///  Per-type cache of enum metadata used by the .NET Framework target.
+/// </summary>
+/// <remarks>
+///  <para>
+///   Backed by reflection into <see cref="Enum"/>'s private <c>GetCachedValuesAndNames</c> method;
+///   per-type results are computed lazily and cached for the lifetime of the process. Internal
+///   because the underlying reflection is fragile against BCL servicing changes.
+///  </para>
+/// </remarks>
+internal static class EnumDataCache
 {
     private static readonly ConcurrentDictionary<Type, EnumData> s_enumData = new();
-
-    [ThreadStatic]
-    private static object[]? t_params;
 
     private static readonly MethodInfo s_cachedNames = typeof(Enum).GetMethod(
         "GetCachedValuesAndNames",
@@ -30,27 +37,33 @@ public static unsafe partial class EnumExtensions
         "Names",
         BindingFlags.Public | BindingFlags.Instance)!;
 
-    /// <inheritdoc cref="GetValuesAndNames(Type)"/>
-    public static (ulong[] Values, string[] Names) GetValuesAndNames<T>() where T : Enum
-        => GetValuesAndNames(typeof(T));
+    [ThreadStatic]
+    private static object[]? t_params;
 
     /// <summary>
-    ///  Gets the internal cached values and names for the specified enum type.
+    ///  Gets the values and names for the specified enum <paramref name="type"/>.
     /// </summary>
-    public static (ulong[] Values, string[]) GetValuesAndNames(Type type)
+    /// <remarks>
+    ///  <para>
+    ///   Returns the BCL's internal cached arrays - callers must not mutate them.
+    ///  </para>
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    ///  <paramref name="type"/> is not an enum type.
+    /// </exception>
+    public static (ulong[] Values, string[] Names) GetEnumValuesAndNames(Type type)
     {
         if (!type.IsEnum)
         {
             throw new ArgumentException("Type must be an enum.", nameof(type));
         }
 
-        // Use reflection to get the private static GetCachedValuesAndNames method
         t_params ??= [null!, true];
-        var parameters = t_params;
+        object[] parameters = t_params;
         parameters[0] = type;
-        var valuesAndNames = s_cachedNames.Invoke(null, parameters);
-        var values = (ulong[])s_valuesField.GetValue(valuesAndNames)!;
-        var names = (string[])s_namesField.GetValue(valuesAndNames)!;
+        object? valuesAndNames = s_cachedNames.Invoke(null, parameters);
+        ulong[] values = (ulong[])s_valuesField.GetValue(valuesAndNames)!;
+        string[] names = (string[])s_namesField.GetValue(valuesAndNames)!;
         return (values, names);
     }
 
@@ -75,7 +88,7 @@ public static unsafe partial class EnumExtensions
             }
 
             Type = type;
-            Data = GetValuesAndNames(type);
+            Data = GetEnumValuesAndNames(type);
             IsFlags = type.IsDefined(typeof(FlagsAttribute), inherit: false);
             UnderlyingType = type.GetEnumUnderlyingType();
         }

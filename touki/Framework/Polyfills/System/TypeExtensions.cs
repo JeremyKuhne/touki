@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Touki;
+
 namespace System;
 
 /// <summary>
@@ -24,5 +26,23 @@ public static class TypeExtensions
             && !type.IsPointer
             && !type.IsConstructedGenericType
             && !type.IsGenericParameter;
+
+        /// <summary>
+        ///  Gets the values and names for the specified enum <see cref="Type"/>.
+        /// </summary>
+        /// <remarks>
+        ///  <para>
+        ///   Reads from <see cref="Enum"/>'s internal <c>GetCachedValuesAndNames</c> cache via
+        ///   reflection; faster than <see cref="Enum.GetValues(Type)"/> + <see cref="Enum.GetNames(Type)"/>
+        ///   on .NET Framework. Returned arrays are the cached references - do not mutate. Internal
+        ///   to keep the public surface identical between net472 and modern .NET targets and to
+        ///   prevent consumers from accidentally mutating the framework's cached arrays.
+        ///  </para>
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        ///  <paramref name="type"/> is not an enum type.
+        /// </exception>
+        internal (ulong[] Values, string[] Names) GetEnumValuesAndNames() =>
+            EnumDataCache.GetEnumValuesAndNames(type);
     }
 }
