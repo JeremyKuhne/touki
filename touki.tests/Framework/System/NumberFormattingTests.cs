@@ -8,13 +8,16 @@ using Touki.Text;
 namespace Framework.System;
 
 /// <summary>
-///  Drives the Number polyfill's floating-point and decimal
-///  formatting paths broadly to exercise <c>Number.Formatting.cs</c>,
+///  Drives the Number polyfill's floating-point and decimal formatting
+///  paths broadly to exercise <c>Number.Formatting.cs</c>,
 ///  <c>Number.Grisu3.cs</c>, <c>Number.Dragon4Double.cs</c>,
 ///  <c>Number.NumberBuffer.cs</c>, <c>Number.Parsing.cs</c>, and
-///  <c>Number.NumberToFloatingPointBits.cs</c>. Most cases run side-by-side
-///  with the BCL's <see cref="double.ToString(string, IFormatProvider)"/> and
-///  friends and assert byte-identical output.
+///  <c>Number.NumberToFloatingPointBits.cs</c>. Tests primarily assert
+///  that the formatter produces non-empty output, returns the documented
+///  NaN / Infinity symbols for non-finite inputs, and that the <c>R</c>
+///  format roundtrips back to the original value. Direct comparison
+///  against the BCL is avoided because net481's legacy double formatter
+///  diverges from the modern formatter that this polyfill mirrors.
 /// </summary>
 public unsafe class NumberFormattingTests
 {
@@ -401,7 +404,7 @@ public unsafe class NumberFormattingTests
     }
 
     [Theory]
-    [InlineData("0", 0, false, 0.0)]
+    [InlineData("", 0, false, 0.0)]
     [InlineData("1", -400, false, 0.0)]
     [InlineData("1", 400, false, double.PositiveInfinity)]
     [InlineData("1", 400, true, double.NegativeInfinity)]
@@ -426,7 +429,7 @@ public unsafe class NumberFormattingTests
     [InlineData("12345", 5, false, 12345.0f)]
     [InlineData("1", 1, false, 1.0f)]
     [InlineData("5", 1, true, -5.0f)]
-    [InlineData("0", 0, false, 0.0f)]
+    [InlineData("", 0, false, 0.0f)]
     [InlineData("1", -50, false, 0.0f)]
     [InlineData("1", 50, false, float.PositiveInfinity)]
     [InlineData("1", 50, true, float.NegativeInfinity)]

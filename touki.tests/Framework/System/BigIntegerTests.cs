@@ -920,8 +920,14 @@ public class BigIntegerTests
         return new BclBigInteger(bytes);
     }
 
+    // Builds a touki BigInteger (which models an unsigned magnitude) from a
+    // System.Numerics.BigInteger. Only non-negative inputs are supported; the
+    // touki type has no sign and the byte-level masking below would otherwise
+    // silently produce wrong values for negative inputs.
     private static void SetFromBcl(out BigInteger result, BclBigInteger value)
     {
+        value.Sign.Should().BeGreaterThanOrEqualTo(0, "touki BigInteger represents an unsigned magnitude");
+
         if (value.IsZero)
         {
             BigInteger.SetZero(out result);
