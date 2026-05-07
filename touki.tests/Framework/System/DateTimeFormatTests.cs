@@ -74,12 +74,12 @@ public class DateTimeFormatTests
             new object[] { "FF" },
             new object[] { "FFF" },
             new object[] { "FFFF" },
-            new object[] { "g" },           // era
-            new object[] { "gg" },          // era
+            new object[] { "g yyyy" },      // era token in a custom format
+            new object[] { "gg yyyy" },     // era token, double-letter form
             new object[] { @"yyyy\-MM\-dd" },
             new object[] { "'literal' yyyy" },
             new object[] { "\"quoted\" yyyy" },
-            new object[] { "% h" },         // single-char custom format
+            new object[] { "%h" },          // single-char custom format
             new object[] { "%H" },
             new object[] { "%t" },
             new object[] { "%y" },
