@@ -136,12 +136,14 @@ public class HebrewNumberTests
     }
 
     [Theory]
-    [InlineData(5001, 1)]
-    [InlineData(5781, 781)] // recent civil-calendar Hebrew year
-    public void Append_NumberAbove5000_SubtractsFiveThousand(int input, int reduced)
+    [InlineData(5001, "\x05d0'")] // 5000 + 1 -> 'alef + apostrophe (single-letter form)
+    [InlineData(5781, "\x05ea\x05e9\x05e4\"\x05d0")] // 5781 -> 781 = 400 + 300 + 80 + 1
+    public void Append_NumberAbove5000_SubtractsFiveThousand(int input, string expected)
     {
         // Numbers above 5000 are reduced by 5000 before formatting (per the source comments).
-        Format(input).Should().Be(Format(reduced));
+        // Asserting against explicit expected strings ensures the reduction itself is tested,
+        // not just consistency with another invocation of the helper.
+        Format(input).Should().Be(expected);
     }
 
     [Fact]
@@ -153,6 +155,31 @@ public class HebrewNumberTests
             builder.Append("Year ");
             HebrewNumber.Append(ref builder, 1);
             builder.ToString().Should().Be("Year \x05d0'");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void DateTimeFormat_WithHebrewCalendar_EmitsGematria()
+    {
+        // Regression test for the by-ref forwarding in DateTimeFormat.HebrewFormatDigits.
+        // Before the fix, this path produced output with the gematria characters silently
+        // truncated because HebrewNumber.Append took its builder by value.
+        CultureInfo culture = new("he-IL");
+        culture.DateTimeFormat.Calendar = new HebrewCalendar();
+
+        DateTime date = new(2026, 5, 1);
+        ValueStringBuilder builder = new(stackalloc char[64]);
+        try
+        {
+            DateTimeFormat.Format(date, "dd MM yyyy", culture.DateTimeFormat, ref builder);
+            string formatted = builder.ToString();
+            formatted.Should().NotBeEmpty();
+            bool hasHebrewLetter = formatted.Any(c => c is >= '\x05d0' and <= '\x05ea');
+            hasHebrewLetter.Should().BeTrue("Hebrew calendar formatting must emit gematria characters");
         }
         finally
         {
