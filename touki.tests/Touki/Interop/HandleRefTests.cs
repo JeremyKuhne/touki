@@ -10,6 +10,13 @@ public class HandleRefTests
     {
     }
 
+    private sealed class TestHandleProvider : IHandle<int>
+    {
+        public int Handle { get; init; }
+
+        public object? Wrapper => this;
+    }
+
     [Fact]
     public void Ctor_WrapperAndHandle_AssignsBoth()
     {
@@ -25,6 +32,23 @@ public class HandleRefTests
         HandleRef<int> reference = new(null, 42);
         reference.Wrapper.Should().BeNull();
         reference.Handle.Should().Be(42);
+    }
+
+    [Fact]
+    public void Ctor_FromIHandle_AssignsWrapperAndHandle()
+    {
+        TestHandleProvider provider = new() { Handle = 99 };
+        HandleRef<int> reference = new(provider);
+        reference.Wrapper.Should().BeSameAs(provider);
+        reference.Handle.Should().Be(99);
+    }
+
+    [Fact]
+    public void Ctor_FromNullIHandle_HandleDefaultsToZero()
+    {
+        HandleRef<int> reference = new((IHandle<int>?)null);
+        reference.Wrapper.Should().BeNull();
+        reference.Handle.Should().Be(0);
     }
 
     [Fact]
