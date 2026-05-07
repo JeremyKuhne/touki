@@ -53,7 +53,7 @@ public readonly struct HandleRef<THandle> : IHandle<THandle>, IEquatable<HandleR
         => other.Handle.Equals(Handle) && Equals(other.Wrapper, Wrapper);
 
     /// <inheritdoc/>
-    public override bool Equals([NotNullWhen(true)] object? obj) => obj is THandle other && Equals(other);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is HandleRef<THandle> other && Equals(other);
 
     /// <inheritdoc/>
     public override int GetHashCode() => HashCode.Combine(Wrapper, Handle);
