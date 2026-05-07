@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using BclBigInteger = System.Numerics.BigInteger;
 using BigInteger = System.Number.BigInteger;
 
 namespace Framework.System;
@@ -891,6 +892,327 @@ public class BigIntegerTests
 
         totalQuotient.Should().Be(1000u / 7u); // Should equal integer division result
         iterations.Should().BeLessThan(maxIterations); // Should not infinite loop
+    }
+
+    #endregion
+
+    #region Coverage Gap Tests (vetted against System.Numerics.BigInteger)
+
+    private static BclBigInteger ToBcl(scoped ref BigInteger value)
+    {
+        int length = value.GetLength();
+        if (length == 0)
+        {
+            return BclBigInteger.Zero;
+        }
+
+        byte[] bytes = new byte[(length * 4) + 1];
+        for (int i = 0; i < length; i++)
+        {
+            uint block = value.GetBlock((uint)i);
+            bytes[(i * 4) + 0] = (byte)block;
+            bytes[(i * 4) + 1] = (byte)(block >> 8);
+            bytes[(i * 4) + 2] = (byte)(block >> 16);
+            bytes[(i * 4) + 3] = (byte)(block >> 24);
+        }
+
+        // Trailing zero byte keeps the BCL BigInteger interpretation unsigned.
+        return new BclBigInteger(bytes);
+    }
+
+    private static void SetFromBcl(out BigInteger result, BclBigInteger value)
+    {
+        if (value.IsZero)
+        {
+            BigInteger.SetZero(out result);
+            return;
+        }
+
+        byte[] bytes = value.ToByteArray();
+        // Pad to a multiple of 4 (and drop any sign byte by zeroing it out for unsigned reading).
+        int byteLength = bytes.Length;
+        int blockCount = (byteLength + 3) / 4;
+        BigInteger.SetZero(out result);
+
+        // Build via Add/ShiftLeft to avoid touching private state.
+        for (int i = blockCount - 1; i >= 0; i--)
+        {
+            uint block = 0;
+            int baseIndex = i * 4;
+            for (int b = 0; b < 4; b++)
+            {
+                int idx = baseIndex + b;
+                if (idx < byteLength)
+                {
+                    // Mask off any sign byte at the very end.
+                    byte v = bytes[idx];
+                    if (idx == byteLength - 1 && (v & 0x80) != 0 && idx % 4 == 0)
+                    {
+                        // Sign byte from BCL; treat as zero for unsigned magnitude.
+                        v = 0;
+                    }
+
+                    block |= (uint)v << (b * 8);
+                }
+            }
+
+            if (i != blockCount - 1)
+            {
+                result.ShiftLeft(32);
+            }
+
+            result.Add(block);
+        }
+    }
+
+    [Fact]
+    public void DivRem_MultiBlockDividendSingleBlockDivisor_MatchesBcl()
+    {
+        // dividend = 2^96 - 1 (3 blocks).
+        BclBigInteger bclDividend = (BclBigInteger.One << 96) - 1;
+        SetFromBcl(out BigInteger dividend, bclDividend);
+        BigInteger.SetUInt32(out BigInteger divisor, 0xDEADBEEFu);
+
+        BigInteger.DivRem(ref dividend, ref divisor, out BigInteger quotient, out BigInteger remainder);
+
+        BclBigInteger expectedQuo = BclBigInteger.DivRem(bclDividend, 0xDEADBEEFu, out BclBigInteger expectedRem);
+        ToBcl(ref quotient).Should().Be(expectedQuo);
+        ToBcl(ref remainder).Should().Be(expectedRem);
+    }
+
+    [Fact]
+    public void DivRem_MultiBlockGrammarSchool_MatchesBcl()
+    {
+        // Build dividend = 10^60 (multi-block) and divisor = 10^25 (multi-block).
+        BigInteger.Pow10(60, out BigInteger dividend);
+        BigInteger.Pow10(25, out BigInteger divisor);
+
+        // Sanity: both must be multi-block to exercise the grammar-school branch.
+        dividend.GetLength().Should().BeGreaterThan(1);
+        divisor.GetLength().Should().BeGreaterThan(1);
+
+        BigInteger.DivRem(ref dividend, ref divisor, out BigInteger quotient, out BigInteger remainder);
+
+        BclBigInteger expectedQuo = BclBigInteger.DivRem(
+            BclBigInteger.Pow(10, 60),
+            BclBigInteger.Pow(10, 25),
+            out BclBigInteger expectedRem);
+
+        ToBcl(ref quotient).Should().Be(expectedQuo);
+        ToBcl(ref remainder).Should().Be(expectedRem);
+    }
+
+    [Fact]
+    public void DivRem_MultiBlockExactDivision_RemainderIsZero()
+    {
+        // dividend = 10^40, divisor = 10^20 -> quotient = 10^20, rem = 0.
+        BigInteger.Pow10(40, out BigInteger dividend);
+        BigInteger.Pow10(20, out BigInteger divisor);
+
+        BigInteger.DivRem(ref dividend, ref divisor, out BigInteger quotient, out BigInteger remainder);
+
+        BclBigInteger expected = BclBigInteger.Pow(10, 20);
+        ToBcl(ref quotient).Should().Be(expected);
+        remainder.IsZero().Should().BeTrue();
+    }
+
+    [Fact]
+    public void Pow10_ExponentEight_ShouldEqualBcl()
+    {
+        // exponent 8 forces use of s_pow10BigNumTable[0].
+        BigInteger.Pow10(8, out BigInteger result);
+        ToBcl(ref result).Should().Be(BclBigInteger.Pow(10, 8));
+    }
+
+    [Theory]
+    [InlineData(10u)]
+    [InlineData(16u)]
+    [InlineData(17u)]
+    [InlineData(32u)]
+    [InlineData(50u)]
+    [InlineData(100u)]
+    [InlineData(255u)]
+    [InlineData(256u)]
+    [InlineData(500u)]
+    [InlineData(1000u)]
+    public void Pow10_VariousExponents_ShouldEqualBcl(uint exponent)
+    {
+        BigInteger.Pow10(exponent, out BigInteger result);
+        ToBcl(ref result).Should().Be(BclBigInteger.Pow(10, (int)exponent));
+    }
+
+    [Fact]
+    public void MultiplyPow10_LargeExponent_ShouldEqualBcl()
+    {
+        BigInteger.SetUInt32(out BigInteger value, 7);
+        value.MultiplyPow10(50);
+
+        BclBigInteger expected = 7 * BclBigInteger.Pow(10, 50);
+        ToBcl(ref value).Should().Be(expected);
+    }
+
+    [Fact]
+    public void Multiply_LhsShorterThanRhs_ShouldSwapAndMultiply()
+    {
+        // lhs is single block, rhs is multi-block: triggers the lhs._length <= 1 fast path.
+        BigInteger.SetUInt32(out BigInteger lhs, 0xABCDEF01u);
+        BigInteger.Pow10(20, out BigInteger rhs);
+
+        BigInteger.Multiply(ref lhs, ref rhs, out BigInteger result);
+
+        BclBigInteger expected = (BclBigInteger)0xABCDEF01u * BclBigInteger.Pow(10, 20);
+        ToBcl(ref result).Should().Be(expected);
+    }
+
+    [Fact]
+    public void Multiply_BothMultiBlockWithLhsShorter_ShouldSwapInternally()
+    {
+        // lhs (2 blocks) shorter than rhs (multi-block from Pow10).
+        BigInteger.SetUInt64(out BigInteger lhs, 0x123456789ABCDEFul);
+        BigInteger.Pow10(40, out BigInteger rhs);
+
+        BigInteger.Multiply(ref lhs, ref rhs, out BigInteger result);
+
+        BclBigInteger expected = (BclBigInteger)0x123456789ABCDEFul * BclBigInteger.Pow(10, 40);
+        ToBcl(ref result).Should().Be(expected);
+    }
+
+    [Fact]
+    public void Multiply_RhsZero_ShouldReturnZero()
+    {
+        BigInteger.Pow10(30, out BigInteger lhs);
+        BigInteger.SetZero(out BigInteger zero);
+
+        BigInteger.Multiply(ref lhs, ref zero, out BigInteger result);
+        result.IsZero().Should().BeTrue();
+    }
+
+    [Fact]
+    public void ShiftLeft_PartialShiftMultiBlock_ShouldEqualBcl()
+    {
+        // Build a multi-block value, then partial (non-block-aligned) shift.
+        BigInteger.Pow10(30, out BigInteger value);
+        BclBigInteger expected = BclBigInteger.Pow(10, 30) << 5;
+
+        value.ShiftLeft(5);
+        ToBcl(ref value).Should().Be(expected);
+    }
+
+    [Fact]
+    public void ShiftLeft_PartialShiftCrossingBlocks_ShouldEqualBcl()
+    {
+        BigInteger.Pow10(20, out BigInteger value);
+        BclBigInteger expected = BclBigInteger.Pow(10, 20) << 37; // 1 block + 5 bits
+
+        value.ShiftLeft(37);
+        ToBcl(ref value).Should().Be(expected);
+    }
+
+    [Fact]
+    public void HeuristicDivide_QuotientCorrection_ShouldStillDivideExactly()
+    {
+        // dividend == divisor exercises the post-loop correction branch
+        // (estimate may be 0 when high blocks are equal; correction bumps it to 1).
+        // Build both with the same primitive sequence so they have equal escape scopes.
+        BigInteger.SetUInt32(out BigInteger dividend, 1);
+        dividend.ShiftLeft(64); // 3 blocks: 0, 0, 1
+        BigInteger.SetUInt32(out BigInteger divisor, 1);
+        divisor.ShiftLeft(64);
+
+        uint q = BigInteger.HeuristicDivide(ref dividend, ref divisor);
+        q.Should().Be(1u);
+        dividend.IsZero().Should().BeTrue();
+    }
+
+    [Fact]
+    public void HeuristicDivide_LargerDividend_RecoversFullQuotient()
+    {
+        // dividend = 7 * divisor + r where r < divisor. Construct dividend with
+        // simple primitives only (SetUInt64 + ShiftLeft + Add) — using more complex
+        // helpers triggers ref-struct escape analysis errors on net481 when the
+        // resulting locals are passed by ref to other ref-struct methods.
+        BigInteger.SetUInt32(out BigInteger divisor, 0x100u);
+        divisor.ShiftLeft(32); // divisor = 0x100_00000000
+
+        BigInteger.SetUInt64(out BigInteger dividend, 7ul * 0x100_00000000ul);
+        dividend.Add(12345);
+
+        uint q = BigInteger.HeuristicDivide(ref dividend, ref divisor);
+
+        q.Should().Be(7u);
+        dividend.ToUInt32().Should().Be(12345u);
+    }
+
+    [Fact]
+    public void Add_TwoMultiBlockValues_MatchesBcl()
+    {
+        BigInteger.Pow10(20, out BigInteger a);
+        BigInteger.Pow10(25, out BigInteger b);
+
+        BigInteger.Add(ref a, ref b, out BigInteger result);
+
+        ToBcl(ref result).Should().Be(BclBigInteger.Pow(10, 20) + BclBigInteger.Pow(10, 25));
+    }
+
+    [Fact]
+    public void Multiply_Pow10Squared_MatchesBcl()
+    {
+        BigInteger.Pow10(40, out BigInteger a);
+        BigInteger.Pow10(40, out BigInteger b);
+
+        BigInteger.Multiply(ref a, ref b, out BigInteger result);
+        ToBcl(ref result).Should().Be(BclBigInteger.Pow(10, 80));
+    }
+
+    [Fact]
+    public void Compare_EqualMultiBlock_ShouldReturnZero()
+    {
+        BigInteger.Pow10(50, out BigInteger a);
+        BigInteger.Pow10(50, out BigInteger b);
+
+        BigInteger.Compare(ref a, ref b).Should().Be(0);
+    }
+
+    [Fact]
+    public void Compare_MultiBlockDifferingInLowBlock_ShouldDetectDifference()
+    {
+        BigInteger.Pow10(30, out BigInteger a);
+        BigInteger.Pow10(30, out BigInteger b);
+        b.Add(1);
+
+        BigInteger.Compare(ref a, ref b).Should().BeLessThan(0);
+        BigInteger.Compare(ref b, ref a).Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public void Multiply10_MultiBlockWithCarry_MatchesBcl()
+    {
+        BigInteger.SetUInt64(out BigInteger value, ulong.MaxValue);
+        value.Multiply10();
+
+        ToBcl(ref value).Should().Be((BclBigInteger)ulong.MaxValue * 10);
+    }
+
+    [Fact]
+    public void Add_InstanceMethod_OnZero_ShouldInitialize()
+    {
+        BigInteger.SetZero(out BigInteger value);
+        value.Add(123);
+        value.ToUInt32().Should().Be(123u);
+        value.GetLength().Should().Be(1);
+    }
+
+    [Fact]
+    public void Add_InstanceMethod_CarryAcrossMultipleBlocks_MatchesBcl()
+    {
+        // Build value = (2^64 - 1), then add 1 to force carry through two blocks.
+        BigInteger.SetUInt64(out BigInteger value, ulong.MaxValue);
+        value.Add(1);
+
+        value.GetLength().Should().Be(3);
+        value.GetBlock(0).Should().Be(0u);
+        value.GetBlock(1).Should().Be(0u);
+        value.GetBlock(2).Should().Be(1u);
     }
 
     #endregion
