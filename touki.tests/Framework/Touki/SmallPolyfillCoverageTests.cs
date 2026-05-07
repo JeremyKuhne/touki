@@ -278,14 +278,14 @@ public class SmallPolyfillCoverageTests
             {
                 global::System.ReadOnlySpan<int> args = stackalloc int[] { 1 };
                 // "{}" is malformed: '{' followed by '}' (not an escape, since they don't match
-                // for an escape — '{{' or '}}' would). Actually the check is `if (brace != next)`
-                // for the escape path; "{}" reaches that with brace='{' next='}' which does NOT
-                // match brace, so FormatError is invoked.
+                // for an escape — '{{' or '}}' would). The check is `if (brace != next)` for the
+                // escape path; "{}" reaches that with brace='{' next='}' which does NOT match,
+                // so FormatError is invoked.
                 builder.AppendFormat("{}".AsSpan(), args);
             }
             finally
             {
-                // builder cleanup happens here
+                builder.Dispose();
             }
         };
 
@@ -298,9 +298,16 @@ public class SmallPolyfillCoverageTests
         Action action = () =>
         {
             ValueStringBuilder builder = new(stackalloc char[32]);
-            global::System.ReadOnlySpan<int> args = stackalloc int[] { 1 };
-            // "{0:X" - format spec without terminating '}' triggers FormatError on the ':' branch.
-            builder.AppendFormat("{0:X".AsSpan(), args);
+            try
+            {
+                global::System.ReadOnlySpan<int> args = stackalloc int[] { 1 };
+                // "{0:X" - format spec without terminating '}' triggers FormatError on the ':' branch.
+                builder.AppendFormat("{0:X".AsSpan(), args);
+            }
+            finally
+            {
+                builder.Dispose();
+            }
         };
 
         action.Should().Throw<FormatException>();
@@ -312,9 +319,16 @@ public class SmallPolyfillCoverageTests
         Action action = () =>
         {
             ValueStringBuilder builder = new(stackalloc char[32]);
-            global::System.ReadOnlySpan<int> args = stackalloc int[] { 1 };
-            // "{0" - hole without terminating brace.
-            builder.AppendFormat("{0".AsSpan(), args);
+            try
+            {
+                global::System.ReadOnlySpan<int> args = stackalloc int[] { 1 };
+                // "{0" - hole without terminating brace.
+                builder.AppendFormat("{0".AsSpan(), args);
+            }
+            finally
+            {
+                builder.Dispose();
+            }
         };
 
         action.Should().Throw<FormatException>();

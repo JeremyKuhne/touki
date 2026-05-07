@@ -19,7 +19,7 @@ public class SpanExtensionsCoverageTests
         byte[] data = [1, 2, 3, 1, 2, 3, 1, 2, 3, 1];
         Span<byte> span = data;
         span.Replace((byte)2, (byte)9);
-        span.ToArray().Should().BeEquivalentTo<byte>([1, 9, 3, 1, 9, 3, 1, 9, 3, 1]);
+        span.ToArray().Should().Equal((byte)1, (byte)9, (byte)3, (byte)1, (byte)9, (byte)3, (byte)1, (byte)9, (byte)3, (byte)1);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class SpanExtensionsCoverageTests
         ushort[] data = [1000, 2, 1000, 4, 1000, 6, 1000, 8, 1000, 10];
         Span<ushort> span = data;
         span.Replace((ushort)1000, (ushort)0);
-        span.ToArray().Should().BeEquivalentTo<ushort>([0, 2, 0, 4, 0, 6, 0, 8, 0, 10]);
+        span.ToArray().Should().Equal((ushort)0, (ushort)2, (ushort)0, (ushort)4, (ushort)0, (ushort)6, (ushort)0, (ushort)8, (ushort)0, (ushort)10);
     }
 
     [Fact]
@@ -133,7 +133,7 @@ public class SpanExtensionsCoverageTests
         ReadOnlySpan<byte> source = [ 1, 2, 3, 1, 2, 3, 1, 2, 3, 1 ];
         Span<byte> dest = stackalloc byte[10];
         source.Replace(dest, (byte)2, (byte)9);
-        dest.ToArray().Should().BeEquivalentTo<byte>([1, 9, 3, 1, 9, 3, 1, 9, 3, 1]);
+        dest.ToArray().Should().Equal((byte)1, (byte)9, (byte)3, (byte)1, (byte)9, (byte)3, (byte)1, (byte)9, (byte)3, (byte)1);
     }
 
     [Fact]
@@ -187,7 +187,7 @@ public class SpanExtensionsCoverageTests
         ReadOnlySpan<byte> source = [ 1, 2, 3, 4, 5 ];
         Span<byte> dest = stackalloc byte[5];
         source.Replace(dest, (byte)1, (byte)1);
-        dest.ToArray().Should().BeEquivalentTo<byte>([1, 2, 3, 4, 5]);
+        dest.ToArray().Should().Equal((byte)1, (byte)2, (byte)3, (byte)4, (byte)5);
     }
 
     // ---------- IndexOfAnyInRange specializations (sbyte / short / ushort / int / uint / ulong) ----------
