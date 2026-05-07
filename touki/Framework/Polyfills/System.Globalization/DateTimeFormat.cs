@@ -209,7 +209,7 @@ internal static class DateTimeFormat
 
     private static void HebrewFormatDigits(ref ValueStringBuilder builder, int digits)
     {
-        HebrewNumber.Append(builder, digits);
+        HebrewNumber.Append(ref builder, digits);
     }
 
     private static int ParseRepeatPattern(ReadOnlySpan<char> format, int pos, char patternChar)

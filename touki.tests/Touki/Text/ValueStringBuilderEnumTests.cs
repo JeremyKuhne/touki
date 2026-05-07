@@ -268,20 +268,26 @@ public unsafe class ValueStringBuilderEnumTests
     [Fact]
     public void AppendFormat_EnumFormattingConsistency()
     {
-        using ValueStringBuilder builder = new(stackalloc char[100]);
-
-        // Test various enum types for consistency
-        TestEnumConsistency(builder, ByteBackedEnum.Value42);
-        TestEnumConsistency(builder, SByteBackedEnum.Negative);
-        TestEnumConsistency(builder, Int16BackedEnum.Positive);
-        TestEnumConsistency(builder, UInt16BackedEnum.Value);
-        TestEnumConsistency(builder, Int32BackedEnum.Zero);
-        TestEnumConsistency(builder, UInt32BackedEnum.Value);
-        TestEnumConsistency(builder, Int64BackedEnum.Positive);
-        TestEnumConsistency(builder, UInt64BackedEnum.Value);
+        ValueStringBuilder builder = new(stackalloc char[100]);
+        try
+        {
+            // Test various enum types for consistency
+            TestEnumConsistency(ref builder, ByteBackedEnum.Value42);
+            TestEnumConsistency(ref builder, SByteBackedEnum.Negative);
+            TestEnumConsistency(ref builder, Int16BackedEnum.Positive);
+            TestEnumConsistency(ref builder, UInt16BackedEnum.Value);
+            TestEnumConsistency(ref builder, Int32BackedEnum.Zero);
+            TestEnumConsistency(ref builder, UInt32BackedEnum.Value);
+            TestEnumConsistency(ref builder, Int64BackedEnum.Positive);
+            TestEnumConsistency(ref builder, UInt64BackedEnum.Value);
+        }
+        finally
+        {
+            builder.Dispose();
+        }
     }
 
-    private static void TestEnumConsistency<TEnum>(ValueStringBuilder builder, TEnum enumValue)
+    private static void TestEnumConsistency<TEnum>(ref ValueStringBuilder builder, TEnum enumValue)
         where TEnum : unmanaged, Enum
     {
         // Test direct enum formatting
