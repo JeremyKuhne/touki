@@ -18,16 +18,18 @@ public unsafe void Replace(T oldValue, T newValue)
 
     if (typeof(T) == typeof(char) || typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
     {
-        ushort oldShort = Unsafe.As<T, ushort>(ref oldValue);
-        ushort newShort = Unsafe.As<T, ushort>(ref newValue);
+        // The `& 0xFFFF` is load-bearing on net481 RyuJIT &mdash; see
+        // "Signed-primitive constant-propagation pitfall" below.
+        ushort oldShort = (ushort)(Unsafe.As<T, ushort>(ref oldValue) & 0xFFFF);
+        ushort newShort = (ushort)(Unsafe.As<T, ushort>(ref newValue) & 0xFFFF);
         // ... tight ushort* loop ...
         return;
     }
 
     if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
     {
-        byte oldByte = Unsafe.As<T, byte>(ref oldValue);
-        byte newByte = Unsafe.As<T, byte>(ref newValue);
+        byte oldByte = (byte)(Unsafe.As<T, byte>(ref oldValue) & 0xFF);
+        byte newByte = (byte)(Unsafe.As<T, byte>(ref newValue) & 0xFF);
         // ... tight byte* loop ...
         return;
     }
@@ -62,7 +64,7 @@ denormalized flags). Don't fold them in.
 
 For methods constrained to `where T : IComparable<T>` (e.g. `IndexOfAnyInRange`),
 keep the primitives as their signed/unsigned variants because comparison
-operators differ. See [SpanExtensions.InRange.cs](../../../touki/Framework/Touki/SpanExtensions.InRange.cs)
+operators differ. See [SpanExtensions.InRange.cs](../../../touki/Framework/Polyfills/System/SpanExtensions.InRange.cs)
 for the full byte/sbyte/char/short/ushort/int/uint/long/ulong specialization.
 
 ## `[MethodImpl(MethodImplOptions.AggressiveInlining)]`
@@ -91,6 +93,37 @@ itself a generic in some outer context where `typeof(T)` isn't a JIT-time
 constant), you'll see all branches in the disassembly &mdash; and your benchmark
 ratio will reflect it. Add the attribute, or hoist the call site so `T` is
 concrete.
+
+## Signed-primitive constant-propagation pitfall
+
+If the specialization compares the reinterpreted value against bytes loaded
+from memory (the typical `*ptr == oldByte` pattern in `Replace` / `IndexOf`),
+**always mask in the int domain** when narrowing through `Unsafe.As`:
+
+```c#
+byte oldByte = (byte)(Unsafe.As<T, byte>(ref oldValue) & 0xFF);
+ushort oldShort = (ushort)(Unsafe.As<T, ushort>(ref oldValue) & 0xFFFF);
+```
+
+Without the mask, `[AggressiveInlining]` plus a literal signed argument
+(`(sbyte)-1`, `(short)-1`) on net481 RyuJIT produces wrong results in
+**Release** (Debug passes). The caller's int-promoted constant
+(`-1` &rarr; `0xFFFFFFFF`) propagates through `Unsafe.As<T, byte>` into the
+loop's `cmp` immediate as a 32-bit value. The `movzx`-loaded byte is in
+`[0, 0xFF]`, so `cmp ecx, 0FFFFFFFF` is unconditionally false &mdash; the loop
+runs, finds nothing, returns silently.
+
+The cast alone (`(byte)Unsafe.As<...>`) does not fix it; RyuJIT's constant
+tracker doesn't model the IL `conv.u1` as truncating. The explicit `& 0xFF`
+mask forces the high bits to zero in the propagated constant, so the compare
+immediate becomes the correct byte even when the JIT carries the int forward.
+Confirmed by disassembly in
+[ReplaceUnsafeAsPerf](../../../touki.perf/ReplaceUnsafeAsPerf.cs).
+
+Symmetric tests using only `byte` or `char` will not catch this (their
+int-promoted form already has zero upper bits). Always include `sbyte` and
+`short` with negative values in the test matrix for any
+`Unsafe.As<T, byte>` / `Unsafe.As<T, ushort>` specialization.
 
 ## See also
 

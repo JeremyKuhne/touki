@@ -35,8 +35,15 @@ public static partial class SpanExtensions
             // The JIT elides this branch for any other T.
             if (typeof(T) == typeof(char) || typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
             {
-                ushort oldShort = Unsafe.As<T, ushort>(ref oldValue);
-                ushort newShort = Unsafe.As<T, ushort>(ref newValue);
+                // The explicit `& 0xFFFF` mask is load-bearing on net481 RyuJIT.
+                // Without it, when this method is inlined the JIT propagates the
+                // caller's int-promoted argument constant through Unsafe.As and
+                // emits a 32-bit-wide comparison immediate (e.g. 0xFFFFFFFF for
+                // (short)-1) instead of the requested 16-bit value (0xFFFF), and
+                // the loop's `cmp byte ptr [...]` style compare never matches.
+                // The mask forces the JIT to fold the high bits to zero.
+                ushort oldShort = (ushort)(Unsafe.As<T, ushort>(ref oldValue) & 0xFFFF);
+                ushort newShort = (ushort)(Unsafe.As<T, ushort>(ref newValue) & 0xFFFF);
                 fixed (T* p = span)
                 {
                     ushort* ptr = (ushort*)p;
@@ -69,8 +76,11 @@ public static partial class SpanExtensions
             // Specialize for 1-byte primitives (byte / sbyte) the same way.
             if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
             {
-                byte oldByte = Unsafe.As<T, byte>(ref oldValue);
-                byte newByte = Unsafe.As<T, byte>(ref newValue);
+                // See the comment above; the explicit `& 0xFF` mask defeats the
+                // net481 RyuJIT constant propagation that would otherwise compare
+                // against a 32-bit sign-extended value for (sbyte)-1 inputs.
+                byte oldByte = (byte)(Unsafe.As<T, byte>(ref oldValue) & 0xFF);
+                byte newByte = (byte)(Unsafe.As<T, byte>(ref newValue) & 0xFF);
                 fixed (T* p = span)
                 {
                     byte* ptr = (byte*)p;
@@ -142,8 +152,9 @@ public static partial class SpanExtensions
             // bit pattern matches IEquatable equality. The JIT elides this branch for any other T.
             if (typeof(T) == typeof(char) || typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
             {
-                ushort oldShort = Unsafe.As<T, ushort>(ref oldValue);
-                ushort newShort = Unsafe.As<T, ushort>(ref newValue);
+                // See the corresponding comment in Replace(T, T) above.
+                ushort oldShort = (ushort)(Unsafe.As<T, ushort>(ref oldValue) & 0xFFFF);
+                ushort newShort = (ushort)(Unsafe.As<T, ushort>(ref newValue) & 0xFFFF);
                 fixed (T* sp = source)
                 fixed (T* dp = destination)
                 {
@@ -186,8 +197,8 @@ public static partial class SpanExtensions
             // Specialize for 1-byte primitives (byte / sbyte) the same way.
             if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
             {
-                byte oldByte = Unsafe.As<T, byte>(ref oldValue);
-                byte newByte = Unsafe.As<T, byte>(ref newValue);
+                byte oldByte = (byte)(Unsafe.As<T, byte>(ref oldValue) & 0xFF);
+                byte newByte = (byte)(Unsafe.As<T, byte>(ref newValue) & 0xFF);
                 fixed (T* sp = source)
                 fixed (T* dp = destination)
                 {

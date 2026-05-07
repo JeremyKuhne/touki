@@ -201,15 +201,39 @@ enforces these; this section explains *why*.
    destination separately before pinning. See
    [EncodingExtensions.GetBytes](../../../touki/Framework/Polyfills/System.Text/EncodingExtensions.cs).
 
-2. **`Unsafe.As<T,...>(ref param)` mis-reads negative-signed primitives
-   in Release on net481.** RyuJIT can keep the parameter in a register
-   or smaller-than-`int` slot, so reinterpret reads the wrong byte
-   (`StartsWith((sbyte)0)` over `[-1, 0, 1]` returns the wrong answer).
-   Either copy to a definite local first (`T local = value;`), or skip
-   Unsafe entirely &mdash; per
-   [StartsWithPerf](../../../touki.perf/StartsWithPerf.cs),
-   `value.Equals(span[0])` via `IEquatable<T>` already beats Unsafe on
-   net481.
+2. **`[AggressiveInlining]` + `Unsafe.As<T, narrower>(ref param)`
+   compares against the wrong constant on net481.** When the caller
+   passes a literal of a *signed* primitive narrower than `int`
+   (`sbyte`, `short`), C# `int`-promotion sign-extends it (`(sbyte)-1`
+   becomes `0xFFFFFFFF`). If the called method is
+   `[AggressiveInlining]` and reinterprets the parameter via
+   `Unsafe.As<T, byte>(ref oldValue)` to compare against bytes loaded
+   with `movzx`, RyuJIT propagates the *int-promoted* constant into
+   the compare immediate (`cmp ecx, 0xFFFFFFFF`) instead of the
+   requested byte (`0xFF`). The `movzx`-loaded byte is in `[0, 0xFF]`
+   so the compare is *unconditionally false* &mdash; the loop runs
+   silently doing nothing in Release. Debug passes (no inlining).
+   Confirmed by disassembly in
+   [ReplaceUnsafeAsPerf](../../../touki.perf/ReplaceUnsafeAsPerf.cs).
+
+   **Fix:** explicitly mask in the int domain so RyuJIT must fold the
+   high bits to zero. The cast alone is not enough &mdash; the JIT's
+   constant tracker doesn't model the `conv.u1` IL op as truncating
+   to `[0, 0xFF]` here. Use:
+
+   ```csharp
+   byte oldByte = (byte)(Unsafe.As<T, byte>(ref oldValue) & 0xFF);
+   ushort oldShort = (ushort)(Unsafe.As<T, ushort>(ref oldValue) & 0xFFFF);
+   ```
+
+   See [SpanExtensions.Replace.cs](../../../touki/Framework/Polyfills/System/SpanExtensions.Replace.cs)
+   for the in-place version, and the
+   [ReplaceUnsafeAsPerf](../../../touki.perf/ReplaceUnsafeAsPerf.cs)
+   benchmark for the disassembly proof. The unsigned cases (`byte`,
+   `ushort`, `char`) are unaffected because their int-promoted form
+   already has the upper bits zero. Tests on signed inputs are
+   essential &mdash; symmetric tests that only use `byte`/`char` will
+   not catch this.
 
 3. **`Random.NextBytes(byte[])` is native on net481; the obvious
    managed span loop is slower per byte** (loses to `byte[]` + copy by

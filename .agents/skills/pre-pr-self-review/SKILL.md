@@ -184,8 +184,13 @@ the overhead in `<remarks>` and keep the benchmark file in `touki.perf/`.
 - Build both TFMs.
 - Run `dotnet test` in **both Debug and Release**. Release-mode RyuJIT
   inlining surfaces bugs Debug doesn't &mdash; e.g.
-  `Unsafe.As<T, ...>(ref param)` mis-reads negative-signed-primitive
-  parameters on net481, but only in Release.
+  `[AggressiveInlining]` + `Unsafe.As<T, byte>(ref param)` propagates
+  the caller's int-promoted argument into the comparison immediate
+  (`cmp ecx, 0xFFFFFFFF` instead of `cmp ecx, 0xFF`) for negative
+  signed-primitive inputs on net481, but only in Release. Mask
+  explicitly with `& 0xFF` / `& 0xFFFF`. See
+  [`polyfill-dotnet-api`](../polyfill-dotnet-api/SKILL.md) &sect;Gotchas
+  and [`framework-jit-optimization/specialization.md`](../framework-jit-optimization/specialization.md).
 - Stage **by path**, never `git add -A` / `git add .` when the working
   tree spans more than one logical change. If topics are intermingled,
   ask before staging.
