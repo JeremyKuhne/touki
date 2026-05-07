@@ -43,7 +43,7 @@ internal static class HebrewNumber
     //
     ////////////////////////////////////////////////////////////////////////////
 
-    internal static void Append(ValueStringBuilder builder, int number)
+    internal static void Append(ref ValueStringBuilder builder, int number)
     {
         int outputBufferStartingLength = builder.Length;
 
