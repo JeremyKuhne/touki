@@ -256,12 +256,27 @@ public class SpanExtensionsSplitRangesTests
     }
 
     [Fact]
-    public void Split_OnAnyWhiteSpace_TrimEntries_Works()
+    public void Split_OnAnyWhiteSpace_RemoveEmpty_DropsEmptySegments()
     {
         ReadOnlySpan<char> source = "  apple   banana   cherry  ";
         Span<Range> ranges = new Range[8];
         int count = source.SplitAny(ranges, ReadOnlySpan<char>.Empty, StringSplitOptions.RemoveEmptyEntries);
         count.Should().Be(3);
+    }
+
+    [Fact]
+    public void Split_OnAnyWhiteSpace_TrimEntries_TrimsAndKeeps()
+    {
+        ReadOnlySpan<char> source = "  apple   banana   cherry  ";
+        Span<Range> ranges = new Range[16];
+        int count = source.SplitAny(
+            ranges,
+            ReadOnlySpan<char>.Empty,
+            (StringSplitOptions)2 | StringSplitOptions.RemoveEmptyEntries);
+        count.Should().Be(3);
+        source[ranges[0]].ToString().Should().Be("apple");
+        source[ranges[1]].ToString().Should().Be("banana");
+        source[ranges[2]].ToString().Should().Be("cherry");
     }
 
     [Fact]

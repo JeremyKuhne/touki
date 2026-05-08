@@ -370,7 +370,7 @@ public class MemoryExtensionsTryWriteTests
     }
 
     [Fact]
-    public void TryWrite_AppendFormatted_NullObject_NoAlignment_NoOp()
+    public void TryWrite_AppendFormatted_NullObject_NoAlignment_AppendsEmpty()
     {
         Span<char> dest = stackalloc char[16];
         object? value = null;
