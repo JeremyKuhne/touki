@@ -111,22 +111,16 @@ Top-level layout:
 
 ## Testing
 
-- Place tests in the `touki.tests` project.
-- Test classes should be in the same namespace as the class they are testing, with
-  `Tests` appended (e.g. `ListBaseTests` for `ListBase`).
-- Test methods should be named `MethodName_StateUnderTest_ExpectedBehavior`
-  (e.g. `MoveNext_AtStart_ReturnsTrue`).
-- Test methods should be ordered by the method they are testing.
-- Cover edge and negative cases.
-- Do **not** add "Arrange, Act, Assert" comments in tests.
-- Ref structs cannot be used in lambdas; use `try`/`finally` blocks to validate error
-  cases.
-- Use FluentAssertions for assertions in tests.
-- FluentAssertions and Xunit are already global usings &mdash; do not add new usings for
-  these to test files.
-- Tests have access to internals via `InternalsVisibleTo`, so you can test internal
-  members directly.
-- For private members, use the `TestAccessor` and `TestAccessors` extension methods.
+Detailed test conventions live in
+[.github/instructions/tests.instructions.md](instructions/tests.instructions.md)
+(applies to `touki.tests/**/*.cs`). Headline rules: place tests in `touki.tests`;
+name them `MethodName_StateUnderTest_ExpectedBehavior`; use FluentAssertions (global
+using); access internals directly via `InternalsVisibleTo` and private members via
+`TestAccessor`; ref structs can't be used in lambdas &mdash; use `try`/`finally`.
+
+Performance-test conventions for `touki.perf/` (BenchmarkDotNet, Release-only,
+JIT-naming rule, regression thresholds) live in
+[.github/instructions/perf.instructions.md](instructions/perf.instructions.md).
 
 ## Working with the user on changes
 
@@ -156,15 +150,36 @@ Treat them as hard requirements.
 - **Stage by path, never `git add -A`/`git add .`** when the working tree spans
   more than one logical change set. Run `git status --short` first; if topics
   are intermingled, ask how to split before staging.
-- **Name the JIT in performance claims.** ".NET Framework 4.8.1 RyuJIT" (older,
-  no `EqualityComparer<T>.Default` intrinsic, no tiered JIT, weaker inlining)
-  vs **modern .NET RyuJIT** (.NET 6+, devirtualization, tiered JIT, dynamic
-  PGO). Unqualified "RyuJIT" claims are wrong about half the time. Code
-  changes in `touki/Framework/` driven by such claims need a benchmark or an
-  explicit "not measured" note.
 - **Run `dotnet test -c Release` before declaring a fix done.** Release-mode
   inlining surfaces bugs Debug doesn't &mdash; `Unsafe.As` on a method
   parameter is a known foot-gun on net481 RyuJIT.
+
+The JIT-naming rule for performance claims (".NET Framework 4.8.1 RyuJIT" vs
+"modern .NET RyuJIT") and BenchmarkDotNet conventions live in
+[.github/instructions/perf.instructions.md](instructions/perf.instructions.md).
+
+### Enforcement
+
+The publish-boundary rule above is also enforced mechanically so that model
+rationalization cannot bypass it:
+
+- **VS Code Copilot agent mode.** [.vscode/settings.json](../.vscode/settings.json)
+  configures `chat.tools.terminal.autoApprove` to deny `git commit`, `git push`,
+  `git reset --hard`, `git rebase`, `git merge`, `git cherry-pick`, `git tag`,
+  destructive `git branch -d/-D`, and `gh pr create|merge|close|edit`. Each
+  invocation requires an explicit in-chat **Allow** click; that click is the
+  approval. Routine read-only verbs (`git status`, `git diff`, `git log`,
+  `git show`, `git branch`, `git stash list`, `git rev-parse`, `git ls-files`)
+  are auto-approved so review work stays frictionless.
+- **Branch protection on `main`.** Configured in repo settings: PR required,
+  status checks required, force pushes and branch deletion blocked. This covers
+  surfaces the local denylist does not (Copilot cloud agent, other agents,
+  scripted runs).
+
+The prose rules above still apply: they explain *why*, and they apply on
+surfaces where the mechanical gate doesn't fire (e.g. cloud-agent runs that
+bypass the local terminal). Treat the mechanical gate as a backstop, not a
+license to skip the conversation.
 
 ## General guidance
 
@@ -193,3 +208,6 @@ automatically based on each file's `applyTo` glob.
 Currently:
 
 - [.github/instructions/msbuild.instructions.md](instructions/msbuild.instructions.md) &mdash; rules for `*.csproj`, `*.props`, `*.targets`.
+- [.github/instructions/tests.instructions.md](instructions/tests.instructions.md) &mdash; conventions for `touki.tests/**/*.cs`.
+- [.github/instructions/perf.instructions.md](instructions/perf.instructions.md) &mdash; BenchmarkDotNet conventions and the JIT-naming rule for `touki.perf/**/*.cs`.
+- [.github/instructions/polyfills.instructions.md](instructions/polyfills.instructions.md) &mdash; the two non-negotiable rules for `touki/Framework/Polyfills/**/*.cs`.

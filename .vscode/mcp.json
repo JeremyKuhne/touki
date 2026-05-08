@@ -1,0 +1,10 @@
+{
+    // MCP servers wired up for this workspace.
+    // See docs/agent-customization.md "MCP servers" for rationale.
+    "servers": {
+        "microsoft-learn": {
+            "type": "http",
+            "url": "https://learn.microsoft.com/api/mcp"
+        }
+    }
+}
