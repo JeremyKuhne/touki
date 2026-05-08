@@ -141,7 +141,7 @@ public class MemoryExtensionsTryWriteTests
     }
 
     [Fact]
-    public void TryWrite_SpanValue_WithAlignment_RightPadded()
+    public void TryWrite_SpanValue_WithAlignment_RightAligned()
     {
         Span<char> dest = stackalloc char[16];
         ReadOnlySpan<char> s = "abc".AsSpan();
@@ -151,7 +151,7 @@ public class MemoryExtensionsTryWriteTests
     }
 
     [Fact]
-    public void TryWrite_SpanValue_WithAlignment_LeftPadded()
+    public void TryWrite_SpanValue_WithAlignment_LeftAligned()
     {
         Span<char> dest = stackalloc char[16];
         ReadOnlySpan<char> s = "abc".AsSpan();
@@ -161,7 +161,7 @@ public class MemoryExtensionsTryWriteTests
     }
 
     [Fact]
-    public void TryWrite_StringValue_WithAlignment_RightPadded()
+    public void TryWrite_StringValue_WithAlignment_RightAligned()
     {
         Span<char> dest = stackalloc char[16];
         string s = "ab";
@@ -171,7 +171,7 @@ public class MemoryExtensionsTryWriteTests
     }
 
     [Fact]
-    public void TryWrite_StringValue_WithAlignment_LeftPadded()
+    public void TryWrite_StringValue_WithAlignment_LeftAligned()
     {
         Span<char> dest = stackalloc char[16];
         string s = "ab";
@@ -181,7 +181,7 @@ public class MemoryExtensionsTryWriteTests
     }
 
     [Fact]
-    public void TryWrite_ObjectValue_WithAlignment_RightPadded()
+    public void TryWrite_ObjectValue_WithAlignment_RightAligned()
     {
         Span<char> dest = stackalloc char[16];
         object o = "ab";
