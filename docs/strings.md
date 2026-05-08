@@ -6,7 +6,7 @@ On modern .NET platforms (from .NET 6 onward) the compiler rewrites interpolate
 
 For developers who need to target .NET Framework 4.8 or earlier, these improvements are not available because the framework lacks the built‑in interpolated‑string handler and many of the supporting APIs. The **Touki** library bridges that gap by providing a default interpolated string handler and polyfills for .NET Framework 4.7.2 and later.
 
-**Touki** also provides additional high‑performance text utilities on **both** .NET 9 **and** .NET Framework 4.7.2 and later so you can enjoy performant, lower allocation string handling while still supporting older frameworks.
+**Touki** also provides additional high‑performance text utilities on **both** .NET 10 **and** .NET Framework 4.7.2 and later so you can enjoy performant, lower allocation string handling while still supporting older frameworks.
 
 ## Why reducing allocations matters
 
@@ -18,7 +18,7 @@ Strings in .NET are immutable. Every time you use `string.Concat`, `StringBuilde
 
 ## Touki’s approach
 
-Touki (登器) provides low allocation interpolated‑string support for .NET Framework 4.7.2 and a number of additional helpers for *all* .NET versions. Touki ports portions of the .NET runtime under the MIT license and augments them with extra functionality. On .NET 9 it defers to the built‑in handler; on .NET Framework 4.7.2 it provides its own implementation.
+Touki (登器) provides low allocation interpolated‑string support for .NET Framework 4.7.2 and a number of additional helpers for *all* .NET versions. Touki ports portions of the .NET runtime under the MIT license and augments them with extra functionality. On .NET 10 it defers to the built‑in handler; on .NET Framework 4.7.2 it provides its own implementation.
 
 ### `ValueStringBuilder`: the core string builder
 
@@ -94,8 +94,14 @@ The builder writes directly to the stream buffer, so no extra string is created.
 C# 10 lets you define **custom interpolated‐string handlers**. Touki supplies `DefaultInterpolatedStringHandler` and `AssertInterpolatedStringHandler` ([AssertInterpolatedStringHandler.cs](https://github.com/JeremyKuhne/touki/blob/main/touki/Framework/Polyfills/System.Diagnostics/AssertInterpolatedStringHandler.cs)). The former is the special class C# looks for to implement interpolated strings. The latter is used to provide a low allocation cross compiled assertions in the `Debugging` class:
 
 ```csharp
-// Works on *both* .NET 9 and .NET Framework 4.7.2
+// Works on *both* .NET 10 and .NET Framework 4.7.2
 Debugging.Assert(count == 0, $"The count should be 0, but is {count}.");
 ```
 
-Touki ports span number formatting from .NET 6 to the .NET Framework 4.7.2 build to allow zero allocation number formatting.
+Touki ports span number formatting from modern .NET to the .NET Framework 4.7.2 build to allow zero allocation number formatting.
+
+## See also
+
+- [Low-Allocation Collections](collections.md) for `ArrayPoolList<T>` and friends.
+- [Buffers, Span Readers, and Span Writers](buffers.md) for `BufferScope<T>`, `SpanReader<T>`, and `SpanWriter<T>`.
+- [IO Helpers](io.md) for `WriteFormatted` on `Stream` and `TextWriter`.
