@@ -46,8 +46,8 @@ Linux); pass an `EnumerationOptions` to override.
 * `OSDefaultMatchCasing` and `GetFinalCasing(MatchCasing)` for
   resolving `MatchCasing.PlatformDefault` consistently across .NET 10
   and .NET Framework.
-* `Matches(expression, name, matchCasing)` for one-off glob matching
-  without spinning up an enumerator.
+* `MatchesExpression(name, expression, matchCasing, matchType)` for
+  one-off glob matching without spinning up an enumerator.
 
 ## `TempFolder`
 
@@ -69,10 +69,11 @@ Failures during deletion (e.g. files held open by another process) are
 swallowed so `Dispose` is safe to call from `finally` blocks and test
 teardown.
 
-## `StreamExtensions` and `TextWriterExtensions`
+## `WriteFormatted` on `Stream` and `TextWriter`
 
-[`StreamExtensions`](../touki/Touki/Io/StreamExtensions.cs) and
-[`TextWriterExtensions`](../touki/Touki/Io/TextWriterExtensions.cs) add
+[`TextWriterExtensions`](../touki/Touki/Io/TextWriterExtensions.cs) (and
+its `Stream`-targeted partial in
+[`StreamExtensions.cs`](../touki/Touki/Io/StreamExtensions.cs)) adds
 `WriteFormatted` overloads that accept a `ValueStringBuilder`-backed
 interpolated string handler, so formatted output flows directly into the
 target without an intermediate `string` allocation. See

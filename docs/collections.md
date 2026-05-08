@@ -22,7 +22,11 @@ more than necessary or don't fit the access pattern. They all live on
 | [`EmptyList<T>`](../touki/Touki/Collections/EmptyList.cs) | Singleton empty `IList<T>`/`IReadOnlyList<T>`. |
 
 `ListBase<T>` and friends require `T : notnull`; nulls are rejected at the
-boundary. All disposable lists return their buffer on `Dispose`.
+boundary. Pooled lists such as `ArrayPoolList<T>` (and
+`SingleOptimizedList<TItem, TList>` once it has promoted to a pooled
+`TList`) return rented buffers to `ArrayPool<T>.Shared` on `Dispose`;
+non-pooled lists such as `ArrayList<T>` simply drop their references and
+let the GC reclaim the backing array.
 
 ## `ArrayPoolList<T>`
 

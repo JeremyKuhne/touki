@@ -1,8 +1,9 @@
 # Buffers, Span Readers, and Span Writers
 
-Touki's [`Touki.Buffers`](../touki/Touki/Buffers/) namespace contains a
-small set of stack-friendly types for working with `Span<T>` and
-`ReadOnlySpan<T>`. They're available on .NET 10 and .NET Framework 4.7.2.
+Touki's buffer-related types in [`touki/Touki/Buffers/`](../touki/Touki/Buffers/)
+are declared in the `Touki` namespace and provide a small set of
+stack-friendly APIs for working with `Span<T>` and `ReadOnlySpan<T>`.
+They're available on .NET 10 and .NET Framework 4.7.2.
 
 ## `BufferScope<T>`
 
@@ -86,7 +87,9 @@ without exception overhead.
 ## `SpanExtensions`
 
 [`SpanExtensions`](../touki/Touki/Buffers/SpanExtensions.cs) adds
-allocation-free helpers on top of `Span<T>` and `ReadOnlySpan<T>`,
-including a `SpanSplitEnumerator<T>` polyfill for downlevel targets so
-the same `foreach (Range range in span.Split(...))` code compiles on
+allocation-free helpers on top of `Span<T>` and `ReadOnlySpan<T>`. For
+downlevel targets, the `Split(...)` / `SpanSplitEnumerator<T>` polyfill
+lives in
+[`System.SpanExtensions`](../touki/Framework/Polyfills/System/SpanExtensions.SpanSplitEnumerator.cs),
+so the same `foreach (Range range in span.Split(...))` code compiles on
 .NET 10 and .NET Framework 4.7.2.
