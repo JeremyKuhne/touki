@@ -394,4 +394,215 @@ public class SpanExtensionsSearchExtraTests
         ReadOnlySpan<string> b = ["x", "y", "z", "extra"];
         a.CommonPrefixLength(b, comparer: null).Should().Be(3);
     }
+
+    // ----- Span<T> wrappers (delegate to ReadOnlySpan<T> overloads) -----
+
+    [Fact]
+    public void ContainsAny_Span_TwoValues_True()
+    {
+        int[] data = [1, 2, 3];
+        Span<int> span = data;
+        span.ContainsAny(2, 99).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ContainsAny_Span_TwoValues_False()
+    {
+        int[] data = [1, 2, 3];
+        Span<int> span = data;
+        span.ContainsAny(98, 99).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ContainsAny_Span_ThreeValues_True()
+    {
+        int[] data = [1, 2, 3];
+        Span<int> span = data;
+        span.ContainsAny(7, 8, 3).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ContainsAny_Span_ThreeValues_False()
+    {
+        int[] data = [1, 2, 3];
+        Span<int> span = data;
+        span.ContainsAny(7, 8, 9).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ContainsAny_Span_ValuesSpan_True()
+    {
+        int[] data = [1, 2, 3];
+        Span<int> span = data;
+        ReadOnlySpan<int> values = [9, 3];
+        span.ContainsAny(values).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ContainsAny_Span_ValuesSpan_False()
+    {
+        int[] data = [1, 2, 3];
+        Span<int> span = data;
+        ReadOnlySpan<int> values = [7, 8];
+        span.ContainsAny(values).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ContainsAnyExcept_Span_SingleValue_True()
+    {
+        int[] data = [1, 2, 1];
+        Span<int> span = data;
+        span.ContainsAnyExcept(1).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ContainsAnyExcept_Span_SingleValue_False()
+    {
+        int[] data = [1, 1, 1];
+        Span<int> span = data;
+        span.ContainsAnyExcept(1).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ContainsAnyExcept_Span_TwoValues_True()
+    {
+        int[] data = [1, 2, 3];
+        Span<int> span = data;
+        span.ContainsAnyExcept(1, 2).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ContainsAnyExcept_Span_TwoValues_False()
+    {
+        int[] data = [1, 2, 1, 2];
+        Span<int> span = data;
+        span.ContainsAnyExcept(1, 2).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ContainsAnyExcept_Span_ThreeValues_True()
+    {
+        int[] data = [1, 2, 3, 4];
+        Span<int> span = data;
+        span.ContainsAnyExcept(1, 2, 3).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ContainsAnyExcept_Span_ThreeValues_False()
+    {
+        int[] data = [1, 2, 3];
+        Span<int> span = data;
+        span.ContainsAnyExcept(1, 2, 3).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ContainsAnyExcept_Span_ValuesSpan_True()
+    {
+        int[] data = [1, 2, 3, 9];
+        Span<int> span = data;
+        ReadOnlySpan<int> values = [1, 2, 3];
+        span.ContainsAnyExcept(values).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ContainsAnyExcept_Span_ValuesSpan_False()
+    {
+        int[] data = [1, 2, 3];
+        Span<int> span = data;
+        ReadOnlySpan<int> values = [1, 2, 3];
+        span.ContainsAnyExcept(values).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Count_Span_SingleValue_CountsOccurrences()
+    {
+        int[] data = [1, 2, 1, 3, 1];
+        Span<int> span = data;
+        span.Count(1).Should().Be(3);
+    }
+
+    [Fact]
+    public void Count_Span_ValuesSpan_CountsNonOverlappingOccurrences()
+    {
+        int[] data = [1, 2, 1, 2, 1, 2];
+        Span<int> span = data;
+        ReadOnlySpan<int> values = [1, 2];
+        span.Count(values).Should().Be(3);
+    }
+
+    [Fact]
+    public void CommonPrefixLength_Span_DelegatesToReadOnly()
+    {
+        int[] dataA = [1, 2, 3, 4];
+        int[] dataB = [1, 2, 3, 5];
+        Span<int> a = dataA;
+        ReadOnlySpan<int> b = dataB;
+        a.CommonPrefixLength(b).Should().Be(3);
+    }
+
+    [Fact]
+    public void CommonPrefixLength_Span_WithComparer_DelegatesToReadOnly()
+    {
+        string[] dataA = ["x", "y", "z"];
+        string[] dataB = ["X", "Y", "Z"];
+        Span<string> a = dataA;
+        ReadOnlySpan<string> b = dataB;
+        a.CommonPrefixLength(b, StringComparer.OrdinalIgnoreCase).Should().Be(3);
+        a.CommonPrefixLength(b, EqualityComparer<string>.Default).Should().Be(0);
+    }
+
+    // ----- IndexOfAnyExcept extra coverage -----
+
+    [Fact]
+    public void IndexOfAnyExcept_SingleValue_AllMatch_ReturnsMinusOne()
+    {
+        ReadOnlySpan<int> span = [7, 7, 7];
+        span.IndexOfAnyExcept(7).Should().Be(-1);
+    }
+
+    [Fact]
+    public void IndexOfAnyExcept_SingleValue_Empty_ReturnsMinusOne()
+    {
+        ReadOnlySpan<int>.Empty.IndexOfAnyExcept(0).Should().Be(-1);
+    }
+
+    [Fact]
+    public void IndexOfAnyExcept_TwoValues_FindsFirstOther()
+    {
+        ReadOnlySpan<int> span = [1, 2, 9, 1, 2];
+        span.IndexOfAnyExcept(1, 2).Should().Be(2);
+    }
+
+    [Fact]
+    public void IndexOfAnyExcept_TwoValues_AllMatch_ReturnsMinusOne()
+    {
+        ReadOnlySpan<int> span = [1, 2, 1, 2];
+        span.IndexOfAnyExcept(1, 2).Should().Be(-1);
+    }
+
+    [Fact]
+    public void IndexOfAnyExcept_TwoValues_Empty_ReturnsMinusOne()
+    {
+        ReadOnlySpan<int>.Empty.IndexOfAnyExcept(1, 2).Should().Be(-1);
+    }
+
+    [Fact]
+    public void IndexOfAnyExcept_ThreeValues_FindsFirstOther()
+    {
+        ReadOnlySpan<int> span = [1, 2, 3, 9, 1];
+        span.IndexOfAnyExcept(1, 2, 3).Should().Be(3);
+    }
+
+    [Fact]
+    public void IndexOfAnyExcept_ThreeValues_AllMatch_ReturnsMinusOne()
+    {
+        ReadOnlySpan<int> span = [1, 2, 3, 1, 2];
+        span.IndexOfAnyExcept(1, 2, 3).Should().Be(-1);
+    }
+
+    [Fact]
+    public void IndexOfAnyExcept_ThreeValues_Empty_ReturnsMinusOne()
+    {
+        ReadOnlySpan<int>.Empty.IndexOfAnyExcept(1, 2, 3).Should().Be(-1);
+    }
 }

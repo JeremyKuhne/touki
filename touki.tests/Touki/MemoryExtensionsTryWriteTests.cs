@@ -139,4 +139,113 @@ public class MemoryExtensionsTryWriteTests
         ok.Should().BeFalse();
         written.Should().Be(0);
     }
+
+    [Fact]
+    public void TryWrite_SpanValue_WithAlignment_RightAligned()
+    {
+        Span<char> dest = stackalloc char[16];
+        ReadOnlySpan<char> s = "abc".AsSpan();
+        bool ok = dest.TryWrite($">{s,5}<", out int written);
+        ok.Should().BeTrue();
+        dest[..written].ToString().Should().Be(">  abc<");
+    }
+
+    [Fact]
+    public void TryWrite_SpanValue_WithAlignment_LeftAligned()
+    {
+        Span<char> dest = stackalloc char[16];
+        ReadOnlySpan<char> s = "abc".AsSpan();
+        bool ok = dest.TryWrite($">{s,-5}<", out int written);
+        ok.Should().BeTrue();
+        dest[..written].ToString().Should().Be(">abc  <");
+    }
+
+    [Fact]
+    public void TryWrite_StringValue_WithAlignment_RightAligned()
+    {
+        Span<char> dest = stackalloc char[16];
+        string s = "ab";
+        bool ok = dest.TryWrite($"|{s,4}|", out int written);
+        ok.Should().BeTrue();
+        dest[..written].ToString().Should().Be("|  ab|");
+    }
+
+    [Fact]
+    public void TryWrite_StringValue_WithAlignment_LeftAligned()
+    {
+        Span<char> dest = stackalloc char[16];
+        string s = "ab";
+        bool ok = dest.TryWrite($"|{s,-4}|", out int written);
+        ok.Should().BeTrue();
+        dest[..written].ToString().Should().Be("|ab  |");
+    }
+
+    [Fact]
+    public void TryWrite_ObjectValue_WithAlignment_RightAligned()
+    {
+        Span<char> dest = stackalloc char[16];
+        object o = "ab";
+        bool ok = dest.TryWrite($"|{o,4}|", out int written);
+        ok.Should().BeTrue();
+        dest[..written].ToString().Should().Be("|  ab|");
+    }
+
+    [Fact]
+    public void TryWrite_ObjectValue_FormatString()
+    {
+        Span<char> dest = stackalloc char[16];
+        object o = 255;
+        bool ok = dest.TryWrite($"{o:X4}", out int written);
+        ok.Should().BeTrue();
+        dest[..written].ToString().Should().Be("00FF");
+    }
+
+    [Fact]
+    public void TryWrite_StringValue_AlignmentAndFormat()
+    {
+        Span<char> dest = stackalloc char[32];
+        string s = "ab";
+        // string ignores the format spec; verify alignment still applies.
+        bool ok = dest.TryWrite($"|{s,5:X}|", out int written);
+        ok.Should().BeTrue();
+        dest[..written].ToString().Should().Be("|   ab|");
+    }
+
+    [Fact]
+    public void TryWrite_ObjectValue_AlignmentAndFormat()
+    {
+        Span<char> dest = stackalloc char[32];
+        object o = 255;
+        bool ok = dest.TryWrite($"|{o,6:X4}|", out int written);
+        ok.Should().BeTrue();
+        dest[..written].ToString().Should().Be("|  00FF|");
+    }
+
+    [Fact]
+    public void TryWrite_CustomFormatter_Used()
+    {
+        Span<char> dest = stackalloc char[32];
+        ReverseCustomFormatProvider provider = new();
+        bool ok = dest.TryWrite(provider, $"{"abc"}", out int written);
+        ok.Should().BeTrue();
+        dest[..written].ToString().Should().Be("cba");
+    }
+
+    private sealed class ReverseCustomFormatProvider : IFormatProvider, ICustomFormatter
+    {
+        public object? GetFormat(Type? formatType) =>
+            formatType == typeof(ICustomFormatter) ? this : null;
+
+        public string Format(string? format, object? arg, IFormatProvider? formatProvider)
+        {
+            if (arg is string s)
+            {
+                char[] chars = s.ToCharArray();
+                Array.Reverse(chars);
+                return new string(chars);
+            }
+
+            return arg?.ToString() ?? string.Empty;
+        }
+    }
 }
