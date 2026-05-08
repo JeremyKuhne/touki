@@ -34,7 +34,18 @@ public static partial class SpanExtensions
             // Specialize for 2-byte primitives (char / short / ushort): IEquatable equality is bit equality.
             if (typeof(T) == typeof(char) || typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
             {
-                ushort target = Unsafe.As<T, ushort>(ref value);
+                // The explicit `& 0xFFFF` mask is load-bearing on net481 RyuJIT.
+                // Inside an [AggressiveInlining] method that takes a generic `T`,
+                // `Unsafe.As<T, ushort>(ref param)` on a literal signed-primitive
+                // caller (e.g. `(short)-1`) propagates the int-promoted constant
+                // 0xFFFFFFFF through the constant tracker, producing a 32-bit
+                // compare against a `movzx`-loaded ushort that is always false.
+                // Masking in the int domain forces a `conv.u2` and yields correct
+                // codegen on both net481 and modern .NET RyuJIT. See
+                // touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs
+                // and touki.perf/ReplaceUnsafeAsPerf.cs for the captured
+                // disassembly evidence.
+                ushort target = (ushort)(Unsafe.As<T, ushort>(ref value) & 0xFFFF);
                 fixed (T* p = span)
                 {
                     ushort* ptr = (ushort*)p;
@@ -65,7 +76,9 @@ public static partial class SpanExtensions
             // Specialize for 1-byte primitives (byte / sbyte).
             if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
             {
-                byte target = Unsafe.As<T, byte>(ref value);
+                // See the ushort branch above; the explicit `& 0xFF` mask defeats
+                // the same net481 RyuJIT constant-propagation bug for sbyte inputs.
+                byte target = (byte)(Unsafe.As<T, byte>(ref value) & 0xFF);
                 fixed (T* p = span)
                 {
                     byte* ptr = (byte*)p;
@@ -114,8 +127,8 @@ public static partial class SpanExtensions
         {
             if (typeof(T) == typeof(char) || typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
             {
-                ushort v0 = Unsafe.As<T, ushort>(ref value0);
-                ushort v1 = Unsafe.As<T, ushort>(ref value1);
+                ushort v0 = (ushort)(Unsafe.As<T, ushort>(ref value0) & 0xFFFF);
+                ushort v1 = (ushort)(Unsafe.As<T, ushort>(ref value1) & 0xFFFF);
                 fixed (T* p = span)
                 {
                     ushort* ptr = (ushort*)p;
@@ -135,8 +148,8 @@ public static partial class SpanExtensions
 
             if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
             {
-                byte v0 = Unsafe.As<T, byte>(ref value0);
-                byte v1 = Unsafe.As<T, byte>(ref value1);
+                byte v0 = (byte)(Unsafe.As<T, byte>(ref value0) & 0xFF);
+                byte v1 = (byte)(Unsafe.As<T, byte>(ref value1) & 0xFF);
                 fixed (T* p = span)
                 {
                     byte* ptr = (byte*)p;
@@ -176,9 +189,9 @@ public static partial class SpanExtensions
         {
             if (typeof(T) == typeof(char) || typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
             {
-                ushort v0 = Unsafe.As<T, ushort>(ref value0);
-                ushort v1 = Unsafe.As<T, ushort>(ref value1);
-                ushort v2 = Unsafe.As<T, ushort>(ref value2);
+                ushort v0 = (ushort)(Unsafe.As<T, ushort>(ref value0) & 0xFFFF);
+                ushort v1 = (ushort)(Unsafe.As<T, ushort>(ref value1) & 0xFFFF);
+                ushort v2 = (ushort)(Unsafe.As<T, ushort>(ref value2) & 0xFFFF);
                 fixed (T* p = span)
                 {
                     ushort* ptr = (ushort*)p;
@@ -198,9 +211,9 @@ public static partial class SpanExtensions
 
             if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
             {
-                byte v0 = Unsafe.As<T, byte>(ref value0);
-                byte v1 = Unsafe.As<T, byte>(ref value1);
-                byte v2 = Unsafe.As<T, byte>(ref value2);
+                byte v0 = (byte)(Unsafe.As<T, byte>(ref value0) & 0xFF);
+                byte v1 = (byte)(Unsafe.As<T, byte>(ref value1) & 0xFF);
+                byte v2 = (byte)(Unsafe.As<T, byte>(ref value2) & 0xFF);
                 fixed (T* p = span)
                 {
                     byte* ptr = (byte*)p;
@@ -273,7 +286,7 @@ public static partial class SpanExtensions
         {
             if (typeof(T) == typeof(char) || typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
             {
-                ushort target = Unsafe.As<T, ushort>(ref value);
+                ushort target = (ushort)(Unsafe.As<T, ushort>(ref value) & 0xFFFF);
                 fixed (T* p = span)
                 {
                     ushort* start = (ushort*)p;
@@ -303,7 +316,7 @@ public static partial class SpanExtensions
 
             if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
             {
-                byte target = Unsafe.As<T, byte>(ref value);
+                byte target = (byte)(Unsafe.As<T, byte>(ref value) & 0xFF);
                 fixed (T* p = span)
                 {
                     byte* start = (byte*)p;
@@ -350,8 +363,8 @@ public static partial class SpanExtensions
         {
             if (typeof(T) == typeof(char) || typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
             {
-                ushort v0 = Unsafe.As<T, ushort>(ref value0);
-                ushort v1 = Unsafe.As<T, ushort>(ref value1);
+                ushort v0 = (ushort)(Unsafe.As<T, ushort>(ref value0) & 0xFFFF);
+                ushort v1 = (ushort)(Unsafe.As<T, ushort>(ref value1) & 0xFFFF);
                 fixed (T* p = span)
                 {
                     ushort* ptr = (ushort*)p;
@@ -370,8 +383,8 @@ public static partial class SpanExtensions
 
             if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
             {
-                byte v0 = Unsafe.As<T, byte>(ref value0);
-                byte v1 = Unsafe.As<T, byte>(ref value1);
+                byte v0 = (byte)(Unsafe.As<T, byte>(ref value0) & 0xFF);
+                byte v1 = (byte)(Unsafe.As<T, byte>(ref value1) & 0xFF);
                 fixed (T* p = span)
                 {
                     byte* ptr = (byte*)p;
@@ -410,9 +423,9 @@ public static partial class SpanExtensions
         {
             if (typeof(T) == typeof(char) || typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
             {
-                ushort v0 = Unsafe.As<T, ushort>(ref value0);
-                ushort v1 = Unsafe.As<T, ushort>(ref value1);
-                ushort v2 = Unsafe.As<T, ushort>(ref value2);
+                ushort v0 = (ushort)(Unsafe.As<T, ushort>(ref value0) & 0xFFFF);
+                ushort v1 = (ushort)(Unsafe.As<T, ushort>(ref value1) & 0xFFFF);
+                ushort v2 = (ushort)(Unsafe.As<T, ushort>(ref value2) & 0xFFFF);
                 fixed (T* p = span)
                 {
                     ushort* ptr = (ushort*)p;
@@ -431,9 +444,9 @@ public static partial class SpanExtensions
 
             if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
             {
-                byte v0 = Unsafe.As<T, byte>(ref value0);
-                byte v1 = Unsafe.As<T, byte>(ref value1);
-                byte v2 = Unsafe.As<T, byte>(ref value2);
+                byte v0 = (byte)(Unsafe.As<T, byte>(ref value0) & 0xFF);
+                byte v1 = (byte)(Unsafe.As<T, byte>(ref value1) & 0xFF);
+                byte v2 = (byte)(Unsafe.As<T, byte>(ref value2) & 0xFF);
                 fixed (T* p = span)
                 {
                     byte* ptr = (byte*)p;
