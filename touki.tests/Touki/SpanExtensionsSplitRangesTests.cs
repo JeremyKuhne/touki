@@ -216,4 +216,70 @@ public class SpanExtensionsSplitRangesTests
         };
         act.Should().Throw<ArgumentException>();
     }
+
+    // ---- Branch-coverage tests targeting TryWriteSegment / WriteWholeSource ----
+    // Some test cases use (StringSplitOptions)2 because StringSplitOptions.TrimEntries
+    // is .NET 5+ only and not present on net481's System.Memory polyfill. The
+    // implementation honors the integer flag at runtime regardless.
+
+    [Fact]
+    public void Split_Char_TrimEntries_TrimsLeadingAndTrailingWhitespace()
+    {
+        ReadOnlySpan<char> source = "  apple , banana ,  cherry  ";
+        Span<Range> ranges = new Range[8];
+        int count = source.Split(ranges, ',', (StringSplitOptions)2);
+        count.Should().Be(3);
+        source[ranges[0]].ToString().Should().Be("apple");
+        source[ranges[1]].ToString().Should().Be("banana");
+        source[ranges[2]].ToString().Should().Be("cherry");
+    }
+
+    [Fact]
+    public void Split_Char_TrimEntries_AllWhitespace_DropsWhenRemoveEmpty()
+    {
+        ReadOnlySpan<char> source = "   ,   ,   ";
+        Span<Range> ranges = new Range[8];
+        int count = source.Split(ranges, ',', (StringSplitOptions)2 | StringSplitOptions.RemoveEmptyEntries);
+        count.Should().Be(0);
+    }
+
+    [Fact]
+    public void Split_Char_TrimEntries_AllWhitespace_KeepsEmptyEntries()
+    {
+        ReadOnlySpan<char> source = "   ,   ,   ";
+        Span<Range> ranges = new Range[8];
+        int count = source.Split(ranges, ',', (StringSplitOptions)2);
+        count.Should().Be(3);
+        source[ranges[0]].Length.Should().Be(0);
+        source[ranges[1]].Length.Should().Be(0);
+        source[ranges[2]].Length.Should().Be(0);
+    }
+
+    [Fact]
+    public void Split_OnAnyWhiteSpace_TrimEntries_Works()
+    {
+        ReadOnlySpan<char> source = "  apple   banana   cherry  ";
+        Span<Range> ranges = new Range[8];
+        int count = source.SplitAny(ranges, ReadOnlySpan<char>.Empty, StringSplitOptions.RemoveEmptyEntries);
+        count.Should().Be(3);
+    }
+
+    [Fact]
+    public void Split_WholeSource_TrimEntries_Trims()
+    {
+        ReadOnlySpan<char> source = "  hello  ";
+        Span<Range> ranges = new Range[4];
+        int count = source.Split(ranges, '!', (StringSplitOptions)2);
+        count.Should().Be(1);
+        source[ranges[0]].ToString().Should().Be("hello");
+    }
+
+    [Fact]
+    public void Split_WholeSource_TrimEntries_AllWhitespace_RemoveEmpty_Empty()
+    {
+        ReadOnlySpan<char> source = "    ";
+        Span<Range> ranges = new Range[4];
+        int count = source.Split(ranges, '!', (StringSplitOptions)2 | StringSplitOptions.RemoveEmptyEntries);
+        count.Should().Be(0);
+    }
 }

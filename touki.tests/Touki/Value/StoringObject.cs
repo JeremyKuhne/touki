@@ -58,4 +58,19 @@ public class StoringObject
     {
         string? ToString();
     }
+
+    [Fact]
+    public void Box_StoresObject()
+    {
+        A a = new();
+        Value value = Value.Box(a);
+        value.As<A>().Should().BeSameAs(a);
+    }
+
+    [Fact]
+    public void Box_NullObject_StoresNull()
+    {
+        Value value = Value.Box(null);
+        value.Type.Should().BeNull();
+    }
 }

@@ -89,4 +89,18 @@ public class StoringArrays
         Assert.Equal(segment, (ArraySegment<char>)value.As<object>());
         Assert.Throws<InvalidCastException>(() => value.As<char[]>());
     }
+
+    [Fact]
+    public void ArraySegment_NullByteArray_Throws()
+    {
+        ArraySegment<byte> segment = default;
+        Assert.Throws<ArgumentNullException>(() => Value.Create(segment));
+    }
+
+    [Fact]
+    public void ArraySegment_NullCharArray_Throws()
+    {
+        ArraySegment<char> segment = default;
+        Assert.Throws<ArgumentNullException>(() => Value.Create(segment));
+    }
 }

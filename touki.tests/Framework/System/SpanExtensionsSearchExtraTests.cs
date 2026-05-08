@@ -821,6 +821,102 @@ public class SpanExtensionsSearchExtraTests
         span.LastIndexOfAnyExcept((short)0, (short)1).Should().Be(2);
     }
 
+    // ----- More LastIndexOfAnyExcept type-specialized branches -----
+
+    [Fact]
+    public void LastIndexOfAnyExcept_SingleValue_Char_LongSpan_HitsUnrolledLoop()
+    {
+        char[] data = new string('a', 33).ToCharArray();
+        data[15] = 'X';
+        ReadOnlySpan<char> span = data;
+        span.LastIndexOfAnyExcept('a').Should().Be(15);
+    }
+
+    [Fact]
+    public void LastIndexOfAnyExcept_SingleValue_Char_AllMatch_ReturnsMinusOne()
+    {
+        ReadOnlySpan<char> span = "aaaa".AsSpan();
+        span.LastIndexOfAnyExcept('a').Should().Be(-1);
+    }
+
+    [Fact]
+    public void LastIndexOfAnyExcept_SingleValue_Short_FindsLastNonMatch()
+    {
+        ReadOnlySpan<short> span = [(short)0, (short)1, (short)0];
+        span.LastIndexOfAnyExcept((short)0).Should().Be(1);
+    }
+
+    [Fact]
+    public void LastIndexOfAnyExcept_SingleValue_UShort_FindsLastNonMatch()
+    {
+        ReadOnlySpan<ushort> span = [(ushort)0, (ushort)1, (ushort)0];
+        span.LastIndexOfAnyExcept((ushort)0).Should().Be(1);
+    }
+
+    [Fact]
+    public void LastIndexOfAnyExcept_SingleValue_Byte_LongSpan_HitsUnrolledLoop()
+    {
+        byte[] data = new byte[33];
+        for (int i = 0; i < data.Length; i++)
+        {
+            data[i] = (byte)1;
+        }
+
+        data[20] = 9;
+        ReadOnlySpan<byte> span = data;
+        span.LastIndexOfAnyExcept((byte)1).Should().Be(20);
+    }
+
+    [Fact]
+    public void LastIndexOfAnyExcept_SingleValue_Byte_AllMatch_ReturnsMinusOne()
+    {
+        byte[] data = [1, 1, 1, 1, 1];
+        ReadOnlySpan<byte> span = data;
+        span.LastIndexOfAnyExcept((byte)1).Should().Be(-1);
+    }
+
+    [Fact]
+    public void LastIndexOfAnyExcept_SingleValue_SByte_FindsLastNonMatch()
+    {
+        ReadOnlySpan<sbyte> span = [(sbyte)9, (sbyte)(-1), (sbyte)(-1)];
+        span.LastIndexOfAnyExcept((sbyte)(-1)).Should().Be(0);
+    }
+
+    [Fact]
+    public void LastIndexOfAnyExcept_SingleValue_String_NullValue_FindsLastNonNull()
+    {
+        ReadOnlySpan<string?> span = [null, "x", null];
+        span.LastIndexOfAnyExcept((string?)null).Should().Be(1);
+    }
+
+    [Fact]
+    public void LastIndexOfAnyExcept_SingleValue_String_AllMatch_ReturnsMinusOne()
+    {
+        ReadOnlySpan<string> span = ["a", "a", "a"];
+        span.LastIndexOfAnyExcept("a").Should().Be(-1);
+    }
+
+    [Fact]
+    public void LastIndexOfAnyExcept_TwoValues_SByte_FindsLastNonMatch()
+    {
+        ReadOnlySpan<sbyte> span = [(sbyte)(-1), (sbyte)9, (sbyte)(-1), (sbyte)2];
+        span.LastIndexOfAnyExcept((sbyte)(-1), (sbyte)2).Should().Be(1);
+    }
+
+    [Fact]
+    public void LastIndexOfAnyExcept_ThreeValues_SByte_FindsLastNonMatch()
+    {
+        ReadOnlySpan<sbyte> span = [(sbyte)1, (sbyte)2, (sbyte)3, (sbyte)9, (sbyte)1];
+        span.LastIndexOfAnyExcept((sbyte)1, (sbyte)2, (sbyte)3).Should().Be(3);
+    }
+
+    [Fact]
+    public void LastIndexOfAnyExcept_ThreeValues_UShort_FindsLastNonMatch()
+    {
+        ReadOnlySpan<ushort> span = [(ushort)0, (ushort)1, (ushort)2, (ushort)9];
+        span.LastIndexOfAnyExcept((ushort)0, (ushort)1, (ushort)2).Should().Be(3);
+    }
+
     [Fact]
     public void IndexOfAnyExcept_ValuesSpan_FourOrMoreValues_GenericPath()
     {

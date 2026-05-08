@@ -2185,4 +2185,392 @@ public class StringSegmentTests
         memory.IsEmpty.Should().BeTrue();
         memory.Length.Should().Be(0);
     }
+
+    // ---- Branch-coverage tests for the lower-coverage methods ----
+
+#pragma warning disable IDE0057 // Use range operator — the whole point of these tests is to exercise the Slice methods directly.
+
+    [Fact]
+    public void Slice_DirectMethodCall_ReturnsCorrectSegment()
+    {
+        StringSegment segment = new("Hello World");
+        StringSegment sliced = segment.Slice(6);
+        sliced.ToString().Should().Be("World");
+    }
+
+    [Fact]
+    public void Slice_DirectMethodCall_StartZero_ReturnsSameContent()
+    {
+        StringSegment segment = new("Hello");
+        StringSegment sliced = segment.Slice(0);
+        sliced.ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void Slice_DirectMethodCall_StartEqualsLength_ReturnsEmpty()
+    {
+        StringSegment segment = new("Hello");
+        StringSegment sliced = segment.Slice(5);
+        sliced.IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Slice_DirectMethodCall_StartOutOfRange_Throws()
+    {
+        StringSegment segment = new("Hello");
+        Action action = () => segment.Slice(6);
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void Slice_DirectMethodCall_NegativeStart_Throws()
+    {
+        StringSegment segment = new("Hello");
+        Action action = () => segment.Slice(-1);
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void Slice_DirectMethodCall_NullValue_ReturnsEmpty()
+    {
+        StringSegment segment = default;
+        StringSegment sliced = segment.Slice(0);
+        sliced.IsEmpty.Should().BeTrue();
+    }
+
+#pragma warning restore IDE0057
+
+    [Fact]
+    public void ToString_OutSegment_PopulatesSegment()
+    {
+        StringSegment original = new("Hello World", 6, 5);
+        string s = original.ToString(out StringSegment newSegment);
+        s.Should().Be("World");
+        newSegment.ToString().Should().Be("World");
+        // Resulting segment should reference the new string and start at 0.
+        newSegment.AsSpan().ToString().Should().Be("World");
+    }
+
+    [Fact]
+    public void WriteTo_NullWriter_Throws()
+    {
+        StringSegment segment = new("Hello");
+        Action action = () => segment.WriteTo(null!);
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void WriteTo_EmptySegment_WritesNothing()
+    {
+        System.IO.StringWriter writer = new();
+        StringSegment segment = default;
+        segment.WriteTo(writer);
+        writer.ToString().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void WriteTo_FullStringSegment_WritesString()
+    {
+        System.IO.StringWriter writer = new();
+        StringSegment segment = new("Hello");
+        segment.WriteTo(writer);
+        writer.ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void WriteTo_PartialSegment_WritesSpan()
+    {
+        System.IO.StringWriter writer = new();
+        StringSegment segment = new("Hello World", 6, 5);
+        segment.WriteTo(writer);
+        writer.ToString().Should().Be("World");
+    }
+
+    [Fact]
+    public void Equals_ReadOnlySpan_DifferentLength_ReturnsFalse()
+    {
+        StringSegment segment = new("Hello");
+        segment.Equals("Hi".AsSpan()).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Equals_ReadOnlySpan_SameContent_ReturnsTrue()
+    {
+        StringSegment segment = new("Hello");
+        segment.Equals("Hello".AsSpan()).Should().BeTrue();
+    }
+
+    [Fact]
+    public void AsSpan_StartLength_ZeroLength_ReturnsEmpty()
+    {
+        StringSegment segment = new("Hello");
+        ReadOnlySpan<char> span = segment.AsSpan(2, 0);
+        span.IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void AsSpan_StartLength_FullSegment_Works()
+    {
+        StringSegment segment = new("Hello");
+        segment.AsSpan(0, 5).ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void AsSpan_Start_FromMiddle_Works()
+    {
+        StringSegment segment = new("Hello");
+        segment.AsSpan(2).ToString().Should().Be("llo");
+    }
+
+    [Fact]
+    public void AsSpan_Start_End_ReturnsEmpty()
+    {
+        StringSegment segment = new("Hello");
+        segment.AsSpan(5).IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IndexOfAny_TwoChars_FirstMatch()
+    {
+        StringSegment segment = new("Hello");
+        segment.IndexOfAny('e', 'o').Should().Be(1);
+    }
+
+    [Fact]
+    public void IndexOfAny_TwoChars_NoMatch_ReturnsMinusOne()
+    {
+        StringSegment segment = new("Hello");
+        segment.IndexOfAny('x', 'y').Should().Be(-1);
+    }
+
+    [Fact]
+    public void TrimStart_NoLeadingWhitespace_ReturnsSelf()
+    {
+        StringSegment segment = new("Hello");
+        segment.TrimStart().ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void TrimStart_OnlyWhitespace_ReturnsEmpty()
+    {
+        StringSegment segment = new("   ");
+        segment.TrimStart().IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void TrimStart_Char_Match_TrimsLeading()
+    {
+        StringSegment segment = new("xxxHello");
+        segment.TrimStart('x').ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void TrimStart_Char_NoMatch_ReturnsSelf()
+    {
+        StringSegment segment = new("Hello");
+        segment.TrimStart('x').ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void TrimEnd_Char_Match_TrimsTrailing()
+    {
+        StringSegment segment = new("Helloxxx");
+        segment.TrimEnd('x').ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void TrimEnd_Char_NoMatch_ReturnsSelf()
+    {
+        StringSegment segment = new("Hello");
+        segment.TrimEnd('x').ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void Trim_Char_BothEnds_Trims()
+    {
+        StringSegment segment = new("xxxHelloxxx");
+        segment.Trim('x').ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void Trim_TwoChars_BothEnds_Trims()
+    {
+        StringSegment segment = new("xy Helloxx");
+        segment.Trim('x', 'y').ToString().Should().Be(" Hello");
+    }
+
+    [Fact]
+    public void TrimStart_TwoChars_TrimsLeading()
+    {
+        StringSegment segment = new("xyxHello");
+        segment.TrimStart('x', 'y').ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void TrimEnd_TwoChars_TrimsTrailing()
+    {
+        StringSegment segment = new("Helloxyx");
+        segment.TrimEnd('x', 'y').ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void StartsWith_Span_OrdinalIgnoreCase_True()
+    {
+        StringSegment segment = new("Hello");
+        segment.StartsWith("HE".AsSpan(), StringComparison.OrdinalIgnoreCase).Should().BeTrue();
+    }
+
+    [Fact]
+    public void StartsWith_Span_Ordinal_DifferentCase_False()
+    {
+        StringSegment segment = new("Hello");
+        segment.StartsWith("HE".AsSpan(), StringComparison.Ordinal).Should().BeFalse();
+    }
+
+    [Fact]
+    public void EndsWith_Span_OrdinalIgnoreCase_True()
+    {
+        StringSegment segment = new("Hello");
+        segment.EndsWith("LO".AsSpan(), StringComparison.OrdinalIgnoreCase).Should().BeTrue();
+    }
+
+    [Fact]
+    public void EndsWith_Span_Ordinal_DifferentCase_False()
+    {
+        StringSegment segment = new("Hello");
+        segment.EndsWith("LO".AsSpan(), StringComparison.Ordinal).Should().BeFalse();
+    }
+
+    [Fact]
+    public void StartsWith_StringSegment_DifferentCase_OrdinalIgnoreCase_True()
+    {
+        StringSegment segment = new("Hello World");
+        segment.StartsWith(new StringSegment("HELLO"), StringComparison.OrdinalIgnoreCase).Should().BeTrue();
+    }
+
+    [Fact]
+    public void EndsWith_StringSegment_OrdinalIgnoreCase_True()
+    {
+        StringSegment segment = new("Hello World");
+        segment.EndsWith(new StringSegment("WORLD"), StringComparison.OrdinalIgnoreCase).Should().BeTrue();
+    }
+
+    [Fact]
+    public void Constructor_StartIndexLength_ZeroLength_OnEmptyString_Succeeds()
+    {
+        StringSegment segment = new(string.Empty, 0, 0);
+        segment.IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Constructor_StartIndexLength_LengthExceedsBounds_Throws()
+    {
+        Action act = () => new StringSegment("Hello", 2, 10);
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void CompareTo_StringSegment_Ordinal_LessThan()
+    {
+        StringSegment a = new("apple");
+        StringSegment b = new("banana");
+        a.CompareTo(b, StringComparison.Ordinal).Should().BeLessThan(0);
+    }
+
+    [Fact]
+    public void CompareTo_StringSegment_OrdinalIgnoreCase_Equal()
+    {
+        StringSegment a = new("Apple");
+        StringSegment b = new("APPLE");
+        a.CompareTo(b, StringComparison.OrdinalIgnoreCase).Should().Be(0);
+    }
+
+    [Fact]
+    public void CompareTo_StringSegment_InvalidComparison_Throws()
+    {
+        StringSegment a = new("a");
+        StringSegment b = new("b");
+        Action act = () => a.CompareTo(b, (StringComparison)42);
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void AsSpan_Start_OutOfRange_Throws()
+    {
+        StringSegment segment = new("Hello");
+        Action act = () => _ = segment.AsSpan(6);
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void AsSpan_StartLength_OutOfRange_Throws()
+    {
+        StringSegment segment = new("Hello");
+        Action act = () => _ = segment.AsSpan(0, 6);
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void AsSpan_StartLength_NegativeStart_Throws()
+    {
+        StringSegment segment = new("Hello");
+        Action act = () => _ = segment.AsSpan(-1, 1);
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void IndexOfAny_TwoChars_NotFound_ReturnsMinusOne()
+    {
+        StringSegment segment = new("aaaa");
+        segment.IndexOfAny('x', 'y').Should().Be(-1);
+    }
+
+    [Fact]
+    public void EndsWith_Span_LongerThanSegment_False()
+    {
+        StringSegment segment = new("ab");
+        segment.EndsWith("hello".AsSpan(), StringComparison.Ordinal).Should().BeFalse();
+    }
+
+    [Fact]
+    public void StartsWith_Span_LongerThanSegment_False()
+    {
+        StringSegment segment = new("ab");
+        segment.StartsWith("hello".AsSpan(), StringComparison.Ordinal).Should().BeFalse();
+    }
+
+    [Fact]
+    public void TrimStart_Default_OnlyWhitespace()
+    {
+        StringSegment segment = new("  \t\n  ");
+        segment.TrimStart().IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void TrimEnd_Default_OnlyWhitespace()
+    {
+        StringSegment segment = new("  \t\n  ");
+        segment.TrimEnd().IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void TrimEnd_Default_NoTrailingWhitespace_ReturnsSelf()
+    {
+        StringSegment segment = new("Hello");
+        segment.TrimEnd().ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void Constructor_NegativeStartIndex_Throws()
+    {
+        Action act = () => _ = new StringSegment("Hello", -1, 2);
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void Constructor_NegativeLength_Throws()
+    {
+        Action act = () => _ = new StringSegment("Hello", 0, -1);
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
 }

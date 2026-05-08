@@ -823,4 +823,56 @@ public class MSBuildSpecificationTests
         string stringFromSpec = (string)new MSBuildSpecification("file.txt");
         stringFromSpec.Should().Be("file.txt");
     }
+
+    // ---- Equals branch coverage ----
+
+    [Fact]
+    public void Equals_Object_MSBuildSpecification_True()
+    {
+        object spec = new MSBuildSpecification("file.txt");
+        new MSBuildSpecification("FILE.txt").Equals(spec).Should().BeTrue();
+    }
+
+    [Fact]
+    public void Equals_Object_String_True()
+    {
+        object str = "FILE.txt";
+        new MSBuildSpecification("file.txt").Equals(str).Should().BeTrue();
+    }
+
+    [Fact]
+    public void Equals_Object_Null_False()
+    {
+        new MSBuildSpecification("file.txt").Equals((object?)null).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Equals_Object_OtherType_False()
+    {
+        new MSBuildSpecification("file.txt").Equals(42).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Equals_String_NullString_False()
+    {
+        new MSBuildSpecification("file.txt").Equals((string?)null).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Equals_String_DifferentCase_True()
+    {
+        new MSBuildSpecification("file.txt").Equals("FILE.TXT").Should().BeTrue();
+    }
+
+    [Fact]
+    public void Equals_MSBuildSpecification_Null_False()
+    {
+        new MSBuildSpecification("file.txt").Equals((MSBuildSpecification?)null).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Equals_MSBuildSpecification_DifferentCase_True()
+    {
+        new MSBuildSpecification("file.txt").Equals(new MSBuildSpecification("FILE.TXT")).Should().BeTrue();
+    }
 }

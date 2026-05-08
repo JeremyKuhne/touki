@@ -47,6 +47,34 @@ public class MathExtensionsTests
         Math.Clamp(0.5m, 0m, 1m).Should().Be(0.5m);
     }
 
+    [Fact]
+    public void Clamp_AllTypes_BelowMin_ReturnsMin()
+    {
+        Math.Clamp((byte)0, (byte)5, (byte)10).Should().Be((byte)5);
+        Math.Clamp((sbyte)-20, (sbyte)-10, (sbyte)0).Should().Be((sbyte)-10);
+        Math.Clamp((short)-20, (short)0, (short)10).Should().Be((short)0);
+        Math.Clamp((ushort)0, (ushort)5, (ushort)10).Should().Be((ushort)5);
+        Math.Clamp(0u, 5u, 10u).Should().Be(5u);
+        Math.Clamp(-20L, 0L, 10L).Should().Be(0L);
+        Math.Clamp(0UL, 5UL, 10UL).Should().Be(5UL);
+        Math.Clamp(-1f, 0f, 1f).Should().Be(0f);
+        Math.Clamp(-1m, 0m, 1m).Should().Be(0m);
+    }
+
+    [Fact]
+    public void Clamp_AllTypes_AboveMax_ReturnsMax()
+    {
+        Math.Clamp((byte)20, (byte)0, (byte)10).Should().Be((byte)10);
+        Math.Clamp((sbyte)20, (sbyte)-10, (sbyte)0).Should().Be((sbyte)0);
+        Math.Clamp((short)20, (short)0, (short)10).Should().Be((short)10);
+        Math.Clamp((ushort)20, (ushort)0, (ushort)10).Should().Be((ushort)10);
+        Math.Clamp(20u, 0u, 10u).Should().Be(10u);
+        Math.Clamp(20L, 0L, 10L).Should().Be(10L);
+        Math.Clamp(20UL, 0UL, 10UL).Should().Be(10UL);
+        Math.Clamp(2f, 0f, 1f).Should().Be(1f);
+        Math.Clamp(2m, 0m, 1m).Should().Be(1m);
+    }
+
     // Mirror of BCL Clamp_MinGreaterThanMax_ThrowsArgumentException across all overloads.
     [Fact]
     public void Clamp_MinGreaterThanMax_AllTypes_Throw()
