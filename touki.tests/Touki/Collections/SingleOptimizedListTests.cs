@@ -577,4 +577,82 @@ public class SingleOptimizedListTests
         values.Length.Should().Be(1);
         values[0].Should().Be(42);
     }
+
+    [Fact]
+    public void CopyTo_NonGenericArray_EmptyList_DoesNothing()
+    {
+        using SingleOptimizedList<int, ArrayPoolList<int>> list = [];
+        Array array = new int[3];
+        list.CopyTo(array, 0);
+        ((int[])array).Should().Equal(0, 0, 0);
+    }
+
+    [Fact]
+    public void CopyTo_NonGenericArray_SingleItem_CopiesCorrectly()
+    {
+        using SingleOptimizedList<int, ArrayPoolList<int>> list = [42];
+        Array array = new int[3];
+        list.CopyTo(array, 1);
+        ((int[])array).Should().Equal(0, 42, 0);
+    }
+
+    [Fact]
+    public void CopyTo_NonGenericArray_MultipleItems_CopiesCorrectly()
+    {
+        using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
+        Array array = new int[5];
+        list.CopyTo(array, 1);
+        ((int[])array).Should().Equal(0, 1, 2, 3, 0);
+    }
+
+    [Fact]
+    public void CopyTo_NonGenericArray_NullArray_Throws()
+    {
+        using SingleOptimizedList<int, ArrayPoolList<int>> list = [1];
+        Action act = () => list.CopyTo((Array)null!, 0);
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void CopyTo_NonGenericArray_NegativeIndex_Throws()
+    {
+        using SingleOptimizedList<int, ArrayPoolList<int>> list = [1];
+        Array array = new int[3];
+        Action act = () => list.CopyTo(array, -1);
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void CopyTo_NonGenericArray_TooSmall_Throws()
+    {
+        using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
+        Array array = new int[2];
+        Action act = () => list.CopyTo(array, 0);
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void CopyTo_GenericArray_TooSmall_Throws()
+    {
+        using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
+        int[] array = new int[2];
+        Action act = () => list.CopyTo(array, 0);
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Clear_MultipleItems_ClearsBackingList()
+    {
+        using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
+        list.Clear();
+        list.Count.Should().Be(0);
+    }
+
+    [Fact]
+    public void Clear_EmptyList_NoOp()
+    {
+        using SingleOptimizedList<int, ArrayPoolList<int>> list = [];
+        list.Clear();
+        list.Count.Should().Be(0);
+    }
 }

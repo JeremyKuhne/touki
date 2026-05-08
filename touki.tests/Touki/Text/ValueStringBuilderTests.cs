@@ -2217,4 +2217,227 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().StartWith("Large: AAAAA");
         builder.ToString().Should().EndWith("AAAAA");
     }
+
+    // ---- Branch-coverage tests ----
+
+    [Fact]
+    public void Insert_CharCount_TriggersGrow()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[8]);
+        builder.Append("abc");
+        // Insert 20 X's at position 1, forcing a grow.
+        builder.Insert(1, 'X', 20);
+        builder.Length.Should().Be(23);
+        builder.ToString().Should().StartWith("aXXXXXXXXXX");
+        builder.ToString().Should().EndWith("XXXXbc");
+    }
+
+    [Fact]
+    public void Insert_NegativeIndex_Throws()
+    {
+        ValueStringBuilder builder = new(stackalloc char[8]);
+        bool threw = false;
+        try
+        {
+            try
+            {
+                builder.Insert(-1, 'X', 1);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                threw = true;
+            }
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+
+        threw.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Insert_IndexBeyondLength_Throws()
+    {
+        ValueStringBuilder builder = new(stackalloc char[8]);
+        builder.Append("ab");
+        bool threw = false;
+        try
+        {
+            try
+            {
+                builder.Insert(5, 'X', 1);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                threw = true;
+            }
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+
+        threw.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Insert_NegativeCount_Throws()
+    {
+        ValueStringBuilder builder = new(stackalloc char[8]);
+        bool threw = false;
+        try
+        {
+            try
+            {
+                builder.Insert(0, 'X', -1);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                threw = true;
+            }
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+
+        threw.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Insert_String_TriggersGrow()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[8]);
+        builder.Append("ab");
+        builder.Insert(1, "abcdefghij");
+        builder.Length.Should().Be(12);
+        builder.ToString().Should().Be("aabcdefghijb");
+    }
+
+    [Fact]
+    public void Replace_OldEqualsNew_NoOp()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[16]);
+        builder.Append("Hello");
+        builder.Replace('l', 'l');
+        builder.ToString().Should().Be("Hello");
+    }
+
+    [Fact]
+    public void Replace_EmptyBuilder_NoOp()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[8]);
+        builder.Replace('a', 'b');
+        builder.Length.Should().Be(0);
+    }
+
+    [Fact]
+    public void Replace_ReplacesAllOccurrences()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[16]);
+        builder.Append("Hello");
+        builder.Replace('l', 'X');
+        builder.ToString().Should().Be("HeXXo");
+    }
+
+    [Fact]
+    public void Append_Char_Count_TriggersGrow()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[4]);
+        builder.Append("ab");
+        builder.Append('X', 20);
+        builder.Length.Should().Be(22);
+        builder.ToString().Should().StartWith("abXXXXX");
+    }
+
+    [Fact]
+    public unsafe void Append_CharPointer_TriggersGrow()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[4]);
+        builder.Append("ab");
+        char[] chars = "0123456789ABCDEF".ToCharArray();
+        fixed (char* p = chars)
+        {
+            builder.Append(p, chars.Length);
+        }
+
+        builder.ToString().Should().Be("ab0123456789ABCDEF");
+    }
+
+    [Fact]
+    public void EnsureCapacity_NegativeCapacity_Throws()
+    {
+        ValueStringBuilder builder = new(stackalloc char[8]);
+        bool threw = false;
+        try
+        {
+            try
+            {
+                builder.EnsureCapacity(-1);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                threw = true;
+            }
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+
+        threw.Should().BeTrue();
+    }
+
+    [Fact]
+    public void EnsureCapacity_AlreadySufficient_NoGrow()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[16]);
+        int originalCapacity = builder.Capacity;
+        builder.EnsureCapacity(8);
+        builder.Capacity.Should().Be(originalCapacity);
+    }
+
+    [Fact]
+    public void CopyTo_Stream_EmptyBuilder_NoOp()
+    {
+        using MemoryStream stream = new();
+        using ValueStringBuilder builder = new(stackalloc char[8]);
+        builder.CopyTo(stream);
+        stream.Length.Should().Be(0);
+    }
+
+    [Fact]
+    public void CopyTo_TextWriter_EmptyBuilder_NoOp()
+    {
+        System.IO.StringWriter writer = new();
+        using ValueStringBuilder builder = new(stackalloc char[8]);
+        builder.CopyTo(writer);
+        writer.ToString().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void CopyTo_TextWriter_NullWriter_Throws()
+    {
+        ValueStringBuilder builder = new(stackalloc char[8]);
+        builder.Append("x");
+        bool threw = false;
+        try
+        {
+            try
+            {
+                builder.CopyTo((System.IO.TextWriter)null!);
+            }
+            catch (ArgumentNullException)
+            {
+                threw = true;
+            }
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+
+        threw.Should().BeTrue();
+    }
 }

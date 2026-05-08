@@ -58,4 +58,21 @@ public class StoringObject
     {
         string? ToString();
     }
+
+    [Fact]
+    public void Box_StoresObject()
+    {
+        A a = new();
+        Value value = Value.Box(a);
+        value.As<A>().Should().BeSameAs(a);
+    }
+
+    [Fact]
+    public void Box_NullObject_HasNoStoredValue()
+    {
+        // Per Value docs, a Type of null means "no value is stored".
+        Value value = Value.Box(null);
+        value.Type.Should().BeNull();
+        Assert.Throws<InvalidCastException>(() => value.As<object>());
+    }
 }

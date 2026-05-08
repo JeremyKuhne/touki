@@ -111,6 +111,32 @@ public class StringExtensionsPolyfillTests
         a.Should().NotBe(b);
     }
 
+    [Theory]
+    [InlineData(StringComparison.CurrentCulture)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase)]
+    [InlineData(StringComparison.InvariantCulture)]
+    [InlineData(StringComparison.InvariantCultureIgnoreCase)]
+    [InlineData(StringComparison.Ordinal)]
+    [InlineData(StringComparison.OrdinalIgnoreCase)]
+    public void GetHashCode_StringComparison_AllSupportedComparisons_Returns(StringComparison comparison)
+    {
+        // Just exercises every branch of ComparerForComparison.
+        "Hello".GetHashCode(comparison).Should().Be("Hello".GetHashCode(comparison));
+    }
+
+    [Theory]
+    [InlineData(StringComparison.CurrentCulture)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase)]
+    [InlineData(StringComparison.InvariantCulture)]
+    [InlineData(StringComparison.InvariantCultureIgnoreCase)]
+    [InlineData(StringComparison.Ordinal)]
+    [InlineData(StringComparison.OrdinalIgnoreCase)]
+    public void Contains_Char_AllSupportedComparisons_FindsMatch(StringComparison comparison)
+    {
+        // Exercises every branch of ComparisonToCompareInfo.
+        "Hello".Contains('e', comparison).Should().BeTrue();
+    }
+
     // ---- Replace(string, string?, StringComparison) ----
 
     [Fact]

@@ -319,4 +319,83 @@ public class MemoryExtensionsTryWriteTests
         public NonFormattable(string data) => _data = data;
         public override string ToString() => $"N:{_data}";
     }
+
+    [Fact]
+    public void TryWrite_AppendLiteralAfterFormatted_DestinationTooSmall_Fails()
+    {
+        Span<char> dest = stackalloc char[6];
+        bool ok = dest.TryWrite($"abcde{1}xyz", out int written);
+        ok.Should().BeFalse();
+        written.Should().Be(0);
+    }
+
+    [Fact]
+    public void TryWrite_AppendFormattedSpan_DestinationTooSmall_Fails()
+    {
+        Span<char> dest = stackalloc char[5];
+        ReadOnlySpan<char> tail = "longer".AsSpan();
+        bool ok = dest.TryWrite($"abc{tail}", out int written);
+        ok.Should().BeFalse();
+        written.Should().Be(0);
+    }
+
+    [Fact]
+    public void TryWrite_AppendFormattedSpan_AlignmentBufferTooSmall_Fails()
+    {
+        Span<char> dest = stackalloc char[6];
+        ReadOnlySpan<char> v = "ab".AsSpan();
+        bool ok = dest.TryWrite($"{v,10}", out int written);
+        ok.Should().BeFalse();
+        written.Should().Be(0);
+    }
+
+    [Fact]
+    public void TryWrite_AppendFormattedT_WithAlignment_PrimaryAppendFails()
+    {
+        Span<char> dest = stackalloc char[3];
+        bool ok = dest.TryWrite($"{12345,5}", out int written);
+        ok.Should().BeFalse();
+        written.Should().Be(0);
+    }
+
+    [Fact]
+    public void TryWrite_CustomFormatter_NullValue_AppendsEmpty()
+    {
+        Span<char> dest = stackalloc char[16];
+        ReverseCustomFormatProvider provider = new();
+        string? value = null;
+        bool ok = dest.TryWrite(provider, $"[{value}]", out int written);
+        ok.Should().BeTrue();
+        dest[..written].ToString().Should().Be("[]");
+    }
+
+    [Fact]
+    public void TryWrite_AppendFormatted_NullObject_NoAlignment_AppendsEmpty()
+    {
+        Span<char> dest = stackalloc char[16];
+        object? value = null;
+        bool ok = dest.TryWrite($"[{value}]", out int written);
+        ok.Should().BeTrue();
+        dest[..written].ToString().Should().Be("[]");
+    }
+
+    [Fact]
+    public void TryWrite_LeftAlignment_LongPadding()
+    {
+        Span<char> dest = stackalloc char[32];
+        bool ok = dest.TryWrite($"|{42,-10}|", out int written);
+        ok.Should().BeTrue();
+        dest[..written].ToString().Should().Be("|42        |");
+    }
+
+    [Fact]
+    public void TryWrite_RightAlignment_PaddingExactlyZero()
+    {
+        // alignment == value length: padding is 0, falls through to the no-padding branch.
+        Span<char> dest = stackalloc char[16];
+        ReadOnlySpan<char> v = "abc".AsSpan();
+        bool ok = dest.TryWrite($">{v,3}<", out int written);
+        ok.Should().BeTrue();
+        dest[..written].ToString().Should().Be(">abc<");
+    }
 }
