@@ -24,12 +24,23 @@ Some of the design goals include:
 - `SpanReader` and `SpanWriter` for efficient reading and writing of data in spans
 - `BufferScope<T>` for easy management of temporary `ArrayPool` and stack based buffers
 - `Value` struct for creating strongly typed arbitrary collections of values without boxing most primitives
+- Pooled and single-item-optimized list types (`ArrayPoolList<T>`,
+  `SingleOptimizedList<TItem, TList>`) and ref-counted resource caches
+- `MSBuildEnumerator` for MSBuild-style glob enumeration with no
+  allocations until a match is produced
+- Polyfills for many modern .NET BCL APIs on .NET Framework 4.7.2 (see the
+  [polyfill layout doc](docs/polyfill-layout.md) for the full list)
+- A `DisposableBase` with double-disposal protection and disposal
+  tracking helpers for diagnosing leaks
 - Much more!
 
 ## Overviews
 
 - [Configuring Your Project for Touki](sample/README.md)
 - [Reducing String Allocations with Touki](docs/strings.md)
+- [Low-Allocation Collections](docs/collections.md)
+- [Buffers, Span Readers, and Span Writers](docs/buffers.md)
+- [IO Helpers (globs, paths, temp folders, stream formatting)](docs/io.md)
 - [.NET Framework Polyfill Layout & Disambiguation](docs/polyfill-layout.md)
 
 ## Package Installation
