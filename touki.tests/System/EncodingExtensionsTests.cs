@@ -70,4 +70,17 @@ public class EncodingExtensionsTests
     {
         Encoding.UTF8.GetString([]).Should().BeEmpty();
     }
+
+    [Fact]
+    public void GetCharCount_EmptyBytes_ReturnsZero()
+    {
+        Encoding.UTF8.GetCharCount([]).Should().Be(0);
+    }
+
+    [Fact]
+    public void GetChars_EmptyBytes_ReturnsZero()
+    {
+        Span<char> dst = stackalloc char[4];
+        Encoding.UTF8.GetChars([], dst).Should().Be(0);
+    }
 }

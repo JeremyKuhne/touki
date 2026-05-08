@@ -118,4 +118,26 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().Be("Hello");
     }
 #endif
+
+    [Fact]
+    public void Write_StringSegmentOverload_WritesSegmentContent()
+    {
+        System.IO.StringWriter writer = new();
+        StringSegment segment = new("Hello World", 6, 5);
+
+        TextWriterExtensions.Write(writer, segment);
+
+        writer.ToString().Should().Be("World");
+    }
+
+    [Fact]
+    public void WriteLine_StringSegmentOverload_WritesSegmentContentAndNewLine()
+    {
+        System.IO.StringWriter writer = new();
+        StringSegment segment = new("Hello World", 0, 5);
+
+        TextWriterExtensions.WriteLine(writer, segment);
+
+        writer.ToString().Should().Be($"Hello{Environment.NewLine}");
+    }
 }

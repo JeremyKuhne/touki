@@ -214,4 +214,46 @@ public class SpanExtensionsSortTests
         keys.ToArray().Should().Equal(1, 2, 3);
         items.ToArray().Should().Equal(10, 20, 30);
     }
+
+    // -----------------------------------------------------------------------
+    //  Larger / worst-case shape coverage. Reverse-sorted is a known pattern
+    //  that exercises deeper IntroSort recursion and partition paths.
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void Sort_LargeReverseSorted_ProducesSortedResult()
+    {
+        int[] data = new int[2048];
+        for (int i = 0; i < data.Length; i++)
+        {
+            data[i] = data.Length - i;
+        }
+
+        Span<int> span = data;
+        span.Sort();
+
+        for (int i = 1; i < data.Length; i++)
+        {
+            data[i].Should().BeGreaterThanOrEqualTo(data[i - 1]);
+        }
+    }
+
+    [Fact]
+    public void Sort_KeysItems_LargeReverseSorted_ProducesSortedResult()
+    {
+        int[] keys = new int[2048];
+        int[] values = new int[2048];
+        for (int i = 0; i < keys.Length; i++)
+        {
+            keys[i] = keys.Length - i;
+            values[i] = i;
+        }
+
+        ((Span<int>)keys).Sort((Span<int>)values);
+
+        for (int i = 1; i < keys.Length; i++)
+        {
+            keys[i].Should().BeGreaterThanOrEqualTo(keys[i - 1]);
+        }
+    }
 }
