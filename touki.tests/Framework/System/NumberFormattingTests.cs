@@ -552,4 +552,60 @@ public unsafe class NumberFormattingTests
         number.IsNegative = negative;
         number.HasNonZeroTail = false;
     }
+
+    // ---- TryFormatUInt32 / TryFormatUInt64 standard formats ----
+
+    [Theory]
+    [InlineData(1234U, "N0", "1,234")]
+    [InlineData(0U, "N", "0.00")]
+    [InlineData(uint.MaxValue, "N0", "4,294,967,295")]
+    [InlineData(1234U, "F2", "1234.00")]
+    [InlineData(1234U, "C", "\u00A41,234.00")]
+    [InlineData(255U, "X8", "000000FF")]
+    [InlineData(255U, "x4", "00ff")]
+    [InlineData(1234U, "G", "1234")]
+    [InlineData(1234U, "D6", "001234")]
+    public void TryFormatUInt32_StandardFormats(uint value, string format, string expected)
+    {
+        Span<char> destination = stackalloc char[32];
+        Number.TryFormatUInt32(value, format.AsSpan(), s_invariant, destination, out int written).Should().BeTrue();
+        destination[..written].ToString().Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(1234UL, "N0", "1,234")]
+    [InlineData(0UL, "N", "0.00")]
+    [InlineData(ulong.MaxValue, "N0", "18,446,744,073,709,551,615")]
+    [InlineData(1234UL, "F2", "1234.00")]
+    [InlineData(1234UL, "C", "\u00A41,234.00")]
+    [InlineData(255UL, "X8", "000000FF")]
+    [InlineData(255UL, "x4", "00ff")]
+    [InlineData(1234UL, "G", "1234")]
+    [InlineData(1234UL, "D6", "001234")]
+    public void TryFormatUInt64_StandardFormats(ulong value, string format, string expected)
+    {
+        Span<char> destination = stackalloc char[32];
+        Number.TryFormatUInt64(value, format.AsSpan(), s_invariant, destination, out int written).Should().BeTrue();
+        destination[..written].ToString().Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(1234U, "##,#", "1,234")]
+    [InlineData(1234U, "0.00", "1234.00")]
+    public void TryFormatUInt32_CustomFormat(uint value, string format, string expected)
+    {
+        Span<char> destination = stackalloc char[32];
+        Number.TryFormatUInt32(value, format.AsSpan(), s_invariant, destination, out int written).Should().BeTrue();
+        destination[..written].ToString().Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(1234UL, "##,#", "1,234")]
+    [InlineData(1234UL, "0.00", "1234.00")]
+    public void TryFormatUInt64_CustomFormat(ulong value, string format, string expected)
+    {
+        Span<char> destination = stackalloc char[32];
+        Number.TryFormatUInt64(value, format.AsSpan(), s_invariant, destination, out int written).Should().BeTrue();
+        destination[..written].ToString().Should().Be(expected);
+    }
 }

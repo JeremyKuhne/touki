@@ -400,4 +400,63 @@ public class StringExtensionsPolyfillTests
         ok.Should().BeTrue();
         dest.ToString().Should().Be("abc");
     }
+
+    // ---- CopyTo (throws on too-short destination) ----
+
+    [Fact]
+    public void CopyTo_DestinationLargeEnough_Copies()
+    {
+        Span<char> dest = new char[5];
+        "abc".CopyTo(dest);
+        dest[..3].ToString().Should().Be("abc");
+    }
+
+    [Fact]
+    public void CopyTo_ExactFit_Copies()
+    {
+        Span<char> dest = new char[3];
+        "abc".CopyTo(dest);
+        dest.ToString().Should().Be("abc");
+    }
+
+    [Fact]
+    public void CopyTo_DestinationTooShort_Throws()
+    {
+        Action act = static () =>
+        {
+            Span<char> dest = new char[2];
+            "abc".CopyTo(dest);
+        };
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void CopyTo_EmptySource_Succeeds()
+    {
+        Span<char> dest = [];
+        "".CopyTo(dest);
+    }
+
+    // ---- Split(string, string, int, StringSplitOptions) extra branches ----
+
+    [Fact]
+    public void Split_String_String_LimitOne_ReturnsWhole()
+    {
+        string[] parts = "a,b,c,d".Split(",", count: 1, StringSplitOptions.None);
+        parts.Should().Equal("a,b,c,d");
+    }
+
+    [Fact]
+    public void Split_String_String_LimitTwo_ReturnsHeadAndTail()
+    {
+        string[] parts = "a,b,c,d".Split(",", count: 2, StringSplitOptions.None);
+        parts.Should().Equal("a", "b,c,d");
+    }
+
+    [Fact]
+    public void Split_String_String_RemoveEmpty_DropsEmptyParts()
+    {
+        string[] parts = "a,,b,".Split(",", count: int.MaxValue, StringSplitOptions.RemoveEmptyEntries);
+        parts.Should().Equal("a", "b");
+    }
 }

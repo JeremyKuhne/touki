@@ -455,4 +455,77 @@ public class EnumExtensionsTests
         action.Should().Throw<ArgumentException>()
             .Which.Message.Should().Contain("Yellow");
     }
+
+    // ---- Non-generic TryParse(Type, ReadOnlySpan<char>, out object?) ----
+
+    [Fact]
+    public void TryParse_NonGeneric_ValidName_ReturnsTrue()
+    {
+        Enum.TryParse(typeof(FileAccess), "Read".AsSpan(), out object? result).Should().BeTrue();
+        result.Should().Be(FileAccess.Read);
+    }
+
+    [Fact]
+    public void TryParse_NonGeneric_InvalidName_ReturnsFalse()
+    {
+        Enum.TryParse(typeof(FileAccess), "Bogus".AsSpan(), out object? result).Should().BeFalse();
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryParse_NonGeneric_OverflowValue_ReturnsFalse()
+    {
+        // Numeric value far outside the underlying type range.
+        Enum.TryParse(typeof(FileAccess), "99999999999999999999".AsSpan(), out object? result).Should().BeFalse();
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryParse_NonGeneric_NullType_Throws()
+    {
+        Action action = () => Enum.TryParse(null!, "Read".AsSpan(), out _);
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void TryParse_NonGeneric_NotAnEnum_Throws()
+    {
+        Action action = () => Enum.TryParse(typeof(int), "1".AsSpan(), out _);
+        action.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void TryParse_NonGeneric_IgnoreCase_True_MatchesCaseInsensitive()
+    {
+        Enum.TryParse(typeof(FileAccess), "read".AsSpan(), ignoreCase: true, out object? result).Should().BeTrue();
+        result.Should().Be(FileAccess.Read);
+    }
+
+    [Fact]
+    public void TryParse_NonGeneric_IgnoreCase_False_RejectsWrongCase()
+    {
+        Enum.TryParse(typeof(FileAccess), "read".AsSpan(), ignoreCase: false, out object? result).Should().BeFalse();
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryParse_NonGeneric_IgnoreCase_OverflowValue_ReturnsFalse()
+    {
+        Enum.TryParse(typeof(FileAccess), "99999999999999999999".AsSpan(), ignoreCase: true, out object? result).Should().BeFalse();
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void TryParse_NonGeneric_IgnoreCase_NullType_Throws()
+    {
+        Action action = () => Enum.TryParse(null!, "Read".AsSpan(), ignoreCase: true, out _);
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void TryParse_NonGeneric_IgnoreCase_NotAnEnum_Throws()
+    {
+        Action action = () => Enum.TryParse(typeof(int), "1".AsSpan(), ignoreCase: true, out _);
+        action.Should().Throw<ArgumentException>();
+    }
 }
