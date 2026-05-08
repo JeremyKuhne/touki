@@ -250,10 +250,13 @@ public class MemoryExtensionsTryWriteTests
     }
 
     [Fact]
-    public void TryWrite_SpanFormattable_DestinationTooSmall_MidExpression_Fails()
+    public void TryWrite_SpanFormattable_DestinationTooSmall_AfterPriorOutput_Fails()
     {
-        Span<char> dest = stackalloc char[3];
-        bool ok = dest.TryWrite($"{12345}", out int written);
+        // Buffer fits the literal prefix "abc" (advances _pos to 3) but
+        // not the formatted int. Exercises the ISpanFormattable Fail() branch
+        // after some output has already been written.
+        Span<char> dest = stackalloc char[4];
+        bool ok = dest.TryWrite($"abc{12345}", out int written);
         ok.Should().BeFalse();
         written.Should().Be(0);
     }
@@ -282,7 +285,7 @@ public class MemoryExtensionsTryWriteTests
     public void TryWrite_NullObject_AppendsEmpty()
     {
         Span<char> dest = stackalloc char[32];
-        NonFormattable? value = null!;
+        NonFormattable? value = null;
         bool ok = dest.TryWrite($"[{value}]", out int written);
         ok.Should().BeTrue();
         dest[..written].ToString().Should().Be("[]");

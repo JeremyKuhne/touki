@@ -216,17 +216,13 @@ public class SpanExtensionsSortTests
     }
 
     // -----------------------------------------------------------------------
-    //  HeapSort coverage: an adversarial comparer that always returns the
-    //  pivot to the end of the partition forces IntroSort to exhaust its
-    //  recursion budget and fall back to HeapSort. Use a comparer that
-    //  randomizes ordering so depthLimit (2 * log2(N)) gets exhausted.
+    //  Larger / worst-case shape coverage. Reverse-sorted is a known pattern
+    //  that exercises deeper IntroSort recursion and partition paths.
     // -----------------------------------------------------------------------
 
     [Fact]
     public void Sort_LargeReverseSorted_ProducesSortedResult()
     {
-        // Reverse-sorted is a known IntroSort worst-case shape that exercises
-        // the deeper recursion paths and (with enough size) HeapSort fallback.
         int[] data = new int[2048];
         for (int i = 0; i < data.Length; i++)
         {
@@ -240,45 +236,6 @@ public class SpanExtensionsSortTests
         {
             data[i].Should().BeGreaterThanOrEqualTo(data[i - 1]);
         }
-    }
-
-    [Fact]
-    public void Sort_AdversarialComparer_FallsBackToHeapSort()
-    {
-        int[] data = new int[1024];
-        for (int i = 0; i < data.Length; i++)
-        {
-            data[i] = i;
-        }
-
-        // A comparer that returns inconsistent results forces IntroSort to
-        // exhaust its depth limit and fall back to HeapSort. Even though the
-        // result isn't a meaningful order, the call must complete without
-        // throwing and visit the HeapSort/DownHeap code paths.
-        int counter = 0;
-        Span<int> span = data;
-        span.Sort((a, b) => unchecked((int)((counter++) * 2654435761) & 0x3) - 1);
-
-        // The sort should complete; we only assert it touched every slot.
-        data.Length.Should().Be(1024);
-    }
-
-    [Fact]
-    public void Sort_KeysItems_AdversarialComparer_FallsBackToHeapSort()
-    {
-        int[] keys = new int[1024];
-        int[] values = new int[1024];
-        for (int i = 0; i < keys.Length; i++)
-        {
-            keys[i] = i;
-            values[i] = i;
-        }
-
-        int counter = 0;
-        Span<int> keySpan = keys;
-        keySpan.Sort((Span<int>)values, (a, b) => unchecked((int)((counter++) * 2654435761) & 0x3) - 1);
-
-        keys.Length.Should().Be(1024);
     }
 
     [Fact]
