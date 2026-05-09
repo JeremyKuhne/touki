@@ -41,8 +41,5 @@ global using Touki.Exceptions;
 global using Touki.Interop;
 global using Touki.Io;
 global using Touki.Text;
-#if NETFRAMEWORK
-global using Framework.Touki;
-#endif
 
 #pragma warning restore IDE0005 // Using directive is unnecessary.

@@ -8,7 +8,7 @@
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageVersion Include="FluentAssertions" Version="6.12.2" />
     <!-- Referencing our own package for the sample project to document consumption. -->
-    <PackageVersion Include="KlutzyNinja.Touki" Version="0.1.0-alpha.8.11" />
+    <PackageVersion Include="KlutzyNinja.Touki" Version="0.2.0-alpha.1" />
     <PackageVersion Include="Microsoft.Build" Version="18.4.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.ResxSourceGenerator" Version="5.0.0-1.25277.114" />
     <PackageVersion Include="Microsoft.CSharp" Version="4.7.0" />
