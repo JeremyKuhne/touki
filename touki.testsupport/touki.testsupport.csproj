@@ -65,18 +65,14 @@
   </PropertyGroup>
 
   <!--
-    Versioning
+    Versioning is centralized in Directory.Build.targets (MinVer, gated on
+    $(IsPackable) != 'false'). TestSupport uses its own `ts-v*` tag stream
+    so it can be released independently of the main `KlutzyNinja.Touki`
+    package.
   -->
   <PropertyGroup>
-    <!-- Ensures that MinVer can find the tags we're using, which start with `v` -->
-    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerTagPrefix>ts-v</MinVerTagPrefix>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="MinVer">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
 
   <!--
     Pack (NuGet) related
@@ -89,9 +85,13 @@
     <PackageProjectUrl>https://github.com/JeremyKuhne/touki</PackageProjectUrl>
     <RepositoryUrl>https://github.com/JeremyKuhne/touki</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Copyright>Copyright (c) Jeremy W. Kuhne. All rights reserved.</Copyright>
     <!-- Publish the repository URL in the built .nupkg (in the NuSpec <repository> element) -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 
 </Project>

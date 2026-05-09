@@ -1,9 +1,26 @@
-﻿# Publishes a .NET package to NuGet.
+﻿# Publishes the TestSupport package on its own tag stream (`ts-v*`).
+# TestSupport is rarely changed, so it gets an independent version axis from
+# the main `KlutzyNinja.Touki` package; cutting a release means pushing a
+# tag like `ts-v0.2.0` (matching the MinVerTagPrefix in
+# touki.testsupport.csproj).
+#
+# `workflow_dispatch` is also supported for ad-hoc republishes; it requires
+# the caller to supply the existing tag they want to publish, which the
+# workflow then checks out and validates. This avoids accidentally
+# publishing a `0.0.0-alpha.0.<height>` MinVer fallback by dispatching
+# from `main` with no tag context.
 
 name: Publish TestSupport NuGet Package
 
 on:
+  push:
+    tags: ['ts-v*.*.*']
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to publish (e.g. ts-v0.1.0-alpha.9)'
+        required: true
+        type: string
 
 jobs:
   publish:
@@ -13,9 +30,25 @@ jobs:
       id-token: write
       contents: read
 
+    env:
+      # `github.ref_name` for push, the dispatched input for manual runs.
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
     steps:
     - uses: actions/checkout@v5
-      with: { fetch-depth: 0 }
+      with:
+        fetch-depth: 0
+        ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
+    - name: Validate tag format
+      shell: pwsh
+      run: |
+        $tag = $env:RELEASE_TAG
+        # SemVer numeric identifiers (major/minor/patch) MUST NOT have leading zeros.
+        if ($tag -notmatch '^ts-v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$') {
+          Write-Error "Tag '$tag' does not match expected SemVer pattern ts-v<major>.<minor>.<patch>[-<prerelease>] (no leading zeros)."
+          exit 1
+        }
+        Write-Host "Tag '$tag' OK."
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
     - name: Restore dependencies
