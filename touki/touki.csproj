@@ -133,18 +133,4 @@
     </PackageReference>
   </ItemGroup>
 
-  <!--
-    Versioning
-  -->
-  <PropertyGroup>
-    <!-- Ensures that MinVer can find the tags we're using, which start with `v` -->
-    <MinVerTagPrefix>v</MinVerTagPrefix>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="MinVer">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
-
 </Project>

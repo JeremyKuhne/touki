@@ -1,8 +1,15 @@
-﻿# Publishes a .NET package to NuGet.
+﻿# Publishes the TestSupport package on its own tag stream (`ts-v*`).
+# TestSupport is rarely changed, so it gets an independent version axis from
+# the main `KlutzyNinja.Touki` package; cutting a release means pushing a
+# tag like `ts-v0.2.0` (matching the MinVerTagPrefix in
+# touki.testsupport.csproj). `workflow_dispatch` is also kept for ad-hoc
+# republishes.
 
 name: Publish TestSupport NuGet Package
 
 on:
+  push:
+    tags: ['ts-v*.*.*']
   workflow_dispatch:
 
 jobs:
@@ -16,6 +23,16 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with: { fetch-depth: 0 }
+    - name: Validate tag format
+      if: github.event_name == 'push'
+      shell: pwsh
+      run: |
+        $tag = '${{ github.ref_name }}'
+        if ($tag -notmatch '^ts-v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') {
+          Write-Error "Tag '$tag' does not match expected SemVer pattern ts-v<major>.<minor>.<patch>[-<prerelease>]."
+          exit 1
+        }
+        Write-Host "Tag '$tag' OK."
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
     - name: Restore dependencies
