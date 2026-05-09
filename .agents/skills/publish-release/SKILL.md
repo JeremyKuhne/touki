@@ -189,8 +189,8 @@ Examples (rejected by guard):
 The regex used by the workflow guards (must match):
 
 ```text
-^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$
-^ts-v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$
+^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$
+^ts-v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$
 ```
 
 ## 6. Approval checkpoint
@@ -235,6 +235,16 @@ If the workflow fails, treat it like any CI failure: do **not** delete and
 re-push the tag without explicit user approval — that's destructive and the
 nuget.org publish is irreversible. Fix forward with the next tag in the
 stream.
+
+### Re-running the publish for an existing tag (`workflow_dispatch`)
+
+If a transient failure (NuGet outage, OIDC blip) leaves a tag pushed but
+not published, both workflows accept a `workflow_dispatch` with a
+required `tag` input. Provide the **exact existing tag name** (e.g.
+`v0.1.0-alpha.13` or `ts-v0.1.0-alpha.9`); the workflow checks out that
+ref, runs the same tag-format guard, and publishes. Do **not** dispatch
+without a tag input — the workflow will fail validation rather than
+publish a `0.0.0-alpha.0.<height>` MinVer fallback.
 
 ## 8. Create the GitHub release
 
