@@ -19,10 +19,10 @@ checked. Do not pad.
 
 1. **Cross-TFM correctness.** All code must compile and behave on both .NET 10
    and .NET Framework 4.7.2. Flag any modern C# / BCL usage not gated for the
-   older target. Flag missing `#if NET` where required (note: code under
+   older target. Flag missing `#if NET` where required. Note: code under
    `touki/Framework/` already targets only the framework, so `#if NETFRAMEWORK`
-   inside that tree is dead — see
-   [.github/instructions/polyfills.instructions.md](../instructions/polyfills.instructions.md)).
+   inside that tree is dead &mdash; see
+   [.github/instructions/polyfills.instructions.md](../instructions/polyfills.instructions.md).
 
 2. **Polyfill conventions.** For files under `touki/Framework/Polyfills/`:
    - Namespace must equal the BCL namespace being polyfilled (e.g.

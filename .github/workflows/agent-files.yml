@@ -39,10 +39,9 @@ jobs:
         run: pwsh tools/Validate-AgentFiles.ps1
 
       - name: Skill freshness warning (90 days)
+        if: steps.changes.outputs.agent == 'true'
         shell: pwsh
         run: |
-          # Fetch enough history for `git log` on each skill directory.
-          git fetch --deepen=200 origin 2>$null
           $threshold = (Get-Date).AddDays(-90)
           $skillDirs = Get-ChildItem -Directory -Path '.agents/skills' -ErrorAction SilentlyContinue
           $stale = @()

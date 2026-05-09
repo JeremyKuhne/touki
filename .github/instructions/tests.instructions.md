@@ -4,9 +4,10 @@ applyTo: 'touki.tests/**/*.cs'
 
 # Test conventions for `touki.tests`
 
-These rules duplicate the summary in [AGENTS.md](../../AGENTS.md) and add the
-detail that would bloat the canonical file. Both are authoritative; if they
-ever drift, AGENTS.md wins.
+[AGENTS.md](../../AGENTS.md) is canonical. This file is a path-scoped
+elaboration of the same rules for `touki.tests/**/*.cs` &mdash; it adds detail
+that would bloat the canonical file but must not contradict it. If the two
+ever drift, AGENTS.md wins; update this file to match.
 
 ## Placement and naming
 
