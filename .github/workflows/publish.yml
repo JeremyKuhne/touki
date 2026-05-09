@@ -18,11 +18,17 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with: { fetch-depth: 0 }
+    - name: Validate tag format
+      shell: pwsh
+      run: |
+        $tag = '${{ github.ref_name }}'
+        if ($tag -notmatch '^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') {
+          Write-Error "Tag '$tag' does not match expected SemVer pattern v<major>.<minor>.<patch>[-<prerelease>]."
+          exit 1
+        }
+        Write-Host "Tag '$tag' OK."
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
-      with:
-        dotnet-version: '10.0.x'
-        dotnet-quality: 'ga'
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
