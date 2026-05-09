@@ -27,7 +27,7 @@ For an IDE experience, once you have the [.NET SDK](https://dotnet.microsoft.com
 
 #### Unix
 
-Run `setup.sh` once after cloning the repository to automatically install the .NET 9 SDK and configure your PATH. The script updates `~/.bashrc` so that the SDK is available in future sessions.
+Run `setup.sh` once after cloning the repository to automatically install the .NET 10 SDK and configure your PATH. The script updates `~/.bashrc` so that the SDK is available in future sessions.
 
 ```bash
 ./setup.sh

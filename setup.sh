@@ -4,12 +4,12 @@ set -euo pipefail
 # Directory of this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Install .NET 9 SDK if not already installed
-if ! command -v dotnet >/dev/null || ! dotnet --list-sdks | grep -q '^9\.'; then
-  echo "Installing .NET 9 SDK..."
+# Install .NET 10 SDK if not already installed
+if ! command -v dotnet >/dev/null || ! dotnet --list-sdks | grep -q '^10\.'; then
+  echo "Installing .NET 10 SDK..."
   curl -SL https://dot.net/v1/dotnet-install.sh -o "$SCRIPT_DIR/dotnet-install.sh"
   chmod +x "$SCRIPT_DIR/dotnet-install.sh"
-  "$SCRIPT_DIR/dotnet-install.sh" --channel 9.0 --install-dir "$HOME/.dotnet"
+  "$SCRIPT_DIR/dotnet-install.sh" --channel 10.0 --install-dir "$HOME/.dotnet"
 fi
 
 # Ensure PATH includes the installed SDK
