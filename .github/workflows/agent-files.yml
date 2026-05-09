@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Detect relevant changes
         id: changes
@@ -35,6 +37,28 @@ jobs:
         if: steps.changes.outputs.agent == 'true'
         shell: pwsh
         run: pwsh tools/Validate-AgentFiles.ps1
+
+      - name: Skill freshness warning (90 days)
+        if: steps.changes.outputs.agent == 'true'
+        shell: pwsh
+        run: |
+          $threshold = (Get-Date).AddDays(-90)
+          $skillDirs = Get-ChildItem -Directory -Path '.agents/skills' -ErrorAction SilentlyContinue
+          $stale = @()
+          foreach ($dir in $skillDirs) {
+              $rel = ".agents/skills/$($dir.Name)"
+              $lastCommit = git log -1 --format=%cI -- $rel 2>$null
+              if (-not $lastCommit) { continue }
+              $when = [DateTime]::Parse($lastCommit)
+              if ($when -lt $threshold) {
+                  $stale += "$($dir.Name) (last touched $($when.ToString('yyyy-MM-dd')))"
+              }
+          }
+          if ($stale.Count -gt 0) {
+              foreach ($s in $stale) { Write-Host "::warning::Skill stale: $s" }
+          } else {
+              Write-Host 'OK: all skills touched within the last 90 days.'
+          }
 
       - name: markdownlint
         if: steps.changes.outputs.agent == 'true'

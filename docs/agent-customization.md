@@ -28,6 +28,19 @@ right one for your needs, place it in the right folder, and CI will validate it.
 universally; reach for the more specialized formats only when you need their extra
 features (path scoping, tool restrictions, slash-command UX, packaged scripts).
 
+## MCP servers
+
+Workspace-scoped MCP server config lives in [.vscode/mcp.json](../.vscode/mcp.json).
+Add a server here only when the agent genuinely cannot reach the data otherwise &mdash;
+prefer instructions and skills first (see the practitioner guide rule "instructions
+&rarr; skills &rarr; MCP").
+
+Currently wired up:
+
+| Server | Purpose |
+| ------ | ------- |
+| `microsoft-learn` (`https://learn.microsoft.com/api/mcp`) | Current official .NET BCL docs and reference content. Used by the [`polyfill-dotnet-api`](../.agents/skills/polyfill-dotnet-api/SKILL.md) workflow when verifying modern API shapes before deciding whether to polyfill. |
+
 ## Frontmatter requirements
 
 | Format               | Required                              | Notes                                                                  |
@@ -61,6 +74,67 @@ pwsh tools/Validate-AgentFiles.ps1 -Fix
 ```
 
 The same checks run in CI via [.github/workflows/agent-files.yml](../.github/workflows/agent-files.yml).
+
+## Improvement loop
+
+The customization layer is source code: it is iterated, not set once. Every
+correction you give an agent is a signal that something is missing.
+
+### Triage matrix
+
+When the agent does something wrong, classify the failure and place the fix
+at the right layer.
+
+| Failure class                                 | Right layer                                                    |
+| --------------------------------------------- | -------------------------------------------------------------- |
+| Factual: wrong about *what the code is*       | [AGENTS.md](../AGENTS.md) or path-specific `*.instructions.md` |
+| Procedural: wrong *workflow*, repeated        | New skill in [.agents/skills/](../.agents/skills/)             |
+| Capability: agent literally cannot reach data | MCP server (or a script the agent can run)                     |
+| Enforcement: agent rationalizes around a rule | Hook, CI check, or `chat.tools.terminal.autoApprove` denylist  |
+
+The order matters. Try instructions before skills, skills before MCP, and
+prefer deterministic enforcement (CI, denylist, branch protection) over more
+prose anywhere a rule has been violated before.
+
+### Size budget
+
+Attention to instructions degrades as files grow. Targets:
+
+- [AGENTS.md](../AGENTS.md): &le; 10 KB. If it grows past this, split rules into
+  a path-specific `*.instructions.md` and leave a one-line summary pointer.
+- Each `*.instructions.md`: &le; 8 KB. If a single area needs more, split it
+  further by glob.
+- Each `SKILL.md`: &le; 15 KB body. Move long examples or scripts into sibling
+  files within the skill directory.
+
+### Periodic maintenance
+
+Roughly monthly:
+
+1. Read [AGENTS.md](../AGENTS.md) end to end. Anything stale, contradictory,
+   or vague? Tighten.
+2. Skim each `*.instructions.md`. Same.
+3. Check [.agents/skills/README.md](../.agents/skills/README.md): every
+   cross-reference should resolve, every disambiguation should still match
+   the skills it names. The CI freshness warning (90 days, derived from git
+   history) flags individual skills that have not been touched.
+4. Scan the recent git log for repeated CI fixes to the same rule, repeated
+   "fix the comments" cycles on PRs, or repeated permission requests for
+   the same command. These are gap signals; address them at the right layer
+   from the matrix above.
+
+### Hygiene rules
+
+- The phrasing-bank lists in
+  [AGENTS.md](../AGENTS.md) "Working with the user on changes" (verbs that
+  are / are not approval) are **append-only**. Add new misreads when they
+  occur. Do not rewrite past entries except to deduplicate.
+- When changing a skill, also update any cross-reference in
+  [.agents/skills/README.md](../.agents/skills/README.md) within the same
+  change set.
+- When a rule moves from instructions to a CI check (or vice versa), keep
+  the prose in instructions explaining *why*. The mechanical gate is the
+  *what*; instructions explain the *why*.
 
 ## Verifying instructions are loaded
 
