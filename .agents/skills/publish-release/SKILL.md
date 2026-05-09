@@ -257,7 +257,7 @@ release → choose the existing tag).
 
 ### Release notes template
 
-```markdown
+````markdown
 ## Changes
 
 <!-- One-sentence headline of the most important change. -->
@@ -287,8 +287,8 @@ release → choose the existing tag).
 dotnet add package KlutzyNinja.Touki --version 0.1.0-alpha.13
 ```
 
-**Full changelog:** https://github.com/JeremyKuhne/touki/compare/v0.1.0-alpha.12...v0.1.0-alpha.13
-```
+**Full changelog:** <https://github.com/JeremyKuhne/touki/compare/v0.1.0-alpha.12...v0.1.0-alpha.13>
+````
 
 Notes on the template:
 
