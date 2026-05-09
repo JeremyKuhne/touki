@@ -16,17 +16,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+      with: { fetch-depth: 0 }
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
-      with:
-        dotnet-version: '10.0.x'
-        dotnet-quality: 'preview'
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
     - name: Build release
       run: dotnet build --configuration Release --no-restore
+    - name: Pack (release)
+      run: dotnet pack --configuration Release --no-build -o ./artifacts/packages
     - name: Test
       run: |
         $resultsDir = Join-Path $PWD.Path 'artifacts/test-results/debug'

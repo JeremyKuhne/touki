@@ -33,6 +33,9 @@
 
     <!-- Want "Sample" rather than "sample". If this is explicitly set to blank it messes with resource generation. -->
     <RootNamespace>Sample</RootNamespace>
+
+    <!-- This is a sample / demo project; never publish a NuGet package for it. -->
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
