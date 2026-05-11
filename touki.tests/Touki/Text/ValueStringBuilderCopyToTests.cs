@@ -170,6 +170,12 @@ public class ValueStringBuilderCopyToTests
         builder.ToString().Should().Be("hello");
     }
 
+#if !DEBUG
+    // Allocation assertion only runs in Release. Debug-mode net481 introduces
+    // JIT-level allocations (no inlining, no enregistration) that aren't
+    // representative of production behavior and that the test cannot
+    // control. MemoryWatch is only meaningful when the JIT optimizations
+    // it's measuring against are actually in effect.
     [Fact]
     public void AppendFormatted_CustomSpanFormattableStruct_DoesNotAllocate()
     {
@@ -193,6 +199,7 @@ public class ValueStringBuilderCopyToTests
             builder.Dispose();
         }
     }
+#endif
 
     [Fact]
     public void AppendFormatted_CustomSpanFormattableStruct_GrowsToFit()

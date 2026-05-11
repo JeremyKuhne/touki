@@ -104,3 +104,9 @@ makes the test locale-dependent and flaky on non-en-US machines.
   on disposal if any bytes were allocated. Warm up generics or
   delegate-creation paths once before the watch so the JIT itself is
   not measured.
+- Allocation assertions are only meaningful when the JIT optimizations
+  they're measuring against are in effect, so guard them with
+  `#if !DEBUG` when the path under test relies on inlining or
+  enregistration (typical for ref-struct and generic value-type code).
+  Debug-mode net481 in particular adds allocations the test cannot
+  control.
