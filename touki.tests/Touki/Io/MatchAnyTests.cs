@@ -271,4 +271,44 @@ public class MatchAnyTests
 
         matcher.MatchesFile("/root".AsSpan(), "file.txt".AsSpan()).Should().BeFalse();
     }
+
+    [Fact]
+    public void MatchAnyFile_Dispose_ReleasesResources()
+    {
+        MatchAnyFile matcher = new("*.txt", MatchType.Simple, MatchCasing.CaseSensitive);
+        matcher.AddSpec("*.log");
+
+        Action action = matcher.Dispose;
+        action.Should().NotThrow();
+    }
+
+    [Fact]
+    public void MatchAnyFile_Dispose_CalledTwice_DoesNotThrow()
+    {
+        MatchAnyFile matcher = new("*.txt", MatchType.Simple, MatchCasing.CaseSensitive);
+        matcher.Dispose();
+
+        Action action = matcher.Dispose;
+        action.Should().NotThrow();
+    }
+
+    [Fact]
+    public void MatchAnyDirectory_Dispose_ReleasesResources()
+    {
+        MatchAnyDirectory matcher = new("docs", MatchType.Simple, MatchCasing.CaseSensitive);
+        matcher.AddSpec("src");
+
+        Action action = matcher.Dispose;
+        action.Should().NotThrow();
+    }
+
+    [Fact]
+    public void MatchAnyDirectory_Dispose_CalledTwice_DoesNotThrow()
+    {
+        MatchAnyDirectory matcher = new("docs", MatchType.Simple, MatchCasing.CaseSensitive);
+        matcher.Dispose();
+
+        Action action = matcher.Dispose;
+        action.Should().NotThrow();
+    }
 }

@@ -40,6 +40,55 @@ ever drift, AGENTS.md wins; update this file to match.
   otherwise want `Assert.Throws(() => ...)`, use a `try`/`finally` block and
   assert on the caught exception explicitly.
 
+## Disposables in test bodies
+
+Anything that allocates a real resource &mdash; `TempFolder`,
+`IEnumerationMatcher`, `MSBuildMatchBuilder.FromSpecification`,
+`ArrayPoolList<T>`, etc. &mdash; must be cleaned up even when assertions
+fail. Default to `using` declarations.
+
+- For "happy path" tests, write `using TempFolder folder = new();` and
+  `using IEnumerationMatcher matcher = ...;`. Do not assign to a bare
+  local; the resource leaks on failure.
+- When the test itself exercises explicit `Dispose()` semantics (e.g.
+  double-dispose, dispose-after-external-deletion), `using` would call
+  `Dispose()` before the test body runs the assertion. Use
+  `try`/`finally` instead and call `Dispose()` defensively in the
+  `finally` &mdash; `DisposableBase` guards against double disposal:
+
+  ```c#
+  TempFolder folder = new();
+  try
+  {
+      // ... explicit Dispose() calls under test ...
+  }
+  finally
+  {
+      folder.Dispose();
+  }
+  ```
+
+- Reviewer Copilot will flag any bare `IDisposable` local in a test as a
+  potential resource leak. Address it before merging.
+
+## Culture-sensitive assertions
+
+Many touki formatting APIs (`string.FormatValue`,
+`string.FormatValues`, `ValueStringBuilder.AppendFormat`, the
+`StringBuilderExtensions.AppendFormatted` overloads that don't take a
+provider) construct the underlying `ValueStringBuilder` with
+`provider: null`, which makes numeric and date formatting follow
+`CultureInfo.CurrentCulture`. Hard-coding `InvariantCulture` expectations
+makes the test locale-dependent and flaky on non-en-US machines.
+
+- For formats that include culture-sensitive separators or symbols (`N`,
+  `C`, `P`, `D` for dates, etc.), derive the expected string from
+  `CultureInfo.CurrentCulture` &mdash; or, when the test is meant to
+  pin behavior under a specific culture, set
+  `Thread.CurrentThread.CurrentCulture` (and restore in `finally`).
+- Culture-insensitive formats (`X`, `B`, default `G` on integers,
+  literal pass-through) are safe with hard-coded expected strings.
+
 ## Release-mode rule
 
 - Run `dotnet test -c Release` before declaring a fix done. Release-mode
