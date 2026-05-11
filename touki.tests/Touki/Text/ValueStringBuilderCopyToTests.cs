@@ -171,6 +171,30 @@ public class ValueStringBuilderCopyToTests
     }
 
     [Fact]
+    public void AppendFormatted_CustomSpanFormattableStruct_DoesNotAllocate()
+    {
+        // Warm up the FormatterHelper<T> static (delegate creation
+        // allocates the first time the generic is touched).
+        using (ValueStringBuilder warmup = new(stackalloc char[32]))
+        {
+            warmup.AppendFormatted(new FixedSpanFormattable("warm"), default(StringSpan));
+        }
+
+        ValueStringBuilder builder = new(stackalloc char[32]);
+        try
+        {
+            using (MemoryWatch.Create)
+            {
+                builder.AppendFormatted(new FixedSpanFormattable("zero-alloc"), default(StringSpan));
+            }
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
     public void AppendFormatted_CustomSpanFormattableStruct_GrowsToFit()
     {
         // Start with a tiny buffer so the formatter's first TryFormat call

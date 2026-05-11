@@ -94,3 +94,13 @@ makes the test locale-dependent and flaky on non-en-US machines.
 - Run `dotnet test -c Release` before declaring a fix done. Release-mode
   inlining surfaces bugs Debug doesn't &mdash; `Unsafe.As` on a method
   parameter is a known foot-gun on net481 RyuJIT.
+
+## Allocation assertions
+
+- Use [`Touki.TestSupport.MemoryWatch`](../../touki.tests/TestSupport/MemoryWatch.cs)
+  to assert that a region of code does not allocate. Open it in a
+  `using` block on the same thread as the code under test; the watch
+  records `GC.GetAllocatedBytesForCurrentThread()` on entry and throws
+  on disposal if any bytes were allocated. Warm up generics or
+  delegate-creation paths once before the watch so the JIT itself is
+  not measured.
