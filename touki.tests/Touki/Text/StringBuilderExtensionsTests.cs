@@ -610,4 +610,78 @@ public unsafe class StringBuilderExtensionsTests
 
         action.Should().Throw<ArgumentException>();
     }
+
+    [Fact]
+    public void AppendSpan_MemoryOverload_NonEmpty_AppendsContent()
+    {
+        StringBuilder builder = new("Prefix:");
+        Memory<char> memory = new char[] { 'a', 'b', 'c' };
+
+        builder.AppendSpan(memory).Should().BeSameAs(builder);
+        builder.ToString().Should().Be("Prefix:abc");
+    }
+
+    [Fact]
+    public void AppendSpan_MemoryOverload_Empty_LeavesBuilderUnchanged()
+    {
+        StringBuilder builder = new("Prefix");
+        Memory<char> memory = Memory<char>.Empty;
+
+        builder.AppendSpan(memory).Should().BeSameAs(builder);
+        builder.ToString().Should().Be("Prefix");
+    }
+
+    [Fact]
+    public void AppendFormatted_StringFormat_ValueSpan_FormatsAllPlaceholders()
+    {
+        StringBuilder builder = new();
+        ReadOnlySpan<Value> values = [Value.Create("a"), Value.Create(1), Value.Create(true)];
+
+        StringBuilderExtensions.AppendFormatted(builder, "{0}-{1}-{2}", values);
+
+        builder.ToString().Should().Be("a-1-True");
+    }
+
+    [Fact]
+    public void AppendFormatted_SpanFormat_ValueSpan_FormatsAllPlaceholders()
+    {
+        StringBuilder builder = new();
+        ReadOnlySpan<Value> values = [Value.Create("x"), Value.Create(42)];
+
+        StringBuilderExtensions.AppendFormatted(builder, "{0}={1}".AsSpan(), values);
+
+        builder.ToString().Should().Be("x=42");
+    }
+
+    [Fact]
+    public void AppendJoin_ReadOnlySpanOverload_EmptyValues_ReturnsBuilderUnchanged()
+    {
+        StringBuilder builder = new("Prefix");
+        StringBuilder result = StringBuilderExtensions.AppendJoin(builder, ',', []);
+
+        result.Should().BeSameAs(builder);
+        builder.ToString().Should().Be("Prefix");
+    }
+
+    [Fact]
+    public void AppendJoin_ReadOnlySpanOverload_SingleValue_AppendsWithoutSeparator()
+    {
+        StringBuilder builder = new();
+        ReadOnlySpan<object?> values = [(object?)"A"];
+
+        StringBuilderExtensions.AppendJoin(builder, ',', values);
+
+        builder.ToString().Should().Be("A");
+    }
+
+    [Fact]
+    public void AppendJoin_ReadOnlySpanOverload_MultipleValues_JoinsWithSeparator()
+    {
+        StringBuilder builder = new();
+        ReadOnlySpan<object?> values = [(object?)"A", "B", null, "D"];
+
+        StringBuilderExtensions.AppendJoin(builder, '|', values);
+
+        builder.ToString().Should().Be("A|B||D");
+    }
 }

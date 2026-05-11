@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.Globalization;
 using System.Text;
 using Touki.Text;
 
@@ -2439,5 +2440,345 @@ public unsafe class ValueStringBuilderTests
         }
 
         threw.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Constructor_LiteralLengthFormattedCount_AllocatesPooledBuffer()
+    {
+        using ValueStringBuilder builder = new(literalLength: 8, formattedCount: 2);
+        builder.Length.Should().Be(0);
+        builder.Capacity.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public void Constructor_LiteralLengthFormattedCount_Provider_AllocatesPooledBuffer()
+    {
+        using ValueStringBuilder builder = new(literalLength: 4, formattedCount: 1, provider: CultureInfo.InvariantCulture);
+        builder.Length.Should().Be(0);
+        builder.Capacity.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public void Constructor_LiteralLengthFormattedCount_InitialBuffer_UsesProvidedBuffer()
+    {
+        using ValueStringBuilder builder = new(
+            literalLength: 4,
+            formattedCount: 1,
+            provider: null,
+            initialBuffer: stackalloc char[16]);
+        builder.Length.Should().Be(0);
+        builder.Capacity.Should().Be(16);
+    }
+
+    [Fact]
+    public void Constructor_Span_WithFormatProvider_Works()
+    {
+        ValueStringBuilder builder = new(stackalloc char[8], CultureInfo.InvariantCulture);
+        try
+        {
+            builder.Append("hi");
+            builder.ToString().Should().Be("hi");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void Constructor_InitialCapacity_WithFormatProvider_Works()
+    {
+        using ValueStringBuilder builder = new(initialCapacity: 32, provider: CultureInfo.InvariantCulture);
+        builder.Append("ok");
+        builder.ToString().Should().Be("ok");
+    }
+
+    [Fact]
+    public void AppendSpan_RequestedLength_ReturnsWritableRegionAndAdvancesLength()
+    {
+        ValueStringBuilder builder = new(stackalloc char[8]);
+        try
+        {
+            Span<char> region = builder.AppendSpan(4);
+            region.Length.Should().Be(4);
+            region[0] = 'a';
+            region[1] = 'b';
+            region[2] = 'c';
+            region[3] = 'd';
+            builder.Length.Should().Be(4);
+            builder.ToString().Should().Be("abcd");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendSpan_GrowsBufferWhenExceedingCapacity()
+    {
+        ValueStringBuilder builder = new(stackalloc char[2]);
+        try
+        {
+            Span<char> region = builder.AppendSpan(8);
+            region.Length.Should().Be(8);
+            "abcdefgh".AsSpan().CopyTo(region);
+            builder.Length.Should().Be(8);
+            builder.ToString().Should().Be("abcdefgh");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendSpan_NegativeLength_Throws()
+    {
+        ValueStringBuilder builder = new(stackalloc char[4]);
+        bool threw = false;
+        try
+        {
+            try
+            {
+                builder.AppendSpan(-1);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                threw = true;
+            }
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+
+        threw.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RangeIndexer_ReturnsRequestedSubsection()
+    {
+        ValueStringBuilder builder = new(stackalloc char[16]);
+        try
+        {
+            builder.Append("Hello World");
+            builder[6..].ToString().Should().Be("World");
+            builder[..5].ToString().Should().Be("Hello");
+            builder[1..4].ToString().Should().Be("ell");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendFormatted_ReadOnlySpan_AppendsContent()
+    {
+        ValueStringBuilder builder = new(stackalloc char[16]);
+        try
+        {
+            builder.AppendFormatted("hello".AsSpan());
+            builder.ToString().Should().Be("hello");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendFormatted_StringWithAlignmentAndFormat_RightAlignsValue()
+    {
+        ValueStringBuilder builder = new(stackalloc char[16]);
+        try
+        {
+            builder.AppendFormatted(value: "x", alignment: 5, format: null);
+            builder.ToString().Should().Be("    x");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendFormatted_StringWithNegativeAlignment_LeftAlignsValue()
+    {
+        ValueStringBuilder builder = new(stackalloc char[16]);
+        try
+        {
+            builder.AppendFormatted(value: "x", alignment: -5, format: null);
+            builder.ToString().Should().Be("x    ");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendFormatted_ValueWithStringFormat_AppliesFormat()
+    {
+        ValueStringBuilder builder = new(stackalloc char[16]);
+        try
+        {
+            builder.AppendFormatted(Value.Create(255), format: "X");
+            builder.ToString().Should().Be("FF");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendFormatted_GenericValueWithAlignment_RightAlignsValue()
+    {
+        ValueStringBuilder builder = new(stackalloc char[16]);
+        try
+        {
+            builder.AppendFormatted<int>(42, alignment: 5);
+            builder.ToString().Should().Be("   42");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendFormatted_GenericValueWithAlignmentZero_DoesNotPad()
+    {
+        ValueStringBuilder builder = new(stackalloc char[16]);
+        try
+        {
+            builder.AppendFormatted<int>(42, alignment: 0);
+            builder.ToString().Should().Be("42");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendFormatted_ReadOnlySpanWithAlignment_RightAlignsValue()
+    {
+        ValueStringBuilder builder = new(stackalloc char[16]);
+        try
+        {
+            builder.AppendFormatted("ab".AsSpan(), alignment: 5);
+            builder.ToString().Should().Be("   ab");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendFormatted_ReadOnlySpanWithNegativeAlignment_LeftAlignsValue()
+    {
+        ValueStringBuilder builder = new(stackalloc char[16]);
+        try
+        {
+            builder.AppendFormatted("ab".AsSpan(), alignment: -5);
+            builder.ToString().Should().Be("ab   ");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendFormatted_ReadOnlySpanWithAlignmentSmallerThanValue_AppendsUnchanged()
+    {
+        ValueStringBuilder builder = new(stackalloc char[16]);
+        try
+        {
+            builder.AppendFormatted("abcdef".AsSpan(), alignment: 2);
+            builder.ToString().Should().Be("abcdef");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendFormatted_Object_NullValue_AppendsNothing()
+    {
+        ValueStringBuilder builder = new(stackalloc char[16]);
+        try
+        {
+            builder.AppendFormatted((object?)null);
+            builder.ToString().Should().Be(string.Empty);
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendFormatted_GenericWithStringFormat_AppliesFormat()
+    {
+        ValueStringBuilder builder = new(stackalloc char[16]);
+        try
+        {
+            builder.AppendFormatted<int>(255, format: "X");
+            builder.ToString().Should().Be("FF");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendFormatted_NullStringValue_AppendsNothing()
+    {
+        ValueStringBuilder builder = new(stackalloc char[16]);
+        try
+        {
+            builder.AppendFormatted((string?)null);
+            builder.ToString().Should().Be(string.Empty);
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [Fact]
+    public void AppendFormatted_CustomFormatter_InterceptsValue()
+    {
+        UpperCaseFormatProvider provider = new();
+        ValueStringBuilder builder = new(literalLength: 0, formattedCount: 1, provider: provider, initialBuffer: stackalloc char[32]);
+        try
+        {
+            builder.AppendFormatted("hi");
+            builder.AppendFormatted<int>(42);
+            builder.ToString().Should().Be("[HI][42]");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    private sealed class UpperCaseFormatProvider : IFormatProvider, ICustomFormatter
+    {
+        public object? GetFormat(Type? formatType) =>
+            formatType == typeof(ICustomFormatter) ? this : null;
+
+        public string Format(string? format, object? arg, IFormatProvider? formatProvider)
+        {
+            string text = arg?.ToString() ?? string.Empty;
+            return "[" + text.ToUpperInvariant() + "]";
+        }
     }
 }
