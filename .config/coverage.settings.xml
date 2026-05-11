@@ -14,11 +14,21 @@
     <Attributes>
       <Exclude>
         <Attribute>^System\.Diagnostics\.CodeAnalysis\.ExcludeFromCodeCoverageAttribute$</Attribute>
-        <Attribute>^System\.CodeDom\.Compiler\.GeneratedCodeAttribute$</Attribute>
+        <!--
+          GeneratedCodeAttribute is intentionally NOT excluded here. The BCL coverage collector
+          applies attribute filters per-member, so excluding it hides the user-authored half of
+          any partial type whose generated half stamps [GeneratedCode] on every member
+          (e.g. CsWin32 partials like HRESULT, BSTR, PWSTR). Generator output is excluded by
+          source path below instead.
+        -->
       </Exclude>
     </Attributes>
     <Sources>
       <Exclude>
+        <!-- Anything written under an obj/ tree (build intermediates including generator output). -->
+        <Source>.*[\\/]obj[\\/].*</Source>
+        <!-- Roslyn source-generator output convention. -->
+        <Source>.*\.g\.cs$</Source>
         <!-- Auto-generated string resource accessors from Microsoft.CodeAnalysis.ResxSourceGenerator. -->
         <Source>.*[\\/]SR\.Designer\.cs$</Source>
         <Source>.*[\\/]SRF\.Designer\.cs$</Source>
