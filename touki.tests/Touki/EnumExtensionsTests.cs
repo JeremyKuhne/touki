@@ -339,6 +339,143 @@ public class EnumExtensionsTests
 
     #endregion
 
+    #region Signed / negative-value sign-extension regression tests
+
+    // These tests exercise enums with signed underlying types (sbyte and
+    // short) using values whose bit patterns have the sign bit set. On
+    // .NET Framework RyuJIT there is a documented foot-gun where reading
+    // a sub-int value (byte/sbyte/short/ushort) and feeding it through an
+    // arithmetic expression can sign-extend incorrectly when the JIT
+    // inlines aggressively. The methods on EnumExtensions go through
+    // memory (`*(byte*)&value` etc.) rather than `Unsafe.As`, which is the
+    // safe pattern, but we want a regression net in case the
+    // implementation is ever refactored to use a faster pattern that
+    // would trip the bug.
+    //
+    // Every method is tested with:
+    //   - an "all bits set" value (sbyte=-1 / short=-1)
+    //   - a "high bit only" value (sbyte=-128 / short.MinValue)
+    //   - a mixed positive/negative value
+
+    [Flags]
+    private enum SByteFlags : sbyte
+    {
+        None = 0,
+        Low = 0x01,
+        High = unchecked((sbyte)0x80), // -128: sign bit only
+        AllBits = unchecked((sbyte)0xFF), // -1: every bit set
+    }
+
+    [Flags]
+    private enum SShortFlags : short
+    {
+        None = 0,
+        Low = 0x0001,
+        High = unchecked((short)0x8000), // short.MinValue: sign bit only
+        AllBits = unchecked((short)0xFFFF), // -1: every bit set
+    }
+
+    [Fact]
+    public void EnumExtensions_AreFlagsSet_NegativeValues_AreCorrect()
+    {
+        // sbyte "all bits set" contains every flag
+        SByteFlags.AllBits.AreFlagsSet(SByteFlags.Low).Should().BeTrue();
+        SByteFlags.AllBits.AreFlagsSet(SByteFlags.High).Should().BeTrue();
+        SByteFlags.AllBits.AreFlagsSet(SByteFlags.AllBits).Should().BeTrue();
+
+        // sbyte "high bit only" only contains High
+        SByteFlags.High.AreFlagsSet(SByteFlags.High).Should().BeTrue();
+        SByteFlags.High.AreFlagsSet(SByteFlags.Low).Should().BeFalse();
+        SByteFlags.High.AreFlagsSet(SByteFlags.AllBits).Should().BeFalse();
+
+        // short with high bit set
+        SShortFlags.AllBits.AreFlagsSet(SShortFlags.High).Should().BeTrue();
+        SShortFlags.High.AreFlagsSet(SShortFlags.High).Should().BeTrue();
+        SShortFlags.High.AreFlagsSet(SShortFlags.Low).Should().BeFalse();
+        SShortFlags.High.AreFlagsSet(SShortFlags.AllBits).Should().BeFalse();
+    }
+
+    [Fact]
+    public void EnumExtensions_AreAnyFlagsSet_NegativeValues_AreCorrect()
+    {
+        SByteFlags.High.AreAnyFlagsSet(SByteFlags.High).Should().BeTrue();
+        SByteFlags.High.AreAnyFlagsSet(SByteFlags.Low).Should().BeFalse();
+        SByteFlags.AllBits.AreAnyFlagsSet(SByteFlags.High).Should().BeTrue();
+        SByteFlags.AllBits.AreAnyFlagsSet(SByteFlags.Low).Should().BeTrue();
+        SByteFlags.None.AreAnyFlagsSet(SByteFlags.AllBits).Should().BeFalse();
+
+        SShortFlags.High.AreAnyFlagsSet(SShortFlags.High).Should().BeTrue();
+        SShortFlags.High.AreAnyFlagsSet(SShortFlags.Low).Should().BeFalse();
+        SShortFlags.AllBits.AreAnyFlagsSet(SShortFlags.High).Should().BeTrue();
+        SShortFlags.AllBits.AreAnyFlagsSet(SShortFlags.Low).Should().BeTrue();
+        SShortFlags.None.AreAnyFlagsSet(SShortFlags.AllBits).Should().BeFalse();
+    }
+
+    [Fact]
+    public void EnumExtensions_IsOnlyOneFlagSet_NegativeValues_AreCorrect()
+    {
+        // sbyte: 0x80 ("High") is a single bit
+        SByteFlags.High.IsOnlyOneFlagSet(SByteFlags.High).Should().BeTrue();
+        // sbyte 0xFF has every bit set, so against itself there is more
+        // than one bit AND-ed in.
+        SByteFlags.AllBits.IsOnlyOneFlagSet(SByteFlags.AllBits).Should().BeFalse();
+        // Masking 0xFF down to a single bit should still report a single bit.
+        SByteFlags.AllBits.IsOnlyOneFlagSet(SByteFlags.High).Should().BeTrue();
+        SByteFlags.AllBits.IsOnlyOneFlagSet(SByteFlags.Low).Should().BeTrue();
+
+        // short: 0x8000 is a single bit. A buggy signed-promotion path
+        // would sign-extend to 0xFFFF8000 and the power-of-two test would
+        // incorrectly report false.
+        SShortFlags.High.IsOnlyOneFlagSet(SShortFlags.High).Should().BeTrue();
+        SShortFlags.AllBits.IsOnlyOneFlagSet(SShortFlags.AllBits).Should().BeFalse();
+        SShortFlags.AllBits.IsOnlyOneFlagSet(SShortFlags.High).Should().BeTrue();
+        SShortFlags.AllBits.IsOnlyOneFlagSet(SShortFlags.Low).Should().BeTrue();
+    }
+
+    [Fact]
+    public void EnumExtensions_SetFlags_NegativeValues_AreCorrect()
+    {
+        SByteFlags value = SByteFlags.Low;
+        value.SetFlags(SByteFlags.High);
+        value.Should().Be(SByteFlags.AllBits & (SByteFlags.Low | SByteFlags.High));
+
+        value = SByteFlags.None;
+        value.SetFlags(SByteFlags.AllBits);
+        value.Should().Be(SByteFlags.AllBits);
+
+        SShortFlags shortValue = SShortFlags.Low;
+        shortValue.SetFlags(SShortFlags.High);
+        shortValue.Should().Be(SShortFlags.Low | SShortFlags.High);
+
+        shortValue = SShortFlags.None;
+        shortValue.SetFlags(SShortFlags.AllBits);
+        shortValue.Should().Be(SShortFlags.AllBits);
+    }
+
+    [Fact]
+    public void EnumExtensions_ClearFlags_NegativeValues_AreCorrect()
+    {
+        SByteFlags value = SByteFlags.AllBits;
+        value.ClearFlags(SByteFlags.High);
+        // 0xFF with the sign bit cleared = 0x7F
+        ((sbyte)value).Should().Be(0x7F);
+
+        value = SByteFlags.AllBits;
+        value.ClearFlags(SByteFlags.AllBits);
+        value.Should().Be(SByteFlags.None);
+
+        SShortFlags shortValue = SShortFlags.AllBits;
+        shortValue.ClearFlags(SShortFlags.High);
+        // 0xFFFF with sign bit cleared = 0x7FFF
+        ((short)shortValue).Should().Be(0x7FFF);
+
+        shortValue = SShortFlags.AllBits;
+        shortValue.ClearFlags(SShortFlags.AllBits);
+        shortValue.Should().Be(SShortFlags.None);
+    }
+
+    #endregion
+
     #region Test Enums
 
     [Flags]
