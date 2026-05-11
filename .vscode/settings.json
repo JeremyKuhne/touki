@@ -19,7 +19,6 @@
     // routine read-only git verbs frictionless.
     "chat.tools.terminal.autoApprove": {
         "/^git\\s+(status|diff|log|show|branch|stash\\s+list|rev-parse|ls-files|config\\s+--get)\\b/": true,
-        "/^git\\s+commit\\b/": false,
         "/^git\\s+push\\b/": false,
         "/^git\\s+reset\\s+--hard\\b/": false,
         "/^git\\s+rebase\\b/": false,
