@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -6,19 +6,51 @@ using Touki.Text;
 
 namespace Touki.ValueTests;
 
-public ref struct MemoryWatch
+/// <summary>
+///  Forces JIT compilation of the <see cref="Value"/> generic
+///  specializations used by the <c>StoringXxx</c> tests so that
+///  subsequent <see cref="MemoryWatch.Create"/> checks measure only
+///  the code under test and not the JIT itself.
+/// </summary>
+/// <remarks>
+///  <para>
+///   The first call to a generic instantiation allocates on the managed
+///   heap. <c>Touki.Value</c> has a wide surface of value-type
+///   specializations (<see cref="Value.Create{T}(T)"/>,
+///   <see cref="Value.TryGetValue{T}(out T)"/>, <see cref="Value.As{T}"/>)
+///   that every <c>StoringXxx</c> allocation test needs warmed up before
+///   the watch is taken.
+///  </para>
+///  <para>
+///   This helper is intentionally Value-specific. The general
+///   <see cref="MemoryWatch"/> in <c>touki.testsupport</c> is a neutral
+///   thread-allocated-bytes recorder; it knows nothing about
+///   <see cref="Value"/>.
+///  </para>
+/// </remarks>
+internal static class ValueJitWarmup
 {
-    private static bool s_jit;
-    private long _allocations;
+    private static bool s_warmed;
 
-    public static void JIT()
+    /// <summary>
+    ///  Module initializer that runs <see cref="Ensure"/> once on test
+    ///  assembly load so individual <c>StoringXxx</c> tests can simply
+    ///  open a <see cref="MemoryWatch"/> without their own warm-up call.
+    /// </summary>
+    [ModuleInitializer]
+    internal static void Initialize() => Ensure();
+
+    /// <summary>
+    ///  Ensures all <see cref="Value"/> generic instantiations used by
+    ///  the test suite have been JIT-compiled. Safe to call repeatedly;
+    ///  the warm-up runs only on the first call.
+    /// </summary>
+    public static void Ensure()
     {
-        if (s_jit)
+        if (s_warmed)
         {
             return;
         }
-
-        // JITing allocates, so make sure we've got all of our <T> methods created.
 
         Value.Create((bool)default).As<bool>();
         Value.Create((byte)default).As<byte>();
@@ -71,27 +103,6 @@ public ref struct MemoryWatch
         value.TryGetValue(out DateTimeOffset _);
         value.TryGetValue(out StringSegment _);
 
-        s_jit = true;
-    }
-
-    public MemoryWatch(long allocations) => _allocations = allocations;
-
-    public static MemoryWatch Create
-    {
-        get
-        {
-            JIT();
-            return new(GC.GetAllocatedBytesForCurrentThread());
-        }
-    }
-
-    public void Dispose() => Validate();
-
-    public void Validate()
-    {
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - _allocations);
-
-        // Assert.Equal allocates
-        _allocations = GC.GetAllocatedBytesForCurrentThread();
+        s_warmed = true;
     }
 }
