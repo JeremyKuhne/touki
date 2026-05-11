@@ -41,17 +41,11 @@ Top-level layout:
 - Always use C# keywords for types (`int`, `string`, `bool`) instead of their aliases
   (`Int32`, `String`, `Boolean`).
 - Always use `nint` and `nuint` for native integer types (not `IntPtr` and `UIntPtr`).
-- Avoid `var` &mdash; always use explicit type declarations.
-- Use target-typed `new` expressions where applicable
-  (e.g. `List<string> list = new()` instead of `var list = new List<string>()`).
-- When instantiating objects, prefer `TypeName instance = new()` over
-  `var instance = new TypeName()`.
-- Prefer
+- Avoid `var` &mdash; use explicit type declarations, target-typed `new`, and
   [collection expressions](https://learn.microsoft.com/dotnet/csharp/language-reference/operators/collection-expressions)
-  for array, list, and span literals (e.g. `int[] values = [1, 2, 3];` and
-  `Point[] points = [new(1, 2), new(5, 6)];`) over `new T[] { ... }` or
-  `new List<T> { ... }` initializers. Combine with target-typed `new()` for
-  element instantiation where the element type is reasonably obvious.
+  together: `List<string> list = new();`, `int[] values = [1, 2, 3];`,
+  `Point[] points = [new(1, 2), new(5, 6)];`. The variable's type is always
+  spelled out; the `new`/`[]` literal supplies the value.
 - Use `is null` and `is not null` for null checks instead of `== null` or `!= null`.
 - For enums wrapped in `Value`, always call `Value.Create()` instead of `new Value()`.
 - Use the following header for all C# files:
@@ -124,62 +118,105 @@ JIT-naming rule, regression thresholds) live in
 
 ## Working with the user on changes
 
-These rules exist because they have been violated and cost a review round-trip.
-Treat them as hard requirements.
+Two hard requirements, both violated on this repo before:
 
-- **Never `git commit` or `git push` without explicit user approval, every
-  time.** No exceptions. This applies to: opening the initial PR, fixing a
-  failing build/test/CI run, addressing PR review comments, follow-up
-  cleanup, "obvious" small changes, and anything else. After making
-  changes, describe what you did and stop. Wait for the user to say
-  "commit", "push", "ship it", or an equivalent **publishing verb**.
+1. **Never push without explicit user approval.**
+2. **Never create a pull request without explicit user approval.**
 
-  Phrasings that are **not** approval (recurring violations on this repo):
-  - "open a PR" / "make a PR" / "create the PR" &mdash; these authorize the
-    work, not the publish. Stage and propose a commit message, then stop.
-  - "address the review comments" / "fix the comments" / "reply to the
-    comments" &mdash; edit-only.
-  - "do the next step" / "finish the rollout" / "go ahead to the next
-    thing" / a bare "go ahead" attached to a task description &mdash;
-    selects which task to work on, not whether to publish it.
-  - "fix the CI failure" &mdash; edit-only.
+Local commits are reversible and don't need approval. Anything that
+publishes to the remote or to GitHub does.
 
-  When in doubt, it is **not** approval. Ask one short yes/no question.
-  Do not stack follow-up commits trying to "make CI green" or "finish
-  the review pass".
-- **Stage by path, never `git add -A`/`git add .`** when the working tree spans
-  more than one logical change set. Run `git status --short` first; if topics
-  are intermingled, ask how to split before staging.
-- **Run `dotnet test -c Release` before declaring a fix done.** Release-mode
-  inlining surfaces bugs Debug doesn't &mdash; `Unsafe.As` on a method
-  parameter is a known foot-gun on net481 RyuJIT.
+### Pre-flight before any publishing tool
 
-The JIT-naming rule for performance claims (".NET Framework 4.8.1 RyuJIT" vs
-"modern .NET RyuJIT") and BenchmarkDotNet conventions live in
-[.github/instructions/perf.instructions.md](instructions/perf.instructions.md).
+Re-read the **most recent user message verbatim**. The only acceptable
+approvals are an explicit publishing verb in that message: `push`,
+`commit and push`, `ship it`, `send it`, `open the PR`, `create the PR`,
+`make the PR`, or an equivalent. If the message does not contain one of
+those verbs, **stop and ask one short yes/no question.**
+
+Tools that count as **push** (require approval):
+
+- Terminal: `git push` (incl. `--force`, `--force-with-lease`).
+- MCP / in-process: `mcp_io_github_git_push_files`,
+  `mcp_io_github_git_merge_pull_request`,
+  `mcp_io_github_git_update_pull_request_branch`.
+
+Create feature branches locally with `git checkout -b`; that's not a push.
+
+Tools that count as **PR create / edit** (require approval):
+
+- Terminal: `gh pr create|edit|merge|close`.
+- MCP / in-process: `mcp_io_github_git_create_pull_request`,
+  `mcp_io_github_git_update_pull_request`,
+  `mcp_io_github_git_create_pull_request_with_copilot`,
+  `github-pull-request_create_pull_request`.
+
+### Phrasings that are NOT approval
+
+None of these authorize a push or a PR. They have all been
+mistaken for it on this repo:
+
+- "address the review comments" / "fix the comments" / "look at the
+  comments" &mdash; edit-only.
+- "do the next step" / "let's do X next" / a bare "go ahead" attached
+  to a task description &mdash; selects which task, not whether to publish.
+- "fix the CI failure" / "the PR is failing" &mdash; diagnosis or local
+  fix, not a push.
+- "pull main and work on X" &mdash; authorizes the work only.
+
+When in doubt, ask one short yes/no question.
+
+### Workflow
+
+1. **Work on a feature branch.** If `git branch --show-current` reports
+   `main`, create a topic branch first (`git checkout -b <name>`). Never
+   commit to `main`. If you're handed a commit-in-progress on `main`,
+   stop and ask. Default to rebasing the branch on the current
+   `origin/main` (`git fetch origin main && git rebase origin/main`)
+   before the first push, unless the user says otherwise.
+2. Edit.
+3. Validate (`dotnet build`, `dotnet test -c Release`).
+4. **Stop.** Describe the change, show or summarize the diff, propose
+   a commit message.
+5. On explicit publish verb, stage by path, commit,
+   then push or PR. If unsure, ask.
+
+### After a violation
+
+Acknowledge directly without minimizing. **Do not push a follow-up
+"fix" commit without explicit approval** &mdash; that compounds the
+failure. The user decides whether to revert, force-push, or leave it.
+
+### Other rules
+
+- **Stage by path, never `git add -A`/`git add .`** when the working
+  tree spans more than one logical change. Run `git status --short`
+  first; if topics are intermingled, ask how to split.
+- **Run `dotnet test -c Release` before declaring a fix done.**
+  Release-mode inlining surfaces bugs Debug doesn't &mdash; `Unsafe.As`
+  on a method parameter is a known foot-gun on net481 RyuJIT.
 
 ### Enforcement
 
-The publish-boundary rule above is also enforced mechanically so that model
-rationalization cannot bypass it:
+The rule above has mechanical backstops, but they do not cover every
+surface, so the prose rule still applies.
 
-- **VS Code Copilot agent mode.** [.vscode/settings.json](../.vscode/settings.json)
-  configures `chat.tools.terminal.autoApprove` to deny `git commit`, `git push`,
-  `git reset --hard`, `git rebase`, `git merge`, `git cherry-pick`, `git tag`,
-  destructive `git branch -d/-D`, and `gh pr create|merge|close|edit`. Each
-  invocation requires an explicit in-chat **Allow** click; that click is the
-  approval. Routine read-only verbs (`git status`, `git diff`, `git log`,
-  `git show`, `git branch`, `git stash list`, `git rev-parse`, `git ls-files`)
-  are auto-approved so review work stays frictionless.
-- **Branch protection on `main`.** Configured in repo settings: PR required,
-  status checks required, force pushes and branch deletion blocked. This covers
-  surfaces the local denylist does not (Copilot cloud agent, other agents,
-  scripted runs).
-
-The prose rules above still apply: they explain *why*, and they apply on
-surfaces where the mechanical gate doesn't fire (e.g. cloud-agent runs that
-bypass the local terminal). Treat the mechanical gate as a backstop, not a
-license to skip the conversation.
+- **Terminal (VS Code Copilot agent mode).** [.vscode/settings.json](../.vscode/settings.json)
+  denies `git push`, `git reset --hard`, `git rebase`, `git merge`,
+  `git cherry-pick`, `git tag`, destructive `git branch -d/-D`, and
+  `gh pr create|merge|close|edit`. Each call requires an in-chat **Allow**
+  click; that click is the approval. Read-only verbs (`git status`,
+  `git diff`, `git log`, `git show`, `git branch`, `git stash list`,
+  `git rev-parse`, `git ls-files`) are auto-approved. `git commit` is
+  not gated &mdash; local commits are reversible.
+- **MCP and in-process tools are NOT covered by
+  `terminal.autoApprove`.** The chat tool surface has its own per-tool
+  approval flow. **Do not click "Always Allow" on any GitHub write
+  tool** &mdash; each invocation must get its own approval. The agent
+  must self-enforce because `settings.json` cannot deny these by path.
+- **Branch protection on `main`.** PR required, status checks required,
+  force pushes and branch deletion blocked. Covers surfaces the local
+  denylist does not (cloud agent, other agents, scripted runs).
 
 ## General guidance
 
