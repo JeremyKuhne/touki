@@ -1661,9 +1661,11 @@ public readonly partial struct Value
             }
             else
             {
-                // Need to special case ArraySegment<byte>, ArraySegment<char>, and StringSegment
+                // Need to special case ArraySegment<byte>, ArraySegment<char>, and StringSegment.
+                // StringSegment is stored as the underlying string with a non-zero union, so the
+                // observed object type is string in that case.
 
-                Debug.Assert(objectType.IsArray || objectType == typeof(StringSegment));
+                Debug.Assert(objectType.IsArray || objectType == typeof(string));
 
                 // We have an ArraySegment or StringSegment
                 if (objectType == typeof(byte[]))
