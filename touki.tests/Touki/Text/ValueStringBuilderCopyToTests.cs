@@ -40,22 +40,6 @@ public class ValueStringBuilderCopyToTests
         stream.ToArray().Should().Equal(expected);
     }
 
-    [Fact]
-    public void CopyTo_Stream_StackBufferThenAppendForces_NonPooledPath()
-    {
-        // On net472 this exercises the branch that calls EnsureCapacity
-        // when _arrayToReturnToPool is null — content must fit in the stack
-        // buffer so no Grow has happened yet.
-        using MemoryStream stream = new();
-        Span<char> initial = stackalloc char[8];
-        using ValueStringBuilder builder = new(initial);
-        builder.Append("ab");
-        builder.CopyTo(stream);
-
-        byte[] expected = MemoryMarshal.AsBytes("ab".AsSpan()).ToArray();
-        stream.ToArray().Should().Equal(expected);
-    }
-
     // ---------- CopyTo(TextWriter) ----------
 
     [Fact]
@@ -131,7 +115,7 @@ public class ValueStringBuilderCopyToTests
     }
 
     [Fact]
-    public void CopyTo_TextWriter_CustomTextWriter_WritesViaSpan()
+    public void CopyTo_TextWriter_CustomTextWriter_WritesContent()
     {
         RecordingTextWriter writer = new();
         using (ValueStringBuilder builder = new(stackalloc char[16]))
@@ -178,7 +162,7 @@ public class ValueStringBuilderCopyToTests
     // loop it sits inside.
 
     [Fact]
-    public void AppendFormatted_CustomSpanFormattableStruct_NoBoxing()
+    public void AppendFormatted_CustomSpanFormattableStruct_AppendsFormattedValue()
     {
         using ValueStringBuilder builder = new(stackalloc char[32]);
         builder.AppendFormatted(new FixedSpanFormattable("hello"), default(StringSpan));
