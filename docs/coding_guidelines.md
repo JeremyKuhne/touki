@@ -114,6 +114,10 @@ internal bool SingleVerticalBorderAdded
 1. Use Pascal Casing to name all types. The only exception is for interop types, which should match the native casing.
 1. Consider [primary constructors](https://learn.microsoft.com/dotnet/csharp/programming-guide/classes-and-structs/instance-constructors#primary-constructors) for "simple" structs and classes where there is only one constructor with no logic other than field assignment.
 
+### Enums
+
+1. Prefer the [`Touki.EnumExtensions`](../touki/Touki/EnumExtensions.cs) helpers (`AreFlagsSet`, `AreAnyFlagsSet`, `IsOnlyOneFlagSet`, `SetFlags`, `ClearFlags`) over hand-written `&`/`|` on flag enums. They inline to the same instructions on both TFMs and avoid `Enum.HasFlag` boxing on net472/net481 (~20&times; faster).
+
 ### Fields
 
 1. Type constants, statics, and fields should be specified at the top within the type declaration.

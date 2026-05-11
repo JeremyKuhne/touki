@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Touki;
+
 namespace System;
 
 public static partial class SpanExtensions
@@ -323,7 +325,7 @@ public static partial class SpanExtensions
             }
         }
 
-        if ((options & StringSplitOptions.RemoveEmptyEntries) != 0 && trimmedStart == trimmedEnd)
+        if (options.AreAnyFlagsSet(StringSplitOptions.RemoveEmptyEntries) && trimmedStart == trimmedEnd)
         {
             return false;
         }
