@@ -184,6 +184,11 @@ license to skip the conversation.
 
 - Ensure code is cross-compatible with both .NET 10 and .NET Framework 4.7.2.
 - Check `GlobalUsings.cs` for global usings and don't add unnecessary usings.
+- **Prefer `Touki.EnumExtensions` over hand-written enum bitwise code** in
+  production library code. `AreFlagsSet`, `AreAnyFlagsSet`,
+  `IsOnlyOneFlagSet`, `SetFlags`, `ClearFlags` inline to the same
+  instructions as `&`/`|`/`==` on both TFMs and avoid the `Enum.HasFlag`
+  boxing penalty on net472/net481 (~20&times; faster, zero alloc).
 - When adding a polyfill for a modern .NET API on .NET Framework, follow the
   [`polyfill-dotnet-api`](.agents/skills/polyfill-dotnet-api/SKILL.md) skill:
   prefer Microsoft-shipped packages (`System.Memory`, `Microsoft.Bcl.*`,
