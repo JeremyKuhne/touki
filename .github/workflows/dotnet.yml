@@ -81,6 +81,7 @@ jobs:
           "-reports:$reportsArg" `
           -targetdir:artifacts/coverage `
           -reporttypes:'Cobertura;HtmlInline;MarkdownSummaryGithub' `
+          -classfilters:'-Touki.Resources.SR;-Touki.Framework.Resources.SRF' `
           -title:'touki'
         if (Test-Path artifacts/coverage/SummaryGithub.md) {
           Get-Content artifacts/coverage/SummaryGithub.md |

@@ -17,5 +17,12 @@
         <Attribute>^System\.CodeDom\.Compiler\.GeneratedCodeAttribute$</Attribute>
       </Exclude>
     </Attributes>
+    <Sources>
+      <Exclude>
+        <!-- Auto-generated string resource accessors from Microsoft.CodeAnalysis.ResxSourceGenerator. -->
+        <Source>.*[\\/]SR\.Designer\.cs$</Source>
+        <Source>.*[\\/]SRF\.Designer\.cs$</Source>
+      </Exclude>
+    </Sources>
   </CodeCoverage>
 </Configuration>
