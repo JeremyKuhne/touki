@@ -15,7 +15,7 @@ public class MSBuildMatchBuilderTests
         File.WriteAllText(Path.Join(folder, "a.txt"), "1");
         File.WriteAllText(Path.Join(folder, "b.cs"), "2");
 
-        IEnumerationMatcher matcher = MSBuildMatchBuilder.FromSpecification(
+        using IEnumerationMatcher matcher = MSBuildMatchBuilder.FromSpecification(
             includeSpecification: "*.txt",
             excludeSpecifications: string.Empty,
             matchType: MatchType.Simple,
@@ -33,7 +33,7 @@ public class MSBuildMatchBuilderTests
     {
         using TempFolder folder = new();
 
-        IEnumerationMatcher matcher = MSBuildMatchBuilder.FromSpecification(
+        using IEnumerationMatcher matcher = MSBuildMatchBuilder.FromSpecification(
             includeSpecification: "**/*.cs",
             excludeSpecifications: "**/skip.cs",
             matchType: MatchType.Simple,
@@ -49,7 +49,7 @@ public class MSBuildMatchBuilderTests
     [Fact]
     public void FromSpecification_StringStringOverload_NullRoot_UsesCurrentDirectory()
     {
-        IEnumerationMatcher matcher = MSBuildMatchBuilder.FromSpecification(
+        using IEnumerationMatcher matcher = MSBuildMatchBuilder.FromSpecification(
             includeSpecification: "*.txt",
             excludeSpecifications: string.Empty,
             matchType: MatchType.Simple,

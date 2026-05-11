@@ -7,7 +7,7 @@ namespace Touki;
 public class SpanExtensionsSliceAtNullTests
 {
     [Fact]
-    public void ReadOnlySpan_NoNull_ReturnsFullSpan()
+    public void SliceAtNull_ReadOnlySpan_NoNull_ReturnsFullSpan()
     {
         ReadOnlySpan<char> span = "hello".AsSpan();
         ReadOnlySpan<char> result = span.SliceAtNull();
@@ -15,7 +15,7 @@ public class SpanExtensionsSliceAtNullTests
     }
 
     [Fact]
-    public void ReadOnlySpan_NullAtEnd_ReturnsContentBeforeNull()
+    public void SliceAtNull_ReadOnlySpan_NullAtEnd_ReturnsContentBeforeNull()
     {
         ReadOnlySpan<char> span = "hello\0".AsSpan();
         ReadOnlySpan<char> result = span.SliceAtNull();
@@ -23,7 +23,7 @@ public class SpanExtensionsSliceAtNullTests
     }
 
     [Fact]
-    public void ReadOnlySpan_NullInMiddle_ReturnsContentBeforeNull()
+    public void SliceAtNull_ReadOnlySpan_NullInMiddle_ReturnsContentBeforeNull()
     {
         ReadOnlySpan<char> span = "ab\0cd".AsSpan();
         ReadOnlySpan<char> result = span.SliceAtNull();
@@ -31,7 +31,7 @@ public class SpanExtensionsSliceAtNullTests
     }
 
     [Fact]
-    public void ReadOnlySpan_NullAtStart_ReturnsEmpty()
+    public void SliceAtNull_ReadOnlySpan_NullAtStart_ReturnsEmpty()
     {
         ReadOnlySpan<char> span = "\0abc".AsSpan();
         ReadOnlySpan<char> result = span.SliceAtNull();
@@ -39,7 +39,7 @@ public class SpanExtensionsSliceAtNullTests
     }
 
     [Fact]
-    public void ReadOnlySpan_Empty_ReturnsEmpty()
+    public void SliceAtNull_ReadOnlySpan_Empty_ReturnsEmpty()
     {
         ReadOnlySpan<char> span = [];
         ReadOnlySpan<char> result = span.SliceAtNull();
@@ -47,7 +47,7 @@ public class SpanExtensionsSliceAtNullTests
     }
 
     [Fact]
-    public void Span_NoNull_ReturnsFullSpan()
+    public void SliceAtNull_Span_NoNull_ReturnsFullSpan()
     {
         Span<char> buffer = ['h', 'e', 'l', 'l', 'o'];
         Span<char> result = buffer.SliceAtNull();
@@ -56,7 +56,16 @@ public class SpanExtensionsSliceAtNullTests
     }
 
     [Fact]
-    public void Span_NullInMiddle_ReturnsContentBeforeNull()
+    public void SliceAtNull_Span_NullAtEnd_ReturnsContentBeforeNull()
+    {
+        Span<char> buffer = ['h', 'e', 'l', 'l', 'o', '\0'];
+        Span<char> result = buffer.SliceAtNull();
+        result.Length.Should().Be(5);
+        result.SequenceEqual("hello".AsSpan()).Should().BeTrue();
+    }
+
+    [Fact]
+    public void SliceAtNull_Span_NullInMiddle_ReturnsContentBeforeNull()
     {
         Span<char> buffer = ['a', 'b', '\0', 'c', 'd'];
         Span<char> result = buffer.SliceAtNull();
@@ -65,7 +74,7 @@ public class SpanExtensionsSliceAtNullTests
     }
 
     [Fact]
-    public void Span_NullAtStart_ReturnsEmpty()
+    public void SliceAtNull_Span_NullAtStart_ReturnsEmpty()
     {
         Span<char> buffer = ['\0', 'x', 'y'];
         Span<char> result = buffer.SliceAtNull();
@@ -73,7 +82,7 @@ public class SpanExtensionsSliceAtNullTests
     }
 
     [Fact]
-    public void Span_Empty_ReturnsEmpty()
+    public void SliceAtNull_Span_Empty_ReturnsEmpty()
     {
         Span<char> buffer = [];
         Span<char> result = buffer.SliceAtNull();

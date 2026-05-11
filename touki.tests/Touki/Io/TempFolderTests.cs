@@ -25,31 +25,53 @@ public class TempFolderTests
     public void Dispose_DeletesDirectory()
     {
         TempFolder folder = new();
-        string path = folder.TempPath;
-        Directory.Exists(path).Should().BeTrue();
+        try
+        {
+            string path = folder.TempPath;
+            Directory.Exists(path).Should().BeTrue();
 
-        folder.Dispose();
+            folder.Dispose();
 
-        Directory.Exists(path).Should().BeFalse();
+            Directory.Exists(path).Should().BeFalse();
+        }
+        finally
+        {
+            // DisposableBase guards against double disposal; safe to call again on failure.
+            folder.Dispose();
+        }
     }
 
     [Fact]
     public void Dispose_DirectoryAlreadyRemoved_DoesNotThrow()
     {
         TempFolder folder = new();
-        Directory.Delete(folder.TempPath, recursive: true);
+        try
+        {
+            Directory.Delete(folder.TempPath, recursive: true);
 
-        Action action = folder.Dispose;
-        action.Should().NotThrow();
+            Action action = folder.Dispose;
+            action.Should().NotThrow();
+        }
+        finally
+        {
+            folder.Dispose();
+        }
     }
 
     [Fact]
     public void Dispose_CalledTwice_DoesNotThrow()
     {
         TempFolder folder = new();
-        folder.Dispose();
+        try
+        {
+            folder.Dispose();
 
-        Action action = folder.Dispose;
-        action.Should().NotThrow();
+            Action action = folder.Dispose;
+            action.Should().NotThrow();
+        }
+        finally
+        {
+            folder.Dispose();
+        }
     }
 }

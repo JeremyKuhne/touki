@@ -45,6 +45,28 @@ For each new `public` (or `InternalsVisibleTo`-internal) member:
 - Allocating APIs (`Concat`, `ToHexString`): include an
   `OverflowException` test on the length sum (see &sect;3).
 
+Test hygiene for the tests themselves &mdash; the recurring miss list
+that costs the most review rounds on coverage-only PRs:
+
+- **Test method names start with the method under test.**
+  `MethodName_StateUnderTest_ExpectedBehavior` (see
+  [tests.instructions.md](../../../.github/instructions/tests.instructions.md)).
+  `ReadOnlySpan_Empty_ReturnsEmpty` is *wrong*;
+  `SliceAtNull_ReadOnlySpan_Empty_ReturnsEmpty` is right.
+- **Every `IDisposable` test local uses `using` or `try`/`finally`.**
+  `TempFolder`, `IEnumerationMatcher`, anything returned by
+  `MSBuildMatchBuilder.FromSpecification`, `ArrayPoolList<T>` &mdash;
+  a bare local leaks the resource when an assertion fails. See
+  the "Disposables in test bodies" section in `tests.instructions.md`
+  for the pattern when the test itself exercises explicit `Dispose()`.
+- **Don't hard-code `InvariantCulture` for APIs that use
+  `CurrentCulture`.** Touki's provider-less formatting helpers
+  (`string.FormatValue`, `ValueStringBuilder.AppendFormat` without a
+  provider, etc.) format with `CurrentCulture`. Asserting against
+  `InvariantCulture`-formatted strings makes the test locale-dependent.
+  See the "Culture-sensitive assertions" section in
+  `tests.instructions.md`.
+
 ## 2. Empty / null spans before `unsafe` interop
 
 `MemoryMarshal.GetReference(default(ReadOnlySpan<T>))` is a null ref.
@@ -161,6 +183,12 @@ the overhead in `<remarks>` and keep the benchmark file in `touki.perf/`.
 - File list, test counts, and perf numbers all reflect the *current*
   diff. Re-run after every commit; do not paste numbers from an earlier
   iteration.
+- **Walk each bullet of the description against the diff before
+  pushing.** If the body says "covers `Foo` with cases A/B/C", search
+  the diff for tests named `Foo_…` and confirm A, B, and C are all
+  there. PR #141 lost a round to a description that claimed a
+  `Span<char>` "null at end" case and a `MatchAnyDirectory` double-
+  dispose test, neither of which was actually in the diff.
 - "Deliberately deferred" entries match what's actually absent from
   the working tree.
 

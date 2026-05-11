@@ -301,4 +301,14 @@ public class MatchAnyTests
         Action action = matcher.Dispose;
         action.Should().NotThrow();
     }
+
+    [Fact]
+    public void MatchAnyDirectory_Dispose_CalledTwice_DoesNotThrow()
+    {
+        MatchAnyDirectory matcher = new("docs", MatchType.Simple, MatchCasing.CaseSensitive);
+        matcher.Dispose();
+
+        Action action = matcher.Dispose;
+        action.Should().NotThrow();
+    }
 }

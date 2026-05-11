@@ -27,8 +27,11 @@ public class StringExtensionsTests
     [Fact]
     public void FormatValue_ValueArg_FormatsBoxedValue()
     {
+        // FormatValue constructs a ValueStringBuilder with a null IFormatProvider,
+        // so number formatting follows CultureInfo.CurrentCulture. The expected
+        // string must use the same culture or this assertion is locale-dependent.
         string result = string.FormatValue("{0:N0}".AsSpan(), Value.Create(1234));
-        result.Should().Be(1234.ToString("N0", CultureInfo.InvariantCulture));
+        result.Should().Be(1234.ToString("N0", CultureInfo.CurrentCulture));
     }
 
     [Fact]
