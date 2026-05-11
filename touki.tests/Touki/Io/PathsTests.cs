@@ -447,4 +447,25 @@ public class PathsTests
     }
 #endif
 
+    [Fact]
+    public void MatchesExpression_Win32_UsesWin32Semantics()
+    {
+        // Win32 treats '*.*' as matching anything that has a dot in it (and more).
+        Paths.MatchesExpression("file.txt".AsSpan(), "*.*".AsSpan(), MatchCasing.CaseSensitive, MatchType.Win32)
+            .Should().BeTrue();
+        // Exercising MatchType.Win32 path; behavior follows FileSystemName.MatchesWin32Expression.
+        Paths.MatchesExpression("README".AsSpan(), "READ*".AsSpan(), MatchCasing.CaseInsensitive, MatchType.Win32)
+            .Should().BeTrue();
+    }
+
+    [Fact]
+    public void MatchesExpression_Simple_RequiresLiteralDot()
+    {
+        // Simple semantics treat '*.*' as needing a literal '.'.
+        Paths.MatchesExpression("file.txt".AsSpan(), "*.*".AsSpan(), MatchCasing.CaseSensitive, MatchType.Simple)
+            .Should().BeTrue();
+        Paths.MatchesExpression("filename".AsSpan(), "*.*".AsSpan(), MatchCasing.CaseSensitive, MatchType.Simple)
+            .Should().BeFalse();
+    }
+
 }

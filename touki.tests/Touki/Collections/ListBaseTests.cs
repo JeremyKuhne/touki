@@ -374,4 +374,73 @@ public class ListBaseTests
         list.Dispose();
         list.Dispose(); // Second dispose should be no-op
     }
+
+    [Fact]
+    public void IList_Indexer_Setter_AssignsItem()
+    {
+        TestList<string> list = new();
+        list.Add("a");
+
+        IList iList = list;
+        iList[0] = "b";
+
+        list[0].Should().Be("b");
+    }
+
+    [Fact]
+    public void IList_Indexer_Setter_WrongType_Throws()
+    {
+        TestList<string> list = new();
+        list.Add("a");
+
+        IList iList = list;
+        Action action = () => iList[0] = 42;
+        action.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void IList_Remove_ExistingItem_RemovesIt()
+    {
+        TestList<string> list = new();
+        list.Add("a");
+        list.Add("b");
+
+        IList iList = list;
+        iList.Remove("a");
+
+        list.Count.Should().Be(1);
+        list[0].Should().Be("b");
+    }
+
+    [Fact]
+    public void IList_Remove_WrongType_IsNoOp()
+    {
+        TestList<string> list = new();
+        list.Add("a");
+
+        IList iList = list;
+        iList.Remove(42);
+
+        list.Count.Should().Be(1);
+    }
+
+    [Fact]
+    public void IList_IndexOf_WrongType_ReturnsNegativeOne()
+    {
+        TestList<string> list = new();
+        list.Add("a");
+
+        IList iList = list;
+        iList.IndexOf(42).Should().Be(-1);
+    }
+
+    [Fact]
+    public void IList_Contains_WrongType_ReturnsFalse()
+    {
+        TestList<string> list = new();
+        list.Add("a");
+
+        IList iList = list;
+        iList.Contains(42).Should().BeFalse();
+    }
 }

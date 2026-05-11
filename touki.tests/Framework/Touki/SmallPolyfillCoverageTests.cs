@@ -602,4 +602,57 @@ public class SmallPolyfillCoverageTests
 
         public bool MatchesFile(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> fileName) => FileResult;
     }
+
+    // ---------- EnumDataCache.EnumData ----------
+
+    [Flags]
+    private enum SampleFlags
+    {
+        A = 1,
+        B = 2
+    }
+
+    [Fact]
+    public void EnumData_Constructor_NonEnum_Throws()
+    {
+        Action action = () => new global::Touki.EnumDataCache.EnumData(typeof(int));
+        action.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void EnumData_Constructor_Enum_PopulatesType()
+    {
+        global::Touki.EnumDataCache.EnumData data = new(typeof(SampleFlags));
+        data.Type.Should().Be(typeof(SampleFlags));
+        data.IsFlags.Should().BeTrue();
+        data.UnderlyingType.Should().Be(typeof(int));
+        data.Data.Names.Should().Contain("A");
+    }
+
+    // ---------- ValueStringBuilder.FormatterHelper<T> ----------
+
+    private struct NonFormattableStruct
+    {
+        public int Value;
+    }
+
+    [Fact]
+    public void AppendFormatted_NonISpanFormattableStruct_FallsBackToObjectFormat()
+    {
+        // Exercises FormatterHelper<T>.Init's branch where T does not implement
+        // ISpanFormattable (the helper returns null and the builder falls back
+        // to boxed formatting).
+        ValueStringBuilder builder = new(stackalloc char[32]);
+        try
+        {
+            NonFormattableStruct value = new() { Value = 7 };
+            builder.AppendFormatted(value);
+            // The fall-back path boxes and calls ToString().
+            builder.AsSpan().ToString().Should().Be(value.ToString());
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
 }

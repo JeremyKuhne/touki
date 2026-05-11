@@ -1016,4 +1016,49 @@ public class MSBuildEnumeratorTests
         IReadOnlyList<string> expected = FileMatcherWrapper.GetFilesSimple(rootFolder, "**/src/**/*.cs");//, excludes);
         files.Count.Should().Be(expected.Count);
     }
+
+    [Fact]
+    public void EnumerateFiles_FullyQualifiedSpec_ReturnsFullPaths()
+    {
+        // A fully-qualified file spec disables project-directory stripping. This covers the
+        // constructor branch that skips stripping and the TransformEntry path that returns
+        // the full path unchanged.
+        using TempFolder tempFolder = new();
+
+        File.WriteAllText(Path.Join(tempFolder, "file1.txt"), "Content 1");
+        File.WriteAllText(Path.Join(tempFolder, "file2.txt"), "Content 2");
+
+        string spec = Path.Join(tempFolder, "*.txt");
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(spec, tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        files.Should().HaveCount(2);
+        files.Should().AllSatisfy(f => Path.IsPathFullyQualified(f).Should().BeTrue());
+    }
+
+    [Fact]
+    public void EnumerateFiles_NullProjectDirectory_ReturnsFullPaths()
+    {
+        // A null project directory also disables stripping.
+        using TempFolder tempFolder = new();
+
+        File.WriteAllText(Path.Join(tempFolder, "file1.txt"), "Content 1");
+
+        string spec = Path.Join(tempFolder, "*.txt");
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(spec, projectDirectory: null);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        files.Should().HaveCount(1);
+        files.Should().AllSatisfy(f => Path.IsPathFullyQualified(f).Should().BeTrue());
+    }
 }
