@@ -138,17 +138,18 @@ Tools that count as **push** (require approval):
 
 - Terminal: `git push` (incl. `--force`, `--force-with-lease`).
 - MCP / in-process: `mcp_io_github_git_push_files`,
-  `mcp_io_github_git_merge_pull_request`,
   `mcp_io_github_git_update_pull_request_branch`.
 
 Create feature branches locally with `git checkout -b`; that's not a push.
 
-Tools that count as **PR create / edit** (require approval):
+Tools that count as **PR create / edit / merge / close** (require
+approval):
 
 - Terminal: `gh pr create|edit|merge|close`.
 - MCP / in-process: `mcp_io_github_git_create_pull_request`,
   `mcp_io_github_git_update_pull_request`,
   `mcp_io_github_git_create_pull_request_with_copilot`,
+  `mcp_io_github_git_merge_pull_request`,
   `github-pull-request_create_pull_request`.
 
 ### Phrasings that are NOT approval
@@ -176,10 +177,10 @@ When in doubt, ask one short yes/no question.
    before the first push, unless the user says otherwise.
 2. Edit.
 3. Validate (`dotnet build`, `dotnet test -c Release`).
-4. **Stop.** Describe the change, show or summarize the diff, propose
-   a commit message.
-5. On explicit publish verb, stage by path, commit,
-   then push or PR. If unsure, ask.
+4. Stage by path and commit locally whenever the change is coherent;
+   local commits are reversible and don't need approval.
+5. **Stop.** Describe the change and show or summarize the diff.
+   **On explicit publish verb**, push or PR. If unsure, ask.
 
 ### After a violation
 
