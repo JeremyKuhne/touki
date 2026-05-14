@@ -3,3 +3,16 @@ WaitForMultipleObjectsEx
 WIN32_ERROR
 E_HANDLE
 Sleep
+OpenClipboard
+CloseClipboard
+EmptyClipboard
+IsClipboardFormatAvailable
+SetClipboardData
+GetClipboardData
+GlobalAlloc
+GlobalLock
+GlobalUnlock
+GlobalSize
+GlobalFree
+CLIPBOARD_FORMAT
+GLOBAL_ALLOC_FLAGS

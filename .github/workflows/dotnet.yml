@@ -112,3 +112,75 @@ jobs:
           artifacts/test-results/**/*.trx
         if-no-files-found: warn
         retention-days: 14
+
+  macos-build:
+    name: ".NET / macos"
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v5
+      with: { fetch-depth: 0 }
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+    - name: Restore
+      run: dotnet restore touki.tests/touki.tests.csproj
+    - name: Build release
+      run: dotnet build touki.tests/touki.tests.csproj -c Release -f net10.0 --no-restore
+    - name: Test release
+      run: |
+        resultsDir="$PWD/artifacts/test-results/macos-release"
+        mkdir -p "$resultsDir"
+
+        dotnet test touki.tests/touki.tests.csproj -c Release -f net10.0 --no-build \
+          -p:TestingPlatformCaptureOutput=false \
+          -- \
+          --results-directory "$resultsDir" \
+          --report-xunit-trx \
+          --show-live-output on
+    - name: Upload raw logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: mtp-logs-macos
+        path: |
+          artifacts/test-results/**/*.trx
+        if-no-files-found: warn
+        retention-days: 14
+
+  linux-build:
+    name: ".NET / linux"
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v5
+      with: { fetch-depth: 0 }
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+    - name: Install xclip and Xvfb
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends xclip xvfb
+    - name: Restore
+      run: dotnet restore touki.tests/touki.tests.csproj
+    - name: Build release
+      run: dotnet build touki.tests/touki.tests.csproj -c Release -f net10.0 --no-restore
+    - name: Test release
+      run: |
+        resultsDir="$PWD/artifacts/test-results/linux-release"
+        mkdir -p "$resultsDir"
+
+        xvfb-run --auto-servernum dotnet test touki.tests/touki.tests.csproj -c Release -f net10.0 --no-build \
+          -p:TestingPlatformCaptureOutput=false \
+          -- \
+          --results-directory "$resultsDir" \
+          --report-xunit-trx \
+          --show-live-output on
+    - name: Upload raw logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: mtp-logs-linux
+        path: |
+          artifacts/test-results/**/*.trx
+        if-no-files-found: warn
+        retention-days: 14
