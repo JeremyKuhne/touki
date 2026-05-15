@@ -19,9 +19,17 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build:
-    name: ".NET / build"
+  # The Windows build runs Debug and Release on two parallel runners.
+  # Coverage, pack, and Codecov are Release-only and gated by `matrix.configuration`.
+  # The `build` aggregator below depends on both legs and keeps the
+  # `.NET / build` status-check name stable for branch protection.
+  build-matrix:
+    name: ".NET / build (${{ matrix.configuration }})"
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
     env:
       # Co-locate the NuGet cache inside the workspace so actions/cache can
       # restore/save it reliably on every OS, avoiding ~/.nuget path quirks
@@ -43,38 +51,36 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore
-    - name: Build release
-      run: dotnet build --configuration Release --no-restore
-    - name: Pack (release)
+      run: dotnet build --configuration ${{ matrix.configuration }} --no-restore
+    - name: Pack
+      if: matrix.configuration == 'Release'
       run: dotnet pack --configuration Release --no-build -o ./artifacts/packages
     - name: Test
       run: |
-        $resultsDir = Join-Path $PWD.Path 'artifacts/test-results/debug'
+        $configuration = '${{ matrix.configuration }}'
+        $resultsDir = Join-Path $PWD.Path "artifacts/test-results/$($configuration.ToLower())"
         New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
 
-        dotnet test --no-build `
-          -p:TestingPlatformCaptureOutput=false `
-          -- `
-          --results-directory "$resultsDir" `
-          --report-xunit-trx `
-          --show-live-output on
-    - name: Test release
-      run: |
-        $resultsDir = Join-Path $PWD.Path 'artifacts/test-results/release'
-        New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
+        # MTP args appended only on Release: coverage instrumentation slows tests
+        # and Codecov only consumes the Release run.
+        $extraArgs = @()
+        if ($configuration -eq 'Release') {
+          $extraArgs = @(
+            '--coverage',
+            '--coverage-output-format', 'cobertura',
+            '--coverage-settings', "$PWD/.config/coverage.settings.xml"
+          )
+        }
 
-        dotnet test -c Release --no-build `
+        dotnet test -c $configuration --no-build `
           -p:TestingPlatformCaptureOutput=false `
           -- `
           --results-directory "$resultsDir" `
           --report-xunit-trx `
           --show-live-output on `
-          --coverage `
-          --coverage-output-format cobertura `
-          --coverage-settings "$PWD/.config/coverage.settings.xml"
+          @extraArgs
     - name: Generate coverage report
-      if: always()
+      if: always() && matrix.configuration == 'Release'
       run: |
         $reportGeneratorVersion = '5.5.9'
         if (dotnet tool list -g | Select-String -SimpleMatch 'dotnet-reportgenerator-globaltool') {
@@ -109,7 +115,7 @@ jobs:
             Add-Content -Path $env:GITHUB_STEP_SUMMARY
         }
     - name: Upload coverage report
-      if: always()
+      if: always() && matrix.configuration == 'Release'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
@@ -117,7 +123,7 @@ jobs:
         if-no-files-found: warn
         retention-days: 14
     - name: Upload coverage to Codecov
-      if: always()
+      if: always() && matrix.configuration == 'Release'
       uses: codecov/codecov-action@v5
       with:
         files: artifacts/coverage/Cobertura.xml
@@ -128,11 +134,30 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: mtp-logs
+        name: mtp-logs-${{ matrix.configuration }}
         path: |
           artifacts/test-results/**/*.trx
         if-no-files-found: warn
         retention-days: 14
+
+  # Aggregator: preserves the `.NET / build` status-check name so branch
+  # protection on `main` doesn't have to be updated. `needs.build-matrix.result`
+  # is `success` only when every matrix leg succeeded; any other state fails
+  # the aggregator and (transitively) the required check.
+  build:
+    name: ".NET / build"
+    runs-on: ubuntu-latest
+    needs: build-matrix
+    if: always()
+    steps:
+    - name: Verify matrix legs
+      run: |
+        result='${{ needs.build-matrix.result }}'
+        echo "build-matrix result: $result"
+        if [ "$result" != "success" ]; then
+          echo "::error::One or more build-matrix legs did not succeed (result: $result)."
+          exit 1
+        fi
 
   macos-build:
     name: ".NET / macos"
