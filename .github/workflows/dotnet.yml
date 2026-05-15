@@ -9,11 +9,13 @@ on:
   push:
     branches: [ "main" ]
 
-# Cancel in-flight runs for the same ref when a new commit lands. PRs benefit
-# the most (force-push iteration during review); pushes to main are left to
-# run to completion so the default branch always has a complete report.
+# Cancel in-flight runs when a force-push to a PR supersedes them. Pushes
+# to `main` are NOT queued: `github.head_ref` is empty for non-PR events,
+# so the group expression falls through to `github.run_id`, which is
+# unique per run. That keeps back-to-back merges into `main` running in
+# parallel instead of serializing behind each other.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
