@@ -58,9 +58,15 @@ public unsafe class WindowsClipboardProviderTests
                 HANDLE result = PInvoke.SetClipboardData((uint)CLIPBOARD_FORMAT.CF_UNICODETEXT, (HANDLE)(void*)hGlobal);
                 if (result.IsNull)
                 {
+                    // Free the HGLOBAL we still own, then fail the attempt. RetryFact
+                    // will re-run on transient clipboard contention rather than letting
+                    // the test silently pass without exercising the provider path.
                     PInvoke.GlobalFree(hGlobal);
-                    return;
                 }
+
+                result.IsNull.Should().BeFalse(
+                    "SetClipboardData must succeed for the provider path to be exercised; "
+                    + "transient contention is retried by RetryFact.");
             }
             finally
             {

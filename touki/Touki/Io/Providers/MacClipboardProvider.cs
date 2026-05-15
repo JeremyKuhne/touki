@@ -59,17 +59,24 @@ internal sealed unsafe partial class MacClipboardProvider : IClipboardProvider
     // Objective-C runtime returns the same pointer for repeated lookups. AppKit
     // must be loaded first (see <see cref="s_appKitHandle"/>) for NSPasteboard
     // to be registered; the field initializer order matters.
-    private static readonly nint s_nsPasteboardClass = objc_getClass("NSPasteboard"u8);
-    private static readonly nint s_nsStringClass = objc_getClass("NSString"u8);
-    private static readonly nint s_selGeneralPasteboard = sel_registerName("generalPasteboard"u8);
-    private static readonly nint s_selClearContents = sel_registerName("clearContents"u8);
-    private static readonly nint s_selSetStringForType = sel_registerName("setString:forType:"u8);
-    private static readonly nint s_selStringForType = sel_registerName("stringForType:"u8);
-    private static readonly nint s_selAvailableTypeFromArray = sel_registerName("availableTypeFromArray:"u8);
-    private static readonly nint s_selStringWithUTF8String = sel_registerName("stringWithUTF8String:"u8);
-    private static readonly nint s_selUTF8String = sel_registerName("UTF8String"u8);
-    private static readonly nint s_selArrayWithObject = sel_registerName("arrayWithObject:"u8);
-    private static readonly nint s_nsArrayClass = objc_getClass("NSArray"u8);
+    //
+    // The names below carry an explicit trailing "\0" so the pointer the
+    // source-generated LibraryImport marshaller hands to objc_getClass /
+    // sel_registerName always sees a NUL inside the bytes that ReadOnlySpan<byte>
+    // covers. Roslyn does emit a trailing 0 byte after every u8 literal today,
+    // but that is not in the public C# language spec; making the terminator
+    // part of the literal removes the implementation-defined dependency.
+    private static readonly nint s_nsPasteboardClass = objc_getClass("NSPasteboard\0"u8);
+    private static readonly nint s_nsStringClass = objc_getClass("NSString\0"u8);
+    private static readonly nint s_selGeneralPasteboard = sel_registerName("generalPasteboard\0"u8);
+    private static readonly nint s_selClearContents = sel_registerName("clearContents\0"u8);
+    private static readonly nint s_selSetStringForType = sel_registerName("setString:forType:\0"u8);
+    private static readonly nint s_selStringForType = sel_registerName("stringForType:\0"u8);
+    private static readonly nint s_selAvailableTypeFromArray = sel_registerName("availableTypeFromArray:\0"u8);
+    private static readonly nint s_selStringWithUTF8String = sel_registerName("stringWithUTF8String:\0"u8);
+    private static readonly nint s_selUTF8String = sel_registerName("UTF8String\0"u8);
+    private static readonly nint s_selArrayWithObject = sel_registerName("arrayWithObject:\0"u8);
+    private static readonly nint s_nsArrayClass = objc_getClass("NSArray\0"u8);
 
     private MacClipboardProvider()
     {
@@ -257,8 +264,9 @@ internal sealed unsafe partial class MacClipboardProvider : IClipboardProvider
         }
     }
 
-    // P/Invoke surface. UTF-8 string literals are stable null-terminated byte sequences
-    // suitable for the C strings these runtime calls expect.
+    // P/Invoke surface. Callers pass UTF-8 byte spans that include an explicit
+    // trailing NUL so the marshaller hands a valid C string to the native call
+    // regardless of compiler-emitted padding.
 
     [LibraryImport(Dl, EntryPoint = "dlopen", StringMarshalling = StringMarshalling.Utf8)]
     private static partial nint dlopen(string path, int mode);

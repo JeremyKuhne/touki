@@ -367,6 +367,11 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
             };
 
             using Process process = Process.Start(info)!;
+
+            // Drain stderr asynchronously so a chatty helper can't fill the stderr pipe
+            // and block its own exit while we're waiting for it.
+            Task<string> stderrTask = process.StandardError.ReadToEndAsync();
+
             if (!process.WaitForExit(ProcessTimeoutMs))
             {
                 try
@@ -380,6 +385,7 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
                 return false;
             }
 
+            stderrTask.Wait(ProcessTimeoutMs);
             return process.ExitCode == 0;
         }
         catch

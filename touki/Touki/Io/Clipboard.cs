@@ -47,13 +47,17 @@ public static class Clipboard
     /// <remarks>
     ///  <para>
     ///   This is a static property of the platform and host environment, not of any individual
-    ///   call. It returns <see langword="true"/> on Windows and macOS; on Linux it returns
-    ///   <see langword="true"/> only if a supported helper (<c>wl-copy</c>/<c>wl-paste</c>,
-    ///   <c>xclip</c>, or <c>xsel</c>) is on <c>PATH</c> and a display server is advertised
-    ///   via <c>WAYLAND_DISPLAY</c> or <c>DISPLAY</c>. The Linux check does not connect to
-    ///   the display server, so a stale environment variable (e.g. an unreachable X server
-    ///   or missing Wayland socket) can leave this <see langword="true"/> while every
-    ///   operation still fails. On any other platform or a headless Linux host it returns
+    ///   call. It returns <see langword="true"/> on Windows. On macOS it typically returns
+    ///   <see langword="true"/>, but reports <see langword="false"/> in the rare case where
+    ///   AppKit cannot be loaded (for example a sandbox that blocks the framework, or a
+    ///   command-line bundle stripped of AppKit) and <c>NSPasteboard</c> is therefore not
+    ///   registered with the Objective-C runtime. On Linux it returns <see langword="true"/>
+    ///   only if a supported helper (<c>wl-copy</c>/<c>wl-paste</c>, <c>xclip</c>, or
+    ///   <c>xsel</c>) is on <c>PATH</c> and a display server is advertised via
+    ///   <c>WAYLAND_DISPLAY</c> or <c>DISPLAY</c>. The Linux check does not connect to the
+    ///   display server, so a stale environment variable (e.g. an unreachable X server or
+    ///   missing Wayland socket) can leave this <see langword="true"/> while every operation
+    ///   still fails. On any other platform or a headless Linux host it returns
     ///   <see langword="false"/>.
     ///  </para>
     ///  <para>
@@ -103,8 +107,20 @@ public static class Clipboard
     /// </summary>
     /// <remarks>
     ///  <para>
-    ///   On Linux this stops the helper process from offering our previously-set value; the
-    ///   current clipboard owner (a clipboard manager, or another application) is not affected.
+    ///   On Windows this calls <c>EmptyClipboard</c>, which discards whatever data the
+    ///   current owner has placed there.
+    ///  </para>
+    ///  <para>
+    ///   On macOS this calls <c>[NSPasteboard clearContents]</c>, which clears the general
+    ///   pasteboard for the current user session.
+    ///  </para>
+    ///  <para>
+    ///   On Linux this invokes the platform helper's global clear path (<c>wl-copy --clear</c>,
+    ///   <c>xsel --clipboard --clear</c>, or an empty <c>xclip</c> set). All three remove
+    ///   the selection that the X server or Wayland compositor is currently advertising,
+    ///   regardless of which process originally placed it there. A running clipboard manager
+    ///   may immediately re-populate the selection from its own history, but the call still
+    ///   affects globally-visible state, not just our own helper process.
     ///  </para>
     /// </remarks>
     public static bool TryClear() => s_provider.TryClear();

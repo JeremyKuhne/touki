@@ -104,6 +104,13 @@ internal sealed unsafe class WindowsClipboardProvider : IClipboardProvider
     /// <inheritdoc/>
     public bool TrySetText(ReadOnlySpan<char> text)
     {
+        // Compute the allocation size up front. Widen to nuint before the multiply so a
+        // pathological span of int.MaxValue chars cannot overflow the size operand. The
+        // checked() guards 32-bit nuint, where (int.MaxValue + 1) * 2 still overflows;
+        // GlobalAlloc would have failed anyway, but we'd rather fail loudly than silently.
+        // Compute this before opening the clipboard so a throw cannot leak the task lock.
+        nuint bytes = checked(((nuint)text.Length + 1) * sizeof(char));
+
         // OpenClipboard just locks the clipboard for the current task; it is not
         // destructive, so we acquire the lock first to bail out cheaply when the
         // clipboard is held by another process. Only the EmptyClipboard call
@@ -114,9 +121,6 @@ internal sealed unsafe class WindowsClipboardProvider : IClipboardProvider
             return false;
         }
 
-        // Always allocate room for a trailing null. text.Length is a positive
-        // int so (text.Length + 1) * sizeof(char) cannot overflow int.
-        nuint bytes = (nuint)((text.Length + 1) * sizeof(char));
         HGLOBAL hGlobal = PInvoke.GlobalAlloc(GLOBAL_ALLOC_FLAGS.GMEM_MOVEABLE, bytes);
         if (hGlobal.IsNull)
         {
