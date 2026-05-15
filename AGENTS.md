@@ -198,25 +198,51 @@ failure. The user decides whether to revert, force-push, or leave it.
 
 ### Enforcement
 
-The rule above has mechanical backstops, but they do not cover every
-surface, so the prose rule still applies.
+**The user may be running VS Code Copilot in Bypass Approvals mode**
+(`chat.permissions.default` = `"autoApprove"` at the user level), or in
+Autopilot, or with `chat.tools.global.autoApprove` enabled. The agent
+cannot tell from inside a session which mode is active. **Assume the
+mechanical backstops below may be disabled** and self-enforce the rule
+above on every publishing tool. The agent's pre-flight check is the
+only guard that works in every configuration.
 
 - **Terminal (VS Code Copilot agent mode).** [.vscode/settings.json](.vscode/settings.json)
-  denies `git push`, `git reset --hard`, `git rebase`, `git merge`,
+  contains a denylist (`chat.tools.terminal.autoApprove` with `false`
+  entries) for `git push`, `git reset --hard`, `git rebase`, `git merge`,
   `git cherry-pick`, `git tag`, destructive `git branch -d/-D`, and
-  `gh pr create|merge|close|edit`. Each call requires an in-chat **Allow**
-  click; that click is the approval. Read-only verbs (`git status`,
-  `git diff`, `git log`, `git show`, `git branch`, `git stash list`,
-  `git rev-parse`, `git ls-files`) are auto-approved. `git commit` is
-  not gated &mdash; local commits are reversible.
+  `gh pr create|merge|close|edit`. In Default Approvals mode each
+  denied command requires an in-chat **Allow** click; that click is
+  the approval. **In Bypass Approvals or Autopilot, this denylist is
+  ignored at runtime** &mdash; the entries remain as documentation of
+  which commands cross the publish boundary, and as a defense-in-depth
+  tripwire for contributors and agents who *are* in Default Approvals
+  mode. Do not rely on the denylist to stop you.
 - **MCP and in-process tools are NOT covered by
-  `terminal.autoApprove`.** The chat tool surface has its own per-tool
-  approval flow. **Do not click "Always Allow" on any GitHub write
-  tool** &mdash; each invocation must get its own approval. The agent
-  must self-enforce because `settings.json` cannot deny these by path.
-- **Branch protection on `main`.** PR required, status checks required,
-  force pushes and branch deletion blocked. Covers surfaces the local
-  denylist does not (cloud agent, other agents, scripted runs).
+  `terminal.autoApprove` in any mode.** The chat tool surface has its
+  own per-tool approval flow which Bypass Approvals and Autopilot
+  also disable. **Do not invoke any GitHub write tool**
+  (`mcp_io_github_git_create_pull_request`,
+  `mcp_io_github_git_update_pull_request`,
+  `mcp_io_github_git_merge_pull_request`,
+  `mcp_io_github_git_push_files`,
+  `mcp_io_github_git_create_or_update_file`,
+  `mcp_io_github_git_delete_file`,
+  `mcp_io_github_git_update_pull_request_branch`,
+  `github-pull-request_create_pull_request`, etc.) without an explicit
+  publishing verb from the user in the most recent message.
+- **Branch protection on `main`** (PR required, status checks required,
+  force pushes and branch deletion blocked) is the only server-side
+  guard that survives every approval mode. It does not stop
+  `gh pr create|merge|close|edit`, MCP `create_pull_request`,
+  `merge_pull_request`, or pushes to feature branches &mdash; only
+  direct writes to `main` itself.
+
+The agent's pre-flight check (re-read the user's most recent message
+verbatim and confirm it contains an explicit publishing verb) is
+load-bearing. If the message does not contain such a verb, stop and ask
+one short yes/no question. Do not assume the user "obviously" wants the
+change published, and do not assume an approval prompt will appear to
+catch a mistake.
 
 ## General guidance
 
