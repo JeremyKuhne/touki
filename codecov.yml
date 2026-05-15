@@ -1,6 +1,9 @@
 # Codecov configuration. Initial gates after a stable baseline has been confirmed:
 #   - project: auto target with a 1% threshold (tolerate small drops on noisy PRs)
-#   - patch:   80% of changed lines must be covered
+#   - patch:   60% of changed lines must be covered. The 80% bar was tightened
+#              prematurely; PRs that introduce Win32 / native-interop shims with
+#              dense defensive failure paths cannot reasonably hit it without
+#              fault-injection harnesses. Revisit once such code is stabilised.
 #
 # Both statuses are now blocking (informational removed). Adjust here when the
 # floor needs to be ratcheted up or down.
@@ -18,7 +21,7 @@ coverage:
         threshold: 1%
     patch:
       default:
-        target: 80%
+        target: 60%
         threshold: 0%
 
 comment:

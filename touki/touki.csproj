@@ -61,8 +61,13 @@
     <!-- This provides Range and Index support downlevel. -->
     <PackageReference Include="Microsoft.Bcl.Memory" />
     <PackageReference Include="Microsoft.Bcl.HashCode" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!--
-      This is used to get us interop needed to backport some functionality.
+      CsWin32 generates the Win32 interop needed by both Framework polyfills and shared
+      Windows-only providers (e.g. Touki.Io.Clipboard). Referenced on both TFMs so the
+      shared providers can call the same generated 'Windows.Win32.PInvoke' surface.
       Generated code is not publicly exposed.
     -->
     <PackageReference Include="Microsoft.Windows.CsWin32">

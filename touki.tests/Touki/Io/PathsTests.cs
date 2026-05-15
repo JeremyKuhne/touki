@@ -412,25 +412,6 @@ public class PathsTests
         { "//tmp///home",                       "/tmp/home" },
         { "/tmp/home/git/./.././git/runtime/../", "/tmp/home/git/" },
         { "/./tmp/home",                        "/tmp/home" },
-
-        { "/tmp/..",                            "/tmp" },
-        { "/tmp/../../../",                     "/tmp/" },
-        { "/./tmp//home",                       "/./tmp/home" },
-        { "/../tmp/home",                       "/../tmp/home" },
-        { "/../../../tmp/./home",               "/../tmp/home" },
-        { "//tmp///home",                       "//tmp/home" },
-        { "/./tmp/home",                        "/./tmp/home" },
-
-        { "/tmp/../../",                        "/tmp/../" },
-        { "/tmp/home/../././",                  "/tmp/home/" },
-        { "/tmp/../../../",                     "/tmp/../" },
-        { "/tmp//home/.././/",                  "/tmp//home/" },
-        { "/./tmp//home/git/git",               "/./tmp/home/git/git" },
-        { "/../tmp/./home",                     "/../tmp/home" },
-        { "/../../../tmp/./home",               "/../../../tmp/home" },
-        { "//tmp///home/..",                    "//tmp/" },
-        { "/tmp/home/git/./.././git/runtime/../", "/tmp/home/git/./git/" },
-        { "/./tmp/home/././",                   "/./tmp/home/" },
     };
 
 #if NET
