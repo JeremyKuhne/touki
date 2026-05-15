@@ -27,9 +27,9 @@ public class RetryFactDiscoverer : IXunitTestCaseDiscoverer
 
         // TestIntrospectionHelper.GetTestCaseDetails returns a ValueTuple containing
         // the data needed to construct an XunitTestCase. The element names match the
-        // GetTestCaseDetails out-tuple in the xUnit v3 source. SourceFilePath and
-        // SourceLineNumber are discarded because XunitTestCase already records them
-        // via the IXunitTestMethod.
+        // GetTestCaseDetails out-tuple in the xUnit v3 source; we capture sourceFilePath
+        // and sourceLineNumber so the runner can navigate to the failing test even
+        // though XunitTestCase also tracks them via IXunitTestMethod.
         (
             string testCaseDisplayName,
             bool @explicit,
@@ -38,8 +38,8 @@ public class RetryFactDiscoverer : IXunitTestCaseDiscoverer
             Type? skipType,
             string? skipUnless,
             string? skipWhen,
-            string? _,
-            int? _,
+            string? sourceFilePath,
+            int? sourceLineNumber,
             int? timeout,
             string uniqueID,
             IXunitTestMethod resolvedTestMethod) =
@@ -57,6 +57,8 @@ public class RetryFactDiscoverer : IXunitTestCaseDiscoverer
             skipUnless,
             skipWhen,
             testMethod.Traits.ToReadWrite(StringComparer.OrdinalIgnoreCase),
+            sourceFilePath: sourceFilePath,
+            sourceLineNumber: sourceLineNumber,
             timeout: timeout);
 
         return new([testCase]);

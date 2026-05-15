@@ -38,7 +38,7 @@ public unsafe class WindowsClipboardProviderTests
 #if NET
         if (!OperatingSystem.IsWindows())
         {
-            return;
+            Assert.Skip("Exercises Win32 PInvoke surface; Windows-only test.");
         }
 #endif
         string original = SnapshotText();

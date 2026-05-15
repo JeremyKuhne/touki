@@ -188,5 +188,34 @@ internal sealed unsafe class WindowsClipboardProvider : IClipboardProvider
         }
     }
 
+    // OpenClipboard(NULL) is intentional. The Win32 reference pages for
+    // OpenClipboard / EmptyClipboard / SetClipboardData all carry the same
+    // unqualified sentence: "If an application calls OpenClipboard with hwnd
+    // set to NULL, EmptyClipboard sets the clipboard owner to NULL; this
+    // causes SetClipboardData to fail." Read in isolation that sentence is
+    // alarming, but it only applies to delayed rendering, where
+    // SetClipboardData is called with a NULL data handle and the system later
+    // sends WM_RENDERFORMAT to the owner HWND to produce the bytes. No owner
+    // means no recipient for that message, hence the failure. The "Using the
+    // Clipboard" tutorial spells the rule out: "If a window passes a NULL
+    // handle to the SetClipboardData function, it must process the
+    // WM_RENDERFORMAT and WM_RENDERALLFORMATS messages to render data upon
+    // request." (https://learn.microsoft.com/windows/win32/dataxchg/using-the-clipboard)
+    //
+    // We always pass a fully-populated HGLOBAL to SetClipboardData (immediate
+    // rendering), so no callback is ever issued and the owner field is never
+    // consulted for the write. The 1995-era Microsoft KB Q92530 confirms
+    // this: it lists GetClipboardOwner / GetOpenClipboardWindow /
+    // GetClipboardViewer / ChangeClipboardChain as the functions affected by
+    // OpenClipboard(NULL), and explicitly excludes SetClipboardData.
+    // Empirically the round-trip TrySetText/TryGetText test passes on every
+    // supported Windows host (Windows Server 2025 CI, Windows 11 desktop),
+    // matching what System.Windows.Forms.Clipboard and System.Windows.Clipboard
+    // do internally for headless / non-OLE write paths.
+    //
+    // The belt-and-suspenders alternative is to create an HWND_MESSAGE owner
+    // window for the provider to pass here. That introduces a window class
+    // registration and message-pump considerations; tracking as a follow-up
+    // rather than blocking this PR.
     private static bool TryOpenClipboard() => PInvoke.OpenClipboard(HWND.Null);
 }

@@ -10,10 +10,11 @@ using Xunit.v3;
 namespace Xunit;
 
 /// <summary>
-///  A <see cref="FactAttribute"/> that re-runs a failing test up to <see cref="MaxRetries"/>
-///  times. Use sparingly - for tests that exercise system-wide resources (clipboard,
-///  network ports, file system races) where transient host contention can produce false
-///  failures even when the code under test is correct.
+///  A <see cref="FactAttribute"/> that re-runs a failing test until it passes or until
+///  <see cref="MaxRetries"/> total attempts have been made. Use sparingly - for tests
+///  that exercise system-wide resources (clipboard, network ports, file system races)
+///  where transient host contention can produce false failures even when the code under
+///  test is correct.
 /// </summary>
 [XunitTestCaseDiscoverer(typeof(RetryFactDiscoverer))]
 public class RetryFactAttribute(
@@ -22,7 +23,10 @@ public class RetryFactAttribute(
     : FactAttribute(sourceFilePath, sourceLineNumber)
 {
     /// <summary>
-    ///  Maximum number of times to run the test before reporting failure. Defaults to 3.
+    ///  Maximum number of total attempts (initial run plus retries) before reporting
+    ///  failure. The initial run counts toward this limit; a value of <c>3</c> means the
+    ///  test will be run up to three times, equivalent to two retries after the first
+    ///  failure. Defaults to <c>3</c>. Values less than <c>1</c> are treated as <c>3</c>.
     /// </summary>
     public int MaxRetries { get; set; } = 3;
 }

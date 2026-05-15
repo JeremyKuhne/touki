@@ -115,12 +115,16 @@ public static class Clipboard
     ///   pasteboard for the current user session.
     ///  </para>
     ///  <para>
-    ///   On Linux this invokes the platform helper's global clear path (<c>wl-copy --clear</c>,
-    ///   <c>xsel --clipboard --clear</c>, or an empty <c>xclip</c> set). All three remove
-    ///   the selection that the X server or Wayland compositor is currently advertising,
-    ///   regardless of which process originally placed it there. A running clipboard manager
-    ///   may immediately re-populate the selection from its own history, but the call still
-    ///   affects globally-visible state, not just our own helper process.
+    ///   On Linux this invokes the platform helper's clear path. <c>wl-copy --clear</c>
+    ///   and <c>xsel --clipboard --clear</c> release the advertised selection, after which
+    ///   <see cref="HasText"/> reports <see langword="false"/>. The <c>xclip</c> helper has
+    ///   no native clear verb, so the provider falls back to publishing an empty payload
+    ///   with <c>xclip -selection clipboard</c>. On xclip-only hosts a clipboard owner
+    ///   serving an empty string remains, and <see cref="HasText"/> can still report
+    ///   <see langword="true"/> while <see cref="TryGetText"/> returns the empty string.
+    ///   A running clipboard manager may also immediately re-populate the selection from
+    ///   its own history. The call still affects globally-visible state, not just our own
+    ///   helper process.
     ///  </para>
     /// </remarks>
     public static bool TryClear() => s_provider.TryClear();

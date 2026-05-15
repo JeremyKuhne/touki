@@ -40,7 +40,7 @@ public class MSBuildEnumeratorTests
         // case-sensitive filesystem these would resolve to two different paths.
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
         {
-            return;
+            Assert.Skip("Path casing parity requires a case-insensitive filesystem; Windows-only test.");
         }
 
         // N:\repos\touki\artifacts\x64\Release\touki.tests\net9.0
@@ -68,7 +68,7 @@ public class MSBuildEnumeratorTests
         // exclusion semantics. The Windows job is the canonical parity check.
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
         {
-            return;
+            Assert.Skip("Recursive parity check is run only on the canonical Windows job.");
         }
 
         // N:\repos\touki\artifacts\x64\Release\touki.tests\net9.0
