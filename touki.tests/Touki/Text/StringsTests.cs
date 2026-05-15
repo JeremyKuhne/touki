@@ -733,7 +733,7 @@ public class StringsTests
         string input = "Hello\r\nWorld";
         string result = input.ReplaceLineEndings();
 
-        result.Should().Be("Hello\r\nWorld");
+        result.Should().Be($"Hello{Environment.NewLine}World");
     }
 
     [Fact]
@@ -742,7 +742,7 @@ public class StringsTests
         string input = "Hello\nWorld";
         string result = input.ReplaceLineEndings();
 
-        result.Should().Be("Hello\r\nWorld");
+        result.Should().Be($"Hello{Environment.NewLine}World");
     }
 
     [Fact]
@@ -751,7 +751,7 @@ public class StringsTests
         string input = "Hello\rWorld";
         string result = input.ReplaceLineEndings();
 
-        result.Should().Be("Hello\r\nWorld");
+        result.Should().Be($"Hello{Environment.NewLine}World");
     }
 
     [Fact]
@@ -760,7 +760,7 @@ public class StringsTests
         string input = "Hello\fWorld";
         string result = input.ReplaceLineEndings();
 
-        result.Should().Be("Hello\r\nWorld");
+        result.Should().Be($"Hello{Environment.NewLine}World");
     }
 
     [Fact]
@@ -769,7 +769,7 @@ public class StringsTests
         string input = "Hello\u0085World";
         string result = input.ReplaceLineEndings();
 
-        result.Should().Be("Hello\r\nWorld");
+        result.Should().Be($"Hello{Environment.NewLine}World");
     }
 
     [Fact]
@@ -778,7 +778,7 @@ public class StringsTests
         string input = "Hello\u2028World";
         string result = input.ReplaceLineEndings();
 
-        result.Should().Be("Hello\r\nWorld");
+        result.Should().Be($"Hello{Environment.NewLine}World");
     }
 
     [Fact]
@@ -787,7 +787,7 @@ public class StringsTests
         string input = "Hello\u2029World";
         string result = input.ReplaceLineEndings();
 
-        result.Should().Be("Hello\r\nWorld");
+        result.Should().Be($"Hello{Environment.NewLine}World");
     }
 
     [Fact]
@@ -796,7 +796,8 @@ public class StringsTests
         string input = "Line1\r\nLine2\nLine3\rLine4\fLine5";
         string result = input.ReplaceLineEndings();
 
-        result.Should().Be("Line1\r\nLine2\r\nLine3\r\nLine4\r\nLine5");
+        string nl = Environment.NewLine;
+        result.Should().Be($"Line1{nl}Line2{nl}Line3{nl}Line4{nl}Line5");
     }
 
     [Fact]

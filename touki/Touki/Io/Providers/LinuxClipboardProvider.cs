@@ -6,6 +6,7 @@
 
 using System.Runtime.Versioning;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Touki.Io.Providers;
 
@@ -29,6 +30,10 @@ namespace Touki.Io.Providers;
 ///  </para>
 /// </remarks>
 [SupportedOSPlatform("linux")]
+// Coverage is collected only by the Windows CI job; the Linux helper branches
+// always show as uncovered there. Functional coverage comes from the dedicated
+// Linux CI job, which runs the ClipboardTests under xvfb-run + xclip.
+[ExcludeFromCodeCoverage]
 internal sealed partial class LinuxClipboardProvider : IClipboardProvider
 {
     /// <summary>
@@ -37,9 +42,16 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
     public static LinuxClipboardProvider Instance { get; } = new();
 
     private static readonly Transport s_transport = DetectTransport();
+    private static readonly Transport s_clearTransport = DetectClearTransport();
 
     // POSIX access(2) mode flag for "is executable" from <unistd.h>.
     private const int X_OK = 1;
+
+    // Sub-process timeout. Clipboard helpers either fork into the background within
+    // a few milliseconds (set / clear) or perform a single X / Wayland round-trip
+    // (get). Anything longer than this means the display server or helper is wedged
+    // and we'd rather report failure than hang the caller.
+    private const int ProcessTimeoutMs = 5000;
 
     // The kernel-level "can the current process execute this file" check. Honors mode
     // bits, POSIX.1e ACLs, capabilities, and the `noexec` mount flag - the same probe
@@ -53,6 +65,17 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    ///  <para>
+    ///   Returns <see langword="true"/> when a supported helper is on <c>PATH</c> and the
+    ///   corresponding display-server environment variable (<c>WAYLAND_DISPLAY</c> for
+    ///   Wayland, <c>DISPLAY</c> for X11) is set. This is a static probe of the host
+    ///   environment - it does not connect to the display server. A misconfigured
+    ///   <c>DISPLAY</c> pointing at an unreachable server will still report
+    ///   <see langword="true"/>; the subsequent <see cref="TryGetText"/> /
+    ///   <see cref="TrySetText"/> call will return <see langword="false"/> instead.
+    ///  </para>
+    /// </remarks>
     public bool IsAvailable => s_transport != Transport.None;
 
     /// <inheritdoc/>
@@ -86,7 +109,18 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
     }
 
     /// <inheritdoc/>
-    public bool TryClear() => s_transport switch
+    /// <remarks>
+    ///  <para>
+    ///   <c>xclip</c> has no native "release the selection" verb - asking it to set the
+    ///   clipboard to an empty string would leave xclip running as the owner serving an
+    ///   empty payload, which differs from the Windows / macOS / Wayland / xsel semantic
+    ///   of "no clipboard content". When <c>xsel</c> is also installed it is used here in
+    ///   preference to fall through to its <c>--clear</c> verb, which does release the
+    ///   selection. When only <c>xclip</c> is available the best we can do is take
+    ///   ownership with an empty payload.
+    ///  </para>
+    /// </remarks>
+    public bool TryClear() => s_clearTransport switch
     {
         Transport.WaylandWlCopy => TryRunDetached("wl-copy", "--clear"),
         Transport.X11Xclip => TryRunWithInput("xclip", "-selection clipboard -i", string.Empty),
@@ -125,6 +159,21 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
         }
 
         return Transport.None;
+    }
+
+    private static Transport DetectClearTransport()
+    {
+        // xclip is the active transport on most X11 distributions because it is more
+        // commonly installed by default, but it lacks a "release the selection" verb.
+        // Prefer xsel for TryClear when both are present so the observable post-clear
+        // state matches the other platforms (TryGetText returns false rather than
+        // returning true with an empty string).
+        if (s_transport == Transport.X11Xclip && IsExecutableOnPath("xsel"))
+        {
+            return Transport.X11Xsel;
+        }
+
+        return s_transport;
     }
 
     private static bool IsExecutableOnPath(string fileName)
@@ -172,10 +221,16 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
             };
 
             using Process process = Process.Start(info)!;
-            string stdout = process.StandardOutput.ReadToEnd();
-            process.StandardError.ReadToEnd();
 
-            if (!process.WaitForExit(5000))
+            // Read stdout / stderr asynchronously so a child that fills its pipe buffer
+            // does not deadlock against a synchronous ReadToEnd here; the kernel pipe is
+            // typically only 64 KB and a misbehaving helper could exceed that. The async
+            // reads complete after the child closes its end of the pipe (which it does on
+            // exit) so the bounded wait below is enough to publish the final output.
+            Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync();
+            Task<string> stderrTask = process.StandardError.ReadToEndAsync();
+
+            if (!process.WaitForExit(ProcessTimeoutMs))
             {
                 try
                 {
@@ -188,12 +243,20 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
                 return false;
             }
 
+            // Child has exited; the kernel will EOF both pipes. Give the reader tasks a
+            // short window to drain - in practice they complete within microseconds, but
+            // a bounded wait avoids hanging if the framework is delayed publishing EOF.
+            if (!Task.WaitAll([stdoutTask, stderrTask], ProcessTimeoutMs))
+            {
+                return false;
+            }
+
             if (process.ExitCode != 0)
             {
                 return false;
             }
 
-            output = stdout;
+            output = stdoutTask.Result;
             return true;
         }
         catch
@@ -218,13 +281,28 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
             };
 
             using Process process = Process.Start(info)!;
-            process.StandardInput.Write(input);
-            process.StandardInput.Close();
 
-            // xclip / wl-copy fork themselves into the background after consuming stdin and
-            // closing it, so the parent observes a quick exit while the daemon continues to
-            // hold the selection. A short bounded wait is sufficient.
-            if (!process.WaitForExit(5000))
+            // Drain stderr asynchronously so a chatty helper can't fill the stderr pipe
+            // and block its own exit while we're waiting.
+            Task<string> stderrTask = process.StandardError.ReadToEndAsync();
+
+            // Write the payload off-thread so a full stdin pipe (rare, but possible with
+            // very large text on a slow helper) can be bounded by ProcessTimeoutMs rather
+            // than blocking the calling thread indefinitely. We close stdin in a finally
+            // so the helper observes EOF even if the write itself throws.
+            Task writeTask = Task.Run(() =>
+            {
+                try
+                {
+                    process.StandardInput.Write(input);
+                }
+                finally
+                {
+                    process.StandardInput.Close();
+                }
+            });
+
+            if (!writeTask.Wait(ProcessTimeoutMs))
             {
                 try
                 {
@@ -237,6 +315,29 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
                 return false;
             }
 
+            // Surface a write-side exception (e.g. broken pipe if the helper exited early).
+            if (writeTask.IsFaulted)
+            {
+                return false;
+            }
+
+            // xclip / wl-copy fork themselves into the background after consuming stdin and
+            // closing it, so the parent observes a quick exit while the daemon continues to
+            // hold the selection. A short bounded wait is sufficient.
+            if (!process.WaitForExit(ProcessTimeoutMs))
+            {
+                try
+                {
+                    process.Kill();
+                }
+                catch
+                {
+                }
+
+                return false;
+            }
+
+            stderrTask.Wait(ProcessTimeoutMs);
             return process.ExitCode == 0;
         }
         catch
@@ -259,7 +360,7 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
             };
 
             using Process process = Process.Start(info)!;
-            if (!process.WaitForExit(5000))
+            if (!process.WaitForExit(ProcessTimeoutMs))
             {
                 try
                 {

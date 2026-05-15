@@ -109,6 +109,41 @@ public class ClipboardTests
         }
     }
 
+    [RetryFact(
+        MaxRetries = 5,
+        Skip = "Clipboard is not available on this host.",
+        SkipUnless = nameof(Clipboard.IsAvailable),
+        SkipType = typeof(Clipboard))]
+    public void TryClear_AfterTrySetText_ClearsClipboard()
+    {
+        string original = SnapshotText();
+        try
+        {
+            // Seed a known payload so we can prove TryClear changes the observable state.
+            string payload = "touki-clipboard-clear-" + Guid.NewGuid().ToString("N");
+            Clipboard.TrySetText(payload).Should().BeTrue();
+            Clipboard.HasText.Should().BeTrue();
+
+            Clipboard.TryClear().Should().BeTrue();
+
+            // After a clear, the clipboard must not still report the prior payload. The
+            // exact post-clear state varies across platforms (Windows / macOS / Wayland /
+            // xsel release the selection so TryGetText returns false; the xclip-only path
+            // on Linux can only take ownership with an empty payload, in which case
+            // TryGetText returns true with an empty string) - both are valid.
+            bool hasText = Clipboard.TryGetText(out string? roundTripped);
+            if (hasText)
+            {
+                roundTripped.Should().NotBe(payload);
+                roundTripped.Should().BeEmpty();
+            }
+        }
+        finally
+        {
+            RestoreText(original);
+        }
+    }
+
     /// <summary>
     ///  Best-effort capture of the current clipboard text so the test can restore it
     ///  in its <c>finally</c> block. Returns <see cref="string.Empty"/> when the clipboard

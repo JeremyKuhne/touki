@@ -27,6 +27,10 @@ namespace Touki.Io.Providers;
 ///  </para>
 /// </remarks>
 [SupportedOSPlatform("macos")]
+// Coverage is collected only by the Windows CI job; the macOS Objective-C
+// branches always show as uncovered there. Functional coverage comes from the
+// dedicated macOS CI job, which runs the ClipboardTests against NSPasteboard.
+[ExcludeFromCodeCoverage]
 internal sealed unsafe partial class MacClipboardProvider : IClipboardProvider
 {
     /// <summary>
@@ -35,12 +39,26 @@ internal sealed unsafe partial class MacClipboardProvider : IClipboardProvider
     public static MacClipboardProvider Instance { get; } = new();
 
     private const string ObjC = "/usr/lib/libobjc.dylib";
+    private const string Dl = "/usr/lib/libSystem.dylib";
+
+    // AppKit hosts NSPasteboard. Console / non-bundled apps do not auto-link
+    // AppKit, so without this dlopen the Objective-C runtime returns 0 from
+    // `objc_getClass("NSPasteboard")` because the class is never registered.
+    // RTLD_LAZY = 1, RTLD_GLOBAL = 8 -- resolve symbols lazily and publish them
+    // so subsequent runtime lookups can find them.
+    private const string AppKitPath = "/System/Library/Frameworks/AppKit.framework/AppKit";
+    private const int RTLD_LAZY = 1;
+    private const int RTLD_GLOBAL = 8;
+
+    private static readonly nint s_appKitHandle = dlopen(AppKitPath, RTLD_LAZY | RTLD_GLOBAL);
 
     // NSPasteboardTypeString = @"public.utf8-plain-text" since OS X 10.6.
     private const string PasteboardTypeString = "public.utf8-plain-text";
 
     // Lazily-resolved class and selector handles. Resolution is idempotent — the
-    // Objective-C runtime returns the same pointer for repeated lookups.
+    // Objective-C runtime returns the same pointer for repeated lookups. AppKit
+    // must be loaded first (see <see cref="s_appKitHandle"/>) for NSPasteboard
+    // to be registered; the field initializer order matters.
     private static readonly nint s_nsPasteboardClass = objc_getClass("NSPasteboard"u8);
     private static readonly nint s_nsStringClass = objc_getClass("NSString"u8);
     private static readonly nint s_selGeneralPasteboard = sel_registerName("generalPasteboard"u8);
@@ -58,7 +76,17 @@ internal sealed unsafe partial class MacClipboardProvider : IClipboardProvider
     }
 
     /// <inheritdoc/>
-    public bool IsAvailable => true;
+    /// <remarks>
+    ///  <para>
+    ///   Reports <see langword="true"/> only after AppKit has been loaded and
+    ///   <c>NSPasteboard</c> registered with the Objective-C runtime. In an
+    ///   exotic configuration where the AppKit framework cannot be loaded
+    ///   (sandbox, command-line bundle stripped of AppKit, ...) this returns
+    ///   <see langword="false"/> so callers can fall back gracefully instead
+    ///   of seeing every operation fail.
+    ///  </para>
+    /// </remarks>
+    public bool IsAvailable => s_appKitHandle != 0 && s_nsPasteboardClass != 0;
 
     /// <inheritdoc/>
     public bool HasText
@@ -228,6 +256,9 @@ internal sealed unsafe partial class MacClipboardProvider : IClipboardProvider
 
     // P/Invoke surface. UTF-8 string literals are stable null-terminated byte sequences
     // suitable for the C strings these runtime calls expect.
+
+    [LibraryImport(Dl, EntryPoint = "dlopen", StringMarshalling = StringMarshalling.Utf8)]
+    private static partial nint dlopen(string path, int mode);
 
     [LibraryImport(ObjC, EntryPoint = "objc_getClass")]
     private static partial nint objc_getClass(ReadOnlySpan<byte> name);
