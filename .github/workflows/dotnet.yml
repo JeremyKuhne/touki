@@ -21,10 +21,11 @@ concurrency:
 jobs:
   # The Windows build runs Debug and Release on two parallel runners.
   # Coverage, pack, and Codecov are Release-only and gated by `matrix.configuration`.
-  # The `build` aggregator below depends on both legs and keeps the
-  # `.NET / build` status-check name stable for branch protection.
+  # The `build` aggregator below depends on this matrix plus the macOS and
+  # Linux jobs and keeps the `.NET / build` status-check name stable for
+  # branch protection.
   build-matrix:
-    name: ".NET / build (${{ matrix.configuration }})"
+    name: ".NET / build (Windows / ${{ matrix.configuration }})"
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -141,26 +142,38 @@ jobs:
         retention-days: 14
 
   # Aggregator: preserves the `.NET / build` status-check name so branch
-  # protection on `main` doesn't have to be updated. `needs.build-matrix.result`
-  # is `success` only when every matrix leg succeeded; any other state fails
-  # the aggregator and (transitively) the required check.
+  # protection on `main` doesn't have to be updated. `needs.<job>.result` is
+  # `success` only when every upstream job (and every matrix leg of
+  # `build-matrix`) succeeded; any other state fails the aggregator and
+  # (transitively) the required check.
   build:
     name: ".NET / build"
     runs-on: ubuntu-latest
-    needs: build-matrix
+    needs: [build-matrix, macos-build, linux-build]
     if: always()
     steps:
-    - name: Verify matrix legs
+    - name: Verify upstream jobs
       run: |
-        result='${{ needs.build-matrix.result }}'
-        echo "build-matrix result: $result"
-        if [ "$result" != "success" ]; then
-          echo "::error::One or more build-matrix legs did not succeed (result: $result)."
+        results=(
+          "build-matrix=${{ needs.build-matrix.result }}"
+          "macos-build=${{ needs.macos-build.result }}"
+          "linux-build=${{ needs.linux-build.result }}"
+        )
+        failed=0
+        for r in "${results[@]}"; do
+          echo "$r"
+          case "$r" in
+            *=success) ;;
+            *) failed=1 ;;
+          esac
+        done
+        if [ "$failed" -ne 0 ]; then
+          echo "::error::One or more upstream jobs did not succeed."
           exit 1
         fi
 
   macos-build:
-    name: ".NET / macos"
+    name: ".NET / build (macOS / Release)"
     runs-on: macos-latest
 
     # The repo pins Platform=x64 in Directory.Build.props for the Windows-focused
@@ -211,7 +224,7 @@ jobs:
         retention-days: 14
 
   linux-build:
-    name: ".NET / linux"
+    name: ".NET / build (Linux / Release)"
     runs-on: ubuntu-latest
     env:
       NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
