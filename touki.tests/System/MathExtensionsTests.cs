@@ -565,16 +565,23 @@ public class MathExtensionsTests
 
     // ---- ReciprocalEstimate / ReciprocalSqrtEstimate / SinCos ----
 
+    // Math.ReciprocalEstimate / ReciprocalSqrtEstimate are documented as
+    // platform-dependent approximations. x86 RCPSS / RSQRTSS give ~11 bits of
+    // precision (~5e-4); ARMv8 FRECPE / FRSQRTE guarantee accuracy to ~1 part
+    // in 256 (~4e-3). The macOS-arm64 runner returns 0.4990234375 (= 511/1024)
+    // for ReciprocalEstimate(2.0). 1e-2 covers both architectures with margin.
+    private const double ReciprocalEstimateTolerance = 1e-2;
+
     [Fact]
     public void ReciprocalEstimate_OfTwo_IsHalf()
     {
-        Math.ReciprocalEstimate(2.0).Should().BeApproximately(0.5, 1e-12);
+        Math.ReciprocalEstimate(2.0).Should().BeApproximately(0.5, ReciprocalEstimateTolerance);
     }
 
     [Fact]
     public void ReciprocalSqrtEstimate_OfFour_IsHalf()
     {
-        Math.ReciprocalSqrtEstimate(4.0).Should().BeApproximately(0.5, 1e-12);
+        Math.ReciprocalSqrtEstimate(4.0).Should().BeApproximately(0.5, ReciprocalEstimateTolerance);
     }
 
     [Fact]

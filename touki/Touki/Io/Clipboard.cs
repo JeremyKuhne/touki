@@ -105,6 +105,10 @@ public static class Clipboard
     /// </remarks>
     public static bool TryClear() => s_provider.TryClear();
 
+    // Platform dispatch is structurally untestable: any single CI runner can
+    // only exercise its own OS branch. The Mac/Linux/Null fallbacks are
+    // unreachable on the Windows runner that produces our coverage data.
+    [ExcludeFromCodeCoverage]
     private static IClipboardProvider SelectProvider()
     {
 #if NET
