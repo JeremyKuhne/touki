@@ -182,8 +182,8 @@ internal sealed unsafe partial class MacClipboardProvider : IClipboardProvider
                 return false;
             }
 
-            // [pasteboard clearContents] — ignore the returned NSInteger changeCount.
-            objc_msgSend_void(pasteboard, s_selClearContents);
+            // Build both NSStrings before touching the pasteboard so a MakeNSString
+            // failure doesn't destroy the user's previous pasteboard contents.
 
             // NSString *value = [NSString stringWithUTF8String:utf8];
             nint nsValue = MakeNSString(text);
@@ -197,6 +197,9 @@ internal sealed unsafe partial class MacClipboardProvider : IClipboardProvider
             {
                 return false;
             }
+
+            // [pasteboard clearContents] — ignore the returned NSInteger changeCount.
+            objc_msgSend_void(pasteboard, s_selClearContents);
 
             // BOOL ok = [pasteboard setString:value forType:type]
             return objc_msgSend_bool_id_id(pasteboard, s_selSetStringForType, nsValue, nsType);

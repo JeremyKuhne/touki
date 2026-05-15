@@ -49,8 +49,12 @@ public static class Clipboard
     ///   This is a static property of the platform and host environment, not of any individual
     ///   call. It returns <see langword="true"/> on Windows and macOS; on Linux it returns
     ///   <see langword="true"/> only if a supported helper (<c>wl-copy</c>/<c>wl-paste</c>,
-    ///   <c>xclip</c>, or <c>xsel</c>) is on <c>PATH</c> and the associated display server is
-    ///   running. On any other platform or a headless Linux host it returns <see langword="false"/>.
+    ///   <c>xclip</c>, or <c>xsel</c>) is on <c>PATH</c> and a display server is advertised
+    ///   via <c>WAYLAND_DISPLAY</c> or <c>DISPLAY</c>. The Linux check does not connect to
+    ///   the display server, so a stale environment variable (e.g. an unreachable X server
+    ///   or missing Wayland socket) can leave this <see langword="true"/> while every
+    ///   operation still fails. On any other platform or a headless Linux host it returns
+    ///   <see langword="false"/>.
     ///  </para>
     ///  <para>
     ///   Even when <see cref="IsAvailable"/> is <see langword="true"/>, individual operations can

@@ -104,39 +104,51 @@ internal sealed unsafe class WindowsClipboardProvider : IClipboardProvider
     /// <inheritdoc/>
     public bool TrySetText(ReadOnlySpan<char> text)
     {
+        // OpenClipboard just locks the clipboard for the current task; it is not
+        // destructive, so we acquire the lock first to bail out cheaply when the
+        // clipboard is held by another process. Only the EmptyClipboard call
+        // below actually replaces the user's contents, and by that point the
+        // HGLOBAL is fully populated and ready to hand to the OS.
         if (!TryOpenClipboard())
         {
             return false;
         }
 
+        // Always allocate room for a trailing null. text.Length is a positive
+        // int so (text.Length + 1) * sizeof(char) cannot overflow int.
+        nuint bytes = (nuint)((text.Length + 1) * sizeof(char));
+        HGLOBAL hGlobal = PInvoke.GlobalAlloc(GLOBAL_ALLOC_FLAGS.GMEM_MOVEABLE, bytes);
+        if (hGlobal.IsNull)
+        {
+            PInvoke.CloseClipboard();
+            return false;
+        }
+
+        void* pointer = PInvoke.GlobalLock(hGlobal);
+        if (pointer is null)
+        {
+            PInvoke.GlobalFree(hGlobal);
+            PInvoke.CloseClipboard();
+            return false;
+        }
+
+        Span<char> destination = new(pointer, text.Length + 1);
+        text.CopyTo(destination);
+        destination[text.Length] = '\0';
+
+        PInvoke.GlobalUnlock(hGlobal);
+
+        // From here on we are committed: EmptyClipboard replaces the user's
+        // contents, and any subsequent failure leaves the clipboard empty
+        // rather than restored. The earlier alloc-failure paths above are the
+        // ones that previously destroyed user data.
         try
         {
             if (!PInvoke.EmptyClipboard())
             {
-                return false;
-            }
-
-            // Always allocate room for a trailing null. text.Length is a positive int so
-            // (text.Length + 1) * sizeof(char) cannot overflow int.
-            nuint bytes = (nuint)((text.Length + 1) * sizeof(char));
-            HGLOBAL hGlobal = PInvoke.GlobalAlloc(GLOBAL_ALLOC_FLAGS.GMEM_MOVEABLE, bytes);
-            if (hGlobal.IsNull)
-            {
-                return false;
-            }
-
-            void* pointer = PInvoke.GlobalLock(hGlobal);
-            if (pointer is null)
-            {
                 PInvoke.GlobalFree(hGlobal);
                 return false;
             }
-
-            Span<char> destination = new(pointer, text.Length + 1);
-            text.CopyTo(destination);
-            destination[text.Length] = '\0';
-
-            PInvoke.GlobalUnlock(hGlobal);
 
             HANDLE result = PInvoke.SetClipboardData((uint)CLIPBOARD_FORMAT.CF_UNICODETEXT, (HANDLE)(void*)hGlobal);
             if (result.IsNull)

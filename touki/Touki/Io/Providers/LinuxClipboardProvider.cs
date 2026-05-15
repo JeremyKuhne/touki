@@ -97,7 +97,14 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
     /// <inheritdoc/>
     public bool TrySetText(ReadOnlySpan<char> text)
     {
-        // Materialize once. Process redirection cannot consume a span directly.
+        // Bail out on headless hosts before materialising the payload; the helper
+        // process redirection cannot consume a span directly, so we'd otherwise
+        // allocate a string proportional to the input only to discard it.
+        if (s_transport == Transport.None)
+        {
+            return false;
+        }
+
         string payload = text.ToString();
         return s_transport switch
         {
