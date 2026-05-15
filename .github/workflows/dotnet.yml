@@ -9,14 +9,33 @@ on:
   push:
     branches: [ "main" ]
 
+# Cancel in-flight runs for the same ref when a new commit lands. PRs benefit
+# the most (force-push iteration during review); pushes to main are left to
+# run to completion so the default branch always has a complete report.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
     name: ".NET / build"
     runs-on: windows-latest
+    env:
+      # Co-locate the NuGet cache inside the workspace so actions/cache can
+      # restore/save it reliably on every OS, avoiding ~/.nuget path quirks
+      # under non-bash shells.
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
     steps:
     - uses: actions/checkout@v5
       with: { fetch-depth: 0 }
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.NUGET_PACKAGES }}
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'Directory.Build.props', 'Directory.Build.targets', 'global.json') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
     - name: Restore dependencies
@@ -124,10 +143,18 @@ jobs:
     # AnyCPU produces an architecture-neutral assembly that loads on any host.
     env:
       _PlatformArgs: "-p:Platform=AnyCPU -p:Platforms=AnyCPU"
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
     steps:
     - uses: actions/checkout@v5
       with: { fetch-depth: 0 }
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.NUGET_PACKAGES }}
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'Directory.Build.props', 'Directory.Build.targets', 'global.json') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
     - name: Restore
@@ -159,10 +186,19 @@ jobs:
   linux-build:
     name: ".NET / linux"
     runs-on: ubuntu-latest
+    env:
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
     steps:
     - uses: actions/checkout@v5
       with: { fetch-depth: 0 }
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.NUGET_PACKAGES }}
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'Directory.Build.props', 'Directory.Build.targets', 'global.json') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
     - name: Install xclip, Xvfb, and xauth
