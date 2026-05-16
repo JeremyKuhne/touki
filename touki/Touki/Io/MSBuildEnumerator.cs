@@ -215,11 +215,27 @@ public class MSBuildEnumerator : MatchEnumerator<string>
                 rootDirectory,
                 out StringSegment startDirectory);
 
+            string startDirectoryString = startDirectory.ToString();
+
+            // Mirror MSBuild's FileMatcher.GetFileSearchData: when the resolved fixed directory does
+            // not exist as a directory on disk, return an empty list rather than letting the
+            // underlying FileSystemEnumerator throw on first iteration. This catches both trailing-
+            // separator specs that resolve onto a file (e.g. "Foo/b.txt/") and specs naming a missing
+            // subdirectory (e.g. "Missing/", "Missing/**").
+            if (!Directory.Exists(startDirectoryString))
+            {
+                return new MSBuildEnumerationResult(
+                    enumerator: null,
+                    action: MSBuildSearchAction.ReturnEmptyList,
+                    failedExcludeSpec: null,
+                    globFailure: null);
+            }
+
             MSBuildEnumerator enumerator = new(
                 matcher,
                 projectDirectory,
                 stripProjectDirectory: !Path.IsPathFullyQualified(fileSpec),
-                startDirectory.ToString(),
+                startDirectoryString,
                 enumOptions);
 
             return new MSBuildEnumerationResult(

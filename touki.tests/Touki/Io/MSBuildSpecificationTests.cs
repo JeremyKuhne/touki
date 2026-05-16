@@ -108,7 +108,10 @@ public class MSBuildSpecificationTests
     [InlineData("a/./b/c/file.txt", "a/b/c", "", "file.txt", false)]
     [InlineData("a/b/c/./../file.txt", "a/b", "", "file.txt", false)]
     [InlineData("a//b///file.txt", "a/b", "", "file.txt", false)]
-    // It is unclear what to really do in the next case
+    // Trailing separator on a path with no wildcards: FixedPath becomes the directory portion and
+    // FileName is empty. End-to-end this matches MSBuild's FileMatcher behavior at the parsing layer
+    // (an empty filenamePart matches nothing on disk). See MSBuildSpecificationTrailingSeparatorTests
+    // for the full discussion, including MSBuild's no-wildcard GetFiles shortcut.
     [InlineData("a/b/file.txt/", "a/b/file.txt", "", "", false)]
     [InlineData("a/b/./", "a/b", "", "", false)]
     [InlineData("./*/file.txt", "", "*", "file.txt", true)]
