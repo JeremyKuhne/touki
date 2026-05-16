@@ -691,6 +691,94 @@ public class MSBuildSpecificationTests
     }
 
     [Fact]
+    public void SplitWithErrors_WhitespaceOnlySegment_ReturnsErrorResult()
+    {
+        // A whitespace-only segment normalizes to empty; the bare Split overload silently drops these
+        // after throwing inside the constructor would have crashed callers. SplitWithErrors surfaces it
+        // as an error result instead.
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(
+            "  ;file.txt;\t;*.cs",
+            ignoreCase: false);
+
+        try
+        {
+            results.Count.Should().Be(4);
+
+            results[0].IsError.Should().BeTrue();
+            results[0].Original.ToString().Should().Be("  ");
+            results[0].ErrorReason.Should().NotBeNullOrEmpty();
+            results[0].Specification.Should().BeNull();
+
+            results[1].IsError.Should().BeTrue();
+            results[1].Original.ToString().Should().Be("\t");
+
+            results[2].IsError.Should().BeFalse();
+            results[2].Specification!.Normalized.ToString().Should().Be("file.txt");
+
+            results[3].IsError.Should().BeFalse();
+            results[3].Specification!.Normalized.ToString().Should().Be("*.cs");
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [Fact]
+    public void SplitWithErrors_NoErrors_ReturnsParsedResults()
+    {
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(
+            "file.txt;*.cs;docs/**",
+            ignoreCase: false);
+
+        try
+        {
+            results.Count.Should().Be(3);
+            results.Should().OnlyContain(r => !r.IsError);
+            results.Select(r => r.Specification!.Normalized.ToString()).Should().Equal(
+                "file.txt",
+                "*.cs",
+                Sep("docs/**"));
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [Fact]
+    public void SplitWithErrors_EmptyInput_ReturnsEmptyList()
+    {
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors("", ignoreCase: false);
+        try
+        {
+            results.Count.Should().Be(0);
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [Fact]
+    public void Split_WhitespaceOnlySegment_SilentlyDropped()
+    {
+        // Documents back-compat: the original Split overload continues to silently drop empty-normalize
+        // segments (rather than throw, which the old code path did before SplitCore was factored out).
+        ListBase<MSBuildSpecification> specs = MSBuildSpecification.Split("  ;file.txt;\t;*.cs", ignoreCase: false);
+        try
+        {
+            specs.Count.Should().Be(2);
+            specs[0].Normalized.ToString().Should().Be("file.txt");
+            specs[1].Normalized.ToString().Should().Be("*.cs");
+        }
+        finally
+        {
+            specs.Dispose();
+        }
+    }
+
+    [Fact]
     public void UnescapeSegment_NoEscapeCharacters_ReturnsSameSegment()
     {
         string original = "HelloWorld";

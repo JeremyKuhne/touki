@@ -146,6 +146,94 @@ public class MSBuildEnumerator : MatchEnumerator<string>
             options);
     }
 
+    /// <summary>
+    ///  Builds an enumeration result for the given include / exclude specifications, mirroring the
+    ///  4-tuple returned by MSBuild's internal <c>FileMatcher.GetFiles</c>.
+    /// </summary>
+    /// <param name="fileSpec">The include specification.</param>
+    /// <param name="excludeSpecs">
+    ///  Optional semicolon-separated exclude specifications. <see langword="null"/> or empty means no
+    ///  excludes.
+    /// </param>
+    /// <param name="projectDirectory">
+    ///  The project directory. Results are returned relative to this directory when the include is not
+    ///  fully qualified. When <see langword="null"/>, <see cref="Environment.CurrentDirectory"/> is used.
+    /// </param>
+    /// <param name="options">
+    ///  Enumeration options and Touki-specific safety flags. <see langword="null"/> selects
+    ///  <see cref="MSBuildEnumerationOptions.Default"/>.
+    /// </param>
+    /// <remarks>
+    ///  <para>
+    ///   On the <see cref="MSBuildSearchAction.RunSearch"/> path the caller owns the
+    ///   <see cref="MSBuildEnumerationResult.Enumerator"/> and must dispose it after iteration.
+    ///  </para>
+    /// </remarks>
+    public static MSBuildEnumerationResult CreateResult(
+        string fileSpec,
+        string? excludeSpecs = null,
+        string? projectDirectory = null,
+        MSBuildEnumerationOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(fileSpec);
+
+        options ??= MSBuildEnumerationOptions.Default;
+        EnumerationOptions enumOptions = options.EnumerationOptions;
+        string rootDirectory = projectDirectory ?? Environment.CurrentDirectory;
+
+        // Parse once. The Create overloads parse a second time and FullyQualify a third time through
+        // MSBuildMatchBuilder; CreateResult avoids that by driving the match builder directly with the
+        // already-qualified include.
+        MSBuildSpecification include = new MSBuildSpecification(fileSpec).FullyQualify(rootDirectory);
+
+        if (!options.AllowDriveEnumeration && include.IsDriveRootRecursion)
+        {
+            return new MSBuildEnumerationResult(
+                enumerator: null,
+                action: MSBuildSearchAction.FailBecauseDriveEnumerationIsForbidden,
+                failedExcludeSpec: null,
+                globFailure:
+                    $"Drive enumeration is not allowed for '{fileSpec}'. Set " +
+                    $"{nameof(MSBuildEnumerationOptions)}.{nameof(MSBuildEnumerationOptions.AllowDriveEnumeration)} = true to override.");
+        }
+
+        bool ignoreCase = Paths.GetFinalCasing(enumOptions.MatchCasing) == MatchCasing.CaseInsensitive;
+        ListBase<MSBuildSpecification> excludes = string.IsNullOrEmpty(excludeSpecs)
+            ? EmptyList<MSBuildSpecification>.Instance
+            : MSBuildSpecification.Split(excludeSpecs!, ignoreCase);
+
+        try
+        {
+            IEnumerationMatcher matcher = MSBuildMatchBuilder.FromSpecification(
+                include,
+                excludes,
+                enumOptions.MatchType,
+                enumOptions.MatchCasing,
+                rootDirectory,
+                out StringSegment startDirectory);
+
+            MSBuildEnumerator enumerator = new(
+                matcher,
+                projectDirectory,
+                stripProjectDirectory: !Path.IsPathFullyQualified(fileSpec),
+                startDirectory.ToString(),
+                enumOptions);
+
+            return new MSBuildEnumerationResult(
+                enumerator: enumerator,
+                action: MSBuildSearchAction.RunSearch,
+                failedExcludeSpec: null,
+                globFailure: null);
+        }
+        finally
+        {
+            if (excludes is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+        }
+    }
+
     /// <inheritdoc/>
     protected override bool ShouldIncludeEntry(ref FileSystemEntry entry) =>
         !entry.IsDirectory && base.ShouldIncludeEntry(ref entry);
