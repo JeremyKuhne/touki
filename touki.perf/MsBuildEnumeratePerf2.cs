@@ -16,17 +16,19 @@ public class MsBuildEnumeratePerf2
 
     private const string UnsplitExcludes = "bin/Debug/**;obj/Debug/**;bin/**;obj/**/;**/*.user;**/*.*proj;**/*.sln;**/*.slnx;**/*.vssscc;**/.DS_Store";
 
+    // FileMatcher takes already-split excludes; mirror the contents of UnsplitExcludes (no trailing ';' -
+    // each entry must be a single literal pattern, not a semicolon-suffixed one).
     private static readonly List<string> s_excludes =
     [
-        "bin/Debug/**;",
-        "obj/Debug/**;",
-        "bin/**;",
-        "obj/**/;",
-        "**/*.user;",
-        "**/*.*proj;",
-        "**/*.sln;",
-        "**/*.slnx;",
-        "**/*.vssscc;",
+        "bin/Debug/**",
+        "obj/Debug/**",
+        "bin/**",
+        "obj/**",
+        "**/*.user",
+        "**/*.*proj",
+        "**/*.sln",
+        "**/*.slnx",
+        "**/*.vssscc",
         "**/.DS_Store"
     ];
 

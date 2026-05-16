@@ -156,12 +156,15 @@ public class MSBuildEnumerator : MatchEnumerator<string>
     ///  excludes.
     /// </param>
     /// <param name="projectDirectory">
-    ///  The project directory. Results are returned relative to this directory when the include is not
-    ///  fully qualified. When <see langword="null"/>, <see cref="Environment.CurrentDirectory"/> is used.
+    ///  The project directory used to resolve a non-rooted include spec. When <see langword="null"/>,
+    ///  <see cref="Environment.CurrentDirectory"/> is used to resolve the spec, but absolute paths are
+    ///  returned in <see cref="MSBuildEnumerationResult.Enumerator"/> (paths are stripped to be relative
+    ///  to <paramref name="projectDirectory"/> only when a non-<see langword="null"/> value is supplied
+    ///  and the include spec is not fully qualified).
     /// </param>
     /// <param name="options">
-    ///  Enumeration options and Touki-specific safety flags. <see langword="null"/> selects
-    ///  <see cref="MSBuildEnumerationOptions.Default"/>.
+    ///  Enumeration options and Touki-specific safety flags. <see langword="null"/> selects a fresh
+    ///  <see cref="MSBuildEnumerationOptions"/> with default values.
     /// </param>
     /// <remarks>
     ///  <para>
@@ -177,7 +180,7 @@ public class MSBuildEnumerator : MatchEnumerator<string>
     {
         ArgumentNullException.ThrowIfNull(fileSpec);
 
-        options ??= MSBuildEnumerationOptions.Default;
+        options ??= new MSBuildEnumerationOptions();
         EnumerationOptions enumOptions = options.EnumerationOptions;
         string rootDirectory = projectDirectory ?? Environment.CurrentDirectory;
 

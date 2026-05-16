@@ -38,8 +38,15 @@ public readonly struct MSBuildSpecificationResult
     ///  <see langword="true"/> when this result represents an error spec that should be surfaced as a literal
     ///  string rather than evaluated as a glob.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Only <see cref="Specification"/> is null-tracked when <see cref="IsError"/> is <see langword="false"/>;
+    ///   <see cref="ErrorReason"/> intentionally lacks a symmetric annotation because <c>default(MSBuildSpecificationResult)</c>
+    ///   has a null <see cref="ErrorReason"/> with <see cref="IsError"/> returning <see langword="true"/>. Callers that
+    ///   inspect <see cref="ErrorReason"/> should null-check explicitly.
+    ///  </para>
+    /// </remarks>
     [MemberNotNullWhen(false, nameof(Specification))]
-    [MemberNotNullWhen(true, nameof(ErrorReason))]
     public bool IsError => Specification is null;
 
     private MSBuildSpecificationResult(StringSegment original, MSBuildSpecification? specification, string? errorReason)

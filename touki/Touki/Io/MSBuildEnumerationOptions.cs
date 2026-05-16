@@ -10,23 +10,13 @@ namespace Touki.Io;
 /// </summary>
 public sealed class MSBuildEnumerationOptions
 {
-    internal static EnumerationOptions DefaultEnumerationOptions { get; } = new()
-    {
-        MatchType = MatchType.Simple,
-        MatchCasing = MatchCasing.PlatformDefault,
-        IgnoreInaccessible = true,
-        RecurseSubdirectories = true
-    };
-
-    /// <summary>
-    ///  Shared default instance: stock enumeration options with drive enumeration disallowed.
-    /// </summary>
-    public static MSBuildEnumerationOptions Default { get; } = new();
-
     /// <summary>
     ///  Underlying filesystem enumeration options (match type, casing, recursion, etc.).
+    ///  Each <see cref="MSBuildEnumerationOptions"/> instance gets its own fresh
+    ///  <see cref="EnumerationOptions"/> when constructed without an explicit value, so mutating it
+    ///  never bleeds into unrelated callers.
     /// </summary>
-    public EnumerationOptions EnumerationOptions { get; init; } = DefaultEnumerationOptions;
+    public EnumerationOptions EnumerationOptions { get; init; } = CreateDefaultEnumerationOptions();
 
     /// <summary>
     ///  When <see langword="false"/> (the default) an include that would recursively enumerate an entire
@@ -37,4 +27,12 @@ public sealed class MSBuildEnumerationOptions
     ///  <c>MSBUILDDISABLEDRIVEENUMERATIONONWILDCARDS</c>.
     /// </summary>
     public bool AllowDriveEnumeration { get; init; }
+
+    private static EnumerationOptions CreateDefaultEnumerationOptions() => new()
+    {
+        MatchType = MatchType.Simple,
+        MatchCasing = MatchCasing.PlatformDefault,
+        IgnoreInaccessible = true,
+        RecurseSubdirectories = true
+    };
 }
