@@ -396,8 +396,15 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     /// </remarks>
     public static StringSegment Normalize(StringSegment specification)
     {
-        // TODO: What is the behavior of a trailing separator in MSBuild? Is "Foo\" the same as "Foo" or is it
-        // expected to be the same as "Foo\*"?
+        // Trailing separators are preserved verbatim. They produce a spec with an empty
+        // <see cref="FileName"/> (and, for "Foo/**/", still an "**" <see cref="WildPath"/>); enumeration
+        // matches nothing because no real on-disk filename is empty. This mirrors MSBuild's
+        // <c>FileMatcher.SplitFileSpec</c>, which leaves <c>filenamePart</c> empty for trailing-separator
+        // specs. Note that MSBuild's <c>FileMatcher.GetFiles</c> wraps that parsing layer with a
+        // no-wildcard shortcut that returns the spec verbatim without consulting the filesystem, so
+        // <c>GetFiles("Foo/")</c> returns ["Foo/"] regardless of whether the path exists; touki's
+        // <see cref="MSBuildEnumerator"/> has no such shortcut and instead returns an empty result for
+        // those specs.
 
         specification = specification.Trim();
 
