@@ -82,24 +82,58 @@ public class MSBuildSpecificationTrailingSeparatorTests
     }
 
     [Theory]
-    // No-wildcard specs whose resolved fixed path is not an existing directory. Previously these
-    // threw an IOException from FileSystemEnumerator (e.g. "Foo/b.txt/" tries to enumerate a file as
-    // a directory). The MatchEnumerator pre-checks Directory.Exists on its start directory now and
-    // returns an empty result instead, matching MSBuild's "ReturnEmptyList" branch in
-    // GetFileSearchData when the fixed directory does not exist as a directory.
+    // Specs whose resolved fixed directory does exist on disk, but the spec itself names a directory
+    // (or an empty filename via a trailing separator on a directory). FixedPath = the existing
+    // directory, FileName = empty, so enumeration runs but matches nothing because no real on-disk
+    // filename is empty. RunSearch action with an empty enumeration result, mirroring MSBuild's
+    // parsing-layer behavior (FileMatcher.SplitFileSpec leaves filenamePart empty here too).
     [InlineData("Foo")]
     [InlineData("Foo/")]
-    [InlineData("Foo/b.txt/")]
-    [InlineData("Missing/")]
-    [InlineData("Missing/file.txt")]
-    public void MSBuildEnumerator_NoWildcardSpecResolvingToNonDirectory_ReturnsEmpty(string spec)
+    public void MSBuildEnumerator_LiteralDirectorySpec_RunsSearchAndYieldsNothing(string spec)
     {
         using TempFolder tempFolder = new();
         CreateFixture(tempFolder.TempPath);
 
-        string[] actual = EnumerateTouki(tempFolder.TempPath, spec);
+        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(
+            fileSpec: spec,
+            projectDirectory: tempFolder.TempPath);
 
-        actual.Should().BeEmpty();
+        result.Action.Should().Be(MSBuildSearchAction.RunSearch);
+        result.Enumerator.Should().NotBeNull();
+
+        using MSBuildEnumerator enumerator = result.Enumerator!;
+        List<string> files = [];
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        files.Should().BeEmpty();
+    }
+
+    [Theory]
+    // Specs whose resolved fixed path is missing or is a file rather than a directory. Without the
+    // CreateResult guard the underlying FileSystemEnumerator would throw on first iteration; with the
+    // guard, CreateResult short-circuits to ReturnEmptyList and a null Enumerator, mirroring
+    // MSBuild's FileMatcher.GetFileSearchData "fixed directory does not exist" branch.
+    [InlineData("Foo/b.txt/")]
+    [InlineData("Missing/")]
+    [InlineData("Missing/file.txt")]
+    [InlineData("Missing/**")]
+    [InlineData("Missing/*.txt")]
+    public void CreateResult_FixedDirectoryMissingOrFile_ReturnsEmptyListAction(string spec)
+    {
+        using TempFolder tempFolder = new();
+        CreateFixture(tempFolder.TempPath);
+
+        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(
+            fileSpec: spec,
+            projectDirectory: tempFolder.TempPath);
+
+        result.Action.Should().Be(MSBuildSearchAction.ReturnEmptyList);
+        result.Enumerator.Should().BeNull();
+        result.GlobFailure.Should().BeNull();
+        result.FailedExcludeSpec.Should().BeNull();
     }
 
     [Theory]

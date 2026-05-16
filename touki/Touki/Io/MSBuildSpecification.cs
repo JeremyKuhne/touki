@@ -396,15 +396,22 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     /// </remarks>
     public static StringSegment Normalize(StringSegment specification)
     {
-        // Trailing separators are preserved verbatim. They produce a spec with an empty
-        // <see cref="FileName"/> (and, for "Foo/**/", still an "**" <see cref="WildPath"/>); enumeration
-        // matches nothing because no real on-disk filename is empty. This mirrors MSBuild's
-        // <c>FileMatcher.SplitFileSpec</c>, which leaves <c>filenamePart</c> empty for trailing-separator
-        // specs. Note that MSBuild's <c>FileMatcher.GetFiles</c> wraps that parsing layer with a
-        // no-wildcard shortcut that returns the spec verbatim without consulting the filesystem, so
-        // <c>GetFiles("Foo/")</c> returns ["Foo/"] regardless of whether the path exists; touki's
-        // <see cref="MSBuildEnumerator"/> has no such shortcut and instead returns an empty result for
-        // those specs.
+        // Trailing separators are preserved verbatim. They split into two cases:
+        //
+        //  * Non-wildcard or non-recursive specs (e.g. "Foo/", "Foo/Bar/", "Foo/b.txt/"): FileName is
+        //    empty and enumeration matches nothing because no real on-disk filename is empty. This
+        //    mirrors MSBuild's FileMatcher.SplitFileSpec, which leaves filenamePart empty for these
+        //    inputs.
+        //  * Recursive trailing-separator specs (e.g. "Foo/**/", "**/"): the constructor's
+        //    IsSimpleRecursiveMatch + empty-FileName branch synthesizes FileName = "*", so these
+        //    behave identically to "Foo/**" / "**" and enumerate all files. MSBuild's SplitFileSpec
+        //    arrives at the same outcome via its own filenamePart == "**" special case.
+        //
+        // Note that MSBuild's FileMatcher.GetFiles wraps the parsing layer above with a no-wildcard
+        // shortcut that returns the spec verbatim without consulting the filesystem, so e.g.
+        // GetFiles("Foo/") returns ["Foo/"] regardless of whether the path exists. Touki's
+        // MSBuildEnumerator has no such shortcut; MSBuildEnumerator.CreateResult returns
+        // MSBuildSearchAction.ReturnEmptyList when the spec's fixed directory does not exist on disk.
 
         specification = specification.Trim();
 
