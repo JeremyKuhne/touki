@@ -172,18 +172,50 @@ public class MSBuildEnumerationResultTests
     [Fact]
     public void CreateResult_DriveRootRecursion_MatchesFileMatcherOracle()
     {
-        // Parity check against MSBuild's FileMatcher: both should refuse drive-root recursion by default.
-        // MSBuild's real SearchAction enum has more values than FileMatcherWrapper exposes (notably
-        // FailBecauseDriveEnumerationIsForbidden = 5), so the wrapper hands back an undefined enum value.
-        // We just assert the oracle did NOT run the search.
+        // Parity check against MSBuild's FileMatcher. MSBuild's default behavior depends on
+        // Traits.Instance.ThrowOnDriveEnumeratingWildcard; in this test environment that trait is
+        // off, so the oracle returns LogDriveEnumeratingWildcard (the search proceeds but a
+        // warning is logged). Touki diverges intentionally: MSBuildEnumerationOptions.AllowDriveEnumeration
+        // defaults to false, so CreateResult returns FailBecauseDriveEnumerationIsForbidden. Both
+        // outcomes share the property that the search does NOT run normally.
         FileMatcherWrapper.GetFilesResult oracle = FileMatcherWrapper.GetFiles(
             Environment.CurrentDirectory,
             DriveRootRecursiveSpec);
 
         MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(DriveRootRecursiveSpec);
 
-        oracle.Action.Should().NotBe(FileMatcherWrapper.SearchAction.RunSearch);
+        oracle.Action.Should().BeOneOf(
+            FileMatcherWrapper.SearchAction.FailOnDriveEnumeratingWildcard,
+            FileMatcherWrapper.SearchAction.LogDriveEnumeratingWildcard);
         oracle.FileList.Should().BeEmpty();
         result.Action.Should().Be(MSBuildSearchAction.FailBecauseDriveEnumerationIsForbidden);
+    }
+
+    [Theory]
+    [InlineData("foo\0bar")]                 // embedded null character
+    [InlineData("foo.../bar.cs")]            // triple-dot sequence
+    [InlineData("a**b")]                     // misplaced ** between non-separator chars
+    [InlineData("*.cs**")]                   // misplaced ** glued to filename
+    public void CreateResult_IllegalIncludeSpec_ReturnsFileSpecAction(string spec)
+    {
+        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(spec);
+
+        result.Action.Should().Be(MSBuildSearchAction.ReturnFileSpec);
+        result.Enumerator.Should().BeNull();
+        result.GlobFailure.Should().NotBeNullOrEmpty();
+        result.FailedExcludeSpec.Should().BeNull();
+    }
+
+    [Fact]
+    public void CreateResult_WhitespaceOnlyIncludeSpec_ReturnsFileSpecAction()
+    {
+        // A whitespace-only include normalizes to empty. CreateResult treats that as a
+        // ReturnFileSpec error (mirroring MSBuild's "return the spec verbatim" for illegal specs)
+        // rather than letting the MSBuildSpecification constructor throw.
+        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult("   ");
+
+        result.Action.Should().Be(MSBuildSearchAction.ReturnFileSpec);
+        result.Enumerator.Should().BeNull();
+        result.GlobFailure.Should().NotBeNullOrEmpty();
     }
 }

@@ -57,8 +57,10 @@ public class FileMatcherTrailingSeparatorOracleTests
 
         FileMatcherWrapper.GetFilesResult result = FileMatcherWrapper.GetFiles(tempFolder.TempPath, spec);
 
-        // Action is RunSearch (the enum value 0 used by FileMatcher's "no wildcard" early return).
-        result.Action.Should().Be(FileMatcherWrapper.SearchAction.RunSearch);
+        // No-wildcard specs are short-circuited in FileMatcher.GetFiles: the spec is returned verbatim
+        // via CreateArrayWithSingleItemIfNotExcluded and the action is SearchAction.None (the early-
+        // return path before any actual search is initiated).
+        result.Action.Should().Be(FileMatcherWrapper.SearchAction.None);
 
         // Single-element list containing exactly the input spec.
         result.FileList.Should().ContainSingle().Which.Should().Be(spec);

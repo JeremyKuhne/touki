@@ -382,6 +382,118 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
         return builder.Length < specification.Length ? builder.ToString() : specification;
     }
 
+    /// <summary>
+    ///  Validates the given <paramref name="specification"/> against MSBuild's "legal file spec"
+    ///  rules. Returns a short human-readable reason string when the spec would be classified as an
+    ///  error by MSBuild's <c>FileMatcher</c> (and surfaced as a literal item rather than expanded),
+    ///  or <see langword="null"/> when the spec is legal.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Internal because this method assumes its input has already been normalized via
+    ///   <see cref="Normalize"/> (so directory separators are the platform's
+    ///   <see cref="Path.DirectorySeparatorChar"/>). Public callers should use
+    ///   <see cref="NormalizeAndValidate"/>, which combines normalization and validation in a single
+    ///   precondition-free entry point. The checks below mirror MSBuild's
+    ///   <c>FileMatcher.RawFileSpecIsValid</c> and <c>FileMatcher.IsLegalFileSpec</c>, restricted to
+    ///   the subset that is actually meaningful for this library:
+    ///  </para>
+    ///  <list type="bullet">
+    ///   <item><description>Embedded null character ('\0'). MSBuild&#39;s <c>MSBuildConstants.InvalidPathChars</c>
+    ///    historically had a larger set; in practice only the null byte is universally illegal.</description></item>
+    ///   <item><description>The literal substring <c>"..."</c> (three or more consecutive dots).</description></item>
+    ///   <item><description>A <c>**</c> recursive wildcard that is not a standalone path segment
+    ///    (e.g. <c>a**b</c>, <c>*.cs**</c>); standalone <c>**</c> at either end of the spec or between
+    ///    separators is legal.</description></item>
+    ///  </list>
+    ///  <para>
+    ///   Not validated (intentionally): MSBuild&#39;s "colon not at position 1" rule (breaks Unix
+    ///   absolute paths) and trailing-dot weirdness.
+    ///  </para>
+    /// </remarks>
+    internal static string? Validate(StringSegment specification)
+    {
+        ReadOnlySpan<char> span = specification.AsSpan();
+
+        if (span.IndexOf('\0') >= 0)
+        {
+            return "Specification contains an embedded null character.";
+        }
+
+        if (span.IndexOf("...".AsSpan(), StringComparison.Ordinal) >= 0)
+        {
+            return "Specification contains an illegal '...' sequence.";
+        }
+
+        if (HasMisplacedDoubleStar(span))
+        {
+            return "Specification contains a '**' that is not a standalone path segment.";
+        }
+
+        return null;
+
+        static bool HasMisplacedDoubleStar(ReadOnlySpan<char> spec)
+        {
+            for (int i = 0; i < spec.Length - 1; i++)
+            {
+                if (spec[i] != '*' || spec[i + 1] != '*')
+                {
+                    continue;
+                }
+
+                bool leftOk = i == 0 || spec[i - 1] == Path.DirectorySeparatorChar;
+                bool rightOk = i + 2 == spec.Length || spec[i + 2] == Path.DirectorySeparatorChar;
+
+                if (!leftOk || !rightOk)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    ///  Combines <see cref="Normalize"/> and validation in a single precondition-free entry point.
+    ///  Returns the normalized specification; <paramref name="errorReason"/> is <see langword="null"/>
+    ///  when the spec is legal, or a short human-readable reason when the spec would be classified as
+    ///  an error by MSBuild's <c>FileMatcher</c>.
+    /// </summary>
+    /// <param name="specification">The raw specification.</param>
+    /// <param name="errorReason">
+    ///  On success, <see langword="null"/>. On failure, a short reason such as
+    ///  <c>"Specification contains an embedded null character."</c> suitable for surfacing in
+    ///  <see cref="MSBuildEnumerationResult.GlobFailure"/> or log output. When non-<see langword="null"/>
+    ///  the returned <see cref="StringSegment"/> is the partially normalized form (or
+    ///  <see langword="default"/> if normalization itself produced an empty result) and should not be
+    ///  used as a glob pattern.
+    /// </param>
+    /// <returns>
+    ///  The normalized form of <paramref name="specification"/>. Inspect <paramref name="errorReason"/>
+    ///  to distinguish success from failure.
+    /// </returns>
+    /// <remarks>
+    ///  <para>
+    ///   Error classes mirror MSBuild's <c>FileMatcher.RawFileSpecIsValid</c> +
+    ///   <c>FileMatcher.IsLegalFileSpec</c>, restricted to the subset meaningful for this library:
+    ///   spec that normalizes to empty (e.g. whitespace-only segment), embedded null character,
+    ///   literal <c>"..."</c> substring, and misplaced <c>**</c> (not a standalone path segment).
+    ///  </para>
+    /// </remarks>
+    public static StringSegment NormalizeAndValidate(StringSegment specification, out string? errorReason)
+    {
+        StringSegment normalized = Normalize(specification);
+
+        if (normalized.IsEmpty)
+        {
+            errorReason = "Specification normalizes to empty.";
+            return normalized;
+        }
+
+        errorReason = Validate(normalized);
+        return normalized;
+    }
 
     /// <summary>
     ///  Simplify a path by converting backslashes to forward slashes on Unix systems, collapsing
@@ -537,10 +649,10 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     /// <remarks>
     ///  <para>
     ///   Unlike <see cref="Split(StringSegment, bool)"/>, this overload preserves error specs in the
-    ///   returned list rather than silently dropping or throwing on them. Currently the only classified
-    ///   error class is "spec normalizes to empty" (e.g. whitespace-only segments); additional MSBuild
-    ///   error classes (drive-root recursion, illegal characters, malformed <c>**</c>) will be added as
-    ///   support for them lands.
+    ///   returned list rather than silently dropping or throwing on them. The classified error classes
+    ///   match the checks performed by <see cref="Validate"/> (embedded null character, <c>...</c>
+    ///   substring, misplaced <c>**</c>) plus the "spec normalizes to empty" class produced by
+    ///   <see cref="Normalize"/>.
     ///  </para>
     /// </remarks>
     public static ListBase<MSBuildSpecificationResult> SplitWithErrors(
@@ -567,17 +679,20 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
         ListBase<MSBuildSpecification> splitSpecs,
         ListBase<MSBuildSpecificationResult>? errorResults)
     {
-        // MSBuild normally validates specifications after it splits each one into fixed, wildcard, and file parts.
-        // Most of that validation isn't strictly necessary for correctness here, but specs that MSBuild treats as
-        // "errors" (and surfaces as literal strings) are tracked when an error sink is provided.
+        // MSBuild validates specifications after splitting each one into fixed, wildcard, and file parts.
+        // For touki, validation is applied to the normalized spec via the static Validate helper and the
+        // results are tracked when an error sink is provided.
         //
-        // What MSBuild considers invalid:
+        // What's validated (mirrors MSBuild's FileMatcher.RawFileSpecIsValid + IsLegalFileSpec, restricted
+        // to the subset that's meaningful here):
         //
-        //  - InvalidPathCharacters - not needed anymore, the only illegal character is null.
-        //  - A colon after the second character - not a real risk unless you create a `Uri` and breaks Unix paths.
-        //  - `...` - this isn't needed either, there is no risk with this.
-        //  - `**` not between separators - a lot of pain for not much gain, so we don't do this.
-        //  - Spec that normalizes to empty - currently captured below when an error sink is provided.
+        //  - Spec that normalizes to empty (e.g. whitespace-only segment).
+        //  - Embedded null character ('\0').
+        //  - Literal "..." substring.
+        //  - Misplaced "**" (not a standalone path segment).
+        //
+        // Intentionally not validated: MSBuild's "colon not at position 1" rule (breaks Unix absolute
+        // paths) and the deprecated InvalidPathChars set beyond null.
 
         StringSegment right = specs;
 
@@ -589,17 +704,15 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
                 continue;
             }
 
-            // Normalize the spec. This will collapse any consecutive separators into a single separator and reduce
-            // unnecessary segments like "." and "..". MSBuild doesn't fully do this at this stage. For performance we
-            // want to dedupe the segments, which can done more efficiently if we normalize first. This will also
-            // improve performance further downstream as we can be more efficient with additional comparisons.
+            // Normalize and validate the spec in one shot. NormalizeAndValidate collapses consecutive
+            // separators, reduces "." and ".." segments, dedupes "**" runs, and then classifies the
+            // result against MSBuild's "legal file spec" rules. On failure the error reason is
+            // surfaced through the optional error sink and the spec is dropped.
 
-            StringSegment normalized = Normalize(left);
-
-            if (normalized.IsEmpty)
+            StringSegment normalized = NormalizeAndValidate(left, out string? errorReason);
+            if (errorReason is not null)
             {
-                // E.g. whitespace-only segment. Constructor would throw; surface as an error spec when caller asked.
-                errorResults?.Add(MSBuildSpecificationResult.FromError(left, "Specification normalizes to empty."));
+                errorResults?.Add(MSBuildSpecificationResult.FromError(left, errorReason));
                 continue;
             }
 
