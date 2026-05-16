@@ -24,6 +24,17 @@ public class MSBuildSpecificationTests
     [InlineData("**/file.txt", "", "**", "file.txt", true)]
     [InlineData("a/b/**", "a/b", "**", "*", true)]
     [InlineData("**/b/**", "", "**/b/**", "*", true)]
+    // Rooted-with-only-leading-separator cases. FixedPath is the root separator (e.g. "/" on
+    // Unix, "\" on Windows) instead of an empty slice, and WildPath/FileName line up with the
+    // suffix the same way they would for non-rooted specs.
+    [InlineData("/", "/", "", "", false)]
+    [InlineData("/foo.txt", "/", "", "foo.txt", false)]
+    [InlineData("/*.cs", "/", "", "*.cs", true)]
+    [InlineData("/**", "/", "**", "*", true)]
+    [InlineData("/**/file.txt", "/", "**", "file.txt", true)]
+    [InlineData("/**/*.cs", "/", "**", "*.cs", true)]
+    [InlineData("/**/foo/*.cs", "/", "**/foo", "*.cs", true)]
+    [InlineData("/**/foo/**", "/", "**/foo/**", "*", true)]
     public void MSBuildSpecification_ParsesCorrectly(
         string original,
         string expectedFixed,

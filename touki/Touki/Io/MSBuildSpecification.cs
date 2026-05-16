@@ -113,19 +113,46 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
 
         if (lastSeparator < 1)
         {
-            // No separator, only special case is "**"
-            FixedPath = default;
+            if (lastSeparator < 0)
+            {
+                // No separator at all. Only special case is "**".
+                FixedPath = default;
 
-            if (Normalized == "**")
+                if (Normalized == "**")
+                {
+                    goto SimpleRecursiveMatch;
+                }
+                else
+                {
+                    WildPath = default;
+                    FileName = Normalized;
+                }
+
+                return;
+            }
+
+            // lastSeparator == 0: rooted with the only separator at the start (e.g. "/**" or
+            // "/foo.txt" on Unix; "\foo" drive-relative on Windows). FixedPath is the root
+            // separator; the suffix has no further separators so it's either empty, the recursive
+            // wildcard "**", or a filename.
+            FixedPath = Normalized[..1];
+            StringSegment suffix = Normalized[1..];
+
+            if (suffix.IsEmpty)
+            {
+                // Just the root itself.
+                WildPath = default;
+                FileName = default;
+                return;
+            }
+
+            if (suffix == "**")
             {
                 goto SimpleRecursiveMatch;
             }
-            else
-            {
-                WildPath = default;
-                FileName = Normalized;
-            }
 
+            WildPath = default;
+            FileName = suffix;
             return;
         }
 
@@ -185,12 +212,16 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
         }
         else
         {
-            // We have a fixed part and a wildcard part
-            FixedPath = Normalized[..lastSeparatorBeforeWildCard];
+            // We have a fixed part and a wildcard part. When the only separator before the
+            // wildcard is the leading root separator (e.g. "/**/*.cs"), FixedPath IS the root
+            // separator rather than an empty slice.
+            FixedPath = lastSeparatorBeforeWildCard == 0
+                ? Normalized[..1]
+                : Normalized[..lastSeparatorBeforeWildCard];
 
             if (trailingWildDirectory)
             {
-                // Trailing wild directory (e.g. "foo/bar*/**").
+                // Trailing wild directory (e.g. "foo/bar*/**" or "/**/foo/**").
                 WildPath = Normalized[(lastSeparatorBeforeWildCard + 1)..];
                 FileName = "*";
                 IsSimpleRecursiveMatch = WildPath == "**";
@@ -198,8 +229,10 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
             }
             else
             {
-                // Normal case with wildcards in the path (e.g. "foo/bar*/baz/*.txt").
-                WildPath = Normalized.Slice(FixedPath.Length + 1, Normalized.Length - FileName.Length - FixedPath.Length - 2);
+                // Normal case with wildcards in the path (e.g. "foo/bar*/baz/*.txt" or
+                // "/**/foo/*.txt"). Use the position-based slice so the root case (where
+                // FixedPath IS the separator) and the non-root case share the same formula.
+                WildPath = Normalized[(lastSeparatorBeforeWildCard + 1)..lastSeparator];
             }
         }
 
@@ -272,24 +305,9 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     {
         get
         {
-            if (!IsFullyQualified || !HasAnyWildCards)
+            if (!IsFullyQualified || !HasAnyWildCards || FixedPath.IsEmpty)
             {
                 return false;
-            }
-
-            // Edge case: the parser currently leaves FixedPath empty for rooted specs whose only
-            // fixed prefix IS the root separator (e.g. "/**" or "/**/*.cs" on Unix). Detect those
-            // by looking at Normalized directly so the gate still catches them. The deeper parser
-            // fix (also populating WildPath/FileName correctly for those specs) is tracked as a
-            // follow-up.
-            if (FixedPath.IsEmpty)
-            {
-                ReadOnlySpan<char> normalized = Normalized.AsSpan();
-                return normalized.Length >= 3
-                    && normalized[0] == Path.DirectorySeparatorChar
-                    && normalized[1] == '*'
-                    && normalized[2] == '*'
-                    && (normalized.Length == 3 || normalized[3] == Path.DirectorySeparatorChar);
             }
 
             if (!IsSimpleRecursiveMatch
