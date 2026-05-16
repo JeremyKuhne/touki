@@ -12,12 +12,19 @@ namespace Touki.Io;
 /// </summary>
 public static class FileMatcherWrapper
 {
-    // Enum to match internal SearchAction enum
+    /// <summary>
+    ///  Mirror of MSBuild's internal <c>FileMatcher.SearchAction</c> enum. The integer values match
+    ///  MSBuild's enum so the reflection-based mapping in <see cref="GetFiles"/> works by direct
+    ///  int cast.
+    /// </summary>
     public enum SearchAction
     {
-        RunSearch = 0,
-        StopSearching = 1,
-        IncludeAllFiles = 2
+        None = 0,
+        RunSearch = 1,
+        ReturnFileSpec = 2,
+        ReturnEmptyList = 3,
+        FailOnDriveEnumeratingWildcard = 4,
+        LogDriveEnumeratingWildcard = 5,
     }
 
     /// <summary>

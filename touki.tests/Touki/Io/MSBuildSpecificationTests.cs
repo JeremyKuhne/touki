@@ -792,6 +792,109 @@ public class MSBuildSpecificationTests
         }
     }
 
+    [Theory]
+    [InlineData("foo\0bar")]                 // embedded null character
+    [InlineData("foo\0/bar.cs")]
+    public void SplitWithErrors_NullCharacter_ReturnsErrorResult(string spec)
+    {
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(spec, ignoreCase: false);
+        try
+        {
+            results.Count.Should().Be(1);
+            results[0].IsError.Should().BeTrue();
+            results[0].ErrorReason.Should().Contain("null");
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData("foo.../bar.cs")]
+    [InlineData(".../bar.cs")]
+    [InlineData("foo/....cs")]
+    public void SplitWithErrors_TripleDotSequence_ReturnsErrorResult(string spec)
+    {
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(spec, ignoreCase: false);
+        try
+        {
+            results.Count.Should().Be(1);
+            results[0].IsError.Should().BeTrue();
+            results[0].ErrorReason.Should().Contain("...");
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData("a**b")]                     // ** between non-separator chars
+    [InlineData("foo/a**b/baz")]             // ** between non-separator chars in a path segment
+    [InlineData("foo/**bar")]                // ** with no separator to the right
+    [InlineData("foo/bar**")]                // ** at end with no separator to the left
+    [InlineData("*.cs**")]                   // trailing ** glued to a filename
+    public void SplitWithErrors_MisplacedDoubleStar_ReturnsErrorResult(string spec)
+    {
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(spec, ignoreCase: false);
+        try
+        {
+            results.Count.Should().Be(1);
+            results[0].IsError.Should().BeTrue();
+            results[0].ErrorReason.Should().Contain("**");
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData("**")]                       // standalone
+    [InlineData("**/foo")]                   // recursive followed by separator
+    [InlineData("foo/**")]                   // recursive at end after separator
+    [InlineData("foo/**/bar")]               // recursive between separators
+    [InlineData("foo/**/")]                  // recursive followed by trailing separator
+    public void SplitWithErrors_LegalDoubleStar_ReturnsParsedResult(string spec)
+    {
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(spec, ignoreCase: false);
+        try
+        {
+            results.Count.Should().Be(1);
+            results[0].IsError.Should().BeFalse();
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData("foo\0bar")]
+    [InlineData("foo.../bar.cs")]
+    [InlineData("a**b")]
+    public void Validate_IllegalSpec_ReturnsErrorReason(string spec)
+    {
+        StringSegment normalized = MSBuildSpecification.Normalize(spec);
+        string? error = MSBuildSpecification.Validate(normalized);
+        error.Should().NotBeNullOrEmpty();
+    }
+
+    [Theory]
+    [InlineData("file.txt")]
+    [InlineData("**")]
+    [InlineData("**/*.cs")]
+    [InlineData("foo/**/bar")]
+    [InlineData("./foo/bar")]
+    [InlineData("../foo/bar")]
+    public void Validate_LegalSpec_ReturnsNull(string spec)
+    {
+        StringSegment normalized = MSBuildSpecification.Normalize(spec);
+        string? error = MSBuildSpecification.Validate(normalized);
+        error.Should().BeNull();
+    }
+
     [Fact]
     public void UnescapeSegment_NoEscapeCharacters_ReturnsSameSegment()
     {

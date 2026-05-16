@@ -184,10 +184,36 @@ public class MSBuildEnumerator : MatchEnumerator<string>
         EnumerationOptions enumOptions = options.EnumerationOptions;
         string rootDirectory = projectDirectory ?? Environment.CurrentDirectory;
 
+        // Validate the include spec against MSBuild's "legal file spec" rules before we ever try to
+        // build an MSBuildSpecification. When the spec is illegal, MSBuild's FileMatcher.GetFiles
+        // returns it verbatim via SearchAction.ReturnFileSpec; we mirror that with our own
+        // ReturnFileSpec action and surface the validation reason via GlobFailure.
+        StringSegment fileSpecSegment = new(fileSpec);
+        StringSegment normalizedFileSpec = MSBuildSpecification.Normalize(fileSpecSegment);
+
+        if (normalizedFileSpec.IsEmpty)
+        {
+            return new MSBuildEnumerationResult(
+                enumerator: null,
+                action: MSBuildSearchAction.ReturnFileSpec,
+                failedExcludeSpec: null,
+                globFailure: $"Specification '{fileSpec}' normalizes to empty.");
+        }
+
+        string? includeValidationError = MSBuildSpecification.Validate(normalizedFileSpec);
+        if (includeValidationError is not null)
+        {
+            return new MSBuildEnumerationResult(
+                enumerator: null,
+                action: MSBuildSearchAction.ReturnFileSpec,
+                failedExcludeSpec: null,
+                globFailure: $"Specification '{fileSpec}' is not a legal file spec: {includeValidationError}");
+        }
+
         // Parse once. The Create overloads parse a second time and FullyQualify a third time through
         // MSBuildMatchBuilder; CreateResult avoids that by driving the match builder directly with the
         // already-qualified include.
-        MSBuildSpecification include = new MSBuildSpecification(fileSpec).FullyQualify(rootDirectory);
+        MSBuildSpecification include = new MSBuildSpecification(fileSpecSegment, normalizedFileSpec).FullyQualify(rootDirectory);
 
         if (!options.AllowDriveEnumeration && include.IsDriveRootRecursion)
         {
