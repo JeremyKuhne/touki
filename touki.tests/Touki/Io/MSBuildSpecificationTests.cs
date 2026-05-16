@@ -874,10 +874,10 @@ public class MSBuildSpecificationTests
     [InlineData("foo\0bar")]
     [InlineData("foo.../bar.cs")]
     [InlineData("a**b")]
-    public void Validate_IllegalSpec_ReturnsErrorReason(string spec)
+    [InlineData("   ")]                      // normalizes to empty
+    public void NormalizeAndValidate_IllegalSpec_ReturnsErrorReason(string spec)
     {
-        StringSegment normalized = MSBuildSpecification.Normalize(spec);
-        string? error = MSBuildSpecification.Validate(normalized);
+        _ = MSBuildSpecification.NormalizeAndValidate(spec, out string? error);
         error.Should().NotBeNullOrEmpty();
     }
 
@@ -888,11 +888,11 @@ public class MSBuildSpecificationTests
     [InlineData("foo/**/bar")]
     [InlineData("./foo/bar")]
     [InlineData("../foo/bar")]
-    public void Validate_LegalSpec_ReturnsNull(string spec)
+    public void NormalizeAndValidate_LegalSpec_ReturnsNullReason(string spec)
     {
-        StringSegment normalized = MSBuildSpecification.Normalize(spec);
-        string? error = MSBuildSpecification.Validate(normalized);
+        StringSegment normalized = MSBuildSpecification.NormalizeAndValidate(spec, out string? error);
         error.Should().BeNull();
+        normalized.IsEmpty.Should().BeFalse();
     }
 
     [Fact]

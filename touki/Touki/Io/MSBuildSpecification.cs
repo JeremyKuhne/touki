@@ -390,8 +390,11 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     /// </summary>
     /// <remarks>
     ///  <para>
-    ///   Validation should be applied to a <see cref="Normalize">normalized</see> spec so that
-    ///   directory separators are consistent. The checks below mirror MSBuild's
+    ///   Internal because this method assumes its input has already been normalized via
+    ///   <see cref="Normalize"/> (so directory separators are the platform's
+    ///   <see cref="Path.DirectorySeparatorChar"/>). Public callers should use
+    ///   <see cref="NormalizeAndValidate"/>, which combines normalization and validation in a single
+    ///   precondition-free entry point. The checks below mirror MSBuild's
     ///   <c>FileMatcher.RawFileSpecIsValid</c> and <c>FileMatcher.IsLegalFileSpec</c>, restricted to
     ///   the subset that is actually meaningful for this library:
     ///  </para>
@@ -408,7 +411,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///   absolute paths) and trailing-dot weirdness.
     ///  </para>
     /// </remarks>
-    public static string? Validate(StringSegment specification)
+    internal static string? Validate(StringSegment specification)
     {
         ReadOnlySpan<char> span = specification.AsSpan();
 
@@ -451,6 +454,46 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
         }
     }
 
+    /// <summary>
+    ///  Combines <see cref="Normalize"/> and validation in a single precondition-free entry point.
+    ///  Returns the normalized specification; <paramref name="errorReason"/> is <see langword="null"/>
+    ///  when the spec is legal, or a short human-readable reason when the spec would be classified as
+    ///  an error by MSBuild's <c>FileMatcher</c>.
+    /// </summary>
+    /// <param name="specification">The raw specification.</param>
+    /// <param name="errorReason">
+    ///  On success, <see langword="null"/>. On failure, a short reason such as
+    ///  <c>"Specification contains an embedded null character."</c> suitable for surfacing in
+    ///  <see cref="MSBuildEnumerationResult.GlobFailure"/> or log output. When non-<see langword="null"/>
+    ///  the returned <see cref="StringSegment"/> is the partially normalized form (or
+    ///  <see langword="default"/> if normalization itself produced an empty result) and should not be
+    ///  used as a glob pattern.
+    /// </param>
+    /// <returns>
+    ///  The normalized form of <paramref name="specification"/>. Inspect <paramref name="errorReason"/>
+    ///  to distinguish success from failure.
+    /// </returns>
+    /// <remarks>
+    ///  <para>
+    ///   Error classes mirror MSBuild's <c>FileMatcher.RawFileSpecIsValid</c> +
+    ///   <c>FileMatcher.IsLegalFileSpec</c>, restricted to the subset meaningful for this library:
+    ///   spec that normalizes to empty (e.g. whitespace-only segment), embedded null character,
+    ///   literal <c>"..."</c> substring, and misplaced <c>**</c> (not a standalone path segment).
+    ///  </para>
+    /// </remarks>
+    public static StringSegment NormalizeAndValidate(StringSegment specification, out string? errorReason)
+    {
+        StringSegment normalized = Normalize(specification);
+
+        if (normalized.IsEmpty)
+        {
+            errorReason = "Specification normalizes to empty.";
+            return normalized;
+        }
+
+        errorReason = Validate(normalized);
+        return normalized;
+    }
 
     /// <summary>
     ///  Simplify a path by converting backslashes to forward slashes on Unix systems, collapsing
@@ -661,26 +704,15 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
                 continue;
             }
 
-            // Normalize the spec. This will collapse any consecutive separators into a single separator and reduce
-            // unnecessary segments like "." and "..". MSBuild doesn't fully do this at this stage. For performance we
-            // want to dedupe the segments, which can done more efficiently if we normalize first. This will also
-            // improve performance further downstream as we can be more efficient with additional comparisons.
+            // Normalize and validate the spec in one shot. NormalizeAndValidate collapses consecutive
+            // separators, reduces "." and ".." segments, dedupes "**" runs, and then classifies the
+            // result against MSBuild's "legal file spec" rules. On failure the error reason is
+            // surfaced through the optional error sink and the spec is dropped.
 
-            StringSegment normalized = Normalize(left);
-
-            if (normalized.IsEmpty)
+            StringSegment normalized = NormalizeAndValidate(left, out string? errorReason);
+            if (errorReason is not null)
             {
-                // E.g. whitespace-only segment. Constructor would throw; surface as an error spec when caller asked.
-                errorResults?.Add(MSBuildSpecificationResult.FromError(left, "Specification normalizes to empty."));
-                continue;
-            }
-
-            string? validationError = Validate(normalized);
-            if (validationError is not null)
-            {
-                // Track the validation error when an error sink is provided; otherwise the spec is
-                // silently dropped (matches the historical Split contract).
-                errorResults?.Add(MSBuildSpecificationResult.FromError(left, validationError));
+                errorResults?.Add(MSBuildSpecificationResult.FromError(left, errorReason));
                 continue;
             }
 

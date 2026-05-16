@@ -189,25 +189,15 @@ public class MSBuildEnumerator : MatchEnumerator<string>
         // returns it verbatim via SearchAction.ReturnFileSpec; we mirror that with our own
         // ReturnFileSpec action and surface the validation reason via GlobFailure.
         StringSegment fileSpecSegment = new(fileSpec);
-        StringSegment normalizedFileSpec = MSBuildSpecification.Normalize(fileSpecSegment);
+        StringSegment normalizedFileSpec = MSBuildSpecification.NormalizeAndValidate(fileSpecSegment, out string? includeError);
 
-        if (normalizedFileSpec.IsEmpty)
+        if (includeError is not null)
         {
             return new MSBuildEnumerationResult(
                 enumerator: null,
                 action: MSBuildSearchAction.ReturnFileSpec,
                 failedExcludeSpec: null,
-                globFailure: $"Specification '{fileSpec}' normalizes to empty.");
-        }
-
-        string? includeValidationError = MSBuildSpecification.Validate(normalizedFileSpec);
-        if (includeValidationError is not null)
-        {
-            return new MSBuildEnumerationResult(
-                enumerator: null,
-                action: MSBuildSearchAction.ReturnFileSpec,
-                failedExcludeSpec: null,
-                globFailure: $"Specification '{fileSpec}' is not a legal file spec: {includeValidationError}");
+                globFailure: $"Specification '{fileSpec}' is not a legal file spec: {includeError}");
         }
 
         // Parse once. The Create overloads parse a second time and FullyQualify a third time through
