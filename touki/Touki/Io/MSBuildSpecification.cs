@@ -296,7 +296,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///  <para>
     ///   MSBuild's <c>FileMatcher</c> treats this as a forbidden pattern by default
     ///   (<c>SearchAction.FailBecauseDriveEnumerationIsForbidden</c>) because it would walk an entire
-    ///   drive or share. <see cref="MSBuildEnumerator.CreateResult(string, string?, string?, MSBuildEnumerationOptions?)"/>
+    ///   drive or share. <see cref="MSBuildEnumerator.CreateResult"/>
     ///   surfaces it as <see cref="MSBuildSearchAction.FailBecauseDriveEnumerationIsForbidden"/> unless
     ///   the caller opts in via <see cref="MSBuildEnumerationOptions.AllowDriveEnumeration"/>.
     ///  </para>
@@ -321,7 +321,20 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
 
             ReadOnlySpan<char> fixedSpan = FixedPath.AsSpan();
             ReadOnlySpan<char> rootSpan = Path.GetPathRoot(fixedSpan);
+
+            // Path.GetPathRoot may or may not include a trailing separator depending on the input
+            // and runtime (notably for UNC roots like "\\server\share" vs "\\server\share\").
+            // Trim a single trailing separator from both spans so the comparison is
+            // normalization-insensitive. The length > 1 guard preserves the "FixedPath is itself
+            // just the separator" case (Unix "/").
+            fixedSpan = TrimTrailingSeparator(fixedSpan);
+            rootSpan = TrimTrailingSeparator(rootSpan);
             return rootSpan.Length > 0 && rootSpan.Length == fixedSpan.Length;
+
+            static ReadOnlySpan<char> TrimTrailingSeparator(ReadOnlySpan<char> span)
+                => span.Length > 1 && span[^1] == Path.DirectorySeparatorChar
+                    ? span[..^1]
+                    : span;
         }
     }
 

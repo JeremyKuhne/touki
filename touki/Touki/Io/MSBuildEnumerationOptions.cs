@@ -5,7 +5,7 @@
 namespace Touki.Io;
 
 /// <summary>
-///  Configuration for <see cref="MSBuildEnumerator.CreateResult(string, string?, string?, MSBuildEnumerationOptions?)"/>.
+///  Configuration for <see cref="MSBuildEnumerator.CreateResult"/>.
 ///  Composes a standard <see cref="EnumerationOptions"/> with Touki-specific safety flags.
 /// </summary>
 public sealed class MSBuildEnumerationOptions

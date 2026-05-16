@@ -79,6 +79,25 @@ public class MSBuildEnumerationResultTests
     }
 
     [Fact]
+    public void IsDriveRootRecursion_UncRoot_ReturnsTrue()
+    {
+        // UNC paths are Windows-only and we don't need the share to exist; we're just exercising
+        // the parser + IsDriveRootRecursion gate. Verifies that the trailing-separator
+        // normalization in the gate handles the case where Path.GetPathRoot may return the UNC
+        // root with or without a trailing separator depending on input / runtime.
+        if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+        {
+            Assert.Skip("UNC paths are Windows-only.");
+        }
+
+        MSBuildSpecification spec = new MSBuildSpecification(@"\\nonexistent-server\share\**\*.cs")
+            .FullyQualify(Environment.CurrentDirectory);
+
+        spec.IsFullyQualified.Should().BeTrue();
+        spec.IsDriveRootRecursion.Should().BeTrue();
+    }
+
+    [Fact]
     public void CreateResult_DriveRootRecursionDefault_StopsSearching()
     {
         MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(DriveRootRecursiveSpec);

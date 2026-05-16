@@ -5,7 +5,7 @@
 namespace Touki.Io;
 
 /// <summary>
-///  Whole-search result returned by <see cref="MSBuildEnumerator.CreateResult(string, string?, string?, MSBuildEnumerationOptions?)"/>.
+///  Whole-search result returned by <see cref="MSBuildEnumerator.CreateResult"/>.
 ///  Mirrors the 4-tuple returned by MSBuild's internal <c>FileMatcher.GetFiles</c>.
 /// </summary>
 /// <remarks>
