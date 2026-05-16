@@ -272,9 +272,24 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     {
         get
         {
-            if (!IsFullyQualified || !HasAnyWildCards || FixedPath.IsEmpty)
+            if (!IsFullyQualified || !HasAnyWildCards)
             {
                 return false;
+            }
+
+            // Edge case: the parser currently leaves FixedPath empty for rooted specs whose only
+            // fixed prefix IS the root separator (e.g. "/**" or "/**/*.cs" on Unix). Detect those
+            // by looking at Normalized directly so the gate still catches them. The deeper parser
+            // fix (also populating WildPath/FileName correctly for those specs) is tracked as a
+            // follow-up.
+            if (FixedPath.IsEmpty)
+            {
+                ReadOnlySpan<char> normalized = Normalized.AsSpan();
+                return normalized.Length >= 3
+                    && normalized[0] == Path.DirectorySeparatorChar
+                    && normalized[1] == '*'
+                    && normalized[2] == '*'
+                    && (normalized.Length == 3 || normalized[3] == Path.DirectorySeparatorChar);
             }
 
             if (!IsSimpleRecursiveMatch
