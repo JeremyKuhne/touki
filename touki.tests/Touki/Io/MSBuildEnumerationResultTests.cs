@@ -135,10 +135,12 @@ public class MSBuildEnumerationResultTests
             Assert.Skip("Drive-letter roots are Windows-only.");
         }
 
-        // These specs are not fully qualified relative to a drive root; FullyQualify resolves them
-        // against the current directory, so the resulting FixedPath sits below (or different from)
-        // the drive root and the gate doesn't fire.
-        MSBuildSpecification parsed = new MSBuildSpecification(spec).FullyQualify(Environment.CurrentDirectory);
+        // Anchor against a synthetic deep base so the assertion isn't affected by what the test
+        // host's current directory happens to be. Using Environment.CurrentDirectory would make
+        // `..\**` resolve to the drive root if the host happens to run from a one-deep path
+        // like C:\repo, flipping the result.
+        const string DeepBase = @"C:\synthetic\deep\base";
+        MSBuildSpecification parsed = new MSBuildSpecification(spec).FullyQualify(DeepBase);
         parsed.IsDriveRootRecursion.Should().BeFalse();
     }
 
