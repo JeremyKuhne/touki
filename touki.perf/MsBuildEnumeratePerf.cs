@@ -32,4 +32,18 @@ public class MsBuildEnumeratePerf
 
         return results;
     }
+
+    [Benchmark]
+    public IReadOnlyList<string> MsBuildEnumeratorResult()
+    {
+        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(Filespec, projectDirectory: Directory);
+        using MSBuildEnumerator enumerator = result.Enumerator!;
+        List<string> results = [];
+        while (enumerator.MoveNext())
+        {
+            results.Add(enumerator.Current);
+        }
+
+        return results;
+    }
 }

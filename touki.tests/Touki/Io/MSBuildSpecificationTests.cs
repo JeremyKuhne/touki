@@ -24,6 +24,17 @@ public class MSBuildSpecificationTests
     [InlineData("**/file.txt", "", "**", "file.txt", true)]
     [InlineData("a/b/**", "a/b", "**", "*", true)]
     [InlineData("**/b/**", "", "**/b/**", "*", true)]
+    // Rooted-with-only-leading-separator cases. FixedPath is the root separator (e.g. "/" on
+    // Unix, "\" on Windows) instead of an empty slice, and WildPath/FileName line up with the
+    // suffix the same way they would for non-rooted specs.
+    [InlineData("/", "/", "", "", false)]
+    [InlineData("/foo.txt", "/", "", "foo.txt", false)]
+    [InlineData("/*.cs", "/", "", "*.cs", true)]
+    [InlineData("/**", "/", "**", "*", true)]
+    [InlineData("/**/file.txt", "/", "**", "file.txt", true)]
+    [InlineData("/**/*.cs", "/", "**", "*.cs", true)]
+    [InlineData("/**/foo/*.cs", "/", "**/foo", "*.cs", true)]
+    [InlineData("/**/foo/**", "/", "**/foo/**", "*", true)]
     public void MSBuildSpecification_ParsesCorrectly(
         string original,
         string expectedFixed,
@@ -97,7 +108,10 @@ public class MSBuildSpecificationTests
     [InlineData("a/./b/c/file.txt", "a/b/c", "", "file.txt", false)]
     [InlineData("a/b/c/./../file.txt", "a/b", "", "file.txt", false)]
     [InlineData("a//b///file.txt", "a/b", "", "file.txt", false)]
-    // It is unclear what to really do in the next case
+    // Trailing separator on a path with no wildcards: FixedPath becomes the directory portion and
+    // FileName is empty. End-to-end this matches MSBuild's FileMatcher behavior at the parsing layer
+    // (an empty filenamePart matches nothing on disk). See MSBuildSpecificationTrailingSeparatorTests
+    // for the full discussion, including MSBuild's no-wildcard GetFiles shortcut.
     [InlineData("a/b/file.txt/", "a/b/file.txt", "", "", false)]
     [InlineData("a/b/./", "a/b", "", "", false)]
     [InlineData("./*/file.txt", "", "*", "file.txt", true)]
@@ -688,6 +702,197 @@ public class MSBuildSpecificationTests
         {
             specs[i].Normalized.ToString().Should().Be(expected[i]);
         }
+    }
+
+    [Fact]
+    public void SplitWithErrors_WhitespaceOnlySegment_ReturnsErrorResult()
+    {
+        // A whitespace-only segment normalizes to empty; the bare Split overload silently drops these
+        // after throwing inside the constructor would have crashed callers. SplitWithErrors surfaces it
+        // as an error result instead.
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(
+            "  ;file.txt;\t;*.cs",
+            ignoreCase: false);
+
+        try
+        {
+            results.Count.Should().Be(4);
+
+            results[0].IsError.Should().BeTrue();
+            results[0].Original.ToString().Should().Be("  ");
+            results[0].ErrorReason.Should().NotBeNullOrEmpty();
+            results[0].Specification.Should().BeNull();
+
+            results[1].IsError.Should().BeTrue();
+            results[1].Original.ToString().Should().Be("\t");
+
+            results[2].IsError.Should().BeFalse();
+            results[2].Specification!.Normalized.ToString().Should().Be("file.txt");
+
+            results[3].IsError.Should().BeFalse();
+            results[3].Specification!.Normalized.ToString().Should().Be("*.cs");
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [Fact]
+    public void SplitWithErrors_NoErrors_ReturnsParsedResults()
+    {
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(
+            "file.txt;*.cs;docs/**",
+            ignoreCase: false);
+
+        try
+        {
+            results.Count.Should().Be(3);
+            results.Should().OnlyContain(r => !r.IsError);
+            results.Select(r => r.Specification!.Normalized.ToString()).Should().Equal(
+                "file.txt",
+                "*.cs",
+                Sep("docs/**"));
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [Fact]
+    public void SplitWithErrors_EmptyInput_ReturnsEmptyList()
+    {
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors("", ignoreCase: false);
+        try
+        {
+            results.Count.Should().Be(0);
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [Fact]
+    public void Split_WhitespaceOnlySegment_SilentlyDropped()
+    {
+        // Documents back-compat: the original Split overload continues to silently drop empty-normalize
+        // segments (rather than throw, which the old code path did before SplitCore was factored out).
+        ListBase<MSBuildSpecification> specs = MSBuildSpecification.Split("  ;file.txt;\t;*.cs", ignoreCase: false);
+        try
+        {
+            specs.Count.Should().Be(2);
+            specs[0].Normalized.ToString().Should().Be("file.txt");
+            specs[1].Normalized.ToString().Should().Be("*.cs");
+        }
+        finally
+        {
+            specs.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData("foo\0bar")]                 // embedded null character
+    [InlineData("foo\0/bar.cs")]
+    public void SplitWithErrors_NullCharacter_ReturnsErrorResult(string spec)
+    {
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(spec, ignoreCase: false);
+        try
+        {
+            results.Count.Should().Be(1);
+            results[0].IsError.Should().BeTrue();
+            results[0].ErrorReason.Should().Contain("null");
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData("foo.../bar.cs")]
+    [InlineData(".../bar.cs")]
+    [InlineData("foo/....cs")]
+    public void SplitWithErrors_TripleDotSequence_ReturnsErrorResult(string spec)
+    {
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(spec, ignoreCase: false);
+        try
+        {
+            results.Count.Should().Be(1);
+            results[0].IsError.Should().BeTrue();
+            results[0].ErrorReason.Should().Contain("...");
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData("a**b")]                     // ** between non-separator chars
+    [InlineData("foo/a**b/baz")]             // ** between non-separator chars in a path segment
+    [InlineData("foo/**bar")]                // ** with no separator to the right
+    [InlineData("foo/bar**")]                // ** at end with no separator to the left
+    [InlineData("*.cs**")]                   // trailing ** glued to a filename
+    public void SplitWithErrors_MisplacedDoubleStar_ReturnsErrorResult(string spec)
+    {
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(spec, ignoreCase: false);
+        try
+        {
+            results.Count.Should().Be(1);
+            results[0].IsError.Should().BeTrue();
+            results[0].ErrorReason.Should().Contain("**");
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData("**")]                       // standalone
+    [InlineData("**/foo")]                   // recursive followed by separator
+    [InlineData("foo/**")]                   // recursive at end after separator
+    [InlineData("foo/**/bar")]               // recursive between separators
+    [InlineData("foo/**/")]                  // recursive followed by trailing separator
+    public void SplitWithErrors_LegalDoubleStar_ReturnsParsedResult(string spec)
+    {
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(spec, ignoreCase: false);
+        try
+        {
+            results.Count.Should().Be(1);
+            results[0].IsError.Should().BeFalse();
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [Theory]
+    [InlineData("foo\0bar")]
+    [InlineData("foo.../bar.cs")]
+    [InlineData("a**b")]
+    [InlineData("   ")]                      // normalizes to empty
+    public void NormalizeAndValidate_IllegalSpec_ReturnsErrorReason(string spec)
+    {
+        _ = MSBuildSpecification.NormalizeAndValidate(spec, out string? error);
+        error.Should().NotBeNullOrEmpty();
+    }
+
+    [Theory]
+    [InlineData("file.txt")]
+    [InlineData("**")]
+    [InlineData("**/*.cs")]
+    [InlineData("foo/**/bar")]
+    [InlineData("./foo/bar")]
+    [InlineData("../foo/bar")]
+    public void NormalizeAndValidate_LegalSpec_ReturnsNullReason(string spec)
+    {
+        StringSegment normalized = MSBuildSpecification.NormalizeAndValidate(spec, out string? error);
+        error.Should().BeNull();
+        normalized.IsEmpty.Should().BeFalse();
     }
 
     [Fact]

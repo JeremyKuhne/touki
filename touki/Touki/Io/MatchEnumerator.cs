@@ -14,6 +14,16 @@ public abstract class MatchEnumerator<TResult> : FileSystemEnumerator<TResult>
     /// <summary>
     ///  Initializes a new instance of the <see cref="MatchEnumerator{TResult}"/> class.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   <paramref name="directory"/> must be an existing directory; the base
+    ///   <see cref="FileSystemEnumerator{T}"/> opens the directory handle eagerly in its constructor
+    ///   and throws an <see cref="System.IO.IOException"/> when the path is missing or is actually a
+    ///   file. Higher-level entry points such as <see cref="MSBuildEnumerator.CreateResult"/> are
+    ///   responsible for guarding against bad start paths before constructing a
+    ///   <see cref="MatchEnumerator{TResult}"/>.
+    ///  </para>
+    /// </remarks>
     public MatchEnumerator(
         string directory,
         IEnumerationMatcher matcher,
