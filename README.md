@@ -42,6 +42,7 @@ Some of the design goals include:
 - [Buffers, Span Readers, and Span Writers](docs/buffers.md)
 - [IO Helpers (globs, paths, temp folders, stream formatting)](docs/io.md)
 - [.NET Framework Polyfill Layout & Disambiguation](docs/polyfill-layout.md)
+- [Span Performance on .NET Framework (net472+)](docs/framework-span-performance.md)
 
 ## Package Installation
 

@@ -24,6 +24,15 @@ the skill whenever a reviewer flags something not yet listed.
   &mdash; net481 RyuJIT tradeoffs cited in &sect;5 and &sect;7.
 - [`agent-files-review`](../agent-files-review/SKILL.md) &mdash; for any
   changes under `.agents/`, `AGENTS.md`, or `.github/copilot-instructions.md`.
+- [`security-review`](../security-review/SKILL.md) &mdash; the
+  security-specific subset (abusive-input handling, length / integer
+  overflow, allocation and algorithmic DoS, argument validation, and
+  every use of `unsafe` / `Unsafe.*` / `MemoryMarshal.*` /
+  `Marshal.*` or any BCL API whose docs say "unsafe" or "caller
+  must"). Invoke alongside this checklist for any change that adds
+  or modifies a member accepting caller-supplied data, or any change
+  that touches one of those caller-validated constructs &mdash; the
+  common case, not a niche.
 
 ## 1. Tests cover every new branch
 

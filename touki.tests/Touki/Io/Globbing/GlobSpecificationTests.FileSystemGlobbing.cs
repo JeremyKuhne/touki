@@ -1,0 +1,52 @@
+// Copyright (c) 2025 Jeremy W Kuhne
+// SPDX-License-Identifier: MIT
+// See LICENSE file in the project root for full license information
+
+namespace Touki.Io.Globbing;
+
+public partial class GlobSpecificationTests
+{
+    // --- FileSystemGlobbing dialect ---
+
+    [Theory]
+    // FileSystemGlobbing has implicit globstar (no opt-in needed), no character classes,
+    // and no escape character (`\` is literal).
+    [InlineData("*.cs", "Foo.cs", true)]
+    [InlineData("**/*.cs", "Foo.cs", true)]
+    [InlineData("**/*.cs", "src/Foo.cs", true)]
+    [InlineData("**/*.cs", "a/b/c/Foo.cs", true)]
+    [InlineData("a/**/b", "a/b", true)]
+    [InlineData("a/**/b", "a/x/y/b", true)]
+    [InlineData("a/?/b", "a/x/b", true)]
+    [InlineData("a/?/b", "a//b", false)]
+    public void IsMatch_FileSystemGlobbing_BasicCases(string pattern, string input, bool expected) =>
+        GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
+            .IsMatch(input).Should().Be(expected);
+
+    [Fact]
+    public void Compile_FileSystemGlobbing_BracketsAreLiteral()
+    {
+        // FileSystemGlobbing does not support character classes; '[' and ']' are literal
+        // characters in the pattern.
+        GlobSpecification matcher = GlobSpecification.Compile("[abc].txt", GlobDialect.FileSystemGlobbing);
+        matcher.IsMatch("[abc].txt").Should().BeTrue();
+        matcher.IsMatch("a.txt").Should().BeFalse();
+    }
+
+    [Fact]
+    public void Compile_FileSystemGlobbing_BackslashNormalizedToSeparator()
+    {
+        // FileSystemGlobbing has no escape character. At compile time the factory
+        // normalizes cross-separator characters to the matcher's separator (mirroring
+        // MSBuildSpecification.Normalize) so the runtime matcher never has to
+        // translate. Pattern `\foo` therefore matches input `/foo` (and not the literal
+        // backslash form).
+        GlobSpecification matcher = GlobSpecification.Compile("\\foo", GlobDialect.FileSystemGlobbing);
+        matcher.IsMatch("/foo").Should().BeTrue();
+        matcher.IsMatch("\\foo").Should().BeFalse();
+    }
+
+    [Fact]
+    public void Compile_FileSystemGlobbing_SeparatorIsForwardSlash() =>
+        GlobSpecification.Compile("*", GlobDialect.FileSystemGlobbing).Separator.Should().Be('/');
+}

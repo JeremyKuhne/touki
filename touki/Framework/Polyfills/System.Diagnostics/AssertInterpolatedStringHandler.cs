@@ -12,7 +12,7 @@ namespace System.Diagnostics;
 [ExcludeFromCodeCoverage]
 public ref struct AssertInterpolatedStringHandler
 {
-    private Touki.Text.ValueStringBuilder _builder;
+    private ValueStringBuilder _builder;
     private readonly bool _shouldAppend;
 
     /// <summary>Creates an instance of the handler.</summary>
@@ -29,12 +29,12 @@ public ref struct AssertInterpolatedStringHandler
         }
         else
         {
-            _builder = new Touki.Text.ValueStringBuilder(literalLength, formattedCount);
+            _builder = new ValueStringBuilder(literalLength, formattedCount);
             _shouldAppend = shouldAppend = true;
         }
     }
 
-    /// <inheritdoc cref="Touki.Text.ValueStringBuilder.AppendLiteral(string?)"/>
+    /// <inheritdoc cref="ValueStringBuilder.AppendLiteral(string?)"/>
     public void AppendLiteral(string? value)
     {
         if (_shouldAppend)
@@ -43,7 +43,7 @@ public ref struct AssertInterpolatedStringHandler
         }
     }
 
-    /// <inheritdoc cref="Touki.Text.ValueStringBuilder.AppendFormatted{T}(T, Touki.Text.StringSpan)"/>
+    /// <inheritdoc cref="ValueStringBuilder.AppendFormatted{T}(T, StringSpan)"/>
     public void AppendFormatted<T>(T value)
     {
         if (_shouldAppend)
@@ -52,7 +52,7 @@ public ref struct AssertInterpolatedStringHandler
         }
     }
 
-    /// <inheritdoc cref="Touki.Text.ValueStringBuilder.AppendFormatted{T}(T,int)"/>
+    /// <inheritdoc cref="ValueStringBuilder.AppendFormatted{T}(T,int)"/>
     public void AppendFormatted<T>(T value, int alignment)
     {
         if (_shouldAppend)
@@ -61,7 +61,7 @@ public ref struct AssertInterpolatedStringHandler
         }
     }
 
-    /// <inheritdoc cref="Touki.Text.ValueStringBuilder.AppendFormatted{T}(T, int, Touki.Text.StringSpan)"/>
+    /// <inheritdoc cref="ValueStringBuilder.AppendFormatted{T}(T, int, StringSpan)"/>
     public void AppendFormatted<T>(T value, int alignment, string? format)
     {
         if (_shouldAppend)
@@ -70,7 +70,7 @@ public ref struct AssertInterpolatedStringHandler
         }
     }
 
-    /// <inheritdoc cref="Touki.Text.ValueStringBuilder.AppendFormatted(ReadOnlySpan{char})"/>
+    /// <inheritdoc cref="ValueStringBuilder.AppendFormatted(ReadOnlySpan{char})"/>
     public void AppendFormatted(scoped ReadOnlySpan<char> value)
     {
         if (_shouldAppend)
@@ -79,7 +79,7 @@ public ref struct AssertInterpolatedStringHandler
         }
     }
 
-    /// <inheritdoc cref="Touki.Text.ValueStringBuilder.AppendFormatted(ReadOnlySpan{char},int,string?)"/>
+    /// <inheritdoc cref="ValueStringBuilder.AppendFormatted(ReadOnlySpan{char},int,string?)"/>
     public void AppendFormatted(scoped ReadOnlySpan<char> value, int alignment = 0, string? format = null)
     {
         if (_shouldAppend)
@@ -88,7 +88,7 @@ public ref struct AssertInterpolatedStringHandler
         }
     }
 
-    /// <inheritdoc cref="Touki.Text.ValueStringBuilder.AppendFormatted(string?)"/>
+    /// <inheritdoc cref="ValueStringBuilder.AppendFormatted(string?)"/>
     public void AppendFormatted(string? value)
     {
         if (_shouldAppend)

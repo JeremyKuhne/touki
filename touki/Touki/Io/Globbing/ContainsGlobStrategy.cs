@@ -1,0 +1,50 @@
+// Copyright (c) 2025 Jeremy W Kuhne
+// SPDX-License-Identifier: MIT
+// See LICENSE file in the project root for full license information
+
+namespace Touki.Io.Globbing;
+
+/// <summary>
+///  Matches inputs that contain a fixed literal substring (pattern of the form <c>*needle*</c>).
+/// </summary>
+internal sealed class ContainsGlobStrategy : GlobStrategy
+{
+    private readonly string _needle;
+    private readonly bool _ignoreCase;
+
+    public ContainsGlobStrategy(string needle, GlobDialect dialect, GlobOptions options)
+        : base(dialect, options)
+    {
+        _needle = needle;
+        _ignoreCase = (options & GlobOptions.IgnoreCase) != 0;
+    }
+
+    /// <inheritdoc/>
+    internal override bool MatchCore(
+        ReadOnlySpan<char> directoryPrefix,
+        ReadOnlySpan<char> fileName)
+    {
+        // ContainsGlobStrategy is only chosen for path-unaware dialects; the directory
+        // prefix is always empty by construction.
+        Debug.Assert(directoryPrefix.IsEmpty);
+        ReadOnlySpan<char> needle = _needle.AsSpan();
+
+        if (!MatchLeadingDot && fileName.Length > 0 && fileName[0] == '.')
+        {
+            // Leading-dot rule: the leading '*' cannot consume the '.', so the needle must
+            // begin at index 0 (and the needle itself must therefore start with '.').
+            if (fileName.Length < needle.Length)
+            {
+                return false;
+            }
+
+            return _ignoreCase
+                ? fileName.StartsWith(needle, StringComparison.OrdinalIgnoreCase)
+                : fileName.StartsWith(needle);
+        }
+
+        return _ignoreCase
+            ? fileName.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0
+            : fileName.IndexOf(needle) >= 0;
+    }
+}

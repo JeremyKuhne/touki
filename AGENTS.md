@@ -253,6 +253,36 @@ catch a mistake.
   `IsOnlyOneFlagSet`, `SetFlags`, `ClearFlags` inline to the same
   instructions as `&`/`|`/`==` on both TFMs and avoid the `Enum.HasFlag`
   boxing penalty on net472/net481 (~20&times; faster, zero alloc).
+- **When optimizing span-walking helpers, read
+  [docs/framework-span-performance.md](docs/framework-span-performance.md)
+  first.** On net472/net481 the `ReadOnlySpan<T>` indexer costs ~8 µops
+  per element (slow-span layout) versus ~1 µop on net10. Hoist
+  `ref T = MemoryMarshal.GetReference(span)` outside the loop and walk
+  with `Unsafe.Add<T>(ref, i)` for a 19&ndash;44% Framework win at no
+  `unsafe`-keyword cost. Prefer a single simple implementation when it
+  measures within ~5% of any Framework-tuned variant on net10 so the
+  simple source keeps accruing future RyuJIT improvements; split with
+  `#if NET` / `#else` only when net10 regresses measurably, and prefer
+  `fixed` over `Unsafe.AsPointer` tricks when the Framework path needs
+  raw pointers.
+- **Prefer Touki utility types over their BCL counterparts** when building
+  strings, buffers, or collections in production library code. They are
+  designed to avoid managed allocation on the hot path:
+  - `Touki.Text.ValueStringBuilder` instead of `System.Text.StringBuilder`.
+    Always seed it with a stack buffer (`stackalloc char[256]` is the
+    standard size); it rents from `ArrayPool<byte>` automatically if the
+    content outgrows the buffer, and `ToStringAndDispose()` returns the
+    final string while releasing the rental. Verified savings of
+    58&ndash;63&nbsp;% allocated bytes when replacing `StringBuilder` in the
+    `GlobMatcherFactory` bytecode encoder, with no measurable throughput
+    cost.
+  - `Touki.Text.StringSegment` / `Touki.Text.StringSpan` instead of
+    substring allocation when slicing existing strings.
+  - `Touki.Buffers.*` (rented arrays, span helpers) before reaching for raw
+    `new char[]` / `new byte[]` in scratch code.
+  - `Touki.Collections.*` (`ContiguousList`, `ArrayPoolList`,
+    `SingleOptimizedList`, `EmptyList`) instead of `List<T>` /
+    `Dictionary<,>` when the lifetime is bounded.
 - When adding a polyfill for a modern .NET API on .NET Framework, follow the
   [`polyfill-dotnet-api`](.agents/skills/polyfill-dotnet-api/SKILL.md) skill:
   prefer Microsoft-shipped packages (`System.Memory`, `Microsoft.Bcl.*`,

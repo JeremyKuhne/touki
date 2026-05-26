@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Loose .txt files in the repo root (scratch / perf output / logs)
+/*.txt
+
 # User-specific files
 *.rsuser
 *.suo

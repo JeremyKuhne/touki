@@ -73,7 +73,7 @@ public class MSBuildEnumeratorTests
 
         // N:\repos\touki\artifacts\x64\Release\touki.tests\net9.0
         string currentDirectory = Directory.GetCurrentDirectory();
-        string directory = Path.GetFullPath(Path.Join(currentDirectory, "../../../../.."));
+        string directory = Path.GetFullPath(Path.Join(currentDirectory, "../../../../../Touki"));
         string[] expected = FileMatcherWrapper.GetFilesSimple(directory, "**/*.cs");
 
         List<string> files = [];

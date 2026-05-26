@@ -29,7 +29,7 @@ public static class Debugging
     /// <inheritdoc cref="Debug.Assert(bool,string?)"/>
     [Conditional("DEBUG")]
     public static void Assert([DoesNotReturnIf(false)] bool condition,
-        [InterpolatedStringHandlerArgument(nameof(condition))] ref System.Diagnostics.AssertInterpolatedStringHandler message)
+        [InterpolatedStringHandlerArgument(nameof(condition))] ref AssertInterpolatedStringHandler message)
     {
         if (!condition)
         {
@@ -54,8 +54,8 @@ public static class Debugging
     /// <inheritdoc cref="Debug.Assert(bool,string?,string?)"/>
     [Conditional("DEBUG")]
     public static void Assert([DoesNotReturnIf(false)] bool condition,
-        [InterpolatedStringHandlerArgument(nameof(condition))] ref System.Diagnostics.AssertInterpolatedStringHandler message,
-        [InterpolatedStringHandlerArgument(nameof(condition))] ref System.Diagnostics.AssertInterpolatedStringHandler detailMessage)
+        [InterpolatedStringHandlerArgument(nameof(condition))] ref AssertInterpolatedStringHandler message,
+        [InterpolatedStringHandlerArgument(nameof(condition))] ref AssertInterpolatedStringHandler detailMessage)
     {
         if (!condition)
         {

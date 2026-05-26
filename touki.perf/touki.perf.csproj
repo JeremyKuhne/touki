@@ -23,6 +23,12 @@
 
     <!-- Don’t advertise “I am a test container/server” to VS/VS Code -->
     <DisableTestingPlatformServerCapability>true</DisableTestingPlatformServerCapability>
+
+    <!--
+      We don't want to have implicit usings as we're retargeting System.IO to Microsoft.IO
+      in our GlobalUsings.cs file for .NET Framework.
+    -->
+    <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
