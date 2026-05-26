@@ -321,11 +321,14 @@ public sealed partial class GlobSpecification : DisposableBase
     {
         // Callers gate on `CoalesceInputSeparators`, which is only set for path-aware
         // dialects, so `separator` is guaranteed non-zero here. A run is two adjacent
-        // separators; skip the very first character so a leading double-separator
-        // (UNC-style root anchor on Windows) stays as-is.
+        // separators. On Windows a leading double-separator is a UNC root anchor and
+        // must be preserved verbatim, so the scan starts at index 2. On non-Windows
+        // UNC does not apply and leading runs are ordinary runs, so the scan starts
+        // at index 1.
         Debug.Assert(separator != '\0');
 
-        for (int i = 2; i < input.Length; i++)
+        int start = Path.DirectorySeparatorChar == '\\' ? 2 : 1;
+        for (int i = start; i < input.Length; i++)
         {
             if (input[i] == separator && input[i - 1] == separator)
             {
@@ -337,13 +340,17 @@ public sealed partial class GlobSpecification : DisposableBase
 
     private static int CoalesceSeparatorRuns(ReadOnlySpan<char> input, char separator, Span<char> destination)
     {
-        // Preserve any leading run (e.g., UNC `//`) verbatim, then collapse internal
-        // and trailing runs to a single separator.
+        // On Windows any leading run is a UNC root anchor and must be preserved
+        // verbatim. On non-Windows leading runs are ordinary runs and collapse to a
+        // single separator the same way internal and trailing runs do.
         int srcIndex = 0;
         int dstIndex = 0;
-        while (srcIndex < input.Length && input[srcIndex] == separator)
+        if (Path.DirectorySeparatorChar == '\\')
         {
-            destination[dstIndex++] = input[srcIndex++];
+            while (srcIndex < input.Length && input[srcIndex] == separator)
+            {
+                destination[dstIndex++] = input[srcIndex++];
+            }
         }
 
         while (srcIndex < input.Length)

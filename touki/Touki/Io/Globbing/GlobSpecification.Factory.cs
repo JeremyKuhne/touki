@@ -500,7 +500,9 @@ public sealed partial class GlobSpecification
                 dialect == GlobDialect.FileSystemGlobbing
                 && (hasLeadingSeparatorRun || hasInternalSeparatorRun);
             bool needsMsbuildSepTransform =
-                dialect == GlobDialect.MSBuild && hasInternalSeparatorRun;
+                dialect == GlobDialect.MSBuild
+                && (hasInternalSeparatorRun
+                    || (hasLeadingSeparatorRun && Path.DirectorySeparatorChar != '\\'));
 
             if (!needsAsteriskCollapse && !needsFsgSepTransform && !needsMsbuildSepTransform)
             {
@@ -525,11 +527,24 @@ public sealed partial class GlobSpecification
                 }
                 else if (needsMsbuildSepTransform)
                 {
-                    // MSBuild preserves the leading double-separator (UNC anchor) verbatim
-                    // and only collapses internal/trailing runs.
-                    builder.Append(separator);
-                    builder.Append(separator);
-                    k = 2;
+                    if (Path.DirectorySeparatorChar == '\\')
+                    {
+                        // Windows: MSBuild preserves the leading double-separator
+                        // (UNC anchor) verbatim and only collapses internal/trailing
+                        // runs. The MSBuild dialect uses '/' as separator on Windows
+                        // too, so this branch fires for '//foo' on Windows.
+                        builder.Append(separator);
+                        builder.Append(separator);
+                        k = 2;
+                    }
+                    else
+                    {
+                        // Non-Windows: UNC doesn't apply, so MSBuildGlob coalesces
+                        // leading runs to a single separator the same way it
+                        // coalesces internal runs.
+                        builder.Append(separator);
+                    }
+
                     while (k < pattern.Length && pattern[k] == separator)
                     {
                         k++;
