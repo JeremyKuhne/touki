@@ -37,6 +37,20 @@ internal static class BashInterop
             return s_bashPath;
         }
 
+        // macOS ships GNU bash 3.2 (frozen by Apple over licensing). The bash
+        // oracle here assumes bash 4+ semantics (extglob, globstar, `***`+ &rarr;
+        // `**` collapsing, multi-separator coalescing) which bash 3.2 does NOT
+        // share. Rather than enumerate the ~24 row-level divergences across
+        // multiple oracle test classes, we treat macOS as "no bash available"
+        // and let every bash oracle test Assert.Skip uniformly. Linux runners
+        // (Ubuntu, bash 5.x) and Windows Git Bash (also bash 5.x) remain
+        // covered.
+        if (OperatingSystem.IsMacOS())
+        {
+            s_bashPathResolved = true;
+            return null;
+        }
+
         // On Windows, prefer the Git for Windows install over whatever `bash.exe`
         // happens to be on PATH first. The WSL launcher stub at
         // `%LocalAppData%\Microsoft\WindowsApps\bash.exe` is installed automatically
