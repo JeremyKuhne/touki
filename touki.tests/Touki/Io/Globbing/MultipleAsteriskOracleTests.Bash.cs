@@ -41,6 +41,21 @@ public class MultipleAsteriskBashOracleTests
             return;
         }
 
+        // macOS ships bash 3.2 (Apple's licensing freeze). Bash 3.2's `[[ == ]]`
+        // collapses `***`+ to a single `*` in string-match mode &mdash; bash 4+ and
+        // touki's Bash dialect both treat it as `**` (any-segment match). The
+        // following rows exercise that divergence and are skipped on macOS so the
+        // oracle stays Linux/Git-Bash-anchored. Tracked in
+        // docs/globbing-feature-plan.md.
+        if (OperatingSystem.IsMacOS()
+            && (pattern, input) is ("***", "a/b")
+                or ("a***b", "ab")
+                or ("a***b", "axb"))
+        {
+            Assert.Skip("macOS bash 3.2 collapses `***` to `*` in `[[ == ]]`; oracle uses bash 4+ semantics.");
+            return;
+        }
+
         bool oracle = BashInterop.Matches(bashPath, pattern, input);
         bool actual = GlobSpecification.Compile(pattern, GlobDialect.Bash, GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob).IsMatch(input);
         actual.Should().Be(

@@ -41,9 +41,11 @@ public class GitIgnoreTests
         using OrderedMatchSet set = GitIgnore.Parse("*.log", Root);
         IEnumerationMatcher matcher = set;
 
+        // Matched by the exclude → not included.
         matcher.MatchesFile(Root, "trace.log".AsSpan()).Should().BeFalse();
         matcher.DirectoryFinished();
-        matcher.MatchesFile(Root, "trace.txt".AsSpan()).Should().BeFalse();  // not matched at all
+        // Not matched by any rule → default-include applies → included.
+        matcher.MatchesFile(Root, "trace.txt".AsSpan()).Should().BeTrue();
     }
 
     [Fact]
@@ -102,13 +104,12 @@ public class GitIgnoreTests
         using OrderedMatchSet set = GitIgnore.Parse("/build", Root);
         IEnumerationMatcher matcher = set;
 
-        matcher.MatchesFile(Root, "build".AsSpan()).Should().BeFalse();  // excluded
+        // At root the rule matches → excluded.
+        matcher.MatchesFile(Root, "build".AsSpan()).Should().BeFalse();
         matcher.DirectoryFinished();
-        // Nested `build` (e.g. `src/build`) is NOT excluded because of root-anchor.
-        matcher.MatchesFile(Path.Combine(Root, "src"), "build".AsSpan()).Should().BeFalse();
-        // No rule matches → OrderedMatchSet returns false (not included) — same result
-        // as "excluded" in this case. To make the distinction visible we'd need an
-        // include rule in the set.
+        // Nested `build` is NOT matched by the root-anchored rule, so the
+        // default-include semantics keep it included.
+        matcher.MatchesFile(Path.Combine(Root, "src"), "build".AsSpan()).Should().BeTrue();
     }
 
     [Fact]
@@ -133,9 +134,13 @@ public class GitIgnoreTests
         set.Count.Should().Be(2);
 
         IEnumerationMatcher matcher = set;
+        // Both exclude rules match → not included.
         matcher.MatchesFile(Root, "a.log".AsSpan()).Should().BeFalse();
         matcher.DirectoryFinished();
         matcher.MatchesFile(Root, "a.tmp".AsSpan()).Should().BeFalse();
+        matcher.DirectoryFinished();
+        // A file matching neither rule remains included.
+        matcher.MatchesFile(Root, "a.cs".AsSpan()).Should().BeTrue();
     }
 
     [Fact]
@@ -238,5 +243,27 @@ public class GitIgnoreTests
     {
         Action act = () => GitIgnore.Parse("*.log", null!);
         act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Parse_ReturnsIncludeByDefaultSet()
+    {
+        // Gitignore semantics: by default files are included; ignore rules
+        // subtract. The returned set must be configured with IncludeByDefault.
+        using OrderedMatchSet set = GitIgnore.Parse("*.log", Root);
+        set.IncludeByDefault.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Parse_NonMatchingFile_IsIncluded()
+    {
+        // `*.log` excludes log files; `trace.txt` matches no rule so it must
+        // remain included (the gitignore default-include semantics).
+        using OrderedMatchSet set = GitIgnore.Parse("*.log", Root);
+        IEnumerationMatcher matcher = set;
+
+        matcher.MatchesFile(Root, "trace.txt".AsSpan()).Should().BeTrue();
+        matcher.DirectoryFinished();
+        matcher.MatchesFile(Root, "trace.log".AsSpan()).Should().BeFalse();
     }
 }

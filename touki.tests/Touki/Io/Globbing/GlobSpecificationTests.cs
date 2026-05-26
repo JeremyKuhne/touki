@@ -233,7 +233,9 @@ public partial class GlobSpecificationTests
     [Fact]
     public void Compile_UnsupportedDialect_Throws()
     {
+#pragma warning disable CS0618 // GlobDialect.Win32 is obsolete; this test pins its not-implemented behavior.
         Action act = () => GlobSpecification.Compile("*", GlobDialect.Win32);
+#pragma warning restore CS0618
         act.Should().Throw<GlobFormatException>()
             .Which.Error.Code.Should().Be(GlobCompileErrorCode.FeatureNotEnabled);
     }

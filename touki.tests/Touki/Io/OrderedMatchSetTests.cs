@@ -167,4 +167,57 @@ public class OrderedMatchSetTests
         Action act = () => set.AddExclude(null!);
         act.Should().Throw<ArgumentNullException>();
     }
+
+    [Fact]
+    public void Ctor_IncludeByDefaultFalse_IsDefault()
+    {
+        using OrderedMatchSet set = new();
+        set.IncludeByDefault.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Ctor_IncludeByDefaultTrue_FlagRoundTrips()
+    {
+        using OrderedMatchSet set = new(includeByDefault: true);
+        set.IncludeByDefault.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IncludeByDefault_Empty_MatchesFile_ReturnsTrue()
+    {
+        // Gitignore mode: with no rules, every file is included.
+        using OrderedMatchSet set = new(includeByDefault: true);
+        IEnumerationMatcher boundary = set;
+
+        boundary.MatchesFile(Root, "anything".AsSpan()).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IncludeByDefault_OnlyExclude_NonMatchingFileStillIncluded()
+    {
+        // Gitignore-style: `*.log` excludes log files; everything else stays included.
+        using OrderedMatchSet set = new(includeByDefault: true);
+        set.AddExclude(CompileGit("*.log"));
+
+        IEnumerationMatcher boundary = set;
+        boundary.MatchesFile(Root, "trace.txt".AsSpan()).Should().BeTrue();
+        boundary.DirectoryFinished();
+        boundary.MatchesFile(Root, "trace.log".AsSpan()).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IncludeByDefault_ExcludeThenInclude_RescuesFile()
+    {
+        // Gitignore "exclude all logs, but keep important.log".
+        using OrderedMatchSet set = new(includeByDefault: true);
+        set.AddExclude(CompileGit("*.log"));
+        set.AddInclude(CompileGit("important.log"));
+
+        IEnumerationMatcher boundary = set;
+        boundary.MatchesFile(Root, "trace.log".AsSpan()).Should().BeFalse();
+        boundary.DirectoryFinished();
+        boundary.MatchesFile(Root, "important.log".AsSpan()).Should().BeTrue();
+        boundary.DirectoryFinished();
+        boundary.MatchesFile(Root, "readme.md".AsSpan()).Should().BeTrue();
+    }
 }

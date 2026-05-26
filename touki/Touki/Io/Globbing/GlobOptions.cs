@@ -11,9 +11,52 @@ namespace Touki.Io.Globbing;
 public enum GlobOptions
 {
     /// <summary>
-    ///  Default behavior: case-sensitive ordinal matching, leading <c>.</c> is matched
-    ///  by wildcards, escape character is honored, no <c>**</c> or extglob.
+    ///  Use the per-<see cref="GlobDialect"/> defaults: no extra options applied beyond
+    ///  what the dialect itself specifies.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   The defaults vary by dialect:
+    ///  </para>
+    ///  <para>
+    ///   <list type="bullet">
+    ///    <item>
+    ///     <description>
+    ///      <b>Case folding</b>: <see cref="GlobDialect.MSBuild"/> is
+    ///      case-insensitive (Unicode) even without <see cref="IgnoreCase"/>; every
+    ///      other dialect is case-sensitive by default.
+    ///     </description>
+    ///    </item>
+    ///    <item>
+    ///     <description>
+    ///      <b>Leading dot</b>: <see cref="GlobDialect.Posix"/>,
+    ///      <see cref="GlobDialect.PosixPath"/>, <see cref="GlobDialect.Bash"/>, and
+    ///      <see cref="GlobDialect.Git"/> require a literal <c>.</c> in the pattern to
+    ///      match a leading <c>.</c> in the input (POSIX <c>FNM_PERIOD</c>). Other
+    ///      dialects allow wildcards to consume a leading dot. Override with
+    ///      <see cref="MatchLeadingDot"/>.
+    ///     </description>
+    ///    </item>
+    ///    <item>
+    ///     <description>
+    ///      <b>Globstar</b> (<c>**</c>): implicitly enabled for
+    ///      <see cref="GlobDialect.MSBuild"/>, <see cref="GlobDialect.FileSystemGlobbing"/>,
+    ///      <see cref="GlobDialect.Bash"/>, and <see cref="GlobDialect.Git"/>. Other
+    ///      path-aware dialects require <see cref="AllowGlobStar"/>.
+    ///     </description>
+    ///    </item>
+    ///    <item>
+    ///     <description>
+    ///      <b>Escape character</b>: honored by POSIX-family, Bash, Git
+    ///      (<c>\</c>) and PowerShell (<c>`</c>). <see cref="GlobDialect.MSBuild"/>,
+    ///      <see cref="GlobDialect.FileSystemGlobbing"/>, and
+    ///      <see cref="GlobDialect.Simple"/> have no escape character. Suppress
+    ///      with <see cref="NoEscape"/>.
+    ///     </description>
+    ///    </item>
+    ///   </list>
+    ///  </para>
+    /// </remarks>
     None = 0,
 
     /// <summary>

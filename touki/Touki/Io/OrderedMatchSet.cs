@@ -35,14 +35,31 @@ namespace Touki.Io;
 public sealed class OrderedMatchSet : DisposableBase, IEnumerationMatcher
 {
     private readonly SingleOptimizedList<Rule, ArrayPoolList<Rule>> _rules = [];
+    private readonly bool _includeByDefault;
 
     /// <summary>
     ///  Constructs an empty <see cref="OrderedMatchSet"/>. Add rules via
     ///  <see cref="AddInclude"/> / <see cref="AddExclude"/> in source order.
     /// </summary>
-    public OrderedMatchSet()
+    /// <param name="includeByDefault">
+    ///  When <see langword="true"/>, entries that match no rule are reported as
+    ///  included; rules then act as <i>filters</i> that subtract from (or add back to)
+    ///  the default-include set. This is the model <c>.gitignore</c> uses: by default
+    ///  every file in the working tree is included; ignore rules remove paths;
+    ///  <c>!</c> re-includes restore them. When <see langword="false"/> (the default),
+    ///  entries that match no rule are <i>not</i> included, so the set acts as an
+    ///  <i>allow list</i> driven by <see cref="AddInclude"/> rules.
+    /// </param>
+    public OrderedMatchSet(bool includeByDefault = false)
     {
+        _includeByDefault = includeByDefault;
     }
+
+    /// <summary>
+    ///  Gets a value indicating whether entries that match no rule are reported as
+    ///  included (gitignore semantics) or not (allow-list semantics).
+    /// </summary>
+    public bool IncludeByDefault => _includeByDefault;
 
     /// <summary>
     ///  Appends an include rule to the set. A file or directory matched by this rule
@@ -80,8 +97,9 @@ public sealed class OrderedMatchSet : DisposableBase, IEnumerationMatcher
     bool IEnumerationMatcher.MatchesFile(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> fileName)
     {
         // Walk all rules in source order; the last rule whose pattern matches the
-        // file decides the verdict. If no rule matches, the file is not included.
-        bool included = false;
+        // file decides the verdict. If no rule matches, fall back to the configured
+        // default (allow-list mode: not included; gitignore mode: included).
+        bool included = _includeByDefault;
         for (int i = 0; i < _rules.Count; i++)
         {
             Rule rule = _rules[i];

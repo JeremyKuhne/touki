@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+// GlobDialect.Win32 is reserved-but-unimplemented and marked [Obsolete] for external
+// callers. These tests pin down its metadata-level mappings (default kind, escape,
+// separator, leading-dot, path-aware) so future drift is caught, and have to reference
+// the obsolete member by name.
+#pragma warning disable CS0618 // GlobDialect.Win32 is obsolete
+
 namespace Touki.Io.Globbing;
 
 /// <summary>

@@ -89,6 +89,33 @@ public class GlobAdditionalCoverageTests
         GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input).Should().Be(expected);
 
     [Theory]
+    // Contains matcher Posix+IgnoreCase: only ASCII letters fold; non-ASCII chars
+    // compare ordinally. `*é*` must NOT match `É` (U+00C9 vs U+00E9 differ outside
+    // the ASCII range). This pins down the IgnoreCaseKind.Ascii dispatch.
+    [InlineData("*\u00E9*", "X\u00E9X", true)]   // exact match of '\u00E9'
+    [InlineData("*\u00E9*", "X\u00C9X", false)]  // '\u00C9' (uppercase) must NOT fold to '\u00E9'
+    [InlineData("*FOO*", "abcfoo", true)]        // ASCII letters DO fold
+    public void ContainsGlobStrategy_PosixIgnoreCase_AsciiOnlyFold(string pattern, string input, bool expected) =>
+        GlobSpecification.Compile(pattern, GlobDialect.Posix, GlobOptions.IgnoreCase)
+            .IsMatch(input).Should().Be(expected);
+
+    [Theory]
+    // Contrast with Simple+IgnoreCase (Unicode fold): '\u00E9' DOES fold to '\u00C9'.
+    [InlineData("*\u00E9*", "X\u00C9X", true)]
+    public void ContainsGlobStrategy_SimpleIgnoreCase_UnicodeFold(string pattern, string input, bool expected) =>
+        GlobSpecification.Compile(pattern, GlobDialect.Simple, GlobOptions.IgnoreCase)
+            .IsMatch(input).Should().Be(expected);
+
+    [Theory]
+    // Contains matcher Posix+IgnoreCase leading-dot branch with ASCII-only fold.
+    [InlineData("*.FOO*", ".foobar", true)]
+    [InlineData("*.\u00E9*", ".\u00C9oo", false)]  // non-ASCII does not fold
+    public void ContainsGlobStrategy_PosixIgnoreCase_LeadingDot_AsciiOnlyFold(
+        string pattern, string input, bool expected) =>
+        GlobSpecification.Compile(pattern, GlobDialect.Posix, GlobOptions.IgnoreCase)
+            .IsMatch(input).Should().Be(expected);
+
+    [Theory]
     // PrefixSuffix matcher Unicode ignore-case branch.
     [InlineData("\u00C9*\u00C9", "\u00e9X\u00e9", true)]
     [InlineData("\u00C9*\u00C9", "\u00eaX\u00e9", false)]

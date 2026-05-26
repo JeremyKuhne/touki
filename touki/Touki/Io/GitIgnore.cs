@@ -67,7 +67,12 @@ public static class GitIgnore
         ArgumentNullException.ThrowIfNull(content);
         ArgumentNullException.ThrowIfNull(rootDirectory);
 
-        OrderedMatchSet set = new();
+        // Gitignore semantics: by default every file in the working tree is
+        // included; ignore rules subtract paths; '!' re-includes restore them.
+        // Without `includeByDefault: true` an OrderedMatchSet built from a
+        // pattern such as `*.log` would report `trace.txt` (which matches no
+        // rule) as not-included, inverting the intended meaning.
+        OrderedMatchSet set = new(includeByDefault: true);
         AddRules(set, content.AsSpan(), rootDirectory, options);
         return set;
     }
