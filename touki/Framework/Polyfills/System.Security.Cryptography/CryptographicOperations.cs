@@ -5,7 +5,7 @@
 namespace System.Security.Cryptography;
 
 /// <summary>
-///  Polyfill for <see cref="System.Security.Cryptography"/> operations.
+///  Polyfill for <see cref="Cryptography"/> operations.
 /// </summary>
 public static class CryptographicOperations
 {

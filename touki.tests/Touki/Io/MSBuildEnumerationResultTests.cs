@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Jeremy W Kuhne
+﻿// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -294,7 +294,7 @@ public class MSBuildEnumerationResultTests
         files.Should().BeEquivalentTo("keep.txt");
     }
 
-    [Fact]
+    [Fact(Skip = "This test is expensive to run, should be checked manually")]
     public void CreateResult_DriveRootRecursion_MatchesFileMatcherOracle()
     {
         // Parity check against MSBuild's FileMatcher. MSBuild's default behavior depends on

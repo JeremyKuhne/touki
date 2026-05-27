@@ -328,7 +328,7 @@ public static partial class MemoryExtensions
         private static bool HasCustomFormatter(IFormatProvider provider)
         {
             Debug.Assert(provider is not null);
-            return provider!.GetType() != typeof(System.Globalization.CultureInfo)
+            return provider!.GetType() != typeof(Globalization.CultureInfo)
                 && provider.GetFormat(typeof(ICustomFormatter)) is not null;
         }
     }

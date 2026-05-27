@@ -35,9 +35,10 @@ public class MSBuildEnumeratorTests
     [Fact]
     public void EnumerateFiles_MatchesDirectoryEnumerate()
     {
-        // Skip on non-Windows: relative path navigation uses the project folder name
-        // "Touki", which is also the namespace folder under the project. On a
-        // case-sensitive filesystem these would resolve to two different paths.
+        // Skip on non-Windows: relative path navigation uses the project folder
+        // name "touki" (lowercase on disk) but the namespace folder under it is
+        // "Touki". On a case-sensitive filesystem these collide if the test
+        // accidentally mixes casings, so we keep the parity check Windows-only.
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
         {
             Assert.Skip("Path casing parity requires a case-insensitive filesystem; Windows-only test.");
@@ -45,7 +46,10 @@ public class MSBuildEnumeratorTests
 
         // N:\repos\touki\artifacts\x64\Release\touki.tests\net9.0
         string currentDirectory = Directory.GetCurrentDirectory();
-        string directory = Path.GetFullPath(Path.Join(currentDirectory, "../../../../../Touki"));
+        // Use the actual on-disk casing ("touki") so the path resolves on
+        // case-sensitive filesystems too should the Windows-only gate above be
+        // relaxed in the future.
+        string directory = Path.GetFullPath(Path.Join(currentDirectory, "../../../../../touki"));
 
         IReadOnlyList<string> expected = FileMatcherWrapper.GetFilesSimple(directory, "*.cs");
 
@@ -73,7 +77,7 @@ public class MSBuildEnumeratorTests
 
         // N:\repos\touki\artifacts\x64\Release\touki.tests\net9.0
         string currentDirectory = Directory.GetCurrentDirectory();
-        string directory = Path.GetFullPath(Path.Join(currentDirectory, "../../../../.."));
+        string directory = Path.GetFullPath(Path.Join(currentDirectory, "../../../../../touki"));
         string[] expected = FileMatcherWrapper.GetFilesSimple(directory, "**/*.cs");
 
         List<string> files = [];

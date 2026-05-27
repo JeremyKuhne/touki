@@ -10,7 +10,7 @@ namespace System;
 /// <remarks>
 ///  <para>
 ///   Provided on .NET Framework to match the .NET surface area. On modern .NET these are part of
-///   <see cref="System.MemoryExtensions"/>.
+///   <see cref="MemoryExtensions"/>.
 ///  </para>
 /// </remarks>
 public static partial class MemoryExtensions

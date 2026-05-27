@@ -118,6 +118,11 @@ internal bool SingleVerticalBorderAdded
 
 1. Prefer the [`Touki.EnumExtensions`](../touki/Touki/EnumExtensions.cs) helpers (`AreFlagsSet`, `AreAnyFlagsSet`, `IsOnlyOneFlagSet`, `SetFlags`, `ClearFlags`) over hand-written `&`/`|` on flag enums. They inline to the same instructions on both TFMs and avoid `Enum.HasFlag` boxing on net472/net481 (~20&times; faster).
 
+### Span-walking hot paths
+
+1. Read [Span Performance on .NET Framework](framework-span-performance.md) before optimizing any helper that walks `ReadOnlySpan<T>` / `Span<T>` per element. On `net472`/`net481` the span indexer is ~8 µops per element (slow-span layout) versus ~1 µop on net10; the hoist-`ref T`-with-`MemoryMarshal.GetReference`-and-`Unsafe.Add` pattern recovers 19&ndash;44% on Framework while staying safe (no `unsafe` keyword).
+1. Prefer a single simple implementation when its measurements are within ~5% of any Framework-tuned variant on net10 &mdash; the simpler source keeps accruing future RyuJIT vectorization/PGO wins. Split via `#if NET` / `#else` only when the simple shape regresses net10 measurably; pin with `fixed` (not `Unsafe.AsPointer` tricks) when the Framework path needs raw pointers.
+
 ### Fields
 
 1. Type constants, statics, and fields should be specified at the top within the type declaration.

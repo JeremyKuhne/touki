@@ -44,6 +44,12 @@
   <ItemGroup>
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="Microsoft.Build" />
+    <!-- Oracle reference for the FileSystemGlobbing dialect. Cross-platform, pure managed. -->
+    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" />
+    <!-- Oracle reference for the Git dialect's gitignore evaluation. Ships native bits
+         for Windows / Linux / macOS so the test class runs on every CI platform without
+         a `git` executable on PATH. -->
+    <PackageReference Include="LibGit2Sharp" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" PrivateAssets="all" />
     <PackageReference Include="xunit.v3" />
   </ItemGroup>

@@ -772,7 +772,7 @@ public static partial class SpanExtensions
     }
 
     /// <summary>
-    ///  Equality matching <see cref="System.MemoryExtensions"/>'s contract:
+    ///  Equality matching <see cref="MemoryExtensions"/>'s contract:
     ///  <c>value?.Equals(item) ?? item is null</c>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,11 +1,6 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
-
-// For just CompareOrdinalIgnoreCaseAscii()
-//
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
 
@@ -840,82 +835,53 @@ public readonly struct StringSegment :
         _ => throw new ArgumentOutOfRangeException(nameof(comparison), "Unsupported comparison type."),
     };
 
+    /// <summary>
+    ///  Best-effort match of <c>string.Compare(string, string, StringComparison.OrdinalIgnoreCase)</c>:
+    ///  ASCII fast-path with pointer pinning on the backing <see langword="string"/>, falling
+    ///  back to invariant-culture <see cref="CompareOptions.IgnoreCase"/> only when a non-ASCII
+    ///  character is encountered. Pinning the string directly (rather than going via
+    ///  <c>SpanExtensions.CompareOrdinalIgnoreCase</c>'s span pin) avoids the slow-span
+    ///  <c>GetPinnableReference</c> branch on net472/net481, preserving the pre-refactor perf.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private unsafe int CompareToOrdinalIgnoreCase(string other, int otherStartIndex, int otherLength)
     {
-        // We're trying to make a best effort to match `string.Compare(string, string, StringComparison.OrdinalIgnoreCase)`.
-        // This means we need to replicate the logic where the string is compared in ASCII first,
-
+        int scanned;
         int result;
 
         fixed (char* a = _value)
         fixed (char* b = other)
         {
-            if (CompareOrdinalIgnoreCaseAscii(a + _startIndex, _length, b + otherStartIndex, otherLength, out result))
+            if (OrdinalIgnoreCaseHelpers.CompareAscii(
+                a + _startIndex,
+                _length,
+                b + otherStartIndex,
+                otherLength,
+                out scanned,
+                out result))
             {
                 return result;
             }
         }
 
-        // If the ASCII comparison didn't succeed, we need to use the CultureInfo.CompareInfo for whatever is left
-        result = CultureInfo.InvariantCulture.CompareInfo.Compare(
-            _value,
-            _startIndex + result,
-            _length - result,
+        return CompareInvariantIgnoreCaseTail(
+            _value!,
+            _startIndex + scanned,
+            _length - scanned,
             other,
-            otherStartIndex + result,
-            otherLength - result,
-            CompareOptions.IgnoreCase);
-
-        return result;
+            otherStartIndex + scanned,
+            otherLength - scanned);
     }
 
-    private static unsafe bool CompareOrdinalIgnoreCaseAscii(char* a, int lengthA, char* b, int lengthB, out int result)
-    {
-        // Copied and modified from the .NET source
-
-        int remainingSharedCount = Math.Min(lengthA, lengthB);
-        int initialCount = remainingSharedCount;
-
-        while (remainingSharedCount != 0)
-        {
-            int charA = *a;
-            int charB = *b;
-
-            if ((charA | charB) > 0x7F)
-            {
-                // Non ascii character, result is chars to skip
-                result = initialCount - remainingSharedCount;
-                return false;
-            }
-
-            // Uppercase both chars - notice that we need just one compare per char
-            if ((uint)(charA - 'a') <= 'z' - 'a')
-            {
-                charA -= 0x20;
-            }
-
-            if ((uint)(charB - 'a') <= 'z' - 'a')
-            {
-                charB -= 0x20;
-            }
-
-            // Return the (case-insensitive) difference between them.
-            if (charA != charB)
-            {
-                result = charA - charB;
-                return true;
-            }
-
-            // Next char
-            a++;
-            b++;
-            remainingSharedCount--;
-        }
-
-        result = lengthA - lengthB;
-        return true;
-    }
+    /// <summary>
+    ///  Invariant-culture <see cref="CompareOptions.IgnoreCase"/> compare for the cold tail
+    ///  after the ASCII fast-path in <see cref="CompareToOrdinalIgnoreCase"/> bailed on a
+    ///  non-ASCII character. Operates on <see langword="string"/> + range so no allocation
+    ///  is required.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CompareInvariantIgnoreCaseTail(string a, int aStart, int aLength, string b, int bStart, int bLength) =>
+        CultureInfo.InvariantCulture.CompareInfo.Compare(a, aStart, aLength, b, bStart, bLength, CompareOptions.IgnoreCase);
 
     /// <summary>
     ///  Gets a value indicating whether two segments are equal.
