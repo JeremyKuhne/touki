@@ -97,8 +97,17 @@ public sealed class OrderedMatchSet : DisposableBase, IEnumerationMatcher
     bool IEnumerationMatcher.MatchesFile(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> fileName)
     {
         // Walk all rules in source order; the last rule whose pattern matches the
-        // file decides the verdict. If no rule matches, fall back to the configured
-        // default (allow-list mode: not included; gitignore mode: included).
+        // file (via the underlying matcher's MatchesFile) decides the verdict.
+        // If no rule matches, fall back to the configured default (allow-list
+        // mode: not included; gitignore mode: included).
+        //
+        // Note: gitignore-style DirectoryOnly excludes such as `bin/` rely on
+        // the walker honoring the MatchesDirectory(matchForExclusion=true)
+        // verdict and not recursing into the excluded subtree at all. This
+        // matches strict git semantics (gitignore(5): "It is not possible to
+        // re-include a file if a parent directory of that file is excluded.").
+        // Callers driving the set without a walker should consult
+        // MatchesDirectory on each ancestor segment themselves.
         bool included = _includeByDefault;
         for (int i = 0; i < _rules.Count; i++)
         {
@@ -117,51 +126,34 @@ public sealed class OrderedMatchSet : DisposableBase, IEnumerationMatcher
         ReadOnlySpan<char> directoryName,
         bool matchForExclusion)
     {
-        // OrderedMatchSet's role at the directory boundary is conservative subtree
-        // pruning. Include rules ("!" re-includes) operate at file granularity, not
-        // at directory granularity, so they never claim a directory. Exclude rules
-        // can claim a directory for exclusion when their matcher reports
-        // MatchesDirectory(matchForExclusion=true) (which a GlobSpecification only does for
-        // DirectoryOnly patterns whose target matches the candidate dir).
+        // Strict gitignore semantics: the last DirectoryOnly exclude that
+        // matches the candidate directory wins. The walker uses the verdict to
+        // skip excluded subtrees entirely (per gitignore(5): "It is not
+        // possible to re-include a file if a parent directory of that file is
+        // excluded."), so file-level includes inside an excluded subtree do not
+        // need to be considered here.
         //
-        // A later include rule in the set may rescue files inside an otherwise
-        // excluded subtree, so we ONLY claim the subtree when the latest matching
-        // exclude has no include rules after it &mdash; otherwise we recurse and let
-        // per-file decisions handle the re-includes.
-        if (!matchForExclusion)
-        {
-            // No rule at this layer prevents recursion; per-file decisions are the
-            // authoritative gate.
-            return true;
-        }
-
-        int latestExcludeIndex = -1;
+        // Include rules' DirectoryOnly matches are not visible via the
+        // underlying GlobMatch.MatchesDirectory(matchForExclusion=true) call
+        // (the matcher's Negated flag flips the result), so this layer can only
+        // detect exclude-side claims. A later DirectoryOnly include (`!bin/`)
+        // therefore cannot rescue a previously-excluded subtree at this layer
+        // &mdash; consistent with the strict-gitignore intent.
+        bool excluded = false;
         for (int i = 0; i < _rules.Count; i++)
         {
             Rule rule = _rules[i];
             if (rule.IsExclude
                 && rule.Matcher.MatchesDirectory(currentDirectory, directoryName, matchForExclusion: true))
             {
-                latestExcludeIndex = i;
+                excluded = true;
             }
         }
 
-        if (latestExcludeIndex < 0)
-        {
-            return false;
-        }
-
-        // Bail on the subtree-claim optimization if any include rule appears after
-        // the latest exclude &mdash; that include may rescue a deeper file.
-        for (int i = latestExcludeIndex + 1; i < _rules.Count; i++)
-        {
-            if (!_rules[i].IsExclude)
-            {
-                return false;
-            }
-        }
-
-        return true;
+        // matchForExclusion=true asks "claim this dir for exclusion?";
+        // matchForExclusion=false asks "should we recurse?". Both map to the
+        // same underlying verdict.
+        return matchForExclusion ? excluded : !excluded;
     }
 
     /// <inheritdoc/>

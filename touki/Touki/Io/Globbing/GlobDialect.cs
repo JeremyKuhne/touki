@@ -90,7 +90,7 @@ public enum GlobDialect
     ///  </para>
     ///  <para>
     ///   <b>Not yet implemented.</b> Reserved for a future release; passing this value
-    ///   to <see cref="GlobSpecification.Compile(Text.StringSegment, GlobDialect, GlobOptions, GlobPathSeparator, int)"/>
+    ///   to <see cref="GlobSpecification.Compile(StringSegment, GlobDialect, GlobOptions, GlobPathSeparator, int)"/>
     ///   throws <see cref="GlobFormatException"/> with
     ///   <see cref="GlobCompileErrorCode.FeatureNotEnabled"/>.
     ///  </para>

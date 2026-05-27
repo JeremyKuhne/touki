@@ -139,5 +139,17 @@ public enum GlobOptions
     ///  Enable extended-glob constructs: <c>?(…)</c>, <c>*(…)</c>, <c>+(…)</c>,
     ///  <c>@(…)</c>, <c>!(…)</c>.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   <b>Not yet implemented.</b> The flag is reserved on the public surface so
+    ///   the eventual API doesn't shift bit values, but the compile pipeline does
+    ///   not currently parse or match extglob constructs. Patterns containing
+    ///   <c>?(…)</c>, <c>*(…)</c>, <c>+(…)</c>, <c>@(…)</c>, or <c>!(…)</c> compile
+    ///   today as if those characters were literal, which is silently incorrect for
+    ///   the extglob semantics. Tracked as task F1.3 in
+    ///   <c>docs/globbing-feature-plan.md</c>.
+    ///  </para>
+    /// </remarks>
+    [Obsolete("GlobOptions.AllowExtGlob is reserved but not yet implemented; setting it has no effect on the compiled matcher.", error: false)]
     AllowExtGlob = 1 << 4
 }

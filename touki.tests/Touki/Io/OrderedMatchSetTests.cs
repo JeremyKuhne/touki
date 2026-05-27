@@ -220,4 +220,46 @@ public class OrderedMatchSetTests
         boundary.DirectoryFinished();
         boundary.MatchesFile(Root, "readme.md".AsSpan()).Should().BeTrue();
     }
+
+    [Fact]
+    public void IncludeByDefault_DirectoryOnlyExclude_ClaimsSubtree()
+    {
+        // Strict gitignore semantics: `bin/` claims the whole subtree at the
+        // walker's recurse decision. Per gitignore(5) you can't re-include a
+        // file whose parent directory is excluded, so the per-file evaluation
+        // never has to deal with descendants &mdash; the walker just doesn't
+        // recurse.
+        using OrderedMatchSet set = new(includeByDefault: true);
+        set.AddExclude(CompileGit("bin/"));
+
+        IEnumerationMatcher boundary = set;
+
+        // ShouldRecurseIntoEntry side: "bin" is excluded → don't recurse.
+        boundary.MatchesDirectory(Root, "bin".AsSpan(), matchForExclusion: false).Should().BeFalse();
+        boundary.DirectoryFinished();
+        // Composite-side query: claim the subtree.
+        boundary.MatchesDirectory(Root, "bin".AsSpan(), matchForExclusion: true).Should().BeTrue();
+        boundary.DirectoryFinished();
+        // Sibling tree is unaffected.
+        boundary.MatchesDirectory(Root, "src".AsSpan(), matchForExclusion: false).Should().BeTrue();
+        boundary.DirectoryFinished();
+        boundary.MatchesDirectory(Root, "src".AsSpan(), matchForExclusion: true).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IncludeByDefault_DirectoryExcludeThenFileInclude_SubtreeStillSkipped()
+    {
+        // Strict gitignore semantics: a later file-level include cannot rescue
+        // files under an excluded directory (gitignore(5)). The walker should
+        // skip the subtree entirely; `!keep.log` has no effect on `bin/`.
+        using OrderedMatchSet set = new(includeByDefault: true);
+        set.AddExclude(CompileGit("bin/"));
+        set.AddInclude(CompileGit("keep.log"));
+
+        IEnumerationMatcher boundary = set;
+
+        // Walker is told not to enter `bin/`, so `bin/keep.log` is never
+        // queried via MatchesFile in practice.
+        boundary.MatchesDirectory(Root, "bin".AsSpan(), matchForExclusion: false).Should().BeFalse();
+    }
 }

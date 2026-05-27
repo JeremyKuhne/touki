@@ -171,13 +171,12 @@ public class GitIgnoreTests
         using OrderedMatchSet set = GitIgnore.Parse(content, Root);
         IEnumerationMatcher matcher = set;
 
-        // bin/ and obj/ are DirectoryOnly excludes, but `!keep.log` is a later include
-        // rule, so OrderedMatchSet conservatively recurses (a later include might
-        // rescue a deeper file). The per-file decisions still correctly exclude
-        // everything under bin/ and obj/.
-        matcher.MatchesDirectory(Root, "bin".AsSpan(), matchForExclusion: true).Should().BeFalse();
+        // bin/ and obj/ are DirectoryOnly excludes; strict gitignore semantics
+        // claim the whole subtree. Even though `!keep.log` follows, it cannot
+        // rescue files under an excluded directory (gitignore(5)).
+        matcher.MatchesDirectory(Root, "bin".AsSpan(), matchForExclusion: true).Should().BeTrue();
         matcher.DirectoryFinished();
-        matcher.MatchesDirectory(Root, "obj".AsSpan(), matchForExclusion: true).Should().BeFalse();
+        matcher.MatchesDirectory(Root, "obj".AsSpan(), matchForExclusion: true).Should().BeTrue();
         matcher.DirectoryFinished();
         // src/ is not excluded.
         matcher.MatchesDirectory(Root, "src".AsSpan(), matchForExclusion: true).Should().BeFalse();
