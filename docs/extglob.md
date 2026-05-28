@@ -21,7 +21,7 @@ escape characters:
 | ------- | -------------------------------------------------------------------- |
 | `?`     | match exactly one character (path-aware dialects: not the separator) |
 | `*`     | match zero or more characters (path-aware: not the separator)        |
-| `**`    | globstar: match zero or more path segments &mdash; only when `AllowGlobStar` is set or the dialect has implicit globstar (`MSBuild`, `FileSystemGlobbing`, `Bash`, `Git`) |
+| `**`    | globstar: match zero or more path segments &mdash; only when `AllowGlobStar` is set or the dialect has implicit globstar (`MSBuild`, `FileSystemGlobbing`, `Git`) |
 | `[...]` | character class &mdash; only on dialects with `HasCharacterClasses()` (POSIX family, Bash, Git, FSG) |
 | `[!...]` / `[^...]` | negated character class (same dialects)                    |
 | `\<c>`  | escape `<c>` to its literal form &mdash; only on dialects with an escape character (POSIX family, Bash, Git use `\\`; PowerShell uses `` ` ``) |

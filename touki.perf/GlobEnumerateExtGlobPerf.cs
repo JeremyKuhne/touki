@@ -34,9 +34,13 @@ namespace touki.perf;
 ///   <b>Extglob:</b> a single <see cref="GlobSpecification"/> for
 ///   <c>**/@(*.ext1|*.ext2|...)</c>, compiled with
 ///   <see cref="GlobOptions.AllowExtGlob"/> on the
-///   <see cref="GlobDialect.Bash"/> dialect. The alternation disqualifies
-///   <see cref="GlobStarFileNameStrategy"/>, so the per-file path is the
-///   bytecode interpreter's extglob branch.
+///   <see cref="GlobDialect.Bash"/> dialect. The factory recognizes this
+///   suffix-set shape and lowers it to a <c>MultiSuffixGlobStrategy</c> wrapped
+///   in <c>GlobStarFileNameStrategy</c>, so the per-file hot path is a tight
+///   <c>EndsWith</c> sweep &#8212; not the recursive bytecode interpreter.
+///   Other extglob shapes (e.g. <c>+(...)</c>, alternatives that are not pure
+///   <c>*literal</c>) skip this specialization and flow through the recursive
+///   walker in <c>CompiledGlobStrategy</c>.
 ///  </para>
 ///  <para>
 ///   <b>Excludes:</b> none. Both walkers descend the same tree, so the

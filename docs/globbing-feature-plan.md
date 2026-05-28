@@ -7,14 +7,15 @@ match-time perf work) — this doc tracks **feature coverage**: dialects, option
 and pattern syntax not yet supported.
 
 For the per-dialect ignore-case semantic mapping (already implemented) see
-[touki/Touki/Text/Globbing/GlobOptions.cs](../touki/Touki/Text/Globbing/GlobOptions.cs)
+[touki/Touki/Io/Globbing/GlobOptions.cs](../touki/Touki/Io/Globbing/GlobOptions.cs)
 `IgnoreCase` and the internal `IgnoreCaseKind` enum.
 
 ## Status snapshot
 
 **Dialects shipped (8 of 9):** `Posix`, `Simple`, `PowerShell`, `PosixPath`
 (path-aware + globstar), `MSBuild` (path-aware + globstar, case-insensitive
-by default), `Bash` (path-aware, globstar opt-in, no extglob/brace yet),
+by default), `Bash` (path-aware, globstar opt-in, extglob opt-in via
+`AllowExtGlob`),
 `FileSystemGlobbing` (path-aware + implicit globstar, no classes, no
 escape), `Git` (path-aware + implicit globstar, with gitignore-style
 `!` / leading `/` / trailing `/` markers). Only `Win32` remains gated;
@@ -25,7 +26,7 @@ it needs a dedicated `Win32GlobMatcher`.
 
 **Tests:** 333 glob tests cover the implemented surface (both TFMs). New
 tests must be added alongside each feature below &mdash; see
-`touki.tests/Touki/Text/Globbing/`.
+`touki.tests/Touki/Io/Globbing/`.
 
 ---
 
@@ -348,7 +349,7 @@ No cross-platform `\` &harr; `/` translation in the matcher; the contract is
 "normalized input only".
 
 - **Status:** Shipped on this branch.
-  [`GlobPathSeparator`](../touki/Touki/Text/Globbing/GlobPathSeparator.cs)
+  [`GlobPathSeparator`](../touki/Touki/Io/Globbing/GlobPathSeparator.cs)
   enum exposes `DialectDefault`, `OSDefault`, `ForwardSlash`, and
   `Backslash`. New `Compile` and `TryCompile` overloads accept the enum and
   thread it through `GlobMatcherFactory.TryCreate` &rarr;
@@ -450,7 +451,7 @@ scanning; that optimization slots in behind the adapter once a
 benchmark exists.
 
 - **Scope:** New `IEnumerationMatcher` adapter under
-  `touki/Touki/Text/Globbing/` (or `touki/Touki/Io/`) that wraps a
+  `touki/Touki/Io/Globbing/` that wraps a
   path-aware `GlobMatcher`; per-directory cached NFA state on the
   adapter (not the matcher) so a single compiled `GlobMatcher` can be
   shared across multiple concurrent enumerations.

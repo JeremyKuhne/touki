@@ -131,4 +131,47 @@ public class MultiSuffixGlobStrategyTests
         GlobSpecification
             .Compile(pattern, GlobDialect.Bash, GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob | GlobOptions.IgnoreCase)
             .MatchCore(prefix.AsSpan(), fileName.AsSpan()).Should().Be(expected);
+
+    [Theory]
+    // Unicode ignore-case path: the MSBuild dialect routes
+    // `MultiSuffixGlobStrategy` through the `IgnoreCaseKind.Unicode`
+    // arm of the endswith / equality switch. Uses a Latin-1 accented
+    // character so the ordinal fold actually differs from the ASCII fold.
+    [InlineData("**/@(*.\u00C9|*.MD)", "src/", "foo.\u00E9", true)]
+    [InlineData("**/@(*.\u00C9|*.MD)", "src/", "foo.MD", true)]
+    [InlineData("**/@(*.\u00C9|*.MD)", "src/", "foo.txt", false)]
+    // Leading-dot input on the Unicode-fold path: forces the EqualsOrdinalIgnoreCase
+    // equality branch inside the leading-dot block. Both arms begin with a
+    // literal `.` so the precheck allows the dot input through; the equality
+    // check then matches under the case-insensitive fold.
+    [InlineData("**/@(.\u00C9|.MD)", "src/", ".\u00E9", true)]
+    [InlineData("**/@(.\u00C9|.MD)", "src/", ".md", true)]
+    [InlineData("**/@(.\u00C9|.MD)", "src/", ".other", false)]
+    public void MatchCore_IgnoreCase_Unicode(string pattern, string prefix, string fileName, bool expected) =>
+        GlobSpecification
+            .Compile(pattern, GlobDialect.MSBuild, GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob)
+            .MatchCore(prefix.AsSpan(), fileName.AsSpan()).Should().Be(expected);
+
+    [Theory]
+    // Shapes that fall outside `TryCreateMultiSuffixSegmentMatcher`'s selection
+    // criteria must still compile and match correctly through the recursive
+    // walker. Pins the rejection arms so the factory paths stay covered.
+    //
+    //   - `*` (bare AnyRun-only alt) — zero suffix length, rejected.
+    //   - `*[a]` — bracket class inside the suffix.
+    //   - `*?` — `?` inside the suffix (any-char wildcard).
+    //   - `foo` — alt missing the leading `*`.
+    //   - `*foo|@(bar)` — alt that opens a nested extglob in the suffix.
+    [InlineData("**/@(*)", "src/", "anything", true)]
+    [InlineData("**/@(*[ab])", "src/", "fooa", true)]
+    [InlineData("**/@(*[ab])", "src/", "fooc", false)]
+    [InlineData("**/@(*?)", "src/", "ab", true)]
+    [InlineData("**/@(foo)", "src/", "foo", true)]
+    [InlineData("**/@(foo)", "src/", "bar", false)]
+    [InlineData("**/@(*foo|@(bar))", "src/", "xfoo", true)]
+    [InlineData("**/@(*foo|@(bar))", "src/", "bar", true)]
+    [InlineData("**/@(*foo|@(bar))", "src/", "baz", false)]
+    public void MatchCore_NonSpecializedShapesStillMatch(
+        string pattern, string prefix, string fileName, bool expected) =>
+        MatchCore(pattern, prefix, fileName).Should().Be(expected);
 }

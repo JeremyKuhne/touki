@@ -114,4 +114,38 @@ public class ExtGlobPathAwareMatchTests
     public void MatchCore_GlobStar_MultiSegmentPrefix(
         string pattern, string prefix, string fileName, bool expected) =>
         MatchCore(pattern, prefix, fileName).Should().Be(expected);
+
+    [Theory]
+    // Leading-dot rule with extglob alternations. The non-extglob fast paths
+    // gate input on `program[0] == Literal '.'`; the extglob walker has to
+    // descend into each alternative so explicit-dot alternatives can match
+    // hidden inputs. Regression for a bug where the precheck rejected any
+    // `.` input the moment `program[0] == AltStart`, even when an
+    // alternative began with a literal dot.
+    [InlineData("@(.gitignore|README)", "", ".gitignore", true)]
+    [InlineData("@(.gitignore|README)", "", "README", true)]
+    [InlineData("@(.gitignore|README)", "", ".cs", false)]
+    [InlineData("@(.gitignore|README)", "", "other", false)]
+    // Nested AltStart: the leading-dot probe must recurse so the inner
+    // explicit-dot alternative is found.
+    [InlineData("@(@(.env|.gitignore)|README)", "", ".env", true)]
+    [InlineData("@(@(.env|.gitignore)|README)", "", ".gitignore", true)]
+    [InlineData("@(@(.env|.gitignore)|README)", "", ".other", false)]
+    // Pure-Literal alternatives: literal mismatch fails naturally without
+    // consuming the leading `.`.
+    [InlineData("@(.cs|README)", "", "README", true)]
+    [InlineData("@(.cs|README)", "", ".cs", true)]
+    [InlineData("@(.cs|README)", "", ".other", false)]
+    // Known limitation: when an alternative begins with `*`/`?`/class/globstar
+    // and the input starts with `.`, the recursive walker does not (yet)
+    // enforce the leading-dot rule per-alternative. The precheck lets these
+    // patterns through because at least one alternative begins with a literal
+    // dot; the wildcard-led alternative then matches against the dot input.
+    // Tracked separately; tighten when the walker grows MatchLeadingDot
+    // awareness.
+    [InlineData("@(*.cs|README)", "", "foo.cs", true)]
+    [InlineData("@(*.cs|README)", "", "README", true)]
+    public void MatchCore_LeadingDotRule_WithExtGlob(
+        string pattern, string prefix, string fileName, bool expected) =>
+        MatchCore(pattern, prefix, fileName).Should().Be(expected);
 }
