@@ -39,10 +39,10 @@ public partial class GlobSpecificationTests
         // FileSystemGlobbing has no escape character. At compile time the factory
         // normalizes cross-separator characters to the matcher's separator (mirroring
         // MSBuildSpecification.Normalize) so the runtime matcher never has to
-        // translate. Pattern `\foo` therefore matches input `/foo` (and not the literal
-        // backslash form).
+        // translate. Pattern `\foo` is therefore equivalent to `/foo`, which is
+        // anchored to the implicit root and matches the relative file name `foo`.
         GlobSpecification matcher = GlobSpecification.Compile("\\foo", GlobDialect.FileSystemGlobbing);
-        matcher.IsMatch("/foo").Should().BeTrue();
+        matcher.IsMatch("foo").Should().BeTrue();
         matcher.IsMatch("\\foo").Should().BeFalse();
     }
 

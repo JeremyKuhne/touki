@@ -149,6 +149,20 @@ public sealed partial class GlobSpecification
                 (negated, rootAnchored, directoryOnly) = StripGitignoreMarkers(ref pattern);
             }
 
+            if (dialect == GlobDialect.FileSystemGlobbing && resolvedSeparator != '\0')
+            {
+                // FSG-specific compile-time rewrites that mirror Matcher's own behavior
+                // captured by the upstream PatternMatchingTests in dotnet/runtime:
+                //
+                //  - Leading "/" anchors to the implicit root and is stripped.
+                //  - Leading "./" and embedded "/./" dot-segments are normalized away.
+                //  - A segment that is exactly "*.*" is equivalent to "*" (StarDotStarIsSameAsStar).
+                //  - Trailing "/**" requires at least one path component beyond the prior
+                //    literal; rewrite to "/*/**" so the engine enforces the same rule
+                //    without a new opcode flag.
+                Normalization.FileSystemGlobbing(ref pattern, resolvedSeparator);
+            }
+
             // Dialect-specific normalization of runs of `*` and runs of `/`. The rules
             // captured by the per-dialect oracle tests are:
             //
