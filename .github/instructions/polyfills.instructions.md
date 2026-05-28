@@ -38,7 +38,7 @@ skill. Headline:
 1. Microsoft-shipped package (`System.Memory`, `Microsoft.Bcl.*`,
    `Microsoft.IO.Redist`).
 2. PolySharp source-gen for compiler attributes.
-3. Hand-rolled polyfill in this directory &mdash; **last resort**, only with
+3. Hand-rolled polyfill in this directory - **last resort**, only with
    a real caller. Don't polyfill for completeness.
 
 See [docs/polyfill-layout.md](../../docs/polyfill-layout.md) for the

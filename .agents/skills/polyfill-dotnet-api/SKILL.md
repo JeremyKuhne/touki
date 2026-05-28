@@ -45,7 +45,7 @@ delete the probe.
 
 When adding a new package, place the `<PackageReference>` inside the
 `Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'"`
-ItemGroup &mdash; never unconditional.
+ItemGroup - never unconditional.
 
 ### 2. PolySharp source-generated polyfills
 
@@ -86,7 +86,7 @@ when there's a real caller; "completeness" polyfills bloat the surface.
   rather than static-class extension methods. Lookup picks the BCL
   member on modern .NET and the polyfill on net472. See
   [ConvertExtensions.cs](../../../touki/Framework/Polyfills/System/ConvertExtensions.cs).
-- **Don't `#if NETFRAMEWORK` inside `touki/Framework/`** &mdash; the
+- **Don't `#if NETFRAMEWORK` inside `touki/Framework/`** - the
   whole folder is already framework-only.
 - **Touki-specific helpers (not polyfills)** live in
   `touki/Framework/Touki/...` with `Touki.*` namespaces. If your file
@@ -113,7 +113,7 @@ when there's a real caller; "completeness" polyfills bloat the surface.
 
 The point of a span overload is to skip the array overload's
 allocation. Allocating a temp `T[]` to delegate to the BCL throws that
-benefit away. **Default allocation-free even at 5&ndash;15% throughput
+benefit away. **Default allocation-free even at 5-15% throughput
 cost**; document the trade-off in `<remarks>`. Use existing helpers
 before inventing new ones:
 
@@ -151,7 +151,7 @@ and comment which BCL surface is targeted and why.
 
 ### Argument validation
 
-- `ArgumentNullException.ThrowIfNull(arg)` &mdash; the polyfill at
+- `ArgumentNullException.ThrowIfNull(arg)` - the polyfill at
   [`ArgumentNullExtensions`](../../../touki/Framework/Polyfills/System/ArgumentNullExtensions.cs)
   covers net472.
 - `ThrowIfNegative` / `ThrowIfGreaterThan` / etc. when available;
@@ -211,13 +211,13 @@ enforces these; this section explains *why*.
    with `movzx`, RyuJIT propagates the *int-promoted* constant into
    the compare immediate (`cmp ecx, 0xFFFFFFFF`) instead of the
    requested byte (`0xFF`). The `movzx`-loaded byte is in `[0, 0xFF]`
-   so the compare is *unconditionally false* &mdash; the loop runs
+   so the compare is *unconditionally false* - the loop runs
    silently doing nothing in Release. Debug passes (no inlining).
    Confirmed by disassembly in
    [ReplaceUnsafeAsPerf](../../../touki.perf/ReplaceUnsafeAsPerf.cs).
 
    **Fix:** explicitly mask in the int domain so RyuJIT must fold the
-   high bits to zero. The cast alone is not enough &mdash; the JIT's
+   high bits to zero. The cast alone is not enough - the JIT's
    constant tracker doesn't model the `conv.u1` IL op as truncating
    to `[0, 0xFF]` here. Use:
 
@@ -232,7 +232,7 @@ enforces these; this section explains *why*.
    benchmark for the disassembly proof. The unsigned cases (`byte`,
    `ushort`, `char`) are unaffected because their int-promoted form
    already has the upper bits zero. Tests on signed inputs are
-   essential &mdash; symmetric tests that only use `byte`/`char` will
+   essential - symmetric tests that only use `byte`/`char` will
    not catch this.
 
 3. **`Random.NextBytes(byte[])` is native on net481; the obvious
@@ -269,9 +269,9 @@ enforces these; this section explains *why*.
 
 | API | Source | File |
 | --- | --- | --- |
-| `Span<T>.IndexOf` / `Contains` | `System.Memory` | &mdash; |
-| `HashCode` | `Microsoft.Bcl.HashCode` | &mdash; |
-| `IsExternalInit`, `CallerArgumentExpression` | PolySharp | &mdash; |
+| `Span<T>.IndexOf` / `Contains` | `System.Memory` | - |
+| `HashCode` | `Microsoft.Bcl.HashCode` | - |
+| `IsExternalInit`, `CallerArgumentExpression` | PolySharp | - |
 | `ROS<T>.StartsWith(T)` (single element) | hand | [SpanExtensions.StartsEndsWith.cs](../../../touki/Framework/Polyfills/System/SpanExtensions.StartsEndsWith.cs) |
 | `Convert.ToHexString` / `FromHexString` | hand | [ConvertExtensions.cs](../../../touki/Framework/Polyfills/System/ConvertExtensions.cs) |
 | `Random.NextBytes(Span<byte>)` | hand | [RandomExtensions.cs](../../../touki/Framework/Polyfills/System/RandomExtensions.cs) |

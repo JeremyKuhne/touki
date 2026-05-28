@@ -20,12 +20,12 @@ All code must compile and behave correctly on both targets.
 
 Top-level layout:
 
-- `touki/` &mdash; main library
-- `touki.tests/` &mdash; xUnit tests (uses FluentAssertions; access to internals via `InternalsVisibleTo`)
-- `touki.testsupport/` &mdash; shared test helpers (`TestAccessor`, etc.)
-- `touki.perf/` &mdash; BenchmarkDotNet performance projects
-- `sample/` &mdash; usage samples
-- `docs/` &mdash; contributor and design documentation
+- `touki/` - main library
+- `touki.tests/` - xUnit tests (uses FluentAssertions; access to internals via `InternalsVisibleTo`)
+- `touki.testsupport/` - shared test helpers (`TestAccessor`, etc.)
+- `touki.perf/` - BenchmarkDotNet performance projects
+- `sample/` - usage samples
+- `docs/` - contributor and design documentation
 
 ## Environment setup
 
@@ -40,7 +40,7 @@ Top-level layout:
 - Always use C# keywords for types (`int`, `string`, `bool`) instead of their aliases
   (`Int32`, `String`, `Boolean`).
 - Always use `nint` and `nuint` for native integer types (not `IntPtr` and `UIntPtr`).
-- Avoid `var` &mdash; use explicit type declarations, target-typed `new`, and
+- Avoid `var` - use explicit type declarations, target-typed `new`, and
   [collection expressions](https://learn.microsoft.com/dotnet/csharp/language-reference/operators/collection-expressions)
   together: `List<string> list = new();`, `int[] values = [1, 2, 3];`,
   `Point[] points = [new(1, 2), new(5, 6)];`. The variable's type is always
@@ -81,6 +81,13 @@ Top-level layout:
   from the method with the most arguments, overriding tags where they differ.
 - Use `<see langword="..."/>` tags for language keywords in comments
   (e.g. `<see langword="true"/>` instead of `true`).
+- Prefer plain ASCII characters that don't need escaping (`-`, `"`, `...`,
+  `->`) over typographic Unicode (`—`, `–`, `"`, `"`, `…`, `→`) or HTML
+  entities (`&mdash;`, `&ndash;`, `&hellip;`, `&rarr;`, `&nbsp;`). Use a
+  plain `-` (with surrounding spaces when separating clauses) instead of
+  em/en-dashes. Only escape when the raw character would actually be
+  parsed as markup (e.g. `<` inside an XML doc comment); do not escape
+  defensively when it isn't needed.
 
 ## Line breaks and whitespace
 
@@ -99,7 +106,7 @@ Top-level layout:
 - When breaking lines in a method call, all parameters should be indented on their own
   lines.
 - After multiple edits to a file, verify that blank lines and whitespace remain correct.
-- When using search-and-replace tools, include 3&ndash;5 lines of context before and
+- When using search-and-replace tools, include 3-5 lines of context before and
   after the target text.
 
 ## Testing
@@ -109,7 +116,7 @@ Detailed test conventions live in
 (applies to `touki.tests/**/*.cs`). Headline rules: place tests in `touki.tests`;
 name them `MethodName_StateUnderTest_ExpectedBehavior`; use FluentAssertions (global
 using); access internals directly via `InternalsVisibleTo` and private members via
-`TestAccessor`; ref structs can't be used in lambdas &mdash; use `try`/`finally`.
+`TestAccessor`; ref structs can't be used in lambdas - use `try`/`finally`.
 
 Performance-test conventions for `touki.perf/` (BenchmarkDotNet, Release-only,
 JIT-naming rule, regression thresholds) live in
@@ -157,12 +164,12 @@ None of these authorize a push or a PR. They have all been
 mistaken for it on this repo:
 
 - "address the review comments" / "fix the comments" / "look at the
-  comments" &mdash; edit-only.
+  comments" - edit-only.
 - "do the next step" / "let's do X next" / a bare "go ahead" attached
-  to a task description &mdash; selects which task, not whether to publish.
-- "fix the CI failure" / "the PR is failing" &mdash; diagnosis or local
+  to a task description - selects which task, not whether to publish.
+- "fix the CI failure" / "the PR is failing" - diagnosis or local
   fix, not a push.
-- "pull main and work on X" &mdash; authorizes the work only.
+- "pull main and work on X" - authorizes the work only.
 
 When in doubt, ask one short yes/no question.
 
@@ -184,7 +191,7 @@ When in doubt, ask one short yes/no question.
 ### After a violation
 
 Acknowledge directly without minimizing. **Do not push a follow-up
-"fix" commit without explicit approval** &mdash; that compounds the
+"fix" commit without explicit approval** - that compounds the
 failure. The user decides whether to revert, force-push, or leave it.
 
 ### Other rules
@@ -193,7 +200,7 @@ failure. The user decides whether to revert, force-push, or leave it.
   tree spans more than one logical change. Run `git status --short`
   first; if topics are intermingled, ask how to split.
 - **Run `dotnet test -c Release` before declaring a fix done.**
-  Release-mode inlining surfaces bugs Debug doesn't &mdash; `Unsafe.As`
+  Release-mode inlining surfaces bugs Debug doesn't - `Unsafe.As`
   on a method parameter is a known foot-gun on net481 RyuJIT.
 
 ### Enforcement
@@ -213,7 +220,7 @@ only guard that works in every configuration.
   `gh pr create|merge|close|edit`. In Default Approvals mode each
   denied command requires an in-chat **Allow** click; that click is
   the approval. **In Bypass Approvals or Autopilot, this denylist is
-  ignored at runtime** &mdash; the entries remain as documentation of
+  ignored at runtime** - the entries remain as documentation of
   which commands cross the publish boundary, and as a defense-in-depth
   tripwire for contributors and agents who *are* in Default Approvals
   mode. Do not rely on the denylist to stop you.
@@ -234,7 +241,7 @@ only guard that works in every configuration.
   force pushes and branch deletion blocked) is the only server-side
   guard that survives every approval mode. It does not stop
   `gh pr create|merge|close|edit`, MCP `create_pull_request`,
-  `merge_pull_request`, or pushes to feature branches &mdash; only
+  `merge_pull_request`, or pushes to feature branches - only
   direct writes to `main` itself.
 
 The agent's pre-flight check (re-read the user's most recent message
@@ -258,7 +265,7 @@ catch a mistake.
   first.** On net472/net481 the `ReadOnlySpan<T>` indexer costs ~8 µops
   per element (slow-span layout) versus ~1 µop on net10. Hoist
   `ref T = MemoryMarshal.GetReference(span)` outside the loop and walk
-  with `Unsafe.Add<T>(ref, i)` for a 19&ndash;44% Framework win at no
+  with `Unsafe.Add<T>(ref, i)` for a 19-44% Framework win at no
   `unsafe`-keyword cost. Prefer a single simple implementation when it
   measures within ~5% of any Framework-tuned variant on net10 so the
   simple source keeps accruing future RyuJIT improvements; split with
@@ -273,7 +280,7 @@ catch a mistake.
     standard size); it rents from `ArrayPool<byte>` automatically if the
     content outgrows the buffer, and `ToStringAndDispose()` returns the
     final string while releasing the rental. Verified savings of
-    58&ndash;63&nbsp;% allocated bytes when replacing `StringBuilder` in the
+    58-63&nbsp;% allocated bytes when replacing `StringBuilder` in the
     `GlobMatcherFactory` bytecode encoder, with no measurable throughput
     cost.
   - `Touki.Text.StringSegment` / `Touki.Text.StringSpan` instead of
@@ -305,7 +312,7 @@ automatically based on each file's `applyTo` glob.
 
 Currently:
 
-- [.github/instructions/msbuild.instructions.md](.github/instructions/msbuild.instructions.md) &mdash; rules for `*.csproj`, `*.props`, `*.targets`.
-- [.github/instructions/tests.instructions.md](.github/instructions/tests.instructions.md) &mdash; conventions for `touki.tests/**/*.cs`.
-- [.github/instructions/perf.instructions.md](.github/instructions/perf.instructions.md) &mdash; BenchmarkDotNet conventions and the JIT-naming rule for `touki.perf/**/*.cs`.
-- [.github/instructions/polyfills.instructions.md](.github/instructions/polyfills.instructions.md) &mdash; the two non-negotiable rules for `touki/Framework/Polyfills/**/*.cs`.
+- [.github/instructions/msbuild.instructions.md](.github/instructions/msbuild.instructions.md) - rules for `*.csproj`, `*.props`, `*.targets`.
+- [.github/instructions/tests.instructions.md](.github/instructions/tests.instructions.md) - conventions for `touki.tests/**/*.cs`.
+- [.github/instructions/perf.instructions.md](.github/instructions/perf.instructions.md) - BenchmarkDotNet conventions and the JIT-naming rule for `touki.perf/**/*.cs`.
+- [.github/instructions/polyfills.instructions.md](.github/instructions/polyfills.instructions.md) - the two non-negotiable rules for `touki/Framework/Polyfills/**/*.cs`.

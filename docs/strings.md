@@ -2,7 +2,7 @@
 
 String creation is one of the most frequently executed operations in many .NET programs. Every time a string is built or modified a new instance is allocated and old instances eventually need to be reclaimed by the garbage collector.
 
-On modern .NET platforms (from .NET 6 onward) the compiler rewrites interpolated strings into a lower‑level representation using **interpolated string handlers** — see *String Interpolation in C# 10 and .NET 6* ([.NET Blog](https://devblogs.microsoft.com/dotnet/string-interpolation-in-c-10-and-net-6/)). Benchmarks published in that post show a ~40 % throughput improvement and about a five‑fold reduction in memory allocation compared with `string.Format`.
+On modern .NET platforms (from .NET 6 onward) the compiler rewrites interpolated strings into a lower‑level representation using **interpolated string handlers** - see *String Interpolation in C# 10 and .NET 6* ([.NET Blog](https://devblogs.microsoft.com/dotnet/string-interpolation-in-c-10-and-net-6/)). Benchmarks published in that post show a ~40 % throughput improvement and about a five‑fold reduction in memory allocation compared with `string.Format`.
 
 For developers who need to target .NET Framework 4.8 or earlier, these improvements are not available because the framework lacks the built‑in interpolated‑string handler and many of the supporting APIs. The **Touki** library bridges that gap by providing a default interpolated string handler and polyfills for .NET Framework 4.7.2 and later.
 
@@ -12,9 +12,9 @@ For developers who need to target .NET Framework 4.8 or earlier, these improve
 
 Strings in .NET are immutable. Every time you use `string.Concat`, `StringBuilder.Append` or `string.Format`, a new string instance is created. Frequent allocations lead to:
 
-* **Garbage‑collection pressure** – short‑lived strings can quickly accumulate to dramatic weight on the GC.
-* **Hidden boxing** – `string.Format` boxes value‑type arguments into an `object[]` array and creates the array itself (see the .NET Blog post above), generating unnecessary heap activity.
-* **Parsing costs** – `string.Format` interprets the composite format string at run‑time, so when you don’t know the format string until run‑time you miss out on compile‑time parsing or optimized code paths.
+* **Garbage‑collection pressure** - short‑lived strings can quickly accumulate to dramatic weight on the GC.
+* **Hidden boxing** - `string.Format` boxes value‑type arguments into an `object[]` array and creates the array itself (see the .NET Blog post above), generating unnecessary heap activity.
+* **Parsing costs** - `string.Format` interprets the composite format string at run‑time, so when you don’t know the format string until run‑time you miss out on compile‑time parsing or optimized code paths.
 
 ## Touki’s approach
 
@@ -40,7 +40,7 @@ using Touki.Text;
 
 // ...
 
-string fmt = "{0} – {1:F2}";
+string fmt = "{0} - {1:F2}";
 double num = 3.14159;
 
 // No boxing for either the string or the double, no intermediate strings

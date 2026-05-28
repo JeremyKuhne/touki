@@ -263,7 +263,7 @@ public sealed partial class GlobSpecification
             // Path-unaware specialized matchers (Prefix/Suffix/Contains/PrefixSuffix/Any).
             // Path-aware dialects route everything through the bytecode interpreter so the
             // separator-aware semantics are honored. Extglob patterns also skip these
-            // specializations &mdash; they fall through to the general path so the
+            // specializations - they fall through to the general path so the
             // bytecode interpreter handles the alternation.
             if (!pathAware && !shape.HasExtGlob
                 && TryCreatePathUnawareSpecialized(pattern, ref shape, dialect, options, escape, out result))
@@ -279,7 +279,7 @@ public sealed partial class GlobSpecification
             // ...) and benefits enormously from bypassing the bytecode interpreter and
             // the per-file path concatenation. Globstar must be enabled (implicitly for
             // MSBuild / FSG / Git, or via GlobOptions.AllowGlobStar). Patterns with an
-            // extglob construct in the segment are still routed here &#8212; the helper
+            // extglob construct in the segment are still routed here - the helper
             // recognizes the `@(*lit1|*lit2|...)` shape and lowers it to
             // <see cref="MultiSuffixGlobStrategy"/>; segments with extglob constructs
             // the helper cannot specialize return false and fall through to the
@@ -433,7 +433,7 @@ public sealed partial class GlobSpecification
         ///   (<c>?</c>, <c>+</c>, <c>*</c>, <c>!</c>), mixed alternative shapes, and
         ///   anything containing a metacharacter inside the literal portion all
         ///   return <see langword="false"/> so the general bytecode path picks them
-        ///   up. Widening the criteria requires re-validating the net481 win &#8212;
+        ///   up. Widening the criteria requires re-validating the net481 win -
         ///   each kind has different match semantics and the simple endswith sweep
         ///   does not generalize cleanly.
         ///  </para>
@@ -509,7 +509,7 @@ public sealed partial class GlobSpecification
                 // Each alternative must be exactly `*literal` where literal is at least
                 // one character. Pure literal alternatives (no `*`) and zero-suffix
                 // alternatives (just `*`, which would match anything) are intentionally
-                // not specialized today &#8212; widening this requires verifying the
+                // not specialized today - widening this requires verifying the
                 // leading-dot semantics on each shape.
                 if (alt.Length < 2 || alt[0] != '*')
                 {
@@ -922,17 +922,31 @@ public sealed partial class GlobSpecification
             // Tail-anchor optimization: when the program ends in a Literal op, the matcher
             // can EndsWith-fast-fail on the tail before running the NFA. We pass the tail
             // offset/length within the same program string so no extra allocation is needed.
-            // The tail-anchor only applies to programs without extglob &mdash; an
-            // alternation may consume the trailing literal as part of one of its
-            // alternatives, so the EndsWith fast-fail would produce false negatives.
+            //
+            // For non-extglob programs the tail is SUFFICIENT (matches mean the input ends
+            // exactly in this literal) so the matcher both EndsWith-checks and trims.
+            //
+            // For extglob programs the tail is NECESSARY but not sufficient: when every
+            // top-level execution path through the outermost alternation ends in the same
+            // literal suffix, an EndsWith check still rules out the (typically large
+            // majority of) inputs that don't end that way. We do not trim - the
+            // alternation walker still needs the full input to resolve which alternative
+            // matches. <see cref="ComputeExtGlobCommonTailSlice"/> returns the longest
+            // common literal suffix as a (start, length) slice within the program string
+            // (pointing at any one alternative's matching Literal payload tail); it returns
+            // (-1, 0) when no common tail exists, in which case we run the walker without
+            // a pre-check.
             int nfaProgramLength;
             int tailStart;
             int tailLength;
             if (hasExtGlob)
             {
                 nfaProgramLength = program.Length;
-                tailStart = 0;
-                tailLength = 0;
+                if (!ComputeExtGlobCommonTailSlice(program, out tailStart, out tailLength))
+                {
+                    tailStart = 0;
+                    tailLength = 0;
+                }
             }
             else
             {
@@ -1019,6 +1033,248 @@ public sealed partial class GlobSpecification
                 tailStart = -1;
                 tailLength = 0;
             }
+        }
+
+        /// <summary>
+        ///  Compute-time helper for the extglob tail-anchor optimization. Walks an
+        ///  encoded program with one or more <see cref="GlobOpCodes.AltStart"/>
+        ///  blocks and computes the longest literal suffix common to every
+        ///  top-level execution path. Returns <see langword="true"/> with
+        ///  <paramref name="tailStart"/> / <paramref name="tailLength"/> pointing
+        ///  at a contiguous slice of <paramref name="program"/> containing that
+        ///  literal when one exists, otherwise <see langword="false"/>.
+        /// </summary>
+        /// <remarks>
+        ///  <para>
+        ///   The tail returned here is a <b>necessary</b> condition for a match,
+        ///   not a sufficient one: the caller still needs to run the full
+        ///   alternation walker on the untrimmed input. See
+        ///   <see cref="CompiledGlobStrategy.MatchCore(ReadOnlySpan{char}, ReadOnlySpan{char})"/>
+        ///   for the per-call <c>EndsWith</c> pre-check.
+        ///  </para>
+        ///  <para>
+        ///   Common cases handled:
+        ///  </para>
+        ///  <para>
+        ///   - Program ends in a plain <see cref="GlobOpCodes.Literal"/> after
+        ///     all alternation blocks. Returns that literal verbatim.<br/>
+        ///   - Program ends in an <see cref="GlobOpCodes.AltStart"/> block where
+        ///     every alternative ends in a literal and those literals share a
+        ///     common trailing run of characters (e.g.
+        ///     <c>&#x40;(*.cs|*.cs)</c> &#8594; <c>.cs</c>;
+        ///     <c>&#x40;(foo.cs|bar.cs)</c> &#8594; <c>.cs</c>).<br/>
+        ///   - Anything else (negation alternation, mixed extensions with no
+        ///     shared suffix, alternatives that end in non-literal opcodes)
+        ///     returns <see langword="false"/>; the caller falls back to running
+        ///     the walker without a pre-check.
+        ///  </para>
+        ///  <para>
+        ///   The negation kind <c>!(...)</c> is treated as &quot;no common tail
+        ///   from this block&quot; even when its alternatives share a suffix:
+        ///   a negation succeeds on input slices that <i>don't</i> match its
+        ///   alternatives, so the alternation's success tail is whatever the
+        ///   parent program contributes after the negation block, not the
+        ///   alternatives' tails.
+        ///  </para>
+        /// </remarks>
+        private static bool ComputeExtGlobCommonTailSlice(string program, out int tailStart, out int tailLength)
+        {
+            ReadOnlySpan<char> span = program.AsSpan();
+            ReadOnlySpan<char> commonTail = ComputeProgramTailLiteral(span, out int sliceStart);
+            if (commonTail.IsEmpty)
+            {
+                tailStart = -1;
+                tailLength = 0;
+                return false;
+            }
+
+            tailStart = sliceStart;
+            tailLength = commonTail.Length;
+            return true;
+        }
+
+        /// <summary>
+        ///  Recursively computes the longest literal suffix common to every
+        ///  execution path through <paramref name="program"/>. Returns the
+        ///  matching slice of <paramref name="program"/> (so the caller can
+        ///  reuse the program string as the literal source without allocating)
+        ///  via <paramref name="sliceStartInProgram"/>.
+        /// </summary>
+        private static ReadOnlySpan<char> ComputeProgramTailLiteral(
+            ReadOnlySpan<char> program,
+            out int sliceStartInProgram)
+        {
+            sliceStartInProgram = -1;
+            if (program.IsEmpty)
+            {
+                return default;
+            }
+
+            // Walk forward to locate the program's last top-level opcode. Top
+            // level here means outside any AltStart..AltEnd block; AltStart is
+            // treated as the unit (we descend into it only if it's the tail).
+            int i = 0;
+            int lastTopStart = -1;
+            char lastTopOp = '\0';
+            while (i < program.Length)
+            {
+                char opcode = program[i];
+                switch (opcode)
+                {
+                    case GlobOpCodes.Literal:
+                    case GlobOpCodes.Class:
+                    case GlobOpCodes.NegClass:
+                        lastTopStart = i;
+                        lastTopOp = opcode;
+                        i += 2 + program[i + 1];
+                        break;
+                    case GlobOpCodes.GlobStar:
+                        lastTopStart = i;
+                        lastTopOp = opcode;
+                        i += 2;
+                        break;
+                    case GlobOpCodes.AltStart:
+                        lastTopStart = i;
+                        lastTopOp = opcode;
+                        i += program[i + 2];
+                        break;
+                    case GlobOpCodes.Any:
+                    case GlobOpCodes.AnyRun:
+                        lastTopStart = i;
+                        lastTopOp = opcode;
+                        i++;
+                        break;
+                    default:
+                        // AltSep / AltEnd should not appear at top level; bail
+                        // without a tail rather than risking a wrong answer.
+                        return default;
+                }
+            }
+
+            if (lastTopOp == GlobOpCodes.Literal)
+            {
+                int payloadStart = lastTopStart + 2;
+                int payloadLength = program[lastTopStart + 1];
+                sliceStartInProgram = payloadStart;
+                return program.Slice(payloadStart, payloadLength);
+            }
+
+            if (lastTopOp != GlobOpCodes.AltStart)
+            {
+                // Class / NegClass / AnyRun / Any / GlobStar at the tail: no
+                // single-literal suffix the EndsWith check can verify.
+                return default;
+            }
+
+            int blockStart = lastTopStart;
+            int blockLen = program[blockStart + 2];
+            char altKind = program[blockStart + 1];
+
+            // `?(...)` (zero or one) and `*(...)` (zero or more) can match
+            // empty - no guaranteed tail from the block itself. `!(...)`
+            // succeeds on input that does NOT match its alternatives, so its
+            // success-tail isn't the alternatives' tails either. Only `@(...)`
+            // (exactly one) and `+(...)` (one or more) always contribute one
+            // alternative's tail to the matched input; restrict the
+            // optimization to those kinds.
+            if (altKind is not '@' and not '+')
+            {
+                return default;
+            }
+
+            int altsStart = blockStart + 3;
+            int altEndIndex = blockStart + blockLen - 1;
+            if (altsStart > altEndIndex)
+            {
+                return default;
+            }
+
+            // Walk the alternatives, recursing on each to compute its tail,
+            // then take the longest common suffix across all.
+            ReadOnlySpan<char> commonSuffix = default;
+            int chosenSliceStart = -1;
+            int altStart = altsStart;
+            int cursor = altsStart;
+            bool first = true;
+            while (true)
+            {
+                bool atEnd = cursor >= altEndIndex;
+                bool atSep = !atEnd && program[cursor] == GlobOpCodes.AltSep;
+                if (atEnd || atSep)
+                {
+                    ReadOnlySpan<char> altBody = program[altStart..cursor];
+                    ReadOnlySpan<char> altTail = ComputeProgramTailLiteral(altBody, out int altSliceOffset);
+                    if (altTail.IsEmpty)
+                    {
+                        return default;
+                    }
+
+                    // altSliceOffset is into altBody; translate to program offset.
+                    int altSliceInProgram = altStart + altSliceOffset;
+
+                    if (first)
+                    {
+                        commonSuffix = altTail;
+                        chosenSliceStart = altSliceInProgram;
+                        first = false;
+                    }
+                    else
+                    {
+                        int commonLen = 0;
+                        int max = Math.Min(commonSuffix.Length, altTail.Length);
+                        while (commonLen < max
+                            && commonSuffix[commonSuffix.Length - 1 - commonLen]
+                                == altTail[altTail.Length - 1 - commonLen])
+                        {
+                            commonLen++;
+                        }
+
+                        if (commonLen == 0)
+                        {
+                            return default;
+                        }
+
+                        // Trim commonSuffix to the new common length, keeping the
+                        // existing slice anchor (its trailing commonLen chars are
+                        // exactly the common suffix).
+                        if (commonLen < commonSuffix.Length)
+                        {
+                            chosenSliceStart += commonSuffix.Length - commonLen;
+                            commonSuffix = commonSuffix[^commonLen..];
+                        }
+                    }
+
+                    if (atEnd)
+                    {
+                        break;
+                    }
+
+                    altStart = cursor + 1;
+                    cursor++;
+                    continue;
+                }
+
+                char op = program[cursor];
+                if (op == GlobOpCodes.AltStart)
+                {
+                    cursor += program[cursor + 2];
+                }
+                else if (op is GlobOpCodes.Literal or GlobOpCodes.Class or GlobOpCodes.NegClass)
+                {
+                    cursor += 2 + program[cursor + 1];
+                }
+                else if (op == GlobOpCodes.GlobStar)
+                {
+                    cursor += 2;
+                }
+                else
+                {
+                    cursor++;
+                }
+            }
+
+            sliceStartInProgram = chosenSliceStart;
+            return commonSuffix;
         }
 
         /// <summary>
@@ -1835,7 +2091,7 @@ public sealed partial class GlobSpecification
         ///     (<c>[:</c>) and colon-bracket (<c>:]</c>) delimiters.&quot; The standard
         ///     character class names are <c>alpha</c>, <c>upper</c>, <c>lower</c>,
         ///     <c>digit</c>, <c>xdigit</c>, <c>alnum</c>, <c>space</c>, <c>blank</c>,
-        ///     <c>print</c>, <c>punct</c>, <c>graph</c>, and <c>cntrl</c> &#8212; expanded
+        ///     <c>print</c>, <c>punct</c>, <c>graph</c>, and <c>cntrl</c> - expanded
         ///     inline to their ASCII range equivalent by
         ///     <see cref="AppendPosixNamedClass"/>.<br/>
         ///   - <c>[[=c=]]</c>: equivalence class. &quot;An equivalence class expression

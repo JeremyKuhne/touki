@@ -278,7 +278,7 @@ public class SmallPolyfillCoverageTests
             {
                 global::System.ReadOnlySpan<int> args = stackalloc int[] { 1 };
                 // "{}" is malformed: '{' followed by '}' (not an escape, since they don't match
-                // for an escape — '{{' or '}}' would). The check is `if (brace != next)` for the
+                // for an escape - '{{' or '}}' would). The check is `if (brace != next)` for the
                 // escape path; "{}" reaches that with brace='{' next='}' which does NOT match,
                 // so FormatError is invoked.
                 builder.AppendFormat("{}".AsSpan(), args);

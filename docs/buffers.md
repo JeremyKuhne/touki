@@ -55,7 +55,7 @@ if (reader.TryRead(out byte tag) && reader.TryRead<int>(out int length))
 Highlights:
 
 * `TryRead`, `TryReadCount`, `TryReadTo`, `TryPeek`, `Advance`,
-  `AdvancePast` — the standard reader surface.
+  `AdvancePast` - the standard reader surface.
 * `Position`, `Length`, `Unread`, `End` for inspection.
 * `TryRead<TValue>(out TValue)` reads any other unmanaged value type
   out of a `byte` reader via a checked reinterpret.

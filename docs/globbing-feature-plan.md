@@ -1,9 +1,9 @@
-# Glob matcher — feature implementation plan
+# Glob matcher - feature implementation plan
 
 Tracks remaining glob functionality not yet shipped on the
 `feature/globbing-phase1` branch. Companion to
 [globbing-optimization-plan.md](globbing-optimization-plan.md) (which tracks
-match-time perf work) — this doc tracks **feature coverage**: dialects, options,
+match-time perf work) - this doc tracks **feature coverage**: dialects, options,
 and pattern syntax not yet supported.
 
 For the per-dialect ignore-case semantic mapping (already implemented) see
@@ -25,18 +25,18 @@ it needs a dedicated `Win32GlobMatcher`.
 `NoEscape`, `AllowGlobStar`, `AllowExtGlob`.
 
 **Tests:** 333 glob tests cover the implemented surface (both TFMs). New
-tests must be added alongside each feature below &mdash; see
+tests must be added alongside each feature below - see
 `touki.tests/Touki/Io/Globbing/`.
 
 ---
 
-## Phase 1 finish &mdash; path-unaware dialects and extglob
+## Phase 1 finish - path-unaware dialects and extglob
 
 Goal: bring every dialect that does *not* need path-mode semantics to feature
 parity, plus the `AllowExtGlob` option. After this slice the matcher is a
 complete drop-in for non-path use cases.
 
-### F1.1 `PowerShell` dialect &mdash; **done**
+### F1.1 `PowerShell` dialect - **done**
 
 PowerShell `-like` / `WildcardPattern` semantics. Smallest delta from `Posix`:
 no `FNM_PERIOD` (a leading `.` in input is matched by `*` or `?` like any other
@@ -65,7 +65,7 @@ rather than `\`.
   per-dialect mappings.
 - **Ref:** [about_Wildcards](https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_wildcards).
 
-### F1.2 `Win32` dialect &mdash; **deferred (low priority)**
+### F1.2 `Win32` dialect - **deferred (low priority)**
 
 Goal: bit-for-bit parity with
 [`FileSystemName.MatchesWin32Expression`](https://learn.microsoft.com/dotnet/api/system.io.enumeration.filesystemname.matcheswin32expression).
@@ -82,12 +82,12 @@ That API does two things the matcher today does not:
    position per input character. The DOS metachars (`<`, `>`, `"`)
    have semantics that don't fit the current single-savepoint
    backtracker:
-   - `<` (DOS_STAR) &mdash; zero or more chars, must stop before the
+   - `<` (DOS_STAR) - zero or more chars, must stop before the
      **last** `.` in the name (requires lookahead to know which `.` is
      last).
-   - `>` (DOS_QM) &mdash; zero or one char; on `.` or end-of-name,
+   - `>` (DOS_QM) - zero or one char; on `.` or end-of-name,
      advances the expression past any contiguous run of `>`s.
-   - `"` (DOS_DOT) &mdash; matches a `.` **or** matches zero chars at
+   - `"` (DOS_DOT) - matches a `.` **or** matches zero chars at
      end-of-name (epsilon).
 
    These epsilon transitions and the "skip contiguous `>`s" behavior
@@ -97,7 +97,7 @@ That API does two things the matcher today does not:
 
 **Implementation plan:** port the BCL `MatchPattern` algorithm
 (`useExtendedWildcards: true` branch) directly into a new
-`Win32GlobMatcher` &mdash; the current `CompiledGlobMatcher` NFA is
+`Win32GlobMatcher` - the current `CompiledGlobMatcher` NFA is
 the wrong shape and trying to shoehorn DOS semantics into it costs
 more than just keeping the dedicated implementation. Pre-translate
 the pattern at compile time so the matcher only ever sees the
@@ -107,20 +107,20 @@ extended-wildcard form.
 [D4](#d4-win32-dialect-ignorecase-is-the-default).
 
 - **Touches:** New `Win32GlobMatcher.cs`; `GlobMatcherFactory` routes
-  `Win32` patterns to it directly (no shape detection &mdash; the
+  `Win32` patterns to it directly (no shape detection - the
   factory's specialized shapes don't survive the pre-translation).
   `GlobMatcher.TryCompile` adds `Win32` to its allow-list. No changes
   to `GlobOpCodes` or the shared `CompiledGlobMatcher`.
 - **Tests:** Golden cross-reference against
   `System.IO.Enumeration.FileSystemName.MatchesWin32Expression` (net10
-  only &mdash; the API is not on net472) for every case in the BCL's
+  only - the API is not on net472) for every case in the BCL's
   own test suite. Spot-checks for `*.*`, `*.`, `*.foo`, `a?b`, raw
   `<`/`>`/`"` already present in patterns (the pre-translation is
   idempotent for those characters).
 - **Ref:** [FsRtlIsNameInExpression](https://learn.microsoft.com/windows-hardware/drivers/ddi/ntifs/nf-ntifs-fsrtlisnameinexpression),
   [`FileSystemName.cs` source](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/IO/Enumeration/FileSystemName.cs).
 
-### F1.2b `WinNT` dialect &mdash; **deferred (low priority)**
+### F1.2b `WinNT` dialect - **deferred (low priority)**
 
 Same NFA as F1.2 but **without** the `TranslateWin32Expression`
 pre-pass. Exposes raw `FsRtlIsNameInExpression` semantics so callers
@@ -131,16 +131,16 @@ matches. Requires a new `GlobDialect.WinNT` enum entry and an
 `Win32`. Same case-insensitive default as `Win32`. Shares the
 `Win32GlobMatcher` implementation behind a "translate?" bool.
 
-### F1.3 `AllowExtGlob` option &mdash; **done**
+### F1.3 `AllowExtGlob` option - **done**
 
 Bash/POSIX extglob alternation constructs (also reachable via POSIX
 `FNM_EXTMATCH`):
 
-- `?(pat1|pat2|...)` &mdash; zero or one occurrence of any alternative
-- `*(pat1|pat2|...)` &mdash; zero or more occurrences of any alternative
-- `+(pat1|pat2|...)` &mdash; one or more occurrences of any alternative
-- `@(pat1|pat2|...)` &mdash; exactly one occurrence
-- `!(pat1|pat2|...)` &mdash; anything that doesn't match any alternative
+- `?(pat1|pat2|...)` - zero or one occurrence of any alternative
+- `*(pat1|pat2|...)` - zero or more occurrences of any alternative
+- `+(pat1|pat2|...)` - one or more occurrences of any alternative
+- `@(pat1|pat2|...)` - exactly one occurrence
+- `!(pat1|pat2|...)` - anything that doesn't match any alternative
 
 Shipped surface:
 
@@ -165,7 +165,7 @@ Shipped surface:
 - Compile-time error codes: `UnterminatedExtGlob`, `InvalidExtGlobBody`,
   `FeatureLimitExceeded`.
 
-Tests: `ExtGlobScannerTests` (compile-shape + error codes &mdash; 47 rows),
+Tests: `ExtGlobScannerTests` (compile-shape + error codes - 47 rows),
 `ExtGlobPositiveMatchTests` (~110 rows across `?` / `@` / `+` / `*`),
 `ExtGlobNegationMatchTests` (33 rows for `!`).
 
@@ -176,24 +176,24 @@ exactly" as failing because `*` matches the empty slice).
 - **Ref:** [fnmatch(3) FNM_EXTMATCH](https://man7.org/linux/man-pages/man3/fnmatch.3.html),
   [bash Pattern Matching](https://www.gnu.org/software/bash/manual/html_node/Pattern-Matching.html).
 
-### F1.4 Bring `AllowExtGlob` online for Bash &mdash; **done**
+### F1.4 Bring `AllowExtGlob` online for Bash - **done**
 
 `Bash` dialect compiles patterns with extglob enabled when `shopt -s extglob`
 is set, off otherwise. Touki's user opts in via `GlobOptions.AllowExtGlob`
-explicitly &mdash; matches what the consumer has to do in bash. The
+explicitly - matches what the consumer has to do in bash. The
 oracle parity check lives in `ExtGlobOracleTests.Bash` (~552 rows across
 24 patterns &times; 23 inputs) and runs against `bash -O extglob -O globstar`
 via `BashInterop`. Skipped automatically on macOS (bash 3.2 too divergent).
 
 ---
 
-## Phase 2 &mdash; path-aware matching
+## Phase 2 - path-aware matching
 
 Goal: support five dialects whose distinguishing feature is path-mode
 matching. The bytecode interpreter is path-unaware today; this phase adds
 the separator-aware machinery.
 
-### F2.1 Separator-aware `Any` and `AnyRun` &mdash; **done**
+### F2.1 Separator-aware `Any` and `AnyRun` - **done**
 
 Add a `pathMode` flag and a `Separator` char to `CompiledGlobMatcher`
 (passed in by the factory; the char comes from
@@ -205,7 +205,7 @@ When path mode is set:
 - A separate `GlobStar` op ([F2.2](#f22--globstar)) is the only thing that
   crosses separators.
 
-Only one separator char is considered &mdash; the matcher assumes inputs are
+Only one separator char is considered - the matcher assumes inputs are
 normalized to that char (D2). No per-character dual-separator branching.
 
 - **Status:** Shipped on this branch. `Separator` is now a `char` property
@@ -218,7 +218,7 @@ normalized to that char (D2). No per-character dual-separator branching.
   `PosixPath` at the time this slice landed; the remaining path-aware
   dialects (`Bash`, `Git`, `MSBuild`, `FileSystemGlobbing`) and the
   `AllowGlobStar` option were gated to `FeatureNotEnabled` until F2.2
-  shipped globstar &mdash; all are now accepted (see F2.2 / F2.3).
+  shipped globstar - all are now accepted (see F2.2 / F2.3).
 - **Factory routing:** Path-aware patterns skip the specialized
   `Prefix`/`Suffix`/`Contains`/`PrefixSuffix` matchers (none of those
   track the separator yet) and route to `CompiledGlobMatcher`. Pure
@@ -231,22 +231,22 @@ normalized to that char (D2). No per-character dual-separator branching.
   `IgnoreCaseKindTests` rows for `IsPathAware` and `DefaultSeparator`
   across all dialects. Full glob suite: 199 tests, green on both
   net481 and net10.0.
-- **Known follow-up &mdash; per-segment leading-dot:** The current
+- **Known follow-up - per-segment leading-dot:** The current
   `MatchLeadingDot` check only consults `input[0]`. POSIX path-mode
   `FNM_PERIOD` actually applies at the start of *each* path segment, so
   `*/x` against `.foo/x` should fail when `MatchLeadingDot` is off.
   Implementing this requires the NFA to track segment boundaries
-  during `AnyRun` expansion. Deferred &mdash; track alongside F2.2 work
+  during `AnyRun` expansion. Deferred - track alongside F2.2 work
   since globstar's segment-walking machinery will produce the same
   boundary tracking for free.
-- **Specialized-matcher path-aware support &mdash; deferred:** The
+- **Specialized-matcher path-aware support - deferred:** The
   plan called for `Prefix/Suffix/Contains/PrefixSuffix` to grow
   separator-aware fast paths. Treating those as a perf follow-up keeps
   this slice focused; `CompiledGlobMatcher` handles them correctly
   today and any perf delta only matters once a path-aware benchmark
   exists.
 
-### F2.2 `**` (globstar) &mdash; **done**
+### F2.2 `**` (globstar) - **done**
 
 A new opcode `GlobStar` distinct from `AnyRun`. Matches zero or more path
 segments including the separators between them. Honors `GlobOptions.AllowGlobStar`
@@ -288,7 +288,7 @@ Subtleties (all handled by the shipped implementation):
   characters collapse correctly so `a/**/b` matches `a/b` (zero
   directories).
 
-### F2.3 Path-aware dialects on top of F2.1 + F2.2 &mdash; **done for `MSBuild` / `Bash` / `FileSystemGlobbing` / `Git`**
+### F2.3 Path-aware dialects on top of F2.1 + F2.2 - **done for `MSBuild` / `Bash` / `FileSystemGlobbing` / `Git`**
 
 Once F2.1 and F2.2 land, five dialects become a thin wrapping job. Globstar
 defaults are per [D1](#d1-allowglobstar-is-dialect-defaulted); separator
@@ -298,7 +298,7 @@ defaults are per
 | Dialect | `pathMode` | Globstar default | Separator default | Status | Notes |
 |---|---|---|---|---|---|
 | `PosixPath` | yes | off (opt in via `AllowGlobStar`) | `ForwardSlash` | **done** | `FNM_PATHNAME` |
-| `Bash` | yes | off (opt in &mdash; matches `shopt -s globstar`) | `ForwardSlash` | **done** (extglob via `AllowExtGlob` still pending in F1.3) | classes + `\`-escape supported |
+| `Bash` | yes | off (opt in - matches `shopt -s globstar`) | `ForwardSlash` | **done** (extglob via `AllowExtGlob` still pending in F1.3) | classes + `\`-escape supported |
 | `Git` | yes | on | `ForwardSlash` | **done** (F3.1 + F3.2 markers included) | implicit globstar; strips `!`, leading `/`, trailing `/` |
 | `MSBuild` | yes | on | `ForwardSlash` | **done** | case-insensitive by default; no escape char; see below |
 | `FileSystemGlobbing` | yes | on | `ForwardSlash` | **done** | no classes; no escape character; case folding follows `IgnoreCase` flag |
@@ -308,7 +308,7 @@ defaults are per
 - Allowed in `GlobMatcher.TryCompile` (was previously gated).
 - `GlobDialectExtensions.DefaultIgnoreCaseKind` returns
   `IgnoreCaseKind.Unicode` for `MSBuild` regardless of the
-  `GlobOptions.IgnoreCase` flag &mdash; matches MSBuild's documented
+  `GlobOptions.IgnoreCase` flag - matches MSBuild's documented
   case-insensitive behavior.
 - `GlobDialectExtensions.GetEscapeChar` returns `'\0'` for `MSBuild`
   (MSBuild has no escape character).
@@ -341,7 +341,7 @@ defaults are per
     repo).
   - `FileSystemGlobbing`: `Matcher.AddInclude(pattern).Match(...)`.
 
-### F2.4 Wire `GlobPathSeparator` option &mdash; **done**
+### F2.4 Wire `GlobPathSeparator` option - **done**
 
 Implement the enum and `Compile` overload from
 [D2](#d2-matcher-requires-normalized-input-paths-separator-is-chosen-at-compile-time).
@@ -369,12 +369,12 @@ No cross-platform `\` &harr; `/` translation in the matcher; the contract is
 
 ---
 
-## Phase 3 &mdash; `.gitignore` specifics
+## Phase 3 - `.gitignore` specifics
 
 Git's `.gitignore` syntax adds three orthogonal features on top of generic
 path-aware globs:
 
-### F3.1 Leading `!` negation &mdash; **done**
+### F3.1 Leading `!` negation - **done**
 
 A pattern starting with `!` inverts the match. Used in `.gitignore` to
 re-include a file that an earlier pattern excluded.
@@ -389,12 +389,12 @@ re-include a file that an earlier pattern excluded.
 - **Tests:** Negation theory rows + property assertions added in
   `GlobMatcherTests` under the Git section.
 
-### F3.2 Leading `/` anchor + trailing `/` directory-only &mdash; **done**
+### F3.2 Leading `/` anchor + trailing `/` directory-only - **done**
 
 The factory recognizes both markers and strips them from the pattern,
 exposing each as a read-only property on the matcher
 ([D3](#d3-gitignore-directory-only--and-git-specific-attribute-filters-belong-on-the-enumerator)).
-`IsMatch` itself is unchanged &mdash; it answers "does this string match this
+`IsMatch` itself is unchanged - it answers "does this string match this
 pattern?" regardless of file-system attributes. The directory-only flag is
 enforced by the `MatchEnumerator` (when it ships) using `FileAttributes`,
 not by the matcher.
@@ -410,7 +410,7 @@ not by the matcher.
   belongs to the `GlobMatchAdapter` / enumerator layer and ships with
   the F3.3 segment-pruning follow-up.
 
-### F3.3 `GlobMatcher` &rarr; `IEnumerationMatcher` adapter; sets via `MatchSet` &mdash; **partial (adapter + enumerator done; `MatchSet` composition pending)**
+### F3.3 `GlobMatcher` &rarr; `IEnumerationMatcher` adapter; sets via `MatchSet` - **partial (adapter + enumerator done; `MatchSet` composition pending)**
 
 `.gitignore`, MSBuild item-lists, and `Microsoft.Extensions.FileSystemGlobbing.Matcher`
 all evaluate **lists** of patterns, not single patterns. Some patterns
@@ -465,7 +465,7 @@ benchmark exists.
 **Shipped on this branch:**
 
 - [`Touki.Io.Globbing.GlobMatcher`](../touki/Touki/Io/Globbing/GlobMatcher.cs)
-  &mdash; the matcher base class itself implements
+  - the matcher base class itself implements
   [`IEnumerationMatcher`](../touki/Touki/Io/IEnumerationMatcher.cs)
   directly. Setting `GlobMatcher.RootDirectory` opts the matcher in to
   path-relative enumeration; the matcher absorbs the per-directory
@@ -482,7 +482,7 @@ benchmark exists.
   `IsMatch(ReadOnlySpan<char>)` stays as the convenience entry point
   for unit tests and one-shot callers.
 - [`Touki.Io.GlobEnumerator`](../touki/Touki/Io/GlobEnumerator.cs)
-  &mdash; a `MatchEnumerator<string>` factory mirroring
+  - a `MatchEnumerator<string>` factory mirroring
   `MSBuildEnumerator`'s strip-project-directory shape. When there are
   no excludes, the compiled `GlobMatcher` is passed directly as the
   `IEnumerationMatcher`; with excludes, the include matcher plus one
@@ -504,7 +504,7 @@ benchmark exists.
 
 **Still pending:**
 
-- Per-directory cached NFA state &mdash; **done.** The matcher caches
+- Per-directory cached NFA state - **done.** The matcher caches
   the translated relative-directory prefix per directory and
   invalidates it on `DirectoryFinished()`, plus a three-valued
   `PrefixAlignment` derived from `GlobMatcher.LiteralPathPrefix`
@@ -514,7 +514,7 @@ benchmark exists.
   span and the raw file-name span to the matcher without any join.
   Both `LiteralGlobMatcher` and
   [`CompiledGlobMatcher`](../touki/Touki/Io/Globbing/CompiledGlobMatcher.cs)
-  override natively &mdash; the four match loops
+  override natively - the four match loops
   (`MatchOrdinalSimple`, `MatchIgnoreCaseSimple`, `MatchOrdinal`,
   `MatchIgnoreCase`), plus `Backtrack`,
   `FirstValidGlobStarLength`, `NextValidGlobStarLength`, and the
@@ -523,11 +523,11 @@ benchmark exists.
   pattern and a `LiteralMatchesAt` straddle-aware compare helper that
   preserves the vectorized `SequenceEqual` / `EqualsOrdinalIgnoreCase`
   / `EqualsAsciiLetterIgnoreCase` paths on contiguous slices. Per-file
-  work is now `O(pattern complexity)` &mdash; no `CopyTo` of the file
+  work is now `O(pattern complexity)` - no `CopyTo` of the file
   name, no allocation, no pool rental. Full parity with
   [`MatchMSBuild`](../touki/Touki/Io/MatchMSBuild.cs)'s
   rents-nothing-allocates-nothing contract.
-- One-time OS-separator pattern normalization &mdash; **done.**
+- One-time OS-separator pattern normalization - **done.**
   [`GlobMatcherFactory.TryCreate`](../touki/Touki/Io/Globbing/GlobMatcherFactory.cs)
   translates cross-separator characters in the pattern to the resolved
   separator at compile time for dialects with no escape character
@@ -541,14 +541,14 @@ benchmark exists.
   written with portable `/` slashes. Dialects with `\` escape
   (POSIX-family, Bash, Git, PowerShell) skip normalization so escape
   sequences are not corrupted.
-- Segment-level `MatchesDirectory` pruning &mdash; **partial.**
+- Segment-level `MatchesDirectory` pruning - **partial.**
   `MatchesDirectory` already returns `false` for diverged candidates
   with a non-empty literal prefix. Patterns whose literal prefix is
   empty (e.g., `**/*.cs`) still recurse unconditionally; pruning those
   requires a separator-checkpointed NFA savepoint API on the matcher
   (different from the two-span walk above) and is its own follow-up.
-- `MatchSet` composition for matchers &mdash; **done.**
-- `RootAnchored` / `DirectoryOnly` enforcement &mdash; **done.**
+- `MatchSet` composition for matchers - **done.**
+- `RootAnchored` / `DirectoryOnly` enforcement - **done.**
   Per-decision wiring:
   <list type="bullet">
    <item><description>Non-anchored Git patterns: the factory recognizes the
@@ -556,7 +556,7 @@ benchmark exists.
     to Git patterns without an internal separator. Patterns with an internal
     <c>/</c> stay anchored to the gitignore root.</description></item>
    <item><description><see cref="GlobMatcher.MatchesFile"/> short-circuits
-    when <see cref="GlobMatcher.DirectoryOnly"/> is set &mdash; directory-only
+    when <see cref="GlobMatcher.DirectoryOnly"/> is set - directory-only
     patterns never match files.</description></item>
    <item><description><see cref="GlobMatcher.MatchesDirectory"/> with
     <c>matchForExclusion=true</c> consults
@@ -564,7 +564,7 @@ benchmark exists.
     the candidate directory's relative path, the whole subtree is claimed
     for exclusion.</description></item>
   </list>
-- **`OrderedMatchSet`** &mdash; new
+- **`OrderedMatchSet`** - new
   [`Touki.Io.OrderedMatchSet`](../touki/Touki/Io/OrderedMatchSet.cs)
   aggregator implementing gitignore "last matching rule wins" semantics.
   Rules are added via <c>AddInclude</c> / <c>AddExclude</c> in source order.
@@ -572,7 +572,7 @@ benchmark exists.
   rule's verdict. At directory-match time the set only claims subtrees when
   a <c>DirectoryOnly</c> exclude matches AND no later include rule could
   rescue a deeper file; conservative recursion otherwise.
-- **`GitIgnore`** &mdash; new
+- **`GitIgnore`** - new
   [`Touki.Io.GitIgnore`](../touki/Touki/Io/GitIgnore.cs) static loader.
   `Parse(content, root, options)` parses a <c>.gitignore</c> file body
   (comments via leading <c>#</c>, blank lines, <c>\#</c> / <c>\!</c>
@@ -584,7 +584,7 @@ benchmark exists.
 
 ---
 
-## Phase 4 &mdash; brace expansion (`Bash` only)
+## Phase 4 - brace expansion (`Bash` only)
 
 `*.{jpg,jpeg,png}` expands to three separate patterns before glob matching.
 Pure macro substitution, no NFA changes.
@@ -600,7 +600,7 @@ Pure macro substitution, no NFA changes.
 
 ---
 
-## Phase 5 &mdash; POSIX bracket-expression extras &mdash; **done**
+## Phase 5 - POSIX bracket-expression extras - **done**
 
 The current bracket scanner accepts `[abc]`, `[a-z]`, and `[!negated]`. The
 full POSIX bracket-expression grammar also includes:
@@ -609,7 +609,7 @@ full POSIX bracket-expression grammar also includes:
   the brackets, e.g. `[[:alpha:]_]`.
 - **Equivalence classes:** `[=e=]` matches `e`, `é`, `è`, etc. per locale.
 - **Collating elements:** `[.ch.]` matches a single collation element. In the
-  C locale this is identical to `c` followed by `h` &mdash; basically never
+  C locale this is identical to `c` followed by `h` - basically never
   useful outside locale-aware libc.
 
 - **Status:** Shipped on this branch. `EmitClass` recognizes the
@@ -646,7 +646,7 @@ force a kind independent of the dialect.
 regardless of `IgnoreCaseKind`. For Unicode-IC dialects with character
 classes containing non-ASCII characters this is incorrect. Becomes
 user-visible only after Phase 2 (when MSBuild/FileSystemGlobbing patterns
-start hitting class membership at scale) &mdash; defer until there's a
+start hitting class membership at scale) - defer until there's a
 failing test.
 
 ### Match-time perf (
@@ -660,7 +660,7 @@ failing test.
 
 ---
 
-## Oracle tests &mdash; reference sources per dialect
+## Oracle tests - reference sources per dialect
 
 To validate `GlobMatcher`'s behavior on each dialect we want
 &quot;oracle&quot; tests that compare our result against a reference
@@ -673,12 +673,12 @@ platform constraints for running it.
 |---|---|---|---|
 | `Posix` | `fnmatch(3)` (POSIX) without `FNM_PATHNAME` | P/Invoke <c>libc</c> / <c>libSystem.B.dylib</c>, or shell-out to <c>python -c &quot;import fnmatch; ...&quot;</c> | Linux/macOS native; WSL on Windows |
 | `PosixPath` | `fnmatch(3)` with `FNM_PATHNAME` flag set | Same P/Invoke; Python `pathlib.PurePath.match` is approximate, not exact | Linux/macOS native; WSL on Windows |
-| `Simple` | [`System.IO.Enumeration.FileSystemName.MatchesSimpleExpression`](https://learn.microsoft.com/dotnet/api/system.io.enumeration.filesystemname.matchessimpleexpression) | Direct managed call | Any TFM net5+ &mdash; **net10 test project, cross-platform** |
+| `Simple` | [`System.IO.Enumeration.FileSystemName.MatchesSimpleExpression`](https://learn.microsoft.com/dotnet/api/system.io.enumeration.filesystemname.matchessimpleexpression) | Direct managed call | Any TFM net5+ - **net10 test project, cross-platform** |
 | `PowerShell` | [`System.Management.Automation.WildcardPattern`](https://learn.microsoft.com/dotnet/api/system.management.automation.wildcardpattern) | Reference `System.Management.Automation` (Windows PowerShell SDK / pwsh SDK), or subprocess to <c>pwsh -c</c> | SMA assembly is Windows-only by default; <c>pwsh</c> subprocess works cross-platform if PowerShell 7+ is installed |
-| `Win32` | [`System.IO.Enumeration.FileSystemName.MatchesWin32Expression`](https://learn.microsoft.com/dotnet/api/system.io.enumeration.filesystemname.matcheswin32expression) | Direct managed call (algorithm is pure managed) | Any TFM net5+ &mdash; **net10 test project, cross-platform**. Cross-check against <c>RtlIsNameInExpression</c> P/Invoke on Windows-only |
+| `Win32` | [`System.IO.Enumeration.FileSystemName.MatchesWin32Expression`](https://learn.microsoft.com/dotnet/api/system.io.enumeration.filesystemname.matcheswin32expression) | Direct managed call (algorithm is pure managed) | Any TFM net5+ - **net10 test project, cross-platform**. Cross-check against <c>RtlIsNameInExpression</c> P/Invoke on Windows-only |
 | `Bash` | <c>bash -O extglob -O globstar -c '[[ &quot;$input&quot; == $pattern ]] ; echo $?'</c> | Subprocess to <c>bash</c> on PATH | bash 4.0+ native on Linux/macOS; Git Bash or WSL on Windows |
-| `MSBuild` | [`Microsoft.Build.Globbing.MSBuildGlob.Parse(pattern).IsMatch(input)`](https://learn.microsoft.com/dotnet/api/microsoft.build.globbing.msbuildglob) | Direct managed call (NuGet: `Microsoft.Build`) | Any TFM net472+ &mdash; **already referenced via `FileMatcherWrapper` for the enumeration parity check** |
-| `FileSystemGlobbing` | [`Microsoft.Extensions.FileSystemGlobbing.Matcher`](https://learn.microsoft.com/dotnet/api/microsoft.extensions.filesystemglobbing.matcher) | Direct managed call (NuGet: `Microsoft.Extensions.FileSystemGlobbing`) | Any TFM netstandard2.0+ &mdash; **cross-platform** |
+| `MSBuild` | [`Microsoft.Build.Globbing.MSBuildGlob.Parse(pattern).IsMatch(input)`](https://learn.microsoft.com/dotnet/api/microsoft.build.globbing.msbuildglob) | Direct managed call (NuGet: `Microsoft.Build`) | Any TFM net472+ - **already referenced via `FileMatcherWrapper` for the enumeration parity check** |
+| `FileSystemGlobbing` | [`Microsoft.Extensions.FileSystemGlobbing.Matcher`](https://learn.microsoft.com/dotnet/api/microsoft.extensions.filesystemglobbing.matcher) | Direct managed call (NuGet: `Microsoft.Extensions.FileSystemGlobbing`) | Any TFM netstandard2.0+ - **cross-platform** |
 | `Git` (pattern-level) | <c>git check-ignore --no-index --verbose -- &lt;path&gt;</c> against a temporary <c>.gitignore</c> | Subprocess to <c>git</c> on PATH | Git installed on all major platforms |
 | `Git` (in-process) | [`LibGit2Sharp`](https://github.com/libgit2/libgit2sharp) <c>Repository.Ignore.IsPathIgnored</c> | NuGet: `LibGit2Sharp` (native lib bundled) | Cross-platform; LibGit2Sharp ships native binaries for Windows/Linux/macOS |
 
@@ -707,7 +707,7 @@ platform constraints for running it.
   both `pattern` and `input` as bash variables (not interpolated into the
   command string) to avoid shell-quoting nightmares with <c>*</c>, <c>?</c>,
   brackets, and escapes. The result is the exit code of the `[[ ... == ... ]]`
-  test. Per-call cost is ~10&ndash;30 ms on Linux native, ~50&ndash;100 ms via
+  test. Per-call cost is ~10-30 ms on Linux native, ~50-100 ms via
   Git Bash on Windows; theory size should be bounded accordingly.
 - **`MSBuild`** and **`FileSystemGlobbing`** are the cheapest oracle paths
   for path-aware dialects. Both are pure managed, no subprocess, and the
@@ -717,10 +717,10 @@ platform constraints for running it.
   the context of a <c>.gitignore</c> file plus a working tree. The simplest
   setup is a per-test scratch directory containing a single-line
   <c>.gitignore</c> + a touched file, then <c>git check-ignore</c>. Per-call
-  cost is ~30&ndash;80 ms. For a high-row theory, batch multiple patterns
+  cost is ~30-80 ms. For a high-row theory, batch multiple patterns
   into one <c>.gitignore</c> and one <c>git check-ignore</c> invocation per
   batch.
-- **`Git` (in-process)** via `LibGit2Sharp` is faster (~1&ndash;5 ms per
+- **`Git` (in-process)** via `LibGit2Sharp` is faster (~1-5 ms per
   query) but adds a native-binary dependency to the test project. Worth it
   for high-row Git theories, optional for small ones.
 
@@ -752,7 +752,7 @@ platforms via `Microsoft.PowerShell.SDK` if the test surface grows.
    The `MatchesSimpleExpression` / `MatchesWin32Expression` algorithms are
    already in the BCL, so the test class is a thin theory comparing
    `GlobMatcher.Compile(..., Simple).IsMatch(input)` against the BCL.
-2. **`MSBuild` oracle** via `MSBuildGlob.Parse` &mdash; complements the
+2. **`MSBuild` oracle** via `MSBuildGlob.Parse` - complements the
    existing enumeration parity check by isolating the pattern-level match.
 3. **`FileSystemGlobbing` oracle** via `Matcher.AddInclude(pattern).Match`
    for path-aware semantics.
@@ -769,11 +769,11 @@ rows covering the dialect's own characteristic features (e.g.,
 POSIX bracket classes, MSBuild `**/`-style globstar, gitignore
 `!` re-includes). The oracle invocation is gated by a static
 `[ConditionalFact]`-style attribute or by the test class's TFM/OS
-constraints; failures should report &quot;pattern X input Y &ndash;
+constraints; failures should report &quot;pattern X input Y -
 matcher returned Z, oracle returned W&quot; so divergences are
 self-diagnosing.
 
-### Sequential-separator behavior &mdash; findings (in-progress)
+### Sequential-separator behavior - findings (in-progress)
 
 First oracle suite landed: per-dialect `[Theory]` covering runs of
 sequential `/` in the **pattern** (doubled, tripled, quadrupled, leading,
@@ -783,18 +783,18 @@ file under
 
 Empirical ground truth captured by running each row through both the
 oracle and `GlobMatcher` for the dialect. The table below states the
-dialect's own rule, established by the oracle &mdash; not what touki
+dialect's own rule, established by the oracle - not what touki
 currently does.
 
 | Dialect | Sequential separators in the pattern | Notes |
 |---|---|---|
-| `MSBuild` | **Coalesced**: a run of `/` after the first character collapses to a single `/`, both at pattern-parse time and at input-match time. A *leading* `//` is preserved as a UNC-style root anchor. | `a//b` &equiv; `a///b` &equiv; `a/b` (matches inputs `a/b`, `a//b`, `a///b`). `**//*.cs` &equiv; `**/*.cs`. `a//**//b` &equiv; `a/**/b`. `//a` only matches `//a` &mdash; the leading double-separator is not collapsed. |
+| `MSBuild` | **Coalesced**: a run of `/` after the first character collapses to a single `/`, both at pattern-parse time and at input-match time. A *leading* `//` is preserved as a UNC-style root anchor. | `a//b` &equiv; `a///b` &equiv; `a/b` (matches inputs `a/b`, `a//b`, `a///b`). `**//*.cs` &equiv; `**/*.cs`. `a//**//b` &equiv; `a/**/b`. `//a` only matches `//a` - the leading double-separator is not collapsed. |
 | `FileSystemGlobbing` | **Not coalesced**: an internal empty pattern segment between two `/` is a one-non-empty-segment wildcard (i.e. `*`). Leading empty segments are dropped; trailing empty segments are tolerated via input-side normalization. | `a//b` &equiv; `a/*/b` (matches `a/x/b`, *not* `a/b` and *not* `a//b`). `**//*.cs` &equiv; `**/*/*.cs` (does *not* match `Foo.cs`; requires at least one intermediate component). `//a` &equiv; `a`. `a//` matches `a/` and `a//`. |
 | `Simple` | **Not coalesced**: `/` is a plain literal character with no separator role. Runs are preserved verbatim on both sides. | `a//b` matches *only* `a//b`. No special handling of leading or trailing `/`. Validated against [`FileSystemName.MatchesSimpleExpression`](https://learn.microsoft.com/dotnet/api/system.io.enumeration.filesystemname.matchessimpleexpression). |
-| `Git` | **Touki already agrees with `LibGit2Sharp`** &mdash; all 21 sequential-separator rows pass. Empirically, the gitignore evaluator treats embedded `//` as a literal empty segment that fails to match any normal path component, so most `a//b` / `**//*.cs` / `a//**//b` patterns simply never match real files. Touki produces the same verdicts. | Pinned via [`LibGit2Sharp.Repository.Ignore.IsPathIgnored`](https://github.com/libgit2/libgit2sharp). Cross-platform; oracle runs on every CI runner. |
+| `Git` | **Touki already agrees with `LibGit2Sharp`** - all 21 sequential-separator rows pass. Empirically, the gitignore evaluator treats embedded `//` as a literal empty segment that fails to match any normal path component, so most `a//b` / `**//*.cs` / `a//**//b` patterns simply never match real files. Touki produces the same verdicts. | Pinned via [`LibGit2Sharp.Repository.Ignore.IsPathIgnored`](https://github.com/libgit2/libgit2sharp). Cross-platform; oracle runs on every CI runner. |
 | `Posix`, `PosixPath` | **Not coalesced**: runs of `/` are preserved verbatim in the pattern; `fnmatch(3)` (with or without `FNM_PATHNAME`) treats each `/` as a literal. Validated against P/Invoke <c>fnmatch(3)</c> on Linux. | All rows green on Linux. Encapsulated in [`FnmatchInterop`](../touki.tests/Touki/Io/Globbing/FnmatchInterop.cs); the glibc/macOS `FNM_PATHNAME` bit difference is the only platform-specific detail. |
 | `Bash` (with `extglob` + `globstar`) | **Not coalesced**: bash's `[[ str == pat ]]` preserves runs of `/` in the pattern. Validated against <c>bash -O extglob -O globstar -c '[[ "$INPUT" == $PATTERN ]]'</c>, with pattern/input passed through env vars to side-step shell quoting. | All rows green on Linux native bash and Windows Git Bash. |
-| `PowerShell`, `Win32` | _TBD._ `Win32` is not implemented in touki's compile yet; oracle suite deferred. `PowerShell` requires `System.Management.Automation` (Windows-only in net481, `Microsoft.PowerShell.SDK` cross-platform on net10) &mdash; deferred to avoid bloating the test project until needed. | &nbsp; |
+| `PowerShell`, `Win32` | _TBD._ `Win32` is not implemented in touki's compile yet; oracle suite deferred. `PowerShell` requires `System.Management.Automation` (Windows-only in net481, `Microsoft.PowerShell.SDK` cross-platform on net10) - deferred to avoid bloating the test project until needed. | &nbsp; |
 
 **Implementation status vs. the contract above.** All compile-time
 normalization landed in `GlobMatcherFactory.TryNormalizeRuns` plus
@@ -818,10 +818,10 @@ green on Windows:
 
 The Posix-family (Linux/macOS oracles via P/Invoke `fnmatch` and `bash`
 subprocess) and `PowerShell` / `Win32` rules will be added to the table
-above once their oracle runs produce data &mdash; the Posix/PosixPath/Bash
+above once their oracle runs produce data - the Posix/PosixPath/Bash
 suites are checked in and ready, just skipped on Windows hosts.
 
-### Multiple-asterisk-run behavior &mdash; findings (in-progress)
+### Multiple-asterisk-run behavior - findings (in-progress)
 
 Second oracle suite landed: per-dialect `[Theory]` covering runs of
 three-or-more consecutive `*` in the **pattern** (`***`, `****`),
@@ -832,12 +832,12 @@ with the 26 shared rows in [MultipleAsteriskRows.cs](../touki.tests/Touki/Io/Glo
 | Dialect | Multi-asterisk-run rule | Touki status |
 |---|---|---|
 | `MSBuild` | **A pattern containing 3 or more consecutive `*` matches nothing.** `MSBuildGlob.Parse` parses the pattern but the resulting glob rejects every input (true for `***`, `a***b`, `a/***/b`, `***/foo`, etc.). The parser only recognizes `*` and `**` as wildcard tokens; anything longer poisons the match. | **26 / 26 green.** Compile-time normalization routes any pattern with a 3+ `*` run to `NeverMatchGlobMatcher`. |
-| `FileSystemGlobbing` | **`***`+ collapses to a single `*` (one path component, does not cross `/`).** `a***b` &equiv; `a*b`, `***/foo` &equiv; `*/foo`, `a/***/b` &equiv; `a/*/b`. Notably *not* equivalent to `**` &mdash; a run of `*` never gains globstar semantics. | **26 / 26 green.** Compile-time `***`+ &rarr; `*` plus `DisallowEmptyInput = true` to match `Matcher`'s empty-input rejection. |
+| `FileSystemGlobbing` | **`***`+ collapses to a single `*` (one path component, does not cross `/`).** `a***b` &equiv; `a*b`, `***/foo` &equiv; `*/foo`, `a/***/b` &equiv; `a/*/b`. Notably *not* equivalent to `**` - a run of `*` never gains globstar semantics. | **26 / 26 green.** Compile-time `***`+ &rarr; `*` plus `DisallowEmptyInput = true` to match `Matcher`'s empty-input rejection. |
 | `Simple` | **`***`+ behaves like `*` for any non-empty input.** Path-unaware. One outlier: `***` does not match the empty string in the BCL while touki currently matches it. | **26 / 26 green.** Compile-time `***`+ &rarr; `*` plus `DisallowEmptyInput = true` to match `MatchesSimpleExpression`'s blanket empty-input rejection. |
 | `Git` | **`***`+ behaves like `**` (globstar across path components)** in `wildmatch`. `***` matches every file in the tree; `a/***` matches `a/b` and `a/b/c` but not `a/` alone; `a/***/b` matches every depth `a/.../b`. | **25 / 26 green, 1 documented divergence.** Compile-time `***`+ &rarr; `**` plus `DisallowEmptyInput = true`. The remaining row (`a/***` vs `a/`) is gitignore's "trailing globstar requires &ge;1 input segment" rule, which our engine's `GlobStar` opcode doesn't enforce. Skipped with reason; trivial engine fix when needed. |
-| `Bash` (with `extglob` + `globstar`) | **`***`+ behaves like `**` (globstar)** under `globstar`. Crosses path separators, with the standard globstar carve-out that a `**` enclosed by separators (e.g. `***/foo`) requires at least one path component on its globstar side. | **22 / 26 green, 4 documented divergences.** Compile-time `***`+ &rarr; `**`. The remaining four rows are the shell-glob vs `[[ == ]]` semantic split &mdash; touki models bash's *shell-glob* `**` (segment-bounded; `*` doesn't cross `/`); the oracle uses bash's *string-match* `[[ ]]` semantics. Closing these needs a per-context flag; deferred until a real user need. |
+| `Bash` (with `extglob` + `globstar`) | **`***`+ behaves like `**` (globstar)** under `globstar`. Crosses path separators, with the standard globstar carve-out that a `**` enclosed by separators (e.g. `***/foo`) requires at least one path component on its globstar side. | **22 / 26 green, 4 documented divergences.** Compile-time `***`+ &rarr; `**`. The remaining four rows are the shell-glob vs `[[ == ]]` semantic split - touki models bash's *shell-glob* `**` (segment-bounded; `*` doesn't cross `/`); the oracle uses bash's *string-match* `[[ ]]` semantics. Closing these needs a per-context flag; deferred until a real user need. |
 | `Posix`, `PosixPath` | All 26 rows green on Linux against `fnmatch(3)` with and without `FNM_PATHNAME`. Compile-time `***`+ &rarr; `*` matches `fnmatch` exactly. Suites skip on Windows. | **26 / 26 green** (Linux). |
-| `PowerShell`, `Win32` | TBD &mdash; oracle not implemented (see notes above). | &nbsp; |
+| `PowerShell`, `Win32` | TBD - oracle not implemented (see notes above). | &nbsp; |
 
 Cross-dialect summary: **only `Bash` and `Git` give `***`+ a globstar
 meaning. Every other dialect treats it as either invalid (MSBuild) or as
@@ -848,7 +848,7 @@ implemented compile-time normalization is dialect-specific:
 - `FileSystemGlobbing`, `Simple`, `Posix` &rarr; collapse runs to a single `*`.
 - `Git`, `Bash` &rarr; collapse runs to `**` (globstar).
 
-### Normalization implementation &mdash; landed, with documented gaps
+### Normalization implementation - landed, with documented gaps
 
 The dialect-specific rules above are implemented as a compile-time pass
 in [`GlobMatcherFactory.TryNormalizeRuns`](../touki/Touki/Io/Globbing/GlobMatcherFactory.cs)
@@ -889,14 +889,14 @@ compile-time normalization; each is marked with `Assert.Skip` and a
 documented reason so the test suite goes fully green while the
 divergence stays catalogued:
 
-- **Bash dialect, 4 rows** &mdash; `***/foo` vs `foo`, `***.cs` vs
+- **Bash dialect, 4 rows** - `***/foo` vs `foo`, `***.cs` vs
   `a/foo.cs`, `a/***/b` vs `a/b`, `a***b` vs `a/b`. Touki's Bash dialect
   models bash's *shell-glob* `**` (segment-bounded; `*` does not cross
   `/`). The `[[ str == pat ]]` oracle uses bash's *string-match*
   semantics, where `*` matches any string including `/` and `**` doesn't
   get a distinct globstar meaning. Closing these needs a per-context
   flag distinguishing the two modes; deferred until a real user need.
-- **Git dialect, 1 row** &mdash; `a/***` (&rarr; `a/**`) vs `a/`. Touki's
+- **Git dialect, 1 row** - `a/***` (&rarr; `a/**`) vs `a/`. Touki's
   trailing globstar matches zero or more path components including the
   empty case; gitignore requires &ge;1. Closing this needs an engine
   flag on the trailing GlobStar opcode that suppresses the zero-segment
@@ -907,7 +907,7 @@ flagging for anyone touching the Bash oracle on Windows:
 
 - `BashInterop.ResolveBashPath` explicitly prefers Git for Windows
   install paths over `bash.exe` discovered on `PATH`, and skips
-  `%LocalAppData%\Microsoft\WindowsApps\bash.exe` &mdash; the WSL
+  `%LocalAppData%\Microsoft\WindowsApps\bash.exe` - the WSL
   launcher stub installed by `wsl --install`. The stub doesn't forward
   process-level environment variables (so the oracle's `PATTERN` /
   `INPUT` env vars come through empty) and doesn't handle `[[ ]]` the
@@ -937,7 +937,7 @@ its documented default; the flag is consulted only when set explicitly.
 | `Bash` | off (matches `shopt -s globstar` being off by default) |
 | `Git`, `MSBuild`, `FileSystemGlobbing` | on (their documented behavior) |
 
-Same pattern as `IgnoreCaseKind` &mdash; computed once in the factory from
+Same pattern as `IgnoreCaseKind` - computed once in the factory from
 `(Dialect, Options)` and stored on the matcher.
 
 ### D2. Matcher requires normalized input paths; separator is chosen at compile time
@@ -984,7 +984,7 @@ the new `GlobPathSeparator` enum.
 
 This replaces the earlier idea of accepting both separators on Windows for
 `MSBuild`/`FileSystemGlobbing`/`Win32`. If a consumer needs both, they
-normalize first &mdash; usually a single `ReadOnlySpan<char>` walk with
+normalize first - usually a single `ReadOnlySpan<char>` walk with
 `string.Replace` or a `Touki.Buffers` helper.
 
 ### D3. `.gitignore` directory-only `/` and Git-specific attribute filters belong on the enumerator
@@ -992,7 +992,7 @@ normalize first &mdash; usually a single `ReadOnlySpan<char>` walk with
 Trailing `/` (directory-only), leading `/` (root-anchor relative to the
 gitignore file), and the other path-attribute predicates are **not** the
 matcher's concern. `GlobMatcher.IsMatch(ReadOnlySpan<char>)` answers
-"does this string match this pattern?" &mdash; nothing more.
+"does this string match this pattern?" - nothing more.
 
 The directory-only flag, root anchor, and any future attribute predicates
 (symlink-only, hidden-only, ACL-based filters, etc.) are wired in at the
@@ -1057,7 +1057,7 @@ implementation of this pattern and the model to follow:
   many `MatchesFile` calls against it cheaply.
 - **Three-valued directory result.** `MatchesDirectory` distinguishes
   `FullMatch` (recurse and files match), `PartialMatch` (recurse only
-  &mdash; a deeper subdirectory may match), and `NoMatch` (skip the
+  - a deeper subdirectory may match), and `NoMatch` (skip the
   subtree entirely). `IEnumerationMatcher.MatchesDirectory` collapses
   partial vs full to a single bool, but uses `matchForExclusion` so a
   partial-match exclude doesn't block recursion. Path-aware glob
@@ -1076,7 +1076,7 @@ implementation of this pattern and the model to follow:
 
 **Sets compose at this interface, not below it.** Multiple include /
 exclude patterns are aggregated through an `IEnumerationMatcher`
-composite &mdash; today
+composite - today
 [`MatchSet`](../touki/Touki/Io/MatchSet.cs) does exactly this for the MSBuild
 matcher (excludes first, includes second, breadth-first cache invalidation
 fanned out to every child). There is no separate parallel "GlobSet"
@@ -1085,7 +1085,7 @@ that is also path-aware exposes an `IEnumerationMatcher` adapter (or
 implements the interface directly), and consumers compose them with
 `MatchSet`. This keeps the include/exclude evaluation order, the
 per-directory cache invalidation, and the partial-vs-full match
-collapse in one place &mdash; the same place MSBuild already uses &mdash;
+collapse in one place - the same place MSBuild already uses -
 and lets `MatchEnumerator<TResult>` drive a heterogeneous mix of glob
 dialects, MSBuild specs, and bespoke matchers through a single
 uniform call site.
@@ -1099,7 +1099,7 @@ Implementation implications:
 - F3.3 ships as a thin path-aware adapter (`GlobMatcher` &rarr;
   `IEnumerationMatcher`) plus documentation that users compose via
   `MatchSet`. The `GlobSet` aggregator originally sketched in this
-  doc is **dropped** &mdash; `MatchSet` covers the use case.
+  doc is **dropped** - `MatchSet` covers the use case.
 - Gitignore order-sensitivity (later override wins) is handled by
   configuring `MatchSet` accordingly or by adding an ordered variant
   alongside `MatchSet`; either way it lives at the `IEnumerationMatcher`
@@ -1113,20 +1113,20 @@ The cheapest items first, building toward the path-aware phase:
 
 | # | Item | Estimated effort | Unlocks |
 |---:|---|---|---|
-| 1 | F1.1 `PowerShell` dialect &mdash; **done** | ~half-day | One dialect closed |
-| 2 | F2.1 separator-aware `Any` / `AnyRun` &mdash; **done** | ~1 day | `PosixPath` dialect unlocked; lays the groundwork for F2.2 |
-| 3 | F2.2 `**` globstar &mdash; **done** | ~2&ndash;3 days | Four more path-aware dialects unblocked (Bash / Git / MSBuild / FileSystemGlobbing) |
-| 4 | F2.3 `MSBuild` / `Bash` / `FileSystemGlobbing` dialect wiring &mdash; **done** | ~1 day | Three more dialects closed |
-| 5 | F3.1 + F3.2 + Git dialect wiring &mdash; **done** | ~1 day | `Git` dialect feature-complete (`!`, leading `/`, trailing `/` markers exposed as init properties) |
-| 6 | F3.3 `IEnumerationMatcher` adapter + `GlobEnumerator` &mdash; **done (partial; no segment pruning, no `MatchSet` composition yet)** | ~1 day | Drives enumerator integration; perf comparison against `MsBuildEnumerator` |
-| 7 | F1.3 + F1.4 `AllowExtGlob` + Bash extglob wiring | ~2&ndash;3 days | One option closed; full `Bash` coverage; introduces savepoint-stack NFA reused by F1.2 |
-| 8 | F2.4 `GlobPathSeparator` option &mdash; **done** | ~half-day | Caller-controlled separator (forward-slash / back-slash / OS default) |
-| 9 | F3.3 segment-level pruning + `MatchSet` composition + `RootAnchored`/`DirectoryOnly` enforcement | ~1&ndash;2 days | Subtree skipping for literal-prefix excludes; mixed-dialect include/exclude sets; gitignore enforcement |
+| 1 | F1.1 `PowerShell` dialect - **done** | ~half-day | One dialect closed |
+| 2 | F2.1 separator-aware `Any` / `AnyRun` - **done** | ~1 day | `PosixPath` dialect unlocked; lays the groundwork for F2.2 |
+| 3 | F2.2 `**` globstar - **done** | ~2-3 days | Four more path-aware dialects unblocked (Bash / Git / MSBuild / FileSystemGlobbing) |
+| 4 | F2.3 `MSBuild` / `Bash` / `FileSystemGlobbing` dialect wiring - **done** | ~1 day | Three more dialects closed |
+| 5 | F3.1 + F3.2 + Git dialect wiring - **done** | ~1 day | `Git` dialect feature-complete (`!`, leading `/`, trailing `/` markers exposed as init properties) |
+| 6 | F3.3 `IEnumerationMatcher` adapter + `GlobEnumerator` - **done (partial; no segment pruning, no `MatchSet` composition yet)** | ~1 day | Drives enumerator integration; perf comparison against `MsBuildEnumerator` |
+| 7 | F1.3 + F1.4 `AllowExtGlob` + Bash extglob wiring | ~2-3 days | One option closed; full `Bash` coverage; introduces savepoint-stack NFA reused by F1.2 |
+| 8 | F2.4 `GlobPathSeparator` option - **done** | ~half-day | Caller-controlled separator (forward-slash / back-slash / OS default) |
+| 9 | F3.3 segment-level pruning + `MatchSet` composition + `RootAnchored`/`DirectoryOnly` enforcement | ~1-2 days | Subtree skipping for literal-prefix excludes; mixed-dialect include/exclude sets; gitignore enforcement |
 | 10 | F4 brace expansion | ~1 day | `Bash` feature-complete |
-| 11 | F5 POSIX bracket extras &mdash; **done** | ~half-day | `Posix` `[[:class:]]` parity |
-| &mdash; | F1.2 / F1.2b `Win32` + `WinNT` &mdash; **deferred, low priority** | ~2&ndash;3 days | Two dialects closed; needs dedicated `Win32GlobMatcher` (BCL `MatchPattern` port) |
+| 11 | F5 POSIX bracket extras - **done** | ~half-day | `Posix` `[[:class:]]` parity |
+| - | F1.2 / F1.2b `Win32` + `WinNT` - **deferred, low priority** | ~2-3 days | Two dialects closed; needs dedicated `Win32GlobMatcher` (BCL `MatchPattern` port) |
 
-Stop conditions between slices &mdash; same as
+Stop conditions between slices - same as
 [globbing-optimization-plan.md §4](globbing-optimization-plan.md#4-proposed-slice-order):
 each slice runs the full test suite on both TFMs and re-runs the relevant
 benchmark rows; zero match-time allocations on `IsMatch_DoesNotAllocate`.

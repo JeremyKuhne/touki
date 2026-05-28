@@ -13,7 +13,7 @@ namespace Touki.Io.Globbing;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   The interpreter does not yet recognize the new opcodes &#8212; that comes in
+///   The interpreter does not yet recognize the new opcodes - that comes in
 ///   step 3 of the F1.3 rollout. Until then runtime matching against an extglob
 ///   pattern silently returns <see langword="false"/>, which the compile-shape
 ///   tests in this file <i>don't</i> exercise (they inspect the emitted bytecode

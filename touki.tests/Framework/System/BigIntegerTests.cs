@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -1134,7 +1134,7 @@ public class BigIntegerTests
     public void HeuristicDivide_LargerDividend_RecoversFullQuotient()
     {
         // dividend = 7 * divisor + r where r < divisor. Construct dividend with
-        // simple primitives only (SetUInt64 + ShiftLeft + Add) — using more complex
+        // simple primitives only (SetUInt64 + ShiftLeft + Add) - using more complex
         // helpers triggers ref-struct escape analysis errors on net481 when the
         // resulting locals are passed by ref to other ref-struct methods.
         BigInteger.SetUInt32(out BigInteger divisor, 0x100u);

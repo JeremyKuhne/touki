@@ -9,12 +9,12 @@ under `BenchmarkDotNet.Artifacts/results/`.
 
 The numbers and disassembly in this document are pulled from a Raptor
 Lake i9-14900K running .NET 10.0.7 and .NET Framework 4.8.1. The shapes
-generalize to any net472+ target — there is one RyuJIT for desktop
+generalize to any net472+ target - there is one RyuJIT for desktop
 Framework and it has not received vectorization or PGO work in years.
 
 The companion document is
 [bcl-ignorecase-valley-rca.md](bcl-ignorecase-valley-rca.md), which
-captures one specific case study (`OrdinalIgnoreCase` at length 8–15)
+captures one specific case study (`OrdinalIgnoreCase` at length 8-15)
 in detail. This document is the general field manual.
 
 ---
@@ -43,7 +43,7 @@ public readonly ref struct Span<T>
 Indexing `span[i]` compiles to a single indexed load (`movzx eax, word
 ptr [reg + i*2]` for `Span<char>`).
 
-On .NET Framework (and any "slow span" target — `netstandard2.0` via the
+On .NET Framework (and any "slow span" target - `netstandard2.0` via the
 `System.Memory` NuGet, `net472`, `net481`) `Span<T>` is approximately:
 
 ```csharp
@@ -97,7 +97,7 @@ fold work.
 Framework RyuJIT does not recognize the `System.Runtime.Intrinsics`
 APIs. `Vector<T>` (the old "agnostic" SIMD type) still works but is
 significantly slower than the modern intrinsics. The BCL itself does
-not vectorize most string/span operations when running on Framework —
+not vectorize most string/span operations when running on Framework -
 even calls like `MemoryExtensions.Equals(span, span, OrdinalIgnoreCase)`
 fall through to a scalar per-character loop.
 
@@ -155,7 +155,7 @@ algorithm wants. Benchmark on **both** net10 and net481.
 
 Three outcomes:
 
-1. **Both TFMs within target.** Done — ship it.
+1. **Both TFMs within target.** Done - ship it.
 2. **net10 fine, net481 slow.** Continue to Strategy B.
 3. **Both slow.** Algorithmic issue. The strategies in this document
    only help with constant-factor JIT/runtime overhead.
@@ -173,7 +173,7 @@ slow-span pointer dance **once** outside the loop and walk a real `ref T`
 inside it.
 
 ```csharp
-// Before — pays the slow-span tax per character on net481
+// Before - pays the slow-span tax per character on net481
 for (int i = 0; i < a.Length; i++)
 {
     char x = a[i];
@@ -181,7 +181,7 @@ for (int i = 0; i < a.Length; i++)
     // ...
 }
 
-// After — pays it once at method entry
+// After - pays it once at method entry
 ref char pa = ref MemoryMarshal.GetReference(a);
 ref char pb = ref MemoryMarshal.GetReference(b);
 int n = a.Length;
@@ -203,18 +203,18 @@ input):
 | 20 | 46.67 ns | 27.04 ns | **−42%** |
 | 64 | 105.81 ns| 59.70 ns | **−44%** |
 
-On net10 the same change is a 14–16% win at short lengths and zero at
-long lengths — modern RyuJIT was already keeping the operand in a
+On net10 the same change is a 14-16% win at short lengths and zero at
+long lengths - modern RyuJIT was already keeping the operand in a
 register, but `Unsafe.Add` saves the bounds check the indexer would
 otherwise emit.
 
-**This pattern is safe** in the C# sense — no `unsafe` block, no
+**This pattern is safe** in the C# sense - no `unsafe` block, no
 pinning, no GC concerns. `Unsafe.Add` on a managed `ref T` is GC-aware:
 the runtime tracks the byref the same way it tracks the original span
 reference, and a moving GC updates both.
 
 The one cost: `MemoryMarshal.GetReference` does **not** inline on
-net481 — it's a non-inlined `call`. That ~2 ns per call (~4 ns total
+net481 - it's a non-inlined `call`. That ~2 ns per call (~4 ns total
 for two operands) is why the L=5 row above is a wash. Continue to
 Strategy C only if you need to recover that.
 
@@ -258,7 +258,7 @@ at L ≥ 20 because every additional iteration the pinned pointer pays
 nothing the `ref T` doesn't, and the `fixed` block has a small
 GC-frame-update cost on entry/exit that `Unsafe.Add` avoids.
 
-**Pinning is explicit `unsafe`.** That is a feature, not a drawback —
+**Pinning is explicit `unsafe`.** That is a feature, not a drawback -
 the keyword forces a reviewer to look at the pointer arithmetic. Treat
 `Unsafe.Add` as "safe but easy to misread" and `fixed` as "unsafe and
 obviously unsafe". Both ship the same machine code shape; the
@@ -328,7 +328,7 @@ private static unsafe bool EqualsPinned(ReadOnlySpan<char> a, ReadOnlySpan<char>
 ```
 
 This pattern lets the modern .NET source remain a target for the JIT's
-own optimizer — when .NET 12 or 13 adds a new vectorization pass, the
+own optimizer - when .NET 12 or 13 adds a new vectorization pass, the
 simple loop picks it up automatically. The Framework implementation
 stays frozen at "whatever runs well on RyuJIT 4.8", because RyuJIT 4.8
 is itself frozen.
@@ -344,7 +344,7 @@ The **within-noise** test for whether to split:
 
 ### 2.5 Strategy E: kill the call frame (force-inline)
 
-Orthogonal to A–D, but worth listing. Framework's per-call overhead
+Orthogonal to A-D, but worth listing. Framework's per-call overhead
 (~6 ns: 88-byte frame + 48-byte `rep stosd` + epilogue) is irreducible
 *within a called function*. The only way to delete it is to not be a
 called function.
@@ -353,7 +353,7 @@ called function.
 [MethodImpl(MethodImplOptions.AggressiveInlining)]
 public static bool Equals(ReadOnlySpan<char> a, ReadOnlySpan<char> b)
 {
-    // Tiny dispatcher — inlines into the caller.
+    // Tiny dispatcher - inlines into the caller.
     if (a.Length != b.Length) return false;
     if (a.Length < SomeThreshold) return EqualsCore(a, b);
     return BclEquals(a, b);
@@ -363,7 +363,7 @@ public static bool Equals(ReadOnlySpan<char> a, ReadOnlySpan<char> b)
 The dispatcher inlines and the per-call frame for `Equals` disappears
 on Framework. The work-doing method (`EqualsCore`) stays out-of-line
 to avoid bloating every call site. On net481 each eliminated call
-frame is worth ~5–6 ns, which is significant for short-input hot
+frame is worth ~5-6 ns, which is significant for short-input hot
 paths.
 
 **Caveat**: `AggressiveInlining` is a *hint*. Framework's JIT will
@@ -379,7 +379,7 @@ quickly estimate how much a given strategy might save:
 
 | Cost | Approx ns | Notes |
 |---|---:|---|
-| Function-call frame (88 B stack + 48 B `rep stosd` + epilogue) | ~5–6 | Per call, irreducible. `[SkipLocalsInit]` is ignored. |
+| Function-call frame (88 B stack + 48 B `rep stosd` + epilogue) | ~5-6 | Per call, irreducible. `[SkipLocalsInit]` is ignored. |
 | Non-inlined `MemoryMarshal.GetReference<T>(span)` | ~2 | Per call. Doubled if you walk two spans. |
 | Slow-span indexer `span[i]` | ~1.5 µops × ~2.5 cycles | Per character. Compare to ~0.3 cycles on net10. |
 | `vzeroupper` in prologue | ~1 µop | Emitted whenever the JIT sees AVX state needs clearing. |
@@ -432,32 +432,32 @@ Benchmark on net10 AND net481.
   (Strategy E). Re-bench.
                   │
                   ▼
-  Still hot? ──── algorithm issue. Strategies A–E exhaust the
+  Still hot? ──── algorithm issue. Strategies A-E exhaust the
                   constant-factor recovery options.
 ```
 
 ---
 
-## 5. Worked example — the `OrdinalIgnoreCase` ASCII fast-path
+## 5. Worked example - the `OrdinalIgnoreCase` ASCII fast-path
 
 Sequence of decisions taken for the helper that became
 `Touki.SpanExtensions.EqualsOrdinalIgnoreCase` /
 `CompareOrdinalIgnoreCase`. Reference trace.
 
-**Start (Strategy A)** — straightforward `for (int i = 0; i < a.Length;
+**Start (Strategy A)** - straightforward `for (int i = 0; i < a.Length;
 i++)` reading `a[i]` and `b[i]`. Measured at L=10 on net10: 6.6 ns.
 Measured at L=10 on net481: 26.7 ns.
 
-**Diagnosis** — net10 fine, net481 hot. The disassembly (§B.3 of the
+**Diagnosis** - net10 fine, net481 hot. The disassembly (§B.3 of the
 RCA) shows ~16 µops per loop iteration are slow-span pointer-dance for
 the two indexer reads.
 
-**Strategy B applied (experimentally)** — `MemoryMarshal.GetReference`
+**Strategy B applied (experimentally)** - `MemoryMarshal.GetReference`
 + `Unsafe.Add`. Net481 L=10 drops to ~22 ns. Net10 L=10 drops to 5.6
 ns. Both improved; net10 win is small.
 
-**Within-noise test** — At L=10 on net10, Strategy B is 5.62 ns vs
-Strategy A's 6.55 ns. Within 14% — *not* within the 5% noise band, but
+**Within-noise test** - At L=10 on net10, Strategy B is 5.62 ns vs
+Strategy A's 6.55 ns. Within 14% - *not* within the 5% noise band, but
 both are tiny absolute values. At L=64 they tie (42.7 vs 43.4 ns). The
 unified Strategy B code is *not* losing anything visible on net10, so
 ship it unified.
@@ -469,7 +469,7 @@ split: net10 keeps the simple indexer; net481 gets the Strategy-B
 rewrite under `#if !NET`.
 
 **Strategy C applied (after the helper was hoisted into a public
-extension method)** — when the work moved into `SpanExtensions` as a
+extension method)** - when the work moved into `SpanExtensions` as a
 public API, the extra call-frame overhead on net481 surfaced: routing
 the `StringSegment.CompareTo` path through `MemoryMarshal.GetReference`
 (non-inlined on net481) regressed the L=5 path from ~10 ns to ~19 ns.
@@ -481,7 +481,7 @@ returned to baseline. See
 [touki/Touki/Buffers/SpanExtensions.IgnoreCase.cs](../touki/Touki/Buffers/SpanExtensions.IgnoreCase.cs)
 for the resulting layout.
 
-**Strategy E (force-inline)** — applied. The extension entry points
+**Strategy E (force-inline)** - applied. The extension entry points
 (`Equals*` / `StartsWith*` / `EndsWith*`) carry
 `[MethodImpl(AggressiveInlining)]` so their length-dispatch check
 (`< 16` &rarr; scalar; `>= 16` &rarr; BCL vectorized) folds into the
@@ -507,14 +507,14 @@ keeps the per-call overhead bounded.
   it as a mitigation.
 - **`Unsafe.AsPointer(ref MemoryMarshal.GetReference(span))` instead of
   `fixed`.** Same machine semantics, harder for a reviewer to spot the
-  pinning requirement (there isn't one — the pointer is bare, and a
+  pinning requirement (there isn't one - the pointer is bare, and a
   moving GC will invalidate it). If you need a raw pointer, use
   `fixed`. If you only need a `ref T`, use `MemoryMarshal.GetReference`
   with `Unsafe.Add`.
 - **`stackalloc` to avoid spans.** `stackalloc` returns a `Span<T>`
   on modern .NET and an `IntPtr` cast-shimmed thing on Framework via
   polyfill. Allocating on the stack does not help with the slow-span
-  indexer tax — it's the *span type* that's slow, not the backing
+  indexer tax - it's the *span type* that's slow, not the backing
   storage. (`stackalloc` is still the right answer for buffer
   ownership; just don't expect it to fix span-indexer performance.)
 
@@ -522,18 +522,18 @@ keeps the per-call overhead bounded.
 
 ## 7. References
 
-- [bcl-ignorecase-valley-rca.md](bcl-ignorecase-valley-rca.md) — the
+- [bcl-ignorecase-valley-rca.md](bcl-ignorecase-valley-rca.md) - the
   worked case study with full disassembly captures for both TFMs.
-- `touki.perf/AsciiIgnoreCaseUnsafePerf.cs` — the Span vs Ref vs
+- `touki.perf/AsciiIgnoreCaseUnsafePerf.cs` - the Span vs Ref vs
   Pinned A/B/C harness this document's measurements come from.
-- `touki.perf/StringSegmentIgnoreCasePerf.cs` — before/after baseline
+- `touki.perf/StringSegmentIgnoreCasePerf.cs` - before/after baseline
   for the `StringSegment.CompareTo OrdinalIgnoreCase` refactor that
   drove the Strategy-C decision in &sect;5.
 - `BenchmarkDotNet.Artifacts/results/touki.perf.AsciiIgnoreCaseUnsafePerf-asm.md`
-  — generated disassembly. Regenerate with `[DisassemblyDiagnoser]`
+  - generated disassembly. Regenerate with `[DisassemblyDiagnoser]`
   on the perf class and `dotnet run -c Release --project touki.perf
   -f net481 -- --filter '*AsciiIgnoreCaseUnsafePerf*'`.
-- `docs/dotnet-perf-discoveries.md` — short-form running list of perf
+- `docs/dotnet-perf-discoveries.md` - short-form running list of perf
   observations across the codebase.
 - [touki/Touki/Buffers/SpanExtensions.IgnoreCase.cs](../touki/Touki/Buffers/SpanExtensions.IgnoreCase.cs)
-  — the production helpers that resulted from this experiment.
+  - the production helpers that resulted from this experiment.

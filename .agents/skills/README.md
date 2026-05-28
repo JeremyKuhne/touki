@@ -16,12 +16,12 @@ The "Disambiguation" section below records every known overlap.
 | [framework-jit-optimization](./framework-jit-optimization/SKILL.md) | hot-path tuning for `net481` in `touki/Framework/`, generic specialization, scalar/unrolled vs BCL delegation, net481 RyuJIT regressions | `performance-testing` |
 | [performance-testing](./performance-testing/SKILL.md) | authoring/running BenchmarkDotNet benchmarks in `touki.perf`, comparing implementations, evaluating allocations | `framework-jit-optimization` |
 | [pre-pr-self-review](./pre-pr-self-review/SKILL.md) | self-review checklist before opening or pushing a PR; missing tests, unchecked length sums, empty-span foot-guns, TFM phrasing | `create-pr`, `polyfill-dotnet-api` |
-| [security-review](./security-review/SKILL.md) | "assess for security vulnerabilities", "do a security review", "check for ReDoS / DoS", "audit untrusted input handling"; any member accepting caller-supplied data, any use of `unsafe` / `Unsafe.*` / `MemoryMarshal.*` / `Marshal.*`, or any BCL API whose name or doc says "unsafe" / "caller must" &mdash; abusive-input handling, length / integer overflow, allocation and algorithmic DoS, caller-validated preconditions, argument validation | `pre-pr-self-review`, `performance-testing` |
-| [create-pr](./create-pr/SKILL.md) | "make a PR", "open a pull request", "push and PR", "publish for review" &mdash; **initial** publish | `pre-pr-self-review` |
-| [address-pr-feedback](./address-pr-feedback/SKILL.md) | "address the review", "fix the comments", "address Copilot's feedback", "fix the CI failure" &mdash; **post-PR** review-cycle work | `pre-pr-self-review` |
-| [agent-files-review](./agent-files-review/SKILL.md) | reviewing/validating agent-customization files (`AGENTS.md`, `*.instructions.md`, `*.prompt.md`, `*.agent.md`, `SKILL.md`, validator, CI workflow); fixing `agent-files.yml` failures | &mdash; |
+| [security-review](./security-review/SKILL.md) | "assess for security vulnerabilities", "do a security review", "check for ReDoS / DoS", "audit untrusted input handling"; any member accepting caller-supplied data, any use of `unsafe` / `Unsafe.*` / `MemoryMarshal.*` / `Marshal.*`, or any BCL API whose name or doc says "unsafe" / "caller must" - abusive-input handling, length / integer overflow, allocation and algorithmic DoS, caller-validated preconditions, argument validation | `pre-pr-self-review`, `performance-testing` |
+| [create-pr](./create-pr/SKILL.md) | "make a PR", "open a pull request", "push and PR", "publish for review" - **initial** publish | `pre-pr-self-review` |
+| [address-pr-feedback](./address-pr-feedback/SKILL.md) | "address the review", "fix the comments", "address Copilot's feedback", "fix the CI failure" - **post-PR** review-cycle work | `pre-pr-self-review` |
+| [agent-files-review](./agent-files-review/SKILL.md) | reviewing/validating agent-customization files (`AGENTS.md`, `*.instructions.md`, `*.prompt.md`, `*.agent.md`, `SKILL.md`, validator, CI workflow); fixing `agent-files.yml` failures | - |
 | [run-tests-on-wsl](./run-tests-on-wsl/SKILL.md) | "run tests on Linux", "run the Posix/PosixPath/Bash oracles", "iterate Unix tests locally"; WSL Ubuntu bootstrap, the `~/repos/touki` Linux-native mirror that sidesteps the `/mnt/` DrvFs NuGet trap, the `DOTNET_ROOT` apphost requirement, and the `iconv` UTF-16 log trick | `performance-testing`, `pre-pr-self-review` |
-| [publish-release](./publish-release/SKILL.md) | "publish a new version", "release alpha.N", "ship a beta", "cut a release", "promote alpha to beta", "tag and publish" &mdash; choosing the right `Major.Minor.Patch`, alpha/beta/rc/stable channel, tag stream (`v*` vs `ts-v*`), and GitHub release notes | `pre-pr-self-review` |
+| [publish-release](./publish-release/SKILL.md) | "publish a new version", "release alpha.N", "ship a beta", "cut a release", "promote alpha to beta", "tag and publish" - choosing the right `Major.Minor.Patch`, alpha/beta/rc/stable channel, tag stream (`v*` vs `ts-v*`), and GitHub release notes | `pre-pr-self-review` |
 
 ## Disambiguation
 
@@ -72,7 +72,7 @@ You will frequently use both in sequence.
 
 Freshness is tracked from git history, not from a manual column. CI warns
 (does not fail) when a skill directory has no commits in the last 90 days
-&mdash; see [.github/workflows/agent-files.yml](../../.github/workflows/agent-files.yml).
+- see [.github/workflows/agent-files.yml](../../.github/workflows/agent-files.yml).
 
 A stale warning means "re-read this skill end-to-end against the current
 codebase." Confirm:
@@ -82,7 +82,7 @@ codebase." Confirm:
 3. Every claim about the codebase is still true.
 
 The only way to clear the warning is to commit a change to the skill
-directory &mdash; ideally the result of a real review pass, but at minimum a
+directory - ideally the result of a real review pass, but at minimum a
 whitespace touch with a commit message stating "verified still current."
 
 When adding a new skill, append a row to the inventory above in the same

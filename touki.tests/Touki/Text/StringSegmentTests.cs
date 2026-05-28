@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -2188,7 +2188,7 @@ public class StringSegmentTests
 
     // ---- Branch-coverage tests for the lower-coverage methods ----
 
-#pragma warning disable IDE0057 // Use range operator — the whole point of these tests is to exercise the Slice methods directly.
+#pragma warning disable IDE0057 // Use range operator - the whole point of these tests is to exercise the Slice methods directly.
 
     [Fact]
     public void Slice_DirectMethodCall_ReturnsCorrectSegment()

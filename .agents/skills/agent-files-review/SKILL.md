@@ -3,7 +3,7 @@ name: agent-files-review
 description: Review changes to AI-agent customization files in this repo (AGENTS.md, .github/copilot-instructions.md, *.instructions.md, *.prompt.md, *.agent.md, SKILL.md, validator, CI workflow). Use when asked to review or validate agent-file changes, fix CI failures from agent-files.yml, or audit a draft of any of these files.
 ---
 
-# Agent customization files — review checklist
+# Agent customization files - review checklist
 
 Run through every applicable item below before approving a change to an agent
 customization file. The PR review history showed each of these caught a real bug.
@@ -22,7 +22,7 @@ customization file. The PR review history showed each of these caught a real bug
   filesystem paths or `./` prefixes that would defeat the regex.
 - Don't use end-of-line comments in AGENTS.md examples or anywhere else; the
   file itself bans the pattern. Same applies to YAML examples in the README
-  files for `.github/agents/`, `.github/prompts/`, etc. — put `# comment`
+  files for `.github/agents/`, `.github/prompts/`, etc. - put `# comment`
   lines above the field, not after it.
 - Watch for placeholder syntax in code examples (e.g.
   `<see langword=".."/>`). Use a recognizable ellipsis (`"..."`) or a real
@@ -84,14 +84,14 @@ customization file. The PR review history showed each of these caught a real bug
 - [.markdownlint.jsonc](../../../.markdownlint.jsonc) intentionally disables
   MD013 (line-length), MD022/MD032 (blanks-around), MD033 (inline HTML),
   MD041 (first-line heading). It keeps MD040 (fenced-code-language),
-  no-trailing-spaces, no-hard-tabs. Don't disable MD040 — adding a `text`
+  no-trailing-spaces, no-hard-tabs. Don't disable MD040 - adding a `text`
   language tag is trivial and prevents drift.
 - The CI job runs on `ubuntu-latest`. PowerShell is preinstalled; no `pip`
   step is needed.
 
 ## 7. Relative Markdown links must resolve in this branch
 
-The CI link check is **offline lychee** &mdash; it only follows links that
+The CI link check is **offline lychee** - it only follows links that
 resolve to files in the current working tree. A link to a file that exists
 on the canonical repo's `main` but not in your branch will fail.
 
@@ -152,7 +152,7 @@ on the canonical repo's `main` but not in your branch will fail.
 **Always run the validator before declaring a review complete or pushing
 agent-file changes.** It catches mirror drift, missing/invalid frontmatter,
 SKILL.md naming mistakes, missing trailing newlines, and trailing/empty-line
-whitespace &mdash; the same rules CI enforces.
+whitespace - the same rules CI enforces.
 
 ```pwsh
 # Validate everything (frontmatter, mirror sync, dir-name match, whitespace,
@@ -173,5 +173,5 @@ passes, sanity-check that your Markdown:
 
 If CI fails after a local validator pass, the failure is almost always
 markdownlint (open the failing job's annotations) or the lychee link check
-(broken relative link &mdash; remember the mirror rewrites links, so test
+(broken relative link - remember the mirror rewrites links, so test
 the form in AGENTS.md, not the rewritten copy).

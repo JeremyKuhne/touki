@@ -4,7 +4,7 @@ Reference for the extended-glob feature surface in
 [`Touki.Io.Globbing`](../touki/Touki/Io/Globbing/). Covers the five extglob
 constructs, how they relate to the &quot;normal&quot; glob metacharacters
 (`*`, `?`, `[...]`), how to turn the feature on, and where touki agrees with
-&mdash; or deliberately diverges from &mdash; bash.
+- or deliberately diverges from - bash.
 
 If you only need the surface-level API contract, the
 [`GlobOptions.AllowExtGlob`](../touki/Touki/Io/Globbing/GlobOptions.cs) doc
@@ -21,10 +21,10 @@ escape characters:
 | ------- | -------------------------------------------------------------------- |
 | `?`     | match exactly one character (path-aware dialects: not the separator) |
 | `*`     | match zero or more characters (path-aware: not the separator)        |
-| `**`    | globstar: match zero or more path segments &mdash; only when `AllowGlobStar` is set or the dialect has implicit globstar (`MSBuild`, `FileSystemGlobbing`, `Git`) |
-| `[...]` | character class &mdash; only on dialects with `HasCharacterClasses()` (POSIX family, Bash, Git, FSG) |
+| `**`    | globstar: match zero or more path segments - only when `AllowGlobStar` is set or the dialect has implicit globstar (`MSBuild`, `FileSystemGlobbing`, `Git`) |
+| `[...]` | character class - only on dialects with `HasCharacterClasses()` (POSIX family, Bash, Git, FSG) |
 | `[!...]` / `[^...]` | negated character class (same dialects)                    |
-| `\<c>`  | escape `<c>` to its literal form &mdash; only on dialects with an escape character (POSIX family, Bash, Git use `\\`; PowerShell uses `` ` ``) |
+| `\<c>`  | escape `<c>` to its literal form - only on dialects with an escape character (POSIX family, Bash, Git use `\\`; PowerShell uses `` ` ``) |
 
 Each `?` consumes exactly one character. `*` is greedy at the matcher's NFA
 level. Neither `*` nor `?` crosses the path separator on path-aware
@@ -50,7 +50,7 @@ immediately by `(`, a `|`-separated list of inner patterns, and a closing
 | `@(p1\|p2\|...)`   | match **exactly one** occurrence of any alternative                                 |
 | `!(p1\|p2\|...)`   | match **any string that is not** one of the alternatives, as a single consumed slice |
 
-Each inner pattern is itself a full glob &mdash; it may contain `*`, `?`,
+Each inner pattern is itself a full glob - it may contain `*`, `?`,
 character classes, escapes, and other extglob constructs recursively.
 
 ### Side-by-side examples
@@ -59,7 +59,7 @@ character classes, escapes, and other extglob constructs recursively.
 | ------------------- | -------------------------------------- | ----------------------------- |
 | `*.cs`              | `foo.cs`, `bar.cs`                     | `foo.txt`, `foo.cs.bak`       |
 | `@(*.cs\|*.txt)`    | `foo.cs`, `foo.txt`                    | `foo.json`, `foo.cs.bak`      |
-| `*.cs`              | `foo.cs` (one extension)               | &mdash;                       |
+| `*.cs`              | `foo.cs` (one extension)               | -                       |
 | `?(*.cs)`           | `foo.cs`, *empty string*               | `foo.cs.bak`                  |
 | `+(a\|b)`           | `a`, `b`, `ab`, `aabb`                 | `empty string`, `c`           |
 | `*(a\|b)`           | `a`, `b`, `ab`, `aabb`, *empty string* | `c`, `ac`                     |
@@ -124,11 +124,11 @@ bool ignored = spec.IsMatch("foo.json");    // false
 
 When `AllowExtGlob` is omitted, the pattern `@(*.cs|*.txt)` is interpreted
 as the literal characters `@(*.cs|*.txt)` and matches no real-world file
-name &mdash; the parser does not warn, so the silent no-match can be
+name - the parser does not warn, so the silent no-match can be
 surprising. If your pattern is user-supplied, prefer to pass the flag
 unconditionally.
 
-The same flag lights the feature up regardless of dialect &mdash; it is
+The same flag lights the feature up regardless of dialect - it is
 honored by every dialect that uses the bytecode interpreter
 (`Posix`, `PosixPath`, `Bash`, `Git`, `Simple`, `PowerShell`,
 `FileSystemGlobbing`, `MSBuild`). Bash callers can think of it as the
@@ -167,7 +167,7 @@ On path-aware dialects (`PosixPath`, `Bash`, `Git`, `MSBuild`,
 
 - Inner wildcards (`*`, `?`, char classes) inside an extglob alternative do
   not cross `/`. `@(*.cs|*.txt)` against `src/foo.cs` is **no match**
-  &mdash; the inner `*` can't consume `src/`.
+  - the inner `*` can't consume `src/`.
 - `!(...)` similarly cannot consume past `/`. Use explicit separators in the
   outer pattern to span segments: `dir/!(foo)` matches `dir/bar`,
   `dir/baz`; never `dir/foo` and never `dir/sub/bar`.
@@ -194,7 +194,7 @@ On path-aware dialects (`PosixPath`, `Bash`, `Git`, `MSBuild`,
   alternation semantics.
 - The compile-time tail-anchor optimization
   (`EndsWith` fast-fail on a literal suffix) is also suppressed for
-  extglob programs &mdash; an alternative may consume what looks like a
+  extglob programs - an alternative may consume what looks like a
   trailing literal.
 
 ## Bash parity
@@ -236,11 +236,11 @@ the un-extended `[abc]` character class is still the cheapest answer:
 
 ## See also
 
-- [`GlobOptions.cs`](../touki/Touki/Io/Globbing/GlobOptions.cs) &mdash;
+- [`GlobOptions.cs`](../touki/Touki/Io/Globbing/GlobOptions.cs) -
   per-flag reference.
-- [`GlobDialect.cs`](../touki/Touki/Io/Globbing/GlobDialect.cs) &mdash;
+- [`GlobDialect.cs`](../touki/Touki/Io/Globbing/GlobDialect.cs) -
   per-dialect defaults.
-- [`globbing-feature-plan.md`](globbing-feature-plan.md) &mdash; internal
+- [`globbing-feature-plan.md`](globbing-feature-plan.md) - internal
   planning, including the F1.3 / F1.4 rollout history.
 - [bash Pattern Matching](https://www.gnu.org/software/bash/manual/html_node/Pattern-Matching.html)
 - [fnmatch(3) FNM_EXTMATCH](https://man7.org/linux/man-pages/man3/fnmatch.3.html)

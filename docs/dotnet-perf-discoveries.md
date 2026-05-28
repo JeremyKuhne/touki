@@ -5,7 +5,7 @@ optimizing `touki`. Each entry captures a measurement-backed observation, why
 it matters, the mitigation we landed on (or considered), and a follow-up that
 might still be worth investigating.
 
-These are **not bug reports** — every observation listed is consistent with
+These are **not bug reports** - every observation listed is consistent with
 documented BCL behavior. They exist here so future optimization work doesn't
 re-discover them from scratch.
 
@@ -19,7 +19,7 @@ see [framework-span-performance.md](framework-span-performance.md).
 
 ---
 
-## 1. `MemoryExtensions.Equals(span, span, StringComparison.OrdinalIgnoreCase)` has a perf valley at length 6–15
+## 1. `MemoryExtensions.Equals(span, span, StringComparison.OrdinalIgnoreCase)` has a perf valley at length 6-15
 
 ### Observation (both TFMs)
 
@@ -33,7 +33,7 @@ on equal-length all-letter ASCII spans of mixed case:
 | 20 | 2.6 ns | 41.5 ns |
 | 64 | 6.3 ns | 69.6 ns |
 
-On net10.0 there is a **non-monotonic valley** around length 6–15 where the
+On net10.0 there is a **non-monotonic valley** around length 6-15 where the
 BCL path is ~3× slower than at length 5 or 20. The shape is consistent with
 the BCL having (a) a length≤5 small-string special case, (b) a length≥16
 vectorized path that handles two `Vector128<short>` registers per iteration,
@@ -46,9 +46,9 @@ linearly with length and the cost-per-char is ~1 ns even on a high-end CPU.
 
 `LiteralGlobMatcher.IsMatch` for `IgnoreCase=true` used to call
 `input.Equals(_literal.AsSpan(), StringComparison.OrdinalIgnoreCase)` directly.
-Typical glob literals are 5–15 chars (file names) — squarely inside the
+Typical glob literals are 5-15 chars (file names) - squarely inside the
 valley. The benchmark `Touki_Literal_Hit IgnoreCase=True` measured 10.04 ns
-against the equivalent `RegexGen_Literal_Hit` at 10.4 ns on net10 — far
+against the equivalent `RegexGen_Literal_Hit` at 10.4 ns on net10 - far
 slower than it should be for what is functionally a 10-char compare.
 
 ### Mitigation (applied)
@@ -56,7 +56,7 @@ slower than it should be for what is functionally a 10-char compare.
 `Touki.SpanExtensions.EqualsOrdinalIgnoreCase`. The helper:
 
 - Length-mismatch returns `false` in one compare.
-- Length ≥ 16 (`BclCrossoverLength`) delegates to BCL — the vectorized path
+- Length ≥ 16 (`BclCrossoverLength`) delegates to BCL - the vectorized path
   there is faster than any scalar loop.
 - Length < 16 runs an inlined ASCII fold compare with a per-character
   non-ASCII guard. On the first non-ASCII char, hands the tail to BCL with
@@ -87,7 +87,7 @@ real-application detection floor for typical glob workloads.
 ### Follow-up
 
 - Watch the .NET 11 / .NET 12 servicing notes for changes to
-  `Ordinal.EqualsIgnoreCase` — if the valley closes, this helper becomes
+  `Ordinal.EqualsIgnoreCase` - if the valley closes, this helper becomes
   pure overhead and can be removed.
 - `MemoryExtensions.StartsWith(span, span, OrdinalIgnoreCase)` and
   `EndsWith(...)` likely have the same valley. We have not benchmarked them
@@ -139,20 +139,20 @@ Two separate experiments hit the same wall:
 1. **`SpanReader<char>` in `GlobMatcherFactory.EncodeProgram`**: replacing a
    scalar `pattern[i++]` index loop with `SpanReader.TryRead`/`TryPeek`
    plus `TryReadToAny` (which uses `IndexOfAny`) regressed *every* compile
-   row by 60–150%, including `Compile_Any` which doesn't even reach
+   row by 60-150%, including `Compile_Any` which doesn't even reach
    `EncodeProgram`. The wrapper method-call overhead plus vector setup cost
-   dominates for 5–10-char pattern reads.
+   dominates for 5-10-char pattern reads.
 2. **`IndexOf(']') + Append(span)` in `EmitClass`**: replacing a
    `for (i; ; i++) sb.Append(c)` loop over a class body with one
    `pattern.IndexOf(']')` + one `sb.Append(span)` regressed
-   `Compile_ManyClasses` by +11%. Real class bodies are 3–7 chars (`[abc]`,
+   `Compile_ManyClasses` by +11%. Real class bodies are 3-7 chars (`[abc]`,
    `[0-9]`); below the `IndexOf` vector-setup amortization point.
 
 ### Why this matters
 
 Section 6 of the reference document on character parsing says vectorization
 becomes a win past ~16 chars of input. The actual breakeven on this
-hardware appears to be ~8–12 chars for the BCL primitives we tested.
+hardware appears to be ~8-12 chars for the BCL primitives we tested.
 Glob patterns and their class bodies, literal runs, and segment lengths
 typically sit **below** that threshold.
 
@@ -162,7 +162,7 @@ typically sit **below** that threshold.
 > (`IndexOf`, `IndexOfAny`, `MemoryExtensions.Equals(StringComparison)`,
 > `SequenceEqual` for char), measure at the realistic input length. The
 > primitive only wins past the vector setup amortization threshold, which
-> on i9-class hardware sits around **8–12 chars for `char`-typed spans**.
+> on i9-class hardware sits around **8-12 chars for `char`-typed spans**.
 > Below that, the inlined loop with `ref char` indexing and the
 > `pattern[i++]` form is faster than any vectorized call.
 
@@ -170,7 +170,7 @@ typically sit **below** that threshold.
 
 - A `SearchValues<char>`-based class-membership matcher for
   `CompiledGlobMatcher` was deferred because typical glob classes are
-  2–7 chars (`[de]`, `[0-9]`, `[A-Z]`). Re-evaluate once we have a
+  2-7 chars (`[de]`, `[0-9]`, `[A-Z]`). Re-evaluate once we have a
   benchmark with realistic long classes like `[A-Za-z0-9_]`.
 
 ---
@@ -180,13 +180,13 @@ typically sit **below** that threshold.
 ### Observation
 
 Slice 1 (this document, item 1) applied an inlined ASCII fold compare to
-`LiteralGlobMatcher.IgnoreCase` — replacing
+`LiteralGlobMatcher.IgnoreCase` - replacing
 `MemoryExtensions.Equals(span, span, OrdinalIgnoreCase)`. Won by 5+ ns at
 typical glob lengths.
 
 The identical code structure applied to `CompiledGlobMatcher.EqualsIgnoreCase`
-— replacing a tight static `for (i) AsciiFold(a[i]) != AsciiFold(b[i])`
-loop — **regressed** `Touki_Compiled_Hit IgnoreCase` by +16% (15.32 →
+- replacing a tight static `for (i) AsciiFold(a[i]) != AsciiFold(b[i])`
+loop - **regressed** `Touki_Compiled_Hit IgnoreCase` by +16% (15.32 →
 17.76 ns). The pre-existing tight loop already had no framework dispatch
 to amortize against; the added branches in the "fast path" cost more than
 they save.
@@ -242,7 +242,7 @@ no measurable effect.
 
 .NET Framework 4.8.1 RyuJIT's inliner is less aggressive than modern .NET
 RyuJIT's. When a small helper contains a moderately sized fold loop, the
-net481 inliner declines to inline at call sites — so even the
+net481 inliner declines to inline at call sites - so even the
 delegating-to-BCL path eats a real call. Modern RyuJIT inlines the same
 method body without the hint.
 
@@ -272,7 +272,7 @@ the JIT auto-inlines.
 
 ### Follow-up
 
-None. Confirmed dead end — do not re-apply without new evidence that a
+None. Confirmed dead end - do not re-apply without new evidence that a
 specific call site is failing to inline.
 
 ---
@@ -309,11 +309,11 @@ analysis.
 ## Index of pinned rules
 
 1. **§3**: Vectorized BCL primitives only beat inlined scalar loops past
-   8–12 chars on i9-class hardware for `char`-typed spans.
+   8-12 chars on i9-class hardware for `char`-typed spans.
 2. **§4**: ASCII inline fast-path is a win iff replacing framework dispatch,
    not iff replacing an existing tight loop.
 3. **§5**: For small dispatch wrappers delegating to BCL, mark the wrapper
-   `AggressiveInlining` and keep the loop in a separate method — fixes a
+   `AggressiveInlining` and keep the loop in a separate method - fixes a
    real net481 inlining cost.
 4. **§7**: ASCII fast-path threshold on `char` spans is 16, controlled by
    `Vector128<short>.Count × 2`.

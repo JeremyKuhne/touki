@@ -145,7 +145,7 @@ public sealed partial class GlobSpecification : DisposableBase
     ///   <see cref="StringSegment"/>), this property slices that string rather
     ///   than allocating. Dialect-specific normalization that the factory may
     ///   apply (separator coalescing, gitignore marker stripping, etc.) does
-    ///   <em>not</em> flow back into this property &#8211; it always reflects
+    ///   <em>not</em> flow back into this property - it always reflects
     ///   the user-supplied input.
     ///  </para>
     /// </remarks>

@@ -14,7 +14,7 @@ namespace Touki.Io.Globbing;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   Linux/macOS only — the oracle calls <c>libc</c>'s <c>fnmatch</c> via P/Invoke.
+///   Linux/macOS only - the oracle calls <c>libc</c>'s <c>fnmatch</c> via P/Invoke.
 ///   Windows runs skip via <see cref="Assert.Skip(string)"/>.
 ///  </para>
 /// </remarks>

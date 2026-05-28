@@ -38,7 +38,7 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
     ///  <see langword="true"/> when the encoded program contains at least one
     ///  <see cref="GlobOpCodes.GlobStar"/> opcode. Captured at compile time so the match
     ///  loop can dispatch to a simpler single-savepoint variant when globstar is absent
-    ///  (the common case&#8212;only a handful of patterns in a typical project use
+    ///  (the common case - only a handful of patterns in a typical project use
     ///  <c>**</c>).
     /// </summary>
     private readonly bool _hasGlobStar;
@@ -168,6 +168,16 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
         // Tail-anchor fast-fail. When the encoded program ends in a Literal op, the
         // factory pre-extracts that literal so we can verify it with a single
         // contiguous compare (vectorized when not straddling) before running the NFA.
+        //
+        // For non-extglob programs the Literal is the program's last opcode, so
+        // matching the tail also consumes it: we trim the tail off the input and
+        // run the NFA on the prefix only.
+        //
+        // For extglob programs the tail is the common literal suffix shared by
+        // every alternative the walker could choose. Failing to match the tail
+        // proves no alternative can match, but a successful match doesn't tell
+        // us which alternative actually applies - the walker still needs the
+        // full input. So we EndsWith-check and skip the trim.
         if (_tailLength > 0)
         {
             if (totalLength < _tailLength)
@@ -182,22 +192,25 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
                 return false;
             }
 
-            // Trim the tail off the virtual input. The tail either fits in `second`
-            // entirely, fits in `first` entirely (when `second` is empty or short),
-            // or straddles the boundary; in each case we slice the appropriate end.
-            int trimmed = totalLength - _tailLength;
-            if (trimmed >= firstLength)
+            if (!_hasExtGlob)
             {
-                second = second[..(trimmed - firstLength)];
-            }
-            else
-            {
-                first = first[..trimmed];
-                second = default;
-            }
+                // Trim the tail off the virtual input. The tail either fits in `second`
+                // entirely, fits in `first` entirely (when `second` is empty or short),
+                // or straddles the boundary; in each case we slice the appropriate end.
+                int trimmed = totalLength - _tailLength;
+                if (trimmed >= firstLength)
+                {
+                    second = second[..(trimmed - firstLength)];
+                }
+                else
+                {
+                    first = first[..trimmed];
+                    second = default;
+                }
 
-            firstLength = first.Length;
-            totalLength = trimmed;
+                firstLength = first.Length;
+                totalLength = trimmed;
+            }
         }
 
         ReadOnlySpan<char> program = _program.AsSpan(0, _nfaProgramLength);
@@ -389,7 +402,7 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
 
     /// <summary>
     ///  Ordinal match path for programs without <see cref="GlobOpCodes.GlobStar"/>.
-    ///  Single AnyRun savepoint, no shared backtrack helper&#8212;keeps the JIT happy and
+    ///  Single AnyRun savepoint, no shared backtrack helper - keeps the JIT happy and
     ///  avoids the two-slot backtrack overhead of <see cref="MatchOrdinal"/> on the
     ///  globstar-free common case. Walks the virtual
     ///  <paramref name="first"/> + <paramref name="second"/> concatenation.

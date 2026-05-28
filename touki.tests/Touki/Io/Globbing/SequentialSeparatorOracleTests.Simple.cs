@@ -13,7 +13,7 @@ namespace Touki.Io.Globbing;
 ///  <para>
 ///   <see cref="GlobDialect.Simple"/> is path-unaware: it has no separator concept, so
 ///   <c>/</c> is a plain literal and runs of <c>/</c> in the pattern are <b>not</b>
-///   coalesced &#8212; the input must contain the same number of <c>/</c> characters in
+///   coalesced - the input must contain the same number of <c>/</c> characters in
 ///   the same position. The compiled <see cref="GlobSpecification"/> must agree with the BCL
 ///   reference on every row.
 ///  </para>

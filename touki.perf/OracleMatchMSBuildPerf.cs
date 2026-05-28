@@ -10,7 +10,7 @@ namespace touki.perf;
 /// <summary>
 ///  Per-pattern-shape match-throughput comparison between
 ///  <see cref="GlobSpecification"/>(<see cref="GlobDialect.MSBuild"/>) and
-///  <see cref="MSBuildGlob"/> — the oracle used by the multi-asterisk and
+///  <see cref="MSBuildGlob"/> - the oracle used by the multi-asterisk and
 ///  sequential-separator suites. Reads a compiled matcher's <c>IsMatch</c> per
 ///  invocation; setup cost is paid once.
 /// </summary>

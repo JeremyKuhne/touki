@@ -1,13 +1,13 @@
 ---
 name: run-tests-on-wsl
-description: Run touki tests &mdash; especially the Unix-only oracle suites under `touki.tests/Touki/Io/Globbing/` &mdash; inside WSL Ubuntu on Windows. Use when the user asks to "run tests on Linux", "run the Posix/PosixPath/Bash oracles", or "iterate Unix tests locally", and for any fix that needs Linux verification before pushing.
+description: Run touki tests - especially the Unix-only oracle suites under `touki.tests/Touki/Io/Globbing/` - inside WSL Ubuntu on Windows. Use when the user asks to "run tests on Linux", "run the Posix/PosixPath/Bash oracles", or "iterate Unix tests locally", and for any fix that needs Linux verification before pushing.
 ---
 
 # Running tests inside WSL Ubuntu
 
 **Headline rule:** keep a Linux-native checkout (e.g. `~/repos/touki`) and
 sync from the Windows-mounted checkout before each run. Building directly
-from the `/mnt/<drive>/...` mount **does not work** &mdash; see the trap
+from the `/mnt/<drive>/...` mount **does not work** - see the trap
 below.
 
 The agent drives WSL from the existing PowerShell terminal via `wsl --`;
@@ -22,7 +22,7 @@ paths for `<WIN_CHECKOUT>` (e.g. `/mnt/d/src/touki`) and `<LINUX_CHECKOUT>`
 `/mnt/c/Users/<user>/AppData/Roaming/NuGet/NuGet.Config` and
 `/mnt/c/Program Files (x86)/NuGet/Config/Microsoft.VisualStudio.*.config`,
 which reference
-`C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages` &mdash;
+`C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages` -
 unreachable as a Linux path. NuGet writes the Windows fallback verbatim into
 `project.assets.json` / `*.nuget.dgspec.json`, and the next build fails with:
 
@@ -40,11 +40,11 @@ moving the checkout off the DrvFs mount does.
 
 - WSL2 with a default Ubuntu distro. If `wsl -l -v` reports "Windows
   Subsystem for Linux is not installed", the user must run `wsl --install`
-  from an elevated PowerShell and reboot &mdash; the agent cannot drive the
+  from an elevated PowerShell and reboot - the agent cannot drive the
   elevation prompt.
 - `libicu-dev` installed (`sudo apt-get install -y libicu-dev`). Without
   it, `dotnet --version` throws on `Console.OutputEncoding`. Tell the user
-  to run `sudo` &mdash; do not collect the password via chat.
+  to run `sudo` - do not collect the password via chat.
 - .NET SDK 10 under `$HOME/.dotnet` (the repo's
   [setup.sh](../../../setup.sh) installs latest 10.x). If
   [global.json](../../../global.json) pins a specific feature-band patch
@@ -80,7 +80,7 @@ wsl --cd <LINUX_CHECKOUT> -- bash -ic `
     'dotnet build touki.tests -c Release -f net10.0 --nologo'
 
 # 3. Run a filtered subset. `--filter-method` only allows wildcards at the
-#    start and/or end of the pattern and does not support `|` OR &mdash;
+#    start and/or end of the pattern and does not support `|` OR -
 #    run each suite separately.
 wsl --cd <LINUX_CHECKOUT> -- bash -ic `
     'dotnet test touki.tests -c Release -f net10.0 --no-build --nologo -- --filter-method "*Posix*"'
@@ -105,14 +105,14 @@ findings in [docs/globbing-feature-plan.md](../../../docs/globbing-feature-plan.
 The one OS-conditional row to expect is
 `SequentialSeparatorMSBuildOracleTests` `//a` vs `/a`: `MSBuildGlob` on
 Linux treats `//a` &equiv; `/a`; on Windows it treats `//a` as a UNC root.
-Touki is OS-stable, matching the Windows verdict &mdash; this is a
+Touki is OS-stable, matching the Windows verdict - this is a
 documented platform divergence in the oracle, not in touki.
 
 ## Related skills
 
-- [`performance-testing`](../performance-testing/SKILL.md) &mdash; same
+- [`performance-testing`](../performance-testing/SKILL.md) - same
   recipe runs `touki.perf` benchmarks on Linux; swap `touki.tests` for
   `touki.perf`.
-- [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) &mdash; for
+- [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - for
   changes touching `touki/Touki/Io/Globbing/`, run the Linux oracle suites
   before pushing so Unix-only regressions are caught locally instead of in CI.

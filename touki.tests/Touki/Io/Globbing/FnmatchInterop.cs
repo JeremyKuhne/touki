@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -9,7 +9,7 @@ namespace Touki.Io.Globbing;
 /// <summary>
 ///  Thin wrapper around POSIX <c>fnmatch(3)</c> via P/Invoke for use as an oracle by the
 ///  per-dialect oracle test classes. Linux and macOS use different bit values for the
-///  <c>FNM_*</c> flags — this class encapsulates the platform shim.
+///  <c>FNM_*</c> flags - this class encapsulates the platform shim.
 /// </summary>
 internal static class FnmatchInterop
 {

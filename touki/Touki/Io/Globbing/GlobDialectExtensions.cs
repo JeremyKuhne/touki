@@ -100,8 +100,8 @@ internal static class GlobDialectExtensions
     ///   <see cref="GlobDialect.PosixPath"/>, <see cref="GlobDialect.Bash"/>,
     ///   <see cref="GlobDialect.Git"/>) treat a leading <c>.</c> as a "hidden" marker
     ///   per <c>fnmatch</c>'s <c>FNM_PERIOD</c> rule, requiring a literal <c>.</c>
-    ///   in the pattern. All other dialects &#8212; including PowerShell, Win32,
-    ///   Simple, MSBuild, FileSystemGlobbing &#8212; do not.
+    ///   in the pattern. All other dialects - including PowerShell, Win32,
+    ///   Simple, MSBuild, FileSystemGlobbing - do not.
     ///  </para>
     /// </remarks>
     public static bool MatchesLeadingDotByDefault(this GlobDialect dialect) => dialect switch
@@ -125,7 +125,7 @@ internal static class GlobDialectExtensions
     ///   <see cref="GlobDialect.Bash"/>, <see cref="GlobDialect.Git"/>,
     ///   <see cref="GlobDialect.MSBuild"/>,
     ///   <see cref="GlobDialect.FileSystemGlobbing"/>. All other dialects
-    ///   &#8212; including <see cref="GlobDialect.Posix"/> &#8212; are
+    ///   - including <see cref="GlobDialect.Posix"/> - are
     ///   path-unaware.
     ///  </para>
     /// </remarks>

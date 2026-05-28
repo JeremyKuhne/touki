@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -29,13 +29,13 @@ public static unsafe partial class EnumExtensions
     // Why AggressiveInlining on every method?
     //
     //  On modern .NET (.NET 5+) the size-of(T) ladder is folded and the
-    //  helper is inlined regardless — AggressiveInlining is a no-op there.
+    //  helper is inlined regardless - AggressiveInlining is a no-op there.
     //
     //  On .NET Framework 4.7.2 the JIT looks at the *unfolded* IL size of
     //  the four-arm ladder and decides the method is too big to inline.
     //  The fold still happens (the helper body is only one `and; cmp; sete`
     //  for AreFlagsSet, for example), but the caller pays a real call/ret
-    //  plus a stack spill — roughly +0.35 ns per call. AggressiveInlining
+    //  plus a stack spill - roughly +0.35 ns per call. AggressiveInlining
     //  overrides that heuristic so the call site gets the same flat code
     //  as on modern .NET. Confirmed in touki.perf/EnumExtensionsInliningPerf.cs
     //  asm output: with the attribute the call disappears and the inlined

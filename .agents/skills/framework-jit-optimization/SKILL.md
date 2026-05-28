@@ -14,7 +14,7 @@ This skill captures decisions distilled from real benchmarks under
 [performance-testing](../performance-testing/SKILL.md) skill workflow before
 committing a change. Run the
 [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) checklist before
-opening a PR &mdash; in particular &sect;5 (allocation-free over raw speed)
+opening a PR - in particular &sect;5 (allocation-free over raw speed)
 and &sect;7 (perf claims must name the JIT and be measured) apply directly
 to changes guided by this skill.
 
@@ -27,7 +27,7 @@ lives in `touki/Framework/`.
 ## What is and isn't available on `net481`
 
 - **No auto-vectorization.** The BCL `MemoryExtensions` methods on net481 ship with
-  System.Memory. They are hand-tuned scalar / integer-stride implementations &mdash;
+  System.Memory. They are hand-tuned scalar / integer-stride implementations -
   they do **not** use SIMD.
 - **No `System.Runtime.Intrinsics`.** `Vector128`/`Vector256`/`Vector512`,
   `Sse2.CompareEqual`, `Avx2.MoveMask` are .NET 5+. Not available here.
@@ -40,12 +40,12 @@ lives in `touki/Framework/`.
 "Integer-stride" means routines like `IndexOf` and `SequenceEqual` internally
 process multiple elements per loop step (e.g. compare a `ulong` chunk that spans
 4 chars or 8 bytes) rather than one element at a time. This is **not**
-vectorization &mdash; just careful scalar code &mdash; but it still substantially
+vectorization - just careful scalar code - but it still substantially
 beats a naive per-element loop for whole-buffer primitives.
 
 **Practical consequence:** do not assume "the BCL is vectorized so my generic code
 is fine." On `net481` a hand-written specialized loop frequently beats the BCL by
-2&ndash;3&times; for full-scan workloads.
+2-3&times; for full-scan workloads.
 
 ## Decision flow for a new framework-only fast path
 
@@ -61,7 +61,7 @@ is fine." On `net481` a hand-written specialized loop frequently beats the BCL b
    increment. See [unrolling.md](unrolling.md) for the right form (and the wrong
    ones).
 6. **Stop there.** Do not pursue SIMD, SWAR, or branchless tricks without data
-   showing they win &mdash; in practice they regress more often than they help.
+   showing they win - in practice they regress more often than they help.
    See [antipatterns.md](antipatterns.md).
 7. Run the same benchmark on `net10.0` to confirm you have not regressed the
    modern path. If a specialization is harmful on net10 (because the BCL is
@@ -71,7 +71,7 @@ is fine." On `net481` a hand-written specialized loop frequently beats the BCL b
 ## Quick reference: ratios from real benchmarks
 
 All numbers are from the smoke benchmarks in `touki.perf/`. Treat as
-order-of-magnitude, not exact &mdash; rerun before claiming a specific number in
+order-of-magnitude, not exact - rerun before claiming a specific number in
 a PR.
 
 | Decision | Net481 effect (length 4096, full scan) |
@@ -82,10 +82,10 @@ a PR.
 | Unroll-8 same form | **1.6&times; slower** than scalar at 256+ |
 | Per-iteration `*ptr; ptr++` instead of indexed reads | ~1.4&times; slower than indexed |
 | Integer-indexed unroll (`ptr[i+0..3]; i += 4`) | **Worse than the scalar baseline** |
-| Branchless `*ptr = v == old ? new : v` (sparse matches) | **1.5&ndash;3&times; slower** than branchful conditional store |
+| Branchless `*ptr = v == old ? new : v` (sparse matches) | **1.5-3&times; slower** than branchful conditional store |
 | SWAR haszero for char `Replace` (dense matches) | **3&times; slower** than scalar |
-| BCL `IndexOf` for `Replace` (full-scan) | 2.18&ndash;3.08&times; slower than specialized scalar |
-| BCL `IndexOf` for `Count` (sparse matches, 1/64 density) | 2&ndash;3&times; **faster** than full-scan specialization |
+| BCL `IndexOf` for `Replace` (full-scan) | 2.18-3.08&times; slower than specialized scalar |
+| BCL `IndexOf` for `Count` (sparse matches, 1/64 density) | 2-3&times; **faster** than full-scan specialization |
 | Exponential `SequenceEqual` probe for `CommonPrefixLength` (4096, full match) | 3.3&times; faster than per-element scalar |
 | Tuple swap `(a, b) = (b, a)` for plain locals | **~23% slower** than `T t = a; a = b; b = t;` |
 | Tuple swap on paired `Span<T>` indexed swap (sort hot path) | **~9% slower** than explicit temps |
@@ -96,11 +96,11 @@ The two BCL rows look contradictory. They aren't. See
 
 ## Sub-pages
 
-- [specialization.md](specialization.md) &mdash; `typeof(T)` pattern, `Unsafe.As`,
+- [specialization.md](specialization.md) - `typeof(T)` pattern, `Unsafe.As`,
   primitive bit-equality classes, when generic methods get inlined.
-- [unrolling.md](unrolling.md) &mdash; the only unroll form that wins on `net481`,
+- [unrolling.md](unrolling.md) - the only unroll form that wins on `net481`,
   and three that don't.
-- [bcl-tradeoffs.md](bcl-tradeoffs.md) &mdash; when to defer to BCL `IndexOf` /
+- [bcl-tradeoffs.md](bcl-tradeoffs.md) - when to defer to BCL `IndexOf` /
   `SequenceEqual` on `net481` despite no vectorization.
-- [antipatterns.md](antipatterns.md) &mdash; specific tricks that look clever but
+- [antipatterns.md](antipatterns.md) - specific tricks that look clever but
   regress on the older JIT.

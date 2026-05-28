@@ -227,7 +227,7 @@ public class OrderedMatchSetTests
         // Strict gitignore semantics: `bin/` claims the whole subtree at the
         // walker's recurse decision. Per gitignore(5) you can't re-include a
         // file whose parent directory is excluded, so the per-file evaluation
-        // never has to deal with descendants &mdash; the walker just doesn't
+        // never has to deal with descendants - the walker just doesn't
         // recurse.
         using OrderedMatchSet set = new(includeByDefault: true);
         set.AddExclude(CompileGit("bin/"));

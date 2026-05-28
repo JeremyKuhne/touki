@@ -5,7 +5,7 @@
 namespace Touki.Io.Globbing;
 
 /// <summary>
-///  Match tests for the four positive extended-glob constructs &#8212;
+///  Match tests for the four positive extended-glob constructs -
 ///  <c>?(...)</c>, <c>*(...)</c>, <c>+(...)</c>, and <c>@(...)</c>. Negation
 ///  (<c>!(...)</c>) is covered in a later step and intentionally still
 ///  reports no match here.

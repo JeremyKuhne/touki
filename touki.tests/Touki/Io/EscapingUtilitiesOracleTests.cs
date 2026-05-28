@@ -25,7 +25,7 @@ public class EscapingUtilitiesOracleTests
     [InlineData("%2A.cs")]                    // %2A = '*'
     [InlineData("dir%2Fname")]                // %2F = '/'
     [InlineData("100%25done")]                // %25 = '%'
-    [InlineData("%00")]                       // %00 = NUL — decoded but illegal at the spec layer
+    [InlineData("%00")]                       // %00 = NUL - decoded but illegal at the spec layer
     [InlineData("file%2Bname")]               // %2B = '+'
     [InlineData("hex%41%42%43")]              // %41-%43 = 'A','B','C'
     // Lowercase hex digits.

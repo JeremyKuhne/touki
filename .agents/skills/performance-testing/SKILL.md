@@ -18,12 +18,12 @@ References to those types from a benchmark must be guarded with `#if NETFRAMEWOR
 
 **Related skills:**
 
-- [`polyfill-dotnet-api`](../polyfill-dotnet-api/SKILL.md) &mdash; reasons
+- [`polyfill-dotnet-api`](../polyfill-dotnet-api/SKILL.md) - reasons
   to add a polyfill (and therefore a benchmark) in the first place.
-- [`framework-jit-optimization`](../framework-jit-optimization/SKILL.md) &mdash;
+- [`framework-jit-optimization`](../framework-jit-optimization/SKILL.md) -
   decisions about specialization, unrolling, and BCL-delegation on net481 that the
   benchmarks here exist to validate.
-- [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) &mdash; requires a benchmark
+- [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - requires a benchmark
   in `touki.perf/` (or an explicit "not measured" note) for any perf claim that
   drives a code change in `touki/Framework/`.
 
@@ -45,10 +45,10 @@ References to those types from a benchmark must be guarded with `#if NETFRAMEWOR
 
 [GlobalUsings.cs](../../../touki.perf/GlobalUsings.cs) already provides:
 
-- `BenchmarkDotNet.Attributes` &mdash; `[Benchmark]`, `[MemoryDiagnoser]`, `[Params]`,
+- `BenchmarkDotNet.Attributes` - `[Benchmark]`, `[MemoryDiagnoser]`, `[Params]`,
   `[GlobalSetup]`, etc.
-- `BenchmarkDotNet.Jobs` &mdash; `RuntimeMoniker`, `[SimpleJob]`.
-- `Touki` &mdash; the library root namespace.
+- `BenchmarkDotNet.Jobs` - `RuntimeMoniker`, `[SimpleJob]`.
+- `Touki` - the library root namespace.
 - `Microsoft.IO` (on NETFRAMEWORK) or `System.IO` otherwise.
 
 Do not re-import these.
@@ -73,13 +73,13 @@ public class StringFormatting
 ```
 
 Mark one method `[Benchmark(Baseline = true)]` whenever you are comparing
-alternative implementations &mdash; the report adds a **Ratio** and
+alternative implementations - the report adds a **Ratio** and
 **RatioSD** column relative to that baseline.
 
 ### Optional attributes
 
 - `[SimpleJob(RuntimeMoniker.HostProcess, warmupCount: 1, iterationCount: 3, launchCount: 1)]`
-  &mdash; cuts run time when iterating on a benchmark. Use only while developing; remove
+  - cuts run time when iterating on a benchmark. Use only while developing; remove
   (or revert to defaults) before checking in stable measurements. See
   [StoreInteger.cs](../../../touki.perf/StoreInteger.cs) for an example.
 - `[Params(...)]` on a public field/property to run the benchmark for each value.
@@ -95,15 +95,15 @@ alternative implementations &mdash; the report adds a **Ratio** and
   consumes the return value to prevent that. For buffer-mutating APIs
   (`Span<T>.Replace`, `Random.NextBytes`, `Encoding.GetBytes`) return
   `buffer[0]`, the last element, or an XOR/sum digest of the buffer
-  &mdash; not `buffer.Length` or any other value invariant of execution.
+  - not `buffer.Length` or any other value invariant of execution.
   Symptoms of forgetting: "optimized" variants slower than the baseline
   (because the baseline got eliminated), >50% StdDev between runs,
   near-zero timings for non-trivial work. See
   [BenchmarkDotNet good practices](https://benchmarkdotnet.org/articles/guides/good-practices.html).
-- Be cheap to call repeatedly &mdash; BenchmarkDotNet invokes it millions of times.
+- Be cheap to call repeatedly - BenchmarkDotNet invokes it millions of times.
 - Avoid per-call setup; move setup into `[GlobalSetup]` or readonly fields.
 - Avoid wrapping the system-under-test in a helper method just to satisfy
-  overload resolution &mdash; the helper's call frame, type check, and
+  overload resolution - the helper's call frame, type check, and
   generic instantiation show up in the measurement. Either rename one
   overload temporarily while measuring, or split into two benchmark classes.
 - Ref structs cannot be returned from `[Benchmark]` methods; consume them
@@ -116,7 +116,7 @@ arguments are forwarded to BenchmarkDotNet. Run from the repo root in PowerShell
 
 ### Specifying the target framework is required
 
-Because `touki.perf` is multi-targeted, **`dotnet run` requires `-f <tfm>`** &mdash;
+Because `touki.perf` is multi-targeted, **`dotnet run` requires `-f <tfm>`** -
 the SDK will not pick one for you and the run fails with NETSDK1005 or an ambiguous
 target error if you omit it. Always pass `-f net10.0` or `-f net481` (or whatever
 `$(DotNetCoreVersion)` currently resolves to).
@@ -133,7 +133,7 @@ dotnet run -c Release -f net481 --project touki.perf -- --filter *StoreInteger*
 will warn loudly.
 
 When a change touches code that compiles for both targets, **run both TFMs**. The
-results often differ dramatically &mdash; the modern runtime has vectorized BCL APIs
+results often differ dramatically - the modern runtime has vectorized BCL APIs
 that .NET Framework lacks, so a hand-tuned net481 fast path may look identical to the
 generic path on net10.
 
@@ -157,11 +157,11 @@ With no `--filter`, BenchmarkSwitcher prints a numbered menu. Useful when explor
 
 ### Useful extra switches
 
-- `--job short` &mdash; very fast, low-confidence run; good for smoke-testing a new
+- `--job short` - very fast, low-confidence run; good for smoke-testing a new
   benchmark before committing to a full run.
-- `--memory` &mdash; enables the memory diagnoser for this run even if the class is not
+- `--memory` - enables the memory diagnoser for this run even if the class is not
   decorated. Prefer the attribute.
-- `--exporters github` &mdash; emits a GitHub-flavored Markdown report alongside the
+- `--exporters github` - emits a GitHub-flavored Markdown report alongside the
   default outputs.
 
 ## 3. Evaluating memory usage
@@ -183,9 +183,9 @@ With `[MemoryDiagnoser]` (or `--memory`), each row of the results table includes
   `Allocated` to confirm a perf change is not just trading CPU for allocations (or
   vice versa).
 - `Gen0` ticking up while `Allocated` stays flat usually means you allocated a lot of
-  short-lived objects on previous iterations &mdash; recheck `[GlobalSetup]`.
+  short-lived objects on previous iterations - recheck `[GlobalSetup]`.
 - Stack-only types (`Span<T>`, `ref struct`s, `stackalloc`) do not contribute to
-  `Allocated`. Boxing of value types does &mdash; watch for accidental boxing through
+  `Allocated`. Boxing of value types does - watch for accidental boxing through
   `object`, non-generic interfaces, or `string.Format`.
 - On `net481` the JIT and BCL allocate differently than on the modern .NET target
   (`net10.0`). Always run both before declaring a win.
@@ -195,9 +195,9 @@ With `[MemoryDiagnoser]` (or `--memory`), each row of the results table includes
 After each run BenchmarkDotNet writes artifacts under
 `BenchmarkDotNet.Artifacts/results/` next to the executable, including:
 
-- `*.md` &mdash; GitHub-friendly Markdown table (paste this into PR descriptions).
-- `*.csv` and `*.html` &mdash; for spreadsheets / browser viewing.
-- `*-report-full.json` &mdash; raw measurements; useful for diffing two runs
+- `*.md` - GitHub-friendly Markdown table (paste this into PR descriptions).
+- `*.csv` and `*.html` - for spreadsheets / browser viewing.
+- `*-report-full.json` - raw measurements; useful for diffing two runs
   programmatically.
 
 The same table is also printed to the console at the end of the run.
@@ -220,10 +220,10 @@ The same table is also printed to the console at the end of the run.
 
 ## 5. Codegen-level optimization rules
 
-For decisions about *how to write* a hot path &mdash; whether to specialize a
+For decisions about *how to write* a hot path - whether to specialize a
 generic for primitives, choose between scalar/unrolled forms, defer to BCL
 primitives like `IndexOf` / `SequenceEqual`, or interpret a `net481`-vs-`net10`
-divergence &mdash; see the
+divergence - see the
 [framework-jit-optimization](../framework-jit-optimization/SKILL.md) skill.
 That skill is the right entry point for "this loop is slow on `net481`, what
 should I try?" questions, while this one is about authoring and running the
@@ -233,7 +233,7 @@ benchmarks themselves.
 
 `IDE0180` ("use tuple to swap values") is disabled globally in
 [.editorconfig](../../../.editorconfig) because the auto-fix is unsafe on
-`net481` &mdash; see [SpanSwapPerf.cs](../../../touki.perf/SpanSwapPerf.cs)
+`net481` - see [SpanSwapPerf.cs](../../../touki.perf/SpanSwapPerf.cs)
 for the measurements. The summary is:
 
 | Form | net481 RyuJIT | .NET 10 RyuJIT |
@@ -261,4 +261,4 @@ with a localized pragma rather than re-enabling the rule globally:
 
 Do **not** apply this to code under `touki/Framework/` (compiled only for
 .NET Framework) or to code shared across both targets without a
-`#if NET` / `#else` split &mdash; the .NET Framework branch will regress.
+`#if NET` / `#else` split - the .NET Framework branch will regress.

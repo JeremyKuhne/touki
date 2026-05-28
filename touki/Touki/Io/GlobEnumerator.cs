@@ -19,8 +19,8 @@ namespace Touki.Io;
 ///   This is a thin wrapper provided to make it easy to drive the
 ///   <see cref="Globbing"/> matcher across a real file system, primarily for
 ///   performance comparison against <see cref="MSBuildEnumerator"/>. The two enumerators
-///   accept different pattern dialects&#8212;<see cref="GlobDialect.PosixPath"/> for this
-///   one, MSBuild-style globs for <see cref="MSBuildEnumerator"/>&#8212;and have
+///   accept different pattern dialects-<see cref="GlobDialect.PosixPath"/> for this
+///   one, MSBuild-style globs for <see cref="MSBuildEnumerator"/>-and have
 ///   different recursion-pruning trade-offs, so they are not drop-in replacements for
 ///   each other.
 ///  </para>
@@ -194,7 +194,7 @@ public sealed class GlobEnumerator : MatchEnumerator<string>
         MatchSet matchSet = new(include);
 
         // Dedupe before compiling each exclude. The two rules mirror
-        // MSBuildSpecification's normalize/dedupe pass &#8212; together they remove
+        // MSBuildSpecification's normalize/dedupe pass - together they remove
         // ~15-20% of the per-file matcher work on net481 (and ~5% on net10) for
         // realistic exclude lists that include redundant subtree rules and
         // file-name patterns that can't match the include's file shape.
@@ -291,7 +291,7 @@ public sealed class GlobEnumerator : MatchEnumerator<string>
     /// <summary>
     ///  Returns <see langword="true"/> when <paramref name="pattern"/> ends with
     ///  <c>/**</c> or <c>\**</c> (optionally with a trailing path separator),
-    ///  reporting the length of the body that precedes the <c>**</c> &#8212;
+    ///  reporting the length of the body that precedes the <c>**</c> -
     ///  inclusive of the separator that splits the body from <c>**</c>.
     /// </summary>
     private static bool EndsWithSlashStarStar(string pattern, out int bodyLength)
@@ -322,7 +322,7 @@ public sealed class GlobEnumerator : MatchEnumerator<string>
 
     /// <summary>
     ///  Extracts the trailing literal of <paramref name="pattern"/>'s last segment
-    ///  &#8212; the characters after the last <c>*</c> in the last separator-bounded
+    ///  - the characters after the last <c>*</c> in the last separator-bounded
     ///  segment. Returns <see langword="true"/> when the segment is suitable for the
     ///  file-name disjointness check; the resulting <paramref name="literal"/> is a
     ///  <see cref="StringSegment"/> view over <paramref name="pattern"/> (no
@@ -379,8 +379,8 @@ public sealed class GlobEnumerator : MatchEnumerator<string>
 
     /// <summary>
     ///  Returns <see langword="true"/> when the exclude <paramref name="pattern"/>'s
-    ///  trailing literal is disjoint from <paramref name="includeLiteral"/> &#8212;
-    ///  neither is a suffix of the other &#8212; meaning no file can satisfy both.
+    ///  trailing literal is disjoint from <paramref name="includeLiteral"/> -
+    ///  neither is a suffix of the other - meaning no file can satisfy both.
     /// </summary>
     private static bool IsFileNameDisjoint(StringSegment includeLiteral, string pattern)
     {

@@ -18,7 +18,7 @@ public unsafe void Replace(T oldValue, T newValue)
 
     if (typeof(T) == typeof(char) || typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
     {
-        // The `& 0xFFFF` is load-bearing on net481 RyuJIT &mdash; see
+        // The `& 0xFFFF` is load-bearing on net481 RyuJIT - see
         // "Signed-primitive constant-propagation pitfall" below.
         ushort oldShort = (ushort)(Unsafe.As<T, ushort>(ref oldValue) & 0xFFFF);
         ushort newShort = (ushort)(Unsafe.As<T, ushort>(ref newValue) & 0xFFFF);
@@ -43,7 +43,7 @@ public unsafe void Replace(T oldValue, T newValue)
 ## Why `Unsafe.As<T, TPrimitive>(ref value)`
 
 A regular cast `(ushort)(object)oldValue` boxes. `Unsafe.As<T, ushort>(ref oldValue)`
-is a no-op reinterpret &mdash; the JIT sees the constant `typeof(T) == typeof(ushort)`
+is a no-op reinterpret - the JIT sees the constant `typeof(T) == typeof(ushort)`
 test before it, knows the cast is valid, and emits a direct load.
 
 ## Bit-equality equivalence classes
@@ -58,7 +58,7 @@ single typed pointer loop covers a whole class:
 | `int` / `uint` | 32 bits | `uint*` |
 | `long` / `ulong` / `IntPtr` (on 64-bit) | 64 bits | `ulong*` |
 
-`float` / `double` / `decimal` are **not** members of these classes &mdash; their
+`float` / `double` / `decimal` are **not** members of these classes - their
 `IEquatable` semantics differ from bit equality (NaN, negative zero,
 denormalized flags). Don't fold them in.
 
@@ -78,19 +78,19 @@ Always put this on the generic entry method when you specialize:
   attribute is doing real work, not just hinting.
 
 The inlining attribute is also why we don't need separate `extension(Span<char>)`
-overloads &mdash; the generic version with the `typeof` ladder, when inlined,
+overloads - the generic version with the `typeof` ladder, when inlined,
 generates code identical to a hand-written `Span<char>` overload.
 
 ## Verifying the JIT actually elides the dead branches
 
 For `T = int`, the `typeof(T) == typeof(char)` branch should become unreachable.
-You can confirm with a debugger by setting a breakpoint inside it &mdash; on a
+You can confirm with a debugger by setting a breakpoint inside it - on a
 Release build with the attribute applied, the JIT will refuse to set the
 breakpoint because the code was eliminated.
 
 If the elision is failing (e.g. you forget `[AggressiveInlining]`, or `T` is
 itself a generic in some outer context where `typeof(T)` isn't a JIT-time
-constant), you'll see all branches in the disassembly &mdash; and your benchmark
+constant), you'll see all branches in the disassembly - and your benchmark
 ratio will reflect it. Add the attribute, or hoist the call site so `T` is
 concrete.
 
@@ -110,7 +110,7 @@ Without the mask, `[AggressiveInlining]` plus a literal signed argument
 **Release** (Debug passes). The caller's int-promoted constant
 (`-1` &rarr; `0xFFFFFFFF`) propagates through `Unsafe.As<T, byte>` into the
 loop's `cmp` immediate as a 32-bit value. The `movzx`-loaded byte is in
-`[0, 0xFF]`, so `cmp ecx, 0FFFFFFFF` is unconditionally false &mdash; the loop
+`[0, 0xFF]`, so `cmp ecx, 0FFFFFFFF` is unconditionally false - the loop
 runs, finds nothing, returns silently.
 
 The cast alone (`(byte)Unsafe.As<...>`) does not fix it; RyuJIT's constant
@@ -127,7 +127,7 @@ int-promoted form already has zero upper bits). Always include `sbyte` and
 
 ## See also
 
-- [unrolling.md](unrolling.md) &mdash; what to put inside the per-primitive
+- [unrolling.md](unrolling.md) - what to put inside the per-primitive
   block.
-- [bcl-tradeoffs.md](bcl-tradeoffs.md) &mdash; whether to specialize at all,
+- [bcl-tradeoffs.md](bcl-tradeoffs.md) - whether to specialize at all,
   vs delegate to a BCL primitive.

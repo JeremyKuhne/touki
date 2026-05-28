@@ -32,20 +32,20 @@ release notes. It does **not** authorize the tag push. The
 
 Read-only checks:
 
-- `git remote -v` — confirm `origin` points at `JeremyKuhne/touki` (push
+- `git remote -v` - confirm `origin` points at `JeremyKuhne/touki` (push
   target).
-- `git rev-parse --abbrev-ref HEAD` — must be `main` or a release branch.
+- `git rev-parse --abbrev-ref HEAD` - must be `main` or a release branch.
   Refuse to tag from an arbitrary feature branch unless the user explicitly
   says so.
-- `git status --porcelain` — must be clean. If dirty, stop and ask.
-- `git log origin/main..HEAD` and `git log HEAD..origin/main` — must both be
+- `git status --porcelain` - must be clean. If dirty, stop and ask.
+- `git log origin/main..HEAD` and `git log HEAD..origin/main` - must both be
   empty. Tag must point at the published `origin/main` tip (or whatever the
   user confirmed in the previous bullet).
 
 Ask the user **which package** if not already obvious from the request:
 
-- `KlutzyNinja.Touki` — the main library.
-- `KlutzyNinja.Touki.TestSupport` — test helpers (rarely shipped; see
+- `KlutzyNinja.Touki` - the main library.
+- `KlutzyNinja.Touki.TestSupport` - test helpers (rarely shipped; see
   [docs/release-strategy](../../../touki.testsupport/README.md)).
 
 Use `vscode_askQuestions` only if ambiguous; if the user said "publish
@@ -89,12 +89,12 @@ prompt** the user with the current state explicit:
 Use `vscode_askQuestions` with these options (mark the matching-prior option
 as `recommended: true`):
 
-- `Stay in alpha` — bug fixes / additive work during early development.
-- `Promote to beta` — feature-complete for the upcoming Minor; only
+- `Stay in alpha` - bug fixes / additive work during early development.
+- `Promote to beta` - feature-complete for the upcoming Minor; only
   stabilization work expected.
-- `Promote to rc` — release candidate; only blocker bug fixes.
-- `Promote to stable` — drop the prerelease label entirely.
-- `Use a different label` — free-form.
+- `Promote to rc` - release candidate; only blocker bug fixes.
+- `Promote to stable` - drop the prerelease label entirely.
+- `Use a different label` - free-form.
 
 Channel rules of thumb:
 
@@ -125,10 +125,10 @@ underlying `Major.Minor.Patch` portion.
 For pre-1.0, the user may treat **Major** and **Minor** as both "Minor"
 during alpha/beta. That is fine; just confirm the call out loud:
 
-> "This change adds a public type but you're still in 0.1.x alpha — bump
+> "This change adds a public type but you're still in 0.1.x alpha - bump
 > to 0.2.0-alpha.1 (treating it as Minor) or stay at 0.1.0-alpha.13?"
 
-### When `AssemblyVersion` changes — and why it matters
+### When `AssemblyVersion` changes - and why it matters
 
 MinVer's defaults (used as-is in this repo, no overrides) produce:
 
@@ -144,11 +144,11 @@ Only a **Major** bump changes `AssemblyVersion`. That has real consequences:
   binding redirects (on .NET Framework). Strong-named assemblies make this
   stricter, and `touki.dll` is strong-named.
 - A change in `Version`/`FileVersion` *without* `AssemblyVersion` changing
-  is binary-compatible — consumers can drop the new DLL into an existing
+  is binary-compatible - consumers can drop the new DLL into an existing
   bin folder and it just works.
 
 **Therefore:** any binary breaking change *must* bump `Major`, even during
-0.x. Refusing to bump `Major` on a binary break — to "stay at 0.1.x" —
+0.x. Refusing to bump `Major` on a binary break - to "stay at 0.1.x" -
 silently keeps `AssemblyVersion = 0.0.0.0` across an incompatible
 boundary, which is a real foot-gun for downstream binders.
 
@@ -179,12 +179,12 @@ Examples (good):
 
 Examples (rejected by guard):
 
-- `v.0.1.0-alpha.11` — stray `.` after `v`. The historical 9/10/11 tags
+- `v.0.1.0-alpha.11` - stray `.` after `v`. The historical 9/10/11 tags
   hit this; do not recreate it.
-- `0.1.0-alpha.13` — missing `v` prefix.
-- `v0.1.0.alpha.13` — `.` instead of `-` before prerelease.
-- `v0.1` — missing patch component.
-- `v01.02.03` — leading zeros in numeric identifiers.
+- `0.1.0-alpha.13` - missing `v` prefix.
+- `v0.1.0.alpha.13` - `.` instead of `-` before prerelease.
+- `v0.1` - missing patch component.
+- `v01.02.03` - leading zeros in numeric identifiers.
 
 The regex used by the workflow guards (must match):
 
@@ -207,7 +207,7 @@ The regex used by the workflow guards (must match):
 
 Wait for an explicit publishing verb (`tag`, `push the tag`, `ship it`,
 `publish`). Do **not** infer approval from the original "publish a release"
-request — that authorized the *preparation*, not the push. See AGENTS.md.
+request - that authorized the *preparation*, not the push. See AGENTS.md.
 
 ## 7. Create and push the tag
 
@@ -218,7 +218,7 @@ git tag -a v0.1.0-alpha.13 -m "v0.1.0-alpha.13"
 git push origin v0.1.0-alpha.13
 ```
 
-Do **not** use lightweight tags — annotated tags carry the tagger and date
+Do **not** use lightweight tags - annotated tags carry the tagger and date
 that show up in GitHub releases.
 
 Pushing the tag triggers the publish workflow. Watch the run:
@@ -229,10 +229,10 @@ Pushing the tag triggers the publish workflow. Watch the run:
 The workflow validates the tag format, packs, OIDC-logs into NuGet, and
 pushes with `--skip-duplicate`. The main publish workflow filters out
 `KlutzyNinja.Touki.TestSupport.*` from its glob, and TestSupport's workflow
-fires only on `ts-v*` — they will not stomp each other.
+fires only on `ts-v*` - they will not stomp each other.
 
 If the workflow fails, treat it like any CI failure: do **not** delete and
-re-push the tag without explicit user approval — that's destructive and the
+re-push the tag without explicit user approval - that's destructive and the
 nuget.org publish is irreversible. Fix forward with the next tag in the
 stream.
 
@@ -243,7 +243,7 @@ not published, both workflows accept a `workflow_dispatch` with a
 required `tag` input. Provide the **exact existing tag name** (e.g.
 `v0.1.0-alpha.13` or `ts-v0.1.0-alpha.9`); the workflow checks out that
 ref, runs the same tag-format guard, and publishes. Do **not** dispatch
-without a tag input — the workflow will fail validation rather than
+without a tag input - the workflow will fail validation rather than
 publish a `0.0.0-alpha.0.<height>` MinVer fallback.
 
 ## 8. Create the GitHub release
@@ -316,7 +316,7 @@ Notes on the template:
 - If you bumped `KlutzyNinja.Touki`, consider whether the sample's pinned
   version in [Directory.Packages.props](../../../Directory.Packages.props)
   should advance. The sample dog-foods the released package; leaving it
-  stale defeats the purpose. (Open as a follow-up PR — not part of the
+  stale defeats the purpose. (Open as a follow-up PR - not part of the
   release commit/tag.)
 - If you bumped `Major` (binary break), also bump `Major` of TestSupport
   on its next release. They don't have to march in lockstep but TestSupport
@@ -326,14 +326,14 @@ Notes on the template:
 
 ## Cross-references
 
-- [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) — run before
+- [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - run before
   shipping any change that lands in a release.
-- [`address-pr-feedback`](../address-pr-feedback/SKILL.md) — used to land
+- [`address-pr-feedback`](../address-pr-feedback/SKILL.md) - used to land
   the changes that this skill then ships.
-- AGENTS.md § "Working with the user on changes" — publish-boundary rule
+- AGENTS.md § "Working with the user on changes" - publish-boundary rule
   governing the approval checkpoint in step 6.
-- [Directory.Build.targets](../../../Directory.Build.targets) — central
+- [Directory.Build.targets](../../../Directory.Build.targets) - central
   MinVer wiring.
 - [.github/workflows/publish.yml](../../../.github/workflows/publish.yml),
   [.github/workflows/publishtestsupport.yml](../../../.github/workflows/publishtestsupport.yml)
-  — the publish pipelines themselves.
+  - the publish pipelines themselves.

@@ -73,7 +73,7 @@ public enum GlobOptions
     ///     <description>
     ///      <see cref="GlobDialect.Posix"/>, <see cref="GlobDialect.PosixPath"/>,
     ///      <see cref="GlobDialect.Bash"/>, and <see cref="GlobDialect.Git"/> use
-    ///      <b>ASCII-only</b> case folding &#8211; only the 26 ASCII letter pairs match
+    ///      <b>ASCII-only</b> case folding - only the 26 ASCII letter pairs match
     ///      case-insensitively; non-ASCII characters compare strictly. This matches the
     ///      documented behavior of POSIX
     ///      <see href="https://man7.org/linux/man-pages/man3/fnmatch.3.html"><c>fnmatch(FNM_CASEFOLD)</c></see>,
@@ -144,7 +144,7 @@ public enum GlobOptions
     ///   Models bash extglob (<c>shopt -s extglob</c>) and POSIX
     ///   <c>fnmatch(FNM_EXTMATCH)</c>. Each construct is a
     ///   <c>|</c>-separated list of inner glob patterns. Inner wildcards still
-    ///   respect path semantics &#8212; <c>*</c> and <c>?</c> inside an
+    ///   respect path semantics - <c>*</c> and <c>?</c> inside an
     ///   alternative do not cross the path separator on path-aware dialects.
     ///  </para>
     ///  <para>

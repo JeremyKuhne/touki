@@ -11,27 +11,27 @@ the skill whenever a reviewer flags something not yet listed.
 
 **Related skills:**
 
-- [`polyfill-dotnet-api`](../polyfill-dotnet-api/SKILL.md) &mdash; the
+- [`polyfill-dotnet-api`](../polyfill-dotnet-api/SKILL.md) - the
   source-preference and design rules for adding a new polyfill that
   this checklist then validates.
-- [`create-pr`](../create-pr/SKILL.md) &mdash; the workflow this checklist
+- [`create-pr`](../create-pr/SKILL.md) - the workflow this checklist
   precedes.
-- [`address-pr-feedback`](../address-pr-feedback/SKILL.md) &mdash; the
+- [`address-pr-feedback`](../address-pr-feedback/SKILL.md) - the
   follow-up workflow that re-runs this checklist after review comments.
-- [`performance-testing`](../performance-testing/SKILL.md) &mdash; benchmark
+- [`performance-testing`](../performance-testing/SKILL.md) - benchmark
   authoring required by &sect;7 when a perf claim drives a code change.
 - [`framework-jit-optimization`](../framework-jit-optimization/SKILL.md)
-  &mdash; net481 RyuJIT tradeoffs cited in &sect;5 and &sect;7.
-- [`agent-files-review`](../agent-files-review/SKILL.md) &mdash; for any
+  - net481 RyuJIT tradeoffs cited in &sect;5 and &sect;7.
+- [`agent-files-review`](../agent-files-review/SKILL.md) - for any
   changes under `.agents/`, `AGENTS.md`, or `.github/copilot-instructions.md`.
-- [`security-review`](../security-review/SKILL.md) &mdash; the
+- [`security-review`](../security-review/SKILL.md) - the
   security-specific subset (abusive-input handling, length / integer
   overflow, allocation and algorithmic DoS, argument validation, and
   every use of `unsafe` / `Unsafe.*` / `MemoryMarshal.*` /
   `Marshal.*` or any BCL API whose docs say "unsafe" or "caller
   must"). Invoke alongside this checklist for any change that adds
   or modifies a member accepting caller-supplied data, or any change
-  that touches one of those caller-validated constructs &mdash; the
+  that touches one of those caller-validated constructs - the
   common case, not a niche.
 
 ## 1. Tests cover every new branch
@@ -46,7 +46,7 @@ For each new `public` (or `InternalsVisibleTo`-internal) member:
   the fast path *and* a subclass override.
 - Generic primitive specializations: every specialized branch needs a
   test. Don't rely on `byte`/`int` covering `bool`/`sbyte`/`short`/
-  `ushort`/`uint`/`long`/`ulong` &mdash; each has independent ref
+  `ushort`/`uint`/`long`/`ulong` - each has independent ref
   reinterpretation.
 - Security-sensitive APIs (`FixedTimeEquals`, hex decode): cover equal,
   differing-content, length mismatch, both empty, one empty, and a long
@@ -54,7 +54,7 @@ For each new `public` (or `InternalsVisibleTo`-internal) member:
 - Allocating APIs (`Concat`, `ToHexString`): include an
   `OverflowException` test on the length sum (see &sect;3).
 
-Test hygiene for the tests themselves &mdash; the recurring miss list
+Test hygiene for the tests themselves - the recurring miss list
 that costs the most review rounds on coverage-only PRs:
 
 - **Test method names start with the method under test.**
@@ -64,7 +64,7 @@ that costs the most review rounds on coverage-only PRs:
   `SliceAtNull_ReadOnlySpan_Empty_ReturnsEmpty` is right.
 - **Every `IDisposable` test local uses `using` or `try`/`finally`.**
   `TempFolder`, `IEnumerationMatcher`, anything returned by
-  `MSBuildMatchBuilder.FromSpecification`, `ArrayPoolList<T>` &mdash;
+  `MSBuildMatchBuilder.FromSpecification`, `ArrayPoolList<T>` -
   a bare local leaks the resource when an assertion fails. See
   the "Disposables in test bodies" section in `tests.instructions.md`
   for the pattern when the test itself exercises explicit `Dispose()`.
@@ -103,7 +103,7 @@ for the canonical `OverflowException` test pattern.
 
 ## 4. Throw helpers
 
-- Null guards use `ArgumentNullException.ThrowIfNull(arg)` &mdash; the
+- Null guards use `ArgumentNullException.ThrowIfNull(arg)` - the
   polyfill at
   [touki/Framework/Polyfills/System/ArgumentNullExtensions.cs](../../../touki/Framework/Polyfills/System/ArgumentNullExtensions.cs)
   covers net472.
@@ -118,7 +118,7 @@ The whole reason callers reach for a span overload is to avoid the
 allocation the array overload makes. A polyfill that allocates a temp
 `T[]` to delegate to the BCL has thrown that benefit away.
 
-**Default to allocation-free, even if 5&ndash;15% slower.** Document
+**Default to allocation-free, even if 5-15% slower.** Document
 the trade-off in `<remarks>` so callers understand the choice.
 
 Strategies used elsewhere in this repo (look here before inventing a
@@ -148,7 +148,7 @@ new one):
   internal helpers directly without exposing them in the public API.
 
 If the only way to be allocation-free is to call an `internal` BCL API,
-allocate &mdash; do not reflect into the BCL.
+allocate - do not reflect into the BCL.
 
 ## 6. Behavior parity with the modern BCL
 
@@ -156,7 +156,7 @@ allocate &mdash; do not reflect into the BCL.
   inputs, length-zero destination, exception types and message family).
 - Mirror the BCL exception type and message family for observable cases.
 - For stateful types (`HashCode`, `Random`), document any deviation in
-  `<remarks>`. `HashCode` is process-local in the BCL too &mdash;
+  `<remarks>`. `HashCode` is process-local in the BCL too -
   within-process determinism is the only contract.
 - For overridable members (`Random.NextBytes`, `Encoding.GetBytes`),
   the polyfill's fast path applies only when
@@ -165,7 +165,7 @@ allocate &mdash; do not reflect into the BCL.
 
 ## 7. Performance claims name the JIT and are measured
 
-State which JIT &mdash; **net481 RyuJIT** (no tiered JIT, no PGO, no
+State which JIT - **net481 RyuJIT** (no tiered JIT, no PGO, no
 `EqualityComparer<T>.Default` intrinsic, weaker inlining) vs **modern
 .NET RyuJIT** (.NET 6+, tiered, PGO, devirtualizes
 `EqualityComparer<T>.Default`). Unqualified "RyuJIT does X" claims are
@@ -203,9 +203,9 @@ the overhead in `<remarks>` and keep the benchmark file in `touki.perf/`.
 
 ## 9. Final audit before staging
 
-- `git status --short` &mdash; delete leftover probe / scratch files;
+- `git status --short` - delete leftover probe / scratch files;
   confirm every listed file belongs in the change set.
-- `git diff --check` &mdash; whitespace.
+- `git diff --check` - whitespace.
 - **Rebase onto the canonical `main` if the branch trails it.** Use
   `upstream/main` when working from a fork (the canonical repo lives at
   `upstream`), `origin/main` when cloning the canonical repo directly.
@@ -220,7 +220,7 @@ the overhead in `<remarks>` and keep the benchmark file in `touki.perf/`.
   options including `-ChangedOnly` and `-Base`).
 - Build both TFMs.
 - Run `dotnet test` in **both Debug and Release**. Release-mode RyuJIT
-  inlining surfaces bugs Debug doesn't &mdash; e.g.
+  inlining surfaces bugs Debug doesn't - e.g.
   `[AggressiveInlining]` + `Unsafe.As<T, byte>(ref param)` propagates
   the caller's int-promoted argument into the comparison immediate
   (`cmp ecx, 0xFFFFFFFF` instead of `cmp ecx, 0xFF`) for negative

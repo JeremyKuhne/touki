@@ -31,7 +31,7 @@ the BCL namespace means callers reach the polyfill through the same
 `using System;` they already have for the BCL type.
 
 Anything outside `Polyfills/` is **not** a polyfill of public BCL
-surface &mdash; it is either Touki-specific functionality
+surface - it is either Touki-specific functionality
 (under `touki/Framework/Touki/`) or shared library code (under
 [touki/Touki/](../touki/Touki/)).
 
@@ -45,7 +45,7 @@ The wrapper class lives in the BCL namespace but adds **members**, not a
 new type.
 
 If a future Microsoft package backports the same member to net472,
-**the BCL member wins lookup automatically** &mdash; instance and static
+**the BCL member wins lookup automatically** - instance and static
 members defined on the type itself bind in preference to extension members.
 The polyfill silently becomes inert and can be removed in a later Touki
 release. **No `extern alias` is needed for callers** in this case.
@@ -67,7 +67,7 @@ so Touki adds it:
 If a future Microsoft package ships these same types on net472, your
 project will see two types with the same fully qualified name (one from
 `KlutzyNinja.Touki`, one from the new package). The compiler reports
-**CS0436** or **CS0433** &mdash; *the type exists in multiple referenced
+**CS0436** or **CS0433** - *the type exists in multiple referenced
 assemblies*.
 
 To pick a specific one, use **`extern alias`**:

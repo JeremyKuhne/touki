@@ -13,7 +13,7 @@ namespace touki.perf;
 ///  Per-pattern-shape match-throughput comparison between
 ///  <see cref="GlobSpecification"/>(<see cref="GlobDialect.Simple"/>) and the BCL
 ///  <see cref="FileSystemName.MatchesSimpleExpression(System.ReadOnlySpan{char}, System.ReadOnlySpan{char}, bool)"/>
-///  helper. The BCL implementation is the reference for the Simple dialect —
+///  helper. The BCL implementation is the reference for the Simple dialect -
 ///  every <see cref="Directory.EnumerateFiles(string, string)"/>-style call routes
 ///  through it.
 /// </summary>

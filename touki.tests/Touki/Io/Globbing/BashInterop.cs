@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -54,7 +54,7 @@ internal static class BashInterop
         // On Windows, prefer the Git for Windows install over whatever `bash.exe`
         // happens to be on PATH first. The WSL launcher stub at
         // `%LocalAppData%\Microsoft\WindowsApps\bash.exe` is installed automatically
-        // when WSL is enabled and would otherwise win the PATH walk &mdash; but it's
+        // when WSL is enabled and would otherwise win the PATH walk - but it's
         // a wrapper around `wsl.exe`, doesn't forward environment variables, and
         // doesn't handle bash's `[[ ... ]]` conditional syntax the same way. Git
         // Bash ships a real GNU bash 5.x and is what our oracle assumes.

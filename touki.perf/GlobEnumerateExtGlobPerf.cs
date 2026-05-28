@@ -37,14 +37,14 @@ namespace touki.perf;
 ///   <see cref="GlobDialect.Bash"/> dialect. The factory recognizes this
 ///   suffix-set shape and lowers it to a <c>MultiSuffixGlobStrategy</c> wrapped
 ///   in <c>GlobStarFileNameStrategy</c>, so the per-file hot path is a tight
-///   <c>EndsWith</c> sweep &#8212; not the recursive bytecode interpreter.
+///   <c>EndsWith</c> sweep - not the recursive bytecode interpreter.
 ///   Other extglob shapes (e.g. <c>+(...)</c>, alternatives that are not pure
 ///   <c>*literal</c>) skip this specialization and flow through the recursive
 ///   walker in <c>CompiledGlobStrategy</c>.
 ///  </para>
 ///  <para>
 ///   <b>Excludes:</b> none. Both walkers descend the same tree, so the
-///   difference is the per-file matching cost &#8212; not directory pruning,
+///   difference is the per-file matching cost - not directory pruning,
 ///   not I/O, not exclude-list compile cost.
 ///  </para>
 ///  <para>

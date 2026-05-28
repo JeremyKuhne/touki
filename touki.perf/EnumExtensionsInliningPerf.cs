@@ -17,7 +17,7 @@ namespace touki.perf;
 ///  <para>
 ///   The production extensions are extension members on a generic
 ///   <c>T : unmanaged, Enum</c>. To isolate the inlining decision we copy each
-///   body into a pair of static generic helpers below — <c>_NoInline</c>
+///   body into a pair of static generic helpers below - <c>_NoInline</c>
 ///   variants get <c>NoInlining</c> so we always pay a real call+ret, and
 ///   <c>_Aggressive</c> variants get <c>AggressiveInlining</c>. The
 ///   <c>_Default</c> column lets the JIT pick its own heuristic (which on
@@ -147,7 +147,7 @@ public unsafe class EnumExtensionsInliningPerf
 
     // ============== Helper implementations ==============
     // Bodies copied verbatim from EnumExtensions.cs (the net472 polyfill
-    // path for AreFlagsSet — equivalent to the modern HasFlag intrinsic).
+    // path for AreFlagsSet - equivalent to the modern HasFlag intrinsic).
 
     private static bool AreFlagsSet_Default<T>(T value, T flags) where T : unmanaged, Enum
     {

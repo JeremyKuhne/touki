@@ -13,12 +13,12 @@ confirmation.
 *work* of preparing one. It does **not** authorize the commit or the push.
 The **Approval checkpoint** inside step 3 (Commit changes) is the gate:
 staging happens before it, `git commit` and everything after happen only
-once the user supplies an explicit publishing verb &mdash; `commit`, `push`,
+once the user supplies an explicit publishing verb - `commit`, `push`,
 `ship it`, or equivalent. See AGENTS.md § "Working with the user on
 changes" for the canonical rule and the recurring not-approval phrasings.
 
 Before running this workflow, walk through the
-[`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) checklist &mdash; it
+[`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) checklist - it
 catches the test, allocation, overflow-arithmetic, and TFM-phrasing mistakes
 that have repeatedly cost a review round-trip on this repo. If the change
 polyfills a .NET API for .NET Framework, the
@@ -29,10 +29,10 @@ design rules the self-review then validates against.
 
 Run these (read-only) checks first:
 
-- `git remote -v` — determine whether an `upstream` remote exists.
-- `git rev-parse --abbrev-ref HEAD` — current branch name.
-- `git status --porcelain` — uncommitted changes.
-- `git log --oneline @{u}.. 2>$null` (if upstream is set) — unpushed commits.
+- `git remote -v` - determine whether an `upstream` remote exists.
+- `git rev-parse --abbrev-ref HEAD` - current branch name.
+- `git status --porcelain` - uncommitted changes.
+- `git log --oneline @{u}.. 2>$null` (if upstream is set) - unpushed commits.
 
 Decide the PR base:
 
@@ -93,14 +93,14 @@ original "open a PR" request.
 
 **Prefer the VS Code GitHub Pull Requests tool**
 (`github-pull-request_create_pull_request`) when it is available in the
-current tool set — it works without requiring `gh` to be installed and
+current tool set - it works without requiring `gh` to be installed and
 returns the PR number/URL directly. Fall back to the GitHub CLI (`gh`) if
 the VS Code tool is not available, and only fall back to a browser compare
 URL if neither is available.
 
 Determine the target with the rule from step 1.
 
-### Option A — VS Code GitHub Pull Requests tool (preferred)
+### Option A - VS Code GitHub Pull Requests tool (preferred)
 
 Call `github-pull-request_create_pull_request` with:
 
@@ -110,7 +110,7 @@ Call `github-pull-request_create_pull_request` with:
 - For an upstream-targeted PR, set `repo` to `{ owner: <upstreamOwner>, name: <repo> }` and `headOwner` to the fork owner.
 - For an origin-only PR, omit `repo` and `headOwner` (they default correctly).
 
-### Option B — GitHub CLI fallback
+### Option B - GitHub CLI fallback
 
 - **Upstream exists**:
 
@@ -133,7 +133,7 @@ Call `github-pull-request_create_pull_request` with:
 - If the user has not supplied a title/body, propose one and confirm before
   creating.
 
-### Option C — Browser fallback
+### Option C - Browser fallback
 
 If neither the VS Code tool nor `gh` is available, print the compare URL:
 
@@ -155,7 +155,7 @@ has different commit/push approval semantics.
 
 ## Guardrails
 
-- Never commit directly to `main`, even if the user is currently on it —
+- Never commit directly to `main`, even if the user is currently on it -
   always branch first.
 - Never delete branches, force-push, or rewrite history as part of this
   workflow.

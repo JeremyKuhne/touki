@@ -7,7 +7,7 @@ using Touki.Io.Globbing;
 namespace touki.perf;
 
 /// <summary>
-///  Compile-time cost baseline for complex <see cref="GlobSpecification"/> inputs —
+///  Compile-time cost baseline for complex <see cref="GlobSpecification"/> inputs -
 ///  the kind that hit the full bytecode encoder, the
 ///  <c>TryNormalizeRuns</c> per-dialect normalization, the gitignore marker strip,
 ///  and the segment-bounded globstar emitter. Use this as the regression line for

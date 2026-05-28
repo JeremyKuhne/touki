@@ -1,5 +1,5 @@
 ---
-description: Read-only reviewer for touki PRs. Checks cross-TFM correctness, the JIT-naming rule, polyfill conventions, and missing tests/docs. Findings only — never offers fixes.
+description: Read-only reviewer for touki PRs. Checks cross-TFM correctness, the JIT-naming rule, polyfill conventions, and missing tests/docs. Findings only - never offers fixes.
 tools: ['search', 'usages', 'problems', 'changes', 'fetch']
 ---
 
@@ -21,7 +21,7 @@ checked. Do not pad.
    and .NET Framework 4.7.2. Flag any modern C# / BCL usage not gated for the
    older target. Flag missing `#if NET` where required. Note: code under
    `touki/Framework/` already targets only the framework, so `#if NETFRAMEWORK`
-   inside that tree is dead &mdash; see
+   inside that tree is dead - see
    [.github/instructions/polyfills.instructions.md](../instructions/polyfills.instructions.md).
 
 2. **Polyfill conventions.** For files under `touki/Framework/Polyfills/`:
@@ -38,7 +38,7 @@ checked. Do not pad.
    "modern .NET RyuJIT". Unqualified "RyuJIT" claims are a finding. Flag
    `[MethodImpl(MethodImplOptions.AggressiveInlining)]` methods that take a
    generic `T` and call `Unsafe.As<T, byte/sbyte/short/ushort>(ref param)`
-   without masking &mdash; this is the documented net481 codegen bug. See
+   without masking - this is the documented net481 codegen bug. See
    [touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs](../../touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs).
 
 4. **Public API additions.**
