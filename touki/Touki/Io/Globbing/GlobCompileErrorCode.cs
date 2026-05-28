@@ -44,5 +44,17 @@ public enum GlobCompileErrorCode
     /// <summary>
     ///  The pattern exceeded an internal size limit (token count, literal length, etc.).
     /// </summary>
-    PatternTooLarge
+    PatternTooLarge,
+
+    /// <summary>
+    ///  An extended-glob construct's body was malformed (for example, an empty
+    ///  alternation list <c>?()</c>).
+    /// </summary>
+    InvalidExtGlobBody,
+
+    /// <summary>
+    ///  An extended-glob construct exceeded an internal complexity limit
+    ///  (nesting depth or alternative count).
+    /// </summary>
+    FeatureLimitExceeded
 }

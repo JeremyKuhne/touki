@@ -17,6 +17,7 @@ public sealed partial class GlobSpecification
             public bool HasQuestionMarks;
             public bool HasClasses;
             public bool HasEscapes;
+            public bool HasExtGlob;
             public bool LeadsWithStar;
             public bool EndsWithStar;
             public bool IsAllStars;

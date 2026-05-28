@@ -6,6 +6,9 @@
 # Loose .txt files in the repo root (scratch / perf output / logs)
 /*.txt
 
+# Local scratch space for plans, notes, throwaway repros. Never committed.
+/scratch/
+
 # User-specific files
 *.rsuser
 *.suo

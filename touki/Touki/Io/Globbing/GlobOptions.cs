@@ -141,15 +141,21 @@ public enum GlobOptions
     /// </summary>
     /// <remarks>
     ///  <para>
-    ///   <b>Not yet implemented.</b> The flag is reserved on the public surface so
-    ///   the eventual API doesn't shift bit values, but the compile pipeline does
-    ///   not currently parse or match extglob constructs. Patterns containing
-    ///   <c>?(…)</c>, <c>*(…)</c>, <c>+(…)</c>, <c>@(…)</c>, or <c>!(…)</c> compile
-    ///   today as if those characters were literal, which is silently incorrect for
-    ///   the extglob semantics. Tracked as task F1.3 in
-    ///   <c>docs/globbing-feature-plan.md</c>.
+    ///   Models bash extglob (<c>shopt -s extglob</c>) and POSIX
+    ///   <c>fnmatch(FNM_EXTMATCH)</c>. Each construct is a
+    ///   <c>|</c>-separated list of inner glob patterns. Inner wildcards still
+    ///   respect path semantics &#8212; <c>*</c> and <c>?</c> inside an
+    ///   alternative do not cross the path separator on path-aware dialects.
+    ///  </para>
+    ///  <para>
+    ///   The compile pipeline enforces hard limits to bound worst-case
+    ///   alternation backtracking: max nesting depth of 8 levels, max 32
+    ///   alternatives per construct. Patterns that exceed either cap fail to
+    ///   compile with <see cref="GlobCompileErrorCode.FeatureLimitExceeded"/>.
+    ///   Empty bodies (<c>?()</c>) fail with
+    ///   <see cref="GlobCompileErrorCode.InvalidExtGlobBody"/>; an empty
+    ///   alternative (<c>?(|)</c>) is allowed and matches the empty string.
     ///  </para>
     /// </remarks>
-    [Obsolete("GlobOptions.AllowExtGlob is reserved but not yet implemented; setting it has no effect on the compiled matcher.", error: false)]
     AllowExtGlob = 1 << 4
 }

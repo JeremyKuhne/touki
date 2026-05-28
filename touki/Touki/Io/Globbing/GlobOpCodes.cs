@@ -6,7 +6,7 @@ namespace Touki.Io.Globbing;
 
 /// <summary>
 ///  Opcode markers used by <see cref="CompiledGlobStrategy"/>'s bytecode-in-a-string
-///  encoding. Values are Unicode noncharacters (<c>U+FDD0..U+FDD4</c>), which are
+///  encoding. Values are Unicode noncharacters (<c>U+FDD0..U+FDD8</c>), which are
 ///  reserved by the Unicode standard for application-internal use and never appear
 ///  in conforming text.
 /// </summary>
@@ -63,4 +63,35 @@ internal static class GlobOpCodes
     ///  <see cref="GlobStarFlagLead"/>)".
     /// </summary>
     public const int GlobStarFlagTrail = 2;
+
+    /// <summary>
+    ///  Start of an extglob alternation block (one of <c>?(…)</c>, <c>*(…)</c>,
+    ///  <c>+(…)</c>, <c>@(…)</c>, <c>!(…)</c>). Followed by two payload chars:
+    ///  the <i>kind</i> character (one of <c>'?'</c>, <c>'*'</c>, <c>'+'</c>,
+    ///  <c>'@'</c>, <c>'!'</c>) and the total length (in chars) of the block
+    ///  from <see cref="AltStart"/> through the matching <see cref="AltEnd"/>
+    ///  inclusive. The block contains zero or more alternative bodies separated
+    ///  by <see cref="AltSep"/>, with each body being a self-contained sub-program.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Emitted only when <see cref="GlobOptions.AllowExtGlob"/> is set at compile
+    ///   time. Nested alternations encode recursively with their own
+    ///   <see cref="AltStart"/>/<see cref="AltEnd"/> pair.
+    ///  </para>
+    /// </remarks>
+    public const char AltStart = '\uFDD6';
+
+    /// <summary>
+    ///  Separator between alternatives inside an extglob block. No payload.
+    ///  Always paired with an enclosing <see cref="AltStart"/> /
+    ///  <see cref="AltEnd"/>.
+    /// </summary>
+    public const char AltSep = '\uFDD7';
+
+    /// <summary>
+    ///  End of an extglob alternation block. No payload. Matches the most
+    ///  recent unmatched <see cref="AltStart"/>.
+    /// </summary>
+    public const char AltEnd = '\uFDD8';
 }

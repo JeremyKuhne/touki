@@ -26,7 +26,7 @@ namespace Touki.Io.Globbing;
 ///   separate static methods so the case branch is hoisted out of the hot loop.
 ///  </para>
 /// </remarks>
-internal sealed class CompiledGlobStrategy : GlobStrategy
+internal sealed partial class CompiledGlobStrategy : GlobStrategy
 {
     private readonly string _program;
     private readonly int _nfaProgramLength;
@@ -42,12 +42,13 @@ internal sealed class CompiledGlobStrategy : GlobStrategy
     ///  <c>**</c>).
     /// </summary>
     private readonly bool _hasGlobStar;
+    private readonly bool _hasExtGlob;
 
     /// <summary>
     ///  Constructs a matcher with no trailing-literal anchor (the program is run end-to-end).
     /// </summary>
     public CompiledGlobStrategy(string program, GlobDialect dialect, GlobOptions options)
-        : this(program, program.Length, tailStart: -1, tailLength: 0, hasGlobStar: false, dialect, options)
+        : this(program, program.Length, tailStart: -1, tailLength: 0, hasGlobStar: false, hasExtGlob: false, dialect, options)
     {
     }
 
@@ -65,6 +66,7 @@ internal sealed class CompiledGlobStrategy : GlobStrategy
         int tailStart,
         int tailLength,
         bool hasGlobStar,
+        bool hasExtGlob,
         GlobDialect dialect,
         GlobOptions options)
         : base(dialect, options)
@@ -74,6 +76,7 @@ internal sealed class CompiledGlobStrategy : GlobStrategy
         _tailStart = tailStart;
         _tailLength = tailLength;
         _hasGlobStar = hasGlobStar;
+        _hasExtGlob = hasExtGlob;
         _literalPathPrefix = ComputeLiteralPathPrefix(program.AsSpan(0, nfaProgramLength), Separator);
     }
 
@@ -199,6 +202,11 @@ internal sealed class CompiledGlobStrategy : GlobStrategy
             {
                 return false;
             }
+        }
+
+        if (_hasExtGlob)
+        {
+            return MatchExtGlob(first, second, program, Separator, IgnoreCaseKind);
         }
 
         if (IgnoreCaseKind == IgnoreCaseKind.Off)
