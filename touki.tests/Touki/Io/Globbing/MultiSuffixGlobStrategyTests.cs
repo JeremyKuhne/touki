@@ -90,10 +90,10 @@ public class MultiSuffixGlobStrategyTests
     // Shapes the specialization intentionally rejects fall through to the
     // bytecode interpreter, which must still answer correctly. These tests
     // pin the safety net.
-    //   `?(...)`  &mdash; wrong extglob kind
-    //   `+(...)`  &mdash; wrong extglob kind
-    //   `*(...)`  &mdash; wrong extglob kind
-    //   `!(...)`  &mdash; wrong extglob kind
+    //   `?(...)`  - wrong extglob kind
+    //   `+(...)`  - wrong extglob kind
+    //   `*(...)`  - wrong extglob kind
+    //   `!(...)`  - wrong extglob kind
     //   mixed-shape body (literal alt next to `*lit` alt)
     [InlineData("**/?(*.cs)", "src/", "foo.cs", true)]
     [InlineData("**/?(*.cs)", "src/", "foo.md", false)]
@@ -157,11 +157,11 @@ public class MultiSuffixGlobStrategyTests
     // criteria must still compile and match correctly through the recursive
     // walker. Pins the rejection arms so the factory paths stay covered.
     //
-    //   - `*` (bare AnyRun-only alt) — zero suffix length, rejected.
-    //   - `*[a]` — bracket class inside the suffix.
-    //   - `*?` — `?` inside the suffix (any-char wildcard).
-    //   - `foo` — alt missing the leading `*`.
-    //   - `*foo|@(bar)` — alt that opens a nested extglob in the suffix.
+    //   - `*` (bare AnyRun-only alt) - zero suffix length, rejected.
+    //   - `*[a]` - bracket class inside the suffix.
+    //   - `*?` - `?` inside the suffix (any-char wildcard).
+    //   - `foo` - alt missing the leading `*`.
+    //   - `*foo|@(bar)` - alt that opens a nested extglob in the suffix.
     [InlineData("**/@(*)", "src/", "anything", true)]
     [InlineData("**/@(*[ab])", "src/", "fooa", true)]
     [InlineData("**/@(*[ab])", "src/", "fooc", false)]

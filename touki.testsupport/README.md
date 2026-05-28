@@ -15,10 +15,10 @@ extensions used by the touki test suite.
 
 ## Notes
 
-This package is **not AOT-friendly** — it uses reflection to reach private
+This package is **not AOT-friendly** - it uses reflection to reach private
 members. It is intended for use from test projects only. Do not take a
 dependency on it from production code.
 
 ## License
 
-MIT — see [LICENSE](https://github.com/JeremyKuhne/touki/blob/main/LICENSE).
+MIT - see [LICENSE](https://github.com/JeremyKuhne/touki/blob/main/LICENSE).

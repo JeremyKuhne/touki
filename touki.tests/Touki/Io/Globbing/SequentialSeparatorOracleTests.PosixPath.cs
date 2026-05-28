@@ -15,7 +15,7 @@ namespace Touki.Io.Globbing;
 /// <remarks>
 ///  <para>
 ///   Linux/macOS only. With <c>FNM_PATHNAME</c>, runs of <c>/</c> in the pattern are
-///   <b>not</b> coalesced by the libc implementation — each <c>/</c> is a literal
+///   <b>not</b> coalesced by the libc implementation - each <c>/</c> is a literal
 ///   separator that must appear in the input at the corresponding position. This contrasts
 ///   with the MSBuild dialect (which coalesces).
 ///  </para>

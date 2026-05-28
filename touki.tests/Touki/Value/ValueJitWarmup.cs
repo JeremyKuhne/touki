@@ -4,7 +4,7 @@
 
 using Touki.Text;
 
-namespace Touki.ValueTests;
+namespace Touki;
 
 /// <summary>
 ///  Forces JIT compilation of the <see cref="Value"/> generic

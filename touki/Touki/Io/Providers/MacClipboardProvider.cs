@@ -55,7 +55,7 @@ internal sealed unsafe partial class MacClipboardProvider : IClipboardProvider
     // NSPasteboardTypeString = @"public.utf8-plain-text" since OS X 10.6.
     private const string PasteboardTypeString = "public.utf8-plain-text";
 
-    // Lazily-resolved class and selector handles. Resolution is idempotent — the
+    // Lazily-resolved class and selector handles. Resolution is idempotent - the
     // Objective-C runtime returns the same pointer for repeated lookups. AppKit
     // must be loaded first (see <see cref="s_appKitHandle"/>) for NSPasteboard
     // to be registered; the field initializer order matters.
@@ -205,7 +205,7 @@ internal sealed unsafe partial class MacClipboardProvider : IClipboardProvider
                 return false;
             }
 
-            // [pasteboard clearContents] — ignore the returned NSInteger changeCount.
+            // [pasteboard clearContents] - ignore the returned NSInteger changeCount.
             objc_msgSend_void(pasteboard, s_selClearContents);
 
             // BOOL ok = [pasteboard setString:value forType:type]

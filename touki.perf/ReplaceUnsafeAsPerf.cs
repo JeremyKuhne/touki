@@ -149,7 +149,7 @@ public class ReplaceUnsafeAsPerf
     // Separate blocks per signed/unsigned primitive. Reading sbyte through a
     // matching Unsafe.As<T, sbyte> followed by a (byte) cast forces a
     // conv.u1 in the IL, which RyuJIT lowers to either a movsx+movzx pair or
-    // a constant fold to 0xFF for a literal -1 — never the buggy 32-bit
+    // a constant fold to 0xFF for a literal -1 - never the buggy 32-bit
     // sign-extended compare immediate.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe void ReplaceSplitBlocks<T>(Span<T> span, T oldValue, T newValue)

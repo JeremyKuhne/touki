@@ -1,6 +1,6 @@
 ---
 name: security-review
-description: Security-focused review of pending changes. Audit any change that could affect safety or correctness under abusive input or unchecked preconditions &mdash; oversized values, malformed structures, integer/length overflow, catastrophic backtracking, allocation pressure, other denial-of-service shapes, and any use of `unsafe` code or the `Unsafe` / `MemoryMarshal` / `Marshal` static helpers (which trade compiler safety guarantees for speed and need extra scrutiny). Add regression tests that pin safe behavior even when the current implementation already handles the input correctly. Use when asked to "assess for security vulnerabilities", "do a security review", "check for ReDoS / DoS", "audit untrusted input handling", or before publishing any change that adds or modifies code that parses, decodes, encodes, compiles, marshals, or reinterprets memory.
+description: Security-focused review of pending changes. Audit any change that could affect safety or correctness under abusive input or unchecked preconditions - oversized values, malformed structures, integer/length overflow, catastrophic backtracking, allocation pressure, other denial-of-service shapes, and any use of `unsafe` code or the `Unsafe` / `MemoryMarshal` / `Marshal` static helpers (which trade compiler safety guarantees for speed and need extra scrutiny). Add regression tests that pin safe behavior even when the current implementation already handles the input correctly. Use when asked to "assess for security vulnerabilities", "do a security review", "check for ReDoS / DoS", "audit untrusted input handling", or before publishing any change that adds or modifies code that parses, decodes, encodes, compiles, marshals, or reinterprets memory.
 ---
 
 # Security review
@@ -10,9 +10,9 @@ APIs** (everything the C# compiler doesn't check for you).
 
 **Related skills:**
 
-- [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) &mdash; broader
+- [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - broader
   self-review; run this skill alongside it before any publish.
-- [`performance-testing`](../performance-testing/SKILL.md) &mdash; use
+- [`performance-testing`](../performance-testing/SKILL.md) - use
   when you need to *measure* a worst-case input rather than just bound
   it with a `Stopwatch`.
 
@@ -25,7 +25,7 @@ APIs** (everything the C# compiler doesn't check for you).
 - A change introduces or modifies `unsafe` code, calls into
   `Unsafe.*` / `MemoryMarshal.*` / `Marshal.*`, `fixed`, raw pointers,
   unbounded `stackalloc`, or any BCL API whose XML doc says "unsafe"
-  or "caller must". Applies even when inputs are fully internal &mdash;
+  or "caller must". Applies even when inputs are fully internal -
   preconditions drift across refactors.
 - A CVE in a comparable library prompts "do we have the same shape?".
 
@@ -58,14 +58,14 @@ APIs** (everything the C# compiler doesn't check for you).
 
 Label every finding before the report.
 
-- **High** &mdash; memory corruption, OOB read/write, type confusion,
+- **High** - memory corruption, OOB read/write, type confusion,
   lifetime escape, RCE, disclosure of secrets/addresses, auth bypass.
   Fix on the same PR.
-- **Medium** &mdash; DoS (CPU, memory, stack, FDs), crashing unhandled
+- **Medium** - DoS (CPU, memory, stack, FDs), crashing unhandled
   exception, parser accepting malformed input as valid, ambiguous
   parsing that smuggles a different shape past validation. Usually
   fix on the same PR; deferral needs a documented mitigation.
-- **Low** &mdash; silent truncation still bounded by a downstream BCL
+- **Low** - silent truncation still bounded by a downstream BCL
   slice check, documented contract violations on edge cases,
   non-sensitive error-message leakage. Safe to defer; still pin the
   *corrected* behavior with a regression test once the fix lands.
@@ -110,7 +110,7 @@ error, opt-out (e.g. `-1`) disables the check.
 
 **Tests:** boundary inside the representable range plus boundary
 outside. Specialized fast paths often bypass the affected code
-&mdash; pick an input shape that **forces the general path**.
+- pick an input shape that **forces the general path**.
 
 ### 3. Allocation pressure / memory DoS
 
@@ -211,7 +211,7 @@ Walk every use site against this table; rows are independent.
 
 ### 8. Path traversal / sandbox escape
 
-- API takes a root + relative input and returns paths &mdash; results
+- API takes a root + relative input and returns paths - results
   stay inside the root? Symlink behavior is the caller's documented
   choice, not silently re-enabled?
 - Caller-supplied fragments concatenated without normalization?
@@ -231,7 +231,7 @@ configured root.
   documented to accept any underlying value with explicit defaulting.
 
 **Test:** one per parameter for each forbidden violation mode. Don't
-trust the downstream BCL primitive to throw &mdash; the contract is
+trust the downstream BCL primitive to throw - the contract is
 yours.
 
 ## Review procedure

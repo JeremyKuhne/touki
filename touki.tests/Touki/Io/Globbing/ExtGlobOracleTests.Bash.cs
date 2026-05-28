@@ -8,7 +8,7 @@ namespace Touki.Io.Globbing;
 
 /// <summary>
 ///  Oracle tests for the <see cref="GlobOptions.AllowExtGlob"/> option on the
-///  <see cref="GlobDialect.Bash"/> dialect &#8212; compares touki against
+///  <see cref="GlobDialect.Bash"/> dialect - compares touki against
 ///  <c>bash -O extglob -O globstar</c> via <see cref="BashInterop"/>. This is
 ///  the F1.4 component of the extglob rollout: the option is honored against
 ///  the bash oracle and any divergence surfaces as a row failure.

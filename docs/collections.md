@@ -63,7 +63,7 @@ using SingleOptimizedList<string, ArrayPoolList<string>> matches = new();
 
 matches.Add("first");
 
-// Still inline — no array allocation yet.
+// Still inline - no array allocation yet.
 
 if (alsoMatchesSecond)
 {

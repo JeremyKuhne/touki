@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -50,7 +50,7 @@ public class MSBuildEnumerationResultTests
     [Fact]
     public void IsDriveRootRecursion_NotFullyQualified_ReturnsFalse()
     {
-        // Not fully qualified — the gate only fires post-qualification because that's the only point at
+        // Not fully qualified - the gate only fires post-qualification because that's the only point at
         // which we know what root the spec resolves against.
         MSBuildSpecification spec = new("**");
         spec.IsDriveRootRecursion.Should().BeFalse();
@@ -111,7 +111,7 @@ public class MSBuildEnumerationResultTests
     [InlineData(@"C:\**\**")]                    // duplicate ** (Normalize dedupes)
     [InlineData(@"C:\.\**")]                     // current-directory segment
     [InlineData(@"C:\foo\..\**")]                // parent segment that cancels back to root
-    [InlineData(@"\**")]                         // root-relative — Path.GetFullPath resolves to current drive root, so the gate fires
+    [InlineData(@"\**")]                         // root-relative - Path.GetFullPath resolves to current drive root, so the gate fires
     public void IsDriveRootRecursion_WindowsDriveRootVariants_ReturnTrue(string spec)
     {
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
@@ -124,7 +124,7 @@ public class MSBuildEnumerationResultTests
     }
 
     [Theory]
-    [InlineData(@"C:**")]                        // drive-relative (no separator) — not fully qualified
+    [InlineData(@"C:**")]                        // drive-relative (no separator) - not fully qualified
     [InlineData(@"C:relative\**")]               // drive-relative path
     [InlineData(@"..\**")]                       // parent-relative
     [InlineData(@".\**")]                        // current-relative
@@ -240,7 +240,7 @@ public class MSBuildEnumerationResultTests
 
         result.Action.Should().Be(MSBuildSearchAction.RunSearch);
         result.GlobFailure.Should().BeNull();
-        // Don't materialize — that would actually walk the drive. Just confirm the enumerator was built.
+        // Don't materialize - that would actually walk the drive. Just confirm the enumerator was built.
         result.Enumerator.Should().NotBeNull();
         result.Enumerator!.Dispose();
     }

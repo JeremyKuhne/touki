@@ -31,7 +31,7 @@ namespace Touki.Io.Globbing;
 ///   win on net481, closing the gap with the <c>MatchSet</c> baseline
 ///   on the canonical <c>**/&#x40;(*.cs|*.md|...)</c> shape. If you
 ///   change the strategy's selection criteria, verify the benchmark
-///   on net481 first &#8212; modern .NET RyuJIT will tolerate
+///   on net481 first - modern .NET RyuJIT will tolerate
 ///   regressions the framework JIT cannot.
 ///  </para>
 /// </remarks>

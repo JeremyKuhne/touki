@@ -40,7 +40,7 @@ Two key choices:
 2. **Single `ptr += 4` per iteration.** One arithmetic op at the end of the
    chunk instead of one per element.
 
-Measured: 14&ndash;36% faster than the scalar baseline at every size on both
+Measured: 14-36% faster than the scalar baseline at every size on both
 runtimes.
 
 ## Don't use these
@@ -57,7 +57,7 @@ if (*ptr == oldShort) *ptr = newShort; ptr++;
 
 Every load now depends on the previous `ptr++`. The JIT does not recover the
 parallelism by recognizing the pattern. Measured: 0.84&times; vs 1.12&times;
-ratio at length 256 on `net481` &mdash; the `ptr++` form is actually slower
+ratio at length 256 on `net481` - the `ptr++` form is actually slower
 than the un-unrolled scalar baseline.
 
 ### Integer-indexed body
@@ -89,7 +89,7 @@ while (ptr < unrollEnd)
 }
 ```
 
-Wins at length 16 (small loop, fewer iterations). **Regresses 1.3&ndash;1.6&times;
+Wins at length 16 (small loop, fewer iterations). **Regresses 1.3-1.6&times;
 at length 256+** on `net481`. Most likely the larger method body trips a
 register-allocation or loop-alignment threshold. The .NET 10 JIT recovers but
 `net481` does not.
@@ -127,6 +127,6 @@ preserve the "last occurrence" semantics).
 
 ## Tail loop
 
-Always pair the unrolled body with a scalar tail that handles 0&ndash;3
+Always pair the unrolled body with a scalar tail that handles 0-3
 elements. `length & ~3` rounds the unroll boundary down to a multiple of 4;
 the remainder is `length & 3` elements walked one at a time.

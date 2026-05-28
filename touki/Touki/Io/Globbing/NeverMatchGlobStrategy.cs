@@ -6,7 +6,7 @@ namespace Touki.Io.Globbing;
 
 /// <summary>
 ///  Matcher that returns <see langword="false"/> for every input. Used when a dialect
-///  considers the source pattern invalid in a non-throwing way — e.g., MSBuild's
+///  considers the source pattern invalid in a non-throwing way - e.g., MSBuild's
 ///  <c>MSBuildGlob.Parse</c> accepts patterns containing three or more consecutive
 ///  <c>*</c> characters but returns a glob that never matches anything.
 /// </summary>

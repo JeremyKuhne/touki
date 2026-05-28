@@ -4,7 +4,7 @@
 
 using Touki.Text;
 
-namespace Touki.ValueTests;
+namespace Touki;
 
 public class CoverageGaps
 {

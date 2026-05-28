@@ -20,7 +20,7 @@ namespace Touki.Io.Globbing;
 ///  </para>
 ///  <para>
 ///   The fixture creates a one-shot scratch repository in the temp directory; per-row
-///   evaluation swaps the temporary ignore rule. Per-call cost is ~1–5 ms with
+///   evaluation swaps the temporary ignore rule. Per-call cost is ~1-5 ms with
 ///   LibGit2Sharp.
 ///  </para>
 /// </remarks>

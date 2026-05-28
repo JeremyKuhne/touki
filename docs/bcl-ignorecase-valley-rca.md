@@ -1,8 +1,8 @@
-# BCL `OrdinalIgnoreCase` valley — root cause analysis
+# BCL `OrdinalIgnoreCase` valley - root cause analysis
 
 Detailed analysis of why
 `MemoryExtensions.Equals(span, span, StringComparison.OrdinalIgnoreCase)`
-exhibits a perf valley at 8–15 chars on .NET 10 RyuJIT. Sourced from
+exhibits a perf valley at 8-15 chars on .NET 10 RyuJIT. Sourced from
 `BenchmarkDotNet.Artifacts/results/touki.perf.AsciiIgnoreCasePerf-asm.md`
 (generated with `[DisassemblyDiagnoser(maxDepth: 3)]`). The takeaway
 sidesteps the "span efficiency" hypothesis: **the valley is a JIT codegen
@@ -12,9 +12,9 @@ not a span performance problem.**
 Hardware: Intel Core i9-14900K, .NET 10.0.7, x64 RyuJIT x86-64-v3, AVX2.
 
 This document is a worked case study. The general field manual for
-span-walking code on .NET Framework — slow-span layout, the Strategy
+span-walking code on .NET Framework - slow-span layout, the Strategy
 A-through-E hierarchy, the within-noise rule for TFM-split
-implementations — lives in
+implementations - lives in
 [framework-span-performance.md](framework-span-performance.md).
 
 ---
@@ -90,11 +90,11 @@ M01_L01:
 ```
 
 This is well-written SIMD code. Length 20 measures **2.6 ns**, length 64
-measures **6.3 ns** — within reach of memcpy throughput.
+measures **6.3 ns** - within reach of memcpy throughput.
 
 ---
 
-## 3. The Vector128 path (length 8–15) is *not* vectorized in the inner compare
+## 3. The Vector128 path (length 8-15) is *not* vectorized in the inner compare
 
 `Ordinal.EqualsIgnoreCase_Vector<Vector128<UInt16>>`:
 
@@ -211,7 +211,7 @@ The helper is 30% faster than the BCL at length 10 because:
 
 ## 5. "How much is span inefficiency?"
 
-**Roughly 10–20% of the helper's code size, none of the BCL's slowness.**
+**Roughly 10-20% of the helper's code size, none of the BCL's slowness.**
 
 ### On the helper side
 
@@ -229,7 +229,7 @@ This costs:
 
 For a 10-char input, the staging cost dilutes the win the helper would
 otherwise have. The hot loop reads `[rsp+50]` and `[rsp+40]` every
-iteration — these become L1-cache loads (~5 cycle latency) instead of
+iteration - these become L1-cache loads (~5 cycle latency) instead of
 register accesses (~0).
 
 **This is real span efficiency cost**, but it's bounded. Estimated impact:
@@ -245,7 +245,7 @@ reload sequences rather than to vector instructions.
 
 The Vector256 specialization of the *same generic method* has a 56-byte
 frame and keeps everything in `ymm` registers. The codegen difference is
-entirely in the JIT's handling of the generic vector type parameter —
+entirely in the JIT's handling of the generic vector type parameter -
 not in spans.
 
 ---
@@ -258,7 +258,7 @@ not in spans.
 |---|---|
 | `SpanExtensions.EqualsOrdinalIgnoreCase` for span lengths < 16 | Sidesteps the Vector128 valley. 10-char compare 10.04 → 4.79 ns. |
 | `[AggressiveInlining]` on the dispatch wrapper, separate non-inlined fold loop | On net481 saves ~7 ns by allowing the inliner to fold the length-check into the call site. On net10 zero-effect. |
-| Crossover threshold at 16 chars | Matches `Vector128<short>.Count × 2` — the BCL's own dispatch point. |
+| Crossover threshold at 16 chars | Matches `Vector128<short>.Count × 2` - the BCL's own dispatch point. |
 
 ### 6.2 Potential incremental wins
 
@@ -266,7 +266,7 @@ not in spans.
 shared ASCII fold core.**
 Drops the 64-byte stack zero-init. Likely ~0.3 ns measurable on the
 length-5/10 case where the prologue is a significant fraction of total time.
-**Risk: zero** — the fold loop never reads uninitialized memory.
+**Risk: zero** - the fold loop never reads uninitialized memory.
 **Status: candidate.**
 
 **(b) Hoist the BCL-fallback span construction out of the hot path.**
@@ -320,7 +320,7 @@ disappears on net10.
 ### 6.3 Not worth doing
 
 - **A Vector128 hand-roll in `SpanExtensions.CompareOrdinalIgnoreCase`
-  for length 8–15.** This
+  for length 8-15.** This
   would require re-implementing the BCL's logic correctly. The helper's
   scalar fold loop already beats the BCL Vector128 path; building a
   correct Vector128 path means matching the Vector256 path's quality,
@@ -339,9 +339,9 @@ Order revised after experimental validation on net481 (see §B.5):
 | Slice | What | Expected impact | Status |
 |---|---|---|---|
 | 7b | Move non-ASCII BCL fallback into a `[NoInlining]` helper taking `ref char` | net10: −0.5 to −1 ns on length-10 hit. net481: ~−1 ns on length-5 hit (eliminates the per-iter stack load). | **Recommended.** |
-| 7c | File runtime issue for `Ordinal.EqualsIgnoreCase_Vector<Vector128<UInt16>>` codegen on net10 | Eventually removes the need for the helper on net10 at length 8–15. No effect on net481. | Filing recommended; not blocking. |
-| 7a | `[SkipLocalsInit]` on the `SpanExtensions` ASCII-fold methods | net10: ≈ 0 (below noise). **net481: 0 — attribute not honored by net481 RyuJIT, see §B.5.** | **Already applied for hygiene** but produces no measurable benefit on either TFM. Keep for code-style consistency; do not cite it as a perf mitigation. |
-| 7d (new) | Force-inline the scalar ASCII fold into `SpanExtensions.EqualsOrdinalIgnoreCase` so net481 sees only one function call instead of two | net481 length-5: ~−6 ns predicted (one full call frame). Risk: code bloat at every call site. Worth a focused experiment with rollback if call sites grow. | **Candidate — biggest remaining net481 win**. |
+| 7c | File runtime issue for `Ordinal.EqualsIgnoreCase_Vector<Vector128<UInt16>>` codegen on net10 | Eventually removes the need for the helper on net10 at length 8-15. No effect on net481. | Filing recommended; not blocking. |
+| 7a | `[SkipLocalsInit]` on the `SpanExtensions` ASCII-fold methods | net10: ≈ 0 (below noise). **net481: 0 - attribute not honored by net481 RyuJIT, see §B.5.** | **Already applied for hygiene** but produces no measurable benefit on either TFM. Keep for code-style consistency; do not cite it as a perf mitigation. |
+| 7d (new) | Force-inline the scalar ASCII fold into `SpanExtensions.EqualsOrdinalIgnoreCase` so net481 sees only one function call instead of two | net481 length-5: ~−6 ns predicted (one full call frame). Risk: code bloat at every call site. Worth a focused experiment with rollback if call sites grow. | **Candidate - biggest remaining net481 win**. |
 
 ---
 
@@ -355,7 +355,7 @@ Length 10, helper, 6.6 ns measured:
 - 10 iterations × 12 ops each = 120 ops at ~4 IPC: ~30 cycles
 - Epilogue: ~3 cycles
 - Total: ~40 cycles ≈ 10 ns. Measured 6.6 ns suggests heavy out-of-order
-  overlap — typical for hot, predictable straight-line code.
+  overlap - typical for hot, predictable straight-line code.
 
 Length 10, BCL Vector128, 9.4 ns measured:
 
@@ -373,7 +373,7 @@ Length 10, BCL Vector128, 9.4 ns measured:
   The gap between predicted and measured is consistent with the BCL hot
   path being predictable; the cost is real, just well-overlapped.
 
-The point of the math is not to predict to the nanosecond — it's to show
+The point of the math is not to predict to the nanosecond - it's to show
 the work the JIT chose to emit, and that the BCL is doing roughly 3× more
 work than the helper at this length.
 
@@ -381,7 +381,7 @@ work than the helper at this length.
 
 ## Appendix B: .NET Framework 4.8.1 disassembly
 
-`[DisassemblyDiagnoser]` **does** work on .NET Framework — that note in an
+`[DisassemblyDiagnoser]` **does** work on .NET Framework - that note in an
 earlier draft of this doc was wrong. The full net481 disasm is captured in
 `BenchmarkDotNet.Artifacts/results/touki.perf.AsciiIgnoreCasePerf-asm.md`
 (regenerate with the diagnoser attribute on `AsciiIgnoreCasePerf`). The
@@ -401,7 +401,7 @@ reference and a byte offset, not a raw pointer.
 | 20 | 41.5 ns | 41.9 ns | ≈ tie (helper delegates to BCL) |
 | 64 | 72.2 ns | 69.7 ns | +2.5 ns (helper has small delegation tax) |
 
-The largest delta is at length 5 — exactly the opposite of net10, where
+The largest delta is at length 5 - exactly the opposite of net10, where
 length 10 was the valley. On net481 there is **no valley**, because there
 is no vectorized path that suddenly cuts in at length 16. The cost grows
 roughly linearly with length on both helper and BCL.
@@ -538,14 +538,14 @@ M02_L02:
 
 **This is the "slow span" tax on net481, per character:**
 
-- `cmp qword ptr [rcx], 0` — check if span is backed by a managed object
-- `mov r11, [rcx]` — load the object pointer
-- `cmp [r11], r11d` — touch the object (GC liveness / null check fold)
-- `lea r10, [r11+8]` — skip the array header
-- `mov rax, [rcx+8]` — load the offset field
-- `add r10, rax` — apply offset
-- `movsxd r11, r8d`, `shl rax, 1`, `add r10, rax` — index by 2 (char size)
-- `movzx eax, word ptr [rax]` — load the character
+- `cmp qword ptr [rcx], 0` - check if span is backed by a managed object
+- `mov r11, [rcx]` - load the object pointer
+- `cmp [r11], r11d` - touch the object (GC liveness / null check fold)
+- `lea r10, [r11+8]` - skip the array header
+- `mov rax, [rcx+8]` - load the offset field
+- `add r10, rax` - apply offset
+- `movsxd r11, r8d`, `shl rax, 1`, `add r10, rax` - index by 2 (char size)
+- `movzx eax, word ptr [rax]` - load the character
 
 **Roughly 8 µops to load one character** on net481 vs **1 µop** on net10
 (where spans store a raw `ref char` that compiles to a register move).
@@ -560,15 +560,15 @@ overhead.
 ### B.4 Where the net481 helper's win comes from at length 5
 
 Helper at length 5: 19.9 ns. BCL at length 5: 26.6 ns. The 6.7 ns gap is
-**not** the per-character work — it's the call-chain overhead the BCL pays
+**not** the per-character work - it's the call-chain overhead the BCL pays
 that the helper avoids:
 
 | Cost | Helper | BCL |
 |---|---:|---:|
 | Bench wrapper (88 B stack + 48 B zero-init) | yes (~6 ns) | yes (~6 ns) |
-| `MemoryExtensions.Equals` (80 B + 48 B zero-init + 5 callee-saved) | — | yes (~6 ns) |
-| `MemoryMarshal.GetReference<char>` × 2 | — | yes (~2 ns) |
-| `EqualsAsciiFold` (88 B + 48 B zero-init) | yes (~6 ns) | — |
+| `MemoryExtensions.Equals` (80 B + 48 B zero-init + 5 callee-saved) | - | yes (~6 ns) |
+| `MemoryMarshal.GetReference<char>` × 2 | - | yes (~2 ns) |
+| `EqualsAsciiFold` (88 B + 48 B zero-init) | yes (~6 ns) | - |
 | Underlying compare (5 chars × 16 µops/char) | yes (~4 ns) | yes (~4 ns) |
 
 The BCL has **two more function calls** in the chain. Each adds a stack
@@ -576,7 +576,7 @@ frame, a `rep stosd` zero-init, and (in `MemoryExtensions.Equals`'s
 case) 5 callee-saved register saves. At length 5 these constant costs
 dominate.
 
-### B.5 Net481-specific mitigations — what actually works
+### B.5 Net481-specific mitigations - what actually works
 
 The recurring overhead in the helper path is the **48-byte `rep stosd`
 zero-init** at every function entry, performed because the C# compiler
@@ -625,9 +625,9 @@ This means:
 The mitigations that *do* still help on net481:
 
 1. **Reduce the number of function calls in the chain.** Currently:
-   - bench wrapper (out of our control — BDN-generated)
+   - bench wrapper (out of our control - BDN-generated)
    - → `SpanExtensions.EqualsOrdinalIgnoreCase` (inlined into the wrapper by AggressiveInlining)
-   - → `CompareOrdinalIgnoreCaseAsciiFold` (not inlined — separate call)
+   - → `CompareOrdinalIgnoreCaseAsciiFold` (not inlined - separate call)
 
    Forcing inlining of `CompareOrdinalIgnoreCaseAsciiFold` into the wrapper
    would eliminate one call frame on net481 (~6 ns at length 5). The risk
@@ -666,7 +666,7 @@ reasons. On net10 the BCL switches from a buggy Vector128 codegen to a
 clean Vector256 codegen. On net481 the BCL has no vectorization either
 side of the threshold, but at length ≥ 16 its scalar inner loop is
 slightly tighter than ours because it doesn't pay the per-char ASCII
-range-check overhead — the input is precompared scalar-wise without the
+range-check overhead - the input is precompared scalar-wise without the
 fold-letter-range check. We do extra work per char to support the fold;
 that work pays off at short lengths (where it's still very few
 iterations) but not at long lengths.
@@ -678,17 +678,17 @@ the original prediction.
 
 1. **Slice 7d (force-inline the scalar ASCII fold into
    `SpanExtensions.EqualsOrdinalIgnoreCase`)**
-   — predicted ~−6 ns on net481 length 5 by eliminating one function-call
+   - predicted ~−6 ns on net481 length 5 by eliminating one function-call
    frame (the chain becomes bench → fused helper, instead of
    bench → wrapper → fold). Risk: code bloat at every call site if too
    aggressive. Worth a focused, measured experiment.
 2. **Slice 7b (move non-ASCII fallback into a `[NoInlining]` helper
-   taking `ref char`)** — predicted −0.5 to −1 ns on both TFMs at the
+   taking `ref char`)** - predicted −0.5 to −1 ns on both TFMs at the
    typical glob length. Modest but real.
 3. **Slice 7c (file runtime issue for the Vector128 codegen on net10)**
-   — only relevant to net10; out of touki's scope to fix but worth
+   - only relevant to net10; out of touki's scope to fix but worth
    reporting.
-4. **Slice 7a (`[SkipLocalsInit]`)** — verified no-op on net481 (the
+4. **Slice 7a (`[SkipLocalsInit]`)** - verified no-op on net481 (the
    attribute is ignored by RyuJIT 4.8.1) and below-noise on net10.
    Keep applied for code-style consistency; **do not credit it as a
    perf mitigation**.

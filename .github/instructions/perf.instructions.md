@@ -15,17 +15,17 @@ skills for the workflow and net481-specific JIT details.
   meaningless and will mislead any performance claim built on them.
 - Benchmarks must run cleanly on **both** target frameworks (.NET 10 and
   .NET Framework 4.8.1). A regression on one TFM and not the other is a real
-  signal, not noise &mdash; see the JIT-naming rule below.
+  signal, not noise - see the JIT-naming rule below.
 
 ## JIT-naming rule (non-negotiable)
 
 When making any performance claim in code comments, PR descriptions, or
 benchmark commentary, name the JIT explicitly:
 
-- **".NET Framework 4.8.1 RyuJIT"** &mdash; older, no
+- **".NET Framework 4.8.1 RyuJIT"** - older, no
   `EqualityComparer<T>.Default` intrinsic, no tiered JIT, weaker inlining,
   no dynamic PGO.
-- **"modern .NET RyuJIT"** (.NET 6+) &mdash; devirtualization, tiered JIT,
+- **"modern .NET RyuJIT"** (.NET 6+) - devirtualization, tiered JIT,
   dynamic PGO, much more aggressive inlining.
 
 Unqualified "RyuJIT" claims are wrong about half the time. Code changes in
@@ -35,7 +35,7 @@ Unqualified "RyuJIT" claims are wrong about half the time. Code changes in
 ## Reading BenchmarkDotNet output
 
 - **Mean** is what you compare; **Median** is a sanity check (large
-  Mean&ndash;Median spread = unstable benchmark, fix before drawing
+  Mean-Median spread = unstable benchmark, fix before drawing
   conclusions).
 - **Allocated** is per-operation managed allocation. **Any new allocation
   in a documented hot path is a regression**, regardless of throughput.

@@ -24,7 +24,7 @@ public sealed class MultipleAsteriskGitOracleTests : IClassFixture<SequentialSep
     {
         // Documented Git dialect divergence. After `***`+ &rarr; `**` normalization
         // touki compiles `a/**` as a trailing globstar that matches zero or more
-        // segments &mdash; including the empty case `a/` &mdash; while gitignore
+        // segments - including the empty case `a/` - while gitignore
         // requires at least one path component after the prefix. Tracked in
         // docs/globbing-feature-plan.md "Multiple-asterisk-run behavior" findings.
         if ((pattern, input) == ("a/***", "a/"))

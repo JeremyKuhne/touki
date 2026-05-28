@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -26,7 +26,7 @@ public class MatchAnyTests
 
         // Include (matchForExclusion = false)
         matcher.MatchesDirectory("".AsSpan(), directoryName.AsSpan(), false).Should().Be(expectedResult);
-        // Exclude (matchForExclusion = true) — directory matcher result should be the same
+        // Exclude (matchForExclusion = true) - directory matcher result should be the same
         matcher.MatchesDirectory("".AsSpan(), directoryName.AsSpan(), true).Should().Be(expectedResult);
     }
 
@@ -49,7 +49,7 @@ public class MatchAnyTests
         iMatcher.MatchesDirectory("".AsSpan(), "build-output".AsSpan(), false).Should().BeTrue();
         iMatcher.MatchesDirectory("".AsSpan(), "tests".AsSpan(), false).Should().BeFalse();
         iMatcher.MatchesDirectory("".AsSpan(), "SRC".AsSpan(), false).Should().BeFalse();
-        // Exclude — same results for directory matcher
+        // Exclude - same results for directory matcher
         iMatcher.MatchesDirectory("".AsSpan(), "docs".AsSpan(), true).Should().BeTrue();
         iMatcher.MatchesDirectory("".AsSpan(), "src".AsSpan(), true).Should().BeTrue();
         iMatcher.MatchesDirectory("".AsSpan(), "build".AsSpan(), true).Should().BeTrue();
@@ -77,7 +77,7 @@ public class MatchAnyTests
         iMatcher.MatchesDirectory("".AsSpan(), "SRC".AsSpan(), false).Should().BeTrue();
         iMatcher.MatchesDirectory("".AsSpan(), "docs".AsSpan(), false).Should().BeTrue();
         iMatcher.MatchesDirectory("".AsSpan(), "build".AsSpan(), false).Should().BeFalse();
-        // Exclude — same results for directory matcher
+        // Exclude - same results for directory matcher
         iMatcher.MatchesDirectory("".AsSpan(), "src".AsSpan(), true).Should().BeTrue();
         iMatcher.MatchesDirectory("".AsSpan(), "SRC".AsSpan(), true).Should().BeTrue();
         iMatcher.MatchesDirectory("".AsSpan(), "docs".AsSpan(), true).Should().BeTrue();
@@ -214,7 +214,7 @@ public class MatchAnyTests
         // Include within root
         matcher.MatchesDirectory(root.AsSpan(), "subdir".AsSpan(), matchForExclusion: false).Should().BeTrue();
 
-        // Exclude within root — file matcher should return false when excluding directories
+        // Exclude within root - file matcher should return false when excluding directories
         matcher.MatchesDirectory(root.AsSpan(), "subdir".AsSpan(), matchForExclusion: true).Should().BeFalse();
         matcher.DirectoryFinished();
 
@@ -256,7 +256,7 @@ public class MatchAnyTests
 
         // Include (matchForExclusion = false)
         matcher.MatchesDirectory(currentDir.AsSpan(), dirName.AsSpan(), false).Should().Be(expectedResult);
-        // Exclude (matchForExclusion = true) — directory matcher result should be the same
+        // Exclude (matchForExclusion = true) - directory matcher result should be the same
         matcher.MatchesDirectory(currentDir.AsSpan(), dirName.AsSpan(), true).Should().Be(expectedResult);
     }
 

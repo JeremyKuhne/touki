@@ -22,7 +22,7 @@ namespace Touki.Io.Globbing;
 ///  </para>
 ///  <para>
 ///   If a row here fails, either touki's FileSystemGlobbing dialect drifted or
-///   <c>Microsoft.Extensions.FileSystemGlobbing</c> changed its tokenizer &#8212; both
+///   <c>Microsoft.Extensions.FileSystemGlobbing</c> changed its tokenizer - both
 ///   warrant a deliberate update to the dialect contract in <c>docs/globbing.md</c>.
 ///  </para>
 /// </remarks>

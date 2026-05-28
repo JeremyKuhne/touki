@@ -16,7 +16,7 @@ namespace Touki.TestSupport;
 ///   monotonically increasing count of bytes the current thread has
 ///   allocated on the managed heap. Capturing that value at one point and
 ///   comparing it later gives a precise, deterministic, single-threaded
-///   measurement — unlike GC counters or memory diagnosers, no
+///   measurement - unlike GC counters or memory diagnosers, no
 ///   collection has to run and no warm-up iterations are required.
 ///  </para>
 ///  <para>
@@ -36,7 +36,7 @@ namespace Touki.TestSupport;
 ///  </para>
 ///  <para>
 ///   For incremental checks, store the watch and call
-///   <see cref="Validate"/> at each checkpoint — the helper resets
+///   <see cref="Validate"/> at each checkpoint - the helper resets
 ///   its baseline after each successful validation so subsequent calls
 ///   measure only the bytes allocated since the previous call:
 ///   <code>
@@ -61,7 +61,7 @@ namespace Touki.TestSupport;
 ///   </code>
 ///  </para>
 ///  <para>
-///   <b>Limitations.</b> Only single-threaded code can be measured —
+///   <b>Limitations.</b> Only single-threaded code can be measured -
 ///   <see cref="GC.GetAllocatedBytesForCurrentThread"/> returns a
 ///   per-thread counter, so allocations on other threads are invisible.
 ///   Boxing, closure captures, and any reference-type literal in the
@@ -125,7 +125,7 @@ public ref struct MemoryWatch
     ///   watch can validate multiple sequential checkpoints. The reset
     ///   happens by reading <see cref="GC.GetAllocatedBytesForCurrentThread"/>
     ///   again rather than by reusing the prior baseline plus the
-    ///   observed delta — producing the exception message itself
+    ///   observed delta - producing the exception message itself
     ///   can allocate, and that allocation must not be counted against
     ///   the next checkpoint.
     ///  </para>

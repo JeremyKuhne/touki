@@ -3,9 +3,8 @@
 // See LICENSE file in the project root for full license information
 
 using Microsoft.Extensions.FileSystemGlobbing;
-using Touki.Io.Globbing;
 
-namespace Touki.Tests.Text.Globbing;
+namespace Touki.Io.Globbing;
 
 /// <summary>
 ///  Oracle tests that pin down how the <see cref="GlobDialect.FileSystemGlobbing"/> dialect

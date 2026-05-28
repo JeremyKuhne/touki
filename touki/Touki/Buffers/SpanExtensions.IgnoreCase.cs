@@ -28,7 +28,7 @@ namespace Touki;
 ///    <item>
 ///     <description>
 ///      <see cref="System.Text.Ascii.EqualsIgnoreCase(ReadOnlySpan{char}, ReadOnlySpan{char})"/>
-///      &#8211; <b>strict ASCII</b>; non-ASCII characters force a <see langword="false"/>
+///      - <b>strict ASCII</b>; non-ASCII characters force a <see langword="false"/>
 ///      return even if both sides are byte-identical. Use this for ASCII protocols (HTTP
 ///      headers, MIME, identifiers) where non-ASCII data is itself an error condition.
 ///     </description>
@@ -36,7 +36,7 @@ namespace Touki;
 ///    <item>
 ///     <description>
 ///      <c>EqualsAsciiLetterIgnoreCase</c> / <c>StartsWithAsciiLetterIgnoreCase</c> /
-///      <c>EndsWithAsciiLetterIgnoreCase</c> &#8211; <b>ASCII-letter case fold, ordinal
+///      <c>EndsWithAsciiLetterIgnoreCase</c> - <b>ASCII-letter case fold, ordinal
 ///      everything else</b>. The 26 ASCII letter pairs (<c>A..Z</c>/<c>a..z</c>) compare
 ///      equal; non-ASCII characters compare ordinal (so <c>caf\u00e9</c> equals
 ///      <c>caf\u00e9</c> but not <c>caf\u00c9</c>). This matches the documented behavior
@@ -47,7 +47,7 @@ namespace Touki;
 ///    <item>
 ///     <description>
 ///      <c>EqualsOrdinalIgnoreCase</c> / <c>CompareOrdinalIgnoreCase</c> /
-///      <c>StartsWithOrdinalIgnoreCase</c> / <c>EndsWithOrdinalIgnoreCase</c> &#8211;
+///      <c>StartsWithOrdinalIgnoreCase</c> / <c>EndsWithOrdinalIgnoreCase</c> -
 ///      <b>full Unicode ordinal ignore-case</b>, matching <c>string</c>'s behavior under
 ///      <see cref="StringComparison.OrdinalIgnoreCase"/>. Use these for MSBuild-style
 ///      globs, .NET <c>Microsoft.Extensions.FileSystemGlobbing</c> parity, and any
@@ -303,7 +303,7 @@ internal static class OrdinalIgnoreCaseHelpers
     /// <summary>
     ///  Tests two equal-length spans for "ASCII-letter case fold, ordinal everything else"
     ///  equality. Differs from <see cref="CompareAscii"/> by not bailing on non-ASCII
-    ///  characters &#8211; they simply compare ordinal. Matches POSIX
+    ///  characters - they simply compare ordinal. Matches POSIX
     ///  <c>fnmatch(FNM_CASEFOLD)</c> / bash <c>nocaseglob</c> / git <c>core.ignoreCase</c>.
     /// </summary>
     /// <remarks>

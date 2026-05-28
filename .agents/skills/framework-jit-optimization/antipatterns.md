@@ -14,7 +14,7 @@ your specific call pattern.
 The `net481` JIT does not lower the ternary into a `cmov` for `ushort` / `byte`
 stores. You get a guaranteed store every iteration regardless of whether the
 value changed. For a sparse-match `Replace` workload (the realistic case), the
-extra writes cost 1.5&ndash;3&times; vs the branchful form below.
+extra writes cost 1.5-3&times; vs the branchful form below.
 
 ```c#
 // GOOD on net481.
@@ -75,7 +75,7 @@ while (ptr < unrollEnd)
 
 The bit-trick (`(x - Lo16) & ~x & Hi16`) adds a dependent-chain of 3 arithmetic
 ops per chunk, plus a load and an XOR, plus the broadcast computation. **Whenever
-any lane matches, the code falls through to the four scalar checks** &mdash; you
+any lane matches, the code falls through to the four scalar checks** - you
 pay the SWAR overhead **on top of** the mutation cost. On dense matches this
 regresses by 3&times;.
 
@@ -86,7 +86,7 @@ parallelizing the arithmetic with the scalar reads.
 
 ## Replacing BCL `IndexOf` with a scalar specialization for sparse search
 
-See [bcl-tradeoffs.md](bcl-tradeoffs.md). The rule cuts both ways &mdash; full
+See [bcl-tradeoffs.md](bcl-tradeoffs.md). The rule cuts both ways - full
 scan favors specialization, sparse search favors the BCL. Don't apply one half
 without the other.
 
@@ -107,13 +107,13 @@ a tight scalar loop at length 16 just from adding the attribute back.
 
 If you really must remove it (e.g. method body becomes too large), measure
 before and after. Don't strip it because "the method is short anyway, the JIT
-will inline it" &mdash; on `net481` the JIT often won't.
+will inline it" - on `net481` the JIT often won't.
 
 ## `Vector<T>` from `System.Numerics.Vectors` "for portable SIMD"
 
 It exists on `net481`. It does not auto-vectorize equality-replace loops on
 the older JIT, and per-load/store overhead loses to a plain unrolled scalar
-loop at typical sizes (16&ndash;4096). Don't reach for it unless you've
+loop at typical sizes (16-4096). Don't reach for it unless you've
 benchmarked it for your specific shape and seen a win.
 
 True SIMD on `net481` requires `System.Runtime.Intrinsics`, which is .NET 5+

@@ -21,7 +21,7 @@ namespace Touki.Io.Globbing;
 ///  </para>
 ///  <para>
 ///   If a row here ever fails, either touki's MSBuild dialect drifted or MSBuild's
-///   <c>MSBuildGlob</c> changed its coalescing rules &#8212; both warrant a deliberate
+///   <c>MSBuildGlob</c> changed its coalescing rules - both warrant a deliberate
 ///   update to the dialect contract documented in <c>docs/globbing.md</c>.
 ///  </para>
 /// </remarks>

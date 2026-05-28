@@ -41,9 +41,9 @@ internal static class GlobOpCodes
     ///  absorbed into this opcode: bit 0 (<see cref="GlobStarFlagLead"/>) means the
     ///  pattern had a separator immediately before the <c>**</c> token; bit 1
     ///  (<see cref="GlobStarFlagTrail"/>) means a separator followed it. The two bits
-    ///  together describe four shapes&#8212;whole-pattern <c>**</c> (neither),
+    ///  together describe four shapes-whole-pattern <c>**</c> (neither),
     ///  leading <c>**/</c> (trail only), trailing <c>/**</c> (lead only), and middle
-    ///  <c>/**/</c> (both)&#8212;each with their own validity constraints on the
+    ///  <c>/**/</c> (both)-each with their own validity constraints on the
     ///  absorbed input slice.
     /// </summary>
     public const char GlobStar = '\uFDD5';

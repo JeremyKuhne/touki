@@ -138,7 +138,7 @@ public sealed class OrderedMatchSet : DisposableBase, IEnumerationMatcher
         // (the matcher's Negated flag flips the result), so this layer can only
         // detect exclude-side claims. A later DirectoryOnly include (`!bin/`)
         // therefore cannot rescue a previously-excluded subtree at this layer
-        // &mdash; consistent with the strict-gitignore intent.
+        // - consistent with the strict-gitignore intent.
         bool excluded = false;
         for (int i = 0; i < _rules.Count; i++)
         {

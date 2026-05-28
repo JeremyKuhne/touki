@@ -13,7 +13,7 @@ namespace Touki.Io.Globbing;
 /// <remarks>
 ///  <para>
 ///   Bash diverges on a handful of edge cases (notably <c>!(*)</c> against the
-///   empty string &#8212; bash accepts, touki rejects because <c>*</c> matches
+///   empty string - bash accepts, touki rejects because <c>*</c> matches
 ///   the empty alternative slice). Those divergences will be tracked as
 ///   documented oracle deltas in step 5 when the bash oracle goes live.
 ///  </para>

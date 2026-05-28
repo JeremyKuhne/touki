@@ -1,6 +1,6 @@
 ---
 name: address-pr-feedback
-description: Address feedback on an existing pull request &mdash; review comments, requested changes, CI failures, or any post-PR follow-up work. Use when the user says "address the review", "fix the comments", "address Copilot's feedback", "fix the CI failure", or any similar phrasing. Distinct from `create-pr`, which covers opening the *initial* PR.
+description: Address feedback on an existing pull request - review comments, requested changes, CI failures, or any post-PR follow-up work. Use when the user says "address the review", "fix the comments", "address Copilot's feedback", "fix the CI failure", or any similar phrasing. Distinct from `create-pr`, which covers opening the *initial* PR.
 ---
 
 # Address PR feedback
@@ -10,7 +10,7 @@ Both skills share the **same** publish gate: neither `git commit` nor
 `git push` runs without an explicit publishing verb from the user. The
 difference is what each skill authorizes you to *edit*:
 
-- `create-pr` authorizes preparing a new PR from in-progress work —
+- `create-pr` authorizes preparing a new PR from in-progress work -
   branching, staging, proposing a commit message. The commit and push
   still wait on approval.
 - This skill authorizes editing files in response to review feedback or
@@ -28,11 +28,11 @@ Carefully read the most recent user message and identify whether it
 contains an explicit publishing verb before you stage, commit, or push.
 Pattern-match the words, do not infer intent.
 
-**Approval** &mdash; verbs that authorize publishing the current change:
+**Approval** - verbs that authorize publishing the current change:
 `commit`, `push`, `update the PR`, `ship it`, `send it`, `yes push`, or
 direct synonyms when paired with a publishing intent.
 
-**Not approval** &mdash; everything else, including these phrasings that
+**Not approval** - everything else, including these phrasings that
 have caused violations on this repo:
 
 - "Address the review comments." / "Reply to the comments on the PR." /
@@ -59,7 +59,7 @@ Stop and ask one short yes/no question.
    disagree with, plan a written response rather than silently overriding.
 3. **Edit files.** Make the code changes. Run the build and any relevant
    tests. The applicable validation rules are still
-   [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) &mdash; a follow-up
+   [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - a follow-up
    round needs the same checks as the initial PR.
 4. **Stop. Describe.** Summarize what you changed, why, and what (if
    anything) you chose not to act on. Do **not** run `git add`, `git
@@ -68,19 +68,19 @@ Stop and ask one short yes/no question.
    above).
 6. **Only then** stage by path, commit with a message that summarizes the
    round of changes, and push. The staging/commit/push mechanics are the
-   same as in [`create-pr`](../create-pr/SKILL.md) §3&ndash;§4.
+   same as in [`create-pr`](../create-pr/SKILL.md) §3-§4.
 
 ## When you've already violated the rule
 
 Acknowledge the violation directly without minimizing. Do **not** push a
-follow-up commit to "fix" the situation without explicit approval &mdash;
+follow-up commit to "fix" the situation without explicit approval -
 that compounds the failure. The user decides whether to revert,
 force-push, or leave the commit in place.
 
 ## Related
 
-- [AGENTS.md](../../../AGENTS.md) &mdash; the rule itself.
-- [`create-pr`](../create-pr/SKILL.md) &mdash; opening the initial PR
+- [AGENTS.md](../../../AGENTS.md) - the rule itself.
+- [`create-pr`](../create-pr/SKILL.md) - opening the initial PR
   (different approval semantics).
-- [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) &mdash; validation
+- [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - validation
   checklist that applies to both initial and follow-up rounds.

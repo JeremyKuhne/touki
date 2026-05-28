@@ -31,7 +31,7 @@ features (path scoping, tool restrictions, slash-command UX, packaged scripts).
 ## MCP servers
 
 Workspace-scoped MCP server config lives in [.vscode/mcp.json](../.vscode/mcp.json).
-Add a server here only when the agent genuinely cannot reach the data otherwise &mdash;
+Add a server here only when the agent genuinely cannot reach the data otherwise -
 prefer instructions and skills first (see the practitioner guide rule "instructions
 &rarr; skills &rarr; MCP").
 
@@ -138,7 +138,7 @@ Roughly monthly:
 
 ## Verifying instructions are loaded
 
-- **VS Code**: right-click in the Chat view, choose **Diagnostics** &mdash; lists all
+- **VS Code**: right-click in the Chat view, choose **Diagnostics** - lists all
   loaded instruction/skill/agent files and any errors.
 - **github.com**: open a PR; the Copilot code review check lists the instruction files
   it consulted.

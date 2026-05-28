@@ -93,7 +93,7 @@ internal sealed partial class CompiledGlobStrategy
     ///   pays a per-frame cost to re-materialize those spans on entry. Folding
     ///   the deterministic advances into a <c>while</c> loop removed the
     ///   majority of the recursive frames for typical patterns
-    ///   (e.g. <c>**/@(*.cs|*.md|...)</c> processes each file in 1&#8211;3
+    ///   (e.g. <c>**/@(*.cs|*.md|...)</c> processes each file in 1-3
     ///   frames instead of one frame per opcode); on the enumeration benchmark
     ///   this closed the bulk of the net481 throughput gap. Modern .NET RyuJIT
     ///   handles span tail-calls efficiently and sees only a small win, but the

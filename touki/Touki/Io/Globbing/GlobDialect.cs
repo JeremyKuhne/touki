@@ -41,7 +41,7 @@ public enum GlobDialect
     /// <remarks>
     ///  <para>
     ///   See <see href="https://www.gnu.org/software/bash/manual/html_node/Pattern-Matching.html">
-    ///   GNU Bash — Pattern Matching</see>.
+    ///   GNU Bash - Pattern Matching</see>.
     ///  </para>
     /// </remarks>
     Bash,

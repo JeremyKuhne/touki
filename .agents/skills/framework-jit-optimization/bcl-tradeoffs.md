@@ -2,7 +2,7 @@
 
 The System.Memory primitives `IndexOf` and `SequenceEqual` are not vectorized on
 `net481`, but they're not naive per-element loops either. They use
-**integer-stride scalar tricks** &mdash; comparing `ulong`-sized chunks (4 chars
+**integer-stride scalar tricks** - comparing `ulong`-sized chunks (4 chars
 or 8 bytes at a time) with bit operations. This makes the choice between
 "specialize my own loop" and "lean on the BCL" non-obvious.
 
@@ -23,7 +23,7 @@ slightly less aggressive unrolling lose to a hand-written `ushort*` /
 
 | Method | Realistic input | Win factor (length 4096) |
 | --- | --- | --- |
-| `Span<T>.Replace(T, T)` | mutate every match in place | 2.18&ndash;3.08&times; faster than `IndexOf`-walking |
+| `Span<T>.Replace(T, T)` | mutate every match in place | 2.18-3.08&times; faster than `IndexOf`-walking |
 | `IndexOfAnyExcept(T)` | typically scans most of the buffer (e.g. trim, parse) | 0.34&times; vs scalar = 3&times; faster |
 
 These are the methods that already have `typeof(T)` specialization in
@@ -31,7 +31,7 @@ These are the methods that already have `typeof(T)` specialization in
 
 ## Cases where deferring to the BCL wins (skip-run / log-probe workloads)
 
-The hot loop **doesn't** visit every element &mdash; the BCL's stride trick
+The hot loop **doesn't** visit every element - the BCL's stride trick
 skips long non-match runs faster than per-element compares can advance.
 
 ### `Count(T)` via repeated `IndexOf` slicing
@@ -87,7 +87,7 @@ return length;
 full match this beats any scalar loop by **3.3&times;** even on `net481`.
 
 The early-divergence case (mismatch at index 8) is roughly tied with a scalar
-specialization &mdash; absolute saving is ~8 ns &mdash; not worth a 3.3&times;
+specialization - absolute saving is ~8 ns - not worth a 3.3&times;
 regression on the long-prefix case (path normalization, string interning,
 sorted-key compression are the realistic callers).
 
@@ -115,7 +115,7 @@ either-or; we have no benchmark showing a hybrid wins.
 ## Reference benchmarks
 
 - [touki.perf/SpanCountAndPrefixPerf.cs](../../../touki.perf/SpanCountAndPrefixPerf.cs)
-  &mdash; `Count` over `MatchEvery = 1, 7, 64` and `CommonPrefixLength` over
+  - `Count` over `MatchEvery = 1, 7, 64` and `CommonPrefixLength` over
   `Diverge = 0, 8, full`.
-- [touki.perf/SpanReplace.cs](../../../touki.perf/SpanReplace.cs) &mdash;
+- [touki.perf/SpanReplace.cs](../../../touki.perf/SpanReplace.cs) -
   full-scan workload where specialization wins.

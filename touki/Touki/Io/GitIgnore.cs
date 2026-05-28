@@ -23,7 +23,7 @@ namespace Touki.Io;
 ///   <item><description>Lines starting with <c>#</c> are comments. Escape a leading
 ///    <c>#</c> with <c>\#</c> if the literal <c>#</c> is needed at the start.</description></item>
 ///   <item><description>Trailing whitespace is stripped unless escaped with
-///    <c>\&#160;</c> &#8212; this implementation strips trailing whitespace
+///    <c>\&#160;</c> - this implementation strips trailing whitespace
 ///    unconditionally (the rare escaped-trailing-space case can be added later).</description></item>
 ///   <item><description>A leading <c>\</c> escapes <c>!</c> or <c>#</c> at the start
 ///    of a line (e.g., <c>\!important.txt</c> matches a file literally named
