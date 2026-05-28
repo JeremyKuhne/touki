@@ -127,7 +127,7 @@ public sealed partial class GlobSpecification : DisposableBase
             return false;
         }
 
-        if (!Factory.TryCreate(pattern.AsSpan(), dialect, options, separator, maxPatternLength, out GlobStrategy? strategy, out error))
+        if (!Factory.TryCreate(pattern, dialect, options, separator, maxPatternLength, out GlobStrategy? strategy, out error))
         {
             return false;
         }
