@@ -577,6 +577,11 @@ public sealed partial class GlobSpecification
                 // Leading '!' negates the match; the '!' is stripped and the flag is reported
                 negated = true;
                 pattern = pattern[1..];
+
+                if (pattern.IsEmpty)
+                {
+                    return (negated, rootAnchored, directoryOnly);
+                }
             }
 
             if (pattern[0] == '/')
@@ -585,6 +590,11 @@ public sealed partial class GlobSpecification
                 // stripped but the pattern is no longer subject to the "match anywhere" rule.
                 rootAnchored = true;
                 pattern = pattern[1..];
+
+                if (pattern.IsEmpty)
+                {
+                    return (negated, rootAnchored, directoryOnly);
+                }
             }
 
             if (pattern[^1] == '/')
