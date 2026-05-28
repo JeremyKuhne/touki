@@ -38,6 +38,23 @@ public sealed partial class GlobSpecification
         internal const int MaxOpcodeBodyLength = char.MaxValue;
 
         /// <summary>
+        ///  Maximum nesting depth of extended-glob constructs (<c>?(…)</c>, <c>*(…)</c>,
+        ///  <c>+(…)</c>, <c>@(…)</c>, <c>!(…)</c>). Exceeding this raises
+        ///  <see cref="GlobCompileErrorCode.FeatureLimitExceeded"/>. The cap exists so
+        ///  the interpreter's stack-allocated savepoint buffer stays bounded: with
+        ///  this depth and the per-construct alternative cap, simultaneous savepoints
+        ///  are guaranteed to fit in the fixed runtime budget.
+        /// </summary>
+        internal const int MaxExtGlobDepth = 8;
+
+        /// <summary>
+        ///  Maximum number of <c>|</c>-separated alternatives in a single extended-glob
+        ///  construct. Exceeding this raises
+        ///  <see cref="GlobCompileErrorCode.FeatureLimitExceeded"/>.
+        /// </summary>
+        internal const int MaxExtGlobAlternatives = 32;
+
+        /// <summary>
         ///  Default upper bound (in characters) applied by the
         ///  <see cref="TryCreate(ReadOnlySpan{char}, GlobDialect, GlobOptions, GlobPathSeparator, out GlobStrategy?, out GlobCompileError)"/>
         ///  overload that omits an explicit <c>maxPatternLength</c>. Sized to comfortably
@@ -221,7 +238,8 @@ public sealed partial class GlobSpecification
             // First pass: validate the pattern, count metacharacters, and locate the single
             // '*' for the PrefixSuffix shape. The scan also fails fast on malformed input
             // (dangling escape, unterminated class) so the encoder can assume well-formed.
-            if (!Scan(pattern, escape, allowClasses, out PatternShape shape, out error))
+            bool allowExtGlob = (options & GlobOptions.AllowExtGlob) != 0;
+            if (!Scan(pattern, escape, allowClasses, allowExtGlob, out PatternShape shape, out error))
             {
                 return false;
             }
@@ -244,8 +262,11 @@ public sealed partial class GlobSpecification
 
             // Path-unaware specialized matchers (Prefix/Suffix/Contains/PrefixSuffix/Any).
             // Path-aware dialects route everything through the bytecode interpreter so the
-            // separator-aware semantics are honored.
-            if (!pathAware && TryCreatePathUnawareSpecialized(pattern, ref shape, dialect, options, escape, out result))
+            // separator-aware semantics are honored. Extglob patterns also skip these
+            // specializations &mdash; they fall through to the general path so the
+            // bytecode interpreter handles the alternation.
+            if (!pathAware && !shape.HasExtGlob
+                && TryCreatePathUnawareSpecialized(pattern, ref shape, dialect, options, escape, out result))
             {
                 result.DisallowEmptyInput = disallowEmptyInput;
                 return true;
@@ -257,7 +278,12 @@ public sealed partial class GlobSpecification
             // canonical real-world glob shape (`**/*.cs`, `**/*.json`, `**/file.cs`,
             // ...) and benefits enormously from bypassing the bytecode interpreter and
             // the per-file path concatenation. Globstar must be enabled (implicitly for
-            // MSBuild / FSG / Git, or via GlobOptions.AllowGlobStar).
+            // MSBuild / FSG / Git, or via GlobOptions.AllowGlobStar). Patterns with an
+            // extglob construct in the segment are still routed here &#8212; the helper
+            // recognizes the `@(*lit1|*lit2|...)` shape and lowers it to
+            // <see cref="MultiSuffixGlobStrategy"/>; segments with extglob constructs
+            // the helper cannot specialize return false and fall through to the
+            // general bytecode path.
             bool allowGlobStar = (options & GlobOptions.AllowGlobStar) != 0 || dialect.GlobStarIsImplicit();
             if (pathAware
                 && allowGlobStar
@@ -285,6 +311,7 @@ public sealed partial class GlobSpecification
                 options,
                 escape,
                 allowClasses,
+                allowExtGlob,
                 pathAware,
                 resolvedSeparator,
                 negated,
@@ -339,8 +366,12 @@ public sealed partial class GlobSpecification
             }
 
             // Scan the segment in isolation. A malformed segment falls through to the
-            // general compile path, which produces the canonical error.
-            if (!Scan(segment, escape, allowClasses, out PatternShape segmentShape, out _))
+            // general compile path, which produces the canonical error. Extglob is
+            // permitted here so the `@(*lit1|*lit2|...)` suffix-set shape can be lowered
+            // to <see cref="MultiSuffixGlobStrategy"/>; other extglob shapes flow back
+            // to the general bytecode path.
+            bool allowExtGlobScan = (options & GlobOptions.AllowExtGlob) != 0;
+            if (!Scan(segment, escape, allowClasses, allowExtGlobScan, out PatternShape segmentShape, out _))
             {
                 return false;
             }
@@ -349,6 +380,16 @@ public sealed partial class GlobSpecification
             if (segmentShape.HasNoMetacharacters)
             {
                 segmentMatcher = new LiteralGlobStrategy(UnescapeToString(segment, escape), dialect, options);
+            }
+            else if (segmentShape.HasExtGlob)
+            {
+                // Only the `@(*lit1|*lit2|...)` shape is specializable today. Anything
+                // else (other kinds, non-suffix alts, nested extglob) falls through to
+                // the general bytecode path which already correctly handles it.
+                if (!TryCreateMultiSuffixSegmentMatcher(segment, escape, dialect, options, out segmentMatcher))
+                {
+                    return false;
+                }
             }
             else if (!TryCreatePathUnawareSpecialized(segment, ref segmentShape, dialect, options, escape, out segmentMatcher))
             {
@@ -366,6 +407,140 @@ public sealed partial class GlobSpecification
                 CoalesceInputSeparators = coalesceInputSeparators,
                 DisallowEmptyInput = disallowEmptyInput,
             };
+            return true;
+        }
+
+        /// <summary>
+        ///  Tries to recognize <c>&#x40;(*lit1|*lit2|...)</c> as a segment matcher.
+        ///  When every alternative is a pure <c>*</c> followed by literal characters
+        ///  (no nested extglob, no classes, no question marks, no escaping inside the
+        ///  alternative), lowers the segment to a <see cref="MultiSuffixGlobStrategy"/>
+        ///  that runs a tight <c>EndsWith</c> sweep per file.
+        /// </summary>
+        /// <remarks>
+        ///  <para>
+        ///   This is the canonical "match any of these extensions" shape produced by
+        ///   user code that wants a single compiled spec instead of an N-include
+        ///   <c>MatchSet</c>. Specializing it removes the recursive bytecode walker
+        ///   from the per-file hot path, which is the dominant cost on
+        ///   .NET Framework 4.8.1 RyuJIT (no tail calls for span-bearing helpers, slow
+        ///   span indexer). See <see cref="MultiSuffixGlobStrategy"/> for the per-TFM
+        ///   rationale.
+        ///  </para>
+        ///  <para>
+        ///   Selection criteria are intentionally narrow: only <c>&#x40;(...)</c>
+        ///   (exactly-one semantics) with <c>*literal</c> alternatives. Other kinds
+        ///   (<c>?</c>, <c>+</c>, <c>*</c>, <c>!</c>), mixed alternative shapes, and
+        ///   anything containing a metacharacter inside the literal portion all
+        ///   return <see langword="false"/> so the general bytecode path picks them
+        ///   up. Widening the criteria requires re-validating the net481 win &#8212;
+        ///   each kind has different match semantics and the simple endswith sweep
+        ///   does not generalize cleanly.
+        ///  </para>
+        /// </remarks>
+        private static bool TryCreateMultiSuffixSegmentMatcher(
+            ReadOnlySpan<char> segment,
+            char escape,
+            GlobDialect dialect,
+            GlobOptions options,
+            [NotNullWhen(true)] out GlobStrategy? result)
+        {
+            result = null;
+
+            // Required shape: `@( ... )` with at least one character between the parens.
+            if (segment.Length < 4
+                || segment[0] != '@'
+                || segment[1] != '('
+                || segment[segment.Length - 1] != ')')
+            {
+                return false;
+            }
+
+            ReadOnlySpan<char> body = segment[2..(segment.Length - 1)];
+
+            // Worst case: one suffix per character. Stack-bound by the encoder's
+            // MaxExtGlobAlternatives cap (32) which is comfortably below.
+            Span<int> altStarts = stackalloc int[64];
+            int altCount = 0;
+            altStarts[altCount++] = 0;
+            for (int i = 0; i < body.Length; i++)
+            {
+                char current = body[i];
+                if (current == escape && i + 1 < body.Length)
+                {
+                    // Escaped char inside the alt; advance past it. The unescape pass
+                    // below normalizes these out.
+                    i++;
+                    continue;
+                }
+
+                if (current == '|')
+                {
+                    if (altCount >= altStarts.Length)
+                    {
+                        return false;
+                    }
+
+                    altStarts[altCount++] = i + 1;
+                }
+                else if (current is '?' or '*' or '+' or '@' or '!')
+                {
+                    // Any of these followed by '(' starts a (possibly nested) extglob
+                    // construct. Disqualify so the general path handles it correctly.
+                    if (i + 1 < body.Length && body[i + 1] == '(')
+                    {
+                        return false;
+                    }
+                }
+                else if (current is '[' or ']')
+                {
+                    // Character classes break the simple `*literal` shape.
+                    return false;
+                }
+            }
+
+            string[] suffixes = new string[altCount];
+            for (int j = 0; j < altCount; j++)
+            {
+                int altStart = altStarts[j];
+                int altEnd = (j + 1 < altCount) ? altStarts[j + 1] - 1 : body.Length;
+                ReadOnlySpan<char> alt = body[altStart..altEnd];
+
+                // Each alternative must be exactly `*literal` where literal is at least
+                // one character. Pure literal alternatives (no `*`) and zero-suffix
+                // alternatives (just `*`, which would match anything) are intentionally
+                // not specialized today &#8212; widening this requires verifying the
+                // leading-dot semantics on each shape.
+                if (alt.Length < 2 || alt[0] != '*')
+                {
+                    return false;
+                }
+
+                ReadOnlySpan<char> suffixSource = alt[1..];
+
+                // The literal portion must contain no further metacharacters. Scan
+                // explicitly here instead of calling Scan to keep the path-aware
+                // semantics for `?` / `*` / classes intact even when AllowExtGlob is
+                // disabled at the caller site.
+                for (int k = 0; k < suffixSource.Length; k++)
+                {
+                    char c = suffixSource[k];
+                    if (c == escape && k + 1 < suffixSource.Length)
+                    {
+                        k++;
+                        continue;
+                    }
+
+                    if (c is '*' or '?' or '[' or ']' or '(' or ')' or '|')
+                    {
+                        return false;
+                    }
+                }
+
+                suffixes[j] = UnescapeToString(suffixSource, escape);
+            }
+
+            result = new MultiSuffixGlobStrategy(suffixes, dialect, options);
             return true;
         }
 
@@ -713,6 +888,7 @@ public sealed partial class GlobSpecification
             GlobOptions options,
             char escape,
             bool allowClasses,
+            bool allowExtGlob,
             bool pathAware,
             char separator,
             bool negated,
@@ -732,9 +908,11 @@ public sealed partial class GlobSpecification
                 escape,
                 allowClasses,
                 allowGlobStar && pathAware,
+                allowExtGlob,
                 separator,
                 out string program,
                 out bool hasGlobStar,
+                out bool hasExtGlob,
                 out error))
             {
                 result = null;
@@ -744,9 +922,24 @@ public sealed partial class GlobSpecification
             // Tail-anchor optimization: when the program ends in a Literal op, the matcher
             // can EndsWith-fast-fail on the tail before running the NFA. We pass the tail
             // offset/length within the same program string so no extra allocation is needed.
-            FindTrailingLiteral(program, out int nfaProgramLength, out int tailStart, out int tailLength);
+            // The tail-anchor only applies to programs without extglob &mdash; an
+            // alternation may consume the trailing literal as part of one of its
+            // alternatives, so the EndsWith fast-fail would produce false negatives.
+            int nfaProgramLength;
+            int tailStart;
+            int tailLength;
+            if (hasExtGlob)
+            {
+                nfaProgramLength = program.Length;
+                tailStart = 0;
+                tailLength = 0;
+            }
+            else
+            {
+                FindTrailingLiteral(program, out nfaProgramLength, out tailStart, out tailLength);
+            }
 
-            result = new CompiledGlobStrategy(program, nfaProgramLength, tailStart, tailLength, hasGlobStar, dialect, options)
+            result = new CompiledGlobStrategy(program, nfaProgramLength, tailStart, tailLength, hasGlobStar, hasExtGlob, dialect, options)
             {
                 Negated = negated,
                 RootAnchored = rootAnchored,
@@ -839,6 +1032,7 @@ public sealed partial class GlobSpecification
             ReadOnlySpan<char> pattern,
             char escape,
             bool allowClasses,
+            bool allowExtGlob,
             out PatternShape shape,
             out GlobCompileError error)
         {
@@ -851,6 +1045,25 @@ public sealed partial class GlobSpecification
             for (int i = 0; i < pattern.Length; i++)
             {
                 char current = pattern[i];
+
+                // Extended-glob constructs always take precedence over the per-character
+                // wildcard meanings of '?' and '*'. `?(`/`*(`/`+(`/`@(`/`!(` open an
+                // alternation; the matching ')' and any nested constructs are consumed
+                // by the recursive walker. Outside an extglob context '?' is the Any
+                // wildcard, '*' is the AnyRun wildcard, and '+'/'@'/'!' are literals,
+                // so the lookahead has to happen before any per-character handling.
+                if (allowExtGlob
+                    && i + 1 < pattern.Length
+                    && pattern[i + 1] == '('
+                    && current is '?' or '*' or '+' or '@' or '!')
+                {
+                    sawNonStar = true;
+                    if (!TryScanExtGlob(pattern, ref i, escape, allowClasses, depth: 1, ref shape, out error))
+                    {
+                        return false;
+                    }
+                    continue;
+                }
 
                 if (current == '*')
                 {
@@ -911,13 +1124,140 @@ public sealed partial class GlobSpecification
             shape.IsAllStars = shape.StarCount > 0 && !sawNonStar;
             shape.HasNoMetacharacters = shape.StarCount == 0
                 && !shape.HasQuestionMarks
-                && !shape.HasClasses;
+                && !shape.HasClasses
+                && !shape.HasExtGlob;
             if (shape.StarCount == 1)
             {
                 shape.SingleStarSourceIndex = firstStar;
             }
 
             return true;
+        }
+
+        /// <summary>
+        ///  Walks an extended-glob construct starting at <paramref name="i"/>, which
+        ///  must point at the kind character (<c>'?'</c>, <c>'*'</c>, <c>'+'</c>,
+        ///  <c>'@'</c>, or <c>'!'</c>) immediately followed by <c>'('</c>. On success
+        ///  advances <paramref name="i"/> past the matching <c>')'</c>, sets
+        ///  <see cref="PatternShape.HasExtGlob"/>, and returns <see langword="true"/>.
+        ///  On failure reports the offending position via <paramref name="error"/>.
+        /// </summary>
+        /// <param name="depth">
+        ///  Current nesting depth (1 at the outermost extglob). The top-level
+        ///  <see cref="Scan"/> always passes 1 here; recursive calls increment.
+        /// </param>
+        private static bool TryScanExtGlob(
+            ReadOnlySpan<char> pattern,
+            ref int i,
+            char escape,
+            bool allowClasses,
+            int depth,
+            ref PatternShape shape,
+            out GlobCompileError error)
+        {
+            error = default;
+
+            if (depth > MaxExtGlobDepth)
+            {
+                error = new GlobCompileError(
+                    GlobCompileErrorCode.FeatureLimitExceeded,
+                    position: i,
+                    message: $"Extended-glob nesting depth exceeds the limit of {MaxExtGlobDepth}.");
+                return false;
+            }
+
+            int kindIndex = i;
+            // pattern[i] is the kind char; pattern[i+1] is '('.
+            i += 2;
+
+            // Empty body `()` matches bash's syntax error: there must be at least
+            // one alternative (which may itself be the empty alternative, written
+            // as `(|)`).
+            if (i < pattern.Length && pattern[i] == ')')
+            {
+                error = new GlobCompileError(
+                    GlobCompileErrorCode.InvalidExtGlobBody,
+                    position: kindIndex,
+                    message: "Extended-glob construct has an empty body.");
+                return false;
+            }
+
+            int alternativeCount = 1;
+            shape.HasExtGlob = true;
+
+            while (i < pattern.Length)
+            {
+                char current = pattern[i];
+
+                if (current == ')')
+                {
+                    i++;
+                    return true;
+                }
+
+                if (current == '|')
+                {
+                    alternativeCount++;
+                    if (alternativeCount > MaxExtGlobAlternatives)
+                    {
+                        error = new GlobCompileError(
+                            GlobCompileErrorCode.FeatureLimitExceeded,
+                            position: i,
+                            message:
+                                $"Extended-glob alternative count exceeds the limit of {MaxExtGlobAlternatives}.");
+                        return false;
+                    }
+
+                    i++;
+                    continue;
+                }
+
+                // Nested extglob.
+                if (i + 1 < pattern.Length
+                    && pattern[i + 1] == '('
+                    && current is '?' or '*' or '+' or '@' or '!')
+                {
+                    if (!TryScanExtGlob(pattern, ref i, escape, allowClasses, depth + 1, ref shape, out error))
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                if (allowClasses && current == '[')
+                {
+                    if (!SkipClass(pattern, ref i, out error))
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                if (escape != '\0' && current == escape)
+                {
+                    if (i + 1 >= pattern.Length)
+                    {
+                        error = new GlobCompileError(
+                            GlobCompileErrorCode.DanglingEscape,
+                            position: i,
+                            message: $"Pattern ends with an unescaped '{escape}'.");
+                        return false;
+                    }
+
+                    i += 2;
+                    continue;
+                }
+
+                i++;
+            }
+
+            error = new GlobCompileError(
+                GlobCompileErrorCode.UnterminatedExtGlob,
+                position: kindIndex,
+                message: "Extended-glob construct is not terminated.");
+            return false;
         }
 
         private static bool SkipClass(ReadOnlySpan<char> pattern, ref int i, out GlobCompileError error)
@@ -984,15 +1324,25 @@ public sealed partial class GlobSpecification
         ///  the run of stars collapses to <see cref="GlobOpCodes.AnyRun"/> exactly as a
         ///  single <c>*</c> would.
         /// </param>
+        /// <param name="allowExtGlob">
+        ///  When <see langword="true"/>, the encoder emits
+        ///  <see cref="GlobOpCodes.AltStart"/> / <see cref="GlobOpCodes.AltSep"/> /
+        ///  <see cref="GlobOpCodes.AltEnd"/> for each <c>?(…)</c>, <c>*(…)</c>,
+        ///  <c>+(…)</c>, <c>@(…)</c>, <c>!(…)</c> construct encountered. When
+        ///  <see langword="false"/> a literal <c>(</c> or <c>)</c> is encoded as a
+        ///  literal character.
+        /// </param>
         [SkipLocalsInit]
         private static bool TryEncodeProgram(
             ReadOnlySpan<char> pattern,
             char escape,
             bool allowClasses,
             bool allowGlobStar,
+            bool allowExtGlob,
             char separator,
             out string program,
             out bool hasGlobStar,
+            out bool hasExtGlob,
             out GlobCompileError error)
         {
             // Worst-case encoded length: every character becomes a Literal-of-1 (3 chars)
@@ -1005,6 +1355,7 @@ public sealed partial class GlobSpecification
             // that absorbs the leading separator.
             LiteralCursor lastLiteral = LiteralCursor.None;
             hasGlobStar = false;
+            hasExtGlob = false;
             error = default;
             int overflowPosition = -1;
 
@@ -1012,6 +1363,35 @@ public sealed partial class GlobSpecification
             while (i < pattern.Length)
             {
                 char current = pattern[i];
+
+                // Extended-glob constructs take precedence over `?`/`*` per-character
+                // wildcards and over `+`/`@`/`!` literals when followed by `(`. The
+                // scanner has already validated balanced parens, depth, and alt count;
+                // here we just emit the bytecode.
+                if (allowExtGlob
+                    && i + 1 < pattern.Length
+                    && pattern[i + 1] == '('
+                    && current is '?' or '*' or '+' or '@' or '!')
+                {
+                    if (!TryEmitExtGlob(
+                            pattern,
+                            ref i,
+                            escape,
+                            allowClasses,
+                            allowGlobStar,
+                            separator,
+                            ref builder,
+                            ref lastLiteral,
+                            ref hasGlobStar,
+                            out int extGlobOverflow))
+                    {
+                        overflowPosition = extGlobOverflow;
+                        break;
+                    }
+
+                    hasExtGlob = true;
+                    continue;
+                }
 
                 if (current == '?')
                 {
@@ -1056,7 +1436,7 @@ public sealed partial class GlobSpecification
                 }
 
                 int literalStart = i;
-                if (!TryEmitLiteralRun(pattern, ref i, escape, allowClasses, ref builder, out lastLiteral))
+                if (!TryEmitLiteralRun(pattern, ref i, escape, allowClasses, allowExtGlob, insideExtGlob: false, ref builder, out lastLiteral))
                 {
                     overflowPosition = literalStart;
                     break;
@@ -1076,6 +1456,170 @@ public sealed partial class GlobSpecification
 
             program = builder.ToStringAndDispose();
             return true;
+        }
+
+        /// <summary>
+        ///  Emits the bytecode for one extended-glob construct starting at
+        ///  <paramref name="i"/>, which must point at the kind character
+        ///  (<c>'?'</c>, <c>'*'</c>, <c>'+'</c>, <c>'@'</c>, or <c>'!'</c>)
+        ///  immediately followed by <c>'('</c>. On success advances <paramref name="i"/>
+        ///  past the matching <c>')'</c> and returns <see langword="true"/>; on
+        ///  encoder overflow returns <see langword="false"/> with the offending
+        ///  source position via <paramref name="overflowPosition"/>.
+        /// </summary>
+        /// <remarks>
+        ///  <para>
+        ///   Layout: <c>AltStart{kind, blockLen} alt1 [AltSep alt2 ...] AltEnd</c>
+        ///   where <c>blockLen</c> is the total opcode-char count of the block from
+        ///   <see cref="GlobOpCodes.AltStart"/> through <see cref="GlobOpCodes.AltEnd"/>
+        ///   inclusive. The scanner has already validated balanced parens, the
+        ///   <see cref="MaxExtGlobDepth"/> nesting cap, and the
+        ///   <see cref="MaxExtGlobAlternatives"/> per-construct alternative cap, so
+        ///   no further input validation happens here.
+        ///  </para>
+        ///  <para>
+        ///   Nested extglob constructs recurse into this same helper, each emitting
+        ///   their own <see cref="GlobOpCodes.AltStart"/>/<see cref="GlobOpCodes.AltEnd"/>
+        ///   pair.
+        ///  </para>
+        /// </remarks>
+        private static bool TryEmitExtGlob(
+            ReadOnlySpan<char> pattern,
+            ref int i,
+            char escape,
+            bool allowClasses,
+            bool allowGlobStar,
+            char separator,
+            ref ValueStringBuilder builder,
+            ref LiteralCursor lastLiteral,
+            ref bool hasGlobStar,
+            out int overflowPosition)
+        {
+            Debug.Assert(i + 1 < pattern.Length && pattern[i + 1] == '(');
+            Debug.Assert(pattern[i] is '?' or '*' or '+' or '@' or '!');
+
+            overflowPosition = -1;
+            int kindIndex = i;
+            char kind = pattern[i];
+            int altStartPos = builder.Length;
+
+            // Reserve the AltStart header: opcode + kind + placeholder length.
+            // The length payload is back-patched once AltEnd is appended.
+            builder.Append(GlobOpCodes.AltStart);
+            builder.Append(kind);
+            builder.Append('\0');
+
+            i += 2;
+            lastLiteral = LiteralCursor.None;
+
+            while (i < pattern.Length)
+            {
+                char current = pattern[i];
+
+                if (current == ')')
+                {
+                    builder.Append(GlobOpCodes.AltEnd);
+                    int blockLength = builder.Length - altStartPos;
+                    if (blockLength > MaxOpcodeBodyLength)
+                    {
+                        overflowPosition = kindIndex;
+                        return false;
+                    }
+
+                    // Back-patch the placeholder length slot (third char of the
+                    // AltStart header).
+                    builder[altStartPos + 2] = (char)blockLength;
+                    lastLiteral = LiteralCursor.None;
+                    i++;
+                    return true;
+                }
+
+                if (current == '|')
+                {
+                    builder.Append(GlobOpCodes.AltSep);
+                    lastLiteral = LiteralCursor.None;
+                    i++;
+                    continue;
+                }
+
+                // Nested extglob.
+                if (i + 1 < pattern.Length
+                    && pattern[i + 1] == '('
+                    && current is '?' or '*' or '+' or '@' or '!')
+                {
+                    if (!TryEmitExtGlob(
+                            pattern,
+                            ref i,
+                            escape,
+                            allowClasses,
+                            allowGlobStar,
+                            separator,
+                            ref builder,
+                            ref lastLiteral,
+                            ref hasGlobStar,
+                            out overflowPosition))
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                if (current == '?')
+                {
+                    builder.Append(GlobOpCodes.Any);
+                    lastLiteral = LiteralCursor.None;
+                    i++;
+                    continue;
+                }
+
+                if (allowClasses && current == '[')
+                {
+                    int classStart = i;
+                    if (!TryEmitClass(pattern, ref i, ref builder))
+                    {
+                        overflowPosition = classStart;
+                        return false;
+                    }
+
+                    lastLiteral = LiteralCursor.None;
+                    continue;
+                }
+
+                if (current == '*')
+                {
+                    int runEnd = i + 1;
+                    while (runEnd < pattern.Length && pattern[runEnd] == '*')
+                    {
+                        runEnd++;
+                    }
+
+                    if (TryEmitGlobStar(pattern, i, runEnd, allowGlobStar, separator, ref builder, ref lastLiteral, out int next))
+                    {
+                        hasGlobStar = true;
+                        i = next;
+                        continue;
+                    }
+
+                    builder.Append(GlobOpCodes.AnyRun);
+                    lastLiteral = LiteralCursor.None;
+                    i = runEnd;
+                    continue;
+                }
+
+                int literalStart = i;
+                if (!TryEmitLiteralRun(pattern, ref i, escape, allowClasses, allowExtGlob: true, insideExtGlob: true, ref builder, out lastLiteral))
+                {
+                    overflowPosition = literalStart;
+                    return false;
+                }
+            }
+
+            // The scanner already verified the closing ')'; reaching here would be
+            // an encoder/scanner mismatch.
+            Debug.Fail("Extglob encoder ran off the end of the pattern; scanner should have rejected this.");
+            overflowPosition = kindIndex;
+            return false;
         }
 
         /// <summary>
@@ -1199,6 +1743,8 @@ public sealed partial class GlobSpecification
             ref int i,
             char escape,
             bool allowClasses,
+            bool allowExtGlob,
+            bool insideExtGlob,
             ref ValueStringBuilder builder,
             out LiteralCursor lastLiteral)
         {
@@ -1211,6 +1757,26 @@ public sealed partial class GlobSpecification
             {
                 char current = pattern[i];
                 if (current == '*' || current == '?' || (allowClasses && current == '['))
+                {
+                    break;
+                }
+
+                // Inside an extglob body, '|' separates alternatives and ')' closes the
+                // construct; both terminate the literal run.
+                if (insideExtGlob && (current == '|' || current == ')'))
+                {
+                    break;
+                }
+
+                // Extglob constructs start with one of '?'/'*'/'+'/'@'/'!' followed
+                // by '('. The '?' / '*' cases already break out above; the remaining
+                // three need an explicit check here because they would otherwise be
+                // ordinary literal characters. The lookahead is gated on
+                // <paramref name="allowExtGlob"/> so unrelated patterns pay nothing.
+                if (allowExtGlob
+                    && (current == '+' || current == '@' || current == '!')
+                    && i + 1 < pattern.Length
+                    && pattern[i + 1] == '(')
                 {
                     break;
                 }

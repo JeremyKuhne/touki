@@ -48,9 +48,7 @@ public class SequentialSeparatorBashOracleTests
         }
 
         bool oracle = BashInterop.Matches(bashPath, pattern, input);
-#pragma warning disable CS0618 // AllowExtGlob is reserved but not implemented; passed for forward-compat with the eventual bash extglob oracle.
         bool actual = GlobSpecification.Compile(pattern, GlobDialect.Bash, GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob).IsMatch(input);
-#pragma warning restore CS0618
         actual.Should().Be(
             oracle,
             because: $"GlobSpecification(Bash) and bash [[ == ]] must agree on pattern '{pattern}' vs input '{input}'");

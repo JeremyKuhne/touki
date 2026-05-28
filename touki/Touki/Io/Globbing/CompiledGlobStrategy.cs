@@ -26,7 +26,7 @@ namespace Touki.Io.Globbing;
 ///   separate static methods so the case branch is hoisted out of the hot loop.
 ///  </para>
 /// </remarks>
-internal sealed class CompiledGlobStrategy : GlobStrategy
+internal sealed partial class CompiledGlobStrategy : GlobStrategy
 {
     private readonly string _program;
     private readonly int _nfaProgramLength;
@@ -42,12 +42,24 @@ internal sealed class CompiledGlobStrategy : GlobStrategy
     ///  <c>**</c>).
     /// </summary>
     private readonly bool _hasGlobStar;
+    private readonly bool _hasExtGlob;
+
+    /// <summary>
+    ///  <see langword="true"/> when the encoded program admits an execution
+    ///  path whose first matched input character is a literal <c>'.'</c>.
+    ///  Computed once at construction by <see cref="ComputeCanStartWithDot"/>
+    ///  so the per-call leading-dot precheck in
+    ///  <see cref="MatchCore(ReadOnlySpan{char}, ReadOnlySpan{char})"/> is a
+    ///  single field load instead of a bytecode walk. Without the cache the
+    ///  walk would re-run on every hidden-file input for extglob programs.
+    /// </summary>
+    private readonly bool _canStartWithDot;
 
     /// <summary>
     ///  Constructs a matcher with no trailing-literal anchor (the program is run end-to-end).
     /// </summary>
     public CompiledGlobStrategy(string program, GlobDialect dialect, GlobOptions options)
-        : this(program, program.Length, tailStart: -1, tailLength: 0, hasGlobStar: false, dialect, options)
+        : this(program, program.Length, tailStart: -1, tailLength: 0, hasGlobStar: false, hasExtGlob: false, dialect, options)
     {
     }
 
@@ -65,6 +77,7 @@ internal sealed class CompiledGlobStrategy : GlobStrategy
         int tailStart,
         int tailLength,
         bool hasGlobStar,
+        bool hasExtGlob,
         GlobDialect dialect,
         GlobOptions options)
         : base(dialect, options)
@@ -74,7 +87,9 @@ internal sealed class CompiledGlobStrategy : GlobStrategy
         _tailStart = tailStart;
         _tailLength = tailLength;
         _hasGlobStar = hasGlobStar;
+        _hasExtGlob = hasExtGlob;
         _literalPathPrefix = ComputeLiteralPathPrefix(program.AsSpan(0, nfaProgramLength), Separator);
+        _canStartWithDot = ComputeCanStartWithDot(program.AsSpan(0, nfaProgramLength));
     }
 
     /// <inheritdoc/>
@@ -188,17 +203,23 @@ internal sealed class CompiledGlobStrategy : GlobStrategy
         ReadOnlySpan<char> program = _program.AsSpan(0, _nfaProgramLength);
 
         // Leading-dot rule: if the (post-tail-trim) virtual input starts with '.',
-        // the first instruction must be a Literal whose first character is '.'.
+        // the program must admit a leading literal '.' on at least one execution
+        // path. `_canStartWithDot` is precomputed at construction (see
+        // <see cref="ComputeCanStartWithDot"/>) so this check is a single field
+        // load on the per-call hot path; the walk over extglob alternatives that
+        // determines the flag happens once at compile time.
         if (!MatchLeadingDot && totalLength > 0)
         {
             char firstChar = firstLength > 0 ? first[0] : second[0];
-            if (firstChar == '.'
-                && (program.Length < 3
-                    || program[0] != GlobOpCodes.Literal
-                    || program[2] != '.'))
+            if (firstChar == '.' && !_canStartWithDot)
             {
                 return false;
             }
+        }
+
+        if (_hasExtGlob)
+        {
+            return MatchExtGlob(first, second, program, Separator, IgnoreCaseKind);
         }
 
         if (IgnoreCaseKind == IgnoreCaseKind.Off)
@@ -211,6 +232,128 @@ internal sealed class CompiledGlobStrategy : GlobStrategy
         return _hasGlobStar
             ? MatchIgnoreCase(first, second, program, IgnoreCaseKind, Separator)
             : MatchIgnoreCaseSimple(first, second, program, IgnoreCaseKind, Separator);
+    }
+
+    /// <summary>
+    ///  Compile-time predicate: returns <see langword="true"/> if
+    ///  <paramref name="program"/> admits an execution path whose first matched
+    ///  input character is a literal <c>'.'</c>. Result is cached in
+    ///  <see cref="_canStartWithDot"/> and consumed by the per-call
+    ///  leading-dot precheck in
+    ///  <see cref="MatchCore(ReadOnlySpan{char}, ReadOnlySpan{char})"/>.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   For a non-extglob program this is the same predicate the previous
+    ///   inline check encoded: the leading opcode must be a <c>Literal</c> whose
+    ///   first character is <c>'.'</c>. For an extglob program we descend into
+    ///   each alternative head and recurse, so explicit-dot alternatives such
+    ///   as <c>@(.gitignore|README)</c> can match hidden inputs. Other leading
+    ///   opcodes (<c>AnyRun</c>, <c>Any</c>, <c>Class</c>/<c>NegClass</c>,
+    ///   <c>GlobStar</c>) cannot consume the leading <c>.</c> under the
+    ///   leading-dot rule, so they short-circuit to <see langword="false"/>.
+    ///  </para>
+    /// </remarks>
+    private static bool ComputeCanStartWithDot(ReadOnlySpan<char> program)
+    {
+        if (program.Length < 1)
+        {
+            return false;
+        }
+
+        char opcode = program[0];
+        if (opcode == GlobOpCodes.Literal)
+        {
+            return program.Length >= 3 && program[2] == '.';
+        }
+
+        if (opcode != GlobOpCodes.AltStart)
+        {
+            // AnyRun / Any / Class / NegClass / GlobStar cannot match a leading
+            // '.' when the leading-dot rule is in force; negation (!) is
+            // handled the same way as its constituent alternatives (any of
+            // which may legitimately start with a dot).
+            return false;
+        }
+
+        // AltStart payload: kind (program[1]), blockLength (program[2]).
+        // Alternatives begin at program[3] and are AltSep-separated until
+        // AltEnd. Walk each alternative's first opcode; recurse to follow
+        // nested AltStarts.
+        if (program.Length < 3)
+        {
+            return false;
+        }
+
+        int blockLength = program[2];
+        int afterEnd = blockLength;
+        int altEndIndex = afterEnd - 1;
+        if (altEndIndex < 0 || altEndIndex >= program.Length)
+        {
+            return false;
+        }
+
+        int i = 3;
+        while (i < altEndIndex)
+        {
+            if (ComputeCanStartWithDot(program[i..altEndIndex]))
+            {
+                return true;
+            }
+
+            // Skip to the next alternative by walking the body of this one,
+            // mirroring the SplitAlternatives bytecode walker so nested
+            // AltStart blocks are not mistaken for top-level boundaries.
+            i = SkipToNextAlternativeOrEnd(program, i, altEndIndex);
+            if (i < altEndIndex && program[i] == GlobOpCodes.AltSep)
+            {
+                i++;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    ///  Walks an alternative body in the AltStart bytecode block, returning the
+    ///  index of the next <see cref="GlobOpCodes.AltSep"/> or the
+    ///  <paramref name="altEndIndex"/> bound. Skips nested <c>AltStart</c>
+    ///  blocks via their pre-recorded <c>blockLength</c>.
+    /// </summary>
+    private static int SkipToNextAlternativeOrEnd(ReadOnlySpan<char> program, int i, int altEndIndex)
+    {
+        while (i < altEndIndex)
+        {
+            char op = program[i];
+            if (op == GlobOpCodes.AltSep)
+            {
+                return i;
+            }
+
+            if (op == GlobOpCodes.AltStart)
+            {
+                int nestedBlockLen = program[i + 2];
+                i += nestedBlockLen;
+                continue;
+            }
+
+            if (op is GlobOpCodes.Literal or GlobOpCodes.Class or GlobOpCodes.NegClass)
+            {
+                int bodyLength = program[i + 1];
+                i += 2 + bodyLength;
+                continue;
+            }
+
+            if (op == GlobOpCodes.GlobStar)
+            {
+                i += 2;
+                continue;
+            }
+
+            i++;
+        }
+
+        return altEndIndex;
     }
 
     /// <summary>
