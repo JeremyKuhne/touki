@@ -21,6 +21,7 @@ The "Disambiguation" section below records every known overlap.
 | [address-pr-feedback](./address-pr-feedback/SKILL.md) | "address the review", "fix the comments", "address Copilot's feedback", "fix the CI failure" - **post-PR** review-cycle work | `pre-pr-self-review` |
 | [agent-files-review](./agent-files-review/SKILL.md) | reviewing/validating agent-customization files (`AGENTS.md`, `*.instructions.md`, `*.prompt.md`, `*.agent.md`, `SKILL.md`, validator, CI workflow); fixing `agent-files.yml` failures | - |
 | [run-tests-on-wsl](./run-tests-on-wsl/SKILL.md) | "run tests on Linux", "run the Posix/PosixPath/Bash oracles", "iterate Unix tests locally"; WSL Ubuntu bootstrap, the `~/repos/touki` Linux-native mirror that sidesteps the `/mnt/` DrvFs NuGet trap, the `DOTNET_ROOT` apphost requirement, and the `iconv` UTF-16 log trick | `performance-testing`, `pre-pr-self-review` |
+| [fuzz-testing](./fuzz-testing/SKILL.md) | "add a fuzz target", "run the fuzzer", "install fuzzing prereqs", "fuzz SpanReader/SpanWriter", coverage-guided SharpFuzz runs on net10/net481, promoting a crash into a regression | `security-review`, `pre-pr-self-review`, `run-tests-on-wsl` |
 | [publish-release](./publish-release/SKILL.md) | "publish a new version", "release alpha.N", "ship a beta", "cut a release", "promote alpha to beta", "tag and publish" - choosing the right `Major.Minor.Patch`, alpha/beta/rc/stable channel, tag stream (`v*` vs `ts-v*`), and GitHub release notes | `pre-pr-self-review` |
 
 ## Disambiguation
