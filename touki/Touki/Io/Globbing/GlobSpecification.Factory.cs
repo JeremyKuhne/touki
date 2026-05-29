@@ -1728,6 +1728,19 @@ public sealed partial class GlobSpecification
                         runEnd++;
                     }
 
+                    // Bash treats `**(` as `*` + `*(` extglob: only the last
+                    // `*` in a run participates in the `*(...)` opener. Back
+                    // off so the next loop iteration sees that `*` as the
+                    // extglob start. `**` alone (no `(` following) keeps its
+                    // globstar / AnyRun behavior.
+                    if (allowExtGlob
+                        && runEnd - i >= 2
+                        && runEnd < pattern.Length
+                        && pattern[runEnd] == '(')
+                    {
+                        runEnd--;
+                    }
+
                     if (TryEmitGlobStar(pattern, i, runEnd, allowGlobStar, separator, ref builder, ref lastLiteral, out int next))
                     {
                         hasGlobStar = true;
@@ -1910,6 +1923,16 @@ public sealed partial class GlobSpecification
                     while (runEnd < pattern.Length && pattern[runEnd] == '*')
                     {
                         runEnd++;
+                    }
+
+                    // Same `**(` -> `*` + `*(` carve-out as the top-level
+                    // encoder. We're already inside an extglob body so
+                    // extglob recognition is unconditionally enabled here.
+                    if (runEnd - i >= 2
+                        && runEnd < pattern.Length
+                        && pattern[runEnd] == '(')
+                    {
+                        runEnd--;
                     }
 
                     if (TryEmitGlobStar(pattern, i, runEnd, allowGlobStar, separator, ref builder, ref lastLiteral, out int next))
