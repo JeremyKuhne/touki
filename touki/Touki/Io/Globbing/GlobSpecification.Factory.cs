@@ -1376,14 +1376,16 @@ public sealed partial class GlobSpecification
                     continue;
                 }
 
-                if (allowClasses && current == '[' && HasClassClose(pattern, i))
+                if (allowClasses && current == '[')
                 {
-                    shape.HasClasses = true;
-                    if (!SkipClass(pattern, ref i, out error))
+                    if (SkipClass(pattern, ref i))
                     {
-                        return false;
+                        shape.HasClasses = true;
                     }
 
+                    // SkipClass leaves `i` at the closing ']' on success or at the
+                    // opening '[' on no-close; the outer for-loop's i++ moves past
+                    // the right character in both cases.
                     continue;
                 }
 
@@ -1507,13 +1509,16 @@ public sealed partial class GlobSpecification
                     continue;
                 }
 
-                if (allowClasses && current == '[' && HasClassClose(pattern, i))
+                if (allowClasses && current == '[')
                 {
-                    if (!SkipClass(pattern, ref i, out error))
+                    if (SkipClass(pattern, ref i))
                     {
-                        return false;
+                        continue;
                     }
 
+                    // Unterminated '[' inside extglob body: treat as literal,
+                    // advance past it, and continue parsing the body.
+                    i++;
                     continue;
                 }
 
@@ -1543,87 +1548,47 @@ public sealed partial class GlobSpecification
         }
 
         /// <summary>
-        ///  Returns <see langword="true"/> when <paramref name="pattern"/> contains a
-        ///  closing <c>]</c> for the <c>[</c> at <paramref name="openIndex"/>, honoring
-        ///  POSIX bracket-expression sub-forms (<c>[:class:]</c>, <c>[=equiv=]</c>,
-        ///  <c>[.collate.]</c>) so their inner <c>]</c> is not mistaken for the outer
-        ///  close. Used as a pre-check by <see cref="Scan"/> and the encoder loops so
-        ///  an unterminated <c>[</c> can fall through to literal handling rather than
-        ///  failing the compile - <c>fnmatch</c> and friends treat the trailing <c>[</c>
-        ///  as a literal character in that case.
+        ///  Tries to advance <paramref name="i"/> past a bracket-class starting at
+        ///  the <c>[</c> at <paramref name="i"/>. POSIX <c>fnmatch</c> semantics
+        ///  treat an unterminated <c>[</c> as a literal character; on no-close the
+        ///  helper resets <paramref name="i"/> to the opening <c>[</c> and returns
+        ///  <see langword="false"/> so the caller's outer loop bumps past the
+        ///  literal <c>[</c> on the next iteration. On success <paramref name="i"/>
+        ///  is positioned at the closing <c>]</c>. Single forward walk - no
+        ///  thrown-away pre-scan.
         /// </summary>
-        private static bool HasClassClose(ReadOnlySpan<char> pattern, int openIndex)
+        private static bool SkipClass(ReadOnlySpan<char> pattern, ref int i)
         {
-            int i = openIndex + 1;
+            int openIndex = i;
+            int j = i + 1;
 
-            if (i < pattern.Length && (pattern[i] == '!' || pattern[i] == '^'))
+            if (j < pattern.Length && (pattern[j] == '!' || pattern[j] == '^'))
             {
-                i++;
-            }
-
-            bool firstChar = true;
-            while (i < pattern.Length)
-            {
-                char current = pattern[i];
-                if (current == ']' && !firstChar)
-                {
-                    return true;
-                }
-
-                if (current == '[' && i + 1 < pattern.Length)
-                {
-                    char marker = pattern[i + 1];
-                    if (marker is ':' or '=' or '.')
-                    {
-                        int close = FindPosixBracketClose(pattern, i + 2, marker);
-                        if (close > 0)
-                        {
-                            i = close + 2;
-                            firstChar = false;
-                            continue;
-                        }
-                    }
-                }
-
-                firstChar = false;
-                i++;
-            }
-
-            return false;
-        }
-
-        private static bool SkipClass(ReadOnlySpan<char> pattern, ref int i, out GlobCompileError error)
-        {
-            error = default;
-            int start = i;
-            i++;
-
-            if (i < pattern.Length && (pattern[i] == '!' || pattern[i] == '^'))
-            {
-                i++;
+                j++;
             }
 
             // A leading ']' is a literal member of the class.
             bool firstChar = true;
-            while (i < pattern.Length)
+            while (j < pattern.Length)
             {
-                char current = pattern[i];
+                char current = pattern[j];
                 if (current == ']' && !firstChar)
                 {
+                    i = j;
                     return true;
                 }
 
                 // Skip POSIX bracket-expression sub-forms ([:class:], [=equiv=], [.collate.])
                 // so the inner ']' that terminates them isn't mistaken for the outer class close.
-                if (current == '[' && i + 1 < pattern.Length)
+                if (current == '[' && j + 1 < pattern.Length)
                 {
-                    char marker = pattern[i + 1];
+                    char marker = pattern[j + 1];
                     if (marker is ':' or '=' or '.')
                     {
-                        int close = FindPosixBracketClose(pattern, i + 2, marker);
+                        int close = FindPosixBracketClose(pattern, j + 2, marker);
                         if (close > 0)
                         {
-                            i = close + 2;
+                            j = close + 2;
                             firstChar = false;
                             continue;
                         }
@@ -1631,13 +1596,12 @@ public sealed partial class GlobSpecification
                 }
 
                 firstChar = false;
-                i++;
+                j++;
             }
 
-            error = new GlobCompileError(
-                GlobCompileErrorCode.UnterminatedClass,
-                position: start,
-                message: "Character class '[' is not terminated.");
+            // No close: treat '[' as a literal. Reset to openIndex so the for-loop's
+            // i++ moves past the '['.
+            i = openIndex;
             return false;
         }
 
@@ -1733,15 +1697,26 @@ public sealed partial class GlobSpecification
                     continue;
                 }
 
-                if (allowClasses && current == '[' && HasClassClose(pattern, i))
+                if (allowClasses && current == '[')
                 {
                     int classStart = i;
-                    if (!TryEmitClass(pattern, ref i, ref builder))
+                    ClassEmitResult classResult = TryEmitClass(pattern, ref i, ref builder);
+                    if (classResult == ClassEmitResult.Emitted)
+                    {
+                        lastLiteral = LiteralCursor.None;
+                        continue;
+                    }
+
+                    if (classResult == ClassEmitResult.Overflow)
                     {
                         overflowPosition = classStart;
                         break;
                     }
-                    lastLiteral = LiteralCursor.None;
+
+                    // ClassEmitResult.NotClass: TryEmitClass rewound the builder and
+                    // reset i to the '['. Emit a literal '[' and advance.
+                    EmitSingleCharLiteral(ref builder, '[', out lastLiteral);
+                    i++;
                     continue;
                 }
 
@@ -1905,16 +1880,27 @@ public sealed partial class GlobSpecification
                     continue;
                 }
 
-                if (allowClasses && current == '[' && HasClassClose(pattern, i))
+                if (allowClasses && current == '[')
                 {
                     int classStart = i;
-                    if (!TryEmitClass(pattern, ref i, ref builder))
+                    ClassEmitResult classResult = TryEmitClass(pattern, ref i, ref builder);
+                    if (classResult == ClassEmitResult.Emitted)
+                    {
+                        lastLiteral = LiteralCursor.None;
+                        continue;
+                    }
+
+                    if (classResult == ClassEmitResult.Overflow)
                     {
                         overflowPosition = classStart;
                         return false;
                     }
 
-                    lastLiteral = LiteralCursor.None;
+                    // ClassEmitResult.NotClass: emit '[' as a literal of length 1
+                    // and let the surrounding loop pick up what follows. The body's
+                    // '|' / ')' termination still applies on the next iteration.
+                    EmitSingleCharLiteral(ref builder, '[', out lastLiteral);
+                    i++;
                     continue;
                 }
 
@@ -2060,6 +2046,26 @@ public sealed partial class GlobSpecification
         }
 
         /// <summary>
+        ///  Emits a single-character <see cref="GlobOpCodes.Literal"/> opcode for
+        ///  <paramref name="ch"/>. Used by the unterminated-<c>[</c> rewind path
+        ///  to encode the bracket as a literal character; a consecutive run of
+        ///  literals after this point will produce a second Literal opcode rather
+        ///  than coalesce, which is acceptable given how rarely real patterns
+        ///  contain an unterminated <c>[</c>.
+        /// </summary>
+        private static void EmitSingleCharLiteral(
+            ref ValueStringBuilder builder,
+            char ch,
+            out LiteralCursor lastLiteral)
+        {
+            int start = builder.Length;
+            builder.Append(GlobOpCodes.Literal);
+            builder.Append((char)1);
+            builder.Append(ch);
+            lastLiteral = new LiteralCursor { Start = start, Length = 1 };
+        }
+
+        /// <summary>
         ///  Emits a <see cref="GlobOpCodes.Literal"/> opcode for the run of non-metacharacters
         ///  starting at <paramref name="i"/>. Honors <paramref name="escape"/> by consuming
         ///  the escape character and emitting only the escaped character. Reports the start
@@ -2089,7 +2095,7 @@ public sealed partial class GlobSpecification
             {
                 char current = pattern[i];
                 if (current == '*' || current == '?'
-                    || (allowClasses && current == '[' && HasClassClose(pattern, i)))
+                    || (allowClasses && current == '['))
                 {
                     break;
                 }
@@ -2142,6 +2148,18 @@ public sealed partial class GlobSpecification
         }
 
         /// <summary>
+        ///  Outcome of <see cref="TryEmitClass"/>: a real bracket-class was emitted,
+        ///  the <c>[</c> was unterminated and should be treated as a literal, or the
+        ///  class body exceeded <see cref="MaxOpcodeBodyLength"/>.
+        /// </summary>
+        private enum ClassEmitResult
+        {
+            Emitted,
+            NotClass,
+            Overflow,
+        }
+
+        /// <summary>
         ///  Emits a <see cref="GlobOpCodes.Class"/> / <see cref="GlobOpCodes.NegClass"/>
         ///  opcode for a bracket expression starting at <paramref name="i"/>. Recognizes
         ///  the bracket-expression sub-forms defined by
@@ -2149,6 +2167,13 @@ public sealed partial class GlobSpecification
         ///   IEEE Std 1003.1-2024 &#167;9.3.5 (RE Bracket Expression)</see>.
         /// </summary>
         /// <remarks>
+        ///  <para>
+        ///   Single forward walk: the encoder appends the class header speculatively
+        ///   and the body chars as it scans. If no closing <c>]</c> is found, the
+        ///   builder is rewound to the pre-call length and <paramref name="i"/> is
+        ///   reset to the opening <c>[</c>; the caller emits the <c>[</c> as a
+        ///   literal and continues. No throw-away pre-scan.
+        ///  </para>
         ///  <para>
         ///   Grammar (quoting the POSIX standard):
         ///  </para>
@@ -2190,9 +2215,12 @@ public sealed partial class GlobSpecification
         ///   <c>[:NAME:]</c> POSIX form recognized here.
         ///  </para>
         /// </remarks>
-        private static bool TryEmitClass(ReadOnlySpan<char> pattern, ref int i, ref ValueStringBuilder builder)
+        private static ClassEmitResult TryEmitClass(ReadOnlySpan<char> pattern, ref int i, ref ValueStringBuilder builder)
         {
             Debug.Assert(pattern[i] == '[');
+
+            int openIndex = i;
+            int headerIndex = builder.Length;
 
             // Walk a sliding slice of pattern instead of indexing through it. The body loop
             // re-slices on every step; on exit we recover the new caller-visible index from
@@ -2206,18 +2234,19 @@ public sealed partial class GlobSpecification
                 remaining = remaining[1..];
             }
 
-            int headerIndex = builder.Length;
             builder.Append(negated ? GlobOpCodes.NegClass : GlobOpCodes.Class);
             builder.Append('\0'); // length placeholder
 
             int bodyLength = 0;
             bool firstChar = true;
+            bool closed = false;
             while (!remaining.IsEmpty)
             {
                 char current = remaining[0];
                 if (current == ']' && !firstChar)
                 {
                     remaining = remaining[1..];
+                    closed = true;
                     break;
                 }
 
@@ -2238,14 +2267,22 @@ public sealed partial class GlobSpecification
                 firstChar = false;
             }
 
+            if (!closed)
+            {
+                // Unterminated '[': rewind builder, reset i, signal not-a-class.
+                builder.Length = headerIndex;
+                i = openIndex;
+                return ClassEmitResult.NotClass;
+            }
+
             i = pattern.Length - remaining.Length;
             if (bodyLength > MaxOpcodeBodyLength)
             {
-                return false;
+                return ClassEmitResult.Overflow;
             }
 
             builder[headerIndex + 1] = (char)bodyLength;
-            return true;
+            return ClassEmitResult.Emitted;
 
             // Recognizes a POSIX bracket-expression sub-form at the start of `remaining`.
             // On success advances `remaining` past the consumed run, appends its expansion
