@@ -467,7 +467,7 @@ public sealed partial class GlobSpecification
             if (segment.Length < 4
                 || segment[0] != '@'
                 || segment[1] != '('
-                || segment[segment.Length - 1] != ')')
+                || segment[^1] != ')')
             {
                 return false;
             }
@@ -1648,7 +1648,11 @@ public sealed partial class GlobSpecification
 
             // Track the most recent Literal opcode position so we can retroactively strip
             // its trailing separator when the next token is a segment-boundary GlobStar
-            // that absorbs the leading separator.
+            // that absorbs the leading separator. The same cursor doubles as a
+            // last-emit-was-GlobStar marker via LiteralCursor.GlobStar so the GlobStar
+            // emitter can collapse adjacent `**/**` runs in place without confusing a
+            // literal byte that happens to equal the GlobStar opcode character (which is
+            // a Unicode private-use noncharacter, but still a valid char in user input).
             LiteralCursor lastLiteral = LiteralCursor.None;
             hasGlobStar = false;
             hasExtGlob = false;
@@ -1971,6 +1975,9 @@ public sealed partial class GlobSpecification
         ///  separator from the prior Literal when a segment-bounded <c>**</c> absorbs it.
         ///  <see cref="None"/> represents "no Literal currently at the tail of the buffer"
         ///  (the most recent opcode is something else, or the buffer is empty).
+        ///  <see cref="GlobStar"/> tags the cursor as "most recent opcode is a GlobStar
+        ///  whose flag byte is at <c>Start</c>"; used by the GlobStar emitter to collapse
+        ///  adjacent `**/**` runs without relying on a fragile buffer-tail char peek.
         /// </summary>
         private struct LiteralCursor
         {
@@ -1979,7 +1986,22 @@ public sealed partial class GlobSpecification
 
             public static LiteralCursor None => new() { Start = -1, Length = 0 };
 
-            public readonly bool IsValid => Start >= 0;
+            /// <summary>
+            ///  Tags the cursor as "the most recently emitted opcode is a
+            ///  <see cref="GlobOpCodes.GlobStar"/> with its flag byte at
+            ///  <paramref name="flagIndex"/>". Read back via
+            ///  <see cref="IsGlobStar"/> and <see cref="GlobStarFlagIndex"/>.
+            ///  Uses <c>Length = -1</c> as the sentinel so the existing
+            ///  <see cref="IsValid"/> check (<c>Start &gt;= 0</c>) keeps reporting
+            ///  "not a Literal".
+            /// </summary>
+            public static LiteralCursor GlobStar(int flagIndex) => new() { Start = flagIndex, Length = -1 };
+
+            public readonly bool IsValid => Start >= 0 && Length >= 0;
+
+            public readonly bool IsGlobStar => Start >= 0 && Length == -1;
+
+            public readonly int GlobStarFlagIndex => Start;
         }
 
         /// <summary>
@@ -2018,14 +2040,9 @@ public sealed partial class GlobSpecification
             }
 
             int flags = 0;
-
-            // After the early return both `leadOk` and `trailOk` hold, so an `i > 0`
-            // automatically means `pattern[i - 1] == separator`; the same simplification
-            // applies on the trailing side. No need to re-test the character.
             if (i > 0)
             {
                 flags |= GlobOpCodes.GlobStarFlagLead;
-                StripTrailingSeparatorFromLastLiteral(ref builder, ref lastLiteral, separator);
             }
 
             if (runEnd < pattern.Length)
@@ -2034,9 +2051,45 @@ public sealed partial class GlobSpecification
                 next = runEnd + 1;
             }
 
+            // Inline collapse: when the previously emitted op is already a
+            // GlobStar (recorded in `lastLiteral` via the GlobStar sentinel),
+            // an adjacent `**/**` run is redundant - each `**` matches zero
+            // or more path segments per wildmatch / FSG / bash globstar
+            // semantics. The merged op inherits the prior op's Lead flag and
+            // the new op's Trail flag (mask+OR, not just OR) so the merged
+            // op terminates correctly when the new globstar is the last
+            // segment of the pattern (e.g. `**/**/**` at end of pattern,
+            // where the final `**` has no trailing `/` and the prior had
+            // Trail set when bordering its absorbed `/`).
+            //
+            // Using the explicit cursor (rather than peeking at the buffer's
+            // tail char) is required: `GlobOpCodes.GlobStar` is a Unicode
+            // private-use noncharacter (`U+FDD5`) but is still a valid char
+            // in a user pattern. A Literal or Class whose payload contained
+            // a literal `U+FDD5` at its tail would otherwise be mistaken
+            // for a prior GlobStar emission and the next char would be
+            // overwritten with flag bits.
+            if (lastLiteral.IsGlobStar)
+            {
+                int flagIndex = lastLiteral.GlobStarFlagIndex;
+                int merged =
+                    (builder[flagIndex] & ~GlobOpCodes.GlobStarFlagTrail)
+                    | (flags & GlobOpCodes.GlobStarFlagTrail);
+                builder[flagIndex] = (char)merged;
+                return true;
+            }
+
+            // After the early return both `leadOk` and `trailOk` hold, so an `i > 0`
+            // automatically means `pattern[i - 1] == separator`; the same simplification
+            // applies on the trailing side. No need to re-test the character.
+            if (i > 0)
+            {
+                StripTrailingSeparatorFromLastLiteral(ref builder, ref lastLiteral, separator);
+            }
+
             builder.Append(GlobOpCodes.GlobStar);
             builder.Append((char)flags);
-            lastLiteral = LiteralCursor.None;
+            lastLiteral = LiteralCursor.GlobStar(builder.Length - 1);
             return true;
         }
 
@@ -2052,7 +2105,7 @@ public sealed partial class GlobSpecification
             char separator)
         {
             Debug.Assert(lastLiteral.IsValid && lastLiteral.Length > 0);
-            Debug.Assert(builder[builder.Length - 1] == separator);
+            Debug.Assert(builder[^1] == separator);
 
             if (lastLiteral.Length == 1)
             {
