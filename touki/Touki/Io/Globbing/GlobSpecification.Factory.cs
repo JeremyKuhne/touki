@@ -1376,7 +1376,7 @@ public sealed partial class GlobSpecification
                     continue;
                 }
 
-                if (allowClasses && current == '[')
+                if (allowClasses && current == '[' && HasClassClose(pattern, i))
                 {
                     shape.HasClasses = true;
                     if (!SkipClass(pattern, ref i, out error))
@@ -1507,7 +1507,7 @@ public sealed partial class GlobSpecification
                     continue;
                 }
 
-                if (allowClasses && current == '[')
+                if (allowClasses && current == '[' && HasClassClose(pattern, i))
                 {
                     if (!SkipClass(pattern, ref i, out error))
                     {
@@ -1539,6 +1539,56 @@ public sealed partial class GlobSpecification
                 GlobCompileErrorCode.UnterminatedExtGlob,
                 position: kindIndex,
                 message: "Extended-glob construct is not terminated.");
+            return false;
+        }
+
+        /// <summary>
+        ///  Returns <see langword="true"/> when <paramref name="pattern"/> contains a
+        ///  closing <c>]</c> for the <c>[</c> at <paramref name="openIndex"/>, honoring
+        ///  POSIX bracket-expression sub-forms (<c>[:class:]</c>, <c>[=equiv=]</c>,
+        ///  <c>[.collate.]</c>) so their inner <c>]</c> is not mistaken for the outer
+        ///  close. Used as a pre-check by <see cref="Scan"/> and the encoder loops so
+        ///  an unterminated <c>[</c> can fall through to literal handling rather than
+        ///  failing the compile - <c>fnmatch</c> and friends treat the trailing <c>[</c>
+        ///  as a literal character in that case.
+        /// </summary>
+        private static bool HasClassClose(ReadOnlySpan<char> pattern, int openIndex)
+        {
+            int i = openIndex + 1;
+
+            if (i < pattern.Length && (pattern[i] == '!' || pattern[i] == '^'))
+            {
+                i++;
+            }
+
+            bool firstChar = true;
+            while (i < pattern.Length)
+            {
+                char current = pattern[i];
+                if (current == ']' && !firstChar)
+                {
+                    return true;
+                }
+
+                if (current == '[' && i + 1 < pattern.Length)
+                {
+                    char marker = pattern[i + 1];
+                    if (marker is ':' or '=' or '.')
+                    {
+                        int close = FindPosixBracketClose(pattern, i + 2, marker);
+                        if (close > 0)
+                        {
+                            i = close + 2;
+                            firstChar = false;
+                            continue;
+                        }
+                    }
+                }
+
+                firstChar = false;
+                i++;
+            }
+
             return false;
         }
 
@@ -1683,7 +1733,7 @@ public sealed partial class GlobSpecification
                     continue;
                 }
 
-                if (allowClasses && current == '[')
+                if (allowClasses && current == '[' && HasClassClose(pattern, i))
                 {
                     int classStart = i;
                     if (!TryEmitClass(pattern, ref i, ref builder))
@@ -1855,7 +1905,7 @@ public sealed partial class GlobSpecification
                     continue;
                 }
 
-                if (allowClasses && current == '[')
+                if (allowClasses && current == '[' && HasClassClose(pattern, i))
                 {
                     int classStart = i;
                     if (!TryEmitClass(pattern, ref i, ref builder))
@@ -2038,7 +2088,8 @@ public sealed partial class GlobSpecification
             while (i < pattern.Length)
             {
                 char current = pattern[i];
-                if (current == '*' || current == '?' || (allowClasses && current == '['))
+                if (current == '*' || current == '?'
+                    || (allowClasses && current == '[' && HasClassClose(pattern, i)))
                 {
                     break;
                 }
@@ -2350,9 +2401,9 @@ public sealed partial class GlobSpecification
 
             if (name.SequenceEqual("cntrl".AsSpan()))
             {
-                // 0x00-0x1F and 0x7F.
+                // 0x00-0x1F and 0x7F. Body is 4 chars: '\0', '-', '\u001F', '\u007F'.
                 builder.Append("\0-\u001F\u007F");
-                return 5;
+                return 4;
             }
 
             if (name.SequenceEqual("print".AsSpan()))

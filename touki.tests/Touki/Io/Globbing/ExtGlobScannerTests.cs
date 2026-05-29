@@ -305,14 +305,17 @@ public class ExtGlobScannerTests
     }
 
     [Fact]
-    public void Compile_AllowExtGlobOn_UnterminatedClassInsideBody_ReportsUnterminatedClass()
+    public void Compile_AllowExtGlobOn_UnterminatedClassInsideBody_TreatedAsLiteral()
     {
-        Action act = () => GlobSpecification.Compile(
+        // Per fnmatch semantics: an unterminated '[' is treated as a literal
+        // character. The extglob body inherits the same behavior so the pattern
+        // compiles successfully and the '[bc' alternative becomes a literal run.
+        GlobSpecification matcher = GlobSpecification.Compile(
             "@(a|[bc)",
             GlobDialect.Bash,
             GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
 
-        act.Should().Throw<GlobFormatException>()
-            .Which.Error.Code.Should().Be(GlobCompileErrorCode.UnterminatedClass);
+        matcher.IsMatch("a").Should().BeTrue();
+        matcher.IsMatch("[bc").Should().BeTrue();
     }
 }
