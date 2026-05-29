@@ -35,6 +35,7 @@ global using StringBuilder = System.Text.StringBuilder;
 
 global using Touki.Exceptions;
 global using Touki.Text;
+global using Touki.Buffers;
 global using Touki.Io;
 
 #pragma warning restore IDE0005 // Using directive is unnecessary.

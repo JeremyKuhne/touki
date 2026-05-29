@@ -27,7 +27,7 @@
    the narrow, low-level primitives. `unmanaged`/`unsafe` ref structs with
    `Position` setters, `Try*`/`Advance*` methods, and `UnsafeAdvance` -
    exactly the kind of bounds/offset logic worth fuzzing first.
-2. RLE codec in [touki/Touki/RunLengthEncoder.cs](../touki/Touki/RunLengthEncoder.cs) -
+2. RLE codec in [touki/Touki/Buffers/RunLengthEncoder.cs](../touki/Touki/Buffers/RunLengthEncoder.cs) -
    `GetEncodedLength` / `GetDecodedLength` / `TryEncode` / `TryDecode` (encode
    and decode both live in this type). Round-trip and length-invariant fuzzing
    builds directly on the `SpanReader`/`SpanWriter` work since RLE is

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-namespace Touki;
+namespace Touki.Buffers;
 
 /// <summary>
 ///  Simple run length encoder (RLE) that works on spans.
