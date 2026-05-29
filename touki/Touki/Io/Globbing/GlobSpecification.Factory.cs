@@ -187,11 +187,14 @@ public sealed partial class GlobSpecification
             // `DisallowEmptyInput` mirrors the documented "empty input never matches"
             // behavior of `FileSystemName.MatchesSimpleExpression`,
             // `Microsoft.Extensions.FileSystemGlobbing.Matcher`, and gitignore (an empty
-            // path is undefined; LibGit2Sharp rejects it outright).
+            // path is undefined; LibGit2Sharp rejects it outright). MSBuild's
+            // FileMatcher.IsMatch / MSBuildGlob.IsMatch do match empty input against
+            // empty pattern and against `*`, so MSBuild is intentionally not in this
+            // list - see the ported FileMatcher rows under
+            // touki.tests/Touki/Io/Globbing/PortedTests.MSBuild.cs.
             bool disallowEmptyInput = dialect is
                 GlobDialect.Simple
                 or GlobDialect.FileSystemGlobbing
-                or GlobDialect.MSBuild
                 or GlobDialect.Git;
 
             if (TryNormalizeRuns(ref pattern, dialect, resolvedSeparator, out bool neverMatch, out bool coalesceInputSeparators))
