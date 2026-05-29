@@ -467,7 +467,7 @@ public sealed partial class GlobSpecification
             if (segment.Length < 4
                 || segment[0] != '@'
                 || segment[1] != '('
-                || segment[segment.Length - 1] != ')')
+                || segment[^1] != ')')
             {
                 return false;
             }
@@ -2018,20 +2018,45 @@ public sealed partial class GlobSpecification
             }
 
             int flags = 0;
-
-            // After the early return both `leadOk` and `trailOk` hold, so an `i > 0`
-            // automatically means `pattern[i - 1] == separator`; the same simplification
-            // applies on the trailing side. No need to re-test the character.
             if (i > 0)
             {
                 flags |= GlobOpCodes.GlobStarFlagLead;
-                StripTrailingSeparatorFromLastLiteral(ref builder, ref lastLiteral, separator);
             }
 
             if (runEnd < pattern.Length)
             {
                 flags |= GlobOpCodes.GlobStarFlagTrail;
                 next = runEnd + 1;
+            }
+
+            // Inline collapse: when the previous emitted opcode is already a
+            // GlobStar (encoded as `GlobStar` + 1 flag char at the tail of
+            // the builder), an adjacent `**/**` run is redundant - each
+            // `**` matches zero or more path segments per wildmatch / FSG /
+            // bash globstar semantics. The merged op inherits the prior
+            // op's Lead flag (it's still adjacent to whatever came before)
+            // and the new op's Trail flag (the new op is the one bordering
+            // whatever follows). Lead is overwritten via OR because the
+            // prior already had it set when needed; Trail is overwritten
+            // via mask+OR because the prior may have had it set when this
+            // is now the terminal globstar (e.g. `**/**/**` at end of
+            // pattern, where the final `**` has no trailing `/`).
+            if (builder.Length >= 2 && builder[^2] == GlobOpCodes.GlobStar)
+            {
+                int flagIndex = builder.Length - 1;
+                int merged =
+                    (builder[flagIndex] & ~GlobOpCodes.GlobStarFlagTrail)
+                    | (flags & GlobOpCodes.GlobStarFlagTrail);
+                builder[flagIndex] = (char)merged;
+                return true;
+            }
+
+            // After the early return both `leadOk` and `trailOk` hold, so an `i > 0`
+            // automatically means `pattern[i - 1] == separator`; the same simplification
+            // applies on the trailing side. No need to re-test the character.
+            if (i > 0)
+            {
+                StripTrailingSeparatorFromLastLiteral(ref builder, ref lastLiteral, separator);
             }
 
             builder.Append(GlobOpCodes.GlobStar);
@@ -2052,7 +2077,7 @@ public sealed partial class GlobSpecification
             char separator)
         {
             Debug.Assert(lastLiteral.IsValid && lastLiteral.Length > 0);
-            Debug.Assert(builder[builder.Length - 1] == separator);
+            Debug.Assert(builder[^1] == separator);
 
             if (lastLiteral.Length == 1)
             {
