@@ -1,0 +1,6 @@
+# Minimized crashing inputs are kept as regression artifacts and are committed
+# intentionally (libFuzzer names them crash-<hash>); transient driver output
+# should not be committed.
+*
+!.gitignore
+!crash-*

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Targeting 4.8.1 alongside .NET 10 so the same fuzz targets can be run against both runtimes. -->
+    <TargetFrameworks>$(DotNetCoreVersion);net481</TargetFrameworks>
+    <DependencyTargetFramework>$(TargetFramework)</DependencyTargetFramework>
+    <OutputType>Exe</OutputType>
+    <StartupObject>Touki.Fuzz.Program</StartupObject>
+
+    <!-- Make sure the main project builds against its normal version. -->
+    <DependencyTargetFramework Condition="'$(TargetFramework)' == 'net481'">$(DotNetFrameworkVersion)</DependencyTargetFramework>
+
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Not a test project; keep it out of the Microsoft Testing Platform discovery and the normal test run. -->
+    <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
+    <GenerateTestingPlatformEntryPoint>false</GenerateTestingPlatformEntryPoint>
+    <DisableTestingPlatformServerCapability>true</DisableTestingPlatformServerCapability>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpFuzz" />
+  </ItemGroup>
+
+  <!-- ReadOnlySpan and friends come from System.Memory on .NET Framework. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net481'">
+    <PackageReference Include="System.Memory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,8 @@
+# libFuzzer appends machine-generated corpus entries (hash-named files) to the
+# per-target directories as it runs. Only the curated seed inputs (seed-*.bin)
+# are committed; the generated entries churn on every run and would bloat the
+# repo without adding lasting value.
+*
+!.gitignore
+!*/
+!*/seed-*.bin
