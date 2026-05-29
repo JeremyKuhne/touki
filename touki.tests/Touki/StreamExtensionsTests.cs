@@ -3,7 +3,6 @@
 // See LICENSE file in the project root for full license information
 
 using System.Text;
-using Touki.Io;
 using Touki.Text;
 #if NETFRAMEWORK
 using System.IO;

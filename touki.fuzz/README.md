@@ -18,9 +18,9 @@ own command-line arguments, so an environment variable is used instead):
 
 | `FUZZ_TARGET` | Exercises | File |
 | --- | --- | --- |
-| `SpanReader` (default) | `Touki.SpanReader<byte>` reads/advances/splits | [SpanReaderTarget.cs](SpanReaderTarget.cs) |
-| `SpanWriter` | `Touki.SpanWriter<byte>` writes/advances/rewinds | [SpanWriterTarget.cs](SpanWriterTarget.cs) |
-| `RunLength` | `Touki.RunLengthEncoder` encode roundtrip / arbitrary decode | [RunLengthTarget.cs](RunLengthTarget.cs) |
+| `SpanReader` (default) | `Touki.Io.SpanReader<byte>` reads/advances/splits | [SpanReaderTarget.cs](SpanReaderTarget.cs) |
+| `SpanWriter` | `Touki.Io.SpanWriter<byte>` writes/advances/rewinds | [SpanWriterTarget.cs](SpanWriterTarget.cs) |
+| `RunLength` | `Touki.Buffers.RunLengthEncoder` encode roundtrip / arbitrary decode | [RunLengthTarget.cs](RunLengthTarget.cs) |
 
 Each target uses the fuzz input as an opcode stream that drives a sequence of
 operations, then re-checks structural invariants (position in range, span

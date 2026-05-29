@@ -5,3 +5,6 @@
 global using System;
 
 global using SharpFuzz;
+
+global using Touki.Buffers;
+global using Touki.Io;

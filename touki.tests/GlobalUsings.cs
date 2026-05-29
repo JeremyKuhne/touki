@@ -25,7 +25,9 @@ global using System.IO;
 global using System.IO.Enumeration;
 #endif
 
+global using Touki.Buffers;
 global using Touki.Exceptions;
+global using Touki.Io;
 global using Touki.TestSupport;
 
 #pragma warning restore IDE0005

@@ -4,7 +4,7 @@
 
 using System.Drawing;
 
-namespace Touki;
+namespace Touki.Io;
 
 public class SpanWriterTests
 {
