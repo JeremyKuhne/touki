@@ -8,9 +8,11 @@ public sealed partial class GlobSpecification
 {
     /// <summary>
     ///  Compile-time pattern normalization helpers shared by
-    ///  <see cref="Factory"/>. Each helper takes a <see cref="ReadOnlySpan{T}"/>
+    ///  <see cref="Factory"/>. Each helper takes a <see cref="StringSegment"/>
     ///  reference and rewrites it only when the dialect's rule set actually
-    ///  requires a change; the no-op path is allocation-free.
+    ///  requires a change; the no-op path is allocation-free and the
+    ///  <see cref="StringSegment"/> still points into the caller's original
+    ///  source string.
     /// </summary>
     private static class Normalization
     {
@@ -36,29 +38,30 @@ public sealed partial class GlobSpecification
         ///  </para>
         /// </remarks>
         [SkipLocalsInit]
-        public static void FileSystemGlobbing(ref ReadOnlySpan<char> pattern, char separator)
+        public static void FileSystemGlobbing(ref StringSegment pattern, char separator)
         {
-            if (!NeedsFileSystemGlobbing(pattern, separator))
+            ReadOnlySpan<char> source = pattern.AsSpan();
+            if (!NeedsFileSystemGlobbing(source, separator))
             {
                 return;
             }
 
             ValueStringBuilder builder = new(stackalloc char[256]);
 
-            int n = pattern.Length;
+            int n = source.Length;
             int i = 0;
 
             // Strip leading "./" segments and any single leading separator
             // ("//"+ is left for Factory.TryNormalizeRuns to turn into "/*/").
             while (i < n)
             {
-                if (i + 1 < n && pattern[i] == '.' && pattern[i + 1] == separator)
+                if (i + 1 < n && source[i] == '.' && source[i + 1] == separator)
                 {
                     i += 2;
                     continue;
                 }
 
-                if (pattern[i] == separator && (i + 1 >= n || pattern[i + 1] != separator))
+                if (source[i] == separator && (i + 1 >= n || source[i + 1] != separator))
                 {
                     i++;
                     continue;
@@ -75,12 +78,12 @@ public sealed partial class GlobSpecification
 
             while (true)
             {
-                while (i < n && pattern[i] != separator)
+                while (i < n && source[i] != separator)
                 {
                     i++;
                 }
 
-                ReadOnlySpan<char> seg = pattern[segStart..i];
+                ReadOnlySpan<char> seg = source[segStart..i];
                 bool atEnd = i == n;
 
                 // Drop "." segments (collapses "/./" and trailing "/.").
@@ -138,7 +141,7 @@ public sealed partial class GlobSpecification
                 builder.Append("**");
             }
 
-            pattern = builder.ToStringAndDispose().AsSpan();
+            pattern = builder.ToStringAndDispose();
         }
 
         /// <summary>

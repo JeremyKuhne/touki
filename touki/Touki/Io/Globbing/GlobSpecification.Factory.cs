@@ -56,7 +56,7 @@ public sealed partial class GlobSpecification
 
         /// <summary>
         ///  Default upper bound (in characters) applied by the
-        ///  <see cref="TryCreate(ReadOnlySpan{char}, GlobDialect, GlobOptions, GlobPathSeparator, out GlobStrategy?, out GlobCompileError)"/>
+        ///  <see cref="TryCreate(StringSegment, GlobDialect, GlobOptions, GlobPathSeparator, out GlobStrategy?, out GlobCompileError)"/>
         ///  overload that omits an explicit <c>maxPatternLength</c>. Sized to comfortably
         ///  cover real-world path-matching patterns (Linux <c>PATH_MAX</c> is 4096, Windows
         ///  long-path is ~32K, and typical globs are well under 200 chars) while still
@@ -66,7 +66,7 @@ public sealed partial class GlobSpecification
         ///  <para>
         ///   Callers that need to compile patterns larger than this (e.g. machine-generated
         ///   exclusion lists) should call the
-        ///   <see cref="TryCreate(ReadOnlySpan{char}, GlobDialect, GlobOptions, GlobPathSeparator, int, out GlobStrategy?, out GlobCompileError)"/>
+        ///   <see cref="TryCreate(StringSegment, GlobDialect, GlobOptions, GlobPathSeparator, int, out GlobStrategy?, out GlobCompileError)"/>
         ///   overload directly with a larger limit, or pass <c>-1</c> to disable the check.
         ///  </para>
         /// </remarks>
@@ -79,7 +79,7 @@ public sealed partial class GlobSpecification
         ///  six-argument overload directly.
         /// </summary>
         public static bool TryCreate(
-            ReadOnlySpan<char> pattern,
+            StringSegment pattern,
             GlobDialect dialect,
             GlobOptions options,
             GlobPathSeparator separator,
@@ -93,7 +93,7 @@ public sealed partial class GlobSpecification
         ///  that limit are rejected with <see cref="GlobCompileErrorCode.PatternTooLarge"/>.
         /// </summary>
         public static bool TryCreate(
-            ReadOnlySpan<char> pattern,
+            StringSegment pattern,
             GlobDialect dialect,
             GlobOptions options,
             GlobPathSeparator separator,
@@ -129,12 +129,11 @@ public sealed partial class GlobSpecification
             if (resolvedSeparator != '\0' && escape == '\0')
             {
                 char altSeparator = resolvedSeparator == '/' ? '\\' : '/';
-                if (pattern.IndexOf(altSeparator) >= 0)
-                {
-                    // Compile is not a hot path; one string allocation here keeps every
-                    // subsequent runtime match-time translation away.
-                    pattern = pattern.ToString().Replace(altSeparator, resolvedSeparator).AsSpan();
-                }
+
+                // StringSegment.Replace returns `this` unchanged (zero alloc) when the
+                // character isn't present, so the common case where the caller already
+                // wrote portable separators pays only one IndexOf.
+                pattern = pattern.Replace(altSeparator, resolvedSeparator);
             }
 
             bool negated = false;
@@ -244,7 +243,7 @@ public sealed partial class GlobSpecification
                     if (!startsWithGlobStarToken)
                     {
                         // Compile-path string allocation; not on the match hot path.
-                        pattern = $"**{resolvedSeparator}{pattern}".AsSpan();
+                        pattern = $"**{resolvedSeparator}{pattern}";
                     }
                 }
             }
@@ -562,7 +561,7 @@ public sealed partial class GlobSpecification
         ///  Strips the gitignore-specific metadata markers from <paramref name="pattern"/>
         /// </summary>
         private static (bool Negated, bool RootAnchored, bool DirectoryOnly) StripGitignoreMarkers(
-            ref ReadOnlySpan<char> pattern)
+            ref StringSegment pattern)
         {
             bool negated = false;
             bool rootAnchored = false;
@@ -578,6 +577,11 @@ public sealed partial class GlobSpecification
                 // Leading '!' negates the match; the '!' is stripped and the flag is reported
                 negated = true;
                 pattern = pattern[1..];
+
+                if (pattern.IsEmpty)
+                {
+                    return (negated, rootAnchored, directoryOnly);
+                }
             }
 
             if (pattern[0] == '/')
@@ -586,6 +590,11 @@ public sealed partial class GlobSpecification
                 // stripped but the pattern is no longer subject to the "match anywhere" rule.
                 rootAnchored = true;
                 pattern = pattern[1..];
+
+                if (pattern.IsEmpty)
+                {
+                    return (negated, rootAnchored, directoryOnly);
+                }
             }
 
             if (pattern[^1] == '/')
@@ -615,7 +624,7 @@ public sealed partial class GlobSpecification
         ///  </para>
         /// </remarks>
         private static bool TryNormalizeRuns(
-            ref ReadOnlySpan<char> pattern,
+            ref StringSegment pattern,
             GlobDialect dialect,
             char separator,
             out bool neverMatch,
@@ -810,7 +819,7 @@ public sealed partial class GlobSpecification
                 k++;
             }
 
-            pattern = builder.ToStringAndDispose().AsSpan();
+            pattern = builder.ToStringAndDispose();
             return true;
         }
 

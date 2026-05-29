@@ -105,4 +105,26 @@ public partial class GlobSpecificationTests
         matcher.IsMatch("Foo.cs").Should().BeFalse();
         matcher.IsMatch("!Foo.cs").Should().BeTrue();
     }
+
+    // Regression: StripGitignoreMarkers must not throw IndexOutOfRangeException
+    // for patterns that become empty between strips. Reported by Copilot review
+    // on PR #160. Each input below crashed before the fix:
+    //   "!"   -> strip '!' -> empty, then pattern[0] == '/' threw.
+    //   "/"   -> strip '/' -> empty, then pattern[^1] == '/' threw.
+    //   "!/"  -> strip '!' -> "/", strip '/' -> empty, then pattern[^1] threw.
+    [Theory]
+    [InlineData("!", true, false, false)]
+    [InlineData("/", false, true, false)]
+    [InlineData("!/", true, true, false)]
+    public void Compile_Git_PathologicalShortPatterns_DoesNotThrow(
+        string pattern,
+        bool expectedNegated,
+        bool expectedRootAnchored,
+        bool expectedDirectoryOnly)
+    {
+        GlobSpecification matcher = GlobSpecification.Compile(pattern, GlobDialect.Git);
+        matcher.Negated.Should().Be(expectedNegated);
+        matcher.RootAnchored.Should().Be(expectedRootAnchored);
+        matcher.DirectoryOnly.Should().Be(expectedDirectoryOnly);
+    }
 }
