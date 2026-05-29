@@ -13,11 +13,11 @@ namespace Touki.Io.Globbing;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   The interpreter does not yet recognize the new opcodes - that comes in
-///   step 3 of the F1.3 rollout. Until then runtime matching against an extglob
-///   pattern silently returns <see langword="false"/>, which the compile-shape
-///   tests in this file <i>don't</i> exercise (they inspect the emitted bytecode
-///   directly via <c>TestAccessor</c>).
+///   This file covers compile-shape behavior - emitted bytecode and error
+///   reporting - inspected directly via <c>TestAccessor</c>. Runtime
+///   match behavior for the same opcodes is covered by
+///   <c>ExtGlobPositiveMatchTests</c>, <c>ExtGlobNegationMatchTests</c>,
+///   <c>ExtGlobPathAwareMatchTests</c>, and <c>ExtGlobOracleTests.Bash</c>.
 ///  </para>
 /// </remarks>
 public class ExtGlobScannerTests
