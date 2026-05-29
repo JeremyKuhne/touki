@@ -6,7 +6,7 @@ namespace Touki.Io.Globbing;
 
 /// <summary>
 ///  Pattern-level scenarios ported from the GNU bash <c>tests/extglob.tests</c>
-///  and <c>tests/extglob1.sub</c> case-statement corpora.
+///  case-statement corpus.
 /// </summary>
 /// <remarks>
 ///  <para>
@@ -97,7 +97,10 @@ public class PortedTests_Bash
     public void IsMatch_Bash_NegationSet(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 
-    // From extglob.tests: VMS-style filename versions via *\;[1-9]*([0-9]).
+    // From extglob.tests: VMS-style filename versions. Upstream uses
+    // *\;[1-9]*([0-9]) where the backslash escapes the ';' for bash's
+    // case-statement parser. Bash's pattern matcher never sees the
+    // backslash; the equivalent touki pattern is the literal *;[1-9]*([0-9]).
     [Theory]
     [InlineData("*;[1-9]*([0-9])", "VMS.FILE;1", true)]
     [InlineData("*;[1-9]*([0-9])", "VMS.FILE;0", false)]
@@ -135,6 +138,29 @@ public class PortedTests_Bash
     // including bash-2.05b"). *?(a)bc vs 123abc.
     [InlineData("*?(a)bc", "123abc", true)]
     public void IsMatch_Bash_PdkshRegressionShapes(string pattern, string input, bool expected) =>
+        Compile(pattern).IsMatch(input).Should().Be(expected);
+
+    // Regression rows pinning the `**(` -> `*` + `*(` extglob carve-out added
+    // to the encoder for this PR. Each row exercises a different shape of
+    // star-run-followed-by-extglob-opener:
+    //   - ab**(e|f)g    : `**` + `*(...)` followed by a literal tail (the
+    //                     case-statement row 37 above, kept here for
+    //                     completeness).
+    //   - ab***(e|f)g   : three stars => `**` AnyRun + `*(e|f)` extglob.
+    //   - @(a|c**(b))   : the carve-out also fires inside an extglob body.
+    //   - ab**(e|f)     : trailing extglob with no literal tail.
+    [Theory]
+    [InlineData("ab**(e|f)g", "abcfefg", true)]
+    [InlineData("ab**(e|f)g", "abg", true)]          // `*` + `*(e|f)` both match empty
+    [InlineData("ab**(e|f)g", "abgh", false)]        // trailing literal `g` must be last
+    [InlineData("ab***(e|f)g", "abcfefg", true)]
+    [InlineData("ab***(e|f)g", "abcXfefg", true)]   // `***` -> `**` AnyRun crosses the X
+    [InlineData("ab**(e|f)", "ab", true)]            // `*(e|f)` accepts zero alts
+    [InlineData("ab**(e|f)", "abef", true)]
+    [InlineData("@(a|c**(b))", "a", true)]
+    [InlineData("@(a|c**(b))", "cbb", true)]
+    [InlineData("@(a|c**(b))", "cXbb", true)]
+    public void IsMatch_Bash_DoubleStarExtGlobCarveOut(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 
     // From extglob.tests: /dev/@(tcp|udp)/*/* path-like alternation.
@@ -175,9 +201,12 @@ public class PortedTests_Bash
     public void IsMatch_Bash_NestedExtGlob(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 
-    // Helper: bash patterns compile with extglob enabled. Globstar is on by
-    // default for the Bash dialect's implicit-globstar resolution but
-    // upstream extglob.tests does not depend on '**'.
+    // Helper: bash patterns compile with extglob enabled. The Bash dialect's
+    // path-aware globstar (`**`) resolution is implicit and is not exercised
+    // by extglob.tests; the `**` runs in this file (e.g. `ab**` and
+    // `ab**(e|f)g`) are not segment-bounded, so they degrade to AnyRun (or to
+    // the `**(` -> `*` + `*(` carve-out the Factory now handles) rather than
+    // triggering the globstar opcode.
     private static GlobSpecification Compile(string pattern) =>
         GlobSpecification.Compile(pattern, GlobDialect.Bash, GlobOptions.AllowExtGlob);
 }
