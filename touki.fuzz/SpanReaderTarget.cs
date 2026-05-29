@@ -90,9 +90,18 @@ internal static class SpanReaderTarget
                         break;
                     }
                 case 14:
-                    // Set Position to an in-range value and confirm it round-trips.
-                    subject.Position = op % (subject.Length + 1);
-                    break;
+                    {
+                        // Set Position to an in-range value and confirm the getter round-trips it.
+                        int position = op % (subject.Length + 1);
+                        subject.Position = position;
+                        if (subject.Position != position)
+                        {
+                            throw new FuzzInvariantException(
+                                $"Position did not round-trip: set {position}, got {subject.Position}.");
+                        }
+
+                        break;
+                    }
                 case 15:
                     subject.Reset();
                     break;
