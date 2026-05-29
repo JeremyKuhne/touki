@@ -13,11 +13,11 @@ namespace Touki.Io.Globbing;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   The interpreter does not yet recognize the new opcodes - that comes in
-///   step 3 of the F1.3 rollout. Until then runtime matching against an extglob
-///   pattern silently returns <see langword="false"/>, which the compile-shape
-///   tests in this file <i>don't</i> exercise (they inspect the emitted bytecode
-///   directly via <c>TestAccessor</c>).
+///   This file covers compile-shape behavior - emitted bytecode and error
+///   reporting - inspected directly via <c>TestAccessor</c>. Runtime
+///   match behavior for the same opcodes is covered by
+///   <c>ExtGlobPositiveMatchTests</c>, <c>ExtGlobNegationMatchTests</c>,
+///   <c>ExtGlobPathAwareMatchTests</c>, and <c>ExtGlobOracleTests.Bash</c>.
 ///  </para>
 /// </remarks>
 public class ExtGlobScannerTests
@@ -305,14 +305,17 @@ public class ExtGlobScannerTests
     }
 
     [Fact]
-    public void Compile_AllowExtGlobOn_UnterminatedClassInsideBody_ReportsUnterminatedClass()
+    public void Compile_AllowExtGlobOn_UnterminatedClassInsideBody_TreatedAsLiteral()
     {
-        Action act = () => GlobSpecification.Compile(
+        // Per fnmatch semantics: an unterminated '[' is treated as a literal
+        // character. The extglob body inherits the same behavior so the pattern
+        // compiles successfully and the '[bc' alternative becomes a literal run.
+        GlobSpecification matcher = GlobSpecification.Compile(
             "@(a|[bc)",
             GlobDialect.Bash,
             GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
 
-        act.Should().Throw<GlobFormatException>()
-            .Which.Error.Code.Should().Be(GlobCompileErrorCode.UnterminatedClass);
+        matcher.IsMatch("a").Should().BeTrue();
+        matcher.IsMatch("[bc").Should().BeTrue();
     }
 }

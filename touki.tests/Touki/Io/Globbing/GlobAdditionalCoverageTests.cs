@@ -214,10 +214,12 @@ public class GlobAdditionalCoverageTests
     [Fact]
     public void TryCompile_InvalidPattern_ReportsError()
     {
-        // Unterminated class produces a compile error; the TryCompile entry point
-        // exposes the error path that the throwing Compile wraps.
+        // Dangling escape produces a compile error; the TryCompile entry point
+        // exposes the error path that the throwing Compile wraps. (An unterminated
+        // '[' is no longer an error - fnmatch semantics treat it as a literal
+        // character; see PortedTests.Posix.cs.)
         bool ok = GlobSpecification.TryCompile(
-            "[abc",
+            "abc\\",
             GlobDialect.Posix,
             GlobOptions.None,
             out GlobSpecification? matcher,
@@ -226,7 +228,7 @@ public class GlobAdditionalCoverageTests
         ok.Should().BeFalse();
         matcher.Should().BeNull();
         error.IsError.Should().BeTrue();
-        error.Code.Should().Be(GlobCompileErrorCode.UnterminatedClass);
+        error.Code.Should().Be(GlobCompileErrorCode.DanglingEscape);
         error.Position.Should().BeGreaterThanOrEqualTo(0);
         error.Message.Should().NotBeNullOrEmpty();
     }
@@ -252,7 +254,7 @@ public class GlobAdditionalCoverageTests
     [Fact]
     public void Compile_InvalidPattern_Throws()
     {
-        Action act = () => GlobSpecification.Compile("[abc", GlobDialect.Posix);
+        Action act = () => GlobSpecification.Compile("abc\\", GlobDialect.Posix);
         act.Should().Throw<GlobFormatException>();
     }
 }

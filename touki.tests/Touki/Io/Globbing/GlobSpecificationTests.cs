@@ -154,11 +154,14 @@ public partial class GlobSpecificationTests
     }
 
     [Fact]
-    public void Compile_UnterminatedClass_Throws()
+    public void Compile_UnterminatedClass_TreatedAsLiteral()
     {
-        Action act = () => GlobSpecification.Compile("[abc", GlobDialect.Posix);
-        act.Should().Throw<GlobFormatException>()
-            .Which.Error.Code.Should().Be(GlobCompileErrorCode.UnterminatedClass);
+        // Per fnmatch / glibc semantics: an unterminated '[' is treated as a
+        // literal character rather than rejected. See PortedTests.Posix.cs for
+        // the row that pinned this down (B.6 031: "/[", "\\/[", 0).
+        GlobSpecification matcher = GlobSpecification.Compile("[abc", GlobDialect.Posix);
+        matcher.IsMatch("[abc").Should().BeTrue();
+        matcher.IsMatch("abc").Should().BeFalse();
     }
 
     [Fact]
