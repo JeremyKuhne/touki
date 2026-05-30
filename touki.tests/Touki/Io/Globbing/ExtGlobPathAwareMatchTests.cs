@@ -35,6 +35,11 @@ public class ExtGlobPathAwareMatchTests
             .Compile(pattern, GlobDialect.Bash, GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob)
             .MatchCore(prefix.AsSpan(), fileName.AsSpan());
 
+    private static bool IsMatch(string pattern, string input) =>
+        GlobSpecification
+            .Compile(pattern, GlobDialect.Bash, GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob)
+            .IsMatch(input.AsSpan());
+
     [Theory]
     // Direct regression for the observed failure: `**/@(*.cs)` with a real
     // directory prefix. Pre-fix, the absorbed=6 retry of `**` saw the
@@ -148,4 +153,124 @@ public class ExtGlobPathAwareMatchTests
     public void MatchCore_LeadingDotRule_WithExtGlob(
         string pattern, string prefix, string fileName, bool expected) =>
         MatchCore(pattern, prefix, fileName).Should().Be(expected);
+
+    [Theory]
+    // Boundary invariant: the two-span walker addresses the virtual input
+    // through `CharAt(first, second, firstLength, i)`, so a separator sitting
+    // exactly at the first/second split (the directory-prefix trailing '/')
+    // must be seen identically to a separator inside a single contiguous span.
+    // Every case here splits the same logical path at the '/' that the
+    // enumeration call shape would, and asserts the two-span `MatchCore`
+    // answer equals the single-span `IsMatch` answer on the joined input.
+    //
+    // Extglob constructs whose handlers scan to a separator (AnyRun, GlobStar,
+    // negation `maxL`) are the ones most exposed to an off-by-one at the
+    // boundary, so each is represented.
+    //
+    // GlobStar spanning the boundary segment.
+    [InlineData("**/@(foo|bar).cs", "a/", "foo.cs")]
+    [InlineData("**/@(foo|bar).cs", "a/b/", "bar.cs")]
+    [InlineData("**/!(skip)", "a/b/", "keep")]
+    [InlineData("**/!(skip)", "a/b/", "skip")]
+    // Negation directly at the boundary: the construct's separator-bounded
+    // `maxL` is computed by walking `CharAt` from the split, so the trailing
+    // prefix separator must terminate the scan at the right index.
+    [InlineData("!(skip)/keep.cs", "", "keep/keep.cs")]
+    [InlineData("!(skip)/keep.cs", "keep/", "keep.cs")]
+    [InlineData("!(skip)/**/*.cs", "keep/", "sub/foo.cs")]
+    [InlineData("!(skip)/**/*.cs", "skip/", "sub/foo.cs")]
+    // AnyRun bounded by the boundary separator.
+    [InlineData("*/@(foo|bar).cs", "dir/", "foo.cs")]
+    [InlineData("*/@(foo|bar).cs", "", "dir/bar.cs")]
+    public void MatchCore_SeparatorAtFirstSecondBoundary_AgreesWithSingleSpan(
+        string pattern, string prefix, string fileName)
+    {
+        bool twoSpan = MatchCore(pattern, prefix, fileName);
+        bool single = IsMatch(pattern, prefix + fileName);
+        twoSpan.Should().Be(single);
+    }
+
+    [Theory]
+    // A literal alternative that straddles the first/second boundary: the
+    // chosen literal ("keep.cs") is split so its head lives in `first` and its
+    // tail in `second`. `LiteralMatchesAt` must compare across the split.
+    // Every split point of "keep.cs" must agree with the single-span answer.
+    [InlineData("@(keep.cs|other)", "k", "eep.cs", true)]
+    [InlineData("@(keep.cs|other)", "ke", "ep.cs", true)]
+    [InlineData("@(keep.cs|other)", "keep", ".cs", true)]
+    [InlineData("@(keep.cs|other)", "keep.", "cs", true)]
+    [InlineData("@(keep.cs|other)", "kee", "p.cx", false)]
+    [InlineData("@(keep.cs|other)", "oth", "er", true)]
+    public void MatchCore_LiteralStraddlesBoundary_MatchesAcrossSplit(
+        string pattern, string prefix, string fileName, bool expected)
+    {
+        MatchCore(pattern, prefix, fileName).Should().Be(expected);
+        // The split must not change the answer relative to one contiguous span.
+        IsMatch(pattern, prefix + fileName).Should().Be(expected);
+    }
+
+    [Theory]
+    // Exercises the per-alternative offset table baked into the AltStart
+    // header. Earlier theories only reach altCount <= 2, so the third and
+    // later offset slots (off_2, off_3, ...) are never read; an off-by-one in
+    // the table write or read would slip through. These cases require the
+    // matcher to select alternatives at index >= 2 to succeed.
+    [InlineData("@(a|b|c)", "", "c", true)]
+    [InlineData("@(a|b|c)", "", "b", true)]
+    [InlineData("@(a|b|c)", "", "d", false)]
+    [InlineData("@(red|green|blue|yellow)", "", "yellow", true)]
+    [InlineData("@(red|green|blue|yellow)", "", "blue", true)]
+    [InlineData("@(red|green|blue|yellow)", "", "purple", false)]
+    [InlineData("+(a|bb|ccc)", "", "cccbbacccbb", true)]
+    [InlineData("**/@(foo|bar|baz).cs", "a/b/", "baz.cs", true)]
+    [InlineData("**/@(foo|bar|baz).cs", "a/b/", "qux.cs", false)]
+    public void MatchCore_OffsetTable_MultipleAlternatives(
+        string pattern, string prefix, string fileName, bool expected) =>
+        MatchCore(pattern, prefix, fileName).Should().Be(expected);
+
+    [Theory]
+    // A nested extglob sitting in a NON-first alternative, followed by further
+    // alternatives. This is the exact shape that would expose an offset-table
+    // bug: the nested construct's own header splice happens between the moment
+    // the outer table records its alternative positions and the moment the
+    // outer table is spliced in, so a later outer offset (for the alternative
+    // after the nested one) must still resolve correctly.
+    [InlineData("@(README|@(.env|.gitignore)|LICENSE)", "", "LICENSE", true)]
+    [InlineData("@(README|@(.env|.gitignore)|LICENSE)", "", ".env", true)]
+    [InlineData("@(README|@(.env|.gitignore)|LICENSE)", "", ".gitignore", true)]
+    [InlineData("@(README|@(.env|.gitignore)|LICENSE)", "", "other", false)]
+    [InlineData("+(a|@(b|c)|d)", "", "dcba", true)]
+    [InlineData("+(a|@(b|c)|d)", "", "abcd", true)]
+    [InlineData("+(a|@(b|c)|d)", "", "abxd", false)]
+    [InlineData("**/@(keep|@(foo|bar)|skip).cs", "a/b/", "skip.cs", true)]
+    [InlineData("**/@(keep|@(foo|bar)|skip).cs", "a/b/", "bar.cs", true)]
+    [InlineData("**/@(keep|@(foo|bar)|skip).cs", "a/b/", "nope.cs", false)]
+    public void MatchCore_OffsetTable_NestedInNonFirstAlternative(
+        string pattern, string prefix, string fileName, bool expected) =>
+        MatchCore(pattern, prefix, fileName).Should().Be(expected);
+
+    [Theory]
+    // Empty alternatives inside the repeating constructs (+ and *) drive the
+    // "empty alternative collapses to matching the rest" branch in
+    // ProduceAlternative: when an alternative body is empty the progress guard
+    // refuses to re-enter the block with no input consumed, so the production
+    // degenerates to matching the construct's continuation. Placing the empty
+    // alternative first guarantees the collapse branch is taken on the first
+    // production; a trailing empty alternative reaches it on a later slot.
+    [InlineData("*(|a)", "", "", true)]
+    [InlineData("*(|a)", "", "a", true)]
+    [InlineData("*(|a)", "", "aaa", true)]
+    [InlineData("*(|a)", "", "b", false)]
+    [InlineData("+(|a)", "", "a", true)]
+    [InlineData("+(|a)", "", "aaa", true)]
+    [InlineData("+(|a)", "", "b", false)]
+    [InlineData("*(a|)", "", "aa", true)]
+    [InlineData("+(a|)", "", "aa", true)]
+    public void MatchCore_EmptyAlternative_RepeatingConstruct(
+        string pattern, string prefix, string fileName, bool expected)
+    {
+        MatchCore(pattern, prefix, fileName).Should().Be(expected);
+        // The two-span split must never change the answer relative to one span.
+        IsMatch(pattern, prefix + fileName).Should().Be(expected);
+    }
 }

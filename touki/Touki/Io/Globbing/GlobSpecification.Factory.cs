@@ -7,6 +7,22 @@ namespace Touki.Io.Globbing;
 public sealed partial class GlobSpecification
 {
     /// <summary>
+    ///  Maximum number of <c>|</c>-separated alternatives in a single extended-glob
+    ///  construct. Exceeding this raises
+    ///  <see cref="GlobCompileErrorCode.FeatureLimitExceeded"/>.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This is the single source of truth for the alternative cap. The encoder
+    ///   enforces it and sizes the offset table it bakes into the
+    ///   <see cref="GlobOpCodes.AltStart"/> header by it; the matcher's
+    ///   fixed-size offset-read buffer in <see cref="CompiledGlobStrategy"/>
+    ///   references this same constant so the two sides can never drift.
+    ///  </para>
+    /// </remarks>
+    internal const int MaxExtGlobAlternatives = 32;
+
+    /// <summary>
     ///  Classifies a source pattern and constructs the cheapest <see cref="GlobStrategy"/>
     ///  implementation that can evaluate it.
     /// </summary>
@@ -46,13 +62,6 @@ public sealed partial class GlobSpecification
         ///  are guaranteed to fit in the fixed runtime budget.
         /// </summary>
         internal const int MaxExtGlobDepth = 8;
-
-        /// <summary>
-        ///  Maximum number of <c>|</c>-separated alternatives in a single extended-glob
-        ///  construct. Exceeding this raises
-        ///  <see cref="GlobCompileErrorCode.FeatureLimitExceeded"/>.
-        /// </summary>
-        internal const int MaxExtGlobAlternatives = 32;
 
         /// <summary>
         ///  Default upper bound (in characters) applied by the
@@ -1208,7 +1217,10 @@ public sealed partial class GlobSpecification
                 return default;
             }
 
-            int altsStart = blockStart + 3;
+            // Alternatives start after the AltStart header, whose length is
+            // 4 (opcode, kind, blockLen, altCount) plus one offset-table slot
+            // per alternative.
+            int altsStart = blockStart + 4 + program[blockStart + 3];
             int altEndIndex = blockStart + blockLen - 1;
             if (altsStart > altEndIndex)
             {
@@ -1828,10 +1840,21 @@ public sealed partial class GlobSpecification
             int altStartPos = builder.Length;
 
             // Reserve the AltStart header: opcode + kind + placeholder length.
-            // The length payload is back-patched once AltEnd is appended.
+            // The length payload is back-patched once AltEnd is appended; the
+            // per-alternative offset table is spliced in at that point too (see
+            // the ')' branch below), so the matcher can read alternative bounds
+            // in O(1) instead of re-walking the block on every production.
             builder.Append(GlobOpCodes.AltStart);
             builder.Append(kind);
             builder.Append('\0');
+
+            // Record each alternative body's start position as it is emitted. The
+            // first body begins immediately after the (table-less) header; once
+            // the table is spliced in at AltEnd these positions shift uniformly,
+            // which is accounted for when the offsets are back-patched.
+            Span<int> altBodyPositions = stackalloc int[MaxExtGlobAlternatives];
+            int altBodyCount = 1;
+            altBodyPositions[0] = builder.Length;
 
             i += 2;
             lastLiteral = LiteralCursor.None;
@@ -1843,6 +1866,20 @@ public sealed partial class GlobSpecification
                 if (current == ')')
                 {
                     builder.Append(GlobOpCodes.AltEnd);
+
+                    // Splice the offset table into the header:
+                    //   [AltStart][kind][blockLen][altCount][off_0..off_{altCount-1}]
+                    // off_j is alternative j's body start relative to the AltStart.
+                    int tableLength = 1 + altBodyCount;
+                    builder.Insert(altStartPos + 3, '\0', tableLength);
+                    builder[altStartPos + 3] = (char)altBodyCount;
+                    for (int a = 0; a < altBodyCount; a++)
+                    {
+                        // Pre-splice positions shift right by tableLength; store
+                        // them relative to the AltStart so slices stay valid.
+                        builder[altStartPos + 4 + a] = (char)(altBodyPositions[a] + tableLength - altStartPos);
+                    }
+
                     int blockLength = builder.Length - altStartPos;
                     if (blockLength > MaxOpcodeBodyLength)
                     {
@@ -1861,6 +1898,18 @@ public sealed partial class GlobSpecification
                 if (current == '|')
                 {
                     builder.Append(GlobOpCodes.AltSep);
+
+                    // The next alternative body begins immediately after the
+                    // separator. The alternative cap is enforced by the scanner;
+                    // guard the table write defensively so a drift there can never
+                    // overflow the fixed-size position buffer.
+                    if (altBodyCount >= MaxExtGlobAlternatives)
+                    {
+                        overflowPosition = kindIndex;
+                        return false;
+                    }
+
+                    altBodyPositions[altBodyCount++] = builder.Length;
                     lastLiteral = LiteralCursor.None;
                     i++;
                     continue;

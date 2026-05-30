@@ -2,41 +2,70 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Touki.Collections;
+
 namespace Touki.Io.Globbing;
 
 /// <summary>
-///  Recursive matcher used when the compiled program contains
+///  Matcher used when the compiled program contains
 ///  <see cref="GlobOpCodes.AltStart"/> opcodes (extended-glob alternation
 ///  constructs). Trades the iterative two-slot backtrack of the non-extglob
-///  fast paths for a recursive "concatenation of program ranges" walker that
-///  naturally handles nested alternations.
+///  fast paths for a "concatenation of program ranges" walker that naturally
+///  handles nested alternations.
 /// </summary>
 /// <remarks>
 ///  <para>
-///   The matcher walks a small <see cref="Span{T}"/> of <see cref="ProgramRange"/>
-///   entries; the first entry is the &quot;current&quot; sub-program and any
-///   additional entries are the &quot;rest&quot; (typically the slice past the
-///   alternation block). On <see cref="GlobOpCodes.AltStart"/> the matcher
-///   prepends an alternative's range and recurses; for repeating constructs
-///   (<c>*(...)</c>, <c>+(...)</c>) it also re-prepends the same alternation block
-///   so further iterations can be attempted before falling through to the rest.
+///   The matcher walks a small list of <see cref="ProgramRange"/> entries; the
+///   first entry is the &quot;current&quot; sub-program and any additional
+///   entries are the &quot;rest&quot; (typically the slice past the alternation
+///   block). On <see cref="GlobOpCodes.AltStart"/> it prepends an alternative's
+///   range; for repeating constructs (<c>*(...)</c>, <c>+(...)</c>) it also
+///   re-prepends the same alternation block so further iterations can be
+///   attempted before falling through to the rest.
 ///  </para>
 ///  <para>
-///   The <c>totalLength</c> parameter threaded through the walker
-///   lets callers run the matcher against a clipped input range (matching some
-///   prefix of the virtual <c>first + second</c> concatenation rather than the
-///   whole thing). The negation handler relies on this to ask &quot;does
-///   alternative <i>p</i> consume exactly <i>L</i> input characters?&quot;.
+///   <b>Iterative engine.</b> Rather than recursing natively for each choice
+///   point, the walker (<see cref="ExtGlobEngine"/>) runs a single <c>while</c>
+///   loop over an explicit backtrack stack (<see cref="Frame"/>). Each choice
+///   point pushes a frame capturing the entry configuration; deterministic
+///   opcodes advance the head range in place. This keeps stack depth a heap
+///   concern - native recursion no longer grows with the input length, so an
+///   adversarial repeating construct (<c>+(...)</c>/<c>*(...)</c> over a long
+///   separator-free segment) can no longer trigger an uncatchable
+///   <see cref="StackOverflowException"/>. The design mirrors the explicit
+///   <c>runstack</c>/<c>runtrack</c> arrays of the .NET regex interpreter.
 ///  </para>
 ///  <para>
-///   Recursion depth is bounded by the encoder's <c>MaxExtGlobDepth</c> cap
-///   plus the maximum number of pending iterations (also bounded by the input
-///   length). The ranges span is always stack-allocated.
+///   The <c>totalLength</c> parameter threaded through the walker lets callers
+///   run the matcher against a clipped input range (matching some prefix of the
+///   virtual <c>first + second</c> concatenation rather than the whole thing).
+///   The negation handler relies on this to ask &quot;does alternative <i>p</i>
+///   consume exactly <i>L</i> input characters?&quot; by re-entering the engine
+///   with the clipped length; that re-entry is the only remaining native
+///   recursion and is bounded by the encoder's <c>MaxExtGlobDepth</c> cap (the
+///   maximum nesting of <c>!(...)</c> constructs).
+///  </para>
+///  <para>
+///   The frame stack and the range-snapshot arena are both seeded from
+///   <c>stackalloc</c> and spill to <see cref="ArrayPool{T}"/> only when an
+///   adversarial input outgrows the seed, so the common path stays allocation
+///   free.
 ///  </para>
 /// </remarks>
 internal sealed partial class CompiledGlobStrategy
 {
     private const int MaxRangesDepth = 32;
+
+    // Failure-memo key layout: [inputIndex, totalLength, rangeCount] followed by
+    // (Start, End, KindOverride) for each range.
+    private const int KeyHeaderLength = 3;
+    private const int RangeKeyLength = 3;
+
+    // Seed sizes for the explicit backtrack stack and the range-snapshot arena.
+    // Common patterns never exceed these, so the engine stays allocation-free;
+    // adversarial repeating constructs spill to ArrayPool.
+    private const int SeedFrameCount = 32;
+    private const int SeedArenaCount = 128;
 
     /// <summary>
     ///  A contiguous half-open program slice <c>[Start, End)</c>. The optional
@@ -50,175 +79,488 @@ internal sealed partial class CompiledGlobStrategy
         public int Start;
         public int End;
         public char KindOverride;
+
+        // For a re-prepended repeating block (KindOverride set), the input index
+        // at which this iteration started. The progress guard refuses to take a
+        // further iteration unless input advanced past this value, preventing
+        // unbounded empty iterations of constructs like *(...) / +(*|*).
+        public int MinProgressInput;
+    }
+
+    /// <summary>
+    ///  A choice point on the explicit backtrack stack. Captures the walker
+    ///  configuration at the choice opcode so each alternative can be tried in
+    ///  order and the state restored on backtrack. Per-kind derived data
+    ///  (alternative offsets, block bounds, separator-bounded limits) is
+    ///  recomputed from the program on revisit to keep the frame small.
+    /// </summary>
+    private struct Frame
+    {
+        // The resolved choice kind: the AnyRun/GlobStar opcode, or the resolved
+        // alternation kind ('@', '?', '+', '*', '!').
+        public char Kind;
+
+        // Index of the choice opcode in the program.
+        public int ProgramIndex;
+
+        // inputIndex at the choice point; every alternative restarts from here.
+        public int SavedInput;
+
+        // Range-snapshot location in the arena: the configuration head..count
+        // captured at entry.
+        public int SnapshotOffset;
+        public int SnapshotCount;
+
+        // Next-alternative cursor; meaning depends on Kind (next consumed length
+        // for AnyRun, next alt index for alternations, next candidate length for
+        // negation, started-flag for GlobStar).
+        public int Cursor;
+
+        // Per-kind scratch carried across alternatives: AnyRun caches the
+        // separator-bounded limit; GlobStar caches the last absorbed length.
+        public int Aux;
+    }
+
+    /// <summary>
+    ///  The immutable inputs to an extglob match: the virtual
+    ///  <see cref="First"/> + <see cref="Second"/> input, the compiled
+    ///  <see cref="Program"/>, and the case/separator policy. Bundled so the
+    ///  engine setup and the bounded negation re-entry pass a single documented
+    ///  value instead of threading five loose parameters through every call.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Only ever used as a local or an <c>in</c> parameter, never stored as a
+    ///   field of <see cref="ExtGlobEngine"/>: a span-bearing ref struct used as
+    ///   a <em>field</em> of another ref struct requires the <c>ByRefFields</c>
+    ///   runtime feature that net481 lacks. The engine therefore unpacks this
+    ///   into its own individual span fields in its constructor.
+    ///  </para>
+    /// </remarks>
+    private readonly ref struct EngineInputs
+    {
+        /// <summary>Directory-prefix span; the first half of the virtual input.</summary>
+        public readonly ReadOnlySpan<char> First;
+
+        /// <summary>File-name span; the second half of the virtual input.</summary>
+        public readonly ReadOnlySpan<char> Second;
+
+        /// <summary>The compiled bytecode program (extglob subset).</summary>
+        public readonly ReadOnlySpan<char> Program;
+
+        /// <summary>Path separator, or <c>'\0'</c> when the matcher is path-unaware.</summary>
+        public readonly char Separator;
+
+        /// <summary>Case-sensitivity policy for literal/class comparisons.</summary>
+        public readonly IgnoreCaseKind Kind;
+
+        public EngineInputs(
+            ReadOnlySpan<char> first,
+            ReadOnlySpan<char> second,
+            ReadOnlySpan<char> program,
+            char separator,
+            IgnoreCaseKind kind)
+        {
+            First = first;
+            Second = second;
+            Program = program;
+            Separator = separator;
+            Kind = kind;
+        }
+    }
+
+    /// <summary>
+    ///  The reusable scratch buffers an <see cref="ExtGlobEngine"/> run consumes.
+    ///  Bundled so the engine setup and the negation re-entry pass one documented
+    ///  value instead of five loose span parameters.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Like <see cref="EngineInputs"/>, only used as a local or an <c>in</c>
+    ///   parameter (never a ref-struct field) for net481 compatibility. The seed
+    ///   buffers are <c>stackalloc</c>-backed; the engine spills <see cref="Frames"/>
+    ///   and <see cref="Arena"/> to <see cref="ArrayPool{T}"/> only when an
+    ///   adversarial input outgrows the seed.
+    ///  </para>
+    /// </remarks>
+    private readonly ref struct EngineScratch
+    {
+        /// <summary>Explicit backtrack stack of choice points.</summary>
+        public readonly Span<Frame> Frames;
+
+        /// <summary>Range-snapshot arena backing each frame's saved configuration.</summary>
+        public readonly Span<ProgramRange> Arena;
+
+        /// <summary>The active ("work") range list the forward loop advances.</summary>
+        public readonly Span<ProgramRange> Work;
+
+        /// <summary>Scratch list used while building an alternative's range list.</summary>
+        public readonly Span<ProgramRange> Rest;
+
+        /// <summary>Failure-memo serialization key buffer.</summary>
+        public readonly Span<int> Key;
+
+        public EngineScratch(
+            Span<Frame> frames,
+            Span<ProgramRange> arena,
+            Span<ProgramRange> work,
+            Span<ProgramRange> rest,
+            Span<int> key)
+        {
+            Frames = frames;
+            Arena = arena;
+            Work = work;
+            Rest = rest;
+            Key = key;
+        }
     }
 
     /// <summary>
     ///  Entry point used by <see cref="MatchCore"/> when the program contains
     ///  one or more <see cref="GlobOpCodes.AltStart"/> opcodes.
     /// </summary>
-    private bool MatchExtGlob(
+    private static bool MatchExtGlob(
         ReadOnlySpan<char> first,
         ReadOnlySpan<char> second,
         ReadOnlySpan<char> program,
         char separator,
         IgnoreCaseKind kind)
     {
-        Span<ProgramRange> ranges = stackalloc ProgramRange[MaxRangesDepth];
-        ranges[0] = new ProgramRange { Start = 0, End = program.Length };
         int totalLength = first.Length + second.Length;
-        return TryMatchRanges(first, second, program, ranges[..1], inputIndex: 0, totalLength, separator, kind);
+        EngineInputs inputs = new(first, second, program, separator, kind);
+        ExtGlobMatchState state = default;
+        try
+        {
+            // Explicit stackalloc rather than a collection expression: on net481 a
+            // [InlineArray]-backed collection expression is unavailable, so the
+            // compiler falls back to a heap array. stackalloc stays allocation-free
+            // on both target frameworks.
+#pragma warning disable IDE0302 // Collection initialization can be simplified - see comment above.
+            Span<ProgramRange> initial = stackalloc ProgramRange[1];
+#pragma warning restore IDE0302
+            initial[0] = new ProgramRange { Start = 0, End = program.Length };
+            return RunEngine(in inputs, initial, inputIndex: 0, totalLength, ref state);
+        }
+        finally
+        {
+            state.Dispose();
+        }
     }
 
     /// <summary>
-    ///  Returns <see langword="true"/> if the concatenation of the program
-    ///  slices in <paramref name="ranges"/> matches <paramref name="first"/> +
-    ///  <paramref name="second"/> starting at <paramref name="inputIndex"/>
-    ///  and consuming exactly up to <paramref name="totalLength"/>.
+    ///  Sets up an <see cref="ExtGlobEngine"/> (seeding its frame stack and
+    ///  range-snapshot arena from <c>stackalloc</c>) and runs it against the
+    ///  concatenation of the program slices in <paramref name="startRanges"/>
+    ///  starting at <paramref name="inputIndex"/> and consuming exactly up to
+    ///  <paramref name="totalLength"/>.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This is the only native recursion point: the negation handler re-enters
+    ///   here with a clipped <paramref name="totalLength"/> to probe whether an
+    ///   alternative consumes exactly a candidate number of characters. Recursion
+    ///   depth is bounded by the encoder's maximum negation nesting.
+    ///  </para>
+    /// </remarks>
+    private static bool RunEngine(
+        in EngineInputs inputs,
+        ReadOnlySpan<ProgramRange> startRanges,
+        int inputIndex,
+        int totalLength,
+        ref ExtGlobMatchState state)
+    {
+        Span<Frame> frames = stackalloc Frame[SeedFrameCount];
+        Span<ProgramRange> arena = stackalloc ProgramRange[SeedArenaCount];
+        Span<ProgramRange> work = stackalloc ProgramRange[MaxRangesDepth];
+        Span<ProgramRange> rest = stackalloc ProgramRange[MaxRangesDepth];
+        Span<int> key = stackalloc int[KeyHeaderLength + (MaxRangesDepth * RangeKeyLength)];
+        EngineScratch scratch = new(frames, arena, work, rest, key);
+
+        return RunEngineCore(in inputs, startRanges, inputIndex, totalLength, in scratch, ref state);
+    }
+
+    /// <summary>
+    ///  Runs the engine against <paramref name="startRanges"/> using
+    ///  caller-supplied scratch buffers. Lets the negation handler reuse one set
+    ///  of seed buffers across all of its bounded re-entry probes instead of
+    ///  re-seeding (and zeroing) a fresh set per probe.
+    /// </summary>
+    private static bool RunEngineCore(
+        in EngineInputs inputs,
+        ReadOnlySpan<ProgramRange> startRanges,
+        int inputIndex,
+        int totalLength,
+        in EngineScratch scratch,
+        ref ExtGlobMatchState state)
+    {
+        ExtGlobEngine engine = new(in inputs, totalLength, in scratch);
+        startRanges.CopyTo(scratch.Work);
+        engine.WorkCount = startRanges.Length;
+        engine.WorkInput = inputIndex;
+
+        try
+        {
+            return engine.Run(ref state);
+        }
+        finally
+        {
+            engine.ReturnRented();
+        }
+    }
+
+    /// <summary>
+    ///  The iterative extglob matching engine. Holds the working configuration
+    ///  (ranges, input cursor) and an explicit backtrack stack so choice points
+    ///  no longer recurse natively.
     /// </summary>
     /// <remarks>
     ///  <para>
     ///   Deterministic opcodes (<see cref="GlobOpCodes.Literal"/>,
     ///   <see cref="GlobOpCodes.Any"/>, <see cref="GlobOpCodes.Class"/>,
-    ///   <see cref="GlobOpCodes.NegClass"/>) and the leading-empty-range skip
-    ///   are inlined into the top-level <c>while</c> loop so a run of straight
-    ///   opcodes processes in a single stack frame. Only choice points
+    ///   <see cref="GlobOpCodes.NegClass"/>) and the leading-empty-range skip are
+    ///   processed inline in the forward loop so a run of straight opcodes makes
+    ///   no stack movement. Only choice points
     ///   (<see cref="GlobOpCodes.AltStart"/>, <see cref="GlobOpCodes.AnyRun"/>,
-    ///   <see cref="GlobOpCodes.GlobStar"/>) tail-recurse, because they need to
-    ///   try alternatives and backtrack on failure.
+    ///   <see cref="GlobOpCodes.GlobStar"/>) push a backtrack frame.
     ///  </para>
     ///  <para>
-    ///   <b>net481 design note.</b> The inline loop matters for .NET Framework
-    ///   4.8.1 RyuJIT, which does not tail-call methods that take
-    ///   <see cref="Span{T}"/> / <see cref="ReadOnlySpan{T}"/> parameters and
-    ///   pays a per-frame cost to re-materialize those spans on entry. Folding
-    ///   the deterministic advances into a <c>while</c> loop removed the
-    ///   majority of the recursive frames for typical patterns
-    ///   (e.g. <c>**/@(*.cs|*.md|...)</c> processes each file in 1-3
-    ///   frames instead of one frame per opcode); on the enumeration benchmark
-    ///   this closed the bulk of the net481 throughput gap. Modern .NET RyuJIT
-    ///   handles span tail-calls efficiently and sees only a small win, but the
-    ///   form is identical so there is no <c>#if</c> split.
+    ///   The failure memo (<see cref="ExtGlobMatchState"/>) engages once the walk
+    ///   crosses <see cref="ExtGlobMatchState.EngageThreshold"/> choice visits.
+    ///   From then on each choice configuration is checked on entry and, if all
+    ///   its alternatives are exhausted without a match, recorded as a failure,
+    ///   collapsing pathological backtracking from exponential to polynomial.
+    ///   Memoizing only failures is sound: a configuration that cannot match is a
+    ///   pure function of the current ranges, input cursor, and total length, and
+    ///   keys are compared exactly so a hash collision can never produce a wrong
+    ///   answer.
     ///  </para>
     /// </remarks>
-    private static bool TryMatchRanges(
-        ReadOnlySpan<char> first,
-        ReadOnlySpan<char> second,
-        ReadOnlySpan<char> program,
-        Span<ProgramRange> ranges,
-        int inputIndex,
-        int totalLength,
-        char separator,
-        IgnoreCaseKind kind)
+    private ref struct ExtGlobEngine
     {
-        int firstLength = first.Length;
+        private readonly ReadOnlySpan<char> _first;
+        private readonly ReadOnlySpan<char> _second;
+        private readonly ReadOnlySpan<char> _program;
+        private readonly char _separator;
+        private readonly IgnoreCaseKind _kind;
+        private readonly int _totalLength;
+        private readonly int _firstLength;
 
-        while (true)
+        private Span<Frame> _frames;
+        private Span<ProgramRange> _arena;
+        private readonly Span<ProgramRange> _work;
+        private readonly Span<ProgramRange> _rest;
+        private readonly Span<int> _key;
+
+        private Frame[]? _rentedFrames;
+        private ProgramRange[]? _rentedArena;
+
+        private int _frameCount;
+        private int _arenaTop;
+
+        // Working configuration: the active list of program ranges, the index of
+        // the current (head) range, and the input cursor.
+        public int WorkCount;
+        public int Head;
+        public int WorkInput;
+
+        public ExtGlobEngine(
+            in EngineInputs inputs,
+            int totalLength,
+            in EngineScratch scratch)
         {
-            // Skip any leading empty ranges; an alternation's "rest" range may
-            // be empty when the alternation is the final construct in the
-            // program. Inlined into the dispatch loop so a string of empties
-            // does not recurse.
-            while (ranges.Length > 0 && ranges[0].Start >= ranges[0].End)
+            _first = inputs.First;
+            _second = inputs.Second;
+            _program = inputs.Program;
+            _separator = inputs.Separator;
+            _kind = inputs.Kind;
+            _totalLength = totalLength;
+            _firstLength = inputs.First.Length;
+            _frames = scratch.Frames;
+            _arena = scratch.Arena;
+            _work = scratch.Work;
+            _rest = scratch.Rest;
+            _key = scratch.Key;
+            _rentedFrames = null;
+            _rentedArena = null;
+            _frameCount = 0;
+            _arenaTop = 0;
+            WorkCount = 0;
+            Head = 0;
+            WorkInput = 0;
+        }
+
+        /// <summary>
+        ///  Returns any pooled storage rented when the seed buffers overflowed.
+        /// </summary>
+        public readonly void ReturnRented()
+        {
+            if (_rentedFrames is not null)
             {
-                ranges = ranges[1..];
+                ArrayPool<Frame>.Shared.Return(_rentedFrames);
             }
 
-            if (ranges.Length == 0)
+            if (_rentedArena is not null)
             {
-                return inputIndex == totalLength;
+                ArrayPool<ProgramRange>.Shared.Return(_rentedArena);
             }
+        }
 
-            int programIndex = ranges[0].Start;
-            char opcode = program[programIndex];
-
-            switch (opcode)
+        /// <summary>
+        ///  Runs the engine to completion, returning whether the configured
+        ///  ranges match.
+        /// </summary>
+        public bool Run(ref ExtGlobMatchState state)
+        {
+            bool forward = true;
+            while (true)
             {
-                case GlobOpCodes.Literal:
+                if (forward)
+                {
+                    char choiceOp = '\0';
+                    bool terminal = false;
+                    bool accepted = false;
+
+                    // Run deterministic opcodes until a choice point or a
+                    // terminal/deadend state.
+                    while (true)
                     {
-                        int literalLength = program[programIndex + 1];
-                        if (inputIndex + literalLength > totalLength)
+                        while (Head < WorkCount && _work[Head].Start >= _work[Head].End)
                         {
-                            return false;
+                            Head++;
                         }
 
-                        if (!LiteralMatchesAt(first, second, inputIndex, program.Slice(programIndex + 2, literalLength), kind))
+                        if (Head == WorkCount)
                         {
-                            return false;
+                            terminal = true;
+                            accepted = WorkInput == _totalLength;
+                            break;
                         }
 
-                        // Deterministic advance: rewrite the head range in place
-                        // and loop instead of recursing. This is the dominant
-                        // form on net481 (e.g. the literal tail of every alt body
-                        // in `@(*.cs|*.md|...)` extensions).
-                        ranges[0].Start = programIndex + 2 + literalLength;
-                        inputIndex += literalLength;
-                        continue;
-                    }
+                        int programIndex = _work[Head].Start;
+                        char opcode = _program[programIndex];
 
-                case GlobOpCodes.Any:
-                    {
-                        if (inputIndex >= totalLength)
+                        if (opcode == GlobOpCodes.AltStart
+                            && _work[Head].KindOverride != '\0'
+                            && WorkInput <= _work[Head].MinProgressInput)
                         {
-                            return false;
+                            // Progress guard: refuse another iteration of a
+                            // repeating block when the previous one consumed no
+                            // input. Collapse the block (skip it) and continue
+                            // with the rest, avoiding unbounded empty iterations.
+                            int guardedBlockLength = _program[programIndex + 2];
+                            _work[Head].Start = programIndex + guardedBlockLength;
+                            _work[Head].KindOverride = '\0';
+                            continue;
                         }
 
-                        char inputChar = CharAt(first, second, firstLength, inputIndex);
-                        if (separator != '\0' && inputChar == separator)
+                        if (opcode == GlobOpCodes.Literal)
                         {
-                            return false;
-                        }
-
-                        ranges[0].Start = programIndex + 1;
-                        inputIndex++;
-                        continue;
-                    }
-
-                case GlobOpCodes.Class:
-                case GlobOpCodes.NegClass:
-                    {
-                        int classLength = program[programIndex + 1];
-                        if (inputIndex >= totalLength)
-                        {
-                            return false;
-                        }
-
-                        char inputChar = CharAt(first, second, firstLength, inputIndex);
-                        if (separator != '\0' && inputChar == separator)
-                        {
-                            return false;
-                        }
-
-                        ReadOnlySpan<char> body = program.Slice(programIndex + 2, classLength);
-                        bool inClass = kind == IgnoreCaseKind.Off
-                            ? ClassContainsOrdinal(body, inputChar, opcode == GlobOpCodes.NegClass)
-                            : ClassContainsIgnoreCase(body, inputChar, opcode == GlobOpCodes.NegClass);
-                        if (!inClass)
-                        {
-                            return false;
-                        }
-
-                        ranges[0].Start = programIndex + 2 + classLength;
-                        inputIndex++;
-                        continue;
-                    }
-
-                case GlobOpCodes.AltStart:
-                    return DispatchAlternation(first, second, program, ranges, inputIndex, totalLength, separator, kind);
-
-                case GlobOpCodes.AnyRun:
-                    {
-                        // Choice point: try every consumed length from 0 to either
-                        // the next separator (path-aware) or the clipped input
-                        // end. Stays a recursive call: the recursion lets us
-                        // restart from the saved head on each retry without
-                        // tracking program state across iterations.
-                        ProgramRange savedHead = ranges[0];
-                        int limit = totalLength;
-                        if (separator != '\0')
-                        {
-                            for (int j = inputIndex; j < totalLength; j++)
+                            int literalLength = _program[programIndex + 1];
+                            if (WorkInput + literalLength > _totalLength
+                                || !LiteralMatchesAt(_first, _second, WorkInput, _program.Slice(programIndex + 2, literalLength), _kind))
                             {
-                                if (CharAt(first, second, firstLength, j) == separator)
+                                break;
+                            }
+
+                            _work[Head].Start = programIndex + 2 + literalLength;
+                            WorkInput += literalLength;
+                            continue;
+                        }
+
+                        if (opcode == GlobOpCodes.Any)
+                        {
+                            if (WorkInput >= _totalLength)
+                            {
+                                break;
+                            }
+
+                            char inputChar = CharAt(_first, _second, _firstLength, WorkInput);
+                            if (_separator != '\0' && inputChar == _separator)
+                            {
+                                break;
+                            }
+
+                            _work[Head].Start = programIndex + 1;
+                            WorkInput++;
+                            continue;
+                        }
+
+                        if (opcode is GlobOpCodes.Class or GlobOpCodes.NegClass)
+                        {
+                            int classLength = _program[programIndex + 1];
+                            if (WorkInput >= _totalLength)
+                            {
+                                break;
+                            }
+
+                            char inputChar = CharAt(_first, _second, _firstLength, WorkInput);
+                            if (_separator != '\0' && inputChar == _separator)
+                            {
+                                break;
+                            }
+
+                            ReadOnlySpan<char> body = _program.Slice(programIndex + 2, classLength);
+                            bool inClass = _kind == IgnoreCaseKind.Off
+                                ? ClassContainsOrdinal(body, inputChar, opcode == GlobOpCodes.NegClass)
+                                : ClassContainsIgnoreCase(body, inputChar, opcode == GlobOpCodes.NegClass);
+                            if (!inClass)
+                            {
+                                break;
+                            }
+
+                            _work[Head].Start = programIndex + 2 + classLength;
+                            WorkInput++;
+                            continue;
+                        }
+
+                        if (opcode is GlobOpCodes.AltSep or GlobOpCodes.AltEnd)
+                        {
+                            // These appear only inside an alternation block; the
+                            // alternation handler slices the range at AltSep /
+                            // AltEnd boundaries so they never reach the walker.
+                            Debug.Fail("Encountered AltSep/AltEnd outside an alternation block.");
+                            break;
+                        }
+
+                        // Choice point.
+                        choiceOp = opcode;
+                        break;
+                    }
+
+                    if (terminal)
+                    {
+                        if (accepted)
+                        {
+                            return true;
+                        }
+
+                        forward = false;
+                        continue;
+                    }
+
+                    if (choiceOp == '\0')
+                    {
+                        // Deterministic mismatch: backtrack.
+                        forward = false;
+                        continue;
+                    }
+
+                    int choiceProgramIndex = _work[Head].Start;
+
+                    // Resolve the frame kind and any push-time scratch.
+                    char frameKind;
+                    int auxValue = 0;
+                    if (choiceOp == GlobOpCodes.AnyRun)
+                    {
+                        frameKind = choiceOp;
+
+                        // Path-aware AnyRun never crosses a separator.
+                        int limit = _totalLength;
+                        if (_separator != '\0')
+                        {
+                            for (int j = WorkInput; j < _totalLength; j++)
+                            {
+                                if (CharAt(_first, _second, _firstLength, j) == _separator)
                                 {
                                     limit = j;
                                     break;
@@ -226,355 +568,480 @@ internal sealed partial class CompiledGlobStrategy
                             }
                         }
 
-                        for (int consumed = 0; inputIndex + consumed <= limit; consumed++)
+                        auxValue = limit;
+                    }
+                    else if (choiceOp == GlobOpCodes.GlobStar)
+                    {
+                        frameKind = choiceOp;
+                    }
+                    else
+                    {
+                        frameKind = _work[Head].KindOverride != '\0'
+                            ? _work[Head].KindOverride
+                            : _program[choiceProgramIndex + 1];
+                    }
+
+                    // Failure-memo check (only once engaged).
+                    state.Steps++;
+                    if (state.Engaged || state.Steps > ExtGlobMatchState.EngageThreshold)
+                    {
+                        if (!state.Engaged)
                         {
-                            ranges[0] = savedHead;
-                            ranges[0].Start = programIndex + 1;
-                            if (TryMatchRanges(first, second, program, ranges, inputIndex + consumed, totalLength, separator, kind))
-                            {
-                                return true;
-                            }
+                            state.Engage();
                         }
 
+                        int keyLength = SerializeState(_work[Head..WorkCount], WorkInput, _totalLength, _key);
+                        if (state.IsKnownFailure(_key[..keyLength]))
+                        {
+                            forward = false;
+                            continue;
+                        }
+                    }
+
+                    // Snapshot the choice configuration and push a frame.
+                    int snapshotCount = WorkCount - Head;
+                    EnsureArena(_arenaTop + snapshotCount);
+                    _work[Head..WorkCount].CopyTo(_arena[_arenaTop..]);
+
+                    EnsureFrames(_frameCount + 1);
+                    _frames[_frameCount] = new Frame
+                    {
+                        Kind = frameKind,
+                        ProgramIndex = choiceProgramIndex,
+                        SavedInput = WorkInput,
+                        SnapshotOffset = _arenaTop,
+                        SnapshotCount = snapshotCount,
+                        Cursor = 0,
+                        Aux = auxValue,
+                    };
+                    _arenaTop += snapshotCount;
+                    _frameCount++;
+
+                    if (ProduceAlternative(_frameCount - 1, ref state))
+                    {
+                        forward = true;
+                        continue;
+                    }
+
+                    // No alternative produced any candidate: record the failure
+                    // and backtrack.
+                    if (state.Engaged)
+                    {
+                        RecordFrameFailure(_frameCount - 1, ref state);
+                    }
+
+                    _arenaTop = _frames[_frameCount - 1].SnapshotOffset;
+                    _frameCount--;
+                    forward = false;
+                    continue;
+                }
+                else
+                {
+                    // Backtrack: advance the topmost frame to its next
+                    // alternative, popping exhausted frames.
+                    bool resumed = false;
+                    while (_frameCount > 0)
+                    {
+                        if (ProduceAlternative(_frameCount - 1, ref state))
+                        {
+                            resumed = true;
+                            break;
+                        }
+
+                        if (state.Engaged)
+                        {
+                            RecordFrameFailure(_frameCount - 1, ref state);
+                        }
+
+                        _arenaTop = _frames[_frameCount - 1].SnapshotOffset;
+                        _frameCount--;
+                    }
+
+                    if (!resumed)
+                    {
                         return false;
                     }
 
-                case GlobOpCodes.GlobStar:
-                    {
-                        int flags = program[programIndex + 1];
+                    forward = true;
+                    continue;
+                }
+            }
+        }
 
-                        // Choice point. The recursive call can mutate ranges[0]
-                        // (DispatchAlternation advances Start past the alternation
-                        // block, for example). Snapshot and restore across each
-                        // retry so every iteration starts from the same
-                        // "program continues at programIndex+2" state.
-                        ProgramRange savedHead = ranges[0];
-                        int absorbed = FirstValidGlobStarLength(first, second, inputIndex, flags, separator);
-                        while (absorbed >= 0)
+        // Grows the frame stack, preserving existing frames and indices.
+        private void EnsureFrames(int needed)
+        {
+            if (needed <= _frames.Length)
+            {
+                return;
+            }
+
+            int newSize = Math.Max(needed, _frames.Length * 2);
+            Frame[] bigger = ArrayPool<Frame>.Shared.Rent(newSize);
+            _frames[.._frameCount].CopyTo(bigger);
+            if (_rentedFrames is not null)
+            {
+                ArrayPool<Frame>.Shared.Return(_rentedFrames);
+            }
+
+            _rentedFrames = bigger;
+            _frames = bigger;
+        }
+
+        // Grows the range-snapshot arena, preserving existing snapshots and
+        // offsets.
+        private void EnsureArena(int needed)
+        {
+            if (needed <= _arena.Length)
+            {
+                return;
+            }
+
+            int newSize = Math.Max(needed, _arena.Length * 2);
+            ProgramRange[] bigger = ArrayPool<ProgramRange>.Shared.Rent(newSize);
+            _arena[.._arenaTop].CopyTo(bigger);
+            if (_rentedArena is not null)
+            {
+                ArrayPool<ProgramRange>.Shared.Return(_rentedArena);
+            }
+
+            _rentedArena = bigger;
+            _arena = bigger;
+        }
+
+        // Records the choice configuration captured by the given frame as a
+        // proven failure.
+        private readonly void RecordFrameFailure(int frameIdx, ref ExtGlobMatchState state)
+        {
+            ReadOnlySpan<ProgramRange> snapshot = _arena.Slice(_frames[frameIdx].SnapshotOffset, _frames[frameIdx].SnapshotCount);
+            int keyLength = SerializeState(snapshot, _frames[frameIdx].SavedInput, _totalLength, _key);
+            state.RecordFailure(_key[..keyLength]);
+        }
+
+        // Advances the given frame to its next alternative, applying it to the
+        // working configuration. Returns false when the frame is exhausted.
+        private bool ProduceAlternative(int frameIdx, ref ExtGlobMatchState state)
+        {
+            char k = _frames[frameIdx].Kind;
+            int snapOffset = _frames[frameIdx].SnapshotOffset;
+            int snapCount = _frames[frameIdx].SnapshotCount;
+            int savedInput = _frames[frameIdx].SavedInput;
+            int programIndex = _frames[frameIdx].ProgramIndex;
+            ReadOnlySpan<ProgramRange> snap = _arena.Slice(snapOffset, snapCount);
+
+            if (k == GlobOpCodes.AnyRun)
+            {
+                // Alternatives are consumed lengths 0, 1, ... up to the cached
+                // separator-bounded limit.
+                int consumed = _frames[frameIdx].Cursor;
+                int limit = _frames[frameIdx].Aux;
+                if (savedInput + consumed > limit)
+                {
+                    return false;
+                }
+
+                snap.CopyTo(_work);
+                WorkCount = snapCount;
+                Head = 0;
+                _work[0].Start = programIndex + 1;
+                WorkInput = savedInput + consumed;
+                _frames[frameIdx].Cursor = consumed + 1;
+                return true;
+            }
+
+            if (k == GlobOpCodes.GlobStar)
+            {
+                // Alternatives are the valid absorbed lengths in increasing
+                // order; the run stops once a length would exceed the input.
+                int flags = _program[programIndex + 1];
+                int absorbed = _frames[frameIdx].Cursor == 0
+                    ? FirstValidGlobStarLength(_first, _second, savedInput, flags, _separator)
+                    : NextValidGlobStarLength(_first, _second, savedInput, _frames[frameIdx].Aux, flags, _separator);
+
+                if (absorbed < 0 || savedInput + absorbed > _totalLength)
+                {
+                    return false;
+                }
+
+                snap.CopyTo(_work);
+                WorkCount = snapCount;
+                Head = 0;
+                _work[0].Start = programIndex + 2;
+                WorkInput = savedInput + absorbed;
+                _frames[frameIdx].Aux = absorbed;
+                _frames[frameIdx].Cursor = 1;
+                return true;
+            }
+
+            // Alternation: the per-alternative body offsets were baked into the
+            // AltStart header at compile time, so read them straight from the
+            // offset table instead of re-walking and re-parsing the whole block on
+            // every production. Header layout:
+            //   [AltStart][kind][blockLen][altCount][off_0..off_{altCount-1}]
+            // where off_j is alternative j's body start relative to the AltStart.
+            int blockLength = _program[programIndex + 2];
+            int afterEnd = programIndex + blockLength;
+            int altEndIndex = afterEnd - 1;
+            int altCount = _program[programIndex + 3];
+
+            // The encoder caps alternatives at GlobSpecification.MaxExtGlobAlternatives
+            // (the single source of truth) and bakes that many offset slots, so
+            // altCount is guaranteed to fit this fixed compile-time buffer.
+            Span<int> altStarts = stackalloc int[GlobSpecification.MaxExtGlobAlternatives];
+            for (int a = 0; a < altCount; a++)
+            {
+                altStarts[a] = programIndex + _program[programIndex + 4 + a];
+            }
+
+            switch (k)
+            {
+                case '@':
+                    while (_frames[frameIdx].Cursor < altCount)
+                    {
+                        int j = _frames[frameIdx].Cursor;
+                        _frames[frameIdx].Cursor = j + 1;
+                        int altBodyStart = altStarts[j];
+                        int altBodyEnd = (j + 1 < altCount) ? altStarts[j + 1] - 1 : altEndIndex;
+                        snap.CopyTo(_rest);
+                        _rest[0].Start = afterEnd;
+                        _rest[0].KindOverride = '\0';
+                        if (BuildRangesWithAlternative(altBodyStart, altBodyEnd, _rest[..snapCount], _work, out WorkCount))
                         {
-                            if (inputIndex + absorbed > totalLength)
+                            Head = 0;
+                            WorkInput = savedInput;
+                            return true;
+                        }
+                    }
+
+                    return false;
+
+                case '?':
+                    while (_frames[frameIdx].Cursor < altCount)
+                    {
+                        int j = _frames[frameIdx].Cursor;
+                        _frames[frameIdx].Cursor = j + 1;
+                        int altBodyStart = altStarts[j];
+                        int altBodyEnd = (j + 1 < altCount) ? altStarts[j + 1] - 1 : altEndIndex;
+                        snap.CopyTo(_rest);
+                        _rest[0].Start = afterEnd;
+                        _rest[0].KindOverride = '\0';
+                        if (BuildRangesWithAlternative(altBodyStart, altBodyEnd, _rest[..snapCount], _work, out WorkCount))
+                        {
+                            Head = 0;
+                            WorkInput = savedInput;
+                            return true;
+                        }
+                    }
+
+                    if (_frames[frameIdx].Cursor == altCount)
+                    {
+                        // Zero-consume: skip the entire alternation block.
+                        _frames[frameIdx].Cursor = altCount + 1;
+                        snap.CopyTo(_work);
+                        WorkCount = snapCount;
+                        Head = 0;
+                        _work[0].Start = afterEnd;
+                        _work[0].KindOverride = '\0';
+                        WorkInput = savedInput;
+                        return true;
+                    }
+
+                    return false;
+
+                case '+':
+                    while (_frames[frameIdx].Cursor < altCount)
+                    {
+                        int j = _frames[frameIdx].Cursor;
+                        _frames[frameIdx].Cursor = j + 1;
+                        int altBodyStart = altStarts[j];
+                        int altBodyEnd = (j + 1 < altCount) ? altStarts[j + 1] - 1 : altEndIndex;
+                        snap.CopyTo(_rest);
+                        _rest[0].Start = afterEnd;
+                        _rest[0].KindOverride = '\0';
+                        int restCount = CompactEmptyRanges(_rest, snapCount);
+
+                        if (altBodyStart >= altBodyEnd)
+                        {
+                            // Empty alternative: the progress guard refuses to
+                            // re-enter the block with no input consumed, so this
+                            // collapses to matching just the rest.
+                            _rest[..restCount].CopyTo(_work);
+                            WorkCount = restCount;
+                            Head = 0;
+                            WorkInput = savedInput;
+                            return true;
+                        }
+
+                        if (BuildRangesWithAlternativeAndBlock(altBodyStart, altBodyEnd, programIndex, afterEnd, _rest[..restCount], _work, out WorkCount))
+                        {
+                            _work[1].MinProgressInput = savedInput;
+                            Head = 0;
+                            WorkInput = savedInput;
+                            return true;
+                        }
+                    }
+
+                    return false;
+
+                case '*':
+                    while (_frames[frameIdx].Cursor < altCount)
+                    {
+                        int j = _frames[frameIdx].Cursor;
+                        _frames[frameIdx].Cursor = j + 1;
+                        int altBodyStart = altStarts[j];
+                        int altBodyEnd = (j + 1 < altCount) ? altStarts[j + 1] - 1 : altEndIndex;
+                        snap.CopyTo(_rest);
+                        _rest[0].Start = afterEnd;
+                        _rest[0].KindOverride = '\0';
+                        int restCount = CompactEmptyRanges(_rest, snapCount);
+
+                        if (altBodyStart >= altBodyEnd)
+                        {
+                            _rest[..restCount].CopyTo(_work);
+                            WorkCount = restCount;
+                            Head = 0;
+                            WorkInput = savedInput;
+                            return true;
+                        }
+
+                        if (BuildRangesWithAlternativeAndBlock(altBodyStart, altBodyEnd, programIndex, afterEnd, _rest[..restCount], _work, out WorkCount))
+                        {
+                            _work[1].MinProgressInput = savedInput;
+                            Head = 0;
+                            WorkInput = savedInput;
+                            return true;
+                        }
+                    }
+
+                    if (_frames[frameIdx].Cursor == altCount)
+                    {
+                        // Zero iterations: skip the entire alternation block.
+                        _frames[frameIdx].Cursor = altCount + 1;
+                        snap.CopyTo(_work);
+                        WorkCount = snapCount;
+                        Head = 0;
+                        _work[0].Start = afterEnd;
+                        _work[0].KindOverride = '\0';
+                        WorkInput = savedInput;
+                        return true;
+                    }
+
+                    return false;
+
+                case '!':
+                {
+                    // Negation accepts the first candidate length L for which no
+                    // alternative matches exactly L characters; the continuation
+                    // (rest at savedInput + L) is the produced alternative.
+                    int maxL = _totalLength - savedInput;
+                    if (_separator != '\0')
+                    {
+                        for (int j = savedInput; j < _totalLength; j++)
+                        {
+                            if (CharAt(_first, _second, _firstLength, j) == _separator)
                             {
+                                maxL = j - savedInput;
                                 break;
                             }
-
-                            ranges[0] = savedHead;
-                            ranges[0].Start = programIndex + 2;
-                            if (TryMatchRanges(first, second, program, ranges, inputIndex + absorbed, totalLength, separator, kind))
-                            {
-                                return true;
-                            }
-
-                            absorbed = NextValidGlobStarLength(first, second, inputIndex, absorbed, flags, separator);
                         }
-
-                        return false;
                     }
 
-                case GlobOpCodes.AltSep:
-                case GlobOpCodes.AltEnd:
-                    // These appear only inside an alternation block; the
-                    // alternation handler slices the range at AltSep / AltEnd
-                    // boundaries so they never reach the top-level walker.
-                    Debug.Fail("Encountered AltSep/AltEnd outside an alternation block.");
+                    // Single-literal alternatives are matched against each
+                    // candidate length with a cheap comparison rather than a full
+                    // engine re-entry (see the loop below); their shape is read
+                    // directly from the compiled program, so no parallel table is
+                    // needed.
+                    Span<ProgramRange> altRange = stackalloc ProgramRange[1];
+
+                    // Seed buffers for the bounded re-entry probes. Allocated once
+                    // per negation production and reused across every candidate
+                    // length and alternative, rather than re-seeding a fresh (and
+                    // zeroed) set inside each probe call. Only the non-literal
+                    // alternatives actually re-enter the engine; single-literal
+                    // alternatives take the cheap comparison path below.
+                    Span<Frame> probeFrames = stackalloc Frame[SeedFrameCount];
+                    Span<ProgramRange> probeArena = stackalloc ProgramRange[SeedArenaCount];
+                    Span<ProgramRange> probeWork = stackalloc ProgramRange[MaxRangesDepth];
+                    Span<ProgramRange> probeRest = stackalloc ProgramRange[MaxRangesDepth];
+                    Span<int> probeKey = stackalloc int[KeyHeaderLength + (MaxRangesDepth * RangeKeyLength)];
+                    EngineScratch probeScratch = new(probeFrames, probeArena, probeWork, probeRest, probeKey);
+                    EngineInputs probeInputs = new(_first, _second, _program, _separator, _kind);
+
+                    while (_frames[frameIdx].Cursor <= maxL)
+                    {
+                        int candidate = _frames[frameIdx].Cursor;
+                        _frames[frameIdx].Cursor = candidate + 1;
+
+                        bool anyAltMatches = false;
+                        for (int j = 0; j < altCount; j++)
+                        {
+                            int altBodyStart = altStarts[j];
+                            int altBodyEnd = (j + 1 < altCount) ? altStarts[j + 1] - 1 : altEndIndex;
+
+                            // Fast path for a single-literal alternative: its shape
+                            // is already encoded in the program (a Literal opcode
+                            // plus length char spanning the whole body), so detect
+                            // it by reading those bytes directly - no parallel
+                            // per-alternative table, no runtime-sized stackalloc. It
+                            // matches exactly 'candidate' characters only when the
+                            // lengths agree and the literal compares equal at the
+                            // cursor.
+                            if (altBodyStart < altBodyEnd
+                                && _program[altBodyStart] == GlobOpCodes.Literal
+                                && altBodyStart + 2 + _program[altBodyStart + 1] == altBodyEnd)
+                            {
+                                int litLen = _program[altBodyStart + 1];
+                                if (litLen == candidate
+                                    && LiteralMatchesAt(_first, _second, savedInput, _program.Slice(altBodyStart + 2, litLen), _kind))
+                                {
+                                    anyAltMatches = true;
+                                    break;
+                                }
+
+                                continue;
+                            }
+
+                            altRange[0] = new ProgramRange { Start = altBodyStart, End = altBodyEnd };
+
+                            // Bounded re-entry: probes whether the alternative
+                            // consumes exactly 'candidate' characters. Native
+                            // recursion depth here is the negation nesting depth
+                            // only.
+                            if (RunEngineCore(
+                                in probeInputs,
+                                altRange,
+                                savedInput,
+                                savedInput + candidate,
+                                in probeScratch,
+                                ref state))
+                            {
+                                anyAltMatches = true;
+                                break;
+                            }
+                        }
+
+                        if (anyAltMatches)
+                        {
+                            continue;
+                        }
+
+                        snap.CopyTo(_work);
+                        WorkCount = snapCount;
+                        Head = 0;
+                        _work[0].Start = afterEnd;
+                        _work[0].KindOverride = '\0';
+                        WorkInput = savedInput + candidate;
+                        return true;
+                    }
+
                     return false;
+                }
 
                 default:
-                    Debug.Fail($"Unexpected opcode '{opcode:X4}' in extglob program.");
+                    Debug.Fail($"Unknown extglob kind '{k}'.");
                     return false;
             }
         }
-    }
-
-    /// <summary>
-    ///  Handles an <see cref="GlobOpCodes.AltStart"/> at the head of
-    ///  <paramref name="ranges"/>: locates the alternatives, dispatches to the
-    ///  kind-specific match strategy, and stitches the &quot;rest&quot; of the
-    ///  program back onto the call.
-    /// </summary>
-    private static bool DispatchAlternation(
-        ReadOnlySpan<char> first,
-        ReadOnlySpan<char> second,
-        ReadOnlySpan<char> program,
-        Span<ProgramRange> ranges,
-        int inputIndex,
-        int totalLength,
-        char separator,
-        IgnoreCaseKind kind)
-    {
-        int altStartIndex = ranges[0].Start;
-        char altKind = ranges[0].KindOverride != '\0'
-            ? ranges[0].KindOverride
-            : program[altStartIndex + 1];
-        int blockLength = program[altStartIndex + 2];
-        int afterEnd = altStartIndex + blockLength;
-        int altsStart = altStartIndex + 3;
-        int altEndIndex = afterEnd - 1;
-
-        // The "rest" of the current head range starts past AltEnd. Reset the
-        // KindOverride so subsequent walks past this alternation see the
-        // bytecode kind unmodified.
-        ranges[0].Start = afterEnd;
-        ranges[0].KindOverride = '\0';
-
-        Span<int> altStarts = stackalloc int[32];
-        int altCount = SplitAlternatives(program, altsStart, altEndIndex, altStarts);
-
-        switch (altKind)
-        {
-            case '@':
-                return TryAlternativeOnce(first, second, program, ranges, altStarts[..altCount], altEndIndex, inputIndex, totalLength, separator, kind);
-
-            case '?':
-                if (TryAlternativeOnce(first, second, program, ranges, altStarts[..altCount], altEndIndex, inputIndex, totalLength, separator, kind))
-                {
-                    return true;
-                }
-
-                // Zero-consume: skip the entire alternation block.
-                return TryMatchRanges(first, second, program, ranges, inputIndex, totalLength, separator, kind);
-
-            case '+':
-                return TryAlternativeRepeating(first, second, program, ranges, altStarts[..altCount], altEndIndex, altStartIndex, afterEnd, inputIndex, totalLength, separator, kind, requireAtLeastOne: true);
-
-            case '*':
-                return TryAlternativeRepeating(first, second, program, ranges, altStarts[..altCount], altEndIndex, altStartIndex, afterEnd, inputIndex, totalLength, separator, kind, requireAtLeastOne: false);
-
-            case '!':
-                return TryNegation(first, second, program, ranges, altStarts[..altCount], altEndIndex, inputIndex, totalLength, separator, kind);
-
-            default:
-                Debug.Fail($"Unknown extglob kind '{altKind}'.");
-                return false;
-        }
-    }
-
-    /// <summary>
-    ///  For <c>?(...)</c> / <c>@(...)</c>: try matching each alternative
-    ///  followed by the program's &quot;rest&quot; <paramref name="ranges"/>.
-    ///  Returns <see langword="true"/> on the first successful alternative.
-    /// </summary>
-    private static bool TryAlternativeOnce(
-        ReadOnlySpan<char> first,
-        ReadOnlySpan<char> second,
-        ReadOnlySpan<char> program,
-        Span<ProgramRange> ranges,
-        ReadOnlySpan<int> altStarts,
-        int altEndIndex,
-        int inputIndex,
-        int totalLength,
-        char separator,
-        IgnoreCaseKind kind)
-    {
-        Span<ProgramRange> newRanges = stackalloc ProgramRange[MaxRangesDepth];
-        for (int j = 0; j < altStarts.Length; j++)
-        {
-            int altBodyStart = altStarts[j];
-            int altBodyEnd = (j + 1 < altStarts.Length) ? altStarts[j + 1] - 1 : altEndIndex;
-
-            if (!BuildRangesWithAlternative(altBodyStart, altBodyEnd, ranges, newRanges, out int newRangeCount))
-            {
-                continue;
-            }
-
-            if (TryMatchRanges(first, second, program, newRanges[..newRangeCount], inputIndex, totalLength, separator, kind))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /// <summary>
-    ///  For <c>*(...)</c> / <c>+(...)</c>: try matching one alternative
-    ///  followed by another invocation of the same alternation block (for
-    ///  additional iterations) and then the program's &quot;rest&quot;
-    ///  <paramref name="ranges"/>. When
-    ///  <paramref name="requireAtLeastOne"/> is <see langword="false"/>, also
-    ///  tries matching just the &quot;rest&quot; with no iterations consumed.
-    /// </summary>
-    private static bool TryAlternativeRepeating(
-        ReadOnlySpan<char> first,
-        ReadOnlySpan<char> second,
-        ReadOnlySpan<char> program,
-        Span<ProgramRange> ranges,
-        ReadOnlySpan<int> altStarts,
-        int altEndIndex,
-        int blockStart,
-        int blockEnd,
-        int inputIndex,
-        int totalLength,
-        char separator,
-        IgnoreCaseKind kind,
-        bool requireAtLeastOne)
-    {
-        Span<ProgramRange> newRanges = stackalloc ProgramRange[MaxRangesDepth];
-        for (int j = 0; j < altStarts.Length; j++)
-        {
-            int altBodyStart = altStarts[j];
-            int altBodyEnd = (j + 1 < altStarts.Length) ? altStarts[j + 1] - 1 : altEndIndex;
-
-            if (!BuildRangesWithAlternativeAndBlock(
-                    altBodyStart,
-                    altBodyEnd,
-                    blockStart,
-                    blockEnd,
-                    ranges,
-                    newRanges,
-                    out int newRangeCount))
-            {
-                continue;
-            }
-
-            if (TryMatchRangesProgressGuarded(
-                    first,
-                    second,
-                    program,
-                    newRanges[..newRangeCount],
-                    inputIndex,
-                    minimumProgressInputIndex: inputIndex + 1,
-                    totalLength,
-                    separator,
-                    kind))
-            {
-                return true;
-            }
-        }
-
-        if (requireAtLeastOne)
-        {
-            return false;
-        }
-
-        // Zero iterations: just match the rest.
-        return TryMatchRanges(first, second, program, ranges, inputIndex, totalLength, separator, kind);
-    }
-
-    /// <summary>
-    ///  Variant of <see cref="TryMatchRanges"/> that, on re-entering a repeating
-    ///  alternation block via <see cref="TryAlternativeRepeating"/>, refuses to
-    ///  try another iteration unless the previous iteration consumed at least
-    ///  one input character (<paramref name="minimumProgressInputIndex"/>). This
-    ///  avoids infinite recursion on constructs that admit empty matches such
-    ///  as <c>*(|)</c>. The repeating-block range is identified by its
-    ///  <see cref="ProgramRange.KindOverride"/> being set.
-    /// </summary>
-    private static bool TryMatchRangesProgressGuarded(
-        ReadOnlySpan<char> first,
-        ReadOnlySpan<char> second,
-        ReadOnlySpan<char> program,
-        Span<ProgramRange> ranges,
-        int inputIndex,
-        int minimumProgressInputIndex,
-        int totalLength,
-        char separator,
-        IgnoreCaseKind kind)
-    {
-        while (ranges.Length > 0 && ranges[0].Start >= ranges[0].End)
-        {
-            ranges = ranges[1..];
-        }
-
-        if (ranges.Length > 0
-            && ranges[0].KindOverride != '\0'
-            && inputIndex < minimumProgressInputIndex
-            && program[ranges[0].Start] == GlobOpCodes.AltStart)
-        {
-            int altStartIdx = ranges[0].Start;
-            int blockLen = program[altStartIdx + 2];
-            ranges[0].Start = altStartIdx + blockLen;
-            ranges[0].KindOverride = '\0';
-        }
-
-        return TryMatchRanges(first, second, program, ranges, inputIndex, totalLength, separator, kind);
-    }
-
-    /// <summary>
-    ///  For <c>!(...)</c>: succeed iff there exists a consumed length <c>L</c>
-    ///  in <c>[0, maxL]</c> such that no alternative matches the input slice
-    ///  <c>input[inputIndex..inputIndex+L]</c> exactly, AND the program's
-    ///  &quot;rest&quot; <paramref name="ranges"/> matches the remainder.
-    /// </summary>
-    /// <remarks>
-    ///  <para>
-    ///   When path-aware, <c>maxL</c> is bounded by the next path separator
-    ///   (same constraint as <see cref="GlobOpCodes.AnyRun"/>): a negation in
-    ///   bash's pathname-expansion context never crosses <c>/</c>.
-    ///  </para>
-    ///  <para>
-    ///   "Alternative matches exactly L chars" is implemented by calling
-    ///   <see cref="TryMatchRanges"/> with a single alt-body range and the
-    ///   <c>totalLength</c> clipped to <c>inputIndex + L</c>; the recursion
-    ///   succeeds only when the alt body consumes the whole clipped slice.
-    ///  </para>
-    /// </remarks>
-    private static bool TryNegation(
-        ReadOnlySpan<char> first,
-        ReadOnlySpan<char> second,
-        ReadOnlySpan<char> program,
-        Span<ProgramRange> ranges,
-        ReadOnlySpan<int> altStarts,
-        int altEndIndex,
-        int inputIndex,
-        int totalLength,
-        char separator,
-        IgnoreCaseKind kind)
-    {
-        int firstLength = first.Length;
-        int maxL = totalLength - inputIndex;
-        if (separator != '\0')
-        {
-            for (int j = inputIndex; j < totalLength; j++)
-            {
-                if (CharAt(first, second, firstLength, j) == separator)
-                {
-                    maxL = j - inputIndex;
-                    break;
-                }
-            }
-        }
-
-        Span<ProgramRange> altRanges = stackalloc ProgramRange[1];
-
-        // Snapshot the caller's ranges so that each L iteration starts from the
-        // same "rest of program after !()" state. The recursive TryMatchRanges
-        // call below can advance ranges[0].Start as it consumes the rest, and
-        // we'd otherwise carry that mutation into the next L.
-        Span<ProgramRange> savedRanges = stackalloc ProgramRange[MaxRangesDepth];
-        ranges.CopyTo(savedRanges);
-        int savedCount = ranges.Length;
-
-        for (int L = 0; L <= maxL; L++)
-        {
-            bool anyAltMatches = false;
-            for (int j = 0; j < altStarts.Length; j++)
-            {
-                int altBodyStart = altStarts[j];
-                int altBodyEnd = (j + 1 < altStarts.Length) ? altStarts[j + 1] - 1 : altEndIndex;
-
-                altRanges[0] = new ProgramRange { Start = altBodyStart, End = altBodyEnd };
-                if (TryMatchRanges(first, second, program, altRanges, inputIndex, inputIndex + L, separator, kind))
-                {
-                    anyAltMatches = true;
-                    break;
-                }
-            }
-
-            if (anyAltMatches)
-            {
-                continue;
-            }
-
-            // No alternative matches exactly L chars. The negation accepts;
-            // try matching the program's rest against the remaining input.
-            savedRanges[..savedCount].CopyTo(ranges);
-            if (TryMatchRanges(first, second, program, ranges, inputIndex + L, totalLength, separator, kind))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /// <summary>
@@ -634,59 +1101,38 @@ internal sealed partial class CompiledGlobStrategy
     }
 
     /// <summary>
-    ///  Splits the alternation body at <c>AltSep</c> boundaries, writing the
-    ///  start index of each alternative body to <paramref name="altStarts"/>.
-    ///  Returns the number of alternatives found.
+    ///  Compacts the first <paramref name="count"/> ranges of
+    ///  <paramref name="ranges"/> in place, dropping any empty
+    ///  (<c>Start &gt;= End</c>) range, and returns the number of ranges that
+    ///  remain.
     /// </summary>
-    private static int SplitAlternatives(
-        ReadOnlySpan<char> program,
-        int altsStart,
-        int altEndIndex,
-        Span<int> altStarts)
+    /// <remarks>
+    ///  <para>
+    ///   An empty range spans no program bytes and is a pure no-op during the
+    ///   walk. When a repeating alternation (<c>*(...)</c> / <c>+(...)</c>)
+    ///   re-prepends its own block, the emptied tail of the block's range would
+    ///   otherwise be carried into the "rest" on every iteration and accumulate
+    ///   one extra empty range per iteration, eventually overflowing the working
+    ///   range buffer. Dropping empty ranges keeps the iteration count stable.
+    ///  </para>
+    /// </remarks>
+    private static int CompactEmptyRanges(Span<ProgramRange> ranges, int count)
     {
-        int count = 0;
-        int i = altsStart;
-        altStarts[count++] = i;
-
-        while (i < altEndIndex)
+        int write = 0;
+        for (int read = 0; read < count; read++)
         {
-            char op = program[i];
-            if (op == GlobOpCodes.AltStart)
+            if (ranges[read].Start < ranges[read].End)
             {
-                int nestedBlockLen = program[i + 2];
-                i += nestedBlockLen;
-                continue;
-            }
-
-            if (op == GlobOpCodes.AltSep)
-            {
-                if (count < altStarts.Length)
+                if (write != read)
                 {
-                    altStarts[count] = i + 1;
+                    ranges[write] = ranges[read];
                 }
 
-                count++;
-                i++;
-                continue;
+                write++;
             }
-
-            if (op is GlobOpCodes.Literal or GlobOpCodes.Class or GlobOpCodes.NegClass)
-            {
-                int bodyLength = program[i + 1];
-                i += 2 + bodyLength;
-                continue;
-            }
-
-            if (op == GlobOpCodes.GlobStar)
-            {
-                i += 2;
-                continue;
-            }
-
-            i++;
         }
 
-        return count;
+        return write;
     }
 
     /// <summary>
@@ -700,4 +1146,110 @@ internal sealed partial class CompiledGlobStrategy
         int firstLength,
         int inputIndex) =>
         inputIndex < firstLength ? first[inputIndex] : second[inputIndex - firstLength];
+
+    /// <summary>
+    ///  Serializes the walker entry state - <paramref name="inputIndex"/>,
+    ///  <paramref name="totalLength"/> (which the negation handler clips per
+    ///  candidate length, so it varies within a single match), plus the
+    ///  contents of <paramref name="ranges"/> - into
+    ///  <paramref name="destination"/> as the key used by the failure memo.
+    ///  Returns the number of <see cref="int"/> elements written.
+    /// </summary>
+    private static int SerializeState(ReadOnlySpan<ProgramRange> ranges, int inputIndex, int totalLength, Span<int> destination)
+    {
+        destination[0] = inputIndex;
+        destination[1] = totalLength;
+        destination[2] = ranges.Length;
+        int written = 3;
+        for (int i = 0; i < ranges.Length; i++)
+        {
+            destination[written++] = ranges[i].Start;
+            destination[written++] = ranges[i].End;
+            destination[written++] = ranges[i].KindOverride;
+        }
+
+        return written;
+    }
+
+    /// <summary>
+    ///  Lazily-engaged, allocation-free-on-the-common-path guard against
+    ///  catastrophic backtracking in <see cref="ExtGlobEngine"/>. Tracks a step
+    ///  counter and, once engaged, an exact failure memo of walker entry states
+    ///  proven not to match.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   The memo is a <see cref="SequenceSet{T}"/> of the serialized entry
+    ///   states (see <see cref="SerializeState"/>). Its single pooled arena is
+    ///   rented only when the walker crosses <see cref="EngageThreshold"/> steps
+    ///   and is returned by <see cref="Dispose"/>. Keys are compared exactly, so
+    ///   a hash collision can never cause a state to be wrongly treated as a
+    ///   known failure.
+    ///  </para>
+    ///  <para>
+    ///   A failure memo backs the iterative backtracking walker rather than
+    ///   flattening the program to a ReDoS-proof Thompson NFA because negation
+    ///   (<c>!(...)</c>) is a non-regular complement over a clipped input window:
+    ///   it cannot be expressed as a single NFA and would re-introduce a memo for
+    ///   the negation sub-problem anyway. Memoizing failures collapses the
+    ///   general case (including negation) to polynomial work without converting
+    ///   the walker to an automaton. Exactness of the key is load-bearing for both
+    ///   correctness and the polynomial bound: an approximate or linearly-scanned
+    ///   structure would either conflate distinct states (wrong answers) or
+    ///   degrade lookups to O(distinct) and re-open the denial-of-service.
+    ///  </para>
+    /// </remarks>
+    private struct ExtGlobMatchState
+    {
+        /// <summary>
+        ///  Number of walker steps after which the failure memo engages. Common
+        ///  patterns complete in far fewer steps and never pay the memo cost;
+        ///  only pathological backtracking crosses this and is then collapsed
+        ///  from exponential to polynomial by the memo.
+        /// </summary>
+        public const int EngageThreshold = 1000;
+
+        // Upper bound on distinct failure states recorded. Far above the
+        // distinct-state count of any realistic program; protects memory on a
+        // crafted input. Once reached, recording stops (still correct).
+        private const int MaxEntries = 1 << 20;
+
+        public long Steps;
+
+        // Failure memo. Non-null exactly when engaged; lazily created so benign
+        // inputs that never cross the threshold pay no allocation.
+        private SequenceSet<int>? _failures;
+
+        public readonly bool Engaged => _failures is not null;
+
+        /// <summary>
+        ///  Creates the failure memo. Called once when the step counter first
+        ///  crosses <see cref="EngageThreshold"/>.
+        /// </summary>
+        public void Engage() => _failures = new SequenceSet<int>(minimumCapacity: 1024);
+
+        /// <summary>
+        ///  Returns <see langword="true"/> if <paramref name="key"/> has already
+        ///  been recorded as a failed state.
+        /// </summary>
+        public readonly bool IsKnownFailure(ReadOnlySpan<int> key) => _failures!.Contains(key);
+
+        /// <summary>
+        ///  Records <paramref name="key"/> as a failed state so future
+        ///  occurrences short-circuit. No-op once <see cref="MaxEntries"/> is
+        ///  reached.
+        /// </summary>
+        public readonly void RecordFailure(ReadOnlySpan<int> key)
+        {
+            if (_failures!.Count < MaxEntries)
+            {
+                _failures.Add(key);
+            }
+        }
+
+        /// <summary>
+        ///  Returns the memo's pooled storage.
+        /// </summary>
+        public readonly void Dispose() => _failures?.Dispose();
+    }
 }

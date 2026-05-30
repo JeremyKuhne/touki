@@ -66,14 +66,24 @@ internal static class GlobOpCodes
 
     /// <summary>
     ///  Start of an extglob alternation block (one of <c>?(…)</c>, <c>*(…)</c>,
-    ///  <c>+(…)</c>, <c>@(…)</c>, <c>!(…)</c>). Followed by two payload chars:
+    ///  <c>+(…)</c>, <c>@(…)</c>, <c>!(…)</c>). Followed by a fixed header:
     ///  the <i>kind</i> character (one of <c>'?'</c>, <c>'*'</c>, <c>'+'</c>,
-    ///  <c>'@'</c>, <c>'!'</c>) and the total length (in chars) of the block
-    ///  from <see cref="AltStart"/> through the matching <see cref="AltEnd"/>
-    ///  inclusive. The block contains zero or more alternative bodies separated
-    ///  by <see cref="AltSep"/>, with each body being a self-contained sub-program.
+    ///  <c>'@'</c>, <c>'!'</c>), the total length (in chars) of the block from
+    ///  <see cref="AltStart"/> through the matching <see cref="AltEnd"/>
+    ///  inclusive, the <i>altCount</i> (number of alternatives), and then one
+    ///  offset-table slot per alternative. The block contains zero or more
+    ///  alternative bodies separated by <see cref="AltSep"/>, with each body
+    ///  being a self-contained sub-program.
     /// </summary>
     /// <remarks>
+    ///  <para>
+    ///   Header layout (all values are single <see langword="char"/> slots):
+    ///   <c>[AltStart][kind][blockLength][altCount][off_0]..[off_{altCount-1}]</c>.
+    ///   <c>off_j</c> is the start of alternative <c>j</c>'s body relative to
+    ///   the <see cref="AltStart"/>, so the matcher reads alternative bounds in
+    ///   O(1) and the offsets stay valid when a block is examined as a slice.
+    ///   The first body therefore begins at <c>AltStart + 4 + altCount</c>.
+    ///  </para>
     ///  <para>
     ///   Emitted only when <see cref="GlobOptions.AllowExtGlob"/> is set at compile
     ///   time. Nested alternations encode recursively with their own

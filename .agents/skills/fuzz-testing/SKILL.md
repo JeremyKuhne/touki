@@ -89,9 +89,51 @@ for the manual path and the per-prerequisite rationale.
 
 A finding is only useful once it is pinned deterministically:
 
-1. Move the crashing input under `touki.fuzz/crashes/`.
-2. Reproduce, then minimize it.
-3. Promote a **deterministic** reproduction (the input bytes + the asserted
+1. **Verify the crash reproduces before doing anything else.** Replay the
+   `crash-<hash>` input on its own. If it does *not* reproduce, it is a
+   *kill-artifact* - the slow in-flight unit the driver dumps when it is
+   interrupted mid-run (Ctrl+C, a killed process, or `--max_total_time`
+   expiry). Delete it; do not move it into `crashes/` or commit it.
+2. Once reproduction is confirmed, move the input under `touki.fuzz/crashes/`.
+3. Minimize it.
+4. Promote a **deterministic** reproduction (the input bytes + the asserted
    invariant) into `touki.tests`, running on both `net10.0` and `net481`, so it
    is enforced on every PR.
-4. Never delete corpus entries - they keep coverage from regressing.
+
+## What to commit of the fuzzer's output
+
+The fuzzer produces files in several places; only curated artifacts belong in
+git. The `.gitignore` files enforce this, but know the intent:
+
+- **`corpus/<target>/seed-*.bin`** - commit. Hand-authored seeds that bootstrap
+  coverage. The `seed-*` prefix is the allowlist.
+- **`corpus/<target>/<hash>`** - do not commit. Machine-generated entries churn
+  on every run; gitignored. Never delete them locally - they preserve coverage.
+- **`crashes/crash-*`** - commit *only* genuine, reproduced, minimized inputs
+  (step 1 above). An un-triaged or non-reproducing `crash-<hash>` is noise.
+- **`tools/`** - do not commit. Downloaded driver binaries.
+- **Stray driver output in the working directory** (`crash-*`, `leak-*`,
+  `timeout-*`, `oom-*`, `slow-unit-*`) - do not commit. Root-anchored patterns
+  in the top-level `.gitignore` keep these from being staged; delete them once
+  triaged.
+
+The rule of thumb: nothing the fuzzer emits autonomously lands in git until a
+human has decided it carries lasting value - seeds you wrote, or crashes you
+have reproduced and reduced to a regression test.
+
+## References
+
+The artifact names, corpus model, and regression-replay step above trace back
+to the upstream documentation:
+
+- [libFuzzer - Options](https://llvm.org/docs/LibFuzzer.html#options) -
+  `-artifact_prefix` / `-exact_artifact_path` and the failing-input names
+  (`crash-<sha1>`, `leak-<sha1>`, `timeout-<sha1>`, `oom-<sha1>`, slow-unit).
+  Passing a single file re-runs it as a regression test without fuzzing - the
+  deterministic replay used to confirm a crash reproduces.
+- [libFuzzer - Corpus](https://llvm.org/docs/LibFuzzer.html#corpus) /
+  [Running](https://llvm.org/docs/LibFuzzer.html#running) - interesting inputs
+  are appended to the first corpus directory (the gitignored churn), and
+  `-merge=1` minimizes a corpus while preserving coverage.
+- [Using libFuzzer with SharpFuzz](https://github.com/Metalnem/sharpfuzz/blob/master/docs/libFuzzer.md) -
+  the `libfuzzer-dotnet` driver and `Fuzzer.LibFuzzer.Run` entry point.
