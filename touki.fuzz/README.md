@@ -21,6 +21,9 @@ own command-line arguments, so an environment variable is used instead):
 | `SpanReader` (default) | `Touki.Io.SpanReader<byte>` reads/advances/splits | [SpanReaderTarget.cs](SpanReaderTarget.cs) |
 | `SpanWriter` | `Touki.Io.SpanWriter<byte>` writes/advances/rewinds | [SpanWriterTarget.cs](SpanWriterTarget.cs) |
 | `RunLength` | `Touki.Buffers.RunLengthEncoder` encode roundtrip / arbitrary decode | [RunLengthTarget.cs](RunLengthTarget.cs) |
+| `StringSegment` | `Touki.Text.StringSegment` slice/trim/split/replace vs string and span oracles | [StringSegmentTarget.cs](StringSegmentTarget.cs) |
+| `ValueStringBuilder` | `Touki.Text.ValueStringBuilder` append/insert/truncate vs a `StringBuilder` oracle | [ValueStringBuilderTarget.cs](ValueStringBuilderTarget.cs) |
+| `GlobSpecification` | `Touki.Io.Globbing.GlobSpecification` compile/match across all pattern-taking public methods, with `Compile`-vs-`TryCompile`, overload, and determinism oracles | [GlobSpecificationTarget.cs](GlobSpecificationTarget.cs) |
 
 Each target uses the fuzz input as an opcode stream that drives a sequence of
 operations, then re-checks structural invariants (position in range, span
@@ -147,18 +150,54 @@ libFuzzer driver that loads the .NET Framework build. Always publish in
 ## Triaging crashes
 
 A crashing input is written to a file named `crash-<hash>` in the working
-directory. To keep it as a regression artifact:
+directory. Before treating it as a regression artifact, **confirm it is a
+genuine defect**:
 
-1. Move it under [crashes/](crashes/).
-2. Reproduce and minimize it, then promote a deterministic reproduction into
-   `touki.tests` so it runs on every PR (see Phase 4 in the plan).
+1. Replay it on its own (`FUZZ_MODE=sweep` with the input, or feed the single
+   file back to the driver). A genuine crash reproduces deterministically.
+2. If it does **not** reproduce, it is almost certainly a *kill-artifact* - the
+   slow in-flight unit the driver dumps when it is interrupted mid-run
+   (Ctrl+C, a killed process, or `--max_total_time` expiry). Delete it; do not
+   move it into `crashes/`.
+3. Once reproduction is confirmed, move it under [crashes/](crashes/), minimize
+   it, then promote a deterministic reproduction into `touki.tests` so it runs
+   on every PR (see Phase 4 in the plan).
 
 ## Corpus and crashes
 
-- `corpus/<target>/` - curated seed inputs named `seed-*.bin` are committed;
-  add interesting hand-picked inputs over time. libFuzzer also writes
-  machine-generated, hash-named entries here as it runs - those are gitignored
-  (see `corpus/.gitignore`) because they churn on every run and would bloat the
-  repo. Keep the committed seeds; do not delete them.
-- `crashes/` - minimized crashing inputs kept as regression artifacts.
+What to commit, and what to leave out, of each fuzzer-produced location:
+
+- `corpus/<target>/` - **commit only the curated seeds named `seed-*.bin`.**
+  libFuzzer also writes machine-generated, hash-named entries here as it runs;
+  those are gitignored (see `corpus/.gitignore`) because they churn on every
+  run and would bloat the repo. Keep the committed seeds; do not delete them.
+- `crashes/` - **commit only genuine, reproduced, minimized `crash-*` inputs.**
+  An un-triaged or non-reproducing `crash-<hash>` does not belong here (see the
+  triage steps above).
 - `tools/` - downloaded driver binaries; not committed.
+- Working directory (repo root) - stray driver output (`crash-*`, `leak-*`,
+  `timeout-*`, `oom-*`, `slow-unit-*`) is root-anchored in the top-level
+  `.gitignore` so it can never be accidentally staged. These are transient;
+  delete them once triaged.
+
+## References
+
+The artifact names and the regression-replay workflow above come from the
+upstream libFuzzer and SharpFuzz documentation:
+
+- [libFuzzer - Options](https://llvm.org/docs/LibFuzzer.html#options) -
+  `-artifact_prefix` / `-exact_artifact_path` document that failing inputs are
+  saved as `crash-<sha1>`, `leak-<sha1>`, `timeout-<sha1>`, `oom-<sha1>`, and
+  slow-unit artifacts.
+- [libFuzzer - Options](https://llvm.org/docs/LibFuzzer.html#options) - passing
+  a single file (rather than a directory) re-runs it as a regression test
+  without fuzzing; this is the deterministic replay used to confirm a crash
+  reproduces before promoting it.
+- [libFuzzer - Corpus](https://llvm.org/docs/LibFuzzer.html#corpus) and
+  [Running](https://llvm.org/docs/LibFuzzer.html#running) - new interesting
+  inputs are written to the first corpus directory (the machine-generated,
+  hash-named churn that `corpus/.gitignore` excludes), and `-merge=1` minimizes
+  a corpus while preserving coverage.
+- [Using libFuzzer with SharpFuzz](https://github.com/Metalnem/sharpfuzz/blob/master/docs/libFuzzer.md) -
+  the `libfuzzer-dotnet` driver and `Fuzzer.LibFuzzer.Run` entry point this
+  harness uses.

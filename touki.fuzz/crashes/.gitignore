@@ -1,6 +1,10 @@
-# Minimized crashing inputs are kept as regression artifacts and are committed
-# intentionally (libFuzzer names them crash-<hash>); transient driver output
-# should not be committed.
+# Only genuine, reproduced, minimized crashing inputs belong here; libFuzzer
+# names them crash-<hash> and they are committed intentionally as regression
+# artifacts. Do NOT move an un-triaged crash-<hash> here straight from the
+# driver - a kill-artifact (the slow in-flight unit the driver dumps when it is
+# killed mid-run) shares the same name but does not reproduce. Verify
+# reproduction first; delete kill-artifacts instead of committing them.
+# Transient driver output should not be committed.
 *
 !.gitignore
 !crash-*

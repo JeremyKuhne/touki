@@ -73,6 +73,127 @@ public partial class GlobSpecificationTests
     }
 
     [Fact]
+    public void IsMatch_PathologicalExtGlobRepetition_TerminatesPromptly()
+    {
+        // Catastrophic backtracking in the recursive extglob walker (fuzz finding
+        // timeout-glob-001). The repeating `+(...)` block contains two alternatives
+        // that both match empty (`*`), and a trailing run of plain `*` strips the
+        // literal tail-anchor prefilter so the walker actually runs. Without failure
+        // memoization this explodes to billions of TryMatchRanges calls against empty
+        // input; the lazily-engaged failure memo bounds it to polynomial time.
+        string pattern = "+(*|}}+|*)a]" + new string('*', 26);
+        GlobSpecification matcher = GlobSpecification.Compile(
+            pattern,
+            GlobDialect.Bash,
+            GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
+
+        Stopwatch sw = Stopwatch.StartNew();
+        bool result = matcher.IsMatch("");
+        sw.Stop();
+
+        result.Should().BeFalse();
+        sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public void IsMatch_MinimalExtGlobRepetition_TerminatesPromptly()
+    {
+        // Smallest pattern that reproduces the extglob catastrophic backtracking:
+        // a repeating `+(...)` with two empty-matchable alternatives (`*|*`), a
+        // literal `y` that can never match the empty input (forcing exhaustive
+        // backtracking), and a trailing `*` that defeats the literal tail-anchor
+        // prefilter so the walker actually runs. Without the failure memo this
+        // explodes to tens of millions of TryMatchRanges calls; with it the
+        // distinct entry states (~constant) are each explored once.
+        string pattern = "+(*|*)y*";
+        GlobSpecification matcher = GlobSpecification.Compile(
+            pattern,
+            GlobDialect.Bash,
+            GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
+
+        Stopwatch sw = Stopwatch.StartNew();
+        bool result = matcher.IsMatch("");
+        sw.Stop();
+
+        result.Should().BeFalse();
+        sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public void IsMatch_DeepExtGlobRepetition_DoesNotStackOverflow()
+    {
+        // StackOverflow DOS regression. The previous recursive extglob walker
+        // descended one native frame per consumed `+(...)` iteration, so a long
+        // separator-free run made recursion depth O(input length) and overflowed
+        // the (uncatchable) call stack well before this size. The iterative engine
+        // keeps every choice point on an explicit pooled stack, so depth is a heap
+        // concern and this matches in linear time without touching the call stack.
+        string pattern = "+(a)";
+        string input = new string('a', 200_000);
+
+        GlobSpecification matcher = GlobSpecification.Compile(
+            pattern,
+            GlobDialect.Bash,
+            GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
+
+        Stopwatch sw = Stopwatch.StartNew();
+        bool result = matcher.IsMatch(input);
+        sw.Stop();
+
+        result.Should().BeTrue();
+        sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public void IsMatch_DeepExtGlobRepetitionNonMatch_DoesNotStackOverflow()
+    {
+        // Companion to the matching case: the same deep repetition against an input
+        // whose final character defeats the match forces the engine to walk the full
+        // depth and then fail, again without native recursion.
+        string pattern = "+(a)*";
+        string input = new string('a', 200_000) + "b";
+
+        GlobSpecification matcher = GlobSpecification.Compile(
+            pattern,
+            GlobDialect.Bash,
+            GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
+
+        Stopwatch sw = Stopwatch.StartNew();
+        bool result = matcher.IsMatch(input);
+        sw.Stop();
+
+        // `+(a)*` matches: the trailing `*` absorbs the 'b'.
+        result.Should().BeTrue();
+        sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public void IsMatch_PathologicalExtGlobNegation_TerminatesPromptly()
+    {
+        // Companion to the `+(...)` repetition cases above, for the `!(...)` negation
+        // operator (fuzz finding: a FileSystemGlobbing pattern of the shape
+        // `//!(**@**?*...)*` against a long run of metacharacters took ~0.5s). The
+        // negated body packs several empty-matchable `**`/`*` runs around a literal so
+        // the engine must explore many interior split points, and the trailing `*`
+        // defeats the literal tail-anchor prefilter so the walker actually runs. The
+        // iterative engine with failure memoization bounds this to polynomial time.
+        string pattern = "!(**@**?*)" + new string('*', 24);
+        string input = new string('@', 128);
+
+        GlobSpecification matcher = GlobSpecification.Compile(
+            pattern,
+            GlobDialect.Bash,
+            GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
+
+        Stopwatch sw = Stopwatch.StartNew();
+        bool result = matcher.IsMatch(input);
+        sw.Stop();
+
+        result.Should().BeTrue();
+        sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
     public void IsMatch_LongInputAgainstWildcard_IsLinear()
     {
         // Bare `*` against a long input must walk the input once. Anything worse
@@ -243,5 +364,64 @@ public partial class GlobSpecificationTests
 
         matcher.IsMatch(opcodeChars).Should().BeTrue();
         matcher.IsMatch("anything-else").Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsMatch_ManyLiveExtGlobChoicePoints_GrowsPooledStacks()
+    {
+        // The iterative engine seeds its frame and arena (range-snapshot) stacks
+        // with fixed stack buffers (32 frames / 128 arena entries); overflowing
+        // either must transparently rent a larger backing array from the pool and
+        // copy the existing contents. A long run of independent two-way `@(a|b)`
+        // constructs keeps one live choice-point frame (plus its snapshot) per
+        // construct simultaneously, so 200 of them forces both stacks well past
+        // their seeds. The required `z` then fails on the all-'a' input; the
+        // trailing `*` defeats the literal tail-anchor prefilter so the walker
+        // actually runs instead of being rejected up front. Asserts the growth
+        // path runs and still returns the correct answer.
+        string pattern = string.Concat(Enumerable.Repeat("@(a|b)", 200)) + "z*";
+        string input = new('a', 200);
+
+        GlobSpecification matcher = GlobSpecification.Compile(
+            pattern,
+            GlobDialect.Bash,
+            GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
+
+        Stopwatch sw = Stopwatch.StartNew();
+        bool result = matcher.IsMatch(input);
+        sw.Stop();
+
+        result.Should().BeFalse();
+        sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public void IsMatch_AmbiguousConsumingRepetition_MemoizesRecurringFailures()
+    {
+        // `+(a|aa)` can tile a run of 'a's in exponentially many ways (each
+        // position may consume one or two characters), and unlike the empty-
+        // matchable `*|*` cases the alternatives genuinely consume input, so the
+        // progress guard cannot collapse them. A required `y` that the all-'a'
+        // input can never satisfy forces the engine to disprove every reachable
+        // (position, continuation) state, and the trailing `*` defeats the literal
+        // tail-anchor prefilter so the walker actually runs. Without the failure
+        // memo this is exponential; the memo records each distinct failed state
+        // once and re-hits it on every later path that reaches the same state,
+        // bounding the work to linear. Prompt termination on a 64-char input pins
+        // that the record-and-re-hit cycle actually engages.
+        string pattern = "+(a|aa)y*";
+        string input = new('a', 64);
+
+        GlobSpecification matcher = GlobSpecification.Compile(
+            pattern,
+            GlobDialect.Bash,
+            GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
+
+        Stopwatch sw = Stopwatch.StartNew();
+        bool result = matcher.IsMatch(input);
+        sw.Stop();
+
+        result.Should().BeFalse();
+        sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
     }
 }

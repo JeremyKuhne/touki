@@ -289,11 +289,12 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
             return false;
         }
 
-        // AltStart payload: kind (program[1]), blockLength (program[2]).
-        // Alternatives begin at program[3] and are AltSep-separated until
+        // AltStart header: kind (program[1]), blockLength (program[2]),
+        // altCount (program[3]), then one offset-table slot per alternative.
+        // Alternatives begin after that header and are AltSep-separated until
         // AltEnd. Walk each alternative's first opcode; recurse to follow
         // nested AltStarts.
-        if (program.Length < 3)
+        if (program.Length < 4)
         {
             return false;
         }
@@ -306,7 +307,7 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
             return false;
         }
 
-        int i = 3;
+        int i = 4 + program[3];
         while (i < altEndIndex)
         {
             if (ComputeCanStartWithDot(program[i..altEndIndex]))
@@ -314,9 +315,8 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
                 return true;
             }
 
-            // Skip to the next alternative by walking the body of this one,
-            // mirroring the SplitAlternatives bytecode walker so nested
-            // AltStart blocks are not mistaken for top-level boundaries.
+            // Skip to the next alternative by walking the body of this one so
+            // nested AltStart blocks are not mistaken for top-level boundaries.
             i = SkipToNextAlternativeOrEnd(program, i, altEndIndex);
             if (i < altEndIndex && program[i] == GlobOpCodes.AltSep)
             {

@@ -22,6 +22,18 @@
 # Mono auto generated files
 mono_crash.*
 
+# libFuzzer / SharpFuzz stray artifacts written to the working directory.
+# The driver dumps the in-flight unit here when it is killed mid-run (a
+# non-reproducible kill-artifact), and writes hang/leak units the same way.
+# Genuine, reproduced, minimized crashes live under touki.fuzz/crashes/ and are
+# re-included by that directory's own .gitignore; these root-anchored patterns
+# only catch the transient output so it can never be accidentally committed.
+/crash-*
+/leak-*
+/timeout-*
+/oom-*
+/slow-unit-*
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/

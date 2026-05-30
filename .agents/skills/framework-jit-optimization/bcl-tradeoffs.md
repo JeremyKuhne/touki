@@ -98,9 +98,8 @@ sorted-key compression are the realistic callers).
    early exit?
 2. Write **both** versions. Don't guess.
 3. Benchmark with `[Params]` covering the realistic range plus the dense /
-   worst case at the extreme. The `MatchEvery` / `Diverge` params in
-   [SpanCountAndPrefixPerf.cs](../../../touki.perf/SpanCountAndPrefixPerf.cs)
-   are good templates.
+   worst case at the extreme. A `MatchEvery` / `Diverge` param pair (match
+   density and divergence point) is a good template.
 4. Pick the form whose worst case on the realistic distribution is best,
    not the form whose absolute peak is best.
 
@@ -114,8 +113,11 @@ either-or; we have no benchmark showing a hybrid wins.
 
 ## Reference benchmarks
 
-- [touki.perf/SpanCountAndPrefixPerf.cs](../../../touki.perf/SpanCountAndPrefixPerf.cs)
-  - `Count` over `MatchEvery = 1, 7, 64` and `CommonPrefixLength` over
-  `Diverge = 0, 8, full`.
-- [touki.perf/SpanReplace.cs](../../../touki.perf/SpanReplace.cs) -
-  full-scan workload where specialization wins.
+The numbers above were measured with local BenchmarkDotNet harnesses that are not
+check-in artifacts; reproduce them in `touki.perf/` when revisiting a decision:
+
+- A `Count` / `CommonPrefixLength` benchmark over `MatchEvery = 1, 7, 64` and
+  `Diverge = 0, 8, full` - the skip-run / log-probe workloads where deferring
+  to the BCL wins.
+- A full-scan `Span<T>.Replace` benchmark - the workload where specialization
+  wins.

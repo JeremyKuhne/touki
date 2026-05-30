@@ -17,6 +17,7 @@ more than necessary or don't fit the access pattern. They all live on
 | [`ArrayPoolList<T>`](../touki/Touki/Collections/ArrayPoolList.cs) | `T[]`-backed list that rents from `ArrayPool<T>.Shared` and returns the buffer on `Dispose`. |
 | [`SingleOptimizedList<TItem, TList>`](../touki/Touki/Collections/SingleOptimizedList.cs) | Stores a single item inline; promotes to `TList` (e.g. `ArrayPoolList<T>`) only when a second item is added. |
 | [`SinglyLinkedList<T>`](../touki/Touki/Collections/SinglyLinkedList.cs) | Minimal singly-linked list used internally by `RefCountedCache<,,>`; useful when you need cheap front/back inserts without a doubly-linked layout. |
+| [`SequenceSet<T>`](../touki/Touki/Collections/SequenceSet.cs) | Hash set of variable-length `ReadOnlySpan<T>` sequences of unmanaged values, interned into one pooled arena with no per-sequence allocation. For deduplicating or memoizing short value-type sequences. See [sequence-set.md](sequence-set.md). |
 | [`Cache<T>`](../touki/Touki/Collections/Cache.cs) | Fixed-size, thread-safe object pool with a per-thread fast slot. For pooling reusable workers, parsers, builders, etc. |
 | [`RefCountedCache<TValue, TCacheEntryData, TKey>`](../touki/Touki/Collections/RefCountedCache.cs) | Cache that hands out scoped, ref-counted handles to expensive resources (GDI objects, native handles, `Pen`/`Brush`/`Font`-style objects). |
 | [`EmptyList<T>`](../touki/Touki/Collections/EmptyList.cs) | Singleton empty `IList<T>`/`IReadOnlyList<T>`. |
