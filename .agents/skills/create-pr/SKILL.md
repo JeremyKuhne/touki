@@ -79,13 +79,32 @@ original "open a PR" request.
 
 ## 4. Push the branch
 
-- Push to `origin` (the user's fork / working remote), setting upstream on
-  first push:
+### Pre-push conflict check
+
+Before pushing (or re-pushing), confirm the branch still merges cleanly into
+its base (`<base>` = `origin/main`, or `upstream/main` when that remote exists)
+so conflicts surface locally instead of on the PR:
+
+- `git fetch <remote> main`, then `git rev-list --left-right --count <base>...HEAD`.
+  Left count `0` means up to date - skip to push.
+- If behind, dry-run the merge without touching the tree:
 
   ```pwsh
-  git push -u origin <branch>
+  git merge-tree $(git merge-base HEAD <base>) HEAD <base> | Select-String 'CONFLICT|<<<<<<<'
   ```
 
+- **Clean:** prefer rebasing onto `<base>` so the PR diff is current.
+- **Conflicts:** rebase (`git rebase <base>`, `$env:GIT_EDITOR='true'`), resolve,
+  `git add` by path, `git rebase --continue`, then re-run `dotnet build` and
+  `dotnet test -c Release` (base may have moved/renamed code you depend on).
+- A rebase rewrites commits, so the next push needs `--force-with-lease` - a
+  force-push that **requires explicit user approval** per the publish-boundary rule.
+
+### Push
+
+- Fresh branch (no rebase): `git push -u origin <branch>`.
+- After rebasing an already-pushed branch (explicit approval only):
+  `git push --force-with-lease origin <branch>`.
 - Never `git push --force` or `--force-with-lease` without explicit user
   confirmation.
 
