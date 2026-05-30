@@ -7,20 +7,20 @@ using Touki.Io.Globbing;
 namespace touki.perf;
 
 /// <summary>
-///  Targets the recursive extglob walker (<c>TryMatchRanges</c> in
+///  Targets the iterative extglob engine (<c>ExtGlobEngine</c> in
 ///  <c>CompiledGlobStrategy</c>) directly via <see cref="GlobSpecification.IsMatch"/>.
 ///  Unlike <c>GlobSpecificationBacktrackPerf</c> (which exercises the non-extglob
 ///  two-savepoint NFA) every pattern here contains an <c>AltStart</c> opcode and is
 ///  not the pure <c>*literal</c> suffix-set shape, so each call flows through the
-///  recursive bytecode interpreter rather than a specialized strategy.
+///  iterative bytecode engine rather than a specialized strategy.
 /// </summary>
 /// <remarks>
 ///  <para>
 ///   The common-path benchmarks (single-iteration <c>@(...)</c>, prefix alternation,
-///   negation) measure the per-call overhead of any walker instrumentation. The
+///   negation) measure the per-call overhead of any engine instrumentation. The
 ///   bounded-backtracking benchmarks (<c>+(...)</c> with overlapping alternatives)
 ///   exercise the path that, without memoization, degrades super-linearly; they use
-///   inputs short enough to remain fast even on the un-memoized walker so the
+///   inputs short enough to remain fast even on the un-memoized engine so the
 ///   benchmark itself terminates quickly.
 ///  </para>
 ///  <para>
@@ -31,7 +31,7 @@ namespace touki.perf;
 public class GlobExtGlobMatchPerf
 {
     // Prefix alternation over literals followed by a globstar tail. Each segment
-    // tries `bin`/`obj` then descends; flows through the walker (not MultiSuffix).
+    // tries `bin`/`obj` then descends; flows through the engine (not MultiSuffix).
     private const string PrefixAltPattern = "@(bin|obj)/**/*.cs";
     private const string PrefixAltHitInput = "bin/a/b/c/file.cs";
     private const string PrefixAltMissInput = "src/a/b/c/file.cs";
@@ -42,7 +42,7 @@ public class GlobExtGlobMatchPerf
     private const string NegationMissInput = "bin/a/b/c/file.cs";
 
     // Single-iteration alternation of `*literal` bodies that is NOT lowered to
-    // MultiSuffix because of the surrounding literal prefix; stays on the walker.
+    // MultiSuffix because of the surrounding literal prefix; stays on the engine.
     private const string AtAltPattern = "src/@(*.cs|*.md|*.txt)";
     private const string AtAltHitInput = "src/readme.md";
     private const string AtAltMissInput = "src/readme.rst";

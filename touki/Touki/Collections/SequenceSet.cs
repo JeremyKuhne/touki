@@ -5,8 +5,8 @@
 namespace Touki.Collections;
 
 /// <summary>
-///  A set of variable-length sequences of unmanaged values backed by a single pooled arena and an
-///  open-addressing hash index. Adding a sequence interns it: identical sequences collapse to the same
+///  A set of variable-length sequences of unmanaged values backed by a single pooled arena and a
+///  bucket-chained hash index. Adding a sequence interns it: identical sequences collapse to the same
 ///  stable integer handle and the element data is stored once, contiguously, with no per-sequence heap
 ///  allocation.
 /// </summary>
