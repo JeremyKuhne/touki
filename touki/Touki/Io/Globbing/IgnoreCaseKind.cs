@@ -41,8 +41,7 @@ internal enum IgnoreCaseKind
     /// <summary>
     ///  Full Unicode ordinal case fold matching <see cref="StringComparison.OrdinalIgnoreCase"/>.
     ///  Implements the behavior of MSBuild item globs, <c>Microsoft.Extensions.FileSystemGlobbing.Matcher</c>,
-    ///  Win32 <c>FsRtlIsNameInExpression</c> with <c>IgnoreCase</c>, the .NET
-    ///  <c>FileSystemName.MatchesSimpleExpression</c>, and PowerShell's <c>-like</c> operator.
+    ///  the .NET <c>FileSystemName.MatchesSimpleExpression</c>, and PowerShell's <c>-like</c> operator.
     /// </summary>
     /// <remarks>
     ///  <para>

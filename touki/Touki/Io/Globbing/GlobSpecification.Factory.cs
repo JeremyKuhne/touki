@@ -23,6 +23,24 @@ public sealed partial class GlobSpecification
     internal const int MaxExtGlobAlternatives = 32;
 
     /// <summary>
+    ///  Maximum nesting depth of extended-glob constructs (<c>?(…)</c>, <c>*(…)</c>,
+    ///  <c>+(…)</c>, <c>@(…)</c>, <c>!(…)</c>). Exceeding this raises
+    ///  <see cref="GlobCompileErrorCode.FeatureLimitExceeded"/>. The cap exists so
+    ///  the interpreter's stack-allocated savepoint buffer stays bounded: with
+    ///  this depth and the per-construct alternative cap, simultaneous savepoints
+    ///  are guaranteed to fit in the fixed runtime budget.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This is the single source of truth for the nesting cap. The encoder
+    ///   enforces it; the matcher derives its fixed range-list ceiling
+    ///   (<see cref="CompiledGlobStrategy"/>'s <c>MaxRangesDepth</c>) from it so the
+    ///   two sides can never drift.
+    ///  </para>
+    /// </remarks>
+    internal const int MaxExtGlobDepth = 8;
+
+    /// <summary>
     ///  Classifies a source pattern and constructs the cheapest <see cref="GlobStrategy"/>
     ///  implementation that can evaluate it.
     /// </summary>
@@ -52,16 +70,6 @@ public sealed partial class GlobSpecification
         ///  <see cref="GlobCompileErrorCode.PatternTooLarge"/>.
         /// </summary>
         internal const int MaxOpcodeBodyLength = char.MaxValue;
-
-        /// <summary>
-        ///  Maximum nesting depth of extended-glob constructs (<c>?(…)</c>, <c>*(…)</c>,
-        ///  <c>+(…)</c>, <c>@(…)</c>, <c>!(…)</c>). Exceeding this raises
-        ///  <see cref="GlobCompileErrorCode.FeatureLimitExceeded"/>. The cap exists so
-        ///  the interpreter's stack-allocated savepoint buffer stays bounded: with
-        ///  this depth and the per-construct alternative cap, simultaneous savepoints
-        ///  are guaranteed to fit in the fixed runtime budget.
-        /// </summary>
-        internal const int MaxExtGlobDepth = 8;
 
         /// <summary>
         ///  Default upper bound (in characters) applied by the

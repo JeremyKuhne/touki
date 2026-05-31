@@ -86,14 +86,12 @@ public enum GlobOptions
     ///    <item>
     ///     <description>
     ///      <see cref="GlobDialect.MSBuild"/>, <see cref="GlobDialect.FileSystemGlobbing"/>,
-    ///      <see cref="GlobDialect.Win32"/>, <see cref="GlobDialect.Simple"/>, and
+    ///      <see cref="GlobDialect.Simple"/>, and
     ///      <see cref="GlobDialect.PowerShell"/> use <b>full Unicode</b> ordinal case
     ///      folding equivalent to <see cref="StringComparison.OrdinalIgnoreCase"/>. This
     ///      matches the documented behavior of
     ///      <see href="https://learn.microsoft.com/dotnet/api/microsoft.extensions.filesystemglobbing.matcher"><c>Microsoft.Extensions.FileSystemGlobbing.Matcher</c></see>,
     ///      <see href="https://learn.microsoft.com/dotnet/api/system.io.enumeration.filesystemname.matchessimpleexpression"><c>FileSystemName.MatchesSimpleExpression</c></see>,
-    ///      Win32
-    ///      <see href="https://learn.microsoft.com/windows-hardware/drivers/ddi/ntifs/nf-ntifs-fsrtlisnameinexpression"><c>FsRtlIsNameInExpression</c></see>,
     ///      and PowerShell
     ///      <see href="https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_wildcards"><c>-like</c></see>.
     ///     </description>

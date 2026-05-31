@@ -14,7 +14,8 @@ The "Disambiguation" section below records every known overlap.
 | ----- | ---------------- | ---------------- |
 | [polyfill-dotnet-api](./polyfill-dotnet-api/SKILL.md) | "polyfill", "backport", "add a span overload for net472/net481", "make API X available downlevel", missing-on-net472-present-on-net10 | `pre-pr-self-review`, `performance-testing`, `framework-jit-optimization`, `create-pr` |
 | [framework-jit-optimization](./framework-jit-optimization/SKILL.md) | hot-path tuning for `net481` in `touki/Framework/`, generic specialization, scalar/unrolled vs BCL delegation, net481 RyuJIT regressions | `performance-testing` |
-| [performance-testing](./performance-testing/SKILL.md) | authoring/running BenchmarkDotNet benchmarks in `touki.perf`, comparing implementations, evaluating allocations | `framework-jit-optimization` |
+| [performance-testing](./performance-testing/SKILL.md) | authoring/running BenchmarkDotNet benchmarks in `touki.perf`, comparing implementations, evaluating allocations | `framework-jit-optimization`, `scratch-buffer-strategy` |
+| [scratch-buffer-strategy](./scratch-buffer-strategy/SKILL.md) | choosing a scratch-buffer strategy (zeroed `stackalloc` vs `[SkipLocalsInit]` vs `BufferScope<T>` vs `ArrayPool` rental), "should I rent or stackalloc?", net481/net10 size crossovers, weighing `[SkipLocalsInit]` | `performance-testing`, `framework-jit-optimization` |
 | [pre-pr-self-review](./pre-pr-self-review/SKILL.md) | self-review checklist before opening or pushing a PR; missing tests, unchecked length sums, empty-span foot-guns, TFM phrasing | `create-pr`, `polyfill-dotnet-api` |
 | [security-review](./security-review/SKILL.md) | "assess for security vulnerabilities", "do a security review", "check for ReDoS / DoS", "audit untrusted input handling"; any member accepting caller-supplied data, any use of `unsafe` / `Unsafe.*` / `MemoryMarshal.*` / `Marshal.*`, or any BCL API whose name or doc says "unsafe" / "caller must" - abusive-input handling, length / integer overflow, allocation and algorithmic DoS, caller-validated preconditions, argument validation | `pre-pr-self-review`, `performance-testing` |
 | [create-pr](./create-pr/SKILL.md) | "make a PR", "open a pull request", "push and PR", "publish for review" - **initial** publish | `pre-pr-self-review` |
@@ -68,6 +69,20 @@ Adjacent, not overlapping, but easy to confuse:
   `framework-jit-optimization`.
 
 You will frequently use both in sequence.
+
+### `scratch-buffer-strategy` vs `performance-testing`
+
+Both mention "evaluating allocations", but they answer different questions:
+
+- **Which buffer strategy should this hot path use** (zeroed `stackalloc` vs
+  `[SkipLocalsInit]` vs `BufferScope<T>` vs an `ArrayPool` rental), and at what
+  size does renting beat zeroing &rarr; `scratch-buffer-strategy`. It hands back
+  a decision, not a measurement.
+- **How do I measure a buffer/allocation cost** (author a benchmark, add
+  `[MemoryDiagnoser]`, read `Allocated`) &rarr; `performance-testing`.
+
+Use `scratch-buffer-strategy` to pick the design; use `performance-testing` to
+verify it on both TFMs.
 
 ## Maintenance
 
