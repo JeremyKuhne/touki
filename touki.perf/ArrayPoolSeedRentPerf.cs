@@ -103,9 +103,10 @@ public class ArrayPoolSeedRentPerf
     }
 
     /// <summary>
-    ///  Zero-initialized <c>stackalloc</c> of the same five seed buffers. On
-    ///  net481 RyuJIT this pays a ~3.7 KB zeroing on entry that cannot be
-    ///  suppressed; on modern .NET RyuJIT the zeroing dominates this path.
+    ///  Zero-initialized <c>stackalloc</c> of the same five seed buffers. This
+    ///  path deliberately omits <c>[SkipLocalsInit]</c> so it measures the full
+    ///  ~3.7 KB zeroing both TFMs pay on entry; net481 RyuJIT would honor the
+    ///  attribute if applied. On modern .NET RyuJIT the zeroing dominates here.
     /// </summary>
     [Benchmark]
     public int StackAllocSeed()

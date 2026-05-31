@@ -1236,7 +1236,7 @@ The cheapest items first, building toward the path-aware phase:
 | 9 | F3.3 segment-level pruning + `MatchSet` composition + `RootAnchored`/`DirectoryOnly` enforcement | ~1-2 days | Subtree skipping for literal-prefix excludes; mixed-dialect include/exclude sets; gitignore enforcement |
 | 10 | F4 brace expansion | ~1 day | `Bash` feature-complete |
 | 11 | F5 POSIX bracket extras - **done** | ~half-day | `Posix` `[[:class:]]` parity |
-| - | F1.2 / F1.2b `Win32` + `WinNT` - **deferred, low priority** | ~2-3 days | Two dialects closed; needs dedicated `Win32GlobMatcher` (BCL `MatchPattern` port) |
+| - | F1.2 / F1.2b `Win32` + `WinNT` - **indefinitely postponed (removed from `GlobDialect`)** | ~2-3 days | Two dialects closed; needs dedicated `Win32GlobMatcher` (BCL `MatchPattern` port) |
 
 Stop conditions between slices - same as
 [globbing-optimization-plan.md §4](globbing-optimization-plan.md#4-proposed-slice-order):

@@ -93,8 +93,13 @@ public class ExtGlobNegationMatchTests
         // The encoder accepts up to GlobSpecification.MaxExtGlobDepth nested
         // extglob constructs. Negation re-entry is the engine's only native
         // recursion, so the deepest legal pattern - that many nested !(...) -
-        // drives the recursion-depth guard to its budget. This pins that the
+        // drives the recursion to depth MaxExtGlobDepth (the innermost !(x)
+        // body is a literal, matched inline without re-entry). That is the
+        // deepest level any valid input can reach; it sits one frame below the
+        // guard's MaxExtGlobDepth + 1 budget by design. This pins that the
         // budget accommodates the real maximum and never trips on valid input.
+        // (MatchCore_OverBudgetNegationNesting_TripsRecursionGuard covers the
+        // over-budget trip with hand-crafted bytecode.)
         int depth = GlobSpecification.MaxExtGlobDepth;
         string pattern = string.Concat(Enumerable.Repeat("!(", depth)) + "x" + new string(')', depth);
 
