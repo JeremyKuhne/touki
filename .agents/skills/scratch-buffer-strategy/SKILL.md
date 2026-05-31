@@ -35,7 +35,7 @@ between them that every decision must hold on both. Name the JIT in any writeup
 
 ## Decision tree
 
-```
+```text
 Short-lived scratch buffer on a hot path?
 |
 +- Fixed/small (one frame, few KB), not recursive/looped?
@@ -48,11 +48,7 @@ Short-lived scratch buffer on a hot path?
 |       CALLING method to drop the stack-buffer zeroing
 |
 +- Large / unbounded / recursive / must escape frame?
-|   --> ArrayPool<T>.Shared, rented once and reused
-|
-+- Scratch must live inside a struct passed around?
-    --> fixed-buffer + Unsafe.SkipInit (slower than a bare [SkipLocalsInit]
-        stackalloc; use only when a local stackalloc will not fit the design)
+    --> ArrayPool<T>.Shared, rented once and reused
 ```
 
 ## Crossover thresholds (zeroed stackalloc vs a rental)
@@ -87,6 +83,15 @@ just stack-allocate.
   no unwritten bytes can escape (info-disclosure risk). The JIT inliner does not
   spread the attribute; net481's weaker inliner can move where zeroing lands, so
   verify on both TFMs.
+- **`Unsafe.SkipInit` does NOT suppress the zeroing.** Common mistake: assuming
+  `Unsafe.SkipInit(out x)` makes a stack buffer un-zeroed. It compiles to a bare
+  `ret` and only satisfies C# definite-assignment so you can read an unassigned
+  local; the runtime still zeroes via the method's `.locals init` flag, which
+  only `[SkipLocalsInit]` (or `[module: SkipLocalsInit]`) removes. A "fixed
+  buffer left uninitialized with `Unsafe.SkipInit`" but *without*
+  `[SkipLocalsInit]` pays full zeroing. See
+  [docs/arraypool-performance.md](../../../docs/arraypool-performance.md)
+  section 8.
 
 ## Stack-safety guardrail
 

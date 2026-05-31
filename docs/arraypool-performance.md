@@ -92,7 +92,7 @@ overhead is **per-call bookkeeping that warmup cannot eliminate**.
 
 `ArrayPoolSeedRentPerf` measures the exact shape the extglob engine uses: five
 buffers (a 28-byte frame struct x32, a 16-byte range struct x128, that range
-struct x32 twice, and an `int[99]`), rented and returned together, ~4.3 KB
+struct x18 twice, and an `int[57]`), rented and returned together, ~3.7 KB
 aggregate, with the pool pre-warmed 64x in `[GlobalSetup]`.
 
 | Operation | net481 RyuJIT | net10 RyuJIT |
@@ -115,7 +115,7 @@ on **every** call:
    (a log2) from the requested length; each Return recomputes it from
    `array.Length`. Ten times for five buffers.
 2. **The thread-local cache holds one array per bucket.** If two rentals hit the
-   same bucket - in the engine, `work` and `rest` are both `ProgramRange[32]` -
+   same bucket - in the engine, `work` and `rest` are both `ProgramRange[18]` -
    the second misses the TLS fast path and falls through to the per-core
    **locked** stack (an interlocked/`Monitor` acquire). So does the second
    return.
@@ -252,27 +252,7 @@ The zeroing essentially vanishes on both TFMs - a ~30x win on net481, ~11x on
 net10. This is the cleanest option: one attribute, one code path, no pool
 bookkeeping, allocation-free.
 
-### 4.2 Fixed-buffer ref struct + `Unsafe.SkipInit` (special cases only)
-
-The pattern the BCL sometimes uses: a struct carrying an inline `fixed` buffer,
-left uninitialized with `Unsafe.SkipInit(out scratch)`, exposing a scoped `Span`
-via an `[UnscopedRef]` property. `Unsafe.SkipInit` ships in the `System.Runtime`
-/ netstandard `Unsafe` surface and **is available on net481**.
-
-| 4 KB scratch | net481 RyuJIT | net10 RyuJIT |
-|---|--:|--:|
-| `[SkipLocalsInit]` `stackalloc` | 1.7 ns | 1.3 ns |
-| fixed-buffer + `Unsafe.SkipInit` | 16.3 ns | 26.3 ns |
-
-**This pattern is slower than plain `[SkipLocalsInit]` on both TFMs, and on net10
-it is slower than just zeroing.** The cost is the `Unsafe.AsPointer` + `Span`
-construction and the fixed-buffer addressing the JIT cannot fold as well as a
-raw `stackalloc`. Reach for it only when you genuinely need the scratch to live
-in a struct that is passed around (so a bare `stackalloc` local will not do) -
-not as a default. For a plain local buffer, `[SkipLocalsInit]` + `stackalloc`
-wins.
-
-### 4.3 `BufferScope<T>`: stack buffer with a pool fallback
+### 4.2 `BufferScope<T>`: stack buffer with a pool fallback
 
 The size sweep in section 3.2 assumes you know the size up front. Often you do
 not: the common size is small and stack-friendly, but a rare large input must
@@ -324,7 +304,7 @@ Two things to take from this:
   rare large input. This is the recommended shape whenever the size is variable
   or unbounded but usually small.
 
-### 4.4 Risks of skipping init (and the inlining trap)
+### 4.3 Risks of skipping init (and the inlining trap)
 
 `[SkipLocalsInit]` is `unsafe` for a reason: it hands you **uninitialized
 memory**. The
@@ -401,18 +381,18 @@ Apply this to the extglob engine seed (`RunEngine`):
 |---|--:|--:|--:|
 | `Frame[]` | 28 B | 32 | 896 |
 | `ProgramRange[]` (arena) | 16 B | 128 | 2048 |
-| `ProgramRange[]` (work) | 16 B | 32 | 512 |
-| `ProgramRange[]` (rest) | 16 B | 32 | 512 |
-| `int[]` (key) | 4 B | 99 | 396 |
-| **Total** | | | **4364 (~4.3 KB)** |
+| `ProgramRange[]` (work) | 16 B | 18 | 288 |
+| `ProgramRange[]` (rest) | 16 B | 18 | 288 |
+| `int[]` (key) | 4 B | 57 | 228 |
+| **Total** | | | **3748 (~3.7 KB)** |
 
 This is safe to keep on the stack because:
 
-- **It is a single frame, ~4.3 KB.** Well under any reasonable per-call budget.
+- **It is a single frame, ~3.7 KB.** Well under any reasonable per-call budget.
 - **It is not on a recursive path.** `RunEngine` allocates the seed once.
   The negation handler's bounded re-entry goes through `RunEngineCore`, which
   reuses caller-supplied probe buffers and does **not** `stackalloc` again, so
-  the 4.3 KB never multiplies with recursion depth.
+  the 3.7 KB never multiplies with recursion depth.
 - **Every slot is written before it is read** (the work/rest/key buffers are
   seeded by `CopyTo` and the per-production builders; frames/arena are written
   before use and spill to `ArrayPool` only when an adversarial input outgrows
@@ -454,12 +434,6 @@ Need a short-lived scratch buffer on a hot path?
 │            (~10 ns/op net481, ~4 ns/op net10); minimize the number
 │            of distinct rentals and avoid two same-bucket rentals
 │            colliding in the TLS cache.
-│
-└─ Need the scratch to live inside a struct that is passed around?
-          fixed-buffer + Unsafe.SkipInit (available on net481), but
-          know it is slower than a bare [SkipLocalsInit] stackalloc -
-          use only when a local stackalloc genuinely will not fit the
-          design.
 ```
 
 Key rules of thumb:
@@ -498,8 +472,44 @@ Key rules of thumb:
 
 - [`SkipLocalsInit` attribute - C# attribute reference](https://learn.microsoft.com/dotnet/csharp/language-reference/attributes/general#skiplocalsinit-attribute) - the compiler/CLR `.locals init` mechanism.
 - [`SkipLocalsInitAttribute` class](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.skiplocalsinitattribute) - the "Applies to: .NET 5-11" type-availability note (polyfilled downlevel by PolySharp).
-- [Unsafe code best practices](https://learn.microsoft.com/dotnet/standard/unsafe-code/best-practices) - `[SkipLocalsInit]`/`Unsafe.SkipInit` guidance and the GC-reference caveat.
+- [Unsafe code best practices](https://learn.microsoft.com/dotnet/standard/unsafe-code/best-practices) - `[SkipLocalsInit]` guidance and the GC-reference caveat.
 - [`stackalloc` expression](https://learn.microsoft.com/dotnet/csharp/language-reference/operators/stackalloc) - unmanaged-type requirement, undefined initial contents, sizing and loop rules.
 - [CA2014: Do not use `stackalloc` in loops](https://learn.microsoft.com/dotnet/core/compatibility/code-analysis/5.0/ca2014-stackalloc-in-loops).
 - [`Thread` constructor](https://learn.microsoft.com/dotnet/api/system.threading.thread.-ctor) - 1 MB default stack, 256 KB partial-trust minimum on .NET Framework.
-- Benchmarks backing the numbers: `touki.perf/StackZeroInitPerf.cs`, `touki.perf/ArrayPoolSeedRentPerf.cs`, `touki.perf/ArrayPoolCrossoverPerf.cs` (the size sweep in section 3.2), and `touki.perf/BufferScopeOverheadPerf.cs` (the `BufferScope` overhead in section 4.3).
+- Benchmarks backing the numbers: `touki.perf/StackZeroInitPerf.cs`, `touki.perf/ArrayPoolSeedRentPerf.cs`, `touki.perf/ArrayPoolCrossoverPerf.cs` (the size sweep in section 3.2), and `touki.perf/BufferScopeOverheadPerf.cs` (the `BufferScope` overhead in section 4.2).
+
+---
+
+## 8. Common mistake: `Unsafe.SkipInit` does not suppress `.locals init`
+
+It is easy to assume that `Unsafe.SkipInit(out T value)` is what turns off the
+zero-initialization of a local - the name reads like "skip the init of this
+value." It does not, and a benchmark of the "uninitialized fixed-buffer scratch"
+pattern was wrong for exactly this reason until `[SkipLocalsInit]` was added.
+
+Two different mechanisms are at play, and only one of them clears memory:
+
+- **`Unsafe.SkipInit<T>(out T value)` is a compile-time trick, not a runtime
+  one.** Its body is a bare `ret` - it emits no code. Its only job is to satisfy
+  the C# compiler's *definite-assignment* analysis so you may read a local
+  without first writing it (or writing `= default`), avoiding the "use of
+  unassigned local variable" error. It never touches memory at run time.
+- **The actual zeroing comes from the method's `.locals init` flag.** The C#
+  compiler stamps that flag on every method that declares locals, and the CLR
+  honors it by zeroing **all** of the method's locals on entry - before any of
+  your code, including the `Unsafe.SkipInit` call, runs. The only way to strip
+  that flag is `[SkipLocalsInit]` on the method (or `[module: SkipLocalsInit]`).
+
+So `Unsafe.SkipInit` lets you legally *read* an unassigned local, but the runtime
+has already zeroed it. Without `[SkipLocalsInit]` on the enclosing method, a
+4 KB fixed buffer "left uninitialized" with `Unsafe.SkipInit` is still fully
+zeroed on entry, and a benchmark of that shape measures the zeroing it claims to
+avoid. The two work together: `[SkipLocalsInit]` removes the runtime clear, and
+`Unsafe.SkipInit` makes the resulting un-zeroed read well-formed at compile time.
+Neither one replaces the other.
+
+The practical rule: to actually skip the zeroing, put `[SkipLocalsInit]` on the
+method that physically contains the `stackalloc` (or fixed-buffer local). Reach
+for `Unsafe.SkipInit` only when you additionally need to read a local the
+compiler would otherwise reject as unassigned - and never treat its presence as
+evidence that the zeroing is gone.

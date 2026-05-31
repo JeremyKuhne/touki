@@ -20,8 +20,8 @@ namespace touki.perf;
 /// <remarks>
 ///  <para>
 ///   The buffer shapes mirror the engine seed exactly: a 28-byte frame struct
-///   times 32, a 16-byte range struct times 128, the same range struct times 32
-///   twice (the <c>work</c> and <c>rest</c> lists), and an int key buffer of 99.
+///   times 32, a 16-byte range struct times 128, the same range struct times 18
+///   twice (the <c>work</c> and <c>rest</c> lists), and an int key buffer of 57.
 ///   Element counts drive the <see cref="ArrayPool{T}"/> bucket selection, and
 ///   the two same-sized range rentals deliberately hit the same bucket - the
 ///   thread-local cache holds only one array per bucket, so the second rental
@@ -30,7 +30,7 @@ namespace touki.perf;
 ///  <para>
 ///   Three distinct element types (frame, range, int) reproduce the engine's
 ///   three independent <c>ArrayPool&lt;T&gt;.Shared</c> instances. Total seed
-///   footprint is ~4.3 KB, matching the zero-init the stackalloc path pays on
+///   footprint is ~3.7 KB, matching the zero-init the stackalloc path pays on
 ///   net481 unless the method is annotated with <c>[SkipLocalsInit]</c> (which
 ///   the Framework JIT does honor).
 ///  </para>
@@ -40,7 +40,8 @@ public class ArrayPoolSeedRentPerf
 {
     private const int SeedFrameCount = 32;
     private const int SeedArenaCount = 128;
-    private const int MaxRangesDepth = 32;
+    // Mirrors CompiledGlobStrategy.MaxRangesDepth = (MaxExtGlobDepth * 2) + 2 = 18.
+    private const int MaxRangesDepth = 18;
     private const int KeyLength = 3 + (MaxRangesDepth * 3);
 
     [StructLayout(LayoutKind.Sequential)]
@@ -103,7 +104,7 @@ public class ArrayPoolSeedRentPerf
 
     /// <summary>
     ///  Zero-initialized <c>stackalloc</c> of the same five seed buffers. On
-    ///  net481 RyuJIT this pays a ~4.3 KB zeroing on entry that cannot be
+    ///  net481 RyuJIT this pays a ~3.7 KB zeroing on entry that cannot be
     ///  suppressed; on modern .NET RyuJIT the zeroing dominates this path.
     /// </summary>
     [Benchmark]

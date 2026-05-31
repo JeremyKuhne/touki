@@ -296,7 +296,7 @@ internal sealed partial class CompiledGlobStrategy
     ///   the engine writes every frame, range, and key slot before reading it
     ///   (high-water-mark counters bound every read to a written region), so it
     ///   does not depend on zero-init. This removes the per-call zero-fill of the
-    ///   roughly 4.3 KB seed - on net481 RyuJIT (unvectorized memset) that clear
+    ///   roughly 3.7 KB seed - on net481 RyuJIT (unvectorized memset) that clear
     ///   dominated the top-level match cost.
     ///  </para>
     /// </remarks>
@@ -1061,17 +1061,25 @@ internal sealed partial class CompiledGlobStrategy
                             // them for every later candidate/alternative.
                             if (!probeReady)
                             {
+                                int keyLength = KeyHeaderLength + (MaxRangesDepth * RangeKeyLength);
                                 probeFramesScope.EnsureCapacity(SeedFrameCount);
                                 probeArenaScope.EnsureCapacity(SeedArenaCount);
                                 probeWorkScope.EnsureCapacity(MaxRangesDepth);
                                 probeRestScope.EnsureCapacity(MaxRangesDepth);
-                                probeKeyScope.EnsureCapacity(KeyHeaderLength + (MaxRangesDepth * RangeKeyLength));
+                                probeKeyScope.EnsureCapacity(keyLength);
+
+                                // EnsureCapacity can hand back an oversized pool
+                                // bucket, so slice each span back to its logical
+                                // seed length. This keeps the probe path under the
+                                // same MaxRangesDepth/key-size ceiling as the
+                                // stack-backed top-level path, so it can never build
+                                // a state the key buffer was not sized to serialize.
                                 probeScratch = new(
-                                    probeFramesScope.AsSpan(),
-                                    probeArenaScope.AsSpan(),
-                                    probeWorkScope.AsSpan(),
-                                    probeRestScope.AsSpan(),
-                                    probeKeyScope.AsSpan());
+                                    probeFramesScope.AsSpan()[..SeedFrameCount],
+                                    probeArenaScope.AsSpan()[..SeedArenaCount],
+                                    probeWorkScope.AsSpan()[..MaxRangesDepth],
+                                    probeRestScope.AsSpan()[..MaxRangesDepth],
+                                    probeKeyScope.AsSpan()[..keyLength]);
                                 probeInputs = new(_first, _second, _program, _separator, _kind);
                                 probeReady = true;
                             }

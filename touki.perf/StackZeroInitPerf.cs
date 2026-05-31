@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -10,9 +9,8 @@ namespace touki.perf;
 
 /// <summary>
 ///  Measures the cost of zero-initializing stack scratch buffers, how that cost
-///  scales with size and element type, and whether <c>[SkipLocalsInit]</c> and
-///  the fixed-buffer-plus-<see cref="Unsafe.SkipInit{T}"/> pattern actually
-///  suppress the zeroing on each target framework.
+///  scales with size and element type, and whether <c>[SkipLocalsInit]</c>
+///  actually suppresses the zeroing on each target framework.
 /// </summary>
 /// <remarks>
 ///  <para>
@@ -131,31 +129,5 @@ public class StackZeroInitPerf
         s[0] = 1;
         s[4095] = 2;
         return s[0] + s[4095];
-    }
-
-    // ---- Fixed-buffer ref struct + Unsafe.SkipInit (the no-zero scratch
-    // pattern). The struct carries a 4 KB inline fixed buffer; SkipInit leaves
-    // it uninitialized, and a scoped Span property exposes it. Available on both
-    // TFMs because Unsafe.SkipInit ships in the netstandard Unsafe surface. ----
-
-    [Benchmark]
-    public int FixedBufferSkipInit() => FixedBufferHelper();
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int FixedBufferHelper()
-    {
-        Unsafe.SkipInit(out Scratch4K scratch);
-        Span<byte> s = scratch.AsSpan();
-        s[0] = 1;
-        s[4095] = 2;
-        return s[0] + s[4095];
-    }
-
-    private unsafe struct Scratch4K
-    {
-        public fixed byte Buffer[4096];
-
-        [UnscopedRef]
-        public Span<byte> AsSpan() => new(Unsafe.AsPointer(ref Buffer[0]), 4096);
     }
 }

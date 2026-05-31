@@ -90,9 +90,6 @@ self-time. Per workload iteration of the complex extglob, `MoveNext`
 - ~13% `Monitor.Enter_Slowpath` inside the BCL enumerator's own buffer/handle
   machinery (verified: no locks exist in the touki glob stack).
 
-SVGs: [scratch/extglob-single-flame.svg](../scratch/extglob-single-flame.svg)
-and [scratch/extglob-root-flame.svg](../scratch/extglob-root-flame.svg).
-
 **Root cause (verified in source).** `!(bin|obj)/**/*.cs` compiles to a
 program whose first opcode is `AltStart`, so
 `CompiledGlobStrategy.ComputeLiteralPathPrefix` returns an empty literal
