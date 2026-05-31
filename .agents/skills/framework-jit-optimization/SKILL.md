@@ -24,6 +24,11 @@ packages to prefer, when to hand-roll), see the
 skill picks up after that decision is already made and the polyfill
 lives in `touki/Framework/`.
 
+For choosing how a hot path gets its scratch buffer (zeroed `stackalloc`
+vs `[SkipLocalsInit]` vs `BufferScope<T>` vs an `ArrayPool` rental, and the
+net481/net10 size crossovers), see the
+[`scratch-buffer-strategy`](../scratch-buffer-strategy/SKILL.md) skill.
+
 ## What is and isn't available on `net481`
 
 - **No auto-vectorization.** The BCL `MemoryExtensions` methods on net481 ship with

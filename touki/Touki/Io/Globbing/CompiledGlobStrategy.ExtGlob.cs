@@ -54,7 +54,37 @@ namespace Touki.Io.Globbing;
 /// </remarks>
 internal sealed partial class CompiledGlobStrategy
 {
-    private const int MaxRangesDepth = 32;
+    /// <summary>
+    ///  Hard cap on the number of program ranges a single match configuration may
+    ///  hold at once. A "range list" is the ordered set of program slices the engine
+    ///  is matching in sequence (the active <c>Work</c> list and the <c>Rest</c>
+    ///  scratch list an alternative is built into); it also sizes the failure-memo
+    ///  <c>Key</c>.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This is a correctness ceiling, not a growable seed:
+    ///   <see cref="BuildRangesWithAlternative"/> and
+    ///   <see cref="BuildRangesWithAlternativeAndBlock"/> return
+    ///   <see langword="false"/> (failing the match arm) rather than spilling to a
+    ///   larger buffer when a list would exceed it, so it must stay at or above the
+    ///   worst case any pattern the encoder accepts can reach.
+    ///  </para>
+    ///  <para>
+    ///   The count grows only when an extglob alternative expands into the program:
+    ///   entering a construct prepends the alternative body and, for a repeating
+    ///   <c>+(...)</c> / <c>*(...)</c> block, a re-entry slice plus the post-block
+    ///   tail. That is at most two persistent ranges per enclosing construct, so the
+    ///   worst case scales with extglob <em>nesting depth</em> - not with input
+    ///   length (<see cref="CompactEmptyRanges"/> stops a repeating construct from
+    ///   accumulating one range per iteration). The encoder caps that nesting at
+    ///   <see cref="GlobSpecification.MaxExtGlobDepth"/>, so the bound is derived from
+    ///   it directly: two ranges per level, plus the initial whole-program range and
+    ///   one slot of slack. Raising <see cref="GlobSpecification.MaxExtGlobDepth"/>
+    ///   widens this in lock-step; do not hard-code a smaller literal.
+    ///  </para>
+    /// </remarks>
+    private const int MaxRangesDepth = (GlobSpecification.MaxExtGlobDepth * 2) + 2;
 
     // Failure-memo key layout: [inputIndex, totalLength, rangeCount] followed by
     // (Start, End, KindOverride) for each range.
@@ -219,6 +249,7 @@ internal sealed partial class CompiledGlobStrategy
     ///  Entry point used by <see cref="MatchCore"/> when the program contains
     ///  one or more <see cref="GlobOpCodes.AltStart"/> opcodes.
     /// </summary>
+    [SkipLocalsInit]
     private static bool MatchExtGlob(
         ReadOnlySpan<char> first,
         ReadOnlySpan<char> second,
@@ -256,12 +287,20 @@ internal sealed partial class CompiledGlobStrategy
     /// </summary>
     /// <remarks>
     ///  <para>
-    ///   This is the only native recursion point: the negation handler re-enters
-    ///   here with a clipped <paramref name="totalLength"/> to probe whether an
-    ///   alternative consumes exactly a candidate number of characters. Recursion
-    ///   depth is bounded by the encoder's maximum negation nesting.
+    ///   Runs once per top-level extglob match. The negation handler does not
+    ///   re-enter here - it re-enters <see cref="RunEngineCore"/> directly,
+    ///   reusing a single set of probe buffers across all of its bounded probes.
+    ///  </para>
+    ///  <para>
+    ///   The five seed buffers are left uninitialized (<see cref="SkipLocalsInitAttribute"/>):
+    ///   the engine writes every frame, range, and key slot before reading it
+    ///   (high-water-mark counters bound every read to a written region), so it
+    ///   does not depend on zero-init. This removes the per-call zero-fill of the
+    ///   roughly 4.3 KB seed - on net481 RyuJIT (unvectorized memset) that clear
+    ///   dominated the top-level match cost.
     ///  </para>
     /// </remarks>
+    [SkipLocalsInit]
     private static bool RunEngine(
         in EngineInputs inputs,
         ReadOnlySpan<ProgramRange> startRanges,
@@ -293,6 +332,10 @@ internal sealed partial class CompiledGlobStrategy
         in EngineScratch scratch,
         ref ExtGlobMatchState state)
     {
+        // Guard the native recursion depth (negation re-entry is the only native
+        // recursion). Throws before recursing past the budget so an encoder/logic
+        // regression fails fast instead of overflowing the stack.
+        state.EnterRecursion();
         ExtGlobEngine engine = new(in inputs, totalLength, in scratch);
         startRanges.CopyTo(scratch.Work);
         engine.WorkCount = startRanges.Length;
@@ -305,6 +348,7 @@ internal sealed partial class CompiledGlobStrategy
         finally
         {
             engine.ReturnRented();
+            state.ExitRecursion();
         }
     }
 
@@ -722,19 +766,24 @@ internal sealed partial class CompiledGlobStrategy
         // working configuration. Returns false when the frame is exhausted.
         private bool ProduceAlternative(int frameIdx, ref ExtGlobMatchState state)
         {
-            char k = _frames[frameIdx].Kind;
-            int snapOffset = _frames[frameIdx].SnapshotOffset;
-            int snapCount = _frames[frameIdx].SnapshotCount;
-            int savedInput = _frames[frameIdx].SavedInput;
-            int programIndex = _frames[frameIdx].ProgramIndex;
+            // Bind the frame once by reference. The body reads and writes its
+            // fields many times across the per-kind loops below; a single ref
+            // local avoids re-indexing the (bounds-checked) frame span on every
+            // access, which is a measurable cost on the net481 RyuJIT.
+            ref Frame frame = ref _frames[frameIdx];
+            char k = frame.Kind;
+            int snapOffset = frame.SnapshotOffset;
+            int snapCount = frame.SnapshotCount;
+            int savedInput = frame.SavedInput;
+            int programIndex = frame.ProgramIndex;
             ReadOnlySpan<ProgramRange> snap = _arena.Slice(snapOffset, snapCount);
 
             if (k == GlobOpCodes.AnyRun)
             {
                 // Alternatives are consumed lengths 0, 1, ... up to the cached
                 // separator-bounded limit.
-                int consumed = _frames[frameIdx].Cursor;
-                int limit = _frames[frameIdx].Aux;
+                int consumed = frame.Cursor;
+                int limit = frame.Aux;
                 if (savedInput + consumed > limit)
                 {
                     return false;
@@ -745,7 +794,7 @@ internal sealed partial class CompiledGlobStrategy
                 Head = 0;
                 _work[0].Start = programIndex + 1;
                 WorkInput = savedInput + consumed;
-                _frames[frameIdx].Cursor = consumed + 1;
+                frame.Cursor = consumed + 1;
                 return true;
             }
 
@@ -754,9 +803,9 @@ internal sealed partial class CompiledGlobStrategy
                 // Alternatives are the valid absorbed lengths in increasing
                 // order; the run stops once a length would exceed the input.
                 int flags = _program[programIndex + 1];
-                int absorbed = _frames[frameIdx].Cursor == 0
+                int absorbed = frame.Cursor == 0
                     ? FirstValidGlobStarLength(_first, _second, savedInput, flags, _separator)
-                    : NextValidGlobStarLength(_first, _second, savedInput, _frames[frameIdx].Aux, flags, _separator);
+                    : NextValidGlobStarLength(_first, _second, savedInput, frame.Aux, flags, _separator);
 
                 if (absorbed < 0 || savedInput + absorbed > _totalLength)
                 {
@@ -768,8 +817,8 @@ internal sealed partial class CompiledGlobStrategy
                 Head = 0;
                 _work[0].Start = programIndex + 2;
                 WorkInput = savedInput + absorbed;
-                _frames[frameIdx].Aux = absorbed;
-                _frames[frameIdx].Cursor = 1;
+                frame.Aux = absorbed;
+                frame.Cursor = 1;
                 return true;
             }
 
@@ -784,24 +833,22 @@ internal sealed partial class CompiledGlobStrategy
             int altEndIndex = afterEnd - 1;
             int altCount = _program[programIndex + 3];
 
-            // The encoder caps alternatives at GlobSpecification.MaxExtGlobAlternatives
-            // (the single source of truth) and bakes that many offset slots, so
-            // altCount is guaranteed to fit this fixed compile-time buffer.
-            Span<int> altStarts = stackalloc int[GlobSpecification.MaxExtGlobAlternatives];
-            for (int a = 0; a < altCount; a++)
-            {
-                altStarts[a] = programIndex + _program[programIndex + 4 + a];
-            }
+            // The per-alternative body offsets live in the AltStart header at
+            // [programIndex + 4 + j]. They are read inline at each use site
+            // (AltBodyStart) rather than expanded into a scratch buffer: the
+            // computation is a single program read, so materializing a table
+            // would only add a stack zero and fill loop on every production.
+            int altOffsetBase = programIndex + 4;
 
             switch (k)
             {
                 case '@':
-                    while (_frames[frameIdx].Cursor < altCount)
+                    while (frame.Cursor < altCount)
                     {
-                        int j = _frames[frameIdx].Cursor;
-                        _frames[frameIdx].Cursor = j + 1;
-                        int altBodyStart = altStarts[j];
-                        int altBodyEnd = (j + 1 < altCount) ? altStarts[j + 1] - 1 : altEndIndex;
+                        int j = frame.Cursor;
+                        frame.Cursor = j + 1;
+                        int altBodyStart = programIndex + _program[altOffsetBase + j];
+                        int altBodyEnd = (j + 1 < altCount) ? programIndex + _program[altOffsetBase + j + 1] - 1 : altEndIndex;
                         snap.CopyTo(_rest);
                         _rest[0].Start = afterEnd;
                         _rest[0].KindOverride = '\0';
@@ -816,12 +863,12 @@ internal sealed partial class CompiledGlobStrategy
                     return false;
 
                 case '?':
-                    while (_frames[frameIdx].Cursor < altCount)
+                    while (frame.Cursor < altCount)
                     {
-                        int j = _frames[frameIdx].Cursor;
-                        _frames[frameIdx].Cursor = j + 1;
-                        int altBodyStart = altStarts[j];
-                        int altBodyEnd = (j + 1 < altCount) ? altStarts[j + 1] - 1 : altEndIndex;
+                        int j = frame.Cursor;
+                        frame.Cursor = j + 1;
+                        int altBodyStart = programIndex + _program[altOffsetBase + j];
+                        int altBodyEnd = (j + 1 < altCount) ? programIndex + _program[altOffsetBase + j + 1] - 1 : altEndIndex;
                         snap.CopyTo(_rest);
                         _rest[0].Start = afterEnd;
                         _rest[0].KindOverride = '\0';
@@ -833,10 +880,10 @@ internal sealed partial class CompiledGlobStrategy
                         }
                     }
 
-                    if (_frames[frameIdx].Cursor == altCount)
+                    if (frame.Cursor == altCount)
                     {
                         // Zero-consume: skip the entire alternation block.
-                        _frames[frameIdx].Cursor = altCount + 1;
+                        frame.Cursor = altCount + 1;
                         snap.CopyTo(_work);
                         WorkCount = snapCount;
                         Head = 0;
@@ -849,12 +896,12 @@ internal sealed partial class CompiledGlobStrategy
                     return false;
 
                 case '+':
-                    while (_frames[frameIdx].Cursor < altCount)
+                    while (frame.Cursor < altCount)
                     {
-                        int j = _frames[frameIdx].Cursor;
-                        _frames[frameIdx].Cursor = j + 1;
-                        int altBodyStart = altStarts[j];
-                        int altBodyEnd = (j + 1 < altCount) ? altStarts[j + 1] - 1 : altEndIndex;
+                        int j = frame.Cursor;
+                        frame.Cursor = j + 1;
+                        int altBodyStart = programIndex + _program[altOffsetBase + j];
+                        int altBodyEnd = (j + 1 < altCount) ? programIndex + _program[altOffsetBase + j + 1] - 1 : altEndIndex;
                         snap.CopyTo(_rest);
                         _rest[0].Start = afterEnd;
                         _rest[0].KindOverride = '\0';
@@ -884,12 +931,12 @@ internal sealed partial class CompiledGlobStrategy
                     return false;
 
                 case '*':
-                    while (_frames[frameIdx].Cursor < altCount)
+                    while (frame.Cursor < altCount)
                     {
-                        int j = _frames[frameIdx].Cursor;
-                        _frames[frameIdx].Cursor = j + 1;
-                        int altBodyStart = altStarts[j];
-                        int altBodyEnd = (j + 1 < altCount) ? altStarts[j + 1] - 1 : altEndIndex;
+                        int j = frame.Cursor;
+                        frame.Cursor = j + 1;
+                        int altBodyStart = programIndex + _program[altOffsetBase + j];
+                        int altBodyEnd = (j + 1 < altCount) ? programIndex + _program[altOffsetBase + j + 1] - 1 : altEndIndex;
                         snap.CopyTo(_rest);
                         _rest[0].Start = afterEnd;
                         _rest[0].KindOverride = '\0';
@@ -913,10 +960,10 @@ internal sealed partial class CompiledGlobStrategy
                         }
                     }
 
-                    if (_frames[frameIdx].Cursor == altCount)
+                    if (frame.Cursor == altCount)
                     {
                         // Zero iterations: skip the entire alternation block.
-                        _frames[frameIdx].Cursor = altCount + 1;
+                        frame.Cursor = altCount + 1;
                         snap.CopyTo(_work);
                         WorkCount = snapCount;
                         Head = 0;
@@ -953,42 +1000,48 @@ internal sealed partial class CompiledGlobStrategy
                     // needed.
                     Span<ProgramRange> altRange = stackalloc ProgramRange[1];
 
-                    // Seed buffers for the bounded re-entry probes. Allocated once
-                    // per negation production and reused across every candidate
-                    // length and alternative, rather than re-seeding a fresh (and
-                    // zeroed) set inside each probe call. Only the non-literal
-                    // alternatives actually re-enter the engine; single-literal
-                    // alternatives take the cheap comparison path below.
-                    Span<Frame> probeFrames = stackalloc Frame[SeedFrameCount];
-                    Span<ProgramRange> probeArena = stackalloc ProgramRange[SeedArenaCount];
-                    Span<ProgramRange> probeWork = stackalloc ProgramRange[MaxRangesDepth];
-                    Span<ProgramRange> probeRest = stackalloc ProgramRange[MaxRangesDepth];
-                    Span<int> probeKey = stackalloc int[KeyHeaderLength + (MaxRangesDepth * RangeKeyLength)];
-                    EngineScratch probeScratch = new(probeFrames, probeArena, probeWork, probeRest, probeKey);
-                    EngineInputs probeInputs = new(_first, _second, _program, _separator, _kind);
+                    // Probe scratch is consumed only by the non-literal re-entry
+                    // path. Rather than zero-filling ~4 KB of stackalloc on every
+                    // negation production (the dominant cost in the negation flame
+                    // graphs - System.Buffer.ZeroMemoryInternal), the seed buffers
+                    // stay unallocated until the candidate loop actually reaches a
+                    // non-literal alternative. The common negation shape - every
+                    // alternative a single literal, e.g. !(bin|obj) - takes only
+                    // the cheap comparison path below and never allocates. When a
+                    // non-literal alternative is first encountered the seed buffers
+                    // are grown once from the pool (uninitialized: the engine writes
+                    // every frame, range, and key slot before reading it, so it does
+                    // not depend on zero-init) and reused for every later probe. The
+                    // using declarations return each rental to the pool on exit; a
+                    // default BufferScope that was never grown disposes as a no-op.
+                    using BufferScope<Frame> probeFramesScope = default;
+                    using BufferScope<ProgramRange> probeArenaScope = default;
+                    using BufferScope<ProgramRange> probeWorkScope = default;
+                    using BufferScope<ProgramRange> probeRestScope = default;
+                    using BufferScope<int> probeKeyScope = default;
+                    EngineScratch probeScratch = default;
+                    EngineInputs probeInputs = default;
+                    bool probeReady = false;
 
-                    while (_frames[frameIdx].Cursor <= maxL)
+                    while (frame.Cursor <= maxL)
                     {
-                        int candidate = _frames[frameIdx].Cursor;
-                        _frames[frameIdx].Cursor = candidate + 1;
+                        int candidate = frame.Cursor;
+                        frame.Cursor = candidate + 1;
 
                         bool anyAltMatches = false;
                         for (int j = 0; j < altCount; j++)
                         {
-                            int altBodyStart = altStarts[j];
-                            int altBodyEnd = (j + 1 < altCount) ? altStarts[j + 1] - 1 : altEndIndex;
+                            int altBodyStart = programIndex + _program[altOffsetBase + j];
+                            int altBodyEnd = (j + 1 < altCount) ? programIndex + _program[altOffsetBase + j + 1] - 1 : altEndIndex;
 
                             // Fast path for a single-literal alternative: its shape
                             // is already encoded in the program (a Literal opcode
-                            // plus length char spanning the whole body), so detect
-                            // it by reading those bytes directly - no parallel
-                            // per-alternative table, no runtime-sized stackalloc. It
-                            // matches exactly 'candidate' characters only when the
-                            // lengths agree and the literal compares equal at the
-                            // cursor.
-                            if (altBodyStart < altBodyEnd
-                                && _program[altBodyStart] == GlobOpCodes.Literal
-                                && altBodyStart + 2 + _program[altBodyStart + 1] == altBodyEnd)
+                            // plus length char spanning the whole body), so detect it
+                            // by reading those bytes directly - no parallel
+                            // per-alternative table, no engine re-entry. It matches
+                            // exactly 'candidate' characters only when the lengths
+                            // agree and the literal compares equal at the cursor.
+                            if (IsSingleLiteralAlternative(_program, altBodyStart, altBodyEnd))
                             {
                                 int litLen = _program[altBodyStart + 1];
                                 if (litLen == candidate
@@ -1002,6 +1055,26 @@ internal sealed partial class CompiledGlobStrategy
                             }
 
                             altRange[0] = new ProgramRange { Start = altBodyStart, End = altBodyEnd };
+
+                            // First non-literal alternative on this production: grow
+                            // the probe seed buffers once from the pool and reuse
+                            // them for every later candidate/alternative.
+                            if (!probeReady)
+                            {
+                                probeFramesScope.EnsureCapacity(SeedFrameCount);
+                                probeArenaScope.EnsureCapacity(SeedArenaCount);
+                                probeWorkScope.EnsureCapacity(MaxRangesDepth);
+                                probeRestScope.EnsureCapacity(MaxRangesDepth);
+                                probeKeyScope.EnsureCapacity(KeyHeaderLength + (MaxRangesDepth * RangeKeyLength));
+                                probeScratch = new(
+                                    probeFramesScope.AsSpan(),
+                                    probeArenaScope.AsSpan(),
+                                    probeWorkScope.AsSpan(),
+                                    probeRestScope.AsSpan(),
+                                    probeKeyScope.AsSpan());
+                                probeInputs = new(_first, _second, _program, _separator, _kind);
+                                probeReady = true;
+                            }
 
                             // Bounded re-entry: probes whether the alternative
                             // consumes exactly 'candidate' characters. Native
@@ -1042,6 +1115,18 @@ internal sealed partial class CompiledGlobStrategy
                     return false;
             }
         }
+
+        /// <summary>
+        ///  Returns <see langword="true"/> when the alternative body
+        ///  <c>[bodyStart, bodyEnd)</c> is a single <see cref="GlobOpCodes.Literal"/>
+        ///  opcode spanning the whole body. Such alternatives are matched by a
+        ///  direct length-and-compare against each negation candidate length, so
+        ///  they never re-enter the engine and need no probe scratch.
+        /// </summary>
+        private static bool IsSingleLiteralAlternative(ReadOnlySpan<char> program, int bodyStart, int bodyEnd) =>
+            bodyStart < bodyEnd
+                && program[bodyStart] == GlobOpCodes.Literal
+                && bodyStart + 2 + program[bodyStart + 1] == bodyEnd;
     }
 
     /// <summary>
@@ -1214,13 +1299,66 @@ internal sealed partial class CompiledGlobStrategy
         // crafted input. Once reached, recording stops (still correct).
         private const int MaxEntries = 1 << 20;
 
+        /// <summary>
+        ///  Hard ceiling on the native recursion depth of the engine. Negation
+        ///  (<c>!(...)</c>) re-entry is the engine's only native recursion: each
+        ///  enclosing negation re-enters <see cref="RunEngineCore"/> one level
+        ///  deeper, and the encoder caps extglob nesting at
+        ///  <see cref="GlobSpecification.MaxExtGlobDepth"/>, so a validly compiled
+        ///  program reaches at most that many re-entries plus the one top-level
+        ///  entry. A program that exceeds this could only come from an encoder bug
+        ///  that let through deeper nesting, so the guard exists purely to convert
+        ///  such a regression into a deterministic, catchable failure instead of a
+        ///  stack overflow.
+        /// </summary>
+        private const int MaxRecursionDepth = GlobSpecification.MaxExtGlobDepth + 1;
+
+        /// <summary>
+        ///  Running count of choice-point visits in the current match. Compared
+        ///  against <see cref="EngageThreshold"/> to decide when to engage the
+        ///  failure memo; never reset within a match.
+        /// </summary>
         public long Steps;
+
+        // Current native recursion depth (number of live RunEngineCore frames).
+        // Incremented on entry and decremented on exit by EnterRecursion /
+        // ExitRecursion; guarded against MaxRecursionDepth.
+        private int _depth;
 
         // Failure memo. Non-null exactly when engaged; lazily created so benign
         // inputs that never cross the threshold pay no allocation.
         private SequenceSet<int>? _failures;
 
+        /// <summary>
+        ///  <see langword="true"/> once the failure memo has been created - that is,
+        ///  once the walk has crossed <see cref="EngageThreshold"/> steps. Before
+        ///  then the common-case path pays no memo allocation or lookup cost.
+        /// </summary>
         public readonly bool Engaged => _failures is not null;
+
+        /// <summary>
+        ///  Records entry into a <see cref="RunEngineCore"/> frame and throws when
+        ///  the native recursion depth would exceed <see cref="MaxRecursionDepth"/>.
+        ///  Unreachable for any validly compiled program (the encoder caps nesting
+        ///  at <see cref="GlobSpecification.MaxExtGlobDepth"/>); it fires only if a
+        ///  logic change breaks that invariant, failing fast and deterministically
+        ///  rather than overflowing the stack.
+        /// </summary>
+        public void EnterRecursion()
+        {
+            if (++_depth > MaxRecursionDepth)
+            {
+                throw new InvalidOperationException(
+                    $"Extended-glob match recursion exceeded the depth budget of {MaxRecursionDepth}. "
+                        + $"The encoder should reject patterns nested deeper than {GlobSpecification.MaxExtGlobDepth} before matching.");
+            }
+        }
+
+        /// <summary>
+        ///  Records exit from a <see cref="RunEngineCore"/> frame, balancing a
+        ///  prior <see cref="EnterRecursion"/>.
+        /// </summary>
+        public void ExitRecursion() => _depth--;
 
         /// <summary>
         ///  Creates the failure memo. Called once when the step counter first

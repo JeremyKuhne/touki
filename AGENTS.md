@@ -290,6 +290,16 @@ catch a mistake.
   - `Touki.Collections.*` (`ContiguousList`, `ArrayPoolList`,
     `SingleOptimizedList`, `EmptyList`) instead of `List<T>` /
     `Dictionary<,>` when the lifetime is bounded.
+- **When choosing how a hot path gets a short-lived scratch buffer** (zeroed
+  `stackalloc` vs `[SkipLocalsInit]` + `stackalloc` vs `BufferScope<T>` vs an
+  `ArrayPool<T>.Shared` rental), follow the
+  [`scratch-buffer-strategy`](.agents/skills/scratch-buffer-strategy/SKILL.md)
+  skill for the decision tree and the net481/net10 size crossovers, and
+  [docs/arraypool-performance.md](docs/arraypool-performance.md) for the backing
+  measurements. Key facts: net481 *does* honor `[SkipLocalsInit]`; a warm
+  `ArrayPool` still has a per-call floor warmup cannot remove; and below the
+  crossover (roughly 190 B net10 / 1.3 KB net481 vs a warm rental) a zeroed
+  `stackalloc` beats renting.
 - When adding a polyfill for a modern .NET API on .NET Framework, follow the
   [`polyfill-dotnet-api`](.agents/skills/polyfill-dotnet-api/SKILL.md) skill:
   prefer Microsoft-shipped packages (`System.Memory`, `Microsoft.Bcl.*`,

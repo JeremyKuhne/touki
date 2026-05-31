@@ -80,25 +80,6 @@ public enum GlobDialect
     FileSystemGlobbing,
 
     /// <summary>
-    ///  Win32 <c>FsRtlIsNameInExpression</c> semantics including the DOS metacharacters
-    ///  <c>&lt;</c>, <c>&gt;</c>, and <c>"</c>.
-    /// </summary>
-    /// <remarks>
-    ///  <para>
-    ///   See <see href="https://learn.microsoft.com/dotnet/api/system.io.enumeration.filesystemname.matcheswin32expression">
-    ///   <c>FileSystemName.MatchesWin32Expression</c></see>.
-    ///  </para>
-    ///  <para>
-    ///   <b>Not yet implemented.</b> Reserved for a future release; passing this value
-    ///   to <see cref="GlobSpecification.Compile(StringSegment, GlobDialect, GlobOptions, GlobPathSeparator, int)"/>
-    ///   throws <see cref="GlobFormatException"/> with
-    ///   <see cref="GlobCompileErrorCode.FeatureNotEnabled"/>.
-    ///  </para>
-    /// </remarks>
-    [Obsolete("GlobDialect.Win32 is reserved but not yet implemented. Compiling with this value throws GlobFormatException.", error: false)]
-    Win32,
-
-    /// <summary>
     ///  Simple file-name expression matching (<c>*</c> and <c>?</c> only).
     /// </summary>
     /// <remarks>

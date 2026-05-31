@@ -23,6 +23,9 @@ References to those types from a benchmark must be guarded with `#if NETFRAMEWOR
 - [`framework-jit-optimization`](../framework-jit-optimization/SKILL.md) -
   decisions about specialization, unrolling, and BCL-delegation on net481 that the
   benchmarks here exist to validate.
+- [`scratch-buffer-strategy`](../scratch-buffer-strategy/SKILL.md) - choosing
+  between zeroed `stackalloc`, `[SkipLocalsInit]`, `BufferScope<T>`, and an
+  `ArrayPool` rental; several benchmarks here exist to validate those crossovers.
 - [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - requires a benchmark
   in `touki.perf/` (or an explicit "not measured" note) for any perf claim that
   drives a code change in `touki/Framework/`.

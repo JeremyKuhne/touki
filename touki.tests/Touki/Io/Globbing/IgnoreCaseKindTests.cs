@@ -2,12 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-// GlobDialect.Win32 is reserved-but-unimplemented and marked [Obsolete] for external
-// callers. These tests pin down its metadata-level mappings (default kind, escape,
-// separator, leading-dot, path-aware) so future drift is caught, and have to reference
-// the obsolete member by name.
-#pragma warning disable CS0618 // GlobDialect.Win32 is obsolete
-
 namespace Touki.Io.Globbing;
 
 /// <summary>
@@ -24,7 +18,6 @@ public class IgnoreCaseKindTests
     [InlineData(GlobDialect.Bash)]
     [InlineData(GlobDialect.Git)]
     [InlineData(GlobDialect.FileSystemGlobbing)]
-    [InlineData(GlobDialect.Win32)]
     [InlineData(GlobDialect.Simple)]
     [InlineData(GlobDialect.PowerShell)]
     public void DefaultIgnoreCaseKind_OptionsNone_ReturnsOff(GlobDialect dialect) =>
@@ -48,10 +41,9 @@ public class IgnoreCaseKindTests
         dialect.DefaultIgnoreCaseKind(GlobOptions.IgnoreCase).Should().Be(IgnoreCaseKind.Ascii);
 
     [Theory]
-    // .NET / Windows-native dialects default to full Unicode ordinal case folding.
+    // .NET-native dialects default to full Unicode ordinal case folding.
     [InlineData(GlobDialect.MSBuild)]
     [InlineData(GlobDialect.FileSystemGlobbing)]
-    [InlineData(GlobDialect.Win32)]
     [InlineData(GlobDialect.Simple)]
     [InlineData(GlobDialect.PowerShell)]
     public void DefaultIgnoreCaseKind_DotNetNative_ReturnsUnicode(GlobDialect dialect) =>
@@ -92,7 +84,6 @@ public class IgnoreCaseKindTests
     [InlineData(GlobDialect.Git, GlobOptions.None, '\\')]
     [InlineData(GlobDialect.MSBuild, GlobOptions.None, '\0')]
     [InlineData(GlobDialect.FileSystemGlobbing, GlobOptions.None, '\0')]
-    [InlineData(GlobDialect.Win32, GlobOptions.None, '\\')]
     [InlineData(GlobDialect.PowerShell, GlobOptions.None, '`')]
     [InlineData(GlobDialect.PowerShell, GlobOptions.NoEscape, '\0')]
     // Simple has no escape character regardless of options.
@@ -112,7 +103,6 @@ public class IgnoreCaseKindTests
     // Other dialects don't restrict leading dots.
     [InlineData(GlobDialect.MSBuild, true)]
     [InlineData(GlobDialect.FileSystemGlobbing, true)]
-    [InlineData(GlobDialect.Win32, true)]
     [InlineData(GlobDialect.Simple, true)]
     [InlineData(GlobDialect.PowerShell, true)]
     public void MatchesLeadingDotByDefault_PerDialect(GlobDialect dialect, bool expected) =>
@@ -131,7 +121,6 @@ public class IgnoreCaseKindTests
     [InlineData(GlobDialect.Posix, false)]
     [InlineData(GlobDialect.Simple, false)]
     [InlineData(GlobDialect.PowerShell, false)]
-    [InlineData(GlobDialect.Win32, false)]
     public void IsPathAware_PerDialect(GlobDialect dialect, bool expected) =>
         dialect.IsPathAware().Should().Be(expected);
 
@@ -148,7 +137,6 @@ public class IgnoreCaseKindTests
     [InlineData(GlobDialect.Posix, '\0')]
     [InlineData(GlobDialect.Simple, '\0')]
     [InlineData(GlobDialect.PowerShell, '\0')]
-    [InlineData(GlobDialect.Win32, '\0')]
     public void DefaultSeparator_PerDialect(GlobDialect dialect, char expected) =>
         dialect.DefaultSeparator().Should().Be(expected);
 

@@ -87,6 +87,87 @@ public class ExtGlobNegationMatchTests
     public void Match_NegationNested(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
+    [Fact]
+    public void Match_MaxDepthNegationNesting_DoesNotTripRecursionGuard()
+    {
+        // The encoder accepts up to GlobSpecification.MaxExtGlobDepth nested
+        // extglob constructs. Negation re-entry is the engine's only native
+        // recursion, so the deepest legal pattern - that many nested !(...) -
+        // drives the recursion-depth guard to its budget. This pins that the
+        // budget accommodates the real maximum and never trips on valid input.
+        int depth = GlobSpecification.MaxExtGlobDepth;
+        string pattern = string.Concat(Enumerable.Repeat("!(", depth)) + "x" + new string(')', depth);
+
+        // !(P) matches s exactly when P does not match s, so wrapping x in an
+        // even number of negations is equivalent to matching "x", and an odd
+        // number is equivalent to "not x".
+        bool matchesLiteral = (depth & 1) == 0;
+
+        Func<bool> act = () => Match(pattern, "x");
+        act.Should().NotThrow();
+        act().Should().Be(matchesLiteral);
+        Match(pattern, "abcd").Should().Be(!matchesLiteral);
+    }
+
+    [Fact]
+    public void MatchCore_OverBudgetNegationNesting_TripsRecursionGuard()
+    {
+        // Companion to Match_MaxDepthNegationNesting_DoesNotTripRecursionGuard:
+        // that test proves the guard never trips at the deepest LEGAL nesting;
+        // this one proves the guard actually fires when nesting exceeds the
+        // budget. The encoder (GlobSpecification.Factory) rejects patterns nested
+        // deeper than MaxExtGlobDepth, so a normally compiled pattern can never
+        // reach the guard. To exercise the safety net we hand-craft an over-deep
+        // bytecode program directly - the shape an encoder bug would have to
+        // produce for the guard to matter - and run it through the engine.
+        //
+        // Each !(...) wraps a body in the AltStart bytecode block. The innermost
+        // body is the literal "x". A literal alternative is matched without an
+        // engine re-entry, so only the outer negations (whose body is itself a
+        // negation) recurse: N nested negations drive the native recursion to
+        // depth N. MaxExtGlobDepth + 2 is comfortably past the guard's budget.
+        int depth = GlobSpecification.MaxExtGlobDepth + 2;
+        string program = BuildNestedNegationProgram(depth);
+
+        CompiledGlobStrategy strategy = new(
+            program,
+            nfaProgramLength: program.Length,
+            tailStart: -1,
+            tailLength: 0,
+            hasGlobStar: false,
+            hasExtGlob: true,
+            GlobDialect.Bash,
+            GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
+
+        Action act = () => _ = strategy.MatchCore(default, "x".AsSpan());
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*recursion exceeded*");
+    }
+
+    // Builds a hand-crafted bytecode program of `depth` nested !(...) constructs
+    // wrapping the literal "x". The AltStart header layout (see
+    // CompiledGlobStrategy.ExtGlob) is
+    // [AltStart][kind][blockLength][altCount][off_0] followed by the single
+    // alternative body and a closing AltEnd. blockLength is the inclusive char
+    // count from AltStart through AltEnd; off_0 is the body start relative to the
+    // AltStart (always 5 for a single-alternative block: the 5-char header).
+    private static string BuildNestedNegationProgram(int depth)
+    {
+        // Innermost body: a Literal opcode carrying the single character 'x'.
+        string program = $"{GlobOpCodes.Literal}{(char)1}x";
+
+        for (int i = 0; i < depth; i++)
+        {
+            int blockLength = 5 + program.Length + 1;
+            program =
+                $"{GlobOpCodes.AltStart}!{(char)blockLength}{(char)1}{(char)5}"
+                + program
+                + GlobOpCodes.AltEnd;
+        }
+
+        return program;
+    }
+
     // -- Path-aware: negation can't cross the separator ------------------------------
 
     [Theory]

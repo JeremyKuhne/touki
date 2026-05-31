@@ -1,32 +1,175 @@
-# Glob matcher - feature implementation plan
+# Glob matcher - status and next steps
 
-Tracks remaining glob functionality not yet shipped on the
-`feature/globbing-phase1` branch. Companion to
-[globbing-optimization-plan.md](globbing-optimization-plan.md) (which tracks
-match-time perf work) - this doc tracks **feature coverage**: dialects, options,
-and pattern syntax not yet supported.
+The glob feature surface is **complete**. Every dialect, option, and pattern
+syntax originally planned for the matcher has shipped, with one deliberate
+exception: the Windows `Win32` / `WinNT` dialects are **indefinitely
+postponed** and have been removed from `GlobDialect` (see
+[Win32 / WinNT - indefinitely postponed](#win32--winnt---indefinitely-postponed)).
 
-For the per-dialect ignore-case semantic mapping (already implemented) see
+This document now serves two purposes:
+
+1. A **record of the completed feature work** (the [Shipped features](#shipped-features)
+   summary and the per-phase notes that follow it).
+2. A **forward-looking plan for continual performance improvement and
+   simplification** - the active section is
+   [Next steps - performance and simplification](#next-steps---performance-and-simplification),
+   which captures the current flame-graph investigation and the directory-pruning
+   work it motivates.
+
+Companion docs: [globbing-optimization-plan.md](globbing-optimization-plan.md)
+(match-time micro-optimization slices) and
+[framework-span-performance.md](framework-span-performance.md) (the net472/net481
+slow-span playbook). For the per-dialect ignore-case mapping see
 [touki/Touki/Io/Globbing/GlobOptions.cs](../touki/Touki/Io/Globbing/GlobOptions.cs)
 `IgnoreCase` and the internal `IgnoreCaseKind` enum.
 
 ## Status snapshot
 
-**Dialects shipped (8 of 9):** `Posix`, `Simple`, `PowerShell`, `PosixPath`
+**Dialects shipped (8):** `Posix`, `Simple`, `PowerShell`, `PosixPath`
 (path-aware + globstar), `MSBuild` (path-aware + globstar, case-insensitive
 by default), `Bash` (path-aware, globstar opt-in, extglob opt-in via
-`AllowExtGlob`),
-`FileSystemGlobbing` (path-aware + implicit globstar, no classes, no
-escape), `Git` (path-aware + implicit globstar, with gitignore-style
-`!` / leading `/` / trailing `/` markers). Only `Win32` remains gated;
-it needs a dedicated `Win32GlobMatcher`.
+`AllowExtGlob`), `FileSystemGlobbing` (path-aware + implicit globstar, no
+classes, no escape), `Git` (path-aware + implicit globstar, with
+gitignore-style `!` / leading `/` / trailing `/` markers).
+
+**Postponed indefinitely:** `Win32` and `WinNT`. Removed from `GlobDialect`;
+the defensive `FeatureNotEnabled` branch in `GlobSpecification.TryCompile`
+covers any out-of-range dialect value.
 
 **`GlobOptions` flags consumed (5 of 5):** `IgnoreCase`, `MatchLeadingDot`,
 `NoEscape`, `AllowGlobStar`, `AllowExtGlob`.
 
-**Tests:** 333 glob tests cover the implemented surface (both TFMs). New
-tests must be added alongside each feature below - see
-`touki.tests/Touki/Io/Globbing/`.
+**Phases complete:** Phase 1 (path-unaware dialects + extglob), Phase 2
+(path-aware matching + globstar), Phase 3 (`.gitignore` negation / anchors /
+directory-only / `OrderedMatchSet` / `GitIgnore` loader), Phase 5 (POSIX
+bracket-expression extras). Phase 4 (brace expansion) remains an optional
+`Bash`-only convenience - see [Phase 4](#phase-4---brace-expansion-bash-only).
+
+**Tests:** the full suite is green on both TFMs (net10.0 and net481),
+including the per-dialect oracle suites. New tests must be added alongside
+each future change - see `touki.tests/Touki/Io/Globbing/`.
+
+---
+
+## Next steps - performance and simplification
+
+This is the active work. The feature surface is frozen; the remaining effort
+is making the enumeration paths faster (especially on the net472/net481
+RyuJIT) and removing avoidable complexity.
+
+### N1. Flame-graph investigation - extglob enumeration (current)
+
+CPU profiling of [`touki.perf/MsBuildEnumeratePerf2.cs`](../touki.perf/MsBuildEnumeratePerf2.cs)
+on the touki repo (`**/*.cs` minus `bin`/`obj`, 4850 `.cs` files) captured
+two extglob-collapse scenarios:
+
+- `GlobEnumeratorExtGlobSingle` - `!(bin|obj)/**/*.cs`
+- `GlobEnumeratorExtGlobSingleWithRoot` - `@(!(bin|obj)/**/*.cs|*.cs)`
+
+Measured means (BenchmarkDotNet, ratio vs the `Microsoft.Build` `FileMatcher`
+baseline):
+
+| Scenario | net10.0 (modern RyuJIT) | net481 (.NET Framework 4.8.1 RyuJIT) |
+|---|---|---|
+| `GlobEnumeratorReduced` (`**/*.cs` + `bin/**`,`obj/**` excludes) | 44.7 ms (0.39) | 49.0 ms (0.56) |
+| `GlobEnumeratorExtGlobSingle` | 52.0 ms (0.46) | 76.3 ms (0.87) |
+| `GlobEnumeratorExtGlobSingleWithRoot` | 51.9 ms (0.46) | 79.1 ms (0.90) |
+
+The extglob collapse is only +15% over the reduced excludes on net10 but
+**+56-65% on net481** - the standout regression and the reason this
+investigation exists.
+
+**Flame-graph reading.** EventPipe `CpuSampling` (net10 only; net481 has no
+in-proc profiler) fully inlines the matcher predicate into
+`FileSystemEnumerator<T>.MoveNext`, so the predicate shows up as `MoveNext`
+self-time. Per workload iteration of the complex extglob, `MoveNext`
+(~8.1 s inclusive in the trace) splits roughly:
+
+- ~38% inlined compiled-extglob predicate (the `ExtGlobEngine` walk run per entry).
+- ~44% OS directory traversal: `FindNextEntry` + per-directory `Kernel32.CloseHandle`.
+- ~13% `Monitor.Enter_Slowpath` inside the BCL enumerator's own buffer/handle
+  machinery (verified: no locks exist in the touki glob stack).
+
+SVGs: [scratch/extglob-single-flame.svg](../scratch/extglob-single-flame.svg)
+and [scratch/extglob-root-flame.svg](../scratch/extglob-root-flame.svg).
+
+**Root cause (verified in source).** `!(bin|obj)/**/*.cs` compiles to a
+program whose first opcode is `AltStart`, so
+`CompiledGlobStrategy.ComputeLiteralPathPrefix` returns an empty literal
+prefix. With no literal prefix, `GlobMatch.MatchesDirectory` returns `true`
+for *every* directory - including `bin` and `obj`. The enumerator therefore
+**descends into `bin`/`obj` and rejects each `.cs` file** via the full
+`ExtGlobEngine` backtracking walk, instead of pruning those subtrees at the
+directory boundary the way the `bin/**`,`obj/**` excludes do. On a .NET repo
+the `bin`/`obj` trees dwarf the source tree, so the extglob variant runs the
+most expensive matcher over the most files - exactly backwards.
+
+### N2. Directory pruning for first-segment negations (primary proposal)
+
+Teach the directory-recursion decision to evaluate a leading negation
+(`!(a|b)/...`) against the *candidate directory name* so matching subtrees are
+never descended.
+
+- **Where:** `GlobMatch.MatchesDirectory` (called from
+  `MatchEnumerator.ShouldRecurseIntoEntry`). Today it short-circuits only on a
+  non-empty `LiteralPathPrefix`; extend it to recognize a leading
+  `AltStart`-with-negation whose alternatives are plain literals (the
+  `!(bin|obj)` shape) and return `false` when the candidate's first segment
+  matches one of the negated literals.
+- **Payoff:** removes the dominant avoidable cost on *both* TFMs (no per-file
+  `ExtGlobEngine` walk over `bin`/`obj`) and should close most of the gap to
+  `GlobEnumeratorReduced`. Largest single win, and it helps net481 most
+  because that path pays the slow-span indexer per engine step.
+- **Risk:** the pruning must be conservative - only prune when the leading
+  construct is provably a first-segment negation of literal alternatives
+  anchored at the path root. Any globstar or nested wildcard before the
+  negation, or alternatives that aren't plain literals, must fall back to
+  descend-and-filter. Add regression tests that pin a non-prunable shape
+  (e.g. `**/!(bin)/*.cs`) still enumerates correctly.
+
+### N3. Specialize the `!(set)/**/suffix` shape (follow-on)
+
+If N2's directory pruning is not enough, add a dedicated `GlobStrategy` for the
+`!(literal-set)/**/suffix` shape - the same approach that produced
+`MultiSuffixGlobStrategy` for `**/@(*.litN|...)`. A first-segment set-exclusion
+check plus a suffix check replaces the general backtracking engine entirely for
+this common MSBuild collapse. Gated behind a benchmark showing N2 alone leaves
+measurable headroom.
+
+### N4. net481 span tuning of the `ExtGlobEngine` inner loop
+
+The +56-65% net481 regression lives in the per-file engine walk. Apply the
+`MemoryMarshal.GetReference` + `Unsafe.Add` hoist from
+[framework-span-performance.md](framework-span-performance.md) to the
+`ExtGlobEngine` opcode and state-serialization loops (the slow-span indexer
+costs ~8 µops/element on net481 vs ~1 on net10). Per that doc, expect a 19-44%
+Framework win at no `unsafe`-keyword cost. **Measure net10 does not regress
+before `#if`-splitting**; prefer a single simple implementation when it stays
+within ~5% on net10.
+
+### N5. Simplification opportunities
+
+- **Specialized-matcher path-aware fast paths (deferred since F2.1).**
+  `Prefix`/`Suffix`/`Contains`/`PrefixSuffix` route to `CompiledGlobMatcher`
+  for path-aware dialects. Either grow separator-aware fast paths *or* delete
+  the dead intent and document that `CompiledGlobMatcher` owns these shapes.
+  Decide based on a path-aware benchmark; do not carry the ambiguity.
+- **Empty-literal-prefix `MatchesDirectory` pruning (deferred since F3.3).**
+  Patterns whose literal prefix is empty (e.g. `**/*.cs`) recurse
+  unconditionally. N2 handles the negation case; a separator-checkpointed NFA
+  savepoint API would generalize pruning to other empty-prefix shapes - only
+  if a benchmark justifies the added matcher surface.
+- **Prefer one implementation over `#if`-split variants** unless net10
+  measurably regresses, so the simple source keeps accruing future RyuJIT
+  improvements (per the repo's span-performance guidance).
+
+---
+
+## Shipped features
+
+The remainder of this document records the completed feature work and the
+design decisions behind it. It is kept for reference; the active plan is
+[Next steps](#next-steps---performance-and-simplification) above.
 
 ---
 
@@ -65,71 +208,14 @@ rather than `\`.
   per-dialect mappings.
 - **Ref:** [about_Wildcards](https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_wildcards).
 
-### F1.2 `Win32` dialect - **deferred (low priority)**
+### F1.2 / F1.2b `Win32` and `WinNT` dialects - **indefinitely postponed**
 
-Goal: bit-for-bit parity with
-[`FileSystemName.MatchesWin32Expression`](https://learn.microsoft.com/dotnet/api/system.io.enumeration.filesystemname.matcheswin32expression).
-That API does two things the matcher today does not:
-
-1. **Pre-translates the pattern** via `TranslateWin32Expression`: `?`
-   becomes `>` (DOS_QM); a `.` becomes `"` (DOS_DOT) when followed by
-   `?` or `*`; a trailing `*.` becomes `*<` (DOS_STAR). This is the
-   historical 8.3-compat shim that makes `*.*` match files without an
-   extension and `*.foo` match `name.foo` cleanly. The matcher needs
-   to perform the same translation up front so callers can pass
-   un-translated patterns and get BCL behavior.
-2. **Runs a multi-state NFA** that tracks every possible expression
-   position per input character. The DOS metachars (`<`, `>`, `"`)
-   have semantics that don't fit the current single-savepoint
-   backtracker:
-   - `<` (DOS_STAR) - zero or more chars, must stop before the
-     **last** `.` in the name (requires lookahead to know which `.` is
-     last).
-   - `>` (DOS_QM) - zero or one char; on `.` or end-of-name,
-     advances the expression past any contiguous run of `>`s.
-   - `"` (DOS_DOT) - matches a `.` **or** matches zero chars at
-     end-of-name (epsilon).
-
-   These epsilon transitions and the "skip contiguous `>`s" behavior
-   mean a single `(pi, si)` savepoint is insufficient; the NFA needs
-   the BCL's prior/current `Span<int>` match-set or an equivalent
-   stack.
-
-**Implementation plan:** port the BCL `MatchPattern` algorithm
-(`useExtendedWildcards: true` branch) directly into a new
-`Win32GlobMatcher` - the current `CompiledGlobMatcher` NFA is
-the wrong shape and trying to shoehorn DOS semantics into it costs
-more than just keeping the dedicated implementation. Pre-translate
-the pattern at compile time so the matcher only ever sees the
-extended-wildcard form.
-
-`Win32` defaults to case-insensitive matching per
-[D4](#d4-win32-dialect-ignorecase-is-the-default).
-
-- **Touches:** New `Win32GlobMatcher.cs`; `GlobMatcherFactory` routes
-  `Win32` patterns to it directly (no shape detection - the
-  factory's specialized shapes don't survive the pre-translation).
-  `GlobMatcher.TryCompile` adds `Win32` to its allow-list. No changes
-  to `GlobOpCodes` or the shared `CompiledGlobMatcher`.
-- **Tests:** Golden cross-reference against
-  `System.IO.Enumeration.FileSystemName.MatchesWin32Expression` (net10
-  only - the API is not on net472) for every case in the BCL's
-  own test suite. Spot-checks for `*.*`, `*.`, `*.foo`, `a?b`, raw
-  `<`/`>`/`"` already present in patterns (the pre-translation is
-  idempotent for those characters).
-- **Ref:** [FsRtlIsNameInExpression](https://learn.microsoft.com/windows-hardware/drivers/ddi/ntifs/nf-ntifs-fsrtlisnameinexpression),
-  [`FileSystemName.cs` source](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/IO/Enumeration/FileSystemName.cs).
-
-### F1.2b `WinNT` dialect - **deferred (low priority)**
-
-Same NFA as F1.2 but **without** the `TranslateWin32Expression`
-pre-pass. Exposes raw `FsRtlIsNameInExpression` semantics so callers
-working at the kernel-name level (file-system filter drivers, NT
-object-namespace scanners) can match the way the Object Manager
-matches. Requires a new `GlobDialect.WinNT` enum entry and an
-`IgnoreCaseKindTests` / `MatchesLeadingDotByDefault` row alongside
-`Win32`. Same case-insensitive default as `Win32`. Shares the
-`Win32GlobMatcher` implementation behind a "translate?" bool.
+See [Win32 / WinNT - indefinitely postponed](#win32--winnt---indefinitely-postponed)
+below. Both dialects were removed from `GlobDialect`; callers needing those
+semantics call
+[`System.IO.Enumeration.FileSystemName.MatchesWin32Expression`](https://learn.microsoft.com/dotnet/api/system.io.enumeration.filesystemname.matcheswin32expression)
+directly (reachable on net10 via the BCL; see `Touki.Io.Paths` for the
+`MatchType.Win32` enumeration shim).
 
 ### F1.3 `AllowExtGlob` option - **done**
 
@@ -630,6 +716,43 @@ full POSIX bracket-expression grammar also includes:
 
 ---
 
+## Win32 / WinNT - indefinitely postponed
+
+The Windows-native dialects `Win32` (with the `TranslateWin32Expression`
+8.3-compat pre-pass) and `WinNT` (raw `FsRtlIsNameInExpression` semantics)
+were planned but are **indefinitely postponed**, and the `Win32` member has
+been **removed from `GlobDialect`** along with every doc cref and test row
+that referenced it.
+
+**Why postponed.** Bit-for-bit `FileSystemName.MatchesWin32Expression` parity
+needs a multi-state NFA with epsilon transitions for the DOS metacharacters
+(`<` DOS_STAR, `>` DOS_QM, `"` DOS_DOT) that does not fit the current
+single-savepoint backtracker. It would require a dedicated `Win32GlobMatcher`
+plus a compile-time `TranslateWin32Expression` pre-pass. There is no concrete
+caller asking for it, and callers who need exact Windows matching today can
+call the BCL directly.
+
+**What replaces it.** Anyone needing Win32 / NT matching semantics calls
+[`System.IO.Enumeration.FileSystemName.MatchesWin32Expression`](https://learn.microsoft.com/dotnet/api/system.io.enumeration.filesystemname.matcheswin32expression)
+(net10 BCL) directly. `Touki.Io.Paths` already surfaces the
+`System.IO.Enumeration.MatchType.Win32` enumeration mode for the file-system
+enumerator. This is unrelated to `GlobDialect` and is not affected by the
+removal.
+
+**Bringing it back.** If a future caller needs it, re-add a `Win32` (and
+optionally `WinNT`) member to `GlobDialect`, add it to the
+`GlobSpecification.TryCompile` allowlist, and port the BCL `MatchPattern`
+algorithm (`useExtendedWildcards: true` branch) into a new
+`Win32GlobMatcher`. Oracle: cross-reference against
+`MatchesWin32Expression` (net10 only; the API is not on net472), and
+`RtlIsNameInExpression` P/Invoke on Windows. `Win32` defaults to
+case-insensitive (Unicode) matching - the historical D4 decision.
+
+- **Ref:** [FsRtlIsNameInExpression](https://learn.microsoft.com/windows-hardware/drivers/ddi/ntifs/nf-ntifs-fsrtlisnameinexpression),
+  [`FileSystemName.cs` source](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/IO/Enumeration/FileSystemName.cs).
+
+---
+
 ## Cross-cutting follow-ups
 
 ### Ignore-case customization (in
@@ -675,7 +798,6 @@ platform constraints for running it.
 | `PosixPath` | `fnmatch(3)` with `FNM_PATHNAME` flag set | Same P/Invoke; Python `pathlib.PurePath.match` is approximate, not exact | Linux/macOS native; WSL on Windows |
 | `Simple` | [`System.IO.Enumeration.FileSystemName.MatchesSimpleExpression`](https://learn.microsoft.com/dotnet/api/system.io.enumeration.filesystemname.matchessimpleexpression) | Direct managed call | Any TFM net5+ - **net10 test project, cross-platform** |
 | `PowerShell` | [`System.Management.Automation.WildcardPattern`](https://learn.microsoft.com/dotnet/api/system.management.automation.wildcardpattern) | Reference `System.Management.Automation` (Windows PowerShell SDK / pwsh SDK), or subprocess to <c>pwsh -c</c> | SMA assembly is Windows-only by default; <c>pwsh</c> subprocess works cross-platform if PowerShell 7+ is installed |
-| `Win32` | [`System.IO.Enumeration.FileSystemName.MatchesWin32Expression`](https://learn.microsoft.com/dotnet/api/system.io.enumeration.filesystemname.matcheswin32expression) | Direct managed call (algorithm is pure managed) | Any TFM net5+ - **net10 test project, cross-platform**. Cross-check against <c>RtlIsNameInExpression</c> P/Invoke on Windows-only |
 | `Bash` | <c>bash -O extglob -O globstar -c '[[ &quot;$input&quot; == $pattern ]] ; echo $?'</c> | Subprocess to <c>bash</c> on PATH | bash 4.0+ native on Linux/macOS; Git Bash or WSL on Windows |
 | `MSBuild` | [`Microsoft.Build.Globbing.MSBuildGlob.Parse(pattern).IsMatch(input)`](https://learn.microsoft.com/dotnet/api/microsoft.build.globbing.msbuildglob) | Direct managed call (NuGet: `Microsoft.Build`) | Any TFM net472+ - **already referenced via `FileMatcherWrapper` for the enumeration parity check** |
 | `FileSystemGlobbing` | [`Microsoft.Extensions.FileSystemGlobbing.Matcher`](https://learn.microsoft.com/dotnet/api/microsoft.extensions.filesystemglobbing.matcher) | Direct managed call (NuGet: `Microsoft.Extensions.FileSystemGlobbing`) | Any TFM netstandard2.0+ - **cross-platform** |
@@ -692,9 +814,9 @@ platform constraints for running it.
   `System.IO.Enumeration.FileSystemName.MatchesSimpleExpression`, but its
   semantic differs (no `FNM_PERIOD`, no leading-dot rule), so it's only
   useful for a partial cross-check, not a full oracle.
-- **`Simple`** and **`Win32`** are the easiest oracles because the BCL ships
-  managed implementations on every supported TFM and platform. These should
-  be the first oracle suites stood up; they validate the matchers most users
+- **`Simple`** is among the easiest oracles because the BCL ships a managed
+  implementation on every supported TFM and platform. This should be one of
+  the first oracle suites stood up; it validates the matcher most users
   encounter via `Directory.EnumerateFiles`.
 - **`PowerShell`** has two oracle paths. The in-process path needs a
   reference to `System.Management.Automation`, which is a Windows-only
@@ -728,7 +850,7 @@ platform constraints for running it.
 
 | Oracle | Windows runner | Linux runner | macOS runner |
 |---|:-:|:-:|:-:|
-| BCL `Simple` / `Win32` | yes | yes | yes |
+| BCL `Simple` | yes | yes | yes |
 | `Microsoft.Build` MSBuild | yes | yes | yes |
 | `Microsoft.Extensions.FileSystemGlobbing` | yes | yes | yes |
 | `LibGit2Sharp` | yes | yes | yes |
@@ -738,7 +860,7 @@ platform constraints for running it.
 | `pwsh` subprocess | yes | yes (if installed) | yes (if installed) |
 | `System.Management.Automation` direct | yes (Windows PowerShell 5.1 referenced) | requires `Microsoft.PowerShell.SDK` | requires `Microsoft.PowerShell.SDK` |
 
-The first four rows cover six of nine dialects (`Simple`, `Win32`,
+The first four rows cover five of the eight dialects (`Simple`,
 `MSBuild`, `FileSystemGlobbing`, `Git`) without any platform gating and
 should be the first slice of oracle work. The remaining three dialects
 (`Posix`, `PosixPath`, `Bash`) inherently require Unix-family tools and
@@ -748,9 +870,9 @@ platforms via `Microsoft.PowerShell.SDK` if the test surface grows.
 
 ### Suggested oracle-suite slice order
 
-1. **`Simple` and `Win32` BCL oracles** (zero deps, cross-platform).
-   The `MatchesSimpleExpression` / `MatchesWin32Expression` algorithms are
-   already in the BCL, so the test class is a thin theory comparing
+1. **`Simple` BCL oracle** (zero deps, cross-platform).
+   The `MatchesSimpleExpression` algorithm is already in the BCL, so the
+   test class is a thin theory comparing
    `GlobMatcher.Compile(..., Simple).IsMatch(input)` against the BCL.
 2. **`MSBuild` oracle** via `MSBuildGlob.Parse` - complements the
    existing enumeration parity check by isolating the pattern-level match.
@@ -794,7 +916,7 @@ currently does.
 | `Git` | **Touki already agrees with `LibGit2Sharp`** - all 21 sequential-separator rows pass. Empirically, the gitignore evaluator treats embedded `//` as a literal empty segment that fails to match any normal path component, so most `a//b` / `**//*.cs` / `a//**//b` patterns simply never match real files. Touki produces the same verdicts. | Pinned via [`LibGit2Sharp.Repository.Ignore.IsPathIgnored`](https://github.com/libgit2/libgit2sharp). Cross-platform; oracle runs on every CI runner. |
 | `Posix`, `PosixPath` | **Not coalesced**: runs of `/` are preserved verbatim in the pattern; `fnmatch(3)` (with or without `FNM_PATHNAME`) treats each `/` as a literal. Validated against P/Invoke <c>fnmatch(3)</c> on Linux. | All rows green on Linux. Encapsulated in [`FnmatchInterop`](../touki.tests/Touki/Io/Globbing/FnmatchInterop.cs); the glibc/macOS `FNM_PATHNAME` bit difference is the only platform-specific detail. |
 | `Bash` (with `extglob` + `globstar`) | **Not coalesced**: bash's `[[ str == pat ]]` preserves runs of `/` in the pattern. Validated against <c>bash -O extglob -O globstar -c '[[ "$INPUT" == $PATTERN ]]'</c>, with pattern/input passed through env vars to side-step shell quoting. | All rows green on Linux native bash and Windows Git Bash. |
-| `PowerShell`, `Win32` | _TBD._ `Win32` is not implemented in touki's compile yet; oracle suite deferred. `PowerShell` requires `System.Management.Automation` (Windows-only in net481, `Microsoft.PowerShell.SDK` cross-platform on net10) - deferred to avoid bloating the test project until needed. | &nbsp; |
+| `PowerShell` | _TBD._ `PowerShell` requires `System.Management.Automation` (Windows-only in net481, `Microsoft.PowerShell.SDK` cross-platform on net10) - deferred to avoid bloating the test project until needed. | &nbsp; |
 
 **Implementation status vs. the contract above.** All compile-time
 normalization landed in `GlobMatcherFactory.TryNormalizeRuns` plus
@@ -817,7 +939,7 @@ green on Windows:
   down so any future engine change that drifts will fail fast.
 
 The Posix-family (Linux/macOS oracles via P/Invoke `fnmatch` and `bash`
-subprocess) and `PowerShell` / `Win32` rules will be added to the table
+subprocess) and `PowerShell` rules will be added to the table
 above once their oracle runs produce data - the Posix/PosixPath/Bash
 suites are checked in and ready, just skipped on Windows hosts.
 
@@ -837,7 +959,7 @@ with the 26 shared rows in [MultipleAsteriskRows.cs](../touki.tests/Touki/Io/Glo
 | `Git` | **`***`+ behaves like `**` (globstar across path components)** in `wildmatch`. `***` matches every file in the tree; `a/***` matches `a/b` and `a/b/c` but not `a/` alone; `a/***/b` matches every depth `a/.../b`. | **25 / 26 green, 1 documented divergence.** Compile-time `***`+ &rarr; `**` plus `DisallowEmptyInput = true`. The remaining row (`a/***` vs `a/`) is gitignore's "trailing globstar requires &ge;1 input segment" rule, which our engine's `GlobStar` opcode doesn't enforce. Skipped with reason; trivial engine fix when needed. |
 | `Bash` (with `extglob` + `globstar`) | **`***`+ behaves like `**` (globstar)** under `globstar`. Crosses path separators, with the standard globstar carve-out that a `**` enclosed by separators (e.g. `***/foo`) requires at least one path component on its globstar side. | **22 / 26 green, 4 documented divergences.** Compile-time `***`+ &rarr; `**`. The remaining four rows are the shell-glob vs `[[ == ]]` semantic split - touki models bash's *shell-glob* `**` (segment-bounded; `*` doesn't cross `/`); the oracle uses bash's *string-match* `[[ ]]` semantics. Closing these needs a per-context flag; deferred until a real user need. |
 | `Posix`, `PosixPath` | All 26 rows green on Linux against `fnmatch(3)` with and without `FNM_PATHNAME`. Compile-time `***`+ &rarr; `*` matches `fnmatch` exactly. Suites skip on Windows. | **26 / 26 green** (Linux). |
-| `PowerShell`, `Win32` | TBD - oracle not implemented (see notes above). | &nbsp; |
+| `PowerShell` | TBD - oracle not implemented (see notes above). | &nbsp; |
 
 Cross-dialect summary: **only `Bash` and `Git` give `***`+ a globstar
 meaning. Every other dialect treats it as either invalid (MSBuild) or as
@@ -932,7 +1054,7 @@ its documented default; the flag is consulted only when set explicitly.
 
 | Dialect | Globstar default |
 |---|---|
-| `Posix`, `Simple`, `PowerShell`, `Win32` | off (path-unaware) |
+| `Posix`, `Simple`, `PowerShell` | off (path-unaware) |
 | `PosixPath` | off (requires explicit opt-in per the POSIX `**` extension) |
 | `Bash` | off (matches `shopt -s globstar` being off by default) |
 | `Git`, `MSBuild`, `FileSystemGlobbing` | on (their documented behavior) |
@@ -967,7 +1089,6 @@ documents its expected default:
 | Dialect | Default separator |
 |---|---|
 | `PosixPath`, `Bash`, `Git`, `FileSystemGlobbing`, `MSBuild` | `ForwardSlash` |
-| `Win32` | `OSDefault` |
 
 `MSBuild` was originally specified as `OSDefault` to match how MSBuild
 evaluates `Include` / `Exclude` strings on the calling OS. The shipped
@@ -983,7 +1104,7 @@ consistently. Documented at the type level on `GlobMatcher.IsMatch` and on
 the new `GlobPathSeparator` enum.
 
 This replaces the earlier idea of accepting both separators on Windows for
-`MSBuild`/`FileSystemGlobbing`/`Win32`. If a consumer needs both, they
+`MSBuild`/`FileSystemGlobbing`. If a consumer needs both, they
 normalize first - usually a single `ReadOnlySpan<char>` walk with
 `string.Replace` or a `Touki.Buffers` helper.
 
@@ -1017,21 +1138,15 @@ for the broader integration contract with
 [`IEnumerationMatcher`](../touki/Touki/Io/IEnumerationMatcher.cs) and
 [`MatchEnumerator<TResult>`](../touki/Touki/Io/MatchEnumerator.cs).
 
-### D4. `Win32` dialect: IgnoreCase is the default
+### D4. `Win32` dialect: IgnoreCase is the default - **retired**
 
-Windows file matching is documented as case-insensitive throughout
-`FsRtlIsNameInExpression`, `FileSystemName.MatchesWin32Expression`, and the
-Windows file system itself. `Win32` therefore implies
-`IgnoreCaseKind.Unicode` whether or not the caller sets
-`GlobOptions.IgnoreCase`.
-
-A new flag may be added later to force case-sensitive `Win32` matching
-(`GlobOptions.Win32CaseSensitive`?) for code that consumes the dialect at a
-lower level than the OS; deferred until there's a concrete caller.
-
-Implementation: update `GlobDialectExtensions.DefaultIgnoreCaseKind` so
-`Win32` returns `IgnoreCaseKind.Unicode` regardless of the `IgnoreCase`
-flag, and document the deviation on `GlobDialect.Win32`.
+This decision applied to the `Win32` dialect, which is now
+[indefinitely postponed](#win32--winnt---indefinitely-postponed) and removed
+from `GlobDialect`. Recorded here for the record: Windows file matching is
+case-insensitive throughout `FsRtlIsNameInExpression`,
+`FileSystemName.MatchesWin32Expression`, and the Windows file system itself,
+so if `Win32` is ever reintroduced it should imply `IgnoreCaseKind.Unicode`
+regardless of `GlobOptions.IgnoreCase`.
 
 ### D5. Path-aware matching integrates via `IEnumerationMatcher`; sets compose via `MatchSet`
 

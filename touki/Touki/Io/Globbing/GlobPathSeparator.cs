@@ -17,8 +17,7 @@ namespace Touki.Io.Globbing;
 ///   Each path-aware dialect documents a default separator
 ///   (<see cref="GlobDialect.PosixPath"/>, <see cref="GlobDialect.Bash"/>,
 ///   <see cref="GlobDialect.Git"/>, <see cref="GlobDialect.MSBuild"/>, and
-///   <see cref="GlobDialect.FileSystemGlobbing"/> default to forward-slash;
-///   <see cref="GlobDialect.Win32"/> defaults to the OS separator). Passing this enum
+///   <see cref="GlobDialect.FileSystemGlobbing"/> default to forward-slash). Passing this enum
 ///   to <see cref="GlobSpecification.Compile(StringSegment, GlobDialect, GlobOptions, GlobPathSeparator, int)"/>
 ///   overrides that default; <see cref="DialectDefault"/> keeps it.
 ///  </para>

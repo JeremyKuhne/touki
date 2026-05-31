@@ -24,9 +24,9 @@ internal static class GlobDialectExtensions
     ///   POSIX/C locale.
     ///  </para>
     ///  <para>
-    ///   .NET-native and Windows-native dialects
+    ///   .NET-native dialects
     ///   (<see cref="GlobDialect.MSBuild"/>, <see cref="GlobDialect.FileSystemGlobbing"/>,
-    ///   <see cref="GlobDialect.Win32"/>, <see cref="GlobDialect.Simple"/>,
+    ///   <see cref="GlobDialect.Simple"/>,
     ///   <see cref="GlobDialect.PowerShell"/>) default to <see cref="IgnoreCaseKind.Unicode"/>
     ///   because their documented implementations use
     ///   <see cref="StringComparison.OrdinalIgnoreCase"/> or the Windows kernel
@@ -63,7 +63,7 @@ internal static class GlobDialectExtensions
     /// </summary>
     /// <remarks>
     ///  <para>
-    ///   POSIX-family, MSBuild, FileSystemGlobbing, and Win32 dialects use backslash
+    ///   POSIX-family, MSBuild, and FileSystemGlobbing dialects use backslash
     ///   (<c>\</c>) as the escape character. PowerShell <c>WildcardPattern</c> /
     ///   <c>-like</c> uses backtick (<c>`</c>) per
     ///   <see href="https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_wildcards">
@@ -100,7 +100,7 @@ internal static class GlobDialectExtensions
     ///   <see cref="GlobDialect.PosixPath"/>, <see cref="GlobDialect.Bash"/>,
     ///   <see cref="GlobDialect.Git"/>) treat a leading <c>.</c> as a "hidden" marker
     ///   per <c>fnmatch</c>'s <c>FNM_PERIOD</c> rule, requiring a literal <c>.</c>
-    ///   in the pattern. All other dialects - including PowerShell, Win32,
+    ///   in the pattern. All other dialects - including PowerShell,
     ///   Simple, MSBuild, FileSystemGlobbing - do not.
     ///  </para>
     /// </remarks>
