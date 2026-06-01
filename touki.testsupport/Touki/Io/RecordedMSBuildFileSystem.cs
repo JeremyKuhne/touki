@@ -271,7 +271,11 @@ public sealed class RecordedMSBuildFileSystem
                     string[] results = new string[count];
                     for (int i = 0; i < count; i++)
                     {
-                        List<string> resultFields = CsvField.ParseRecord(reader.ReadLine() ?? string.Empty);
+                        string resultLine = reader.ReadLine()
+                            ?? throw new System.IO.InvalidDataException(
+                                $"Truncated recording: expected {count} result rows for {method} '{path}' but the data ended after {i}.");
+
+                        List<string> resultFields = CsvField.ParseRecord(resultLine);
                         results[i] = resultFields.Count > 1 ? resultFields[1] : string.Empty;
                     }
 

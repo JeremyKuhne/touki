@@ -120,5 +120,5 @@ public sealed class RecordedFileSystem
             : [];
 
     internal static string Normalize(string path) =>
-        path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        Path.TrimEndingDirectorySeparator(path);
 }
