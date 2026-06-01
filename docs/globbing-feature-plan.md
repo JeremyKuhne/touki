@@ -57,7 +57,7 @@ This is the active work. The feature surface is frozen; the remaining effort
 is making the enumeration paths faster (especially on the net472/net481
 RyuJIT) and removing avoidable complexity.
 
-### N1. Flame-graph investigation - extglob enumeration (current)
+### N1. Flame-graph investigation - extglob enumeration - **addressed by N2**
 
 CPU profiling of [`touki.perf/MsBuildEnumeratePerf2.cs`](../touki.perf/MsBuildEnumeratePerf2.cs)
 on the touki repo (`**/*.cs` minus `bin`/`obj`, 4850 `.cs` files) captured
@@ -101,7 +101,53 @@ directory boundary the way the `bin/**`,`obj/**` excludes do. On a .NET repo
 the `bin`/`obj` trees dwarf the source tree, so the extglob variant runs the
 most expensive matcher over the most files - exactly backwards.
 
-### N2. Directory pruning for first-segment negations (primary proposal)
+### N2. Directory pruning for negations - **done**
+
+**Status: shipped (general engine-level directory mode).** `GlobMatch.MatchesDirectory`
+now prunes any anchored extglob negation - not just the first-segment literal
+shape - by reusing the `ExtGlobEngine` in a new *directory mode* instead of a
+bespoke compile-time detector.
+
+- A compile-time flag `CompiledGlobStrategy._hasNegation` (set by the encoder
+  during the single program-emit pass whenever it writes an `AltStart` of the
+  `!` kind) is surfaced through `GlobStrategy.HasNegation` /
+  `GlobSpecification.HasNegation`. It gates the whole pruning path behind a
+  single field load, so non-negation patterns pay nothing.
+- The tri-state result is `MatchOutcome { None, Positive, Negative }`.
+  `GlobStrategy.MatchDirectory(prefix, name)` (overridden only by
+  `CompiledGlobStrategy`) runs the engine in directory mode and classifies the
+  candidate: `Negative` (no backtracking path can consume the candidate, so an
+  anchored negation has excluded one of its segments and the subtree is pruned),
+  `None` (viable prefix, keep descending), or `Positive` (the directory path is
+  itself a complete match).
+- **Directory mode** is one gated early-accept in `ExtGlobEngine.Run`: as soon
+  as the forward walk reaches `WorkInput == _totalLength` on a live path it
+  accepts (recording `DirectoryFullMatch` to distinguish `Positive` from
+  `None`). `MatchExtGlobDirectory` appends a trailing separator to the candidate
+  so it ends on a path-segment boundary - directory `D` is viable exactly when
+  the pattern can consume `D/` as a prefix of some `D/child...` full match.
+  Without the trailing separator a multi-char literal (`src/`) or a globstar
+  absorbing a separator-terminated segment (`bin/`) straddles the candidate end
+  and is misread as a dead end (false prune).
+- **Soundness:** any directory with a matching descendant has a full-match run
+  that passes through the "whole candidate consumed" state, so it can never be
+  reported `Negative`. A wrong answer can only forgo a pruning opportunity,
+  never skip a file that should match. The gitignore-style inversion (`Negated`)
+  is excluded because it would invert the conclusion.
+- **Generalizes** beyond the old first-segment-only detector: it prunes nested
+  anchored negations (`src/!(bin)/**/*.cs` skips `src/bin`, descends `src/lib`)
+  and correctly does *not* prune non-anchored negations (`**/!(bin)/*.cs`, where
+  the globstar absorbs past the negation leaving the directory viable).
+- The file-match hot path is untouched: `MatchCore` stays `bool` across all
+  strategies; the tri-state lives only on the dedicated `MatchDirectory`.
+
+Regression coverage:
+`touki.tests/Touki/Io/GlobMatchFirstSegmentNegationPruningTests.cs` pins the
+first-segment prune, the nested-anchored prune (`src/!(bin)/**/*.cs`), and the
+non-prunable shape (`**/!(bin)/*.cs`) still enumerating correctly, green on both
+TFMs.
+
+The original proposal follows.
 
 Teach the directory-recursion decision to evaluate a leading negation
 (`!(a|b)/...`) against the *candidate directory name* so matching subtrees are
@@ -146,16 +192,26 @@ within ~5% on net10.
 
 ### N5. Simplification opportunities
 
-- **Specialized-matcher path-aware fast paths (deferred since F2.1).**
-  `Prefix`/`Suffix`/`Contains`/`PrefixSuffix` route to `CompiledGlobMatcher`
-  for path-aware dialects. Either grow separator-aware fast paths *or* delete
-  the dead intent and document that `CompiledGlobMatcher` owns these shapes.
-  Decide based on a path-aware benchmark; do not carry the ambiguity.
+- **Specialized-matcher path-aware fast paths (deferred since F2.1) -
+  resolved.** `Prefix`/`Suffix`/`Contains`/`PrefixSuffix` route to
+  `CompiledGlobStrategy` for path-aware dialects. **Decision:**
+  `CompiledGlobStrategy` owns these shapes for path-aware dialects; no
+  separate separator-aware specialized matchers will be grown. The
+  specialized strategies are path-unaware by construction (each asserts
+  `directoryPrefix.IsEmpty`), and the routing in
+  `GlobSpecification.Factory.TryCreateMatcher` already documents that
+  path-aware dialects flow through the bytecode interpreter so
+  separator-aware semantics are honored. There is no dead-intent stub code to
+  delete - the ambiguity was only in this plan, and it is now resolved in
+  favor of the single bytecode owner. Revisit only if a path-aware benchmark
+  shows the specialized shapes are a measurable hot spot the interpreter
+  cannot match.
 - **Empty-literal-prefix `MatchesDirectory` pruning (deferred since F3.3).**
   Patterns whose literal prefix is empty (e.g. `**/*.cs`) recurse
-  unconditionally. N2 handles the negation case; a separator-checkpointed NFA
-  savepoint API would generalize pruning to other empty-prefix shapes - only
-  if a benchmark justifies the added matcher surface.
+  unconditionally. N2 now handles the first-segment negation case; a
+  separator-checkpointed NFA savepoint API would generalize pruning to other
+  empty-prefix shapes - still deferred, only if a benchmark justifies the
+  added matcher surface.
 - **Prefer one implementation over `#if`-split variants** unless net10
   measurably regresses, so the simple source keeps accruing future RyuJIT
   improvements (per the repo's span-performance guidance).

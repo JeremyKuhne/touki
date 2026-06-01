@@ -15,6 +15,9 @@ global using System.Threading.Tasks;
 
 global using MemoryStream = System.IO.MemoryStream;
 global using StreamReader = System.IO.StreamReader;
+global using StreamWriter = System.IO.StreamWriter;
+global using TextWriter = System.IO.TextWriter;
+global using TextReader = System.IO.TextReader;
 global using FileAttributes = System.IO.FileAttributes;
 
 #if NETFRAMEWORK

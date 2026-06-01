@@ -306,6 +306,56 @@ analysis.
 
 ---
 
+## 8. EventPipe profiles mislabel JIT-helper thunks as the hotspot
+
+### Observation
+
+A `CpuSampling` `[EventPipeProfiler]` trace of the extglob directory
+enumeration reported `System.Buffer.BulkMoveWithWriteBarrier` at **93%**
+inclusive time - seemingly the dominant cost. It is not a real cost. After
+folding the helper thunks back into their callers, the true hotspots were the
+two engine loop bodies `CompiledGlobStrategy.RunEngine` (50.9%) and
+`RunEngineDirectory` (42.2%) - pure compute, no copies. The
+`BulkMoveWithWriteBarrier` cycles belong to those loops.
+
+### Why
+
+EventPipe's stack walk is **managed-only** and samples at a fixed ~100 Hz. When
+a sample's instruction pointer lands inside a JIT helper - a write barrier, a
+`Buffer.Memmove`, or the GC-poll thunk RyuJIT emits at loop back-edges - the
+walker resolves the *leaf* to that helper instead of the method whose hot loop
+is running. The helper then appears to dominate. Two tells that a helper frame
+is an artifact:
+
+- It copies/marshals data that provably has no GC references. A `Span<T>.CopyTo`
+  over a `struct` with no reference fields compiles to plain `Buffer.Memmove`,
+  **never** `BulkMoveWithWriteBarrier` (that helper requires
+  `RuntimeHelpers.IsReferenceOrContainsReferences<T>()`), so seeing the
+  write-barrier variant over a ref-free struct is impossible for a real call.
+- It is a *direct* child of a hot loop method, bypassing intermediate frames a
+  real call would pass through.
+
+Separately, the speedscope export buckets every sample's leaf self-time into a
+synthetic `CPU_TIME` node, so a naive top-self-time view shows `0 ms` for every
+managed method. Inclusive time is accurate; self-time needs the fold.
+
+### Rule of thumb (pinned)
+
+> Before trusting any self-time number from an EventPipe / speedscope trace,
+> **fold the JIT-helper thunks** (`BulkMoveWithWriteBarrier`, `PollGC`,
+> `Memmove`, `WriteBarrier`, `JIT_`) and the synthetic `CPU_TIME` /
+> `UNMANAGED_CODE_TIME` markers into their callers. `tools/Get-TraceHotspots.ps1`
+> (and the `tools/Profile-Benchmark.ps1` wrapper) does this by default; see
+> [performance-investigation.md](performance-investigation.md) section 3a.
+
+### Follow-up
+
+For true on-CPU time and native frames (which EventPipe cannot give), use
+`[EtwProfiler]` on Windows (admin) or `dotnet-trace` Linux CPU sampling under
+WSL.
+
+---
+
 ## Index of pinned rules
 
 1. **§3**: Vectorized BCL primitives only beat inlined scalar loops past
@@ -317,3 +367,6 @@ analysis.
    real net481 inlining cost.
 4. **§7**: ASCII fast-path threshold on `char` spans is 16, controlled by
    `Vector128<short>.Count × 2`.
+5. **§8**: EventPipe profiles mislabel JIT-helper thunks
+   (`BulkMoveWithWriteBarrier`, `PollGC`) as the hotspot; fold them into their
+   callers before reading self-time.

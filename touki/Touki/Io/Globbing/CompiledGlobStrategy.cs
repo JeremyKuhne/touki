@@ -35,14 +35,12 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
     private readonly string _literalPathPrefix;
 
     /// <summary>
-    ///  <see langword="true"/> when the encoded program contains at least one
-    ///  <see cref="GlobOpCodes.GlobStar"/> opcode. Captured at compile time so the match
-    ///  loop can dispatch to a simpler single-savepoint variant when globstar is absent
-    ///  (the common case - only a handful of patterns in a typical project use
-    ///  <c>**</c>).
+    ///  Compile-time properties of the encoded program (globstar, extglob, negation).
+    ///  Captured by the encoder so the match loop can dispatch to the right variant
+    ///  and gate optional fast paths behind single field loads. See
+    ///  <see cref="GlobTraits"/>.
     /// </summary>
-    private readonly bool _hasGlobStar;
-    private readonly bool _hasExtGlob;
+    private readonly GlobTraits _traits;
 
     /// <summary>
     ///  <see langword="true"/> when the encoded program admits an execution
@@ -59,7 +57,7 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
     ///  Constructs a matcher with no trailing-literal anchor (the program is run end-to-end).
     /// </summary>
     public CompiledGlobStrategy(string program, GlobDialect dialect, GlobOptions options)
-        : this(program, program.Length, tailStart: -1, tailLength: 0, hasGlobStar: false, hasExtGlob: false, dialect, options)
+        : this(program, program.Length, tailStart: -1, tailLength: 0, GlobTraits.None, dialect, options)
     {
     }
 
@@ -68,16 +66,16 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
     ///  is the length of the program portion run by the NFA (excludes the trailing Literal
     ///  op header and payload); <paramref name="tailStart"/> and <paramref name="tailLength"/>
     ///  identify the tail characters within <paramref name="program"/>.
-    ///  <paramref name="hasGlobStar"/> is the compile-time flag that selects the simple
-    ///  versus globstar-aware match loop.
+    ///  <paramref name="traits"/> carries the compile-time properties (globstar, extglob,
+    ///  negation) the encoder discovered, which select the match loop and gate the
+    ///  directory-pruning path.
     /// </summary>
     public CompiledGlobStrategy(
         string program,
         int nfaProgramLength,
         int tailStart,
         int tailLength,
-        bool hasGlobStar,
-        bool hasExtGlob,
+        GlobTraits traits,
         GlobDialect dialect,
         GlobOptions options)
         : base(dialect, options)
@@ -86,8 +84,7 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
         _nfaProgramLength = nfaProgramLength;
         _tailStart = tailStart;
         _tailLength = tailLength;
-        _hasGlobStar = hasGlobStar;
-        _hasExtGlob = hasExtGlob;
+        _traits = traits;
         _literalPathPrefix = ComputeLiteralPathPrefix(program.AsSpan(0, nfaProgramLength), Separator);
         _canStartWithDot = ComputeCanStartWithDot(program.AsSpan(0, nfaProgramLength));
     }
@@ -142,6 +139,39 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
     }
 
     /// <inheritdoc/>
+    internal override bool HasNegation => _traits.AreFlagsSet(GlobTraits.Negation);
+
+    /// <inheritdoc/>
+    /// <remarks>
+    ///  <para>
+    ///   Only meaningful when <see cref="HasNegation"/> is set; the caller gates on
+    ///   it. Runs the extglob engine in directory mode against the candidate path
+    ///   <paramref name="directoryPrefix"/> + <paramref name="directoryName"/>,
+    ///   which accepts as soon as any backtracking path consumes the whole candidate
+    ///   (a viable prefix). When no path can consume the candidate the anchored
+    ///   negation has excluded one of its segments, so the subtree is reported
+    ///   <see cref="MatchOutcome.Negative"/> and may be pruned. The tail-anchor
+    ///   fast-fail and leading-dot precheck of
+    ///   <see cref="MatchCore(ReadOnlySpan{char}, ReadOnlySpan{char})"/> are
+    ///   deliberately skipped: a directory name need not end with the pattern's
+    ///   trailing literal, and forgoing the dot precheck only costs a pruning
+    ///   opportunity.
+    ///  </para>
+    /// </remarks>
+    internal override MatchOutcome MatchDirectory(
+        ReadOnlySpan<char> directoryPrefix,
+        ReadOnlySpan<char> directoryName)
+    {
+        if (!_traits.AreFlagsSet(GlobTraits.Negation))
+        {
+            return MatchOutcome.None;
+        }
+
+        ReadOnlySpan<char> program = _program.AsSpan(0, _nfaProgramLength);
+        return MatchExtGlobDirectory(directoryPrefix, directoryName, program, Separator, IgnoreCaseKind);
+    }
+
+    /// <inheritdoc/>
     /// <remarks>
     ///  <para>
     ///   Walks the virtual concatenation <paramref name="directoryPrefix"/> +
@@ -192,7 +222,7 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
                 return false;
             }
 
-            if (!_hasExtGlob)
+            if (!_traits.AreFlagsSet(GlobTraits.ExtGlob))
             {
                 // Trim the tail off the virtual input. The tail either fits in `second`
                 // entirely, fits in `first` entirely (when `second` is empty or short),
@@ -230,19 +260,19 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
             }
         }
 
-        if (_hasExtGlob)
+        if (_traits.AreFlagsSet(GlobTraits.ExtGlob))
         {
             return MatchExtGlob(first, second, program, Separator, IgnoreCaseKind);
         }
 
         if (IgnoreCaseKind == IgnoreCaseKind.Off)
         {
-            return _hasGlobStar
+            return _traits.AreFlagsSet(GlobTraits.GlobStar)
                 ? MatchOrdinal(first, second, program, Separator)
                 : MatchOrdinalSimple(first, second, program, Separator);
         }
 
-        return _hasGlobStar
+        return _traits.AreFlagsSet(GlobTraits.GlobStar)
             ? MatchIgnoreCase(first, second, program, IgnoreCaseKind, Separator)
             : MatchIgnoreCaseSimple(first, second, program, IgnoreCaseKind, Separator);
     }

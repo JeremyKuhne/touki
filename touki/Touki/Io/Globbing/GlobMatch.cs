@@ -100,6 +100,18 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
     ///   prefix and <see langword="false"/> when it has diverged; specifications
     ///   with an empty literal prefix always return <see langword="true"/>.
     ///  </para>
+    ///  <para>
+    ///   Before the literal-prefix check, inclusion calls for a pattern that
+    ///   carries an extglob negation (<see cref="GlobSpecification.HasNegation"/>)
+    ///   ask <see cref="GlobSpecification.MatchDirectory"/> whether the candidate
+    ///   subtree can be pruned. An anchored negation
+    ///   (<c>!(bin|obj)/...</c>, <c>src/!(bin)/**/*.cs</c>) that no backtracking
+    ///   path can satisfy yields <see cref="MatchOutcome.Negative"/>, so the whole
+    ///   subtree is skipped instead of being descended and rejected file by file.
+    ///   The check is conservative: a directory with any matching descendant is
+    ///   never pruned. The gitignore-style <see cref="GlobSpecification.Negated"/>
+    ///   wrapper is excluded because it would invert the conclusion.
+    ///  </para>
     /// </remarks>
     [SkipLocalsInit]
     public bool MatchesDirectory(
@@ -113,7 +125,7 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
         }
 
         EnsureRootPrefixComputed();
-        ReadOnlySpan<char> rawDir = GetRelativeDirectory(currentDirectory);
+        ReadOnlySpan<char> relativeDirectory = GetRelativeDirectory(currentDirectory);
 
         if (matchForExclusion)
         {
@@ -132,20 +144,51 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
             // fallback for unusually long relative paths) so the matcher sees a
             // clean (prefix, name) pair.
             bool matched;
-            if (rawDir.IsEmpty)
+            if (relativeDirectory.IsEmpty)
             {
                 matched = _specification.MatchCore(default, directoryName);
             }
             else
             {
-                int prefixLength = rawDir.Length + 1;
+                int prefixLength = relativeDirectory.Length + 1;
                 using BufferScope<char> buffer = new(stackalloc char[StackBufferSize], prefixLength);
                 Span<char> prefix = buffer[..prefixLength];
-                BuildTranslatedPrefix(rawDir, prefix, _specification.Separator);
+                BuildTranslatedPrefix(relativeDirectory, prefix, _specification.Separator);
                 matched = _specification.MatchCore(prefix, directoryName);
             }
 
             return _specification.Negated ? !matched : matched;
+        }
+
+        // Directory-mode negation pruning. A pattern carrying an extglob negation
+        // (`!(bin|obj)/...`, `src/!(bin)/**/*.cs`, etc.) can provably exclude a whole
+        // subtree: if no backtracking path can consume the candidate directory path,
+        // an anchored negation has rejected one of its segments and no descendant can
+        // match. The engine answers this in directory mode via MatchDirectory; a
+        // Negative outcome prunes the subtree. Run before the literal-prefix check so
+        // negations nested under a literal prefix are reached. Gated by HasNegation
+        // (a single field load, false for non-negation patterns) and excluded for the
+        // gitignore-style `Negated` wrapper, which would invert the conclusion.
+        if (_specification.HasNegation && !_specification.Negated)
+        {
+            MatchOutcome outcome;
+            if (relativeDirectory.IsEmpty)
+            {
+                outcome = _specification.MatchDirectory(default, directoryName);
+            }
+            else
+            {
+                int prefixLength = relativeDirectory.Length + 1;
+                using BufferScope<char> buffer = new(stackalloc char[StackBufferSize], prefixLength);
+                Span<char> prefix = buffer[..prefixLength];
+                BuildTranslatedPrefix(relativeDirectory, prefix, _specification.Separator);
+                outcome = _specification.MatchDirectory(prefix, directoryName);
+            }
+
+            if (outcome == MatchOutcome.Negative)
+            {
+                return false;
+            }
         }
 
         string literalPrefix = _specification.Strategy.LiteralPathPrefix;
@@ -158,7 +201,7 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
         // prefix without materializing the join. The helper walks the two spans in
         // sequence and applies on-the-fly native-to-matcher separator translation.
         return ClassifyAlignment(
-            rawDir,
+            relativeDirectory,
             directoryName,
             literalPrefix,
             _specification.Separator,
@@ -199,12 +242,12 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
         }
 
         EnsureRootPrefixComputed();
-        ReadOnlySpan<char> rawDir = GetRelativeDirectory(currentDirectory);
+        ReadOnlySpan<char> relativeDirectory = GetRelativeDirectory(currentDirectory);
 
         if (!_cacheValid)
         {
             _alignment = ClassifyAlignment(
-                rawDir,
+                relativeDirectory,
                 default,
                 _specification.Strategy.LiteralPathPrefix,
                 _specification.Separator,
@@ -218,7 +261,7 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
         }
 
         bool matched;
-        if (rawDir.IsEmpty)
+        if (relativeDirectory.IsEmpty)
         {
             matched = _specification.MatchCore(default, fileName);
         }
@@ -230,10 +273,10 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
             // the stack budget, so the IEnumerationMatcher hot path never
             // allocates on the managed heap and never silently fails for
             // long paths.
-            int prefixLength = rawDir.Length + 1;
+            int prefixLength = relativeDirectory.Length + 1;
             using BufferScope<char> buffer = new(stackalloc char[StackBufferSize], prefixLength);
             Span<char> prefix = buffer[..prefixLength];
-            BuildTranslatedPrefix(rawDir, prefix, _specification.Separator);
+            BuildTranslatedPrefix(relativeDirectory, prefix, _specification.Separator);
             matched = _specification.MatchCore(prefix, fileName);
         }
 

@@ -1,0 +1,5 @@
+# Recorded snapshots are committed as compressed archives (*.zip) and extracted
+# to the build output by tools/CompressedContent.targets. Never commit the
+# uncompressed payloads that the extraction or the record-if-missing fallback
+# may drop here.
+*.csv

@@ -97,6 +97,11 @@ internal sealed partial class CompiledGlobStrategy
     private const int SeedFrameCount = 32;
     private const int SeedArenaCount = 128;
 
+    // Stack budget for the directory-probe input buffer (candidate path plus a
+    // trailing separator). Relative paths longer than this spill to ArrayPool via
+    // BufferScope.
+    private const int StackInputBufferSize = 256;
+
     /// <summary>
     ///  A contiguous half-open program slice <c>[Start, End)</c>. The optional
     ///  <see cref="KindOverride"/> rewrites the kind of an <see cref="GlobOpCodes.AltStart"/>
@@ -279,6 +284,68 @@ internal sealed partial class CompiledGlobStrategy
     }
 
     /// <summary>
+    ///  Directory-pruning entry point used by <see cref="MatchDirectory"/>. Runs the
+    ///  engine in directory mode against the candidate directory path
+    ///  (<paramref name="first"/> + <paramref name="second"/>) and classifies it.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   A trailing <paramref name="separator"/> is appended to the candidate so it
+    ///   aligns with the pattern's path-segment boundaries: directory <c>D</c> is a
+    ///   viable prefix exactly when the pattern can consume <c>D/</c> as a prefix of
+    ///   some <c>D/child...</c> full match. Without it a literal segment
+    ///   (<c>src/</c>) or a globstar that absorbs a separator-terminated segment
+    ///   would straddle the candidate's end and be misread as a dead end.
+    ///  </para>
+    ///  <para>
+    ///   Directory mode accepts as soon as any backtracking path consumes the whole
+    ///   candidate, so the run reports a viable prefix
+    ///   (<see cref="MatchOutcome.None"/>) - or a complete match
+    ///   (<see cref="MatchOutcome.Positive"/>) - without exhausting the search. When
+    ///   no path can consume the candidate, an anchored negation has excluded one of
+    ///   its segments and no descendant can match, so the subtree is reported
+    ///   <see cref="MatchOutcome.Negative"/> and may be pruned. This is sound: any
+    ///   directory with a matching descendant has a full-match run that passes
+    ///   through the &quot;whole candidate consumed&quot; state, so it can never be
+    ///   reported <see cref="MatchOutcome.Negative"/>.
+    ///  </para>
+    /// </remarks>
+    [SkipLocalsInit]
+    private static MatchOutcome MatchExtGlobDirectory(
+        ReadOnlySpan<char> first,
+        ReadOnlySpan<char> second,
+        ReadOnlySpan<char> program,
+        char separator,
+        IgnoreCaseKind kind)
+    {
+        // Assemble first + second + a trailing separator into one contiguous buffer
+        // so the candidate ends on a path-segment boundary. BufferScope keeps the
+        // common case on the stack and falls back to ArrayPool for unusually long
+        // relative paths.
+        int totalLength = first.Length + second.Length + 1;
+        using BufferScope<char> inputBuffer = new(stackalloc char[StackInputBufferSize], totalLength);
+        Span<char> input = inputBuffer[..totalLength];
+        first.CopyTo(input);
+        second.CopyTo(input[first.Length..]);
+        input[totalLength - 1] = separator;
+
+        EngineInputs inputs = new(input, default, program, separator, kind);
+        ExtGlobMatchState state = default;
+        try
+        {
+#pragma warning disable IDE0302 // Collection initialization can be simplified - see comment in MatchExtGlob.
+            Span<ProgramRange> initial = stackalloc ProgramRange[1];
+#pragma warning restore IDE0302
+            initial[0] = new ProgramRange { Start = 0, End = program.Length };
+            return RunEngineDirectory(in inputs, initial, totalLength, ref state);
+        }
+        finally
+        {
+            state.Dispose();
+        }
+    }
+
+    /// <summary>
     ///  Sets up an <see cref="ExtGlobEngine"/> (seeding its frame stack and
     ///  range-snapshot arena from <c>stackalloc</c>) and runs it against the
     ///  concatenation of the program slices in <paramref name="startRanges"/>
@@ -316,6 +383,49 @@ internal sealed partial class CompiledGlobStrategy
         EngineScratch scratch = new(frames, arena, work, rest, key);
 
         return RunEngineCore(in inputs, startRanges, inputIndex, totalLength, in scratch, ref state);
+    }
+
+    /// <summary>
+    ///  Directory-mode counterpart of <see cref="RunEngine"/>. Seeds its own scratch
+    ///  buffers and runs the engine with directory acceptance enabled, returning the
+    ///  classification (<see cref="MatchOutcome.Negative"/> when the candidate cannot
+    ///  be consumed at all, <see cref="MatchOutcome.Positive"/> on a complete match,
+    ///  <see cref="MatchOutcome.None"/> for a viable prefix).
+    /// </summary>
+    [SkipLocalsInit]
+    private static MatchOutcome RunEngineDirectory(
+        in EngineInputs inputs,
+        ReadOnlySpan<ProgramRange> startRanges,
+        int totalLength,
+        ref ExtGlobMatchState state)
+    {
+        Span<Frame> frames = stackalloc Frame[SeedFrameCount];
+        Span<ProgramRange> arena = stackalloc ProgramRange[SeedArenaCount];
+        Span<ProgramRange> work = stackalloc ProgramRange[MaxRangesDepth];
+        Span<ProgramRange> rest = stackalloc ProgramRange[MaxRangesDepth];
+        Span<int> key = stackalloc int[KeyHeaderLength + (MaxRangesDepth * RangeKeyLength)];
+        EngineScratch scratch = new(frames, arena, work, rest, key);
+
+        state.EnterRecursion();
+        ExtGlobEngine engine = new(in inputs, totalLength, in scratch, directoryMode: true);
+        startRanges.CopyTo(scratch.Work);
+        engine.WorkCount = startRanges.Length;
+        engine.WorkInput = 0;
+
+        try
+        {
+            if (!engine.Run(ref state))
+            {
+                return MatchOutcome.Negative;
+            }
+
+            return engine.DirectoryFullMatch ? MatchOutcome.Positive : MatchOutcome.None;
+        }
+        finally
+        {
+            engine.ReturnRented();
+            state.ExitRecursion();
+        }
     }
 
     /// <summary>
@@ -388,6 +498,7 @@ internal sealed partial class CompiledGlobStrategy
         private readonly IgnoreCaseKind _kind;
         private readonly int _totalLength;
         private readonly int _firstLength;
+        private readonly bool _directoryMode;
 
         private Span<Frame> _frames;
         private Span<ProgramRange> _arena;
@@ -407,10 +518,16 @@ internal sealed partial class CompiledGlobStrategy
         public int Head;
         public int WorkInput;
 
+        // Directory-mode output: set when the accepting state in directory mode was
+        // also a complete match of the candidate (program fully consumed), so the
+        // caller can distinguish MatchOutcome.Positive from a viable prefix.
+        public bool DirectoryFullMatch;
+
         public ExtGlobEngine(
             in EngineInputs inputs,
             int totalLength,
-            in EngineScratch scratch)
+            in EngineScratch scratch,
+            bool directoryMode = false)
         {
             _first = inputs.First;
             _second = inputs.Second;
@@ -419,6 +536,7 @@ internal sealed partial class CompiledGlobStrategy
             _kind = inputs.Kind;
             _totalLength = totalLength;
             _firstLength = inputs.First.Length;
+            _directoryMode = directoryMode;
             _frames = scratch.Frames;
             _arena = scratch.Arena;
             _work = scratch.Work;
@@ -431,6 +549,7 @@ internal sealed partial class CompiledGlobStrategy
             WorkCount = 0;
             Head = 0;
             WorkInput = 0;
+            DirectoryFullMatch = false;
         }
 
         /// <summary>
@@ -471,6 +590,19 @@ internal sealed partial class CompiledGlobStrategy
                         while (Head < WorkCount && _work[Head].Start >= _work[Head].End)
                         {
                             Head++;
+                        }
+
+                        if (_directoryMode && WorkInput == _totalLength)
+                        {
+                            // Directory mode: the candidate directory path has been
+                            // fully consumed on a live forward path, so it is a viable
+                            // prefix - some descendant could still match. Accept
+                            // immediately (the caller maps this to "keep descending").
+                            // Record whether the program is also exhausted so the
+                            // caller can report a complete match (Positive) versus a
+                            // proper prefix (None).
+                            DirectoryFullMatch = Head == WorkCount;
+                            return true;
                         }
 
                         if (Head == WorkCount)

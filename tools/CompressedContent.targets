@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+
+  <!--
+    Compressed content support.
+
+    Lets a project commit large data files to source control as compressed `.zip`
+    archives instead of their bulky uncompressed form. Each archive is listed as a
+    `CompressedContent` item; at build time the archives are extracted and the
+    extracted files are copied to the build output directory (and flow transitively
+    to the output of any referencing project). Consumers read the files from
+    `AppContext.BaseDirectory`.
+
+    Usage in a project:
+
+      <Import Project="$(RepoDir)tools\CompressedContent.targets" />
+
+      <ItemGroup>
+        <CompressedContent Include="RecordedData\enumeration.zip" DestinationFolder="RecordedData" />
+      </ItemGroup>
+
+    `DestinationFolder` (optional) is the sub-directory under the output directory
+    that receives the extracted files; omit it to extract to the output root.
+
+    Each archive is expected to contain the uncompressed payload directly (no extra
+    wrapping directory). Extraction is incremental: an archive is only re-extracted
+    when it is newer than the per-archive stamp written on the previous build.
+  -->
+
+  <PropertyGroup>
+    <!-- Staging location for extracted files; kept out of the output until copied. -->
+    <CompressedContentIntermediateDirectory Condition="'$(CompressedContentIntermediateDirectory)' == ''">$(IntermediateOutputPath)CompressedContent\</CompressedContentIntermediateDirectory>
+  </PropertyGroup>
+
+  <!--
+    Extract each `CompressedContent` archive into the staging directory under its
+    `DestinationFolder`. Incremental: the standard Inputs/Outputs up-to-date check
+    pairs each archive with a stamp file, so an unchanged archive is skipped.
+  -->
+  <Target Name="DecompressCompressedContent"
+          BeforeTargets="AssignTargetPaths"
+          Condition="'@(CompressedContent)' != ''"
+          Inputs="@(CompressedContent)"
+          Outputs="@(CompressedContent->'$(CompressedContentIntermediateDirectory)%(Filename)%(Extension).stamp')">
+
+    <MakeDir Directories="$(CompressedContentIntermediateDirectory)%(CompressedContent.DestinationFolder)" />
+
+    <Unzip SourceFiles="%(CompressedContent.FullPath)"
+           DestinationFolder="$(CompressedContentIntermediateDirectory)%(CompressedContent.DestinationFolder)"
+           OverwriteReadOnlyFiles="true" />
+
+    <Touch Files="$(CompressedContentIntermediateDirectory)%(CompressedContent.Filename)%(CompressedContent.Extension).stamp"
+           AlwaysCreate="true" />
+  </Target>
+
+  <!--
+    Declare the extracted files as copy-to-output content. Runs on every build (no
+    Inputs/Outputs) so the items are present even when extraction was skipped as
+    up to date. The staging directory mirrors each archive's `DestinationFolder`, so
+    `%(RecursiveDir)` (captured when the private item is globbed) reproduces it under
+    the output directory via `Link`. Stamp files are excluded.
+  -->
+  <Target Name="IncludeCompressedContent"
+          AfterTargets="DecompressCompressedContent"
+          BeforeTargets="AssignTargetPaths"
+          Condition="'@(CompressedContent)' != ''">
+
+    <ItemGroup>
+      <_CompressedContentExtracted Include="$(CompressedContentIntermediateDirectory)**\*"
+                                   Exclude="$(CompressedContentIntermediateDirectory)*.stamp" />
+      <None Include="@(_CompressedContentExtracted)">
+        <Link>%(_CompressedContentExtracted.RecursiveDir)%(_CompressedContentExtracted.Filename)%(_CompressedContentExtracted.Extension)</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <Visible>false</Visible>
+      </None>
+    </ItemGroup>
+  </Target>
+
+</Project>

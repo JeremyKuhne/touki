@@ -104,6 +104,15 @@ internal abstract class GlobStrategy : DisposableBase
     internal virtual string LiteralPathPrefix => string.Empty;
 
     /// <summary>
+    ///  <see langword="true"/> when the compiled program contains at least one
+    ///  extglob negation (<c>!(...)</c>) construct. Captured at compile time so the
+    ///  per-directory hot path can gate the (relatively expensive) directory-mode
+    ///  evaluation in <see cref="MatchDirectory"/> behind a single field load: a
+    ///  pattern with no negation can never prune a subtree this way.
+    /// </summary>
+    internal virtual bool HasNegation => false;
+
+    /// <summary>
     ///  Tests whether the logical concatenation
     ///  <paramref name="directoryPrefix"/> + <paramref name="fileName"/> matches the
     ///  compiled pattern. When <paramref name="directoryPrefix"/> is non-empty it
@@ -112,6 +121,61 @@ internal abstract class GlobStrategy : DisposableBase
     internal abstract bool MatchCore(
         ReadOnlySpan<char> directoryPrefix,
         ReadOnlySpan<char> fileName);
+
+    /// <summary>
+    ///  Evaluates the compiled pattern against a candidate directory path
+    ///  (<paramref name="directoryPrefix"/> + <paramref name="directoryName"/>),
+    ///  asking whether the subtree rooted at that directory can be pruned.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Returns <see cref="MatchOutcome.Negative"/> only when the pattern provably
+    ///   excludes the directory - an anchored negation rejects one of its segments,
+    ///   so no descendant can match and the enumerator may skip the whole subtree.
+    ///   Returns <see cref="MatchOutcome.None"/> for a viable prefix (keep
+    ///   descending) and <see cref="MatchOutcome.Positive"/> when the directory path
+    ///   itself is a complete match. The default never prunes; only strategies that
+    ///   carry a negation (see <see cref="HasNegation"/>) override it.
+    ///  </para>
+    ///  <para>
+    ///   The contract is conservative: a directory with any matching descendant is
+    ///   never reported <see cref="MatchOutcome.Negative"/>, so a wrong answer can
+    ///   only forgo a pruning opportunity, never skip a file that should match.
+    ///  </para>
+    ///  <para>
+    ///   Pruning keys off a negation that <em>fails</em> for the directory's own
+    ///   segment, not off one that matches. The sign is inverted: a directory whose
+    ///   name satisfies the <c>!(...)</c> group is allowed (keep descending); one
+    ///   whose name is excluded by the group is the only candidate for pruning.
+    ///   Worked examples (root <c>R</c>, MSBuild dialect with extglob):
+    ///  </para>
+    ///  <para>
+    ///   <c>!(bin|obj)/**/*.cs</c> - the negation is anchored to the first segment.
+    ///   <c>R/src</c> and <c>R/binx</c> satisfy <c>!(bin|obj)</c> (their names are
+    ///   neither <c>bin</c> nor <c>obj</c>), so both are descended and files such as
+    ///   <c>src/a.cs</c> or <c>src/bin/d.cs</c> match. <c>R/bin</c> and <c>R/obj</c>
+    ///   fail the group, so the whole subtree is pruned and <c>bin/Release/bin.cs</c>
+    ///   never enumerates. A nested <c>src/bin</c> is <em>not</em> pruned: only the
+    ///   first segment is constrained.
+    ///  </para>
+    ///  <para>
+    ///   <c>**/!(bin)/*.cs</c> - the negation floats behind a globstar, so it is not
+    ///   anchored to any fixed segment. The root <c>R/bin</c> must <em>not</em> be
+    ///   pruned: <c>bin/Release/bin.cs</c> matches because its immediate parent
+    ///   (<c>Release</c>) satisfies <c>!(bin)</c>. Pruning a floating negation by the
+    ///   directory's own name would wrongly drop that file.
+    ///  </para>
+    ///  <para>
+    ///   <c>src/!(bin)/**/*.cs</c> - the negation is anchored to the second segment
+    ///   under a literal <c>src</c> prefix. <c>src/bin</c> fails the group and is
+    ///   pruned; <c>src/lib</c> and <c>src/nested</c> satisfy it and are descended.
+    ///   The root <c>R/bin</c> is pruned by the literal <c>src</c> prefix, not by the
+    ///   negation.
+    ///  </para>
+    /// </remarks>
+    internal virtual MatchOutcome MatchDirectory(
+        ReadOnlySpan<char> directoryPrefix,
+        ReadOnlySpan<char> directoryName) => MatchOutcome.None;
 
     /// <inheritdoc/>
     protected override void Dispose(bool disposing)
