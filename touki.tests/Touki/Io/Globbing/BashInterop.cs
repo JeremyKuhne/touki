@@ -144,6 +144,67 @@ internal static class BashInterop
         p.WaitForExit();
         return p.ExitCode == 0;
     }
+
+    /// <summary>
+    ///  Expands <paramref name="pattern"/> as a canonical bash pathname glob against the
+    ///  real directory tree rooted at <paramref name="rootDirectory"/>, returning the set
+    ///  of matched paths relative to that root (forward-slash separated).
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Unlike <see cref="Matches"/> (which uses <c>[[ "$INPUT" == $PATTERN ]]</c> string
+    ///   matching where <c>*</c> crosses <c>/</c> and <c>**</c> has no globstar meaning),
+    ///   pathname expansion under <c>shopt -s globstar extglob</c> exercises bash's own
+    ///   path-aware directory traversal - including globstar zero-segment collapse and
+    ///   per-segment negation pruning - so it is the faithful oracle for the touki
+    ///   directory-pruning enumeration. <c>nullglob</c> makes a non-matching pattern
+    ///   expand to nothing instead of to itself.
+    ///  </para>
+    ///  <para>
+    ///   The root and pattern are passed via environment variables, never interpolated
+    ///   into the command string. The root is quoted (no expansion); the pattern is left
+    ///   unquoted so it undergoes the glob expansion we are measuring.
+    ///  </para>
+    /// </remarks>
+    public static HashSet<string> ExpandPathnames(string bashPath, string rootDirectory, string pattern)
+    {
+        ProcessStartInfo psi = new()
+        {
+            FileName = bashPath,
+            ArgumentList =
+            {
+                "-O", "extglob",
+                "-O", "globstar",
+                "-O", "nullglob",
+                "-c",
+                "cd \"$ROOT\" || exit 2; printf '%s\\n' $PATTERN",
+            },
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+        };
+
+        // Git Bash on Windows accepts forward-slash drive paths (N:/repos/...); backslashes
+        // would be read as escape sequences inside the double-quoted cd.
+        psi.Environment["ROOT"] = rootDirectory.Replace('\\', '/');
+        psi.Environment["PATTERN"] = pattern;
+
+        using Process p = Process.Start(psi)!;
+        string stdout = p.StandardOutput.ReadToEnd();
+        p.WaitForExit();
+
+        HashSet<string> results = [];
+        foreach (string line in stdout.Split('\n'))
+        {
+            string trimmed = line.Trim().Trim('/');
+            if (trimmed.Length > 0)
+            {
+                results.Add(trimmed);
+            }
+        }
+
+        return results;
+    }
 }
 
 #endif

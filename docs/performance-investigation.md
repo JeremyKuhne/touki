@@ -252,17 +252,81 @@ It writes a `.speedscope.json` (and `.nettrace`) under
 <https://www.speedscope.app/> (drag-drop, nothing to install) to get a flame
 graph. Cross-platform, works on Linux/macOS/Windows, **no admin required**.
 
-> **Reading the BenchmarkDotNet speedscope export.** The trace it writes is an
-> *evented* profile whose leaf self-time is bucketed into a synthetic
-> `CPU_TIME` node, so a naive "top self-time" aggregation is useless - every
-> managed leaf reads as `0 ms`. The **inclusive call tree is the real signal**,
-> and it is exactly what a flame graph renders: read the inclusive percentages
-> per frame (`MatchCore` -> `RunEngine` -> `ProduceAlternative` ...) and follow
-> the widest path down. If you need a static, embeddable flame graph rather than
-> the interactive viewer, walk the evented `O`/`C` events maintaining an
-> open-frame stack, attribute each inter-event time delta to the full stack, and
-> emit folded stacks or an SVG. (`speedscope.app` does this internally; a small
-> script reproduces it for committing before/after images to a doc.)
+#### One command: run + profile + ranked hotspots
+
+For an agent, the fastest loop is the committed wrapper, which runs the
+benchmark under EventPipe, finds the freshest trace, and prints folded
+self-time and inclusive-time rankings (and optionally a flame-graph SVG) - no
+GUI, no PerfView:
+
+```powershell
+# Run the benchmark under EventPipe, then print accurate hotspot rankings.
+./tools/Profile-Benchmark.ps1 `
+    -Filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' `
+    -RootFrame 'RecordedDirectoryEnumerator.MoveNext' `
+    -OutSvg scratch/extglob.svg          # SVG is optional
+
+# Already have a fresh trace? Re-aggregate without re-running:
+./tools/Profile-Benchmark.ps1 -Filter '*GlobEnumeratorExtGlobSingleWithRoot' `
+    -RootFrame 'RecordedDirectoryEnumerator.MoveNext' -SkipRun
+
+# Or analyze a specific trace directly:
+./tools/Get-TraceHotspots.ps1 `
+    -Path BenchmarkDotNet.Artifacts/<trace>.speedscope.json `
+    -RootFrame 'RecordedDirectoryEnumerator.MoveNext'
+```
+
+Three committed scripts back this:
+
+- `tools/Profile-Benchmark.ps1` - the wrapper above (net10.0-only; refuses
+  net481).
+- `tools/Get-TraceHotspots.ps1` - aggregates a `.speedscope.json` into
+  self-time and inclusive rankings, **folding the JIT-helper sampling
+  artifacts** (see below) into the real method. `-CallersOf <frame>` reports
+  who calls a given frame, to confirm what an artifact is attributable to.
+- `tools/speedscope-to-flamegraph.ps1` - renders an inclusive flame-graph SVG.
+
+> **Reading the BenchmarkDotNet speedscope export - two traps.**
+>
+> **Trap 1: the synthetic `CPU_TIME` leaf.** The trace is an *evented* profile
+> whose leaf self-time is bucketed into a synthetic `CPU_TIME` (or
+> `UNMANAGED_CODE_TIME`) node, so a naive "top self-time" aggregation is
+> useless - every managed leaf reads as `0 ms`. The **inclusive call tree is
+> the real signal**, and it is exactly what a flame graph renders: read the
+> inclusive percentages per frame and follow the widest path down.
+>
+> **Trap 2: JIT-helper thunks masquerading as the hotspot.** EventPipe's stack
+> walk is **managed-only**. When a sample's instruction pointer lands inside a
+> JIT helper - a write barrier, a `Buffer.Memmove`, or the GC-poll thunk
+> RyuJIT emits at loop back-edges - the walker resolves the *leaf* to that
+> helper (`System.Buffer.BulkMoveWithWriteBarrier`, `Thread.PollGCWorker`, ...)
+> rather than the method whose hot loop is actually running. Such a frame then
+> appears, misleadingly, to dominate self-time *and* inclusive-time. Two tells
+> that a frame is an artifact, not a real cost:
+>
+> - It copies/marshals data that provably has no GC references. A
+>   `Span<T>.CopyTo` over a `struct` with no reference fields compiles to plain
+>   `Buffer.Memmove`, **never** `BulkMoveWithWriteBarrier` (that helper requires
+>   `RuntimeHelpers.IsReferenceOrContainsReferences<T>()`), so seeing the
+>   write-barrier variant over a ref-free struct is impossible for a real call.
+> - It appears as a *direct* child of a hot loop method, bypassing the
+>   intermediate frames a real call would pass through.
+>
+> The cycles are real - they belong to the enclosing loop - but the *label* is
+> wrong. `Get-TraceHotspots.ps1` folds these (default patterns: `CPU_TIME`,
+> `UNMANAGED_CODE_TIME`, `BulkMoveWithWriteBarrier`, `PollGC`, `Memmove`,
+> `WriteBarrier`, `JIT_`) back into the nearest non-folded ancestor, which is
+> the PerfView `/FoldPats` operation done headless. In the extglob case the
+> folded view reattributed a "93% `BulkMoveWithWriteBarrier`" reading to its
+> true owners: the two engine loop bodies `RunEngine` (50.9%) and
+> `RunEngineDirectory` (42.2%), pure compute, no copies.
+
+> **`-RootFrame` gotcha.** BenchmarkDotNet wraps the workload in an
+> `Activity Benchmark(...benchmarkName=Foo...)` frame whose **name contains the
+> benchmark method name**. Scoping with the method name as `-RootFrame`
+> therefore also matches that wrapper and pulls idle threadpool threads into the
+> ranking. Scope to a frame *inside* the workload instead (an enumerator
+> `MoveNext`, or the first method unique to the system under test).
 
 `EventPipeProfile` values worth knowing:
 
@@ -325,6 +389,55 @@ Notes from the current docs:
   (open in Visual Studio or PerfView).
 - `dotnet-dump` - full process dump for post-mortem analysis with `dotnet dump
   analyze` (SOS commands like `dumpheap -stat`).
+
+### 3e. Getting more accurate samples (without ETW)
+
+EventPipe's `CpuSampling` profile samples at a fixed **~100 Hz** (one sample per
+managed thread roughly every 10 ms). It is a *managed-only, thread-time* walker:
+it cannot see native frames, and on a short benchmark you simply get too few
+samples for a stable ranking. Levers that actually help, cheapest first:
+
+- **Lengthen the measured work, not the sample rate.** On **net10 you cannot
+  raise the rate** - `DOTNET_EventPipeThreadSamplingRate` is **.NET 11+ only**.
+  More samples means a longer workload at the fixed 100 Hz: profile a larger
+  input, or wrap the body in an inner loop. BenchmarkDotNet's own iteration
+  count already helps; an operation that runs for seconds (like the 25 s
+  extglob enumeration here) yields thousands of samples and a stable tree.
+- **Fold the artifacts** (section 3a, Trap 2). This is the single biggest
+  accuracy win for *attribution* and costs nothing - `Get-TraceHotspots.ps1`
+  does it by default.
+- **Split a suspect frame with `[MethodImpl(MethodImplOptions.NoInlining)]`.**
+  If two methods are inlined together the sampler cannot tell them apart;
+  temporarily disabling inlining on one gives it its own frame and confirms the
+  split. Remove it afterwards - it changes the codegen you are measuring.
+- **`dotnet-trace report <file> topN --inclusive`** prints the ranked methods to
+  stdout - token-cheap for an agent, and it reads the same `.nettrace`.
+- **PerfView headless** (`PerfView /FoldPats=... stacks ...`) does the same fold
+  the script does, with richer grouping, when you already have PerfView. The
+  committed script exists so the common case needs neither PerfView nor a GUI.
+- **Want true CPU time and native frames?** EventPipe gives neither. On Windows
+  use `[EtwProfiler]` (section 3b, admin). On Linux - including **WSL Ubuntu on
+  this machine** (see the `run-tests-on-wsl` skill) - `dotnet-trace collect`
+  with the Linux CPU event, or `perf` + the runtime's perfmap, gives real
+  on-CPU sampling with native frames.
+
+#### Should I stabilize the JIT first?
+
+Stabilize the JIT **for clean attribution, not for absolute numbers**:
+
+- For a *flame graph / where-is-the-time* question, a stable call tree is what
+  you want; tiered compilation re-JITting mid-run can smear samples across the
+  tier-0 and tier-1 versions of a method. BenchmarkDotNet's warmup already lands
+  the steady-state iterations on tier-1 code, so the default harness is usually
+  stable enough - check the warmup output settled before trusting the tree.
+- Setting `DOTNET_TieredCompilation=0` (or `<TieredCompilation>false</...>`)
+  forces full opts from the first call and removes tier transitions, which makes
+  the trace cleaner - **but it is not the code your users run** (they get
+  tiering), so never read *absolute* timings from a `TieredCompilation=0` run
+  and treat them as production. Use it only to sharpen *attribution*, then drop
+  it.
+- Do **not** chase JIT stability for a microbenchmark whose numbers you care
+  about - measure those with the normal tiered harness.
 
 ---
 
@@ -450,12 +563,15 @@ A concrete, token-efficient loop an agent should follow:
 5. **Confirm** on both TFMs without `--job short`. Read
    `*-report-github.md`, quote only `Mean`/`Ratio`/`Allocated` for changed rows.
 6. **If the bottleneck is unclear**, attach `[EventPipeProfiler(CpuSampling)]`
-   (or run `dotnet-trace ... report topN`) on **net10.0** to find the dominant
-   method. Profiling is part of the loop: capture a `before/` trace, apply the
-   fix, capture an `after/` trace with the identical filter, and diff the flame
-   graphs to confirm the targeted frame shrank. EventPipe is net10.0-only; for
-   net481 on-CPU attribution use `[EtwProfiler]` (admin) - see the
-   per-TFM table in &sect;3.
+   and run `./tools/Profile-Benchmark.ps1 -Filter *<Subject>* -RootFrame
+   <workload-frame>` on **net10.0** for ranked, artifact-folded hotspots in one
+   command (or `dotnet-trace ... report topN`). **Fold the JIT-helper artifacts**
+   (`BulkMoveWithWriteBarrier`, `PollGC`, the synthetic `CPU_TIME` leaf) before
+   trusting any self-time number - the script does this by default; see &sect;3a
+   Trap 2. Profiling is part of the loop: capture a `before/` trace, apply the
+   fix, capture an `after/` trace with the identical filter, and diff. EventPipe
+   is net10.0-only; for net481 on-CPU attribution use `[EtwProfiler]` (admin) -
+   see the per-TFM table in &sect;3.
 7. **If a specific loop is slow**, attach `[DisassemblyDiagnoser]` on both TFMs
    and diff the asm; consult `framework-jit-optimization` for the fix.
 8. **Apply the fix, re-measure with the identical filter.** Name the TFM and
@@ -485,9 +601,14 @@ A concrete, token-efficient loop an agent should follow:
 A/B + allocations ............ dotnet run -c Release -f <tfm> --project touki.perf -- --filter *X*
 Fast smoke ................... add --job short
 Read the result .............. BenchmarkDotNet.Artifacts/results/*-report-github.md
+Where's the time? (one cmd) .. ./tools/Profile-Benchmark.ps1 -Filter *X* -RootFrame <workload-frame>
+                               runs [EventPipeProfiler] + folds JIT-helper artifacts + ranks. net10 only.
+                               -OutSvg writes a flame graph; -SkipRun re-aggregates an existing trace.
+Analyze an existing trace .... ./tools/Get-TraceHotspots.ps1 -Path *.speedscope.json -RootFrame <frame>
+                               -CallersOf <frame> confirms what a helper artifact is attributable to.
 Where's the time? (in-harness) [EventPipeProfiler(EventPipeProfile.CpuSampling)] -> speedscope.app
                                net10.0 only (no admin); net481 needs [EtwProfiler] (admin) -> .etl
-                               Capture before/ AND after/ traces; diff the flame graphs.
+                               FOLD BulkMoveWithWriteBarrier/PollGC/CPU_TIME before reading self-time.
 Where's the time? (live proc)  dotnet-trace collect -p <PID> --format Speedscope
                                dotnet-trace report <file> topN --inclusive   (text, token-cheap)
 Why slow codegen? ............ [DisassemblyDiagnoser(printSource:true)] -> *-asm.md  (diff TFMs)

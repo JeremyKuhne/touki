@@ -41,4 +41,16 @@
     <ProjectReference Include="..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
   </ItemGroup>
 
+  <!--
+    Recorded file-system snapshots replayed by MsBuildEnumeratePerf3. Committed as
+    compressed archives; CompressedContent.targets extracts them to the output
+    directory at build time and the benchmark reads them from AppContext.BaseDirectory.
+  -->
+  <Import Project="$(RepoDir)tools\CompressedContent.targets" />
+
+  <ItemGroup>
+    <CompressedContent Include="RecordedData\enumeration.zip" DestinationFolder="RecordedData" />
+    <CompressedContent Include="RecordedData\msbuild-filesystem.zip" DestinationFolder="RecordedData" />
+  </ItemGroup>
+
 </Project>

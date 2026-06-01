@@ -217,6 +217,26 @@ public sealed partial class GlobSpecification : DisposableBase
     /// </remarks>
     public StringSegment LiteralPathPrefix => _strategy.LiteralPathPrefix;
 
+    /// <summary>
+    ///  <see langword="true"/> when the compiled pattern contains at least one
+    ///  extglob negation (<c>!(...)</c>). Lets
+    ///  <see cref="GlobMatch.MatchesDirectory"/> gate directory-mode pruning behind a
+    ///  single field load.
+    /// </summary>
+    internal bool HasNegation => _strategy.HasNegation;
+
+    /// <summary>
+    ///  Classifies a candidate directory path
+    ///  (<paramref name="directoryPrefix"/> + <paramref name="directoryName"/>)
+    ///  against the compiled pattern so the enumerator can prune subtrees that an
+    ///  anchored negation provably excludes. See
+    ///  <see cref="GlobStrategy.MatchDirectory"/> for the conservative contract.
+    /// </summary>
+    internal MatchOutcome MatchDirectory(
+        ReadOnlySpan<char> directoryPrefix,
+        ReadOnlySpan<char> directoryName) =>
+        _strategy.MatchDirectory(directoryPrefix, directoryName);
+
     internal bool IsPathAware => Separator != '\0';
 
     // Internal so GlobMatch can route through the strategy directly and tests can

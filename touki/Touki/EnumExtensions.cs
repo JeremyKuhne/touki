@@ -51,19 +51,30 @@ public static unsafe partial class EnumExtensions
         /// <remarks>
         ///  <para>
         ///   Equivalent to <see cref="Enum.HasFlag(Enum)"/> but without the boxing
-        ///   penalty on .NET Framework. Compared to `Enum.HasFlag` on net472 (which
-        ///   boxes both operands and virtcalls into Enum.HasFlag) this is ~20x
+        ///   penalty. Compared to <see cref="Enum.HasFlag(Enum)"/> on net472 (which
+        ///   boxes both operands and virtcalls into <c>Enum.HasFlag</c>) this is ~20x
         ///   faster and allocates zero bytes.
+        ///  </para>
+        ///  <para>
+        ///   The underlying-integer pointer ladder is used on <em>both</em> runtimes.
+        ///   The obvious <c>#if NET</c> shortcut of delegating to
+        ///   <c>value.HasFlag(flags)</c> on modern .NET does NOT work as intended:
+        ///   RyuJIT's no-box <c>Enum.HasFlag</c> intrinsic only fires when the call is
+        ///   made directly on a concrete enum, not when it is reached through this
+        ///   generic <c>extension&lt;T&gt;</c> body. Inside the generic the
+        ///   <paramref name="flags"/> argument is widened to the <see cref="Enum"/>
+        ///   parameter of <see cref="Enum.HasFlag(Enum)"/> and boxes on every call,
+        ///   reintroducing the exact allocation this method exists to avoid (caught by
+        ///   an allocation-asserting test on net10). The pointer ladder folds to the
+        ///   same <c>and; cmp; sete</c> on net10 with no box, so it is the correct
+        ///   choice for both targets.
         ///  </para>
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool AreFlagsSet(T flags)
         {
-#if NET
-            return value.HasFlag(flags);
-#else
-            // .NET Framework polyfill: HasFlag boxes and virtcalls.
-            // Reading the underlying integer via a raw pointer avoids the box.
+            // HasFlag boxes (see remarks); read the underlying integer via a raw
+            // pointer on both runtimes to avoid it.
             if (sizeof(T) == sizeof(byte))
             {
                 byte f = *(byte*)&flags;
@@ -88,7 +99,6 @@ public static unsafe partial class EnumExtensions
             {
                 throw new InvalidOperationException();
             }
-#endif
         }
 
         /// <summary>

@@ -177,7 +177,7 @@ public sealed class GlobEnumerator : MatchEnumerator<string>
     ///  <see cref="IEnumerationMatcher"/>); otherwise wraps the include matcher and
     ///  one exclude matcher per pattern in a <see cref="MatchSet"/>.
     /// </summary>
-    private static IEnumerationMatcher BuildMatcher(
+    internal static IEnumerationMatcher BuildMatcher(
         string includePattern,
         IReadOnlyList<string>? excludePatterns,
         string rootDirectory,

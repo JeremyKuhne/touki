@@ -1,6 +1,6 @@
 ---
 name: performance-testing
-description: Author and run BenchmarkDotNet performance tests in the `touki.perf` project. Use when adding new benchmarks, running existing ones, comparing implementations, or evaluating allocations / memory usage for code in the `touki` library.
+description: Author and run BenchmarkDotNet performance tests in the `touki.perf` project. Use when adding new benchmarks, running existing ones, comparing implementations, profiling to find which method dominates a benchmark, or evaluating allocations / memory usage for code in the `touki` library.
 ---
 
 # Performance testing in `touki.perf`
@@ -167,6 +167,43 @@ With no `--filter`, BenchmarkSwitcher prints a numbered menu. Useful when explor
 - `--exporters github` - emits a GitHub-flavored Markdown report alongside the
   default outputs.
 
+### Profiling a benchmark: where does the time go?
+
+To find which method dominates a benchmark - whether optimizing a hot path or
+chasing a regression - profile it. One committed command runs the benchmark
+under the EventPipe CPU profiler on `net10.0` and prints ranked,
+artifact-folded hotspots (optionally a flame-graph SVG):
+
+```powershell
+# Run + profile + ranked self/inclusive hotspots in one command.
+./tools/Profile-Benchmark.ps1 `
+    -Filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' `
+    -RootFrame 'RecordedDirectoryEnumerator.MoveNext' `
+    -OutSvg scratch/subject.svg          # SVG optional
+
+# Re-aggregate an existing trace without re-running:
+./tools/Get-TraceHotspots.ps1 `
+    -Path BenchmarkDotNet.Artifacts/<trace>.speedscope.json `
+    -RootFrame 'RecordedDirectoryEnumerator.MoveNext'
+```
+
+Two trace-reading traps the scripts handle, but worth knowing:
+
+- **Leaf self-time is a synthetic `CPU_TIME` marker** - a raw top-self-time view
+  shows `0 ms` per method. Read inclusive time, or let the script fold it.
+- **The managed-only walker mislabels JIT-helper thunks**
+  (`BulkMoveWithWriteBarrier`, `Thread.PollGCWorker`, `Buffer.Memmove`) as the
+  hotspot when a sample lands in a tight loop's GC-poll/write-barrier code. The
+  cycles belong to the *enclosing* method; the script folds them by default. A
+  `BulkMoveWithWriteBarrier` over a GC-ref-free struct is always an artifact.
+
+EventPipe is **net10.0-only** (net481 needs `[EtwProfiler]` + admin). Full
+rationale, the `-RootFrame` gotcha (BenchmarkDotNet's `Activity Benchmark(...)`
+frame name contains the method name), accuracy levers, and the
+JIT-stabilization tradeoff:
+[docs/performance-investigation.md](../../../docs/performance-investigation.md)
+section 3.
+
 ## 3. Evaluating memory usage
 
 With `[MemoryDiagnoser]` (or `--memory`), each row of the results table includes:
@@ -220,6 +257,8 @@ The same table is also printed to the console at the end of the run.
    individually using `-f net10.0` and `-f net481`.
 8. Run the full benchmark on both target frameworks (drop `--job short`).
 9. Inspect `Allocated` and `Ratio` columns; copy the Markdown report into the PR.
+10. If one method dominates and you need to know which, profile it - see the
+    *Profiling a benchmark* subsection in &sect;2.
 
 ## 5. Codegen-level optimization rules
 

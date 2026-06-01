@@ -954,8 +954,7 @@ public sealed partial class GlobSpecification
                 allowExtGlob,
                 separator,
                 out string program,
-                out bool hasGlobStar,
-                out bool hasExtGlob,
+                out GlobTraits traits,
                 out error))
             {
                 result = null;
@@ -982,7 +981,7 @@ public sealed partial class GlobSpecification
             int nfaProgramLength;
             int tailStart;
             int tailLength;
-            if (hasExtGlob)
+            if (traits.AreFlagsSet(GlobTraits.ExtGlob))
             {
                 nfaProgramLength = program.Length;
                 if (!ComputeExtGlobCommonTailSlice(program, out tailStart, out tailLength))
@@ -996,7 +995,7 @@ public sealed partial class GlobSpecification
                 FindTrailingLiteral(program, out nfaProgramLength, out tailStart, out tailLength);
             }
 
-            result = new CompiledGlobStrategy(program, nfaProgramLength, tailStart, tailLength, hasGlobStar, hasExtGlob, dialect, options)
+            result = new CompiledGlobStrategy(program, nfaProgramLength, tailStart, tailLength, traits, dialect, options)
             {
                 Negated = negated,
                 RootAnchored = rootAnchored,
@@ -1657,8 +1656,7 @@ public sealed partial class GlobSpecification
             bool allowExtGlob,
             char separator,
             out string program,
-            out bool hasGlobStar,
-            out bool hasExtGlob,
+            out GlobTraits traits,
             out GlobCompileError error)
         {
             // Worst-case encoded length: every character becomes a Literal-of-1 (3 chars)
@@ -1674,8 +1672,7 @@ public sealed partial class GlobSpecification
             // literal byte that happens to equal the GlobStar opcode character (which is
             // a Unicode private-use noncharacter, but still a valid char in user input).
             LiteralCursor lastLiteral = LiteralCursor.None;
-            hasGlobStar = false;
-            hasExtGlob = false;
+            traits = GlobTraits.None;
             error = default;
             int overflowPosition = -1;
 
@@ -1702,14 +1699,14 @@ public sealed partial class GlobSpecification
                             separator,
                             ref builder,
                             ref lastLiteral,
-                            ref hasGlobStar,
+                            ref traits,
                             out int extGlobOverflow))
                     {
                         overflowPosition = extGlobOverflow;
                         break;
                     }
 
-                    hasExtGlob = true;
+                    traits.SetFlags(GlobTraits.ExtGlob);
                     continue;
                 }
 
@@ -1767,7 +1764,7 @@ public sealed partial class GlobSpecification
 
                     if (TryEmitGlobStar(pattern, i, runEnd, allowGlobStar, separator, ref builder, ref lastLiteral, out int next))
                     {
-                        hasGlobStar = true;
+                        traits.SetFlags(GlobTraits.GlobStar);
                         i = next;
                         continue;
                     }
@@ -1836,7 +1833,7 @@ public sealed partial class GlobSpecification
             char separator,
             ref ValueStringBuilder builder,
             ref LiteralCursor lastLiteral,
-            ref bool hasGlobStar,
+            ref GlobTraits traits,
             out int overflowPosition)
         {
             Debug.Assert(i + 1 < pattern.Length && pattern[i + 1] == '(');
@@ -1846,6 +1843,14 @@ public sealed partial class GlobSpecification
             int kindIndex = i;
             char kind = pattern[i];
             int altStartPos = builder.Length;
+
+            // A negation construct anywhere in the program (top-level or nested)
+            // enables the directory-pruning path. Detected here as a side effect of
+            // the single encode pass instead of re-walking the encoded program.
+            if (kind == '!')
+            {
+                traits.SetFlags(GlobTraits.Negation);
+            }
 
             // Reserve the AltStart header: opcode + kind + placeholder length.
             // The length payload is back-patched once AltEnd is appended; the
@@ -1937,7 +1942,7 @@ public sealed partial class GlobSpecification
                             separator,
                             ref builder,
                             ref lastLiteral,
-                            ref hasGlobStar,
+                            ref traits,
                             out overflowPosition))
                     {
                         return false;
@@ -1998,7 +2003,7 @@ public sealed partial class GlobSpecification
 
                     if (TryEmitGlobStar(pattern, i, runEnd, allowGlobStar, separator, ref builder, ref lastLiteral, out int next))
                     {
-                        hasGlobStar = true;
+                        traits.SetFlags(GlobTraits.GlobStar);
                         i = next;
                         continue;
                     }

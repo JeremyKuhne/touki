@@ -139,8 +139,7 @@ public class ExtGlobNegationMatchTests
             nfaProgramLength: program.Length,
             tailStart: -1,
             tailLength: 0,
-            hasGlobStar: false,
-            hasExtGlob: true,
+            GlobTraits.ExtGlob | GlobTraits.Negation,
             GlobDialect.Bash,
             GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
 
