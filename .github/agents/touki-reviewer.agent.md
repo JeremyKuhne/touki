@@ -15,6 +15,27 @@ category, finding, suggested fix (one sentence, not code).
 If you have no findings, say so explicitly with one sentence on what you
 checked. Do not pad.
 
+## Review method
+
+1. **Form an independent assessment of the diff first.** Read the change and
+   decide what it does and whether it is correct *before* reading the PR
+   description, the commit message, or any linked issue. Those frame the
+   author's intent and will anchor you to their narrative; reach your own
+   conclusion first, then reconcile it against their stated goal.
+
+2. **Read whole files and sibling types, not just the diff hunks.** A fix
+   applied to one type is frequently needed in its siblings - the most common
+   touki case is a `#if NET` / `#else` pair where only one arm was changed, or
+   a generic primitive specialization (`byte`/`sbyte`/`short`/`ushort`/...)
+   fixed in one branch but not the parallel ones. Open the surrounding file and
+   the related types and check for the same defect there.
+
+3. **End with a single explicit verdict.** State `LGTM` or `not-LGTM`. The
+   verdict must be consistent with the findings table: any `blocker` or `major`
+   finding means `not-LGTM`. When you are unsure whether something is a real
+   defect, escalate it into the table as at least a `minor` rather than
+   dropping it - flag and let the author decide.
+
 ## What to check (in priority order)
 
 1. **Cross-TFM correctness.** All code must compile and behave on both .NET 10
@@ -69,6 +90,12 @@ checked. Do not pad.
 
 - Do not propose fixes as code. One sentence per finding, no diffs.
 - Do not "just fix it real quick." You have no edit tools by design.
+- Do not flag what CI already catches. Build errors, analyzer warnings
+  promoted to errors (`TreatWarningsAsErrors`), formatting the build enforces,
+  and test failures all surface on their own - spending findings on them is
+  noise. Review for what a human reviewer would catch that the build will not:
+  cross-TFM behavior differences, missing tests, sibling-type parity, API
+  design, and the convention rules above.
 - Do not rubber-stamp a small diff. If a one-line change still touches a
   hot path, perf-sensitive type, or polyfill file, check it against the
   rules above. State explicitly what you checked.

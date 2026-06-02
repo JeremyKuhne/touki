@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      The server runs on .NET 10 only. It reads traces produced by either TFM
+      (net10 EventPipe .nettrace/.speedscope.json and net481 ETW .etl); the
+      reading host itself does not need to run on Framework.
+    -->
+    <TargetFramework>$(DotNetCoreVersion)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Touki.Mcp</RootNamespace>
+
+    <!-- Internal optimization tooling: never packaged, never on the public API surface. -->
+    <IsPackable>false</IsPackable>
+
+    <!-- Not a test container; keep VS / VS Code from probing it as one. -->
+    <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" />
+  </ItemGroup>
+
+</Project>

@@ -1,6 +1,6 @@
 ---
 name: performance-testing
-description: Author and run BenchmarkDotNet performance tests in the `touki.perf` project. Use when adding new benchmarks, running existing ones, comparing implementations, profiling to find which method dominates a benchmark, or evaluating allocations / memory usage for code in the `touki` library.
+description: Author and run BenchmarkDotNet performance tests in the `touki.perf` project. Use when adding new benchmarks, running existing ones, comparing implementations, profiling to find which method dominates a benchmark, drilling from a benchmark down to the hot source line (via the `touki.mcp` trace analyzer), or evaluating allocations / memory usage for code in the `touki` library.
 ---
 
 # Performance testing in `touki.perf`
@@ -167,42 +167,65 @@ With no `--filter`, BenchmarkSwitcher prints a numbered menu. Useful when explor
 - `--exporters github` - emits a GitHub-flavored Markdown report alongside the
   default outputs.
 
-### Profiling a benchmark: where does the time go?
+### Profiling a benchmark: from operation to method to line
 
-To find which method dominates a benchmark - whether optimizing a hot path or
-chasing a regression - profile it. One committed command runs the benchmark
-under the EventPipe CPU profiler on `net10.0` and prints ranked,
-artifact-folded hotspots (optionally a flame-graph SVG):
+To find where a benchmark spends its time - optimizing a hot path or chasing a
+regression - capture an EventPipe CPU trace on `net10.0`, then drill it with the
+in-workspace [touki.mcp](../../../touki.mcp/touki.mcp.csproj) analyzer. It reads
+the trace through TraceEvent, folds the JIT-helper sampling artifacts, and ranks
+by method or by source `file:line`. One capture serves both:
 
 ```powershell
-# Run + profile + ranked self/inclusive hotspots in one command.
-./tools/Profile-Benchmark.ps1 `
-    -Filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' `
-    -RootFrame 'RecordedDirectoryEnumerator.MoveNext' `
-    -OutSvg scratch/subject.svg          # SVG optional
+# Capture once. --keepFiles preserves BDN's build so its PDB GUID survives for
+# the line ranking below.
+dotnet run -c Release -f net10.0 --project touki.perf -- `
+    --filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' -p EP --keepFiles
 
-# Re-aggregate an existing trace without re-running:
-./tools/Get-TraceHotspots.ps1 `
-    -Path BenchmarkDotNet.Artifacts/<trace>.speedscope.json `
-    -RootFrame 'RecordedDirectoryEnumerator.MoveNext'
+$trace = (Get-ChildItem BenchmarkDotNet.Artifacts `
+    -Filter '*GlobEnumeratorExtGlobSingleWithRoot*.nettrace' |
+    Sort-Object LastWriteTime | Select-Object -Last 1).FullName
+# The exact build BDN profiled - its PDB GUID matches the trace:
+$sym = 'artifacts/x64/Release/touki.perf/net10.0/touki.perf-DefaultJob-1/bin/Release/net10.0'
+
+# Method ranking, scoped to a workload frame (which method owns the self-time).
+dotnet run --project touki.mcp -c Release -- analyze $trace --root 'RecordedDirectoryEnumerator.MoveNext' --top 25
+
+# Line ranking inside the dominant method (which lines of its hot loop dominate).
+dotnet run --project touki.mcp -c Release -- analyze $trace --lines RunEngine --symbols $sym --top 30
+
+# Who calls a folded JIT-helper artifact, to confirm what it's attributable to.
+dotnet run --project touki.mcp -c Release -- analyze $trace --callers 'BulkMoveWithWriteBarrier'
 ```
 
-Two trace-reading traps the scripts handle, but worth knowing:
+An agent that speaks MCP calls the equivalent tools directly (`hotspots_self`,
+`hotspots_inclusive`, `hot_lines`, `callers_of`, `load_trace`, `list_threads`).
 
-- **Leaf self-time is a synthetic `CPU_TIME` marker** - a raw top-self-time view
-  shows `0 ms` per method. Read inclusive time, or let the script fold it.
-- **The managed-only walker mislabels JIT-helper thunks**
-  (`BulkMoveWithWriteBarrier`, `Thread.PollGCWorker`, `Buffer.Memmove`) as the
-  hotspot when a sample lands in a tight loop's GC-poll/write-barrier code. The
-  cycles belong to the *enclosing* method; the script folds them by default. A
-  `BulkMoveWithWriteBarrier` over a GC-ref-free struct is always an artifact.
-
-EventPipe is **net10.0-only** (net481 needs `[EtwProfiler]` + admin). Full
-rationale, the `-RootFrame` gotcha (BenchmarkDotNet's `Activity Benchmark(...)`
-frame name contains the method name), accuracy levers, and the
-JIT-stabilization tradeoff:
+Things that bite, kept short - full rationale in
 [docs/performance-investigation.md](../../../docs/performance-investigation.md)
-section 3.
+sections 3a (methods) and 3f (lines):
+
+- **EventPipe is net10.0-only** - net481 needs `[EtwProfiler]` + admin.
+- **Fold the artifacts.** A raw self-time view shows `0 ms` per method (the leaf
+  is a synthetic `CPU_TIME` marker), and the managed-only walker mislabels
+  JIT-helper thunks (`BulkMoveWithWriteBarrier`, `Thread.PollGCWorker`,
+  `Buffer.Memmove`) as the hotspot. The analyzer folds both by default; a
+  `BulkMoveWithWriteBarrier` over a GC-ref-free struct is always an artifact.
+- **`--root` must be a frame inside the workload**, not the benchmark method
+  name (that also matches BDN's `Activity Benchmark(...)` wrapper and pulls in
+  idle threadpool threads).
+- **Line ranking needs `--symbols` pointing at BDN's `...-DefaultJob-N/bin/...`
+  build** - `touki.dll` ships its PDB embedded, and the symbols build's GUID
+  must match the trace (hence `--keepFiles`). A wrong dir resolves frames to
+  `<no source>` or is rejected with a GUID mismatch.
+- **Line attribution stops at inlined boundaries** - a fully-inlined callee
+  collapses onto its caller's call-site line. If the ranking piles onto one or
+  two call-site lines, scope `--lines` to the callee (`--lines ExtGlobEngine`)
+  or add a temporary `[MethodImpl(MethodImplOptions.NoInlining)]`.
+
+The older `Profile-Benchmark.ps1` / `Get-TraceHotspots.ps1` scripts predate the
+analyzer and remain as a no-MCP fallback (plus `speedscope-to-flamegraph.ps1`
+for SVG) in
+[docs/performance-investigation-without-mcp.md](../../../docs/performance-investigation-without-mcp.md).
 
 ## 3. Evaluating memory usage
 
@@ -257,8 +280,9 @@ The same table is also printed to the console at the end of the run.
    individually using `-f net10.0` and `-f net481`.
 8. Run the full benchmark on both target frameworks (drop `--job short`).
 9. Inspect `Allocated` and `Ratio` columns; copy the Markdown report into the PR.
-10. If one method dominates and you need to know which, profile it - see the
-    *Profiling a benchmark* subsection in &sect;2.
+10. If one method dominates and you need to know which - or which *line* inside
+    it - profile it; see *Profiling a benchmark: from operation to method to
+    line* in &sect;2.
 
 ## 5. Codegen-level optimization rules
 
