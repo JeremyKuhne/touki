@@ -36,16 +36,19 @@ flowchart TD
     B -->|"Is impl A faster than B?"| C[BenchmarkDotNet A/B<br/>MemoryDiagnoser + Baseline]
     B -->|"Does this allocate?"| D[BenchmarkDotNet<br/>MemoryDiagnoser - read Allocated]
     B -->|"Which method eats the time<br/>in a whole operation?"| E[Profiler: EventPipeProfiler<br/>or dotnet-trace -> speedscope]
+    B -->|"Which source LINE inside<br/>the hot method?"| M[touki.mcp hot_lines<br/>.nettrace + --symbols]
     B -->|"Why is THIS loop slow<br/>on net481?"| F[DisassemblyDiagnoser<br/>compare net481 vs net10 asm]
     B -->|"Branch mispredicts / cache?"| G[HardwareCounters<br/>Windows + admin]
     C --> H[Read *.md report only]
     D --> H
     E --> I[Open trace: speedscope.app<br/>or VS / PerfView]
+    M --> N[Read ranked file:line<br/>from stdout]
     F --> J[Read *-asm.md / *-asm.html]
     G --> H
     H --> K{Signal clear?}
     K -->|Yes| L[Apply fix, re-measure same filter]
     K -->|No| E
+    I --> M
 ```
 
 Rule of thumb for picking the entry point:
@@ -55,6 +58,7 @@ Rule of thumb for picking the entry point:
 | "A vs B", "did my change regress?" | BenchmarkDotNet `[Benchmark]` + `Baseline` | low |
 | "Does X allocate? how much?" | BenchmarkDotNet `[MemoryDiagnoser]` | low |
 | "Where in a multi-method operation is the time?" | `[EventPipeProfiler]` or `dotnet-trace` | medium |
+| "Which source *line* inside the hot method?" | `touki.mcp` `hot_lines` (`.nettrace` + `--symbols`) | medium |
 | "Why does the JIT emit slow code here?" | `[DisassemblyDiagnoser]` | medium |
 | "Is it branch misprediction / cache misses?" | `[HardwareCounters]` (Win+admin) | medium |
 | "Does it leak / churn the GC over a long run?" | `dotnet-counters`, `dotnet-gcdump` | medium |
@@ -252,39 +256,43 @@ It writes a `.speedscope.json` (and `.nettrace`) under
 <https://www.speedscope.app/> (drag-drop, nothing to install) to get a flame
 graph. Cross-platform, works on Linux/macOS/Windows, **no admin required**.
 
-#### One command: run + profile + ranked hotspots
+#### Capture a trace, then rank hotspots (touki.mcp)
 
-For an agent, the fastest loop is the committed wrapper, which runs the
-benchmark under EventPipe, finds the freshest trace, and prints folded
-self-time and inclusive-time rankings (and optionally a flame-graph SVG) - no
-GUI, no PerfView:
+Capturing the trace and *reading* it are two steps. Capture is a plain
+`dotnet run`; the ranked, artifact-folded self/inclusive hotspots come from the
+in-workspace [touki.mcp](../touki.mcp/touki.mcp.csproj) analyzer (section 6),
+which reads the trace BenchmarkDotNet just wrote - no GUI, no PerfView:
 
 ```powershell
-# Run the benchmark under EventPipe, then print accurate hotspot rankings.
-./tools/Profile-Benchmark.ps1 `
-    -Filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' `
-    -RootFrame 'RecordedDirectoryEnumerator.MoveNext' `
-    -OutSvg scratch/extglob.svg          # SVG is optional
+# 1. Run the benchmark under EventPipe (--keepFiles preserves the build so its
+#    PDB GUID survives for line-level work in section 3f; harmless otherwise).
+dotnet run -c Release -f net10.0 --project touki.perf -- `
+    --filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' -p EP --keepFiles
 
-# Already have a fresh trace? Re-aggregate without re-running:
-./tools/Profile-Benchmark.ps1 -Filter '*GlobEnumeratorExtGlobSingleWithRoot' `
-    -RootFrame 'RecordedDirectoryEnumerator.MoveNext' -SkipRun
+$trace = (Get-ChildItem BenchmarkDotNet.Artifacts `
+    -Filter '*GlobEnumeratorExtGlobSingleWithRoot*.nettrace' |
+    Sort-Object LastWriteTime | Select-Object -Last 1).FullName
 
-# Or analyze a specific trace directly:
-./tools/Get-TraceHotspots.ps1 `
-    -Path BenchmarkDotNet.Artifacts/<trace>.speedscope.json `
-    -RootFrame 'RecordedDirectoryEnumerator.MoveNext'
+# 2. Folded self-time + inclusive-time rankings, scoped to a workload frame.
+dotnet run --project touki.mcp -c Release -- analyze $trace --root 'RecordedDirectoryEnumerator.MoveNext' --top 25
+
+# Confirm what a folded JIT-helper artifact is attributable to:
+dotnet run --project touki.mcp -c Release -- analyze $trace --callers 'BulkMoveWithWriteBarrier'
 ```
 
-Three committed scripts back this:
+An agent that speaks MCP calls `hotspots_self` / `hotspots_inclusive` /
+`callers_of` directly on the same trace (section 6) instead of shelling out.
 
-- `tools/Profile-Benchmark.ps1` - the wrapper above (net10.0-only; refuses
-  net481).
-- `tools/Get-TraceHotspots.ps1` - aggregates a `.speedscope.json` into
-  self-time and inclusive rankings, **folding the JIT-helper sampling
-  artifacts** (see below) into the real method. `-CallersOf <frame>` reports
-  who calls a given frame, to confirm what an artifact is attributable to.
-- `tools/speedscope-to-flamegraph.ps1` - renders an inclusive flame-graph SVG.
+> The committed PowerShell scripts (`Profile-Benchmark.ps1`,
+> `Get-TraceHotspots.ps1`) did this aggregation before the MCP server existed
+> and the analyzer now supersedes them. They remain as a no-MCP fallback - and
+> `speedscope-to-flamegraph.ps1` still has unique value for rendering an SVG
+> flame graph. See
+> [performance-investigation-without-mcp.md](performance-investigation-without-mcp.md).
+
+For line-level attribution on the same trace - which *source line* inside the
+ranked method dominates - hand the `.nettrace` to `touki.mcp` with `--lines`
+(section 3f). This has no script fallback.
 
 > **Reading the BenchmarkDotNet speedscope export - two traps.**
 >
@@ -313,17 +321,17 @@ Three committed scripts back this:
 >   intermediate frames a real call would pass through.
 >
 > The cycles are real - they belong to the enclosing loop - but the *label* is
-> wrong. `Get-TraceHotspots.ps1` folds these (default patterns: `CPU_TIME`,
-> `UNMANAGED_CODE_TIME`, `BulkMoveWithWriteBarrier`, `PollGC`, `Memmove`,
-> `WriteBarrier`, `JIT_`) back into the nearest non-folded ancestor, which is
-> the PerfView `/FoldPats` operation done headless. In the extglob case the
-> folded view reattributed a "93% `BulkMoveWithWriteBarrier`" reading to its
+> wrong. The analyzer (and the fallback scripts) fold these (default patterns:
+> `CPU_TIME`, `UNMANAGED_CODE_TIME`, `BulkMoveWithWriteBarrier`, `PollGC`,
+> `Memmove`, `WriteBarrier`, `JIT_`) back into the nearest non-folded ancestor,
+> which is the PerfView `/FoldPats` operation done headless. In the extglob case
+> the folded view reattributed a "93% `BulkMoveWithWriteBarrier`" reading to its
 > true owners: the two engine loop bodies `RunEngine` (50.9%) and
 > `RunEngineDirectory` (42.2%), pure compute, no copies.
 
-> **`-RootFrame` gotcha.** BenchmarkDotNet wraps the workload in an
+> **`rootFrame` gotcha.** BenchmarkDotNet wraps the workload in an
 > `Activity Benchmark(...benchmarkName=Foo...)` frame whose **name contains the
-> benchmark method name**. Scoping with the method name as `-RootFrame`
+> benchmark method name**. Scoping with the method name as `--root` / `rootFrame`
 > therefore also matches that wrapper and pulls idle threadpool threads into the
 > ranking. Scope to a frame *inside* the workload instead (an enumerator
 > `MoveNext`, or the first method unique to the system under test).
@@ -404,8 +412,8 @@ samples for a stable ranking. Levers that actually help, cheapest first:
   count already helps; an operation that runs for seconds (like the 25 s
   extglob enumeration here) yields thousands of samples and a stable tree.
 - **Fold the artifacts** (section 3a, Trap 2). This is the single biggest
-  accuracy win for *attribution* and costs nothing - `Get-TraceHotspots.ps1`
-  does it by default.
+  accuracy win for *attribution* and costs nothing - the `touki.mcp` analyzer
+  (and the fallback scripts) do it by default.
 - **Split a suspect frame with `[MethodImpl(MethodImplOptions.NoInlining)]`.**
   If two methods are inlined together the sampler cannot tell them apart;
   temporarily disabling inlining on one gives it its own frame and confirms the
@@ -413,8 +421,9 @@ samples for a stable ranking. Levers that actually help, cheapest first:
 - **`dotnet-trace report <file> topN --inclusive`** prints the ranked methods to
   stdout - token-cheap for an agent, and it reads the same `.nettrace`.
 - **PerfView headless** (`PerfView /FoldPats=... stacks ...`) does the same fold
-  the script does, with richer grouping, when you already have PerfView. The
-  committed script exists so the common case needs neither PerfView nor a GUI.
+  the analyzer does, with richer grouping, when you already have PerfView. The
+  `touki.mcp` analyzer exists so the common case needs neither PerfView nor a
+  GUI.
 - **Want true CPU time and native frames?** EventPipe gives neither. On Windows
   use `[EtwProfiler]` (section 3b, admin). On Linux - including **WSL Ubuntu on
   this machine** (see the `run-tests-on-wsl` skill) - `dotnet-trace collect`
@@ -438,6 +447,73 @@ Stabilize the JIT **for clean attribution, not for absolute numbers**:
   it.
 - Do **not** chase JIT stability for a microbenchmark whose numbers you care
   about - measure those with the normal tiered harness.
+
+### 3f. Layer 2b - from the hot method down to the hot *line* (`touki.mcp`)
+
+The profilers above rank *methods*. The committed
+[touki.mcp](../touki.mcp/touki.mcp.csproj) project takes the same trace one
+level deeper: it reads the `.nettrace`/`.etl` through TraceEvent and attributes
+each leaf sample to the **source `file:line` that was executing**, so you can
+see which lines of a hot loop dominate. It is net10-only and runs two ways:
+
+- **Console front end** - `dotnet run --project touki.mcp -c Release -- analyze`.
+- **MCP server** - the same queries exposed as tools (`load_trace`,
+  `hotspots_self`, `hotspots_inclusive`, `callers_of`, `hot_lines`,
+  `list_threads`) for an agent that speaks MCP. See section 6.
+
+The top-down loop on a single captured trace:
+
+```powershell
+# 0. Capture a CPU-sampled .nettrace AND keep BDN's build (so its PDB survives).
+dotnet run -c Release -f net10.0 --project touki.perf -- `
+    --filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' -p EP --keepFiles
+
+$trace = (Get-ChildItem BenchmarkDotNet.Artifacts `
+    -Filter '*GlobEnumeratorExtGlobSingleWithRoot*.nettrace' |
+    Sort-Object LastWriteTime | Select-Object -Last 1).FullName
+# The exact build BDN profiled - its PDB GUID matches the trace:
+$sym = 'artifacts/x64/Release/touki.perf/net10.0/touki.perf-DefaultJob-1/bin/Release/net10.0'
+
+# 1. Method ranking (self + inclusive), JIT-helper artifacts folded.
+dotnet run --project touki.mcp -c Release -- analyze $trace --symbols $sym --top 20
+
+# 2. Line ranking inside the dominant method.
+dotnet run --project touki.mcp -c Release -- analyze $trace --lines RunEngine --symbols $sym --top 30
+```
+
+Console flags: `--root <substr>` scopes to a subtree, `--callers <substr>`
+reports a frame's callers, `--lines [<methodSubstr>]` switches to line-level,
+`--symbols <dir>` supplies PDBs, `--top N` caps rows.
+
+> **Embedded PDBs need `--symbols`.** `touki.dll` ships its portable PDB
+> *embedded* (`<DebugType>embedded</DebugType>`), and TraceEvent cannot read an
+> embedded PDB from the image. The analyzer extracts it to a temp standalone PDB
+> when you point `--symbols` (MCP arg `symbols`) at the build-output directory.
+> Without it every managed touki frame resolves to `<no source>`.
+
+> **The symbols build must match the traced build by PDB GUID.**
+> BenchmarkDotNet compiles its *own* isolated copy of `touki.dll` (its own
+> deterministic GUID) into an ephemeral `...-DefaultJob-N/bin/Release/net10.0/`
+> directory and **deletes it during "Artifacts cleanup"** unless you pass
+> `--keepFiles`. Point `--symbols` at *that* surviving directory - not the outer
+> `artifacts/.../touki.perf/net10.0` (a different build, different GUID, which
+> TraceEvent rejects with `FOUND PDB ... has Guid X != Desired Guid Y`).
+
+> **Line attribution stops at inlined-method boundaries.** TraceEvent's
+> IL-offset->source-line map is **per-JITTED-method**; it cannot see inside an
+> inlined callee. A fully-inlined hot helper collapses *all* its samples onto
+> the caller's call-*site* line. Tell-tale: the line ranking lands almost
+> entirely on one or two call-site lines (in the extglob case, 93.6% piled onto
+> `ExtGlob.cs:385 return RunEngineCore(...)` and `:410 engine.Run(...)` because
+> the engine is inlined). Two ways through it: drill into the non-inlined tail
+> by scoping `--lines` to the callee (`--lines ExtGlobEngine` surfaced the real
+> internal lines - backtracking machinery ~half, forward walk ~half), or
+> temporarily add `[MethodImpl(MethodImplOptions.NoInlining)]` to the callee and
+> re-profile to force a per-method line map (remove it afterwards - it perturbs
+> codegen, same caveat as section 3e).
+
+The TraceEvent embedded-PDB limitation and the proposed upstream fix are written
+up in [traceevent-embedded-pdb.md](traceevent-embedded-pdb.md).
 
 ---
 
@@ -526,10 +602,33 @@ but unmatched depth. Pairs with `dotnet-trace`'s `.nettrace` output too.
 
 ## 6. MCP servers and programmatic API access
 
-There is **no dedicated .NET profiling MCP server** in this workspace, and none
-is an industry standard at time of writing. Profiling is done with the CLI tools
-and diagnosers above. The MCP/API surfaces that *do* help an agent's perf work
-are research-oriented:
+### The in-workspace profiling MCP server: `touki.mcp`
+
+This workspace **does** ship a dedicated trace-analysis MCP server,
+[touki.mcp](../touki.mcp/touki.mcp.csproj) (net10-only). It reads the same
+`.nettrace`/`.etl` traces the diagnosers and `dotnet-trace` produce, folds the
+JIT-helper sampling artifacts (section 3a, Trap 2), and answers method- and
+line-level questions over MCP - so an agent that speaks MCP can drive the whole
+Layer 2 / Layer 2b loop without shelling out to the PowerShell scripts. It also
+has a console front end (`analyze`, section 3f).
+
+Tools it exposes (all take a trace `path`):
+
+| Tool | Answers |
+| --- | --- |
+| `load_trace(path, symbols)` | format / duration / sample count / symbol-resolution rate / threads. **Call first**; a rate below 0.8 means symbols are missing. |
+| `hotspots_self(path, rootFrame, fold, top)` | folded self-time ranking. |
+| `hotspots_inclusive(path, rootFrame, fold, top)` | folded inclusive-time ranking. |
+| `callers_of(path, frame, rootFrame, top)` | who calls a frame - confirms what a JIT-helper artifact is attributable to. |
+| `hot_lines(path, method, fold, top, symbols)` | **line-level** self-time, each leaf sample mapped to `file:line`. Needs `.nettrace`/`.etl` + `symbols`; speedscope yields nothing; `<no source>` = PDB not found. |
+| `list_threads(path)` | per-thread sample counts, to pick a `rootFrame` or spot idle thread-pool noise. |
+
+`rootFrame` gotcha and symbol/`--keepFiles`/inlining caveats are the same as the
+console form - see sections 3a and 3f.
+
+### Research-oriented MCP/API surfaces
+
+Complementary, for confirming facts rather than reading traces:
 
 - **Microsoft Learn MCP** (`microsoft_docs_search`, `microsoft_docs_fetch`) -
   authoritative, current docs for `dotnet-trace`, `dotnet-counters`,
@@ -541,9 +640,6 @@ are research-oriented:
   BCL primitive is even available on `net481`.
 - **GitHub MCP / PR tools** - pull prior benchmark numbers out of merged PR
   descriptions in this repo to avoid re-measuring a known result.
-
-If you reach for an MCP "profiler", stop - there isn't one; use a diagnoser or
-`dotnet-trace`.
 
 ---
 
@@ -562,21 +658,33 @@ A concrete, token-efficient loop an agent should follow:
    the benchmark is well-formed (stable Mean/Median, sane direction).
 5. **Confirm** on both TFMs without `--job short`. Read
    `*-report-github.md`, quote only `Mean`/`Ratio`/`Allocated` for changed rows.
-6. **If the bottleneck is unclear**, attach `[EventPipeProfiler(CpuSampling)]`
-   and run `./tools/Profile-Benchmark.ps1 -Filter *<Subject>* -RootFrame
-   <workload-frame>` on **net10.0** for ranked, artifact-folded hotspots in one
-   command (or `dotnet-trace ... report topN`). **Fold the JIT-helper artifacts**
+6. **If the bottleneck is unclear**, attach `[EventPipeProfiler(CpuSampling)]`,
+   capture a trace (`dotnet run ... --filter *<Subject>* -p EP --keepFiles` on
+   **net10.0**), then rank it with the `touki.mcp` analyzer
+   (`dotnet run --project touki.mcp -c Release -- analyze <trace> --root
+   <workload-frame>`, or the `hotspots_self`/`hotspots_inclusive` MCP tools; the
+   PowerShell scripts in
+   [performance-investigation-without-mcp.md](performance-investigation-without-mcp.md)
+   are the no-MCP fallback). **Fold the JIT-helper artifacts**
    (`BulkMoveWithWriteBarrier`, `PollGC`, the synthetic `CPU_TIME` leaf) before
-   trusting any self-time number - the script does this by default; see &sect;3a
-   Trap 2. Profiling is part of the loop: capture a `before/` trace, apply the
-   fix, capture an `after/` trace with the identical filter, and diff. EventPipe
-   is net10.0-only; for net481 on-CPU attribution use `[EtwProfiler]` (admin) -
-   see the per-TFM table in &sect;3.
-7. **If a specific loop is slow**, attach `[DisassemblyDiagnoser]` on both TFMs
+   trusting any self-time number - the analyzer does this by default; see
+   &sect;3a Trap 2. Profiling is part of the loop: capture a `before/` trace,
+   apply the fix, capture an `after/` trace with the identical filter, and diff.
+   EventPipe is net10.0-only; for net481 on-CPU attribution use `[EtwProfiler]`
+   (admin) - see the per-TFM table in &sect;3.
+7. **If you need the hot *line*, not just the hot method**, feed the same
+   `.nettrace` to `touki.mcp`: `dotnet run --project touki.mcp -c Release --
+   analyze <trace> --lines <method> --symbols <build-dir> --top 30` (or the
+   `hot_lines` MCP tool). Capture with `--keepFiles` and point `--symbols` at
+   BDN's surviving `...-DefaultJob-N/bin/Release/net10.0` so the PDB GUID
+   matches; if the ranking collapses onto one or two call-site lines the callee
+   is inlined - drill the non-inlined tail or add a temporary `NoInlining`. See
+   &sect;3f.
+8. **If a specific loop is slow**, attach `[DisassemblyDiagnoser]` on both TFMs
    and diff the asm; consult `framework-jit-optimization` for the fix.
-8. **Apply the fix, re-measure with the identical filter.** Name the TFM and
+9. **Apply the fix, re-measure with the identical filter.** Name the TFM and
    JIT ("modern .NET RyuJIT" / ".NET Framework 4.8.1 RyuJIT") in the writeup.
-9. **Record durable findings** in [dotnet-perf-discoveries.md](dotnet-perf-discoveries.md)
+10. **Record durable findings** in [dotnet-perf-discoveries.md](dotnet-perf-discoveries.md)
    if the result is a reusable BCL/JIT behavior, so the next investigation skips
    straight to step 2.
 
@@ -601,11 +709,16 @@ A concrete, token-efficient loop an agent should follow:
 A/B + allocations ............ dotnet run -c Release -f <tfm> --project touki.perf -- --filter *X*
 Fast smoke ................... add --job short
 Read the result .............. BenchmarkDotNet.Artifacts/results/*-report-github.md
-Where's the time? (one cmd) .. ./tools/Profile-Benchmark.ps1 -Filter *X* -RootFrame <workload-frame>
-                               runs [EventPipeProfiler] + folds JIT-helper artifacts + ranks. net10 only.
-                               -OutSvg writes a flame graph; -SkipRun re-aggregates an existing trace.
-Analyze an existing trace .... ./tools/Get-TraceHotspots.ps1 -Path *.speedscope.json -RootFrame <frame>
-                               -CallersOf <frame> confirms what a helper artifact is attributable to.
+Capture a trace .............. dotnet run -c Release -f net10.0 --project touki.perf -- --filter *X* -p EP --keepFiles
+Rank an existing trace ....... dotnet run --project touki.mcp -c Release -- analyze <trace> --root <workload-frame>
+                               folds JIT-helper artifacts + ranks self/inclusive. --callers <frame> = who calls it.
+No-MCP fallback scripts ...... ./tools/Profile-Benchmark.ps1 / Get-TraceHotspots.ps1 (see *-without-mcp.md)
+Flame-graph SVG .............. ./tools/speedscope-to-flamegraph.ps1   (or drag the speedscope into speedscope.app)
+Which source LINE? ........... dotnet run --project touki.mcp -c Release -- analyze <trace> --lines <method> --symbols <build-dir>
+                               net10 .nettrace/.etl + embedded PDB. Capture with --keepFiles; point --symbols
+                               at BDN's ...-DefaultJob-N/bin/Release/net10.0 (PDB GUID must match the trace).
+                               Inlined callee -> samples collapse on the call-site line; drill the tail. See 3f.
+touki.mcp as an MCP server ... tools: load_trace / hotspots_self / hotspots_inclusive / callers_of / hot_lines / list_threads
 Where's the time? (in-harness) [EventPipeProfiler(EventPipeProfile.CpuSampling)] -> speedscope.app
                                net10.0 only (no admin); net481 needs [EtwProfiler] (admin) -> .etl
                                FOLD BulkMoveWithWriteBarrier/PollGC/CPU_TIME before reading self-time.
