@@ -13,10 +13,10 @@ namespace Touki.Io.Globbing;
 /// </summary>
 public class MultipleAsteriskFileSystemGlobbingOracleTests
 {
-    public static TheoryData<string, string> Rows => MultipleAsteriskRows.Rows;
+    public static IEnumerable<(string, string)> Rows() => MultipleAsteriskRows.Rows();
 
-    [Theory]
-    [MemberData(nameof(Rows))]
+    [Test]
+    [MethodDataSource(nameof(Rows))]
     public void IsMatch_FileSystemGlobbingDialect_MultipleAsterisks_AgreesWithMatcher(string pattern, string input)
     {
         Matcher matcher = new(StringComparison.Ordinal);

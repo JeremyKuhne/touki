@@ -24,11 +24,11 @@ public class ExtGlobScannerTests
 {
     // -- AllowExtGlob off: '(' / ')' are literals --------------------------------
 
-    [Theory]
-    [InlineData("(foo)")]
-    [InlineData("?(foo)")]
-    [InlineData("*(a|b)")]
-    [InlineData("@(only|alt)")]
+    [Test]
+    [Arguments("(foo)")]
+    [Arguments("?(foo)")]
+    [Arguments("*(a|b)")]
+    [Arguments("@(only|alt)")]
     public void Compile_AllowExtGlobOff_ParensAreLiteral(string pattern)
     {
         // Without AllowExtGlob the scanner never inspects '('. The pattern
@@ -40,19 +40,19 @@ public class ExtGlobScannerTests
 
     // -- AllowExtGlob on, well-formed: encoder emits Alt* opcodes ----------------
 
-    [Theory]
-    [InlineData("?(foo)")]
-    [InlineData("*(a)")]
-    [InlineData("+(a)")]
-    [InlineData("@(a|b)")]
-    [InlineData("!(a)")]
-    [InlineData("@(foo|bar|baz)")]
-    [InlineData("foo@(a|b)bar")]
-    [InlineData("*(a|@(b|c))d")]
-    [InlineData("@(|)")]              // single explicitly-empty alternative
-    [InlineData("@(a|)")]             // trailing empty alternative
-    [InlineData("@(|a)")]             // leading empty alternative
-    [InlineData("@(a|b|c|d|e|f|g|h)")] // 8 alternatives, under cap
+    [Test]
+    [Arguments("?(foo)")]
+    [Arguments("*(a)")]
+    [Arguments("+(a)")]
+    [Arguments("@(a|b)")]
+    [Arguments("!(a)")]
+    [Arguments("@(foo|bar|baz)")]
+    [Arguments("foo@(a|b)bar")]
+    [Arguments("*(a|@(b|c))d")]
+    [Arguments("@(|)")]              // single explicitly-empty alternative
+    [Arguments("@(a|)")]             // trailing empty alternative
+    [Arguments("@(|a)")]             // leading empty alternative
+    [Arguments("@(a|b|c|d|e|f|g|h)")] // 8 alternatives, under cap
     public void Compile_AllowExtGlobOn_WellFormed_CompilesToCompiledStrategy(string pattern)
     {
         GlobSpecification spec = GlobSpecification.Compile(
@@ -64,10 +64,10 @@ public class ExtGlobScannerTests
         strategy.Should().BeOfType<CompiledGlobStrategy>();
     }
 
-    [Theory]
-    [InlineData("@(a|b)")]
-    [InlineData("*(a|b|c)")]
-    [InlineData("foo@(x|y)bar")]
+    [Test]
+    [Arguments("@(a|b)")]
+    [Arguments("*(a|b|c)")]
+    [Arguments("foo@(x|y)bar")]
     public void Compile_AllowExtGlobOn_EmitsAltOpcodes(string pattern)
     {
         GlobSpecification spec = GlobSpecification.Compile(
@@ -82,13 +82,13 @@ public class ExtGlobScannerTests
         program.Should().Contain(GlobOpCodes.AltEnd.ToString());
     }
 
-    [Theory]
+    [Test]
     // Single alternative -> AltStart ... AltEnd with no AltSep.
-    [InlineData("@(only)", '@')]
-    [InlineData("?(x)", '?')]
-    [InlineData("*(y)", '*')]
-    [InlineData("+(z)", '+')]
-    [InlineData("!(n)", '!')]
+    [Arguments("@(only)", '@')]
+    [Arguments("?(x)", '?')]
+    [Arguments("*(y)", '*')]
+    [Arguments("+(z)", '+')]
+    [Arguments("!(n)", '!')]
     public void Compile_AllowExtGlobOn_SingleAlternative_EmitsKindAndNoSeparator(string pattern, char kind)
     {
         GlobSpecification spec = GlobSpecification.Compile(
@@ -109,7 +109,7 @@ public class ExtGlobScannerTests
         program.Should().Contain(GlobOpCodes.AltEnd.ToString());
     }
 
-    [Fact]
+    [Test]
     public void Compile_AllowExtGlobOn_AltStartBlockLength_CoversThroughAltEnd()
     {
         GlobSpecification spec = GlobSpecification.Compile(
@@ -130,7 +130,7 @@ public class ExtGlobScannerTests
         blockLength.Should().Be(altEndIndex - altStartIndex + 1);
     }
 
-    [Fact]
+    [Test]
     public void Compile_AllowExtGlobOn_Nested_EmitsTwoAltStarts()
     {
         GlobSpecification spec = GlobSpecification.Compile(
@@ -161,7 +161,7 @@ public class ExtGlobScannerTests
         innerBlockLength.Should().Be(innerEnd - innerStart + 1);
     }
 
-    [Fact]
+    [Test]
     public void Compile_AllowExtGlobOn_EmptyAlternativesEmitConsecutiveSeparators()
     {
         GlobSpecification spec = GlobSpecification.Compile(
@@ -181,12 +181,12 @@ public class ExtGlobScannerTests
 
     // -- AllowExtGlob on, malformed: scanner-side errors -------------------------
 
-    [Theory]
-    [InlineData("?()")]
-    [InlineData("*()")]
-    [InlineData("+()")]
-    [InlineData("@()")]
-    [InlineData("!()")]
+    [Test]
+    [Arguments("?()")]
+    [Arguments("*()")]
+    [Arguments("+()")]
+    [Arguments("@()")]
+    [Arguments("!()")]
     public void Compile_AllowExtGlobOn_EmptyBody_ReportsInvalidExtGlobBody(string pattern)
     {
         Action act = () => GlobSpecification.Compile(
@@ -198,12 +198,12 @@ public class ExtGlobScannerTests
             .Which.Error.Code.Should().Be(GlobCompileErrorCode.InvalidExtGlobBody);
     }
 
-    [Theory]
-    [InlineData("?(foo")]
-    [InlineData("*(a|b")]
-    [InlineData("@(a|b|c")]
-    [InlineData("!(a")]
-    [InlineData("@(a|@(b|c)")] // outer unterminated, inner closed
+    [Test]
+    [Arguments("?(foo")]
+    [Arguments("*(a|b")]
+    [Arguments("@(a|b|c")]
+    [Arguments("!(a")]
+    [Arguments("@(a|@(b|c)")] // outer unterminated, inner closed
     public void Compile_AllowExtGlobOn_Unterminated_ReportsUnterminatedExtGlob(string pattern)
     {
         Action act = () => GlobSpecification.Compile(
@@ -215,7 +215,7 @@ public class ExtGlobScannerTests
             .Which.Error.Code.Should().Be(GlobCompileErrorCode.UnterminatedExtGlob);
     }
 
-    [Fact]
+    [Test]
     public void Compile_AllowExtGlobOn_NestingDepthCapExceeded_ReportsFeatureLimitExceeded()
     {
         // 9 levels of nesting; cap is 8.
@@ -229,7 +229,7 @@ public class ExtGlobScannerTests
             .Which.Error.Code.Should().Be(GlobCompileErrorCode.FeatureLimitExceeded);
     }
 
-    [Fact]
+    [Test]
     public void Compile_AllowExtGlobOn_AlternativeCountCapExceeded_ReportsFeatureLimitExceeded()
     {
         // 33 alternatives; cap is 32. Build via string concat.
@@ -254,7 +254,7 @@ public class ExtGlobScannerTests
             .Which.Error.Code.Should().Be(GlobCompileErrorCode.FeatureLimitExceeded);
     }
 
-    [Fact]
+    [Test]
     public void Compile_AllowExtGlobOn_AlternativeCountAtCap_Compiles()
     {
         // Exactly 32 alternatives; cap allows this.
@@ -278,7 +278,7 @@ public class ExtGlobScannerTests
         act.Should().NotThrow();
     }
 
-    [Fact]
+    [Test]
     public void Compile_AllowExtGlobOn_NestingDepthAtCap_Compiles()
     {
         // Exactly 8 levels of nesting; cap allows this.
@@ -291,7 +291,7 @@ public class ExtGlobScannerTests
         act.Should().NotThrow();
     }
 
-    [Fact]
+    [Test]
     public void Compile_AllowExtGlobOn_DanglingEscapeInsideBody_ReportsDanglingEscape()
     {
         // Bash-style escape (`\`) inside an extglob body with nothing to escape.
@@ -304,7 +304,7 @@ public class ExtGlobScannerTests
             .Which.Error.Code.Should().Be(GlobCompileErrorCode.DanglingEscape);
     }
 
-    [Fact]
+    [Test]
     public void Compile_AllowExtGlobOn_UnterminatedClassInsideBody_TreatedAsLiteral()
     {
         // Per fnmatch semantics: an unterminated '[' is treated as a literal

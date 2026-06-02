@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -6,7 +6,7 @@ namespace Touki;
 
 public class TypeInfoTests
 {
-    [Fact]
+    [Test]
     public void IsReferenceOrContainsReferences_ReferenceTypes_ReturnsTrue()
     {
         // Reference types should return true
@@ -15,7 +15,7 @@ public class TypeInfoTests
         TypeInfo<TypeInfoTests>.IsReferenceOrContainsReferences().Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void IsReferenceOrContainsReferences_ValueTypesWithoutReferences_ReturnsFalse()
     {
         // Value types without references should return false
@@ -26,7 +26,7 @@ public class TypeInfoTests
         TypeInfo<SimpleStruct>.IsReferenceOrContainsReferences().Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void IsReferenceOrContainsReferences_ValueTypesWithReferences_ReturnsTrue()
     {
         // Value types containing references should return true
@@ -34,7 +34,7 @@ public class TypeInfoTests
         TypeInfo<StructWithString>.IsReferenceOrContainsReferences().Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void IsReferenceOrContainsReferences_ResultIsCached()
     {
         // First call should compute the result

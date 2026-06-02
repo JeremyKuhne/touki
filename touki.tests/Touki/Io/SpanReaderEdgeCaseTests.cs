@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -9,7 +9,7 @@ namespace Touki.Io;
 /// </summary>
 public class SpanReaderEdgeCaseTests
 {
-    [Fact]
+    [Test]
     public void Position_Setter_AllowsSpanLength()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -24,7 +24,7 @@ public class SpanReaderEdgeCaseTests
         reader.Unread.Length.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Position_Setter_ThrowsOnValueGreaterThanLength()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -41,7 +41,7 @@ public class SpanReaderEdgeCaseTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Position_Setter_ThrowsOnNegativeValue()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -58,7 +58,7 @@ public class SpanReaderEdgeCaseTests
         }
     }
 
-    [Fact]
+    [Test]
     public void TryRead_Count_ValidatesNegativeCount()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -75,7 +75,7 @@ public class SpanReaderEdgeCaseTests
         }
     }
 
-    [Fact]
+    [Test]
     public void TryRead_Count_HandlesZeroCountCorrectly()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -87,7 +87,7 @@ public class SpanReaderEdgeCaseTests
         reader.Position.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void TryRead_Count_HandlesIntMaxValue()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -99,7 +99,7 @@ public class SpanReaderEdgeCaseTests
         reader.Position.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Advance_ValidatesNegativeCount()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -116,7 +116,7 @@ public class SpanReaderEdgeCaseTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Advance_ThrowsWhenAdvancingPastEnd()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -133,7 +133,7 @@ public class SpanReaderEdgeCaseTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Advance_AllowsAdvancingToEnd()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -143,7 +143,7 @@ public class SpanReaderEdgeCaseTests
         reader.End.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Rewind_ValidatesNegativeCount()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -160,7 +160,7 @@ public class SpanReaderEdgeCaseTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Rewind_ThrowsWhenRewindingBeforeStart()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -178,7 +178,7 @@ public class SpanReaderEdgeCaseTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Rewind_AllowsRewindingToStart()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -189,11 +189,11 @@ public class SpanReaderEdgeCaseTests
         reader.Position.Should().Be(0);
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    [InlineData(2)]
-    [InlineData(3)]
+    [Test]
+    [Arguments(0)]
+    [Arguments(1)]
+    [Arguments(2)]
+    [Arguments(3)]
     public void Rewind_HandlesZeroCount(int initialPosition)
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -206,7 +206,7 @@ public class SpanReaderEdgeCaseTests
         reader.Position.Should().Be(initialPosition);
     }
 
-    [Fact]
+    [Test]
     public void TryRead_Struct_ValidatesTypeSizeAlignment()
     {
         // Test with a case where TValue size is not evenly divisible by T size
@@ -231,7 +231,7 @@ public class SpanReaderEdgeCaseTests
         }
     }
 
-    [Fact]
+    [Test]
     public void TryRead_Struct_Count_ValidatesTypeSizeAlignment()
     {
         ReadOnlySpan<ushort> span = [1, 2, 3, 4]; // 2-byte elements
@@ -249,7 +249,7 @@ public class SpanReaderEdgeCaseTests
         }
     }
 
-    [Fact]
+    [Test]
     public void TryRead_Struct_Count_ValidatesNegativeCount()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4];
@@ -268,7 +268,7 @@ public class SpanReaderEdgeCaseTests
         }
     }
 
-    [Fact]
+    [Test]
     public void TryRead_Struct_HandlesIntegerOverflowInSizeCalculation()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4];
@@ -281,7 +281,7 @@ public class SpanReaderEdgeCaseTests
         reader.Position.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void TryReadTo_EmptyDelimiterSpan()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -294,7 +294,7 @@ public class SpanReaderEdgeCaseTests
         reader.Position.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void TrySplitAny_EmptyDelimiterSpan()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -307,7 +307,7 @@ public class SpanReaderEdgeCaseTests
         reader.Position.Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void TryAdvancePast_EmptyPattern()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -319,7 +319,7 @@ public class SpanReaderEdgeCaseTests
         reader.Position.Should().Be(0); // Should not advance
     }
 
-    [Fact]
+    [Test]
     public void AdvancePast_WithAllMatchingValues()
     {
         ReadOnlySpan<byte> span = [5, 5, 5, 5, 5];
@@ -331,7 +331,7 @@ public class SpanReaderEdgeCaseTests
         reader.End.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void AdvancePast_WithSingleValue()
     {
         ReadOnlySpan<byte> span = [5];
@@ -343,7 +343,7 @@ public class SpanReaderEdgeCaseTests
         reader.End.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void AdvancePast_WithNoMatchingValues()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -354,7 +354,7 @@ public class SpanReaderEdgeCaseTests
         reader.Position.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Properties_RemainingReadOnlyAfterOperations()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -374,7 +374,7 @@ public class SpanReaderEdgeCaseTests
         reader.Length.Should().Be(originalLength);
     }
 
-    [Fact]
+    [Test]
     public void Unread_ReflectsCurrentPosition()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -389,7 +389,7 @@ public class SpanReaderEdgeCaseTests
         reader.Unread.ToArray().Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void TryReadTo_DelimiterAtEveryPosition()
     {
         ReadOnlySpan<byte> span = [1, 1, 1, 1, 1];
@@ -413,7 +413,7 @@ public class SpanReaderEdgeCaseTests
         reader.End.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void TryReadToAny_TwoDelimitersOptimizationPath()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -427,7 +427,7 @@ public class SpanReaderEdgeCaseTests
         reader.Position.Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void TryReadToAny_MoreThanTwoDelimitersGeneralPath()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -441,7 +441,7 @@ public class SpanReaderEdgeCaseTests
         reader.Position.Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void TryRead_Struct_EdgeCaseSizes()
     {
         // Test reading different struct sizes
@@ -462,7 +462,7 @@ public class SpanReaderEdgeCaseTests
         reader.Position.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void TryRead_Struct_Count_EdgeCases()
     {
         ReadOnlySpan<byte> span = new byte[16];
@@ -484,7 +484,7 @@ public class SpanReaderEdgeCaseTests
         reader.Position.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Position_Setter_BoundaryValues()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -509,7 +509,7 @@ public class SpanReaderEdgeCaseTests
         reader.Unread.ToArray().Should().BeEquivalentTo([2, 3]);
     }
 
-    [Fact]
+    [Test]
     public void Complex_SequenceOfOperations()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -539,7 +539,7 @@ public class SpanReaderEdgeCaseTests
         reader.End.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void EmptySpan_AllOperations()
     {
         ReadOnlySpan<byte> span = [];

@@ -6,7 +6,7 @@ namespace Touki;
 
 public class SpanExtensionsStartsEndsWithPrimitiveTests
 {
-    [Fact]
+    [Test]
     public void StartsWith_Bool_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<bool> span = [true, false];
@@ -14,7 +14,7 @@ public class SpanExtensionsStartsEndsWithPrimitiveTests
         span.StartsWith(false).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_Bool_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<bool> span = [true, false];
@@ -22,7 +22,7 @@ public class SpanExtensionsStartsEndsWithPrimitiveTests
         span.EndsWith(true).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_SByte_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<sbyte> span = [-1, 0, 1];
@@ -30,7 +30,7 @@ public class SpanExtensionsStartsEndsWithPrimitiveTests
         span.StartsWith((sbyte)0).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_SByte_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<sbyte> span = [-1, 0, 1];
@@ -38,7 +38,7 @@ public class SpanExtensionsStartsEndsWithPrimitiveTests
         span.EndsWith((sbyte)0).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_Short_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<short> span = [-32768, 0, 32767];
@@ -46,7 +46,7 @@ public class SpanExtensionsStartsEndsWithPrimitiveTests
         span.StartsWith((short)0).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_Short_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<short> span = [-32768, 0, 32767];
@@ -54,7 +54,7 @@ public class SpanExtensionsStartsEndsWithPrimitiveTests
         span.EndsWith((short)0).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_UShort_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<ushort> span = [1, 2, 65535];
@@ -62,7 +62,7 @@ public class SpanExtensionsStartsEndsWithPrimitiveTests
         span.StartsWith((ushort)2).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_UShort_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<ushort> span = [1, 2, 65535];
@@ -70,7 +70,7 @@ public class SpanExtensionsStartsEndsWithPrimitiveTests
         span.EndsWith((ushort)2).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_UInt_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<uint> span = [1u, 2u, uint.MaxValue];
@@ -78,7 +78,7 @@ public class SpanExtensionsStartsEndsWithPrimitiveTests
         span.StartsWith(2u).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_UInt_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<uint> span = [1u, 2u, uint.MaxValue];
@@ -86,7 +86,7 @@ public class SpanExtensionsStartsEndsWithPrimitiveTests
         span.EndsWith(2u).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_Long_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<long> span = [long.MinValue, 0L, long.MaxValue];
@@ -94,7 +94,7 @@ public class SpanExtensionsStartsEndsWithPrimitiveTests
         span.StartsWith(0L).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_Long_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<long> span = [long.MinValue, 0L, long.MaxValue];
@@ -102,7 +102,7 @@ public class SpanExtensionsStartsEndsWithPrimitiveTests
         span.EndsWith(0L).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_ULong_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<ulong> span = [1UL, 2UL, ulong.MaxValue];
@@ -110,7 +110,7 @@ public class SpanExtensionsStartsEndsWithPrimitiveTests
         span.StartsWith(2UL).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_ULong_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<ulong> span = [1UL, 2UL, ulong.MaxValue];

@@ -6,14 +6,14 @@ namespace Touki.Collections;
 
 public class ArrayListTests
 {
-    [Fact]
+    [Test]
     public void Ctor_Default_HasZeroCount()
     {
         using ArrayList<int> list = new();
         list.Count.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Ctor_Default_AcceptsAdds()
     {
         using ArrayList<string> list = new();
@@ -27,14 +27,14 @@ public class ArrayListTests
         list[31].Should().Be("31");
     }
 
-    [Fact]
+    [Test]
     public void Ctor_PositiveCapacity_HasZeroCount()
     {
         using ArrayList<int> list = new(16);
         list.Count.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Ctor_ZeroCapacity_StillUsable()
     {
         using ArrayList<int> list = new(0);
@@ -46,14 +46,14 @@ public class ArrayListTests
         list[1].Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void Ctor_NegativeCapacity_ThrowsArgumentOutOfRangeException()
     {
         Action act = () => _ = new ArrayList<int>(-1);
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Add_NullItem_ThrowsArgumentNullException()
     {
         using ArrayList<string> list = new();

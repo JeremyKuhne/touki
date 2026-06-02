@@ -6,93 +6,93 @@ namespace Touki;
 
 public class StoringDateTime
 {
-    public static TheoryData<DateTime> DateTimeData => new()
+    public static IEnumerable<DateTime> DateTimeData()
     {
-        { DateTime.Now },
-        { DateTime.UtcNow },
-        { DateTime.MaxValue },
-        { DateTime.MinValue }
-    };
+        yield return DateTime.Now;
+        yield return DateTime.UtcNow;
+        yield return DateTime.MaxValue;
+        yield return DateTime.MinValue;
+    }
 
-    [Theory]
-    [MemberData(nameof(DateTimeData))]
+    [Test]
+    [MethodDataSource(nameof(DateTimeData))]
     public void DateTimeImplicit(DateTime dateTime)
     {
         Value value = dateTime;
-        Assert.Equal(dateTime, value.As<DateTime>());
-        Assert.Equal(typeof(DateTime), value.Type);
+        value.As<DateTime>().Should().Be(dateTime);
+        value.Type.Should().Be(typeof(DateTime));
 
         DateTime? source = dateTime;
         value = source;
-        Assert.Equal(source, value.As<DateTime?>());
-        Assert.Equal(typeof(DateTime), value.Type);
+        value.As<DateTime?>().Should().Be(source);
+        value.Type.Should().Be(typeof(DateTime));
     }
 
-    [Theory]
-    [MemberData(nameof(DateTimeData))]
+    [Test]
+    [MethodDataSource(nameof(DateTimeData))]
     public void DateTimeInOut(DateTime dateTime)
     {
         Value value = dateTime;
         bool success = value.TryGetValue(out DateTime result);
-        Assert.True(success);
-        Assert.Equal(dateTime, result);
+        success.Should().BeTrue();
+        result.Should().Be(dateTime);
 
-        Assert.Equal(dateTime, value.As<DateTime>());
-        Assert.Equal(dateTime, (DateTime)value);
+        value.As<DateTime>().Should().Be(dateTime);
+        ((DateTime)value).Should().Be(dateTime);
     }
 
-    [Theory]
-    [MemberData(nameof(DateTimeData))]
+    [Test]
+    [MethodDataSource(nameof(DateTimeData))]
     public void NullableDateTimeInDateTimeOut(DateTime dateTime)
     {
         DateTime? source = dateTime;
         Value value = source;
 
         bool success = value.TryGetValue(out DateTime result);
-        Assert.True(success);
-        Assert.Equal(dateTime, result);
+        success.Should().BeTrue();
+        result.Should().Be(dateTime);
 
-        Assert.Equal(dateTime, value.As<DateTime>());
+        value.As<DateTime>().Should().Be(dateTime);
 
-        Assert.Equal(dateTime, (DateTime)value);
+        ((DateTime)value).Should().Be(dateTime);
     }
 
-    [Theory]
-    [MemberData(nameof(DateTimeData))]
+    [Test]
+    [MethodDataSource(nameof(DateTimeData))]
     public void DateTimeInNullableDateTimeOut(DateTime dateTime)
     {
         DateTime source = dateTime;
         Value value = source;
         bool success = value.TryGetValue(out DateTime? result);
-        Assert.True(success);
-        Assert.Equal(dateTime, result);
+        success.Should().BeTrue();
+        result.Should().Be(dateTime);
 
-        Assert.Equal(dateTime, (DateTime?)value);
+        ((DateTime?)value).Should().Be(dateTime);
     }
 
-    [Fact]
+    [Test]
     public void NullDateTime()
     {
         DateTime? source = null;
         Value value = source;
-        Assert.Null(value.Type);
-        Assert.Equal(source, value.As<DateTime?>());
-        Assert.False(value.As<DateTime?>().HasValue);
+        value.Type.Should().BeNull();
+        value.As<DateTime?>().Should().Be(source);
+        value.As<DateTime?>().HasValue.Should().BeFalse();
     }
 
-    [Theory]
-    [MemberData(nameof(DateTimeData))]
+    [Test]
+    [MethodDataSource(nameof(DateTimeData))]
     public void OutAsObject(DateTime dateTime)
     {
         Value value = dateTime;
         object o = value.As<object>();
-        Assert.Equal(typeof(DateTime), o.GetType());
-        Assert.Equal(dateTime, (DateTime)o);
+        o.GetType().Should().Be(typeof(DateTime));
+        ((DateTime)o).Should().Be(dateTime);
 
         DateTime? n = dateTime;
         value = n;
         o = value.As<object>();
-        Assert.Equal(typeof(DateTime), o.GetType());
-        Assert.Equal(dateTime, (DateTime)o);
+        o.GetType().Should().Be(typeof(DateTime));
+        ((DateTime)o).Should().Be(dateTime);
     }
 }

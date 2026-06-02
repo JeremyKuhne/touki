@@ -6,30 +6,30 @@ namespace Touki;
 
 public class StoringSByte
 {
-    public static TheoryData<sbyte> SByteData => new()
+    public static IEnumerable<sbyte> SByteData()
     {
-        { 0 },
-        { 42 },
-        { sbyte.MaxValue },
-        { sbyte.MinValue }
-    };
+        yield return 0;
+        yield return 42;
+        yield return sbyte.MaxValue;
+        yield return sbyte.MinValue;
+    }
 
-    [Theory]
-    [MemberData(nameof(SByteData))]
+    [Test]
+    [MethodDataSource(nameof(SByteData))]
     public void SByteImplicit(sbyte @sbyte)
     {
         Value value = @sbyte;
-        Assert.Equal(@sbyte, value.As<sbyte>());
-        Assert.Equal(typeof(sbyte), value.Type);
+        value.As<sbyte>().Should().Be(@sbyte);
+        value.Type.Should().Be(typeof(sbyte));
 
         sbyte? source = @sbyte;
         value = source;
-        Assert.Equal(source, value.As<sbyte?>());
-        Assert.Equal(typeof(sbyte), value.Type);
+        value.As<sbyte?>().Should().Be(source);
+        value.Type.Should().Be(typeof(sbyte));
     }
 
-    [Theory]
-    [MemberData(nameof(SByteData))]
+    [Test]
+    [MethodDataSource(nameof(SByteData))]
     public void SByteCreate(sbyte @sbyte)
     {
         Value value;
@@ -38,8 +38,8 @@ public class StoringSByte
             value = Value.Create(@sbyte);
         }
 
-        Assert.Equal(@sbyte, value.As<sbyte>());
-        Assert.Equal(typeof(sbyte), value.Type);
+        value.As<sbyte>().Should().Be(@sbyte);
+        value.Type.Should().Be(typeof(sbyte));
 
         sbyte? source = @sbyte;
 
@@ -48,75 +48,75 @@ public class StoringSByte
             value = Value.Create(source);
         }
 
-        Assert.Equal(source, value.As<sbyte?>());
-        Assert.Equal(typeof(sbyte), value.Type);
+        value.As<sbyte?>().Should().Be(source);
+        value.Type.Should().Be(typeof(sbyte));
     }
 
-    [Theory]
-    [MemberData(nameof(SByteData))]
+    [Test]
+    [MethodDataSource(nameof(SByteData))]
     public void SByteInOut(sbyte @sbyte)
     {
         Value value = @sbyte;
         bool success = value.TryGetValue(out sbyte result);
-        Assert.True(success);
-        Assert.Equal(@sbyte, result);
+        success.Should().BeTrue();
+        result.Should().Be(@sbyte);
 
-        Assert.Equal(@sbyte, value.As<sbyte>());
-        Assert.Equal(@sbyte, (sbyte)value);
+        value.As<sbyte>().Should().Be(@sbyte);
+        ((sbyte)value).Should().Be(@sbyte);
     }
 
-    [Theory]
-    [MemberData(nameof(SByteData))]
+    [Test]
+    [MethodDataSource(nameof(SByteData))]
     public void NullableSByteInSByteOut(sbyte @sbyte)
     {
         sbyte? source = @sbyte;
         Value value = source;
 
         bool success = value.TryGetValue(out sbyte result);
-        Assert.True(success);
-        Assert.Equal(@sbyte, result);
+        success.Should().BeTrue();
+        result.Should().Be(@sbyte);
 
-        Assert.Equal(@sbyte, value.As<sbyte>());
+        value.As<sbyte>().Should().Be(@sbyte);
 
-        Assert.Equal(@sbyte, (sbyte)value);
+        ((sbyte)value).Should().Be(@sbyte);
     }
 
-    [Theory]
-    [MemberData(nameof(SByteData))]
+    [Test]
+    [MethodDataSource(nameof(SByteData))]
     public void SByteInNullableSByteOut(sbyte @sbyte)
     {
         sbyte source = @sbyte;
         Value value = source;
         bool success = value.TryGetValue(out sbyte? result);
-        Assert.True(success);
-        Assert.Equal(@sbyte, result);
+        success.Should().BeTrue();
+        result.Should().Be(@sbyte);
 
-        Assert.Equal(@sbyte, (sbyte?)value);
+        ((sbyte?)value).Should().Be(@sbyte);
     }
 
-    [Fact]
+    [Test]
     public void NullSByte()
     {
         sbyte? source = null;
         Value value = source;
-        Assert.Null(value.Type);
-        Assert.Equal(source, value.As<sbyte?>());
-        Assert.False(value.As<sbyte?>().HasValue);
+        value.Type.Should().BeNull();
+        value.As<sbyte?>().Should().Be(source);
+        value.As<sbyte?>().HasValue.Should().BeFalse();
     }
 
-    [Theory]
-    [MemberData(nameof(SByteData))]
+    [Test]
+    [MethodDataSource(nameof(SByteData))]
     public void OutAsObject(sbyte @sbyte)
     {
         Value value = @sbyte;
         object o = value.As<object>();
-        Assert.Equal(typeof(sbyte), o.GetType());
-        Assert.Equal(@sbyte, (sbyte)o);
+        o.GetType().Should().Be(typeof(sbyte));
+        ((sbyte)o).Should().Be(@sbyte);
 
         sbyte? n = @sbyte;
         value = n;
         o = value.As<object>();
-        Assert.Equal(typeof(sbyte), o.GetType());
-        Assert.Equal(@sbyte, (sbyte)o);
+        o.GetType().Should().Be(typeof(sbyte));
+        ((sbyte)o).Should().Be(@sbyte);
     }
 }

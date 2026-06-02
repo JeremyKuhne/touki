@@ -6,28 +6,28 @@ namespace Touki.Collections;
 
 public class SequenceSetTests
 {
-    [Fact]
+    [Test]
     public void Constructor_NegativeCapacity_ThrowsArgumentOutOfRangeException()
     {
         Action act = () => new SequenceSet<int>(-1);
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Count_NewSet_IsZero()
     {
         using SequenceSet<int> set = new();
         set.Count.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Contains_EmptySet_ReturnsFalse()
     {
         using SequenceSet<int> set = new();
         set.Contains([1, 2, 3]).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Add_NewSequence_ReturnsTrue()
     {
         using SequenceSet<int> set = new();
@@ -35,7 +35,7 @@ public class SequenceSetTests
         set.Count.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Add_DuplicateSequence_ReturnsFalse()
     {
         using SequenceSet<int> set = new();
@@ -44,7 +44,7 @@ public class SequenceSetTests
         set.Count.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Add_DuplicateSequence_ReturnsSameHandle()
     {
         using SequenceSet<int> set = new();
@@ -53,7 +53,7 @@ public class SequenceSetTests
         second.Should().Be(first);
     }
 
-    [Fact]
+    [Test]
     public void Add_DistinctSequences_ReturnDistinctHandles()
     {
         using SequenceSet<int> set = new();
@@ -63,7 +63,7 @@ public class SequenceSetTests
         set.Count.Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void Add_DifferentLengths_AreDistinct()
     {
         using SequenceSet<int> set = new();
@@ -73,7 +73,7 @@ public class SequenceSetTests
         set.Count.Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Add_EmptySequence_IsInterned()
     {
         using SequenceSet<int> set = new();
@@ -83,7 +83,7 @@ public class SequenceSetTests
         set.Contains([]).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Contains_AddedSequence_ReturnsTrue()
     {
         using SequenceSet<int> set = new();
@@ -93,7 +93,7 @@ public class SequenceSetTests
         set.Contains([9, 8, 7]).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Indexer_ResolvesHandleToStoredSequence()
     {
         using SequenceSet<int> set = new();
@@ -103,7 +103,7 @@ public class SequenceSetTests
         set[handle].SequenceEqual(expected).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Indexer_OutOfRangeHandle_Throws()
     {
         using SequenceSet<int> set = new();
@@ -118,7 +118,7 @@ public class SequenceSetTests
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Add_ManySequences_GrowsAndStaysCorrect()
     {
         using SequenceSet<int> set = new(minimumCapacity: 4);
@@ -142,7 +142,7 @@ public class SequenceSetTests
         set.Count.Should().Be(total);
     }
 
-    [Fact]
+    [Test]
     public void Add_VariableLengthSequences_GrowArenaCorrectly()
     {
         using SequenceSet<int> set = new(minimumCapacity: 2);
@@ -172,7 +172,7 @@ public class SequenceSetTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Clear_RemovesAllSequences()
     {
         using SequenceSet<int> set = new();
@@ -187,7 +187,7 @@ public class SequenceSetTests
         set.Count.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Enumerator_YieldsAllSequencesInInsertionOrder()
     {
         using SequenceSet<int> set = new();
@@ -206,7 +206,7 @@ public class SequenceSetTests
         observed.Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Add_CharSequences_InternsCorrectly()
     {
         using SequenceSet<char> set = new();
@@ -217,7 +217,7 @@ public class SequenceSetTests
         set.Count.Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void Add_ByteSequences_InternsCorrectly()
     {
         using SequenceSet<byte> set = new();
@@ -227,7 +227,7 @@ public class SequenceSetTests
         set.Count.Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void Dispose_BeforeFirstAdd_DoesNotThrow()
     {
         SequenceSet<int> set = new();

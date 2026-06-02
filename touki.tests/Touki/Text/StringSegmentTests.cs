@@ -8,7 +8,7 @@ namespace Touki.Text;
 
 public class StringSegmentTests
 {
-    [Fact]
+    [Test]
     public void DefaultConstructor_CreatesEmptySegment()
     {
         StringSegment segment = new();
@@ -17,7 +17,7 @@ public class StringSegmentTests
         segment.ToString().Should().Be(string.Empty);
     }
 
-    [Fact]
+    [Test]
     public void Constructor_WithString_InitializesCorrectly()
     {
         string value = "Hello";
@@ -27,28 +27,28 @@ public class StringSegmentTests
         segment.ToString().Should().Be(value);
     }
 
-    [Fact]
+    [Test]
     public void Constructor_WithNullString_ReturnsEmpty()
     {
         StringSegment segment = new(null!, 0, 0);
         segment.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Constructor_WithNegativeStart_ThrowsException()
     {
         Action action = () => new StringSegment("test", -1, 1);
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Constructor_WithNegativeLength_ThrowsException()
     {
         Action action = () => new StringSegment("test", 0, -1);
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Constructor_WithStartAndLengthExceedingBounds_ThrowsException()
     {
         Action action = () => new StringSegment("test", 3, 2);
@@ -56,7 +56,7 @@ public class StringSegmentTests
             .WithMessage("*Start and length exceed the bounds of the string*");
     }
 
-    [Fact]
+    [Test]
     public void Constructor_WithStartAndLength_InitializesCorrectly()
     {
         string value = "Hello World";
@@ -66,7 +66,7 @@ public class StringSegmentTests
         segment.ToString().Should().Be("World");
     }
 
-    [Fact]
+    [Test]
     public void Constructor_WithStart_InitializesCorrectly()
     {
         string value = "Hello World";
@@ -76,7 +76,7 @@ public class StringSegmentTests
         segment.ToString().Should().Be("World");
     }
 
-    [Fact]
+    [Test]
     public void Indexer_ReturnsCorrectCharacter()
     {
         StringSegment segment = new("Hello", 1, 3);
@@ -85,7 +85,7 @@ public class StringSegmentTests
         segment[2].Should().Be('l');
     }
 
-    [Fact]
+    [Test]
     public void Indexer_WithInvalidIndex_ThrowsException()
     {
         StringSegment segment = new("Hello");
@@ -93,7 +93,7 @@ public class StringSegmentTests
         action.Should().Throw<IndexOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void RangeIndexer_ReturnsCorrectSegment()
     {
         StringSegment segment = new("Hello World");
@@ -101,7 +101,7 @@ public class StringSegmentTests
         subSegment.ToString().Should().Be("World");
     }
 
-    [Fact]
+    [Test]
     public void Slice_WithStart_ReturnsCorrectSegment()
     {
         StringSegment segment = new("Hello World");
@@ -109,7 +109,7 @@ public class StringSegmentTests
         sliced.ToString().Should().Be("World");
     }
 
-    [Fact]
+    [Test]
     public void Slice_WithStartOutOfRange_ThrowsException()
     {
         StringSegment segment = new("Hello");
@@ -117,7 +117,7 @@ public class StringSegmentTests
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Slice_WithStartAndLength_ReturnsCorrectSegment()
     {
         StringSegment segment = new("Hello World");
@@ -125,7 +125,7 @@ public class StringSegmentTests
         sliced.ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void Slice_WithStartAndLengthOutOfRange_ThrowsException()
     {
         StringSegment segment = new("Hello");
@@ -133,7 +133,7 @@ public class StringSegmentTests
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void TrySplit_WithDelimiterPresent_SplitsCorrectly()
     {
         StringSegment segment = new("Hello,World");
@@ -144,7 +144,7 @@ public class StringSegmentTests
         right.ToString().Should().Be("World");
     }
 
-    [Fact]
+    [Test]
     public void TrySplit_WithDelimiterNotPresent_ReturnsOriginalSegment()
     {
         StringSegment segment = new("HelloWorld");
@@ -155,7 +155,7 @@ public class StringSegmentTests
         right.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void TrySplit_WithEmptySegment_ReturnsFalse()
     {
         StringSegment segment = new();
@@ -166,7 +166,7 @@ public class StringSegmentTests
         right.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void TrySplitAny_WithSameDelimiters_SplitsCorrectly()
     {
         StringSegment segment = new("Hello,World");
@@ -177,7 +177,7 @@ public class StringSegmentTests
         right.ToString().Should().Be("World");
     }
 
-    [Fact]
+    [Test]
     public void TrySplitAny_WithDifferentDelimiters_SplitsCorrectly()
     {
         StringSegment segment = new("Hello;World,Test");
@@ -188,42 +188,42 @@ public class StringSegmentTests
         right.ToString().Should().Be("World,Test");
     }
 
-    [Fact]
+    [Test]
     public void Contains_WithCharPresent_ReturnsTrue()
     {
         StringSegment segment = new("Hello");
         segment.Contains('e').Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Contains_WithCharNotPresent_ReturnsFalse()
     {
         StringSegment segment = new("Hello");
         segment.Contains('z').Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void IndexOf_WithCharPresent_ReturnsCorrectIndex()
     {
         StringSegment segment = new("Hello", 1, 3);
         segment.IndexOf('l').Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOf_WithCharNotPresent_ReturnsMinusOne()
     {
         StringSegment segment = new("Hello");
         segment.IndexOf('z').Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAny_WithCharsPresent_ReturnsCorrectIndex()
     {
         StringSegment segment = new("Hello");
         segment.IndexOfAny('e', 'o').Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Replace_ReplacesAllOccurrences()
     {
         StringSegment segment = new("Hello");
@@ -231,7 +231,7 @@ public class StringSegmentTests
         replaced.ToString().Should().Be("Hexxo");
     }
 
-    [Fact]
+    [Test]
     public void Replace_WithNoMatches_ReturnsSameSegment()
     {
         StringSegment segment = new("Hello");
@@ -239,7 +239,7 @@ public class StringSegmentTests
         replaced.Should().Be(segment);
     }
 
-    [Fact]
+    [Test]
     public void Replace_WithNoMatches_ReturnsSameInstance()
     {
         StringSegment segment = new("Hello");
@@ -247,7 +247,7 @@ public class StringSegmentTests
         replaced.ToString().Should().BeSameAs((string)segment);
     }
 
-    [Fact]
+    [Test]
     public void AsSpan_ReturnsCorrectSpan()
     {
         StringSegment segment = new("Hello", 1, 3);
@@ -255,7 +255,7 @@ public class StringSegmentTests
         span.ToString().Should().Be("ell");
     }
 
-    [Fact]
+    [Test]
     public void AsSpan_WithStart_ReturnsCorrectSpan()
     {
         StringSegment segment = new("Hello");
@@ -263,7 +263,7 @@ public class StringSegmentTests
         span.ToString().Should().Be("ello");
     }
 
-    [Fact]
+    [Test]
     public void AsSpan_WithStartAndLength_ReturnsCorrectSpan()
     {
         StringSegment segment = new("Hello");
@@ -271,7 +271,7 @@ public class StringSegmentTests
         span.ToString().Should().Be("ell");
     }
 
-    [Fact]
+    [Test]
     public void ImplicitConversion_ToReadOnlySpan_Succeeds()
     {
         StringSegment segment = new("Hello");
@@ -279,7 +279,7 @@ public class StringSegmentTests
         span.ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void ExplicitConversion_ToString_Succeeds()
     {
         StringSegment segment = new("Hello");
@@ -287,7 +287,7 @@ public class StringSegmentTests
         value.Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void ImplicitConversion_FromString_Succeeds()
     {
         string value = "Hello";
@@ -295,7 +295,7 @@ public class StringSegmentTests
         segment.ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void Equals_WithIdenticalSegments_ReturnsTrue()
     {
         StringSegment segment1 = new("Hello");
@@ -303,7 +303,7 @@ public class StringSegmentTests
         segment1.Equals(segment2).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Equals_WithDifferentSegments_ReturnsFalse()
     {
         StringSegment segment1 = new("Hello");
@@ -311,7 +311,7 @@ public class StringSegmentTests
         segment1.Equals(segment2).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Equals_WithIgnoreCase_ReturnsTrue()
     {
         StringSegment segment1 = new("Hello");
@@ -319,7 +319,7 @@ public class StringSegmentTests
         segment1.Equals(segment2, true).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Equals_WithReadOnlySpan_ReturnsTrue()
     {
         StringSegment segment = new("Hello");
@@ -327,7 +327,7 @@ public class StringSegmentTests
         segment.Equals(span).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void EqualsOperator_WithIdenticalSegments_ReturnsTrue()
     {
         StringSegment segment1 = new("Hello");
@@ -335,7 +335,7 @@ public class StringSegmentTests
         (segment1 == segment2).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void NotEqualsOperator_WithDifferentSegments_ReturnsTrue()
     {
         StringSegment segment1 = new("Hello");
@@ -343,7 +343,7 @@ public class StringSegmentTests
         (segment1 != segment2).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void GetHashCode_ReturnsSameValueForEqualSegments()
     {
         StringSegment segment1 = new("Hello");
@@ -351,7 +351,7 @@ public class StringSegmentTests
         segment1.GetHashCode().Should().Be(segment2.GetHashCode());
     }
 
-    [Fact]
+    [Test]
     public void ToString_WithFullSegment_ReturnsOriginalString()
     {
         string original = "Hello";
@@ -359,14 +359,14 @@ public class StringSegmentTests
         segment.ToString().Should().BeSameAs(original);
     }
 
-    [Fact]
+    [Test]
     public void ToString_WithPartialSegment_ReturnsSubstring()
     {
         StringSegment segment = new("Hello World", 6, 5);
         segment.ToString().Should().Be("World");
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAny_WithReadOnlySpan_ReturnsCorrectIndex()
     {
         StringSegment segment = new("Hello World");
@@ -387,7 +387,7 @@ public class StringSegmentTests
         segment.IndexOfAny("xyz".AsSpan()).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOf_WithCharPresent_ReturnsCorrectIndex()
     {
         StringSegment segment = new("Hello World");
@@ -407,7 +407,7 @@ public class StringSegmentTests
         multipleOccurrences.LastIndexOf('l').Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void Equals_WithDifferentComparisonTypes_WorksCorrectly()
     {
         StringSegment lower = new("hello world");
@@ -430,7 +430,7 @@ public class StringSegmentTests
         mixed.Equals(upper, StringComparison.InvariantCultureIgnoreCase).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Equals_WithString_HandlesEdgeCases()
     {
         StringSegment empty = new();
@@ -456,7 +456,7 @@ public class StringSegmentTests
         segment.Equals("Hello").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Equals_WithObject_HandlesVariousTypes()
     {
         StringSegment segment = new("Hello");
@@ -485,7 +485,7 @@ public class StringSegmentTests
         segment.Equals(intObj).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOf_WithSegmentSlice_ReturnsCorrectIndex()
     {
         StringSegment segment = new("Hello World Hello");
@@ -497,7 +497,7 @@ public class StringSegmentTests
         sliced.LastIndexOf('H').Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void EmptySegment_MethodBehaviors()
     {
         StringSegment empty = new();
@@ -521,7 +521,7 @@ public class StringSegmentTests
         empty.Equals("a").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EmptySegment_Indexer_ThrowsException()
     {
         StringSegment empty = new();
@@ -529,7 +529,7 @@ public class StringSegmentTests
         action.Should().Throw<IndexOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void EmptySegment_RangeIndexer_ReturnsEmptySegment()
     {
         StringSegment empty = new();
@@ -538,7 +538,7 @@ public class StringSegmentTests
         result.Length.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void EmptySegment_SliceWithStart_ReturnsEmptySegmentForZero()
     {
         StringSegment empty = new();
@@ -547,7 +547,7 @@ public class StringSegmentTests
         result.Length.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void EmptySegment_SliceWithStart_ThrowsForNonZero()
     {
         StringSegment empty = new();
@@ -555,7 +555,7 @@ public class StringSegmentTests
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void EmptySegment_SliceWithStartAndLength_ReturnsEmptySegmentForZeros()
     {
         StringSegment empty = new();
@@ -564,7 +564,7 @@ public class StringSegmentTests
         result.Length.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void EmptySegment_SliceWithStartAndLength_ThrowsForNonZeroLength()
     {
         StringSegment empty = new();
@@ -572,7 +572,7 @@ public class StringSegmentTests
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void EmptySegment_TrySplitAny_ReturnsFalse()
     {
         StringSegment empty = new();
@@ -582,14 +582,14 @@ public class StringSegmentTests
         right.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void EmptySegment_Contains_ReturnsFalse()
     {
         StringSegment empty = new();
         empty.Contains('a').Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EmptySegment_EqualsOperator_WorksCorrectly()
     {
         StringSegment empty1 = new();
@@ -601,7 +601,7 @@ public class StringSegmentTests
         (empty1 == string.Empty).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void EmptySegment_Conversions_WorkCorrectly()
     {
         StringSegment empty = new();
@@ -614,7 +614,7 @@ public class StringSegmentTests
         span.Length.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_WithString_ReturnsTrueForPrefix()
     {
         StringSegment segment = new("Hello World");
@@ -623,7 +623,7 @@ public class StringSegmentTests
         segment.StartsWith("Hello World").Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_WithString_ReturnsFalseForNonPrefix()
     {
         StringSegment segment = new("Hello World");
@@ -632,7 +632,7 @@ public class StringSegmentTests
         segment.StartsWith("Hello World!").Should().BeFalse(); // Longer than segment
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_WithString_HandlesCaseComparison()
     {
         StringSegment segment = new("Hello World");
@@ -641,7 +641,7 @@ public class StringSegmentTests
         segment.StartsWith("HELLO", StringComparison.InvariantCultureIgnoreCase).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_WithStringSegment_ReturnsTrueForPrefix()
     {
         StringSegment segment = new("Hello World");
@@ -653,7 +653,7 @@ public class StringSegmentTests
         segment.StartsWith(segment).Should().BeTrue(); // Same segment
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_WithStringSegment_ReturnsFalseForNonPrefix()
     {
         StringSegment segment = new("Hello World");
@@ -666,7 +666,7 @@ public class StringSegmentTests
         segment.StartsWith(nonPrefix3).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_WithStringSegment_HandlesCaseComparison()
     {
         StringSegment segment = new("Hello World");
@@ -676,7 +676,7 @@ public class StringSegmentTests
         segment.StartsWith(lowerPrefix, StringComparison.Ordinal).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_WithReadOnlySpan_ReturnsTrueForPrefix()
     {
         StringSegment segment = new("Hello World");
@@ -688,7 +688,7 @@ public class StringSegmentTests
         segment.StartsWith(segment.AsSpan()).Should().BeTrue(); // Full span
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_WithReadOnlySpan_ReturnsFalseForNonPrefix()
     {
         StringSegment segment = new("Hello World");
@@ -699,7 +699,7 @@ public class StringSegmentTests
         segment.StartsWith(nonPrefix2).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_WithReadOnlySpan_HandlesCaseComparison()
     {
         StringSegment segment = new("Hello World");
@@ -709,7 +709,7 @@ public class StringSegmentTests
         segment.StartsWith(lowerPrefix, StringComparison.Ordinal).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_WithEmptyValues_ReturnsExpectedResults()
     {
         string hello = "Hello";
@@ -734,7 +734,7 @@ public class StringSegmentTests
         empty.StartsWith("Hello").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_WithPartialSegment_WorksCorrectly()
     {
         StringSegment segment = new("Hello World", 6, 5); // "World"
@@ -745,7 +745,7 @@ public class StringSegmentTests
         segment.StartsWith("Worlds").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Trim_RemovesLeadingAndTrailingWhitespace()
     {
         StringSegment segment = new("  Hello World  ");
@@ -753,7 +753,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be("Hello World");
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_RemovesLeadingWhitespace()
     {
         StringSegment segment = new("  Hello World  ");
@@ -761,7 +761,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be("Hello World  ");
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_RemovesTrailingWhitespace()
     {
         StringSegment segment = new("  Hello World  ");
@@ -769,7 +769,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be("  Hello World");
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithNoWhitespace_ReturnsOriginalString()
     {
         string original = "HelloWorld";
@@ -778,7 +778,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().BeSameAs(original);
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithNoWhitespace_ReturnsSameInstance()
     {
         string original = "HelloWorld";
@@ -787,7 +787,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().BeSameAs(original);
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_WithNoLeadingWhitespace_ReturnsSameInstance()
     {
         StringSegment segment = new("HelloWorld");
@@ -795,7 +795,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().BeSameAs((string)segment);
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_WithNoTrailingWhitespace_ReturnsSameInstance()
     {
         StringSegment segment = new("HelloWorld");
@@ -803,7 +803,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().BeSameAs((string)segment);
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithEmptySegment_ReturnsEmptySegment()
     {
         StringSegment segment = new();
@@ -811,7 +811,7 @@ public class StringSegmentTests
         trimmed.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithOnlyWhitespace_ReturnsEmptySegment()
     {
         StringSegment segment = new("   \t\n\r   ");
@@ -819,7 +819,7 @@ public class StringSegmentTests
         trimmed.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_WithOnlyWhitespace_ReturnsEmptySegment()
     {
         StringSegment segment = new("   \t\n\r   ");
@@ -827,7 +827,7 @@ public class StringSegmentTests
         trimmed.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_WithOnlyWhitespace_ReturnsEmptySegment()
     {
         StringSegment segment = new("   \t\n\r   ");
@@ -835,7 +835,7 @@ public class StringSegmentTests
         trimmed.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithPartialSegment_TrimsCorrectly()
     {
         StringSegment segment = new("  Hello World  ", 2, 11);
@@ -843,7 +843,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be("Hello World");
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_WithPartialSegment_TrimsCorrectly()
     {
         StringSegment segment = new("  Hello World  ", 2, 11);
@@ -851,7 +851,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be("Hello World");
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_WithPartialSegment_TrimsCorrectly()
     {
         StringSegment segment = new("  Hello World  ", 1, 11);
@@ -859,7 +859,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be(" Hello Worl");
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithVariousWhitespaceCharacters_TrimsCorrectly()
     {
         StringSegment segment = new("\t \n\rHello World\r\n \t");
@@ -867,7 +867,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be("Hello World");
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_WithString_ReturnsTrueForSuffix()
     {
         StringSegment segment = new("Hello World");
@@ -876,7 +876,7 @@ public class StringSegmentTests
         segment.EndsWith("Hello World").Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_WithString_ReturnsFalseForNonSuffix()
     {
         StringSegment segment = new("Hello World");
@@ -885,7 +885,7 @@ public class StringSegmentTests
         segment.EndsWith("!Hello World").Should().BeFalse(); // Longer than segment
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_WithString_HandlesCaseComparison()
     {
         StringSegment segment = new("Hello World");
@@ -894,7 +894,7 @@ public class StringSegmentTests
         segment.EndsWith("WORLD", StringComparison.InvariantCultureIgnoreCase).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_WithStringSegment_ReturnsTrueForSuffix()
     {
         StringSegment segment = new("Hello World");
@@ -906,7 +906,7 @@ public class StringSegmentTests
         segment.EndsWith(segment).Should().BeTrue(); // Same segment
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_WithStringSegment_ReturnsFalseForNonSuffix()
     {
         StringSegment segment = new("Hello World");
@@ -919,7 +919,7 @@ public class StringSegmentTests
         segment.EndsWith(nonSuffix3).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_WithStringSegment_HandlesCaseComparison()
     {
         StringSegment segment = new("Hello World");
@@ -929,7 +929,7 @@ public class StringSegmentTests
         segment.EndsWith(lowerSuffix, StringComparison.Ordinal).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_WithReadOnlySpan_ReturnsTrueForSuffix()
     {
         StringSegment segment = new("Hello World");
@@ -941,7 +941,7 @@ public class StringSegmentTests
         segment.EndsWith(segment.AsSpan()).Should().BeTrue(); // Full span
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_WithReadOnlySpan_ReturnsFalseForNonSuffix()
     {
         StringSegment segment = new("Hello World");
@@ -952,7 +952,7 @@ public class StringSegmentTests
         segment.EndsWith(nonSuffix2).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_WithReadOnlySpan_HandlesCaseComparison()
     {
         StringSegment segment = new("Hello World");
@@ -962,7 +962,7 @@ public class StringSegmentTests
         segment.EndsWith(lowerSuffix, StringComparison.Ordinal).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_WithEmptyValues_ReturnsExpectedResults()
     {
         StringSegment segment = new("Hello");
@@ -980,7 +980,7 @@ public class StringSegmentTests
         empty.EndsWith("Hello").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_WithPartialSegment_WorksCorrectly()
     {
         StringSegment segment = new("Hello World", 0, 5); // "Hello"
@@ -991,7 +991,7 @@ public class StringSegmentTests
         segment.EndsWith("xHello").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAny_WithCharsPresent_ReturnsCorrectIndex()
     {
         StringSegment segment = new("Hello World");
@@ -1010,21 +1010,21 @@ public class StringSegmentTests
         segment.LastIndexOfAny('l', 'l').Should().Be(9);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAny_WithCharsNotPresent_ReturnsMinusOne()
     {
         StringSegment segment = new("Hello World");
         segment.LastIndexOfAny('z', 'y').Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAny_WithEmptySegment_ReturnsMinusOne()
     {
         StringSegment empty = new();
         empty.LastIndexOfAny('a', 'b').Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAny_WithPartialSegment_ReturnsCorrectIndex()
     {
         StringSegment segment = new("Hello World", 3, 5); // "lo Wo"
@@ -1032,7 +1032,7 @@ public class StringSegmentTests
         segment.LastIndexOfAny('H', 'e').Should().Be(-1); // Not in this segment
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAny_WithReadOnlySpan_ReturnsCorrectIndex()
     {
         StringSegment segment = new("Hello World");
@@ -1053,14 +1053,14 @@ public class StringSegmentTests
         segment.LastIndexOfAny("xyz".AsSpan()).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAny_WithReadOnlySpan_AndEmptySegment_ReturnsMinusOne()
     {
         StringSegment empty = new();
         empty.LastIndexOfAny("abc".AsSpan()).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAny_WithReadOnlySpan_AndPartialSegment_ReturnsCorrectIndex()
     {
         StringSegment segment = new("Hello World Hello", 6, 5); // "World"
@@ -1071,7 +1071,7 @@ public class StringSegmentTests
         segment.LastIndexOfAny("HZ".AsSpan()).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithSpecificChar_RemovesLeadingAndTrailingChar()
     {
         StringSegment segment = new("###Hello World###");
@@ -1079,7 +1079,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be("Hello World");
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithSpecificChar_WhenNotPresent_ReturnsOriginalSegment()
     {
         StringSegment segment = new("Hello World");
@@ -1087,7 +1087,7 @@ public class StringSegmentTests
         trimmed.Should().Be(segment);
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithSpecificChar_WhenNotPresent_ReturnsSameInstance()
     {
         string original = "Hello World";
@@ -1096,7 +1096,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().BeSameAs(original);
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithSpecificChar_WhenOnlyTrimChar_ReturnsEmptySegment()
     {
         StringSegment segment = new("######");
@@ -1104,7 +1104,7 @@ public class StringSegmentTests
         trimmed.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithTwoSpecificChars_RemovesLeadingAndTrailingChars()
     {
         StringSegment segment = new("###Hello*World***");
@@ -1112,7 +1112,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be("Hello*World");
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithTwoSpecificChars_WhenOnlyTrimChars_ReturnsEmptySegment()
     {
         StringSegment segment = new("##**##**##");
@@ -1120,7 +1120,7 @@ public class StringSegmentTests
         trimmed.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithTwoSpecificChars_WhenNotPresent_ReturnsSameInstance()
     {
         StringSegment segment = new("Hello World");
@@ -1128,7 +1128,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().BeSameAs((string)segment);
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_WithSpecificChar_RemovesLeadingChar()
     {
         StringSegment segment = new("###Hello World###");
@@ -1136,7 +1136,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be("Hello World###");
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_WithSpecificChar_WhenNotPresent_ReturnsOriginalSegment()
     {
         StringSegment segment = new("Hello World");
@@ -1144,7 +1144,7 @@ public class StringSegmentTests
         trimmed.Should().Be(segment);
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_WithSpecificChar_WhenNotPresent_ReturnsSameInstance()
     {
         StringSegment segment = new("Hello World");
@@ -1152,7 +1152,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().BeSameAs((string)segment);
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_WithSpecificChar_WhenOnlyTrimChar_ReturnsEmptySegment()
     {
         StringSegment segment = new("######");
@@ -1160,7 +1160,7 @@ public class StringSegmentTests
         trimmed.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_WithTwoSpecificChars_RemovesLeadingChars()
     {
         StringSegment segment = new("##**Hello World");
@@ -1168,7 +1168,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be("Hello World");
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_WithTwoSpecificChars_WhenNotPresent_ReturnsSameInstance()
     {
         StringSegment segment = new("Hello World");
@@ -1176,7 +1176,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().BeSameAs((string)segment);
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_WithSpecificChar_RemovesTrailingChar()
     {
         StringSegment segment = new("###Hello World###");
@@ -1184,7 +1184,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be("###Hello World");
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_WithSpecificChar_WhenNotPresent_ReturnsOriginalSegment()
     {
         StringSegment segment = new("Hello World");
@@ -1192,7 +1192,7 @@ public class StringSegmentTests
         trimmed.Should().Be(segment);
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_WithSpecificChar_WhenNotPresent_ReturnsSameInstance()
     {
         StringSegment segment = new("Hello World");
@@ -1200,7 +1200,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().BeSameAs((string)segment);
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_WithSpecificChar_WhenOnlyTrimChar_ReturnsEmptySegment()
     {
         StringSegment segment = new("######");
@@ -1208,7 +1208,7 @@ public class StringSegmentTests
         trimmed.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_WithTwoSpecificChars_RemovesTrailingChars()
     {
         StringSegment segment = new("Hello World##**");
@@ -1216,7 +1216,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be("Hello World");
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_WithTwoSpecificChars_WhenNotPresent_ReturnsSameInstance()
     {
         StringSegment segment = new("Hello World");
@@ -1224,7 +1224,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().BeSameAs((string)segment);
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithSpecificChar_OnPartialSegment_TrimsCorrectly()
     {
         StringSegment segment = new("###Hello World###", 3, 11); // "Hello World"
@@ -1232,7 +1232,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be("Hello World");
     }
 
-    [Fact]
+    [Test]
     public void Trim_WithTwoSpecificChars_OnPartialSegment_TrimsCorrectly()
     {
         StringSegment segment = new("###Hello*World###", 3, 11); // "Hello*World"
@@ -1240,7 +1240,7 @@ public class StringSegmentTests
         trimmed.ToString().Should().Be("Hello*World");
     }
 
-    [Fact]
+    [Test]
     public unsafe void Pinning_NonEmptySegment_ProvidesValidPointer()
     {
         string original = "Hello World";
@@ -1259,7 +1259,7 @@ public class StringSegmentTests
         }
     }
 
-    [Fact]
+    [Test]
     public unsafe void Pinning_PartialSegment_ProvidesValidPointerToSubstring()
     {
         string original = "Hello World";
@@ -1286,7 +1286,7 @@ public class StringSegmentTests
         }
     }
 
-    [Fact]
+    [Test]
     public unsafe void Pinning_EmptySegment_ReturnsNullPointer()
     {
         StringSegment empty = new();
@@ -1298,7 +1298,7 @@ public class StringSegmentTests
         }
     }
 
-    [Fact]
+    [Test]
     public unsafe void Pinning_SegmentWithEmptyString_ReturnsNonNullPointer()
     {
         // Empty string is different from a null string - it's a valid but zero-length buffer
@@ -1312,7 +1312,7 @@ public class StringSegmentTests
         }
     }
 
-    [Fact]
+    [Test]
     public unsafe void Pinning_SegmentAfterSlicing_ProvidesCorrectPointer()
     {
         string original = "Hello World";
@@ -1336,7 +1336,7 @@ public class StringSegmentTests
         }
     }
 
-    [Fact]
+    [Test]
     public void GetHashCode_ForFullString_MatchesStringHashCode()
     {
         // Full string segment
@@ -1347,7 +1347,7 @@ public class StringSegmentTests
         segment.GetHashCode().Should().Be(original.GetHashCode());
     }
 
-    [Fact]
+    [Test]
     public void GetHashCode_ForPartialSegment_MatchesEquivalentStringHashCode()
     {
         // Partial segment
@@ -1359,7 +1359,7 @@ public class StringSegmentTests
         segment.GetHashCode().Should().Be(equivalent.GetHashCode());
     }
 
-    [Fact]
+    [Test]
     public void GetHashCode_ForEmptySegment_MatchesEmptyStringHashCode()
     {
         // Empty segment
@@ -1370,7 +1370,7 @@ public class StringSegmentTests
         emptySegment.GetHashCode().Should().Be(emptyString.GetHashCode());
     }
 
-    [Fact]
+    [Test]
     public void GetHashCode_ForSubSegments_MatchesCorrespondingSubstrings()
     {
         string original = "This is a test string for hash code validation";
@@ -1392,7 +1392,7 @@ public class StringSegmentTests
         }
     }
 
-    [Fact]
+    [Test]
     public void GetHashCode_ForDifferentSegmentsWithSameContent_HaveSameHashCode()
     {
         // Different string sources with the same content in segments
@@ -1411,7 +1411,7 @@ public class StringSegmentTests
         segment2.GetHashCode().Should().Be(equivalent.GetHashCode());
     }
 
-    [Fact]
+    [Test]
     public void GetHashCode_ForSegmentsAfterSlicing_MatchesCorrectSubstring()
     {
         string original = "Hello World";
@@ -1426,7 +1426,7 @@ public class StringSegmentTests
         worldSegment.GetHashCode().Should().Be("World".GetHashCode());
     }
 
-    [Fact]
+    [Test]
     public void GetHashCode_IsConsistentForSameContent()
     {
         // Multiple calls should return the same hash code
@@ -1437,7 +1437,7 @@ public class StringSegmentTests
         hash1.Should().Be(hash2);
     }
 
-    [Fact]
+    [Test]
     public void GetHashCode_ForStringWithOddLength_MatchesStringHashCode()
     {
         // Test with odd-length string to validate hash algorithm handles it correctly
@@ -1447,7 +1447,7 @@ public class StringSegmentTests
         segment.GetHashCode().Should().Be(oddString.GetHashCode());
     }
 
-    [Fact]
+    [Test]
     public void GetHashCode_WithUnicodeCharacters_MatchesStringHashCode()
     {
         // Test with Unicode characters
@@ -1463,7 +1463,7 @@ public class StringSegmentTests
         partialSegment.GetHashCode().Should().Be(partialString.GetHashCode());
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_StringSegment_Ordinal_WorksCorrectly()
     {
         // Test segments with different positions
@@ -1505,7 +1505,7 @@ public class StringSegmentTests
             string.Compare("", "", StringComparison.Ordinal));
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_StringSegment_WithComparison_WorksCorrectly()
     {
         StringSegment segment1 = new("Hello World", 0, 5);  // "Hello"
@@ -1536,7 +1536,7 @@ public class StringSegmentTests
             string.Compare("Hello", "hello", StringComparison.InvariantCultureIgnoreCase));
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_String_Ordinal_WorksCorrectly()
     {
         // Test segments with different positions
@@ -1587,7 +1587,7 @@ public class StringSegmentTests
     }
 
 
-    [Fact]
+    [Test]
     public void CompareTo_String_WithComparison_WorksCorrectly()
     {
         StringSegment segment = new("Hello World", 0, 5);  // "Hello"
@@ -1631,7 +1631,7 @@ public class StringSegmentTests
             string.Compare("Hello", "Helloz", StringComparison.Ordinal));
     }
 
-    [Fact]
+    [Test]
     public void ComparisonOperators_WithStringSegments_WorkCorrectly()
     {
         StringSegment segment1 = new("Hello");
@@ -1673,7 +1673,7 @@ public class StringSegmentTests
         (segment2 > segment1).Should().Be(string.Compare("World", "Hello", StringComparison.Ordinal) > 0);
     }
 
-    [Fact]
+    [Test]
     public void ComparisonOperators_WithStrings_WorkCorrectly()
     {
         StringSegment segment = new("Hello");
@@ -1701,7 +1701,7 @@ public class StringSegmentTests
         (segment > "Hel").Should().Be(string.Compare("Hello", "Hel", StringComparison.Ordinal) > 0);
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_WithDifferentPositions_MatchesStringCompare()
     {
         string original = "This is a test string for comparison tests";
@@ -1745,7 +1745,7 @@ public class StringSegmentTests
         }
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_WithSpecialCases_WorksCorrectly()
     {
         // Unicode characters
@@ -1795,7 +1795,7 @@ public class StringSegmentTests
             "Empty segment compared to itself should match string.Compare");
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_StringComparison_InvalidValue_ThrowsArgumentOutOfRangeException()
     {
         StringSegment segment = new("test");
@@ -1810,7 +1810,7 @@ public class StringSegmentTests
               .WithMessage("*Unsupported comparison type*");
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_WithMixedAsciiAndNonAscii_WorksCorrectly()
     {
         // Strings with ASCII and non-ASCII
@@ -1846,7 +1846,7 @@ public class StringSegmentTests
             "Strings differing in non-ASCII portion should compare correctly");
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_AsciiToNonAsciiTransition_WorksCorrectly()
     {
         // Test strings that differ at the transition from ASCII to non-ASCII
@@ -1880,7 +1880,7 @@ public class StringSegmentTests
             "Partial segment with transition should compare correctly");
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_OrdinalIgnoreCase_WithMixedCharacters_WorksCorrectly()
     {
         // Case differences with ASCII and non-ASCII characters
@@ -1923,7 +1923,7 @@ public class StringSegmentTests
             "Strings differing at non-ASCII should not be equal with case-insensitive comparison");
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_HalfAsciiOptimization_WorksCorrectly()
     {
         // Test the half-ASCII optimization in OrdinalIgnoreCase comparison
@@ -1956,7 +1956,7 @@ public class StringSegmentTests
                 "Strings with case differences in ASCII and differences in non-ASCII should compare correctly");
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_WithAsciiPrefixNonAsciiSuffix_OrdinalIgnoreCase()
     {
         // This tests the specific case where string comparison switches from the
@@ -1993,7 +1993,7 @@ public class StringSegmentTests
             "OrdinalIgnoreCase should consider different case ASCII with same surrogate pairs as equal");
     }
 
-    [Fact]
+    [Test]
     public void ImplicitConversion_ToReadOnlyMemory_WorksCorrectly()
     {
         // Full segment
@@ -2019,7 +2019,7 @@ public class StringSegmentTests
         emptyMemory.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void TryFormat_WithSufficientBuffer_ReturnsTrue()
     {
         StringSegment segment = new("Hello World");
@@ -2036,7 +2036,7 @@ public class StringSegmentTests
         destination.ToString().Should().Be("Hello World");
     }
 
-    [Fact]
+    [Test]
     public void TryFormat_WithInsufficientBuffer_ReturnsFalse()
     {
         StringSegment segment = new("Hello World");
@@ -2052,7 +2052,7 @@ public class StringSegmentTests
         charsWritten.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void TryFormat_WithFormat_IgnoresFormat()
     {
         StringSegment segment = new("123");
@@ -2070,14 +2070,14 @@ public class StringSegmentTests
         destination.ToString().Should().Be("123"); // Not "123.00"
     }
 
-    [Fact]
+    [Test]
     public void GetHashCode_WithNull_ReturnsEmptyStringHashCode()
     {
         StringSegment segment = new(null!);
         segment.GetHashCode().Should().Be(string.Empty.GetHashCode());
     }
 
-    [Fact]
+    [Test]
     public void GetHashCode_PreservesHash_ForPartialSegments()
     {
         string str = "Hello World Test";
@@ -2096,7 +2096,7 @@ public class StringSegmentTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Equals_WithReadOnlySpan_IgnoresCase()
     {
         StringSegment segment = new("Hello");
@@ -2110,7 +2110,7 @@ public class StringSegmentTests
         string.Equals(segment.ToString(), lower.ToString(), StringComparison.OrdinalIgnoreCase).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public unsafe void Pinning_WithDifferentSegmentCreationPaths_WorksConsistently()
     {
         // Test pinning with segments created via different paths
@@ -2142,7 +2142,7 @@ public class StringSegmentTests
         }
     }
 
-    [Fact]
+    [Test]
     public void IFormattable_ToString_ReturnsSameAsToString()
     {
         StringSegment segment = new("Hello World");
@@ -2155,7 +2155,7 @@ public class StringSegmentTests
         result.Should().Be("Hello World");
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_WithNullString_ReturnsPositiveValue()
     {
         string hello = "Hello";
@@ -2176,7 +2176,7 @@ public class StringSegmentTests
         empty.CompareTo(null).Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void ImplicitConversion_ToReadOnlyMemory_WithNullValue_ReturnsEmptyMemory()
     {
         StringSegment segment = new(null!);
@@ -2190,7 +2190,7 @@ public class StringSegmentTests
 
 #pragma warning disable IDE0057 // Use range operator - the whole point of these tests is to exercise the Slice methods directly.
 
-    [Fact]
+    [Test]
     public void Slice_DirectMethodCall_ReturnsCorrectSegment()
     {
         StringSegment segment = new("Hello World");
@@ -2198,7 +2198,7 @@ public class StringSegmentTests
         sliced.ToString().Should().Be("World");
     }
 
-    [Fact]
+    [Test]
     public void Slice_DirectMethodCall_StartZero_ReturnsSameContent()
     {
         StringSegment segment = new("Hello");
@@ -2206,7 +2206,7 @@ public class StringSegmentTests
         sliced.ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void Slice_DirectMethodCall_StartEqualsLength_ReturnsEmpty()
     {
         StringSegment segment = new("Hello");
@@ -2214,7 +2214,7 @@ public class StringSegmentTests
         sliced.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Slice_DirectMethodCall_StartOutOfRange_Throws()
     {
         StringSegment segment = new("Hello");
@@ -2222,7 +2222,7 @@ public class StringSegmentTests
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Slice_DirectMethodCall_NegativeStart_Throws()
     {
         StringSegment segment = new("Hello");
@@ -2230,7 +2230,7 @@ public class StringSegmentTests
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Slice_DirectMethodCall_NullValue_ReturnsEmpty()
     {
         StringSegment segment = default;
@@ -2240,7 +2240,7 @@ public class StringSegmentTests
 
 #pragma warning restore IDE0057
 
-    [Fact]
+    [Test]
     public void ToString_OutSegment_PopulatesSegment()
     {
         StringSegment original = new("Hello World", 6, 5);
@@ -2251,7 +2251,7 @@ public class StringSegmentTests
         newSegment.AsSpan().ToString().Should().Be("World");
     }
 
-    [Fact]
+    [Test]
     public void WriteTo_NullWriter_Throws()
     {
         StringSegment segment = new("Hello");
@@ -2259,7 +2259,7 @@ public class StringSegmentTests
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void WriteTo_EmptySegment_WritesNothing()
     {
         System.IO.StringWriter writer = new();
@@ -2268,7 +2268,7 @@ public class StringSegmentTests
         writer.ToString().Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void WriteTo_FullStringSegment_WritesString()
     {
         System.IO.StringWriter writer = new();
@@ -2277,7 +2277,7 @@ public class StringSegmentTests
         writer.ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void WriteTo_PartialSegment_WritesSpan()
     {
         System.IO.StringWriter writer = new();
@@ -2286,21 +2286,21 @@ public class StringSegmentTests
         writer.ToString().Should().Be("World");
     }
 
-    [Fact]
+    [Test]
     public void Equals_ReadOnlySpan_DifferentLength_ReturnsFalse()
     {
         StringSegment segment = new("Hello");
         segment.Equals("Hi".AsSpan()).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Equals_ReadOnlySpan_SameContent_ReturnsTrue()
     {
         StringSegment segment = new("Hello");
         segment.Equals("Hello".AsSpan()).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void AsSpan_StartLength_ZeroLength_ReturnsEmpty()
     {
         StringSegment segment = new("Hello");
@@ -2308,168 +2308,168 @@ public class StringSegmentTests
         span.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void AsSpan_StartLength_FullSegment_Works()
     {
         StringSegment segment = new("Hello");
         segment.AsSpan(0, 5).ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void AsSpan_Start_FromMiddle_Works()
     {
         StringSegment segment = new("Hello");
         segment.AsSpan(2).ToString().Should().Be("llo");
     }
 
-    [Fact]
+    [Test]
     public void AsSpan_Start_End_ReturnsEmpty()
     {
         StringSegment segment = new("Hello");
         segment.AsSpan(5).IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAny_TwoChars_FirstMatch()
     {
         StringSegment segment = new("Hello");
         segment.IndexOfAny('e', 'o').Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAny_TwoChars_NoMatch_ReturnsMinusOne()
     {
         StringSegment segment = new("Hello");
         segment.IndexOfAny('x', 'y').Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_NoLeadingWhitespace_ReturnsSelf()
     {
         StringSegment segment = new("Hello");
         segment.TrimStart().ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_OnlyWhitespace_ReturnsEmpty()
     {
         StringSegment segment = new("   ");
         segment.TrimStart().IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_Char_Match_TrimsLeading()
     {
         StringSegment segment = new("xxxHello");
         segment.TrimStart('x').ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_Char_NoMatch_ReturnsSelf()
     {
         StringSegment segment = new("Hello");
         segment.TrimStart('x').ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_Char_Match_TrimsTrailing()
     {
         StringSegment segment = new("Helloxxx");
         segment.TrimEnd('x').ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_Char_NoMatch_ReturnsSelf()
     {
         StringSegment segment = new("Hello");
         segment.TrimEnd('x').ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void Trim_Char_BothEnds_Trims()
     {
         StringSegment segment = new("xxxHelloxxx");
         segment.Trim('x').ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void Trim_TwoChars_BothEnds_Trims()
     {
         StringSegment segment = new("xy Helloxx");
         segment.Trim('x', 'y').ToString().Should().Be(" Hello");
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_TwoChars_TrimsLeading()
     {
         StringSegment segment = new("xyxHello");
         segment.TrimStart('x', 'y').ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_TwoChars_TrimsTrailing()
     {
         StringSegment segment = new("Helloxyx");
         segment.TrimEnd('x', 'y').ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_Span_OrdinalIgnoreCase_True()
     {
         StringSegment segment = new("Hello");
         segment.StartsWith("HE".AsSpan(), StringComparison.OrdinalIgnoreCase).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_Span_Ordinal_DifferentCase_False()
     {
         StringSegment segment = new("Hello");
         segment.StartsWith("HE".AsSpan(), StringComparison.Ordinal).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_Span_OrdinalIgnoreCase_True()
     {
         StringSegment segment = new("Hello");
         segment.EndsWith("LO".AsSpan(), StringComparison.OrdinalIgnoreCase).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_Span_Ordinal_DifferentCase_False()
     {
         StringSegment segment = new("Hello");
         segment.EndsWith("LO".AsSpan(), StringComparison.Ordinal).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_StringSegment_DifferentCase_OrdinalIgnoreCase_True()
     {
         StringSegment segment = new("Hello World");
         segment.StartsWith(new StringSegment("HELLO"), StringComparison.OrdinalIgnoreCase).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_StringSegment_OrdinalIgnoreCase_True()
     {
         StringSegment segment = new("Hello World");
         segment.EndsWith(new StringSegment("WORLD"), StringComparison.OrdinalIgnoreCase).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Constructor_StartIndexLength_ZeroLength_OnEmptyString_Succeeds()
     {
         StringSegment segment = new(string.Empty, 0, 0);
         segment.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Constructor_StartIndexLength_LengthExceedsBounds_Throws()
     {
         Action act = () => new StringSegment("Hello", 2, 10);
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_StringSegment_Ordinal_LessThan()
     {
         StringSegment a = new("apple");
@@ -2477,7 +2477,7 @@ public class StringSegmentTests
         a.CompareTo(b, StringComparison.Ordinal).Should().BeLessThan(0);
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_StringSegment_OrdinalIgnoreCase_Equal()
     {
         StringSegment a = new("Apple");
@@ -2485,7 +2485,7 @@ public class StringSegmentTests
         a.CompareTo(b, StringComparison.OrdinalIgnoreCase).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void CompareTo_StringSegment_InvalidComparison_Throws()
     {
         StringSegment a = new("a");
@@ -2494,7 +2494,7 @@ public class StringSegmentTests
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void AsSpan_Start_OutOfRange_Throws()
     {
         StringSegment segment = new("Hello");
@@ -2502,7 +2502,7 @@ public class StringSegmentTests
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void AsSpan_StartLength_OutOfRange_Throws()
     {
         StringSegment segment = new("Hello");
@@ -2510,7 +2510,7 @@ public class StringSegmentTests
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void AsSpan_StartLength_NegativeStart_Throws()
     {
         StringSegment segment = new("Hello");
@@ -2518,56 +2518,56 @@ public class StringSegmentTests
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAny_TwoChars_NotFound_ReturnsMinusOne()
     {
         StringSegment segment = new("aaaa");
         segment.IndexOfAny('x', 'y').Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_Span_LongerThanSegment_False()
     {
         StringSegment segment = new("ab");
         segment.EndsWith("hello".AsSpan(), StringComparison.Ordinal).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_Span_LongerThanSegment_False()
     {
         StringSegment segment = new("ab");
         segment.StartsWith("hello".AsSpan(), StringComparison.Ordinal).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void TrimStart_Default_OnlyWhitespace()
     {
         StringSegment segment = new("  \t\n  ");
         segment.TrimStart().IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_Default_OnlyWhitespace()
     {
         StringSegment segment = new("  \t\n  ");
         segment.TrimEnd().IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void TrimEnd_Default_NoTrailingWhitespace_ReturnsSelf()
     {
         StringSegment segment = new("Hello");
         segment.TrimEnd().ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void Constructor_NegativeStartIndex_Throws()
     {
         Action act = () => _ = new StringSegment("Hello", -1, 2);
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Constructor_NegativeLength_Throws()
     {
         Action act = () => _ = new StringSegment("Hello", 0, -1);

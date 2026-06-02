@@ -20,11 +20,22 @@ public static class FileMatcherWrapper
     /// </summary>
     public enum SearchAction
     {
+        /// <summary>No action.</summary>
         None = 0,
+
+        /// <summary>Run the file-system search.</summary>
         RunSearch = 1,
+
+        /// <summary>Return the file specification verbatim.</summary>
         ReturnFileSpec = 2,
+
+        /// <summary>Return an empty list.</summary>
         ReturnEmptyList = 3,
+
+        /// <summary>Fail because the wildcard would enumerate a drive root.</summary>
         FailOnDriveEnumeratingWildcard = 4,
+
+        /// <summary>Log that the wildcard would enumerate a drive root.</summary>
         LogDriveEnumeratingWildcard = 5,
     }
 

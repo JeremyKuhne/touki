@@ -8,25 +8,25 @@ namespace Touki;
 
 public class StoringStringSegment
 {
-    public static TheoryData<StringSegment> StringSegmentData => new()
+    public static IEnumerable<StringSegment> StringSegmentData()
     {
-        { new StringSegment("Hello, World!") },
-        { new StringSegment("Hello, World!", 7, 5) },
-        { new StringSegment(string.Empty) },
-        { default(StringSegment) }
-    };
+        yield return new StringSegment("Hello, World!");
+        yield return new StringSegment("Hello, World!", 7, 5);
+        yield return new StringSegment(string.Empty);
+        yield return default;
+    }
 
-    [Theory]
-    [MemberData(nameof(StringSegmentData))]
+    [Test]
+    [MethodDataSource(nameof(StringSegmentData))]
     public void StringSegmentImplicit(StringSegment segment)
     {
         Value value = segment;
-        Assert.Equal(segment, value.As<StringSegment>());
-        Assert.Equal(typeof(StringSegment), value.Type);
+        value.As<StringSegment>().Should().Be(segment);
+        value.Type.Should().Be(typeof(StringSegment));
     }
 
-    [Theory]
-    [MemberData(nameof(StringSegmentData))]
+    [Test]
+    [MethodDataSource(nameof(StringSegmentData))]
     public void StringSegmentCreate(StringSegment segment)
     {
         Value value;
@@ -35,24 +35,24 @@ public class StoringStringSegment
             value = Value.Create(segment);
         }
 
-        Assert.Equal(segment, value.As<StringSegment>());
-        Assert.Equal(typeof(StringSegment), value.Type);
+        value.As<StringSegment>().Should().Be(segment);
+        value.Type.Should().Be(typeof(StringSegment));
     }
 
-    [Theory]
-    [MemberData(nameof(StringSegmentData))]
+    [Test]
+    [MethodDataSource(nameof(StringSegmentData))]
     public void StringSegmentInOut(StringSegment segment)
     {
         Value value = segment;
         bool success = value.TryGetValue(out StringSegment result);
-        Assert.True(success);
-        Assert.Equal(segment, result);
+        success.Should().BeTrue();
+        result.Should().Be(segment);
 
-        Assert.Equal(segment, value.As<StringSegment>());
-        Assert.Equal(segment, (StringSegment)value);
+        value.As<StringSegment>().Should().Be(segment);
+        ((StringSegment)value).Should().Be(segment);
     }
 
-    [Fact]
+    [Test]
     public void NestedSegments()
     {
         string text = "Hello, World! How are you?";
@@ -64,59 +64,59 @@ public class StoringStringSegment
         Value value2 = worldSegment;
         Value value3 = howSegment;
 
-        Assert.Equal(fullSegment, value1.As<StringSegment>());
-        Assert.Equal(worldSegment, value2.As<StringSegment>());
-        Assert.Equal(howSegment, value3.As<StringSegment>());
+        value1.As<StringSegment>().Should().Be(fullSegment);
+        value2.As<StringSegment>().Should().Be(worldSegment);
+        value3.As<StringSegment>().Should().Be(howSegment);
 
         // Ensure the segments maintain their correct positions
-        Assert.Equal("Hello, World! How are you?", fullSegment.ToString());
-        Assert.Equal("World", worldSegment.ToString());
-        Assert.Equal("How", howSegment.ToString());
+        fullSegment.ToString().Should().Be("Hello, World! How are you?");
+        worldSegment.ToString().Should().Be("World");
+        howSegment.ToString().Should().Be("How");
 
         // Verify the retrieved segments have the same properties
         StringSegment retrieved2 = value2.As<StringSegment>();
-        Assert.Equal(7, retrieved2._startIndex);
-        Assert.Equal(5, retrieved2._length);
-        Assert.Equal(text, retrieved2.Value);
+        retrieved2._startIndex.Should().Be(7);
+        retrieved2._length.Should().Be(5);
+        retrieved2.Value.Should().Be(text);
     }
 
-    [Fact]
+    [Test]
     public void DefaultStringSegment()
     {
         StringSegment defaultSegment = default;
         Value value = defaultSegment;
 
-        Assert.Equal(typeof(StringSegment), value.Type);
-        Assert.Equal(defaultSegment, value.As<StringSegment>());
-        Assert.Equal(string.Empty, value.As<StringSegment>().Value);
-        Assert.Equal(0, value.As<StringSegment>()._startIndex);
-        Assert.Equal(0, value.As<StringSegment>()._length);
+        value.Type.Should().Be(typeof(StringSegment));
+        value.As<StringSegment>().Should().Be(defaultSegment);
+        value.As<StringSegment>().Value.Should().Be(string.Empty);
+        value.As<StringSegment>()._startIndex.Should().Be(0);
+        value.As<StringSegment>()._length.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void OutAsObject()
     {
         StringSegment segment = new("Test Segment", 0, 4); // "Test"
         Value value = segment;
 
         object o = value.As<object>();
-        Assert.Equal(typeof(StringSegment), o.GetType());
-        Assert.Equal(segment, (StringSegment)o);
-        Assert.Equal("Test", ((StringSegment)o).ToString());
+        o.GetType().Should().Be(typeof(StringSegment));
+        ((StringSegment)o).Should().Be(segment);
+        ((StringSegment)o).ToString().Should().Be("Test");
     }
 
-    [Fact]
+    [Test]
     public void EmptyStringSegment()
     {
         StringSegment emptySegment = new(string.Empty);
         Value value = emptySegment;
 
-        Assert.Equal(typeof(StringSegment), value.Type);
-        Assert.Equal(emptySegment, value.As<StringSegment>());
-        Assert.True(value.As<StringSegment>().IsEmpty);
+        value.Type.Should().Be(typeof(StringSegment));
+        value.As<StringSegment>().Should().Be(emptySegment);
+        value.As<StringSegment>().IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void StringSegmentRoundTrip()
     {
         string original = "This is a test of string segments";
@@ -133,10 +133,10 @@ public class StoringStringSegment
             Value value = segment;
             StringSegment roundTripped = value.As<StringSegment>();
 
-            Assert.Equal(segment.Value, roundTripped.Value);
-            Assert.Equal(segment._startIndex, roundTripped._startIndex);
-            Assert.Equal(segment._length, roundTripped._length);
-            Assert.Equal(segment.ToString(), roundTripped.ToString());
+            roundTripped.Value.Should().Be(segment.Value);
+            roundTripped._startIndex.Should().Be(segment._startIndex);
+            roundTripped._length.Should().Be(segment._length);
+            roundTripped.ToString().Should().Be(segment.ToString());
         }
     }
 }

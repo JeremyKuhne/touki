@@ -6,7 +6,7 @@ namespace Touki;
 
 public class StoringEnum
 {
-    [Fact]
+    [Test]
     public void BasicFunctionality()
     {
         InitType();
@@ -17,11 +17,11 @@ public class StoringEnum
         DayOfWeek outDay = value.As<DayOfWeek>();
         watch.Validate();
 
-        Assert.Equal(day, outDay);
-        Assert.Equal(typeof(DayOfWeek), value.Type);
+        outDay.Should().Be(day);
+        value.Type.Should().Be(typeof(DayOfWeek));
     }
 
-    [Fact]
+    [Test]
     public void NullableEnum()
     {
         DayOfWeek? day = DayOfWeek.Monday;
@@ -29,121 +29,121 @@ public class StoringEnum
         Value value = Value.Create(day);
         DayOfWeek outDay = value.As<DayOfWeek>();
 
-        Assert.Equal(day.Value, outDay);
-        Assert.Equal(typeof(DayOfWeek), value.Type);
+        outDay.Should().Be(day.Value);
+        value.Type.Should().Be(typeof(DayOfWeek));
     }
 
-    [Fact]
+    [Test]
     public void ToFromNullableEnum()
     {
         DayOfWeek day = DayOfWeek.Monday;
         Value value = Value.Create(day);
-        Assert.True(value.TryGetValue(out DayOfWeek? nullDay));
-        Assert.Equal(day, nullDay);
+        value.TryGetValue(out DayOfWeek? nullDay).Should().BeTrue();
+        nullDay.Should().Be(day);
 
         value = Value.Create((DayOfWeek?)day);
-        Assert.True(value.TryGetValue(out DayOfWeek outDay));
-        Assert.Equal(day, outDay);
+        value.TryGetValue(out DayOfWeek outDay).Should().BeTrue();
+        outDay.Should().Be(day);
     }
 
-    [Fact]
+    [Test]
     public void BoxedEnum()
     {
         DayOfWeek day = DayOfWeek.Monday;
         Value value = Value.Create((object)day);
-        Assert.True(value.TryGetValue(out DayOfWeek? nullDay));
-        Assert.Equal(day, nullDay);
+        value.TryGetValue(out DayOfWeek? nullDay).Should().BeTrue();
+        nullDay.Should().Be(day);
 
         value = Value.Create((object)(DayOfWeek?)day);
-        Assert.True(value.TryGetValue(out DayOfWeek outDay));
-        Assert.Equal(day, outDay);
+        value.TryGetValue(out DayOfWeek outDay).Should().BeTrue();
+        outDay.Should().Be(day);
     }
 
-    [Theory]
-    [InlineData(ByteEnum.MinValue)]
-    [InlineData(ByteEnum.MaxValue)]
+    [Test]
+    [Arguments(ByteEnum.MinValue)]
+    [Arguments(ByteEnum.MaxValue)]
     public void ByteSize(ByteEnum @enum)
     {
         Value value = Value.Create(@enum);
-        Assert.True(value.TryGetValue(out ByteEnum result));
-        Assert.Equal(@enum, result);
-        Assert.True(value.TryGetValue(out ByteEnum? nullResult));
-        Assert.Equal(@enum, nullResult!.Value);
+        value.TryGetValue(out ByteEnum result).Should().BeTrue();
+        result.Should().Be(@enum);
+        value.TryGetValue(out ByteEnum? nullResult).Should().BeTrue();
+        nullResult!.Value.Should().Be(@enum);
         value = Value.Create((ByteEnum?)@enum);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@enum, result);
-        Assert.True(value.TryGetValue(out nullResult));
-        Assert.Equal(@enum, nullResult!.Value);
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@enum);
+        value.TryGetValue(out nullResult).Should().BeTrue();
+        nullResult!.Value.Should().Be(@enum);
 
         // Create boxed
         value = Value.Create((object)@enum);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@enum, result);
-        Assert.True(value.TryGetValue(out nullResult));
-        Assert.Equal(@enum, nullResult!.Value);
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@enum);
+        value.TryGetValue(out nullResult).Should().BeTrue();
+        nullResult!.Value.Should().Be(@enum);
         value = Value.Create((object)(ByteEnum?)@enum);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@enum, result);
-        Assert.True(value.TryGetValue(out nullResult));
-        Assert.Equal(@enum, nullResult!.Value);
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@enum);
+        value.TryGetValue(out nullResult).Should().BeTrue();
+        nullResult!.Value.Should().Be(@enum);
     }
 
-    [Theory]
-    [InlineData(ShortEnum.MinValue)]
-    [InlineData(ShortEnum.MaxValue)]
+    [Test]
+    [Arguments(ShortEnum.MinValue)]
+    [Arguments(ShortEnum.MaxValue)]
     public void ShortSize(ShortEnum @enum)
     {
         Value value = Value.Create(@enum);
-        Assert.True(value.TryGetValue(out ShortEnum result));
-        Assert.Equal(@enum, result);
-        Assert.True(value.TryGetValue(out ShortEnum? nullResult));
-        Assert.Equal(@enum, nullResult!.Value);
+        value.TryGetValue(out ShortEnum result).Should().BeTrue();
+        result.Should().Be(@enum);
+        value.TryGetValue(out ShortEnum? nullResult).Should().BeTrue();
+        nullResult!.Value.Should().Be(@enum);
         value = Value.Create((ShortEnum?)@enum);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@enum, result);
-        Assert.True(value.TryGetValue(out nullResult));
-        Assert.Equal(@enum, nullResult!.Value);
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@enum);
+        value.TryGetValue(out nullResult).Should().BeTrue();
+        nullResult!.Value.Should().Be(@enum);
 
         // Create boxed
         value = Value.Create((object)@enum);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@enum, result);
-        Assert.True(value.TryGetValue(out nullResult));
-        Assert.Equal(@enum, nullResult!.Value);
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@enum);
+        value.TryGetValue(out nullResult).Should().BeTrue();
+        nullResult!.Value.Should().Be(@enum);
         value = Value.Create((object)(ShortEnum?)@enum);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@enum, result);
-        Assert.True(value.TryGetValue(out nullResult));
-        Assert.Equal(@enum, nullResult!.Value);
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@enum);
+        value.TryGetValue(out nullResult).Should().BeTrue();
+        nullResult!.Value.Should().Be(@enum);
     }
 
-    [Theory]
-    [InlineData(LongEnum.MinValue)]
-    [InlineData(LongEnum.MaxValue)]
+    [Test]
+    [Arguments(LongEnum.MinValue)]
+    [Arguments(LongEnum.MaxValue)]
     public void LongSize(LongEnum @enum)
     {
         Value value = Value.Create(@enum);
-        Assert.True(value.TryGetValue(out LongEnum result));
-        Assert.Equal(@enum, result);
-        Assert.True(value.TryGetValue(out LongEnum? nullResult));
-        Assert.Equal(@enum, nullResult!.Value);
+        value.TryGetValue(out LongEnum result).Should().BeTrue();
+        result.Should().Be(@enum);
+        value.TryGetValue(out LongEnum? nullResult).Should().BeTrue();
+        nullResult!.Value.Should().Be(@enum);
         value = Value.Create((LongEnum?)@enum);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@enum, result);
-        Assert.True(value.TryGetValue(out nullResult));
-        Assert.Equal(@enum, nullResult!.Value);
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@enum);
+        value.TryGetValue(out nullResult).Should().BeTrue();
+        nullResult!.Value.Should().Be(@enum);
 
         // Create boxed
         value = Value.Create((object)@enum);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@enum, result);
-        Assert.True(value.TryGetValue(out nullResult));
-        Assert.Equal(@enum, nullResult!.Value);
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@enum);
+        value.TryGetValue(out nullResult).Should().BeTrue();
+        nullResult!.Value.Should().Be(@enum);
         value = Value.Create((object)(LongEnum?)@enum);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@enum, result);
-        Assert.True(value.TryGetValue(out nullResult));
-        Assert.Equal(@enum, nullResult!.Value);
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@enum);
+        value.TryGetValue(out nullResult).Should().BeTrue();
+        nullResult!.Value.Should().Be(@enum);
     }
 
     [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

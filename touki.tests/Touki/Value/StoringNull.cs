@@ -6,15 +6,15 @@ namespace Touki;
 
 public class StoringNull
 {
-    [Fact]
+    [Test]
     public void GetIntFromStoredNull()
     {
         Value nullFastValue = Value.Create((object?)null);
         Assert.Throws<InvalidCastException>(() => _ = nullFastValue.As<int>());
 
         bool success = nullFastValue.TryGetValue(out int result);
-        Assert.False(success);
+        success.Should().BeFalse();
 
-        Assert.Equal(default, result);
+        result.Should().Be(default);
     }
 }

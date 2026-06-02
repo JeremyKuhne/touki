@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Multitarget .NET Core and .NET Framework
+      https://learn.microsoft.com/dotnet/standard/frameworks
+    -->
+    <TargetFrameworks>$(DotNetCoreVersion);$(DotNetFrameworkVersion)</TargetFrameworks>
+    <OutputType>Library</OutputType>
+
+    <!--
+     We don't want to have implicit usings as we're retargeting System.IO to Microsoft.IO
+     in our GlobalUsings.cs file for .NET Framework.
+    -->
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace />
+    <IsPackable>false</IsPackable>
+
+    <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Provides the internal FileMatcher / IFileSystem surface the wrapper reflects over. -->
+    <PackageReference Include="Microsoft.Build" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'">
+    <PackageReference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- RecordedMSBuildFileSystem and the recording infrastructure live in test support. -->
+    <ProjectReference Include="..\touki.testsupport\touki.testsupport.csproj" />
+    <ProjectReference Include="..\touki\touki.csproj" />
+  </ItemGroup>
+
+</Project>

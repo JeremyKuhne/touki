@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -9,7 +9,7 @@ namespace System;
 public class InternalDateTimeExtensionsTests
 {
     // GetDate tests
-    [Fact]
+    [Test]
     public void GetDate_StandardDate_ReturnsCorrectComponents()
     {
         DateTime date = new(2023, 5, 15);
@@ -21,7 +21,7 @@ public class InternalDateTimeExtensionsTests
         day.Should().Be(15);
     }
 
-    [Fact]
+    [Test]
     public void GetDate_MinValue_ReturnsCorrectComponents()
     {
         DateTime date = DateTime.MinValue;
@@ -33,7 +33,7 @@ public class InternalDateTimeExtensionsTests
         day.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void GetDate_MaxValue_ReturnsCorrectComponents()
     {
         DateTime date = DateTime.MaxValue;
@@ -45,7 +45,7 @@ public class InternalDateTimeExtensionsTests
         day.Should().Be(31);
     }
 
-    [Fact]
+    [Test]
     public void GetDate_LeapYear_ReturnsCorrectComponents()
     {
         DateTime date = new(2024, 2, 29);
@@ -58,7 +58,7 @@ public class InternalDateTimeExtensionsTests
     }
 
     // GetTime tests (hour, minute, second)
-    [Fact]
+    [Test]
     public void GetTime_StandardTime_ReturnsCorrectComponents()
     {
         DateTime time = new(2023, 1, 1, 14, 30, 45);
@@ -70,7 +70,7 @@ public class InternalDateTimeExtensionsTests
         second.Should().Be(45);
     }
 
-    [Fact]
+    [Test]
     public void GetTime_Midnight_ReturnsZeroComponents()
     {
         DateTime time = new(2023, 1, 1, 0, 0, 0);
@@ -82,7 +82,7 @@ public class InternalDateTimeExtensionsTests
         second.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void GetTime_BeforeMidnight_ReturnsCorrectComponents()
     {
         DateTime time = new(2023, 1, 1, 23, 59, 59);
@@ -95,7 +95,7 @@ public class InternalDateTimeExtensionsTests
     }
 
     // GetTime tests (hour, minute, second, millisecond)
-    [Fact]
+    [Test]
     public void GetTimeWithMillisecond_StandardTime_ReturnsCorrectComponents()
     {
         DateTime time = new(2023, 1, 1, 14, 30, 45, 500);
@@ -108,7 +108,7 @@ public class InternalDateTimeExtensionsTests
         millisecond.Should().Be(500);
     }
 
-    [Fact]
+    [Test]
     public void GetTimeWithMillisecond_Midnight_ReturnsZeroComponents()
     {
         DateTime time = new(2023, 1, 1, 0, 0, 0, 0);
@@ -121,7 +121,7 @@ public class InternalDateTimeExtensionsTests
         millisecond.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void GetTimeWithMillisecond_MaxMillisecond_ReturnsCorrectComponents()
     {
         DateTime time = new(2023, 1, 1, 12, 30, 45, 999);
@@ -135,7 +135,7 @@ public class InternalDateTimeExtensionsTests
     }
 
     // GetTimePrecise tests
-    [Fact]
+    [Test]
     public void GetTimePrecise_Midnight_ReturnsZeroComponents()
     {
         DateTime time = new(2023, 1, 1, 0, 0, 0);

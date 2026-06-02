@@ -14,10 +14,10 @@ namespace Touki.Io.Globbing;
 /// </summary>
 public class MultipleAsteriskMSBuildOracleTests
 {
-    public static TheoryData<string, string> Rows => MultipleAsteriskRows.Rows;
+    public static IEnumerable<(string, string)> Rows() => MultipleAsteriskRows.Rows();
 
-    [Theory]
-    [MemberData(nameof(Rows))]
+    [Test]
+    [MethodDataSource(nameof(Rows))]
     public void IsMatch_MSBuildDialect_MultipleAsterisks_AgreesWithMSBuildGlob(string pattern, string input)
     {
         bool oracle = MSBuildGlob.Parse(Directory.GetCurrentDirectory(), pattern).IsMatch(input);

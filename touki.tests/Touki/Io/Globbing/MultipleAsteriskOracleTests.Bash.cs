@@ -13,16 +13,16 @@ namespace Touki.Io.Globbing;
 /// </summary>
 public class MultipleAsteriskBashOracleTests
 {
-    public static TheoryData<string, string> Rows => MultipleAsteriskRows.Rows;
+    public static IEnumerable<(string, string)> Rows() => MultipleAsteriskRows.Rows();
 
-    [Theory]
-    [MemberData(nameof(Rows))]
+    [Test]
+    [MethodDataSource(nameof(Rows))]
     public void IsMatch_BashDialect_MultipleAsterisks_AgreesWithBash(string pattern, string input)
     {
         string? bashPath = BashInterop.ResolveBashPath();
         if (bashPath is null)
         {
-            Assert.Skip("bash oracle requires bash on PATH (or Git for Windows installed).");
+            Skip.Test("bash oracle requires bash on PATH (or Git for Windows installed).");
             return;
         }
 
@@ -37,7 +37,7 @@ public class MultipleAsteriskBashOracleTests
             or ("a/***/b", "a/b")
             or ("a***b", "a/b"))
         {
-            Assert.Skip("Documented Bash shell-glob vs `[[ == ]]` string-match divergence.");
+            Skip.Test("Documented Bash shell-glob vs `[[ == ]]` string-match divergence.");
             return;
         }
 

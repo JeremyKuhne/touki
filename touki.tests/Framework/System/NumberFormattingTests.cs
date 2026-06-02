@@ -133,8 +133,8 @@ public unsafe class NumberFormattingTests
         }
     }
 
-    [Theory]
-    [MemberData(nameof(StandardDoubleData))]
+    [Test]
+    [MethodDataSource(nameof(StandardDoubleData))]
     public void FormatDouble_StandardSpecifiers_ProducesNonEmptyOutput(double value, string format)
     {
         string result = FormatDouble(value, format);
@@ -209,8 +209,8 @@ public unsafe class NumberFormattingTests
         }
     }
 
-    [Theory]
-    [MemberData(nameof(StandardSingleData))]
+    [Test]
+    [MethodDataSource(nameof(StandardSingleData))]
     public void FormatSingle_StandardSpecifiers_ProducesNonEmptyOutput(float value, string format)
     {
         string result = FormatSingle(value, format);
@@ -273,8 +273,8 @@ public unsafe class NumberFormattingTests
         }
     }
 
-    [Theory]
-    [MemberData(nameof(CustomDoubleFormatData))]
+    [Test]
+    [MethodDataSource(nameof(CustomDoubleFormatData))]
     public void FormatDouble_CustomFormats_ProducesNonEmptyOutput(double value, string format)
     {
         string result = FormatDouble(value, format);
@@ -331,8 +331,8 @@ public unsafe class NumberFormattingTests
         }
     }
 
-    [Theory]
-    [MemberData(nameof(DecimalData))]
+    [Test]
+    [MethodDataSource(nameof(DecimalData))]
     public void FormatDecimal_VariousFormats_ProducesNonEmptyOutput(decimal value, string format)
     {
         string result = FormatDecimal(value, format);
@@ -340,36 +340,36 @@ public unsafe class NumberFormattingTests
         result.Length.Should().BeGreaterThan(0);
     }
 
-    [Theory]
-    [InlineData("Z")]
-    [InlineData("z")]
-    [InlineData("Z2")]
+    [Test]
+    [Arguments("Z")]
+    [Arguments("z")]
+    [Arguments("Z2")]
     public void FormatDouble_InvalidStandardSpecifier_Throws(string format)
     {
         Action action = () => FormatDouble(1.0, format);
         action.Should().Throw<FormatException>();
     }
 
-    [Theory]
-    [InlineData("Z")]
-    [InlineData("z2")]
+    [Test]
+    [Arguments("Z")]
+    [Arguments("z2")]
     public void FormatSingle_InvalidStandardSpecifier_Throws(string format)
     {
         Action action = () => FormatSingle(1.0f, format);
         action.Should().Throw<FormatException>();
     }
 
-    [Theory]
-    [InlineData("", -1, 'G')]
-    [InlineData("G", -1, 'G')]
-    [InlineData("g", -1, 'g')]
-    [InlineData("F2", 2, 'F')]
-    [InlineData("F12", 12, 'F')]
-    [InlineData("F123", 123, 'F')]
-    [InlineData("F0001", 1, 'F')]
-    [InlineData("0.##", -1, '\0')]
-    [InlineData("#,##0", -1, '\0')]
-    [InlineData("\0", -1, 'G')]
+    [Test]
+    [Arguments("", -1, 'G')]
+    [Arguments("G", -1, 'G')]
+    [Arguments("g", -1, 'g')]
+    [Arguments("F2", 2, 'F')]
+    [Arguments("F12", 12, 'F')]
+    [Arguments("F123", 123, 'F')]
+    [Arguments("F0001", 1, 'F')]
+    [Arguments("0.##", -1, '\0')]
+    [Arguments("#,##0", -1, '\0')]
+    [Arguments("\0", -1, 'G')]
     public void ParseFormatSpecifier_VariousInputs_ReturnsExpected(string format, int expectedDigits, char expectedChar)
     {
         char actual = Number.ParseFormatSpecifier(format.AsSpan(), out int digits);
@@ -377,7 +377,7 @@ public unsafe class NumberFormattingTests
         digits.Should().Be(expectedDigits);
     }
 
-    [Fact]
+    [Test]
     public void ParseFormatSpecifier_OverflowDigits_Throws()
     {
         // A long run of digits whose accumulator overflows int.
@@ -386,14 +386,14 @@ public unsafe class NumberFormattingTests
         action.Should().Throw<FormatException>();
     }
 
-    [Theory]
-    [InlineData("12345", 5, false, 12345.0)]
-    [InlineData("12345", 5, true, -12345.0)]
-    [InlineData("1", 1, false, 1.0)]
-    [InlineData("1", 0, false, 0.1)]
-    [InlineData("1", -1, false, 0.01)]
-    [InlineData("5", 1, false, 5.0)]
-    [InlineData("123456789", 9, false, 123456789.0)]
+    [Test]
+    [Arguments("12345", 5, false, 12345.0)]
+    [Arguments("12345", 5, true, -12345.0)]
+    [Arguments("1", 1, false, 1.0)]
+    [Arguments("1", 0, false, 0.1)]
+    [Arguments("1", -1, false, 0.01)]
+    [Arguments("5", 1, false, 5.0)]
+    [Arguments("123456789", 9, false, 123456789.0)]
     public void NumberToDouble_ValidBuffer_RoundtripsExactly(string digits, int scale, bool negative, double expected)
     {
         byte* pDigits = stackalloc byte[Number.DoubleNumberBufferLength];
@@ -403,11 +403,11 @@ public unsafe class NumberFormattingTests
         Number.NumberToDouble(ref number).Should().Be(expected);
     }
 
-    [Theory]
-    [InlineData("", 0, false, 0.0)]
-    [InlineData("1", -400, false, 0.0)]
-    [InlineData("1", 400, false, double.PositiveInfinity)]
-    [InlineData("1", 400, true, double.NegativeInfinity)]
+    [Test]
+    [Arguments("", 0, false, 0.0)]
+    [Arguments("1", -400, false, 0.0)]
+    [Arguments("1", 400, false, double.PositiveInfinity)]
+    [Arguments("1", 400, true, double.NegativeInfinity)]
     public void NumberToDouble_OutOfRange_ReturnsExpected(string digits, int scale, bool negative, double expected)
     {
         byte* pDigits = stackalloc byte[Number.DoubleNumberBufferLength];
@@ -425,14 +425,14 @@ public unsafe class NumberFormattingTests
         }
     }
 
-    [Theory]
-    [InlineData("12345", 5, false, 12345.0f)]
-    [InlineData("1", 1, false, 1.0f)]
-    [InlineData("5", 1, true, -5.0f)]
-    [InlineData("", 0, false, 0.0f)]
-    [InlineData("1", -50, false, 0.0f)]
-    [InlineData("1", 50, false, float.PositiveInfinity)]
-    [InlineData("1", 50, true, float.NegativeInfinity)]
+    [Test]
+    [Arguments("12345", 5, false, 12345.0f)]
+    [Arguments("1", 1, false, 1.0f)]
+    [Arguments("5", 1, true, -5.0f)]
+    [Arguments("", 0, false, 0.0f)]
+    [Arguments("1", -50, false, 0.0f)]
+    [Arguments("1", 50, false, float.PositiveInfinity)]
+    [Arguments("1", 50, true, float.NegativeInfinity)]
     public void NumberToSingle_ValidBuffer_RoundtripsExpected(string digits, int scale, bool negative, float expected)
     {
         byte* pDigits = stackalloc byte[Number.SingleNumberBufferLength];
@@ -442,7 +442,7 @@ public unsafe class NumberFormattingTests
         Number.NumberToSingle(ref number).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void NumberToDouble_LargeMantissa_RoundtripsExactly()
     {
         // Use a mantissa long enough to exercise the slow BigInteger path in
@@ -454,7 +454,7 @@ public unsafe class NumberFormattingTests
         Number.NumberToDouble(ref number).Should().Be(1.0000000000000000000005e22);
     }
 
-    [Fact]
+    [Test]
     public void NumberToDouble_SubnormalRange_ProducesSubnormal()
     {
         byte* pDigits = stackalloc byte[Number.DoubleNumberBufferLength];
@@ -466,7 +466,7 @@ public unsafe class NumberFormattingTests
         result.Should().BeLessThan(double.Epsilon * 1e10);
     }
 
-    [Fact]
+    [Test]
     public void NumberBuffer_ToString_ReturnsDebugRepresentation()
     {
         byte* pDigits = stackalloc byte[Number.DoubleNumberBufferLength];
@@ -480,7 +480,7 @@ public unsafe class NumberFormattingTests
         description.Should().Contain("FloatingPoint");
     }
 
-    [Fact]
+    [Test]
     public void NumberBuffer_GetDigitsPointer_ReturnsValidPointer()
     {
         byte* pDigits = stackalloc byte[Number.DoubleNumberBufferLength];
@@ -491,7 +491,7 @@ public unsafe class NumberFormattingTests
         (*digitsPointer).Should().Be((byte)'\0');
     }
 
-    [Fact]
+    [Test]
     public void FormatDouble_TooSmallBuffer_StillProducesString()
     {
         // A 16-char buffer can't hold the full G17 representation of MinValue,
@@ -508,15 +508,15 @@ public unsafe class NumberFormattingTests
         }
     }
 
-    [Theory]
-    [InlineData(123.45, "123.45")]
-    [InlineData(0.0001, "0.0001")]
+    [Test]
+    [Arguments(123.45, "123.45")]
+    [Arguments(0.0001, "0.0001")]
     public void FormatDouble_GeneralSpecifier_HandlesExponentSwitch(double value, string expected)
     {
         FormatDouble(value, "G").Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void FormatDouble_GeneralSpecifier_RoundtripsPreservedForFiniteValues()
     {
         double[] values = [1.0, -1.0, 123.456, 1e100, 1e-100, double.MaxValue, double.MinValue];
@@ -528,7 +528,7 @@ public unsafe class NumberFormattingTests
         }
     }
 
-    [Fact]
+    [Test]
     public void FormatDouble_NegativeZero_ProducesOutput()
     {
         // Modern .NET preserves the sign on -0.0; net481's BCL does not, but the
@@ -555,16 +555,16 @@ public unsafe class NumberFormattingTests
 
     // ---- TryFormatUInt32 / TryFormatUInt64 standard formats ----
 
-    [Theory]
-    [InlineData(1234U, "N0", "1,234")]
-    [InlineData(0U, "N", "0.00")]
-    [InlineData(uint.MaxValue, "N0", "4,294,967,295")]
-    [InlineData(1234U, "F2", "1234.00")]
-    [InlineData(1234U, "C", "\u00A41,234.00")]
-    [InlineData(255U, "X8", "000000FF")]
-    [InlineData(255U, "x4", "00ff")]
-    [InlineData(1234U, "G", "1234")]
-    [InlineData(1234U, "D6", "001234")]
+    [Test]
+    [Arguments(1234U, "N0", "1,234")]
+    [Arguments(0U, "N", "0.00")]
+    [Arguments(uint.MaxValue, "N0", "4,294,967,295")]
+    [Arguments(1234U, "F2", "1234.00")]
+    [Arguments(1234U, "C", "\u00A41,234.00")]
+    [Arguments(255U, "X8", "000000FF")]
+    [Arguments(255U, "x4", "00ff")]
+    [Arguments(1234U, "G", "1234")]
+    [Arguments(1234U, "D6", "001234")]
     public void TryFormatUInt32_StandardFormats(uint value, string format, string expected)
     {
         Span<char> destination = stackalloc char[32];
@@ -572,16 +572,16 @@ public unsafe class NumberFormattingTests
         destination[..written].ToString().Should().Be(expected);
     }
 
-    [Theory]
-    [InlineData(1234UL, "N0", "1,234")]
-    [InlineData(0UL, "N", "0.00")]
-    [InlineData(ulong.MaxValue, "N0", "18,446,744,073,709,551,615")]
-    [InlineData(1234UL, "F2", "1234.00")]
-    [InlineData(1234UL, "C", "\u00A41,234.00")]
-    [InlineData(255UL, "X8", "000000FF")]
-    [InlineData(255UL, "x4", "00ff")]
-    [InlineData(1234UL, "G", "1234")]
-    [InlineData(1234UL, "D6", "001234")]
+    [Test]
+    [Arguments(1234UL, "N0", "1,234")]
+    [Arguments(0UL, "N", "0.00")]
+    [Arguments(ulong.MaxValue, "N0", "18,446,744,073,709,551,615")]
+    [Arguments(1234UL, "F2", "1234.00")]
+    [Arguments(1234UL, "C", "\u00A41,234.00")]
+    [Arguments(255UL, "X8", "000000FF")]
+    [Arguments(255UL, "x4", "00ff")]
+    [Arguments(1234UL, "G", "1234")]
+    [Arguments(1234UL, "D6", "001234")]
     public void TryFormatUInt64_StandardFormats(ulong value, string format, string expected)
     {
         Span<char> destination = stackalloc char[32];
@@ -589,9 +589,9 @@ public unsafe class NumberFormattingTests
         destination[..written].ToString().Should().Be(expected);
     }
 
-    [Theory]
-    [InlineData(1234U, "##,#", "1,234")]
-    [InlineData(1234U, "0.00", "1234.00")]
+    [Test]
+    [Arguments(1234U, "##,#", "1,234")]
+    [Arguments(1234U, "0.00", "1234.00")]
     public void TryFormatUInt32_CustomFormat(uint value, string format, string expected)
     {
         Span<char> destination = stackalloc char[32];
@@ -599,9 +599,9 @@ public unsafe class NumberFormattingTests
         destination[..written].ToString().Should().Be(expected);
     }
 
-    [Theory]
-    [InlineData(1234UL, "##,#", "1,234")]
-    [InlineData(1234UL, "0.00", "1234.00")]
+    [Test]
+    [Arguments(1234UL, "##,#", "1,234")]
+    [Arguments(1234UL, "0.00", "1234.00")]
     public void TryFormatUInt64_CustomFormat(ulong value, string format, string expected)
     {
         Span<char> destination = stackalloc char[32];

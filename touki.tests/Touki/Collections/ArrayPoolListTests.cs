@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -6,7 +6,7 @@ namespace Touki.Collections;
 
 public class ArrayPoolListTests
 {
-    [Fact]
+    [Test]
     public void Constructor_DefaultCapacity_InitializesCorrectly()
     {
         using ArrayPoolList<int> list = [];
@@ -16,7 +16,7 @@ public class ArrayPoolListTests
         list.IsReadOnly.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Constructor_CustomCapacity_InitializesCorrectly()
     {
         using ArrayPoolList<int> list = new(minimumCapacity: 100);
@@ -25,14 +25,14 @@ public class ArrayPoolListTests
         list.Empty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Constructor_NegativeCapacity_ThrowsArgumentOutOfRangeException()
     {
         Action act = () => new ArrayPoolList<int>(-1);
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Add_SingleItem_IncrementsCount()
     {
         using ArrayPoolList<int> list = [42];
@@ -42,7 +42,7 @@ public class ArrayPoolListTests
         list.Empty.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Add_MultipleItems_IncrementsCount()
     {
         using ArrayPoolList<int> list = [];
@@ -59,7 +59,7 @@ public class ArrayPoolListTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Indexer_GetWithInvalidIndex_ThrowsArgumentOutOfRangeException()
     {
         using ArrayPoolList<int> list = [42];
@@ -71,7 +71,7 @@ public class ArrayPoolListTests
         actTooLarge.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Indexer_SetWithInvalidIndex_ThrowsArgumentOutOfRangeException()
     {
         using ArrayPoolList<int> list = [42];
@@ -83,7 +83,7 @@ public class ArrayPoolListTests
         actTooLarge.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Indexer_SetWithValidIndex_UpdatesItem()
     {
         using ArrayPoolList<int> list = [42];
@@ -92,7 +92,7 @@ public class ArrayPoolListTests
         list[0].Should().Be(100);
     }
 
-    [Fact]
+    [Test]
     public void Insert_AtBeginning_ShiftsItems()
     {
         using ArrayPoolList<int> list = [2, 3];
@@ -104,7 +104,7 @@ public class ArrayPoolListTests
         list[2].Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Insert_AtMiddle_ShiftsItems()
     {
         using ArrayPoolList<int> list = [1, 3];
@@ -116,7 +116,7 @@ public class ArrayPoolListTests
         list[2].Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Insert_AtEnd_AppendsList()
     {
         using ArrayPoolList<int> list = [1, 2];
@@ -128,7 +128,7 @@ public class ArrayPoolListTests
         list[2].Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Insert_WithInvalidIndex_ThrowsArgumentOutOfRangeException()
     {
         using ArrayPoolList<int> list = [1];
@@ -140,7 +140,7 @@ public class ArrayPoolListTests
         actTooLarge.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void RemoveAt_ValidIndex_RemovesItem()
     {
         using ArrayPoolList<int> list = [1, 2, 3];
@@ -152,7 +152,7 @@ public class ArrayPoolListTests
         list[1].Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void RemoveAt_InvalidIndex_ThrowsArgumentOutOfRangeException()
     {
         using ArrayPoolList<int> list = [1];
@@ -164,7 +164,7 @@ public class ArrayPoolListTests
         actTooLarge.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Remove_ExistingItem_RemovesAndReturnsTrue()
     {
         using ArrayPoolList<int> list = [1, 2, 3];
@@ -177,7 +177,7 @@ public class ArrayPoolListTests
         list[1].Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Remove_NonExistingItem_ReturnsFalse()
     {
         using ArrayPoolList<int> list = [1, 3];
@@ -188,35 +188,35 @@ public class ArrayPoolListTests
         list.Count.Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void Contains_ExistingItem_ReturnsTrue()
     {
         using ArrayPoolList<int> list = [1, 2, 3];
         list.Should().Contain(2);
     }
 
-    [Fact]
+    [Test]
     public void Contains_NonExistingItem_ReturnsFalse()
     {
         using ArrayPoolList<int> list = [1, 3];
         list.Should().NotContain(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOf_ExistingItem_ReturnsCorrectIndex()
     {
         using ArrayPoolList<int> list = [1, 2, 3];
         list.IndexOf(2).Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOf_NonExistingItem_ReturnsNegativeOne()
     {
         using ArrayPoolList<int> list = [1, 3];
         list.IndexOf(2).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void Clear_RemovesAllItems()
     {
         using ArrayPoolList<int> list = [1, 2, 3];
@@ -227,7 +227,7 @@ public class ArrayPoolListTests
         list.Empty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_CopiesAllElements()
     {
         using ArrayPoolList<int> list = [1, 2, 3];
@@ -242,7 +242,7 @@ public class ArrayPoolListTests
         array[4].Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_WithNullArray_ThrowsArgumentNullException()
     {
         using ArrayPoolList<int> list = [1];
@@ -250,7 +250,7 @@ public class ArrayPoolListTests
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_WithNegativeIndex_ThrowsArgumentOutOfRangeException()
     {
         using ArrayPoolList<int> list = [1];
@@ -260,7 +260,7 @@ public class ArrayPoolListTests
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_WithInsufficientSpace_ThrowsArgumentException()
     {
         using ArrayPoolList<int> list = [1, 2];
@@ -270,7 +270,7 @@ public class ArrayPoolListTests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Test]
     public void Enumeration_WorksCorrectly()
     {
         using ArrayPoolList<int> list = [1, 2, 3];
@@ -285,7 +285,7 @@ public class ArrayPoolListTests
         index.Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void EnsureCapacity_NegativeOrZeroCapacity_ThrowsArgumentOutOfRangeException()
     {
         using ArrayPoolList<int> list = [];
@@ -297,7 +297,7 @@ public class ArrayPoolListTests
         actZero.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void EnsureCapacity_GrowsCapacity()
     {
         using ArrayPoolList<int> list = new(10);
@@ -312,7 +312,7 @@ public class ArrayPoolListTests
         list.Count.Should().Be(11);
     }
 
-    [Fact]
+    [Test]
     public void Dispose_CleansUpResources()
     {
         ArrayPoolList<int> list = [1, 2];
@@ -323,7 +323,7 @@ public class ArrayPoolListTests
         array.Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void Enumerator_Reset_StartsFromBeginning()
     {
         using ArrayPoolList<int> list = [1, 2];
@@ -337,7 +337,7 @@ public class ArrayPoolListTests
         enumerator.Current.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Enumerator_MovePastEnd_ReturnsFalse()
     {
         using ArrayPoolList<int> list = [1];
@@ -347,7 +347,7 @@ public class ArrayPoolListTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void ArrayPoolList_WithReferenceType_HandlesCorrectly()
     {
         using ArrayPoolList<string> list = ["one", "two", "three"];

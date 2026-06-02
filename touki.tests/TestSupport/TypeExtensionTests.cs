@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -14,7 +14,7 @@ namespace TestSupport;
 
 public class TypeExtensionTests
 {
-    [Fact]
+    [Test]
     public void GetFullNestedType_NonGenericNested_ReturnsNestedType()
     {
         Type parentType = typeof(OuterClass);
@@ -22,7 +22,7 @@ public class TypeExtensionTests
         nestedType.Should().Be<OuterClass.NonGenericNested>();
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_GenericNestedWithParentGenerics_ReturnsConstructedNestedType()
     {
         Type parentType = typeof(OuterClass<int, string>);
@@ -30,7 +30,7 @@ public class TypeExtensionTests
         nestedType.Should().Be<OuterClass<int, string>.GenericNested<double>>();
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_GenericNestedWithNonGenericParent_ReturnsConstructedNestedType()
     {
         Type parentType = typeof(OuterClass);
@@ -38,7 +38,7 @@ public class TypeExtensionTests
         nestedType.Should().Be<OuterClass.GenericNested<double>>();
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_GenericNestedWithMultipleParameters_ReturnsConstructedNestedType()
     {
         Type parentType = typeof(OuterClass);
@@ -46,7 +46,7 @@ public class TypeExtensionTests
         nestedType.Should().Be<OuterClass.MultiGenericNested<int, string>>();
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_NonGenericNestedInGenericParent_ReturnsNestedType()
     {
         Type parentType = typeof(OuterClass<int, string>);
@@ -54,7 +54,7 @@ public class TypeExtensionTests
         nestedType.Should().Be<OuterClass<int, string>.NonGenericNested>();
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_GenericNestedInheritingParentGenerics_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass<int, string>);
@@ -63,7 +63,7 @@ public class TypeExtensionTests
             .WithMessage("Could not find NestedInheritsParentGenerics in OuterClass`2");
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_NonExistentNestedType_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass);
@@ -72,7 +72,7 @@ public class TypeExtensionTests
             .WithMessage("Could not find NonExistentType in OuterClass");
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_GenericNestedWithoutParameters_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass);
@@ -81,7 +81,7 @@ public class TypeExtensionTests
             .WithMessage("Could not find GenericNested in OuterClass");
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_GenericNestedWithoutExplicitParameters_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClassWithInheritedGenerics<int, string>);
@@ -90,7 +90,7 @@ public class TypeExtensionTests
             .WithMessage("Could not find GenericNested in OuterClassWithInheritedGenerics`2");
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_GenericParentDefinition_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass<,>);
@@ -100,7 +100,7 @@ public class TypeExtensionTests
             .WithParameterName("type");
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_WrongGenericParameterCount_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass<int, string>);
@@ -109,7 +109,7 @@ public class TypeExtensionTests
             .WithMessage("Could not find GenericNested in OuterClass`2");
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_TooFewGenericParameters_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass<int, string>);
@@ -118,7 +118,7 @@ public class TypeExtensionTests
             .WithMessage("Could not find GenericNested in OuterClass`2");
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_TooFewGenericParametersForNonGenericParent_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass);
@@ -126,7 +126,7 @@ public class TypeExtensionTests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_TooManyGenericParametersForNonGenericParent_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass);
@@ -134,7 +134,7 @@ public class TypeExtensionTests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_EmptyNestedTypeName_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass);
@@ -143,7 +143,7 @@ public class TypeExtensionTests
             .WithMessage("Could not find  in OuterClass");
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_PublicNestedType_ReturnsNestedType()
     {
         Type parentType = typeof(OuterClass);
@@ -151,7 +151,7 @@ public class TypeExtensionTests
         nestedType.Should().Be<OuterClass.PublicNested>();
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_PrivateNestedType_ReturnsNestedType()
     {
         Type parentType = typeof(OuterClass);
@@ -160,7 +160,7 @@ public class TypeExtensionTests
         nestedType.Name.Should().Be("PrivateNested");
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_ComplexGenericCombination_ReturnsConstructedNestedType()
     {
         Type parentType = typeof(OuterClass<List<int>, Dictionary<string, double>>);
@@ -172,7 +172,7 @@ public class TypeExtensionTests
         nestedType.GenericTypeArguments[2].Should().Be<HashSet<bool>>();
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_NestedGenericDefinitionRequiresParameter_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass);
@@ -182,7 +182,7 @@ public class TypeExtensionTests
             .WithMessage("Could not find DeeplyNested in GenericNested`1");
     }
 
-    [Fact]
+    [Test]
     public void GetFullNestedType_ParameterCountMismatchWithParentGenerics_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClassWithInheritedGenerics<int, string>);

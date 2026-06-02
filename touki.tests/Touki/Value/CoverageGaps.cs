@@ -9,7 +9,7 @@ namespace Touki;
 public class CoverageGaps
 {
     // Exercises the explicit conversion operator `(double?)value`.
-    [Fact]
+    [Test]
     public void ExplicitOperator_NullableDouble_RoundTrips()
     {
         Value value = 3.14;
@@ -18,29 +18,29 @@ public class CoverageGaps
     }
 
     // Exercises the explicit conversion operator `(ArraySegment<byte>)value`.
-    [Fact]
+    [Test]
     public void ExplicitOperator_ArraySegmentByte_RoundTrips()
     {
         byte[] array = [1, 2, 3, 4];
         ArraySegment<byte> segment = new(array, 1, 2);
         Value value = segment;
         ArraySegment<byte> result = (ArraySegment<byte>)value;
-        Assert.Equal(segment, result);
+        result.Should().Equal(segment);
     }
 
     // Exercises the explicit conversion operator `(ArraySegment<char>)value`.
-    [Fact]
+    [Test]
     public void ExplicitOperator_ArraySegmentChar_RoundTrips()
     {
         char[] array = ['a', 'b', 'c', 'd'];
         ArraySegment<char> segment = new(array, 1, 2);
         Value value = segment;
         ArraySegment<char> result = (ArraySegment<char>)value;
-        Assert.Equal(segment, result);
+        result.Should().Equal(segment);
     }
 
     // Storing a default(ArraySegment<char>) (null Array) should throw ArgumentNullException.
-    [Fact]
+    [Test]
     public void Value_FromDefaultArraySegmentChar_Throws()
     {
         ArraySegment<char> segment = default;
@@ -50,7 +50,7 @@ public class CoverageGaps
 
     // As<string>() on a stored string should return the string (covers
     // TryGetObjectSlow's success branch for string).
-    [Fact]
+    [Test]
     public void As_String_FromStoredString_ReturnsString()
     {
         Value value = "hello";
@@ -58,7 +58,7 @@ public class CoverageGaps
     }
 
     // As<string>() on a stored non-string value type should fail.
-    [Fact]
+    [Test]
     public void As_String_FromStoredByte_ThrowsInvalidCast()
     {
         Value value = (byte)5;
@@ -67,7 +67,7 @@ public class CoverageGaps
     }
 
     // As<string>() on a stored StringSegment (string + non-zero union) should fail.
-    [Fact]
+    [Test]
     public void As_String_FromStringSegment_ThrowsInvalidCast()
     {
         StringSegment segment = new("hello world", 6, 5);
@@ -78,7 +78,7 @@ public class CoverageGaps
 
     // TryGetValue<T> for a value type that doesn't match anything stored
     // should return false (covers the outermost else in TryGetValueSlow).
-    [Fact]
+    [Test]
     public void TryGetValue_UnmatchedValueType_ReturnsFalse()
     {
         Value value = 42;
@@ -87,7 +87,7 @@ public class CoverageGaps
 
     // As<StringSegment>() when the stored value isn't a string should fail
     // (covers the inner else that sets value = default!).
-    [Fact]
+    [Test]
     public void TryGetValue_StringSegment_FromNonString_ReturnsFalse()
     {
         Value value = (byte)5;
@@ -102,7 +102,7 @@ public class CoverageGaps
         Max = long.MaxValue
     }
 
-    [Fact]
+    [Test]
     public void TryGetValue_NullableLongEnum_RoundTrips()
     {
         Value value = Value.Create(LongEnum.Max);
@@ -112,7 +112,7 @@ public class CoverageGaps
 
     // Format paths for primitive TypeFlag values that don't hit the inlined
     // fast path: char, byte, sbyte, short, ushort, DateTimeOffset.
-    [Fact]
+    [Test]
     public void Format_Char_WritesValue()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -127,7 +127,7 @@ public class CoverageGaps
         }
     }
 
-    [Fact]
+    [Test]
     public void Format_Byte_WritesValue()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -142,7 +142,7 @@ public class CoverageGaps
         }
     }
 
-    [Fact]
+    [Test]
     public void Format_SByte_WritesValue()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -157,7 +157,7 @@ public class CoverageGaps
         }
     }
 
-    [Fact]
+    [Test]
     public void Format_Short_WritesValue()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -172,7 +172,7 @@ public class CoverageGaps
         }
     }
 
-    [Fact]
+    [Test]
     public void Format_UShort_WritesValue()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -187,7 +187,7 @@ public class CoverageGaps
         }
     }
 
-    [Fact]
+    [Test]
     public void Format_DateTimeOffset_WritesValue()
     {
         DateTimeOffset dto = new(2025, 1, 2, 3, 4, 5, TimeSpan.FromHours(5));
@@ -204,7 +204,7 @@ public class CoverageGaps
     }
 
     // Format path for a Value containing a non-full StringSegment (string + non-zero union).
-    [Fact]
+    [Test]
     public void Format_StringSegment_WritesSegmentText()
     {
         StringSegment segment = new("hello world", 6, 5);
@@ -223,7 +223,7 @@ public class CoverageGaps
 
     // A DateTimeOffset whose offset is not a 30-minute multiple cannot fit in
     // PackedDateTimeOffset and falls through to the boxing path.
-    [Fact]
+    [Test]
     public void Value_DateTimeOffset_UnpackableOffset_FallsBackToBoxing()
     {
         // UTC+5:45 (Nepal) is 345 minutes, not a multiple of 30.

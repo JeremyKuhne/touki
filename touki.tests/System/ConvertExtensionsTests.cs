@@ -6,20 +6,20 @@ namespace Touki;
 
 public class ConvertExtensionsTests
 {
-    [Fact]
+    [Test]
     public void ToHexString_Empty_ReturnsEmpty()
     {
         Convert.ToHexString([]).Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void ToHexString_Bytes_Uppercase()
     {
         ReadOnlySpan<byte> bytes = [0x00, 0x0F, 0x10, 0xFF, 0xAB, 0xCD];
         Convert.ToHexString(bytes).Should().Be("000F10FFABCD");
     }
 
-    [Fact]
+    [Test]
     public void ToHexString_AllByteValues_RoundTrip()
     {
         byte[] all = new byte[256];
@@ -34,40 +34,40 @@ public class ConvertExtensionsTests
         back.Should().Equal(all);
     }
 
-    [Fact]
+    [Test]
     public void ToHexString_Array_OffsetLength()
     {
         byte[] bytes = [0xAA, 0x01, 0x02, 0xBB];
         Convert.ToHexString(bytes, 1, 2).Should().Be("0102");
     }
 
-    [Fact]
+    [Test]
     public void FromHexString_Empty_ReturnsEmptyArray()
     {
         Convert.FromHexString(ReadOnlySpan<char>.Empty).Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void FromHexString_MixedCase_Decodes()
     {
         Convert.FromHexString("aBcDeF01".AsSpan()).Should().Equal([0xAB, 0xCD, 0xEF, 0x01]);
     }
 
-    [Fact]
+    [Test]
     public void FromHexString_OddLength_Throws()
     {
         Action a = () => Convert.FromHexString("abc".AsSpan());
         a.Should().Throw<FormatException>();
     }
 
-    [Fact]
+    [Test]
     public void FromHexString_InvalidChar_Throws()
     {
         Action a = () => Convert.FromHexString("zz".AsSpan());
         a.Should().Throw<FormatException>();
     }
 
-    [Fact]
+    [Test]
     public void FromHexString_String_Decodes()
     {
         Convert.FromHexString("DEADBEEF").Should().Equal([0xDE, 0xAD, 0xBE, 0xEF]);

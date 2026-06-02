@@ -28,32 +28,32 @@ public class SequentialSeparatorPosixPathOracleTests
     private static bool ToukiMatches(string pattern, string input) =>
         GlobSpecification.Compile(pattern, GlobDialect.PosixPath).IsMatch(input);
 
-    [Theory]
-    [InlineData("a//b", "a/b")]
-    [InlineData("a//b", "a//b")]
-    [InlineData("a//b", "a///b")]
-    [InlineData("a//b", "ab")]
-    [InlineData("a//b", "a/x/b")]
-    [InlineData("a///b", "a/b")]
-    [InlineData("a///b", "a//b")]
-    [InlineData("a///b", "a///b")]
-    [InlineData("a////b", "a///b")]
-    [InlineData("//a", "/a")]
-    [InlineData("//a", "//a")]
-    [InlineData("//a", "a")]
-    [InlineData("a//", "a/")]
-    [InlineData("a//", "a//")]
-    [InlineData("a//", "a")]
-    [InlineData("a//*", "a/b")]
-    [InlineData("a//*", "a//b")]
-    [InlineData("*//b", "a/b")]
-    [InlineData("*//b", "a//b")]
-    [InlineData("*//b", "//b")]
+    [Test]
+    [Arguments("a//b", "a/b")]
+    [Arguments("a//b", "a//b")]
+    [Arguments("a//b", "a///b")]
+    [Arguments("a//b", "ab")]
+    [Arguments("a//b", "a/x/b")]
+    [Arguments("a///b", "a/b")]
+    [Arguments("a///b", "a//b")]
+    [Arguments("a///b", "a///b")]
+    [Arguments("a////b", "a///b")]
+    [Arguments("//a", "/a")]
+    [Arguments("//a", "//a")]
+    [Arguments("//a", "a")]
+    [Arguments("a//", "a/")]
+    [Arguments("a//", "a//")]
+    [Arguments("a//", "a")]
+    [Arguments("a//*", "a/b")]
+    [Arguments("a//*", "a//b")]
+    [Arguments("*//b", "a/b")]
+    [Arguments("*//b", "a//b")]
+    [Arguments("*//b", "//b")]
     public void IsMatch_PosixPathDialect_SequentialSeparators_AgreesWithFnmatchPathname(string pattern, string input)
     {
         if (!FnmatchInterop.IsSupported)
         {
-            Assert.Skip("fnmatch(3) oracle requires Linux or macOS.");
+            Skip.Test("fnmatch(3) oracle requires Linux or macOS.");
             return;
         }
 

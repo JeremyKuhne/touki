@@ -6,29 +6,29 @@ namespace Touki;
 
 public class StoringUShort
 {
-    public static TheoryData<ushort> UShortData => new()
+    public static IEnumerable<ushort> UShortData()
     {
-        { 42 },
-        { ushort.MaxValue },
-        { ushort.MinValue }
-    };
+        yield return 42;
+        yield return ushort.MaxValue;
+        yield return ushort.MinValue;
+    }
 
-    [Theory]
-    [MemberData(nameof(UShortData))]
+    [Test]
+    [MethodDataSource(nameof(UShortData))]
     public void UShortImplicit(ushort @ushort)
     {
         Value value = @ushort;
-        Assert.Equal(@ushort, value.As<ushort>());
-        Assert.Equal(typeof(ushort), value.Type);
+        value.As<ushort>().Should().Be(@ushort);
+        value.Type.Should().Be(typeof(ushort));
 
         ushort? source = @ushort;
         value = source;
-        Assert.Equal(source, value.As<ushort?>());
-        Assert.Equal(typeof(ushort), value.Type);
+        value.As<ushort?>().Should().Be(source);
+        value.Type.Should().Be(typeof(ushort));
     }
 
-    [Theory]
-    [MemberData(nameof(UShortData))]
+    [Test]
+    [MethodDataSource(nameof(UShortData))]
     public void UShortCreate(ushort @ushort)
     {
         Value value;
@@ -37,8 +37,8 @@ public class StoringUShort
             value = Value.Create(@ushort);
         }
 
-        Assert.Equal(@ushort, value.As<ushort>());
-        Assert.Equal(typeof(ushort), value.Type);
+        value.As<ushort>().Should().Be(@ushort);
+        value.Type.Should().Be(typeof(ushort));
 
         ushort? source = @ushort;
 
@@ -47,101 +47,101 @@ public class StoringUShort
             value = Value.Create(source);
         }
 
-        Assert.Equal(source, value.As<ushort?>());
-        Assert.Equal(typeof(ushort), value.Type);
+        value.As<ushort?>().Should().Be(source);
+        value.Type.Should().Be(typeof(ushort));
     }
 
-    [Theory]
-    [MemberData(nameof(UShortData))]
+    [Test]
+    [MethodDataSource(nameof(UShortData))]
     public void UShortInOut(ushort @ushort)
     {
         Value value = @ushort;
         bool success = value.TryGetValue(out ushort result);
-        Assert.True(success);
-        Assert.Equal(@ushort, result);
+        success.Should().BeTrue();
+        result.Should().Be(@ushort);
 
-        Assert.Equal(@ushort, value.As<ushort>());
-        Assert.Equal(@ushort, (ushort)value);
+        value.As<ushort>().Should().Be(@ushort);
+        ((ushort)value).Should().Be(@ushort);
     }
 
-    [Theory]
-    [MemberData(nameof(UShortData))]
+    [Test]
+    [MethodDataSource(nameof(UShortData))]
     public void NullableUShortInUShortOut(ushort @ushort)
     {
         ushort? source = @ushort;
         Value value = source;
 
         bool success = value.TryGetValue(out ushort result);
-        Assert.True(success);
-        Assert.Equal(@ushort, result);
+        success.Should().BeTrue();
+        result.Should().Be(@ushort);
 
-        Assert.Equal(@ushort, value.As<ushort>());
+        value.As<ushort>().Should().Be(@ushort);
 
-        Assert.Equal(@ushort, (ushort)value);
+        ((ushort)value).Should().Be(@ushort);
     }
 
-    [Theory]
-    [MemberData(nameof(UShortData))]
+    [Test]
+    [MethodDataSource(nameof(UShortData))]
     public void UShortInNullableUShortOut(ushort @ushort)
     {
         ushort source = @ushort;
         Value value = source;
         bool success = value.TryGetValue(out ushort? result);
-        Assert.True(success);
-        Assert.Equal(@ushort, result);
+        success.Should().BeTrue();
+        result.Should().Be(@ushort);
 
-        Assert.Equal(@ushort, (ushort?)value);
+        ((ushort?)value).Should().Be(@ushort);
     }
 
-    [Theory]
-    [MemberData(nameof(UShortData))]
+    [Test]
+    [MethodDataSource(nameof(UShortData))]
     public void BoxedUShort(ushort @ushort)
     {
         ushort i = @ushort;
         object o = i;
         Value value = Value.Create(o);
 
-        Assert.Equal(typeof(ushort), value.Type);
-        Assert.True(value.TryGetValue(out ushort result));
-        Assert.Equal(@ushort, result);
-        Assert.True(value.TryGetValue(out ushort? nullableResult));
-        Assert.Equal(@ushort, nullableResult!.Value);
+        value.Type.Should().Be(typeof(ushort));
+        value.TryGetValue(out ushort result).Should().BeTrue();
+        result.Should().Be(@ushort);
+        value.TryGetValue(out ushort? nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@ushort);
 
 
         ushort? n = @ushort;
         o = n;
         value = Value.Create(o);
 
-        Assert.Equal(typeof(ushort), value.Type);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@ushort, result);
-        Assert.True(value.TryGetValue(out nullableResult));
-        Assert.Equal(@ushort, nullableResult!.Value);
+        value.Type.Should().Be(typeof(ushort));
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@ushort);
+        value.TryGetValue(out nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@ushort);
     }
 
-    [Fact]
+    [Test]
     public void NullUShort()
     {
         ushort? source = null;
         Value value = source;
-        Assert.Null(value.Type);
-        Assert.Equal(source, value.As<ushort?>());
-        Assert.False(value.As<ushort?>().HasValue);
+        value.Type.Should().BeNull();
+        value.As<ushort?>().Should().Be(source);
+        value.As<ushort?>().HasValue.Should().BeFalse();
     }
 
-    [Theory]
-    [MemberData(nameof(UShortData))]
+    [Test]
+    [MethodDataSource(nameof(UShortData))]
     public void OutAsObject(ushort @ushort)
     {
         Value value = @ushort;
         object o = value.As<object>();
-        Assert.Equal(typeof(ushort), o.GetType());
-        Assert.Equal(@ushort, (ushort)o);
+        o.GetType().Should().Be(typeof(ushort));
+        ((ushort)o).Should().Be(@ushort);
 
         ushort? n = @ushort;
         value = n;
         o = value.As<object>();
-        Assert.Equal(typeof(ushort), o.GetType());
-        Assert.Equal(@ushort, (ushort)o);
+        o.GetType().Should().Be(typeof(ushort));
+        ((ushort)o).Should().Be(@ushort);
     }
 }

@@ -13,67 +13,67 @@ namespace Touki;
 /// </summary>
 public class AsciiTests
 {
-    [Fact]
+    [Test]
     public void EqualsIgnoreCase_BothEmpty_ReturnsTrue()
     {
         Ascii.EqualsIgnoreCase(ReadOnlySpan<char>.Empty, ReadOnlySpan<char>.Empty).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void EqualsIgnoreCase_LengthMismatch_ReturnsFalse()
     {
         Ascii.EqualsIgnoreCase("abc".AsSpan(), "ab".AsSpan()).Should().BeFalse();
         Ascii.EqualsIgnoreCase("ab".AsSpan(), "abc".AsSpan()).Should().BeFalse();
     }
 
-    [Theory]
-    [InlineData("abc", "abc")]
-    [InlineData("ABC", "ABC")]
-    [InlineData("Hello, World!", "Hello, World!")]
-    [InlineData("0123456789", "0123456789")]
+    [Test]
+    [Arguments("abc", "abc")]
+    [Arguments("ABC", "ABC")]
+    [Arguments("Hello, World!", "Hello, World!")]
+    [Arguments("0123456789", "0123456789")]
     public void EqualsIgnoreCase_EqualAscii_ReturnsTrue(string left, string right)
     {
         Ascii.EqualsIgnoreCase(left.AsSpan(), right.AsSpan()).Should().BeTrue();
     }
 
-    [Theory]
-    [InlineData("abc", "ABC")]
-    [InlineData("ABC", "abc")]
-    [InlineData("Hello, World!", "HELLO, WORLD!")]
-    [InlineData("MixedCase", "mIXEDcASE")]
-    [InlineData("a", "A")]
-    [InlineData("z", "Z")]
+    [Test]
+    [Arguments("abc", "ABC")]
+    [Arguments("ABC", "abc")]
+    [Arguments("Hello, World!", "HELLO, WORLD!")]
+    [Arguments("MixedCase", "mIXEDcASE")]
+    [Arguments("a", "A")]
+    [Arguments("z", "Z")]
     public void EqualsIgnoreCase_CaseFoldedAscii_ReturnsTrue(string left, string right)
     {
         Ascii.EqualsIgnoreCase(left.AsSpan(), right.AsSpan()).Should().BeTrue();
     }
 
-    [Theory]
-    [InlineData("abc", "abd")]
-    [InlineData("abc", "xyz")]
-    [InlineData("0", "1")]
-    [InlineData("hello!", "hello?")]
+    [Test]
+    [Arguments("abc", "abd")]
+    [Arguments("abc", "xyz")]
+    [Arguments("0", "1")]
+    [Arguments("hello!", "hello?")]
     public void EqualsIgnoreCase_DifferentAscii_ReturnsFalse(string left, string right)
     {
         Ascii.EqualsIgnoreCase(left.AsSpan(), right.AsSpan()).Should().BeFalse();
     }
 
-    [Theory]
+    [Test]
     // ASCII letter pairs differ by bit 5 BUT do not fold to a letter.
     // '[' (0x5B) | 0x20 == '{' (0x7B); '@' (0x40) | 0x20 == '`' (0x60).
-    [InlineData("[", "{")]
-    [InlineData("@", "`")]
+    [Arguments("[", "{")]
+    [Arguments("@", "`")]
     public void EqualsIgnoreCase_NonLetterAsciiOnly_Bit5DifferenceDoesNotMatch(string left, string right)
     {
         // Only ASCII letters fold; bit-5 differences elsewhere must not compare equal.
         Ascii.EqualsIgnoreCase(left.AsSpan(), right.AsSpan()).Should().BeFalse();
     }
 
-    [Theory]
+    [Test]
     // Both sides identical Unicode -> BCL Ascii returns false because they are non-ASCII.
-    [InlineData("café", "café")]
-    [InlineData("\u00e9", "\u00e9")]              // é vs é
-    [InlineData("\u4e2d\u6587", "\u4e2d\u6587")]  // CJK vs CJK
+    [Arguments("café", "café")]
+    [Arguments("\u00e9", "\u00e9")]              // é vs é
+    [Arguments("\u4e2d\u6587", "\u4e2d\u6587")]  // CJK vs CJK
     public void EqualsIgnoreCase_BothNonAscii_ReturnsFalse(string left, string right)
     {
         // BCL contract: "If both buffers contain equal, but non-ASCII characters,
@@ -81,37 +81,37 @@ public class AsciiTests
         Ascii.EqualsIgnoreCase(left.AsSpan(), right.AsSpan()).Should().BeFalse();
     }
 
-    [Theory]
-    [InlineData("\u00e9", "\u00c9")]              // é vs É (Latin-1 lowercase/uppercase)
-    [InlineData("caf\u00e9", "CAF\u00c9")]        // café vs CAFÉ
+    [Test]
+    [Arguments("\u00e9", "\u00c9")]              // é vs É (Latin-1 lowercase/uppercase)
+    [Arguments("caf\u00e9", "CAF\u00c9")]        // café vs CAFÉ
     public void EqualsIgnoreCase_NonAsciiCaseFold_ReturnsFalse(string left, string right)
     {
         // Unicode case-folding is NOT performed; non-ASCII characters force a false return.
         Ascii.EqualsIgnoreCase(left.AsSpan(), right.AsSpan()).Should().BeFalse();
     }
 
-    [Theory]
-    [InlineData("a", "\u00e9")]   // ASCII vs Latin-1
-    [InlineData("\u00e9", "a")]
-    [InlineData("hello\u00e9", "helloa")]
+    [Test]
+    [Arguments("a", "\u00e9")]   // ASCII vs Latin-1
+    [Arguments("\u00e9", "a")]
+    [Arguments("hello\u00e9", "helloa")]
     public void EqualsIgnoreCase_OneSideNonAscii_ReturnsFalse(string left, string right)
     {
         Ascii.EqualsIgnoreCase(left.AsSpan(), right.AsSpan()).Should().BeFalse();
     }
 
-    [Theory]
+    [Test]
     // Inputs straddling the BCL vectorization threshold (16 chars). Cover both sides
     // and both the equal and case-folded cases so any specialized small-string or
     // vector path is exercised on net10.
-    [InlineData(1)]
-    [InlineData(8)]
-    [InlineData(15)]
-    [InlineData(16)]
-    [InlineData(17)]
-    [InlineData(32)]
-    [InlineData(63)]
-    [InlineData(64)]
-    [InlineData(255)]
+    [Arguments(1)]
+    [Arguments(8)]
+    [Arguments(15)]
+    [Arguments(16)]
+    [Arguments(17)]
+    [Arguments(32)]
+    [Arguments(63)]
+    [Arguments(64)]
+    [Arguments(255)]
     public void EqualsIgnoreCase_VariousLengths_ConsistentResults(int length)
     {
         // Build a same-case-and-different-case pair of ASCII letters of the given length.

@@ -34,10 +34,14 @@
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" />
     <PackageReference Include="Microsoft.Build" />
+    <!-- Oracle reference for the FileSystemGlobbing dialect comparison benchmarks. -->
+    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\touki.tests\touki.tests.csproj" />
+    <!-- The MSBuild shim (and, transitively, test support's recording infrastructure) without the
+         test framework dependencies that referencing touki.tests would drag in. -->
+    <ProjectReference Include="..\touki.msbuildshim\touki.msbuildshim.csproj" />
     <ProjectReference Include="..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
   </ItemGroup>
 

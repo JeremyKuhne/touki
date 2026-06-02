@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -8,7 +8,7 @@ namespace Touki.Io;
 
 public class SpanWriterTests
 {
-    [Fact]
+    [Test]
     public void SpanWriter_TryWrite()
     {
         Span<byte> span = new byte[5];
@@ -32,7 +32,7 @@ public class SpanWriterTests
         writer.TryWrite(6).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_TryWrite_Spans()
     {
         Span<byte> span = new byte[5];
@@ -50,7 +50,7 @@ public class SpanWriterTests
         writer.TryWrite([6]).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_TryWrite_Count()
     {
         Span<int> span = new int[5];
@@ -68,7 +68,7 @@ public class SpanWriterTests
         writer.TryWrite(1, 4).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_TryWrite_CountPoints()
     {
         Span<Point> span = new Point[5];
@@ -86,7 +86,7 @@ public class SpanWriterTests
         writer.TryWrite(1, new Point(7, 8)).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_Position_Property()
     {
         Span<byte> span = new byte[5];
@@ -104,7 +104,7 @@ public class SpanWriterTests
         writer.Position.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_Position_Setter_Valid()
     {
         Span<byte> span = new byte[5];
@@ -122,7 +122,7 @@ public class SpanWriterTests
         writer.Position.Should().Be(5);
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_Position_Setter_Negative_ThrowsException()
     {
         Span<byte> span = new byte[3];
@@ -139,7 +139,7 @@ public class SpanWriterTests
         }
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_Position_Setter_OutOfBounds_ThrowsException()
     {
         Span<byte> span = new byte[3];
@@ -156,7 +156,7 @@ public class SpanWriterTests
         }
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_Length_Property()
     {
         Span<byte> span = new byte[5];
@@ -168,7 +168,7 @@ public class SpanWriterTests
         writer.Length.Should().Be(5); // Length should not change with position
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_End_Property()
     {
         Span<byte> span = new byte[3];
@@ -189,7 +189,7 @@ public class SpanWriterTests
         writer.End.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_End_EmptySpan()
     {
         Span<byte> span = [];
@@ -198,7 +198,7 @@ public class SpanWriterTests
         writer.End.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_End_AfterReset()
     {
         Span<byte> span = new byte[2];
@@ -211,7 +211,7 @@ public class SpanWriterTests
         writer.End.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_End_AfterRewind()
     {
         Span<byte> span = new byte[3];
@@ -227,7 +227,7 @@ public class SpanWriterTests
         writer.End.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_End_AfterPositionChange()
     {
         Span<byte> span = new byte[5];
@@ -245,7 +245,7 @@ public class SpanWriterTests
         writer.End.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_Span_Property()
     {
         Span<byte> span = new byte[5];
@@ -257,7 +257,7 @@ public class SpanWriterTests
         writer.Span.ToArray().Should().BeEquivalentTo([1, 2, 0, 0, 0]);
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_TryWrite_SingleValue_EmptySpan()
     {
         Span<byte> span = [];
@@ -267,7 +267,7 @@ public class SpanWriterTests
         writer.Position.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_TryWrite_Span_EmptyInput()
     {
         Span<byte> span = new byte[3];
@@ -279,7 +279,7 @@ public class SpanWriterTests
         span.ToArray().Should().BeEquivalentTo([0, 0, 0]);
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_TryWrite_Span_ExactFit()
     {
         Span<byte> span = new byte[3];
@@ -292,7 +292,7 @@ public class SpanWriterTests
         writer.TryWrite([4]).Should().BeFalse(); // No space left
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_TryWrite_Span_TooLarge()
     {
         Span<byte> span = new byte[2];
@@ -303,7 +303,7 @@ public class SpanWriterTests
         writer.Position.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_TryWrite_Count_Zero()
     {
         Span<byte> span = new byte[3];
@@ -314,7 +314,7 @@ public class SpanWriterTests
         span.ToArray().Should().BeEquivalentTo([0, 0, 0]);
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_TryWrite_Count_Negative_ThrowsException()
     {
         Span<byte> span = new byte[3];
@@ -331,7 +331,7 @@ public class SpanWriterTests
         }
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_TryWrite_Count_ExactFit()
     {
         Span<byte> span = new byte[3];
@@ -344,7 +344,7 @@ public class SpanWriterTests
         writer.TryWrite(1, 8).Should().BeFalse(); // No space left
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_Advance()
     {
         Span<byte> span = new byte[5];
@@ -370,7 +370,7 @@ public class SpanWriterTests
         }
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_Advance_Zero()
     {
         Span<byte> span = new byte[3];
@@ -380,7 +380,7 @@ public class SpanWriterTests
         writer.Position.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_Advance_Negative_ThrowsException()
     {
         Span<byte> span = new byte[3];
@@ -397,7 +397,7 @@ public class SpanWriterTests
         }
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_Rewind()
     {
         Span<byte> span = new byte[5];
@@ -423,7 +423,7 @@ public class SpanWriterTests
         }
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_Rewind_Zero()
     {
         Span<byte> span = new byte[3];
@@ -434,7 +434,7 @@ public class SpanWriterTests
         writer.Position.Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_Rewind_Negative_ThrowsException()
     {
         Span<byte> span = new byte[3];
@@ -451,7 +451,7 @@ public class SpanWriterTests
         }
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_Reset()
     {
         Span<byte> span = new byte[5];
@@ -468,7 +468,7 @@ public class SpanWriterTests
         span.ToArray().Should().BeEquivalentTo([4, 5, 3, 0, 0]); // Note: previous data at index 2 remains
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_ComplexScenario()
     {
         Span<byte> span = new byte[10];
@@ -495,7 +495,7 @@ public class SpanWriterTests
         writer.Position.Should().Be(6);
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_BoundaryConditions()
     {
         Span<byte> span = new byte[1];
@@ -516,7 +516,7 @@ public class SpanWriterTests
         span[0].Should().Be(44);
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_EdgeCases_EmptySpan()
     {
         Span<byte> span = [];
@@ -533,7 +533,7 @@ public class SpanWriterTests
         writer.Position.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_Position_EdgeCases()
     {
         Span<byte> span = new byte[3];
@@ -549,7 +549,7 @@ public class SpanWriterTests
         writer.TryWrite(1).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void SpanWriter_MixedOperations()
     {
         Span<byte> span = new byte[8];

@@ -6,7 +6,7 @@ namespace Touki;
 
 public class HashCodeExtensionsTests
 {
-    [Fact]
+    [Test]
     public void AddBytes_Empty_DoesNotThrow()
     {
         HashCode h = default;
@@ -14,19 +14,19 @@ public class HashCodeExtensionsTests
         _ = h.ToHashCode();
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    [InlineData(2)]
-    [InlineData(3)]
-    [InlineData(4)]
-    [InlineData(7)]
-    [InlineData(8)]
-    [InlineData(15)]
-    [InlineData(16)]
-    [InlineData(31)]
-    [InlineData(32)]
-    [InlineData(33)]
+    [Test]
+    [Arguments(0)]
+    [Arguments(1)]
+    [Arguments(2)]
+    [Arguments(3)]
+    [Arguments(4)]
+    [Arguments(7)]
+    [Arguments(8)]
+    [Arguments(15)]
+    [Arguments(16)]
+    [Arguments(31)]
+    [Arguments(32)]
+    [Arguments(33)]
     public void AddBytes_SameInput_ProducesSameHash(int length)
     {
         // Within a single process HashCode uses a fixed random seed, so equal inputs
@@ -47,7 +47,7 @@ public class HashCodeExtensionsTests
         a.ToHashCode().Should().Be(b.ToHashCode());
     }
 
-    [Fact]
+    [Test]
     public void AddBytes_DifferentTrailingByte_ProducesDifferentHash()
     {
         // 4-byte chunked path + tail byte: last byte must affect the result.
@@ -63,7 +63,7 @@ public class HashCodeExtensionsTests
         hx.ToHashCode().Should().NotBe(hy.ToHashCode());
     }
 
-    [Fact]
+    [Test]
     public void AddBytes_DifferentInChunkedRegion_ProducesDifferentHash()
     {
         // First 4 bytes (the chunked region): a single bit flip should reach the digest.
@@ -79,7 +79,7 @@ public class HashCodeExtensionsTests
         hx.ToHashCode().Should().NotBe(hy.ToHashCode());
     }
 
-    [Fact]
+    [Test]
     public void AddBytes_AppendingChangesHash()
     {
         byte[] prefix = [1, 2, 3, 4];
@@ -94,7 +94,7 @@ public class HashCodeExtensionsTests
         hp.ToHashCode().Should().NotBe(hl.ToHashCode());
     }
 
-    [Fact]
+    [Test]
     public void AddBytes_SegmentBoundaries_ConsistentWhenSplitOrWhole()
     {
         // The polyfill processes 4-byte chunks then tail bytes. Two HashCode instances

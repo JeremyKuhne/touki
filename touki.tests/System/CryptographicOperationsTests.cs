@@ -8,7 +8,7 @@ namespace Touki;
 
 public class CryptographicOperationsTests
 {
-    [Fact]
+    [Test]
     public void FixedTimeEquals_BothEmpty_ReturnsTrue()
     {
         CryptographicOperations.FixedTimeEquals(
@@ -16,7 +16,7 @@ public class CryptographicOperationsTests
             []).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void FixedTimeEquals_EqualContent_ReturnsTrue()
     {
         ReadOnlySpan<byte> a = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -24,7 +24,7 @@ public class CryptographicOperationsTests
         CryptographicOperations.FixedTimeEquals(a, b).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void FixedTimeEquals_DifferentContent_ReturnsFalse()
     {
         ReadOnlySpan<byte> a = [1, 2, 3, 4, 5];
@@ -32,7 +32,7 @@ public class CryptographicOperationsTests
         CryptographicOperations.FixedTimeEquals(a, b).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void FixedTimeEquals_FirstByteDiffers_ReturnsFalse()
     {
         ReadOnlySpan<byte> a = [9, 2, 3, 4, 5];
@@ -40,7 +40,7 @@ public class CryptographicOperationsTests
         CryptographicOperations.FixedTimeEquals(a, b).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void FixedTimeEquals_DifferentLengths_ReturnsFalse()
     {
         ReadOnlySpan<byte> a = [1, 2, 3];
@@ -48,7 +48,7 @@ public class CryptographicOperationsTests
         CryptographicOperations.FixedTimeEquals(a, b).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void FixedTimeEquals_OneEmpty_ReturnsFalse()
     {
         ReadOnlySpan<byte> a = [];
@@ -57,7 +57,7 @@ public class CryptographicOperationsTests
         CryptographicOperations.FixedTimeEquals(b, a).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void FixedTimeEquals_LongEqualSpans_ReturnsTrue()
     {
         byte[] data = new byte[256];
@@ -70,7 +70,7 @@ public class CryptographicOperationsTests
         CryptographicOperations.FixedTimeEquals(data, copy).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void FixedTimeEquals_LastByteDifferent_ReturnsFalse()
     {
         byte[] a = new byte[256];

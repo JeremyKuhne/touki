@@ -8,7 +8,7 @@ namespace Touki;
 
 public class RandomExtensionsTests
 {
-    [Fact]
+    [Test]
     public void NextBytes_ExactRandomType_FillsBuffer()
     {
         Random r = new(42);
@@ -28,7 +28,7 @@ public class RandomExtensionsTests
         anyNonZero.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void NextBytes_ExactRandomType_DeterministicForSameSeed()
     {
         // Two Random instances with the same seed must fill spans identically.
@@ -43,7 +43,7 @@ public class RandomExtensionsTests
         a.SequenceEqual(b).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void NextBytes_EmptySpan_NoOp()
     {
         Random r = new(1);
@@ -51,7 +51,7 @@ public class RandomExtensionsTests
     }
 
 #if NETFRAMEWORK
-    [Fact]
+    [Test]
     public void NextBytes_NullRandom_Throws()
     {
         Random r = null!;
@@ -64,7 +64,7 @@ public class RandomExtensionsTests
         a.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void NextBytes_DerivedType_DispatchesToOverride()
     {
         // The polyfill forwards subclass calls through Random.NextBytes(byte[]) so any

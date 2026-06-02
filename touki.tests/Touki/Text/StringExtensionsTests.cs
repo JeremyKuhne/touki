@@ -8,14 +8,14 @@ namespace Touki.Text;
 
 public class StringExtensionsTests
 {
-    [Fact]
+    [Test]
     public void FormatValue_Generic_FormatsUnmanagedArgument()
     {
         string result = string.FormatValue("{0:X4}".AsSpan(), 0x2A);
         result.Should().Be("002A");
     }
 
-    [Fact]
+    [Test]
     public void FormatValue_Generic_LargeOutput_GrowsBuffer()
     {
         ReadOnlySpan<char> format = "{0}".AsSpan();
@@ -24,7 +24,7 @@ public class StringExtensionsTests
         result.Should().Be(long.MaxValue.ToString(CultureInfo.InvariantCulture));
     }
 
-    [Fact]
+    [Test]
     public void FormatValue_ValueArg_FormatsBoxedValue()
     {
         // FormatValue constructs a ValueStringBuilder with a null IFormatProvider,
@@ -34,7 +34,7 @@ public class StringExtensionsTests
         result.Should().Be(1234.ToString("N0", CultureInfo.CurrentCulture));
     }
 
-    [Fact]
+    [Test]
     public void FormatValues_SpanArgs_FormatsMultiplePlaceholders()
     {
         ReadOnlySpan<Value> args = [Value.Create("Alice"), Value.Create(30)];
@@ -42,7 +42,7 @@ public class StringExtensionsTests
         result.Should().Be("Alice is 30");
     }
 
-    [Fact]
+    [Test]
     public void FormatValues_TwoArgs_FormatsBothPlaceholders()
     {
         string result = string.FormatValues(
@@ -52,7 +52,7 @@ public class StringExtensionsTests
         result.Should().Be("a-1");
     }
 
-    [Fact]
+    [Test]
     public void FormatValues_ThreeArgs_FormatsAllPlaceholders()
     {
         string result = string.FormatValues(
@@ -63,7 +63,7 @@ public class StringExtensionsTests
         result.Should().Be("2026/5/10");
     }
 
-    [Fact]
+    [Test]
     public void FormatValues_FourArgs_FormatsAllPlaceholders()
     {
         string result = string.FormatValues(
@@ -75,7 +75,7 @@ public class StringExtensionsTests
         result.Should().Be("1,2,3,4");
     }
 
-    [Fact]
+    [Test]
     public void FormatValues_FourArgs_LiteralFormat_NoPlaceholders_ReturnsLiteral()
     {
         string result = string.FormatValues(

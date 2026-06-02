@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -9,7 +9,7 @@ namespace Touki.Io;
 /// </summary>
 public class VirtualPathTests
 {
-    [Fact]
+    [Test]
     public void VirtualPath_SinglePath_ConstructsCorrectly()
     {
         PathSegmentEnumerator path = new(Paths.ChangeAlternateDirectorySeparators("test/path"));
@@ -18,7 +18,7 @@ public class VirtualPathTests
         path.Current.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_TwoPaths_WithoutSeparators_ConstructsCorrectly()
     {
         PathSegmentEnumerator path = new("first", "second");
@@ -27,7 +27,7 @@ public class VirtualPathTests
         path.Current.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_TwoPaths_FirstEndsWithSeparator_ConstructsCorrectly()
     {
         PathSegmentEnumerator path = new(Paths.ChangeAlternateDirectorySeparators("first/"), "second");
@@ -36,7 +36,7 @@ public class VirtualPathTests
         path.Current.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_TwoPaths_SecondStartsWithSeparator_ConstructsCorrectly()
     {
         PathSegmentEnumerator path = new("first", Paths.ChangeAlternateDirectorySeparators("/second"));
@@ -45,7 +45,7 @@ public class VirtualPathTests
         path.Current.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_TwoPaths_BothHaveSeparators_ConstructsCorrectly()
     {
         PathSegmentEnumerator path = new($"first{Path.DirectorySeparatorChar}", $"{Path.DirectorySeparatorChar}second");
@@ -54,7 +54,7 @@ public class VirtualPathTests
         path.Current.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_EmptyFirstPath_ConstructsCorrectly()
     {
         PathSegmentEnumerator path = new("", "second");
@@ -63,7 +63,7 @@ public class VirtualPathTests
         path.Current.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_EmptySecondPath_ConstructsCorrectly()
     {
         PathSegmentEnumerator path = new("first", "");
@@ -72,7 +72,7 @@ public class VirtualPathTests
         path.Current.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_BothPathsEmpty_ConstructsCorrectly()
     {
         PathSegmentEnumerator path = new("", "");
@@ -81,7 +81,7 @@ public class VirtualPathTests
         path.Current.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_Indexer_FirstPath_ReturnsCorrectCharacters()
     {
         PathSegmentEnumerator path = new("hello", "world");
@@ -93,7 +93,7 @@ public class VirtualPathTests
         path[4].Should().Be('o');
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_Indexer_VirtualSeparator_ReturnsDirectorySeparator()
     {
         PathSegmentEnumerator path = new("hello", "world");
@@ -101,7 +101,7 @@ public class VirtualPathTests
         path[5].Should().Be(Path.DirectorySeparatorChar);
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_Indexer_SecondPath_ReturnsCorrectCharacters()
     {
         PathSegmentEnumerator path = new("hello", "world");
@@ -113,7 +113,7 @@ public class VirtualPathTests
         path[10].Should().Be('d');
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_Indexer_WithExistingSeparators_ReturnsCorrectCharacters()
     {
         PathSegmentEnumerator path = new($"hello{Path.DirectorySeparatorChar}", $"{Path.DirectorySeparatorChar}world");
@@ -124,7 +124,7 @@ public class VirtualPathTests
         path[7].Should().Be('w');
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_SingleSegment_ReturnsSegment()
     {
         PathSegmentEnumerator path = new("hello");
@@ -135,7 +135,7 @@ public class VirtualPathTests
         path.Current.ToString().Should().Be("hello");
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_NoMoreSegments_ReturnsFalse()
     {
         PathSegmentEnumerator path = new("hello");
@@ -147,7 +147,7 @@ public class VirtualPathTests
         path.Current.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_MultipleSegments_ReturnsEachSegment()
     {
         PathSegmentEnumerator path = new($"first{Path.DirectorySeparatorChar}second{Path.DirectorySeparatorChar}third");
@@ -168,7 +168,7 @@ public class VirtualPathTests
         result4.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_TwoPaths_ReturnsAllSegments()
     {
         PathSegmentEnumerator path = new($"first{Path.DirectorySeparatorChar}second", $"third{Path.DirectorySeparatorChar}fourth");
@@ -193,7 +193,7 @@ public class VirtualPathTests
         result5.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_LeadingSeparators_SkipsSeparators()
     {
         PathSegmentEnumerator path = new($"{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}first{Path.DirectorySeparatorChar}second");
@@ -207,7 +207,7 @@ public class VirtualPathTests
         path.Current.ToString().Should().Be("second");
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_TrailingSeparators_IgnoresTrailingSeparators()
     {
         PathSegmentEnumerator path = new($"first{Path.DirectorySeparatorChar}second{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}");
@@ -224,7 +224,7 @@ public class VirtualPathTests
         result3.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_ConsecutiveSeparators_SkipsEmptySegments()
     {
         PathSegmentEnumerator path = new($"first{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}second{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}third");
@@ -242,7 +242,7 @@ public class VirtualPathTests
         path.Current.ToString().Should().Be("third");
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_OnlySeparators_ReturnsFalse()
     {
         PathSegmentEnumerator path = new($"{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}");
@@ -253,7 +253,7 @@ public class VirtualPathTests
         path.Current.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_EmptyPath_ReturnsFalse()
     {
         PathSegmentEnumerator path = new("");
@@ -264,7 +264,7 @@ public class VirtualPathTests
         path.Current.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_CrossingBoundary_ReturnsCorrectSegments()
     {
         PathSegmentEnumerator path = new("first", "second");
@@ -278,7 +278,7 @@ public class VirtualPathTests
         path.Current.ToString().Should().Be("second");
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_FirstPathWithTrailingSeparator_HandlesCorrectly()
     {
         PathSegmentEnumerator path = new($"first{Path.DirectorySeparatorChar}", "second");
@@ -292,7 +292,7 @@ public class VirtualPathTests
         path.Current.ToString().Should().Be("second");
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_SecondPathWithLeadingSeparator_HandlesCorrectly()
     {
         PathSegmentEnumerator path = new("first", $"{Path.DirectorySeparatorChar}second");
@@ -306,7 +306,7 @@ public class VirtualPathTests
         path.Current.ToString().Should().Be("second");
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_SegmentSpanningBoundary_HandlesCorrectly()
     {
         // This tests when a segment would span across the virtual boundary
@@ -321,7 +321,7 @@ public class VirtualPathTests
         path.Current.ToString().Should().Be("segment");
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_ComplexPath_ReturnsAllSegments()
     {
         PathSegmentEnumerator path = new(
@@ -337,7 +337,7 @@ public class VirtualPathTests
         segments.Should().BeEquivalentTo(["a", "b", "c", "d", "e", "f"]);
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_OnlyFirstPath_ReturnsFirstPathSegments()
     {
         PathSegmentEnumerator path = new(Paths.ChangeAlternateDirectorySeparators("first/second/third"), "");
@@ -351,7 +351,7 @@ public class VirtualPathTests
         segments.Should().BeEquivalentTo(["first", "second", "third"]);
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_OnlySecondPath_ReturnsSecondPathSegments()
     {
         PathSegmentEnumerator path = new("", Paths.ChangeAlternateDirectorySeparators("first/second/third"));
@@ -365,7 +365,7 @@ public class VirtualPathTests
         segments.Should().BeEquivalentTo(["first", "second", "third"]);
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_SingleCharacterSegments_HandlesCorrectly()
     {
         PathSegmentEnumerator path = new(
@@ -381,10 +381,10 @@ public class VirtualPathTests
         segments.Should().BeEquivalentTo(["a", "b", "c", "d"]);
     }
 
-    [Theory]
-    [InlineData("path", "", "path")]
-    [InlineData("", "path", "path")]
-    [InlineData("first", "second", "first", "second")]
+    [Test]
+    [Arguments("path", "", "path")]
+    [Arguments("", "path", "path")]
+    [Arguments("first", "second", "first", "second")]
     public void VirtualPath_MoveNextSegment_VariousInputs_ReturnsExpectedSegments(string firstPath, string secondPath, params string[] expectedSegments)
     {
         PathSegmentEnumerator path = new(firstPath.AsSpan(), secondPath.AsSpan());
@@ -398,7 +398,7 @@ public class VirtualPathTests
         actualSegments.Should().BeEquivalentTo(expectedSegments);
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_VariousInputsWithSeparators_ReturnsExpectedSegments()
     {
         // Test cases with separators using platform-specific separator
@@ -424,7 +424,7 @@ public class VirtualPathTests
         segments2.Should().BeEquivalentTo(["a", "b"]);
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_CurrentSegment_BeforeFirstMove_ReturnsEmpty()
     {
         PathSegmentEnumerator path = new($"test{Path.DirectorySeparatorChar}path");
@@ -432,7 +432,7 @@ public class VirtualPathTests
         path.Current.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_CurrentSegment_AfterLastMove_ReturnsEmpty()
     {
         PathSegmentEnumerator path = new("test");
@@ -443,7 +443,7 @@ public class VirtualPathTests
         path.Current.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_RecursiveCall_HandlesCorrectly()
     {
         // Test the recursive call for separator skipping
@@ -455,7 +455,7 @@ public class VirtualPathTests
         path.Current.ToString().Should().Be("test");
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_MoveNextSegment_MultipleRecursiveCalls_HandlesCorrectly()
     {
         // Test multiple recursive calls for consecutive separators
@@ -467,7 +467,7 @@ public class VirtualPathTests
         path.Current.ToString().Should().Be("test");
     }
 
-    [Fact]
+    [Test]
     public void VirtualPath_Documentation_Example()
     {
         // Example from documentation: combining two path segments

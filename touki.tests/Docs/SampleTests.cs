@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -8,7 +8,7 @@ namespace Touki.Docs;
 
 public class SampleTests
 {
-    [Fact]
+    [Test]
     public void StringSegment_Indexing()
     {
         string csv = "apple,banana,cherry";
@@ -30,7 +30,7 @@ public class SampleTests
         segments.Should().BeEquivalentTo(["apple", "banana", "cherry"]);
     }
 
-    [Fact]
+    [Test]
     public void Value_Demo()
     {
         Value[] args = [1, 2.5, "three"];
@@ -39,7 +39,7 @@ public class SampleTests
         result.Should().Be("1 - 2.5 - three");
     }
 
-    [Fact]
+    [Test]
     public void StreamExtension()
     {
         string name = "Name";

@@ -43,7 +43,7 @@ public class ValueEnumeratorTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Constructor_WithValidEnumerator_InitializesCorrectly()
     {
         int[] items = [1, 2, 3];
@@ -53,7 +53,7 @@ public class ValueEnumeratorTests
         enumerator.Current.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Current_ReturnsInnerEnumeratorCurrent()
     {
         string[] items = ["hello", "world"];
@@ -66,7 +66,7 @@ public class ValueEnumeratorTests
         current.Should().Be("hello");
     }
 
-    [Fact]
+    [Test]
     public void MoveNext_DelegatesToInnerEnumerator()
     {
         int[] items = [10, 20, 30];
@@ -89,7 +89,7 @@ public class ValueEnumeratorTests
         fourth.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MoveNext_WithEmptyEnumerator_ReturnsFalse()
     {
         int[] items = [];
@@ -101,7 +101,7 @@ public class ValueEnumeratorTests
         result.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Reset_DelegatesToInnerEnumerator()
     {
         double[] items = [1.1, 2.2];
@@ -118,7 +118,7 @@ public class ValueEnumeratorTests
         enumerator.Current.Should().Be(1.1);
     }
 
-    [Fact]
+    [Test]
     public void ValueEnumerator_CanBeUsedInForeachPattern()
     {
         char[] items = ['a', 'b', 'c', 'd'];
@@ -136,7 +136,7 @@ public class ValueEnumeratorTests
         results.Should().Equal(['a', 'b', 'c', 'd']);
     }
 
-    [Fact]
+    [Test]
     public void ValueEnumerator_IsRefStruct()
     {
         Type type = typeof(ValueEnumerator<,>);
@@ -151,7 +151,7 @@ public class ValueEnumeratorTests
 #endif
     }
 
-    [Fact]
+    [Test]
     public void ValueEnumerator_WithValueTypeEnumerator_OptimizesCorrectly()
     {
         // ValueEnumerator is designed to work with value type enumerators to avoid boxing
@@ -168,7 +168,7 @@ public class ValueEnumeratorTests
         results.Should().Equal([1, 2, 3]);
     }
 
-    [Fact]
+    [Test]
     public void ValueEnumerator_WithReferenceTypes_WorksCorrectly()
     {
         string[] items = ["first", "second", "third"];
@@ -184,7 +184,7 @@ public class ValueEnumeratorTests
         results.Should().Equal(["first", "second", "third"]);
     }
 
-    [Fact]
+    [Test]
     public void ValueEnumerator_HandlesNullValues()
     {
         string?[] items = ["test", null, "value"];
@@ -200,7 +200,7 @@ public class ValueEnumeratorTests
         results.Should().Equal(["test", null, "value"]);
     }
 
-    [Fact]
+    [Test]
     public void Current_BeforeMoveNext_ReturnsDefault()
     {
         int[] items = [42];
@@ -212,7 +212,7 @@ public class ValueEnumeratorTests
         current.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Current_AfterReset_ReturnsDefault()
     {
         bool[] items = [true, false];
@@ -226,7 +226,7 @@ public class ValueEnumeratorTests
         enumerator.Current.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void ValueEnumerator_Methods_WorkCorrectly()
     {
         int[] items = [100, 200];
@@ -244,7 +244,7 @@ public class ValueEnumeratorTests
         enumerator.Current.Should().Be(200);
     }
 
-    [Fact]
+    [Test]
     public void ValueEnumerator_MultipleIterations_WorksCorrectly()
     {
         int[] items = [5, 10, 15];
@@ -269,7 +269,7 @@ public class ValueEnumeratorTests
         secondResults.Should().Equal([5, 10, 15]);
     }
 
-    [Fact]
+    [Test]
     public void ValueEnumerator_GenericConstraints_EnforceCorrectTypes()
     {
         // ValueEnumerator<TEnumerator, TValue> where TEnumerator : struct, IEnumerator<TValue>, IDisposable

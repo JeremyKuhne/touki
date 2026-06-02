@@ -6,33 +6,33 @@ namespace Touki;
 
 public class StoringDouble
 {
-    public static TheoryData<double> DoubleData => new()
+    public static IEnumerable<double> DoubleData()
     {
-        { 0d },
-        { 42d },
-        { double.MaxValue },
-        { double.MinValue },
-        { double.NaN },
-        { double.NegativeInfinity },
-        { double.PositiveInfinity }
-    };
+        yield return 0d;
+        yield return 42d;
+        yield return double.MaxValue;
+        yield return double.MinValue;
+        yield return double.NaN;
+        yield return double.NegativeInfinity;
+        yield return double.PositiveInfinity;
+    }
 
-    [Theory]
-    [MemberData(nameof(DoubleData))]
+    [Test]
+    [MethodDataSource(nameof(DoubleData))]
     public void DoubleImplicit(double @double)
     {
         Value value = @double;
-        Assert.Equal(@double, value.As<double>());
-        Assert.Equal(typeof(double), value.Type);
+        value.As<double>().Should().Be(@double);
+        value.Type.Should().Be(typeof(double));
 
         double? source = @double;
         value = source;
-        Assert.Equal(source, value.As<double?>());
-        Assert.Equal(typeof(double), value.Type);
+        value.As<double?>().Should().Be(source);
+        value.Type.Should().Be(typeof(double));
     }
 
-    [Theory]
-    [MemberData(nameof(DoubleData))]
+    [Test]
+    [MethodDataSource(nameof(DoubleData))]
     public void DoubleCreate(double @double)
     {
         Value value;
@@ -41,8 +41,8 @@ public class StoringDouble
             value = Value.Create(@double);
         }
 
-        Assert.Equal(@double, value.As<double>());
-        Assert.Equal(typeof(double), value.Type);
+        value.As<double>().Should().Be(@double);
+        value.Type.Should().Be(typeof(double));
 
         double? source = @double;
 
@@ -51,101 +51,101 @@ public class StoringDouble
             value = Value.Create(source);
         }
 
-        Assert.Equal(source, value.As<double?>());
-        Assert.Equal(typeof(double), value.Type);
+        value.As<double?>().Should().Be(source);
+        value.Type.Should().Be(typeof(double));
     }
 
-    [Theory]
-    [MemberData(nameof(DoubleData))]
+    [Test]
+    [MethodDataSource(nameof(DoubleData))]
     public void DoubleInOut(double @double)
     {
         Value value = @double;
         bool success = value.TryGetValue(out double result);
-        Assert.True(success);
-        Assert.Equal(@double, result);
+        success.Should().BeTrue();
+        result.Should().Be(@double);
 
-        Assert.Equal(@double, value.As<double>());
-        Assert.Equal(@double, (double)value);
+        value.As<double>().Should().Be(@double);
+        ((double)value).Should().Be(@double);
     }
 
-    [Theory]
-    [MemberData(nameof(DoubleData))]
+    [Test]
+    [MethodDataSource(nameof(DoubleData))]
     public void NullableDoubleInDoubleOut(double @double)
     {
         double? source = @double;
         Value value = source;
 
         bool success = value.TryGetValue(out double result);
-        Assert.True(success);
-        Assert.Equal(@double, result);
+        success.Should().BeTrue();
+        result.Should().Be(@double);
 
-        Assert.Equal(@double, value.As<double>());
+        value.As<double>().Should().Be(@double);
 
-        Assert.Equal(@double, (double)value);
+        ((double)value).Should().Be(@double);
     }
 
-    [Theory]
-    [MemberData(nameof(DoubleData))]
+    [Test]
+    [MethodDataSource(nameof(DoubleData))]
     public void DoubleInNullableDoubleOut(double @double)
     {
         double source = @double;
         Value value = source;
         bool success = value.TryGetValue(out double? result);
-        Assert.True(success);
-        Assert.Equal(@double, result);
+        success.Should().BeTrue();
+        result.Should().Be(@double);
 
-        Assert.Equal(@double, (double)value);
+        ((double)value).Should().Be(@double);
     }
 
-    [Theory]
-    [MemberData(nameof(DoubleData))]
+    [Test]
+    [MethodDataSource(nameof(DoubleData))]
     public void BoxedDouble(double @double)
     {
         double i = @double;
         object o = i;
         Value value = Value.Create(o);
 
-        Assert.Equal(typeof(double), value.Type);
-        Assert.True(value.TryGetValue(out double result));
-        Assert.Equal(@double, result);
-        Assert.True(value.TryGetValue(out double? nullableResult));
-        Assert.Equal(@double, nullableResult!.Value);
+        value.Type.Should().Be(typeof(double));
+        value.TryGetValue(out double result).Should().BeTrue();
+        result.Should().Be(@double);
+        value.TryGetValue(out double? nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@double);
 
 
         double? n = @double;
         o = n;
         value = Value.Create(o);
 
-        Assert.Equal(typeof(double), value.Type);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@double, result);
-        Assert.True(value.TryGetValue(out nullableResult));
-        Assert.Equal(@double, nullableResult!.Value);
+        value.Type.Should().Be(typeof(double));
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@double);
+        value.TryGetValue(out nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@double);
     }
 
-    [Fact]
+    [Test]
     public void NullDouble()
     {
         double? source = null;
         Value value = source;
-        Assert.Null(value.Type);
-        Assert.Equal(source, value.As<double?>());
-        Assert.False(value.As<double?>().HasValue);
+        value.Type.Should().BeNull();
+        value.As<double?>().Should().Be(source);
+        value.As<double?>().HasValue.Should().BeFalse();
     }
 
-    [Theory]
-    [MemberData(nameof(DoubleData))]
+    [Test]
+    [MethodDataSource(nameof(DoubleData))]
     public void OutAsObject(double @double)
     {
         Value value = @double;
         object o = value.As<object>();
-        Assert.Equal(typeof(double), o.GetType());
-        Assert.Equal(@double, (double)o);
+        o.GetType().Should().Be(typeof(double));
+        ((double)o).Should().Be(@double);
 
         double? n = @double;
         value = n;
         o = value.As<object>();
-        Assert.Equal(typeof(double), o.GetType());
-        Assert.Equal(@double, (double)o);
+        o.GetType().Should().Be(typeof(double));
+        ((double)o).Should().Be(@double);
     }
 }

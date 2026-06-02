@@ -27,11 +27,8 @@ namespace Touki.Io.Globbing;
 /// </remarks>
 public class ExtGlobBashOracleTests
 {
-    public static TheoryData<string, string> Rows
+    public static IEnumerable<(string, string)> Rows()
     {
-        get
-        {
-            TheoryData<string, string> data = new();
             string[] patterns =
             [
                 // @ : exactly one
@@ -83,22 +80,19 @@ public class ExtGlobBashOracleTests
             {
                 foreach (string input in inputs)
                 {
-                    data.Add(pattern, input);
+                    yield return (pattern, input);
                 }
             }
-
-            return data;
-        }
     }
 
-    [Theory]
-    [MemberData(nameof(Rows))]
+    [Test]
+    [MethodDataSource(nameof(Rows))]
     public void IsMatch_BashDialect_ExtGlob_AgreesWithBash(string pattern, string input)
     {
         string? bashPath = BashInterop.ResolveBashPath();
         if (bashPath is null)
         {
-            Assert.Skip("bash oracle requires bash on PATH (or Git for Windows installed).");
+            Skip.Test("bash oracle requires bash on PATH (or Git for Windows installed).");
             return;
         }
 
@@ -107,7 +101,7 @@ public class ExtGlobBashOracleTests
         // gate.
         if (pattern == "!(*)" && input == "")
         {
-            Assert.Skip("Documented divergence: bash accepts `!(*)` against empty input; touki rejects (`*` matches the empty alt slice exactly).");
+            Skip.Test("Documented divergence: bash accepts `!(*)` against empty input; touki rejects (`*` matches the empty alt slice exactly).");
             return;
         }
 

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -6,7 +6,7 @@ namespace Touki;
 
 public class InterlockTests
 {
-    [Fact]
+    [Test]
     public void Increment_UInt32_ShouldIncrementValue()
     {
         uint value = 0;
@@ -14,7 +14,7 @@ public class InterlockTests
         value.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Increment_UInt64_ShouldIncrementValue()
     {
         ulong value = 0;
@@ -22,7 +22,7 @@ public class InterlockTests
         value.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Decrement_UInt32_ShouldDecrementValue()
     {
         uint value = 2;
@@ -30,7 +30,7 @@ public class InterlockTests
         value.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Decrement_UInt64_ShouldDecrementValue()
     {
         ulong value = 2;
@@ -38,7 +38,7 @@ public class InterlockTests
         value.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Exchange_UInt32_ShouldExchangeValues()
     {
         uint value = 1;
@@ -46,7 +46,7 @@ public class InterlockTests
         value.Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void Exchange_UInt64_ShouldExchangeValues()
     {
         ulong value = 1;
@@ -54,7 +54,7 @@ public class InterlockTests
         value.Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void CompareExchange_UInt32_WhenValuesMatch_ShouldExchange()
     {
         uint value = 1;
@@ -62,7 +62,7 @@ public class InterlockTests
         value.Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void CompareExchange_UInt32_WhenValuesDontMatch_ShouldNotExchange()
     {
         uint value = 1;
@@ -70,7 +70,7 @@ public class InterlockTests
         value.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void CompareExchange_UInt64_WhenValuesMatch_ShouldExchange()
     {
         ulong value = 1;
@@ -78,7 +78,7 @@ public class InterlockTests
         value.Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void CompareExchange_UInt64_WhenValuesDontMatch_ShouldNotExchange()
     {
         ulong value = 1;
@@ -86,7 +86,7 @@ public class InterlockTests
         value.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Add_UInt32_ShouldAddValues()
     {
         uint value = 1;
@@ -94,7 +94,7 @@ public class InterlockTests
         value.Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Add_UInt64_ShouldAddValues()
     {
         ulong value = 1;
@@ -102,14 +102,14 @@ public class InterlockTests
         value.Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Read_UInt64_ShouldReturnValue()
     {
         ulong value = 42;
         Interlocked.Read(ref value).Should().Be(42);
     }
 
-    [Fact]
+    [Test]
     public void And_Int32_ShouldPerformBitwiseAnd()
     {
         int value = 0b1111;
@@ -117,7 +117,7 @@ public class InterlockTests
         value.Should().Be(0b1010);
     }
 
-    [Fact]
+    [Test]
     public void And_UInt32_ShouldPerformBitwiseAnd()
     {
         uint value = 0b1111u;
@@ -125,7 +125,7 @@ public class InterlockTests
         value.Should().Be(0b1010u);
     }
 
-    [Fact]
+    [Test]
     public void And_Int64_ShouldPerformBitwiseAnd()
     {
         long value = 0b1111L;
@@ -133,7 +133,7 @@ public class InterlockTests
         value.Should().Be(0b1010L);
     }
 
-    [Fact]
+    [Test]
     public void And_UInt64_ShouldPerformBitwiseAnd()
     {
         ulong value = 0b1111UL;
@@ -141,7 +141,7 @@ public class InterlockTests
         value.Should().Be(0b1010UL);
     }
 
-    [Fact]
+    [Test]
     public void Or_Int32_ShouldPerformBitwiseOr()
     {
         int value = 0b1010;
@@ -149,7 +149,7 @@ public class InterlockTests
         value.Should().Be(0b1111);
     }
 
-    [Fact]
+    [Test]
     public void Or_UInt32_ShouldPerformBitwiseOr()
     {
         uint value = 0b1010u;
@@ -157,7 +157,7 @@ public class InterlockTests
         value.Should().Be(0b1111u);
     }
 
-    [Fact]
+    [Test]
     public void Or_Int64_ShouldPerformBitwiseOr()
     {
         long value = 0b1010L;
@@ -165,7 +165,7 @@ public class InterlockTests
         value.Should().Be(0b1111L);
     }
 
-    [Fact]
+    [Test]
     public void Or_UInt64_ShouldPerformBitwiseOr()
     {
         ulong value = 0b1010UL;
@@ -173,7 +173,7 @@ public class InterlockTests
         value.Should().Be(0b1111UL);
     }
 
-    [Fact]
+    [Test]
     public async Task Increment_UInt32_IsAtomic_WhenCalledFromMultipleThreads()
     {
         uint value = 0;
@@ -190,14 +190,14 @@ public class InterlockTests
                     Interlocked.Increment(ref value);
                 }
             },
-            TestContext.Current.CancellationToken);
+            CancellationToken.None);
         }
 
         await Task.WhenAll(tasks);
         value.Should().Be((uint)(iterations * taskCount));
     }
 
-    [Fact]
+    [Test]
     public async Task Add_UInt64_IsAtomic_WhenCalledFromMultipleThreads()
     {
         ulong value = 0;
@@ -214,14 +214,14 @@ public class InterlockTests
                     Interlocked.Add(ref value, 1);
                 }
             },
-            TestContext.Current.CancellationToken);
+            CancellationToken.None);
         }
 
         await Task.WhenAll(tasks);
         value.Should().Be((ulong)(iterations * taskCount));
     }
 
-    [Fact]
+    [Test]
     public async Task CompareExchange_UInt32_IsAtomic_WhenCalledFromMultipleThreads()
     {
         uint value = 0;
@@ -242,14 +242,14 @@ public class InterlockTests
                     } while (Interlocked.CompareExchange(ref value, current + 1, current) != current);
                 }
             },
-            TestContext.Current.CancellationToken);
+            CancellationToken.None);
         }
 
         await Task.WhenAll(tasks);
         value.Should().Be((uint)(iterations * taskCount));
     }
 
-    [Fact]
+    [Test]
     public async Task And_Or_Operations_AreAtomic_WhenCalledFromMultipleThreads()
     {
         const int iterations = 100;
@@ -270,7 +270,7 @@ public class InterlockTests
                     Interlocked.Or(ref orValue, mask);
                 }
             },
-            TestContext.Current.CancellationToken);
+            CancellationToken.None);
         }
 
         await Task.WhenAll(tasks);

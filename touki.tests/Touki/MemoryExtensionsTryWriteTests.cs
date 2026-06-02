@@ -8,7 +8,7 @@ namespace Touki;
 
 public class MemoryExtensionsTryWriteTests
 {
-    [Fact]
+    [Test]
     public void TryWrite_LiteralOnly_Writes()
     {
         Span<char> dest = stackalloc char[16];
@@ -18,7 +18,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("hello");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_LiteralAndInt()
     {
         Span<char> dest = stackalloc char[32];
@@ -27,7 +27,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("answer=42");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_DestinationTooSmall_ReturnsFalse()
     {
         Span<char> dest = stackalloc char[3];
@@ -36,7 +36,7 @@ public class MemoryExtensionsTryWriteTests
         written.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_FormatString_Hex()
     {
         Span<char> dest = stackalloc char[16];
@@ -45,7 +45,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("00FF");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_RightAlignment()
     {
         Span<char> dest = stackalloc char[16];
@@ -54,7 +54,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("|   42|");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_LeftAlignment()
     {
         Span<char> dest = stackalloc char[16];
@@ -63,7 +63,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("|42   |");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_AlignmentNoPadding_NoFill()
     {
         Span<char> dest = stackalloc char[16];
@@ -72,7 +72,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("|12345|");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_StringValue()
     {
         Span<char> dest = stackalloc char[16];
@@ -82,7 +82,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("hi world");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_NullValue_AppendsEmpty()
     {
         Span<char> dest = stackalloc char[16];
@@ -92,7 +92,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("[]");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_SpanValue()
     {
         Span<char> dest = stackalloc char[16];
@@ -102,7 +102,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be(">abc<");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_FormatProvider_AffectsCulture()
     {
         Span<char> dest = stackalloc char[32];
@@ -112,7 +112,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("1,5");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_Empty_Works()
     {
         Span<char> dest = [];
@@ -121,7 +121,7 @@ public class MemoryExtensionsTryWriteTests
         written.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_ExactFit()
     {
         Span<char> dest = stackalloc char[5];
@@ -131,7 +131,7 @@ public class MemoryExtensionsTryWriteTests
         dest.ToString().Should().Be("hello");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_OverflowMidExpression_ReturnsFalse()
     {
         Span<char> dest = stackalloc char[4];
@@ -140,7 +140,7 @@ public class MemoryExtensionsTryWriteTests
         written.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_SpanValue_WithAlignment_RightAligned()
     {
         Span<char> dest = stackalloc char[16];
@@ -150,7 +150,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be(">  abc<");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_SpanValue_WithAlignment_LeftAligned()
     {
         Span<char> dest = stackalloc char[16];
@@ -160,7 +160,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be(">abc  <");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_StringValue_WithAlignment_RightAligned()
     {
         Span<char> dest = stackalloc char[16];
@@ -170,7 +170,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("|  ab|");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_StringValue_WithAlignment_LeftAligned()
     {
         Span<char> dest = stackalloc char[16];
@@ -180,7 +180,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("|ab  |");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_ObjectValue_WithAlignment_RightAligned()
     {
         Span<char> dest = stackalloc char[16];
@@ -190,7 +190,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("|  ab|");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_ObjectValue_FormatString()
     {
         Span<char> dest = stackalloc char[16];
@@ -200,7 +200,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("00FF");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_StringValue_AlignmentAndFormat()
     {
         Span<char> dest = stackalloc char[32];
@@ -211,7 +211,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("|   ab|");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_ObjectValue_AlignmentAndFormat()
     {
         Span<char> dest = stackalloc char[32];
@@ -221,7 +221,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("|  00FF|");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_CustomFormatter_Used()
     {
         Span<char> dest = stackalloc char[32];
@@ -249,7 +249,7 @@ public class MemoryExtensionsTryWriteTests
         }
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_SpanFormattable_DestinationTooSmall_AfterPriorOutput_Fails()
     {
         // Buffer fits the literal prefix "abc" (advances _pos to 3) but
@@ -261,7 +261,7 @@ public class MemoryExtensionsTryWriteTests
         written.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_FormattableNotSpanFormattable_FormatsViaToString()
     {
         Span<char> dest = stackalloc char[32];
@@ -271,7 +271,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("F:payload");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_NonFormattableObject_UsesToString()
     {
         Span<char> dest = stackalloc char[32];
@@ -281,7 +281,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("N:xyz");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_NullObject_AppendsEmpty()
     {
         Span<char> dest = stackalloc char[32];
@@ -291,7 +291,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("[]");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_FormattableNotSpanFormattable_WithFormat_PassesFormat()
     {
         Span<char> dest = stackalloc char[32];
@@ -320,7 +320,7 @@ public class MemoryExtensionsTryWriteTests
         public override string ToString() => $"N:{_data}";
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_AppendLiteralAfterFormatted_DestinationTooSmall_Fails()
     {
         Span<char> dest = stackalloc char[6];
@@ -329,7 +329,7 @@ public class MemoryExtensionsTryWriteTests
         written.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_AppendFormattedSpan_DestinationTooSmall_Fails()
     {
         Span<char> dest = stackalloc char[5];
@@ -339,7 +339,7 @@ public class MemoryExtensionsTryWriteTests
         written.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_AppendFormattedSpan_AlignmentBufferTooSmall_Fails()
     {
         Span<char> dest = stackalloc char[6];
@@ -349,7 +349,7 @@ public class MemoryExtensionsTryWriteTests
         written.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_AppendFormattedT_WithAlignment_PrimaryAppendFails()
     {
         Span<char> dest = stackalloc char[3];
@@ -358,7 +358,7 @@ public class MemoryExtensionsTryWriteTests
         written.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_CustomFormatter_NullValue_AppendsEmpty()
     {
         Span<char> dest = stackalloc char[16];
@@ -369,7 +369,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("[]");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_AppendFormatted_NullObject_NoAlignment_AppendsEmpty()
     {
         Span<char> dest = stackalloc char[16];
@@ -379,7 +379,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("[]");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_LeftAlignment_LongPadding()
     {
         Span<char> dest = stackalloc char[32];
@@ -388,7 +388,7 @@ public class MemoryExtensionsTryWriteTests
         dest[..written].ToString().Should().Be("|42        |");
     }
 
-    [Fact]
+    [Test]
     public void TryWrite_RightAlignment_PaddingExactlyZero()
     {
         // alignment == value length: padding is 0, falls through to the no-padding branch.

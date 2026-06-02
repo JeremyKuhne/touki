@@ -20,156 +20,156 @@ public class ExtGlobPositiveMatchTests
 
     // -- @(...) : exactly one alternative must match --------------------------------
 
-    [Theory]
-    [InlineData("@(foo)", "foo", true)]
-    [InlineData("@(foo)", "bar", false)]
-    [InlineData("@(foo|bar)", "foo", true)]
-    [InlineData("@(foo|bar)", "bar", true)]
-    [InlineData("@(foo|bar)", "baz", false)]
-    [InlineData("@(a|b|c)", "a", true)]
-    [InlineData("@(a|b|c)", "c", true)]
-    [InlineData("@(a|b|c)", "d", false)]
-    [InlineData("@(a|b)", "", false)]
-    [InlineData("@(a|b)", "ab", false)]
+    [Test]
+    [Arguments("@(foo)", "foo", true)]
+    [Arguments("@(foo)", "bar", false)]
+    [Arguments("@(foo|bar)", "foo", true)]
+    [Arguments("@(foo|bar)", "bar", true)]
+    [Arguments("@(foo|bar)", "baz", false)]
+    [Arguments("@(a|b|c)", "a", true)]
+    [Arguments("@(a|b|c)", "c", true)]
+    [Arguments("@(a|b|c)", "d", false)]
+    [Arguments("@(a|b)", "", false)]
+    [Arguments("@(a|b)", "ab", false)]
     public void Match_At_ExactlyOneAlternative(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // @(...) embedded in surrounding literals.
-    [InlineData("foo@(x|y)bar", "fooxbar", true)]
-    [InlineData("foo@(x|y)bar", "fooybar", true)]
-    [InlineData("foo@(x|y)bar", "foozbar", false)]
-    [InlineData("foo@(x|y)bar", "fooxybar", false)]
-    [InlineData("foo@(x|y)bar", "foobar", false)]
+    [Arguments("foo@(x|y)bar", "fooxbar", true)]
+    [Arguments("foo@(x|y)bar", "fooybar", true)]
+    [Arguments("foo@(x|y)bar", "foozbar", false)]
+    [Arguments("foo@(x|y)bar", "fooxybar", false)]
+    [Arguments("foo@(x|y)bar", "foobar", false)]
     public void Match_At_WithSurroundingLiterals(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- ?(...) : zero or one alternative ---------------------------------------------
 
-    [Theory]
-    [InlineData("?(foo)", "", true)]
-    [InlineData("?(foo)", "foo", true)]
-    [InlineData("?(foo)", "bar", false)]
-    [InlineData("?(foo)", "foofoo", false)]
-    [InlineData("?(a|b)", "", true)]
-    [InlineData("?(a|b)", "a", true)]
-    [InlineData("?(a|b)", "b", true)]
-    [InlineData("?(a|b)", "c", false)]
-    [InlineData("foo?(x|y)bar", "fooxbar", true)]
-    [InlineData("foo?(x|y)bar", "foobar", true)]
-    [InlineData("foo?(x|y)bar", "fooxxbar", false)]
+    [Test]
+    [Arguments("?(foo)", "", true)]
+    [Arguments("?(foo)", "foo", true)]
+    [Arguments("?(foo)", "bar", false)]
+    [Arguments("?(foo)", "foofoo", false)]
+    [Arguments("?(a|b)", "", true)]
+    [Arguments("?(a|b)", "a", true)]
+    [Arguments("?(a|b)", "b", true)]
+    [Arguments("?(a|b)", "c", false)]
+    [Arguments("foo?(x|y)bar", "fooxbar", true)]
+    [Arguments("foo?(x|y)bar", "foobar", true)]
+    [Arguments("foo?(x|y)bar", "fooxxbar", false)]
     public void Match_Question_ZeroOrOne(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- +(...) : one or more alternatives --------------------------------------------
 
-    [Theory]
-    [InlineData("+(a)", "", false)]
-    [InlineData("+(a)", "a", true)]
-    [InlineData("+(a)", "aa", true)]
-    [InlineData("+(a)", "aaaa", true)]
-    [InlineData("+(a)", "ab", false)]
-    [InlineData("+(a|b)", "ab", true)]
-    [InlineData("+(a|b)", "aabb", true)]
-    [InlineData("+(a|b)", "abab", true)]
-    [InlineData("+(a|b)", "abc", false)]
-    [InlineData("+(a|b)", "", false)]
-    [InlineData("foo+(x|y)bar", "fooxbar", true)]
-    [InlineData("foo+(x|y)bar", "fooxxbar", true)]
-    [InlineData("foo+(x|y)bar", "fooxyxbar", true)]
-    [InlineData("foo+(x|y)bar", "foobar", false)]
+    [Test]
+    [Arguments("+(a)", "", false)]
+    [Arguments("+(a)", "a", true)]
+    [Arguments("+(a)", "aa", true)]
+    [Arguments("+(a)", "aaaa", true)]
+    [Arguments("+(a)", "ab", false)]
+    [Arguments("+(a|b)", "ab", true)]
+    [Arguments("+(a|b)", "aabb", true)]
+    [Arguments("+(a|b)", "abab", true)]
+    [Arguments("+(a|b)", "abc", false)]
+    [Arguments("+(a|b)", "", false)]
+    [Arguments("foo+(x|y)bar", "fooxbar", true)]
+    [Arguments("foo+(x|y)bar", "fooxxbar", true)]
+    [Arguments("foo+(x|y)bar", "fooxyxbar", true)]
+    [Arguments("foo+(x|y)bar", "foobar", false)]
     public void Match_Plus_OneOrMore(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- *(...) : zero or more alternatives -------------------------------------------
 
-    [Theory]
-    [InlineData("*(a)", "", true)]
-    [InlineData("*(a)", "a", true)]
-    [InlineData("*(a)", "aa", true)]
-    [InlineData("*(a)", "aaaa", true)]
-    [InlineData("*(a)", "ab", false)]
-    [InlineData("*(a|b)", "", true)]
-    [InlineData("*(a|b)", "abab", true)]
-    [InlineData("*(a|b)", "c", false)]
-    [InlineData("foo*(x|y)bar", "foobar", true)]
-    [InlineData("foo*(x|y)bar", "fooxbar", true)]
-    [InlineData("foo*(x|y)bar", "fooxxxxxbar", true)]
-    [InlineData("foo*(x|y)bar", "fooxybar", true)]
-    [InlineData("foo*(x|y)bar", "foozbar", false)]
+    [Test]
+    [Arguments("*(a)", "", true)]
+    [Arguments("*(a)", "a", true)]
+    [Arguments("*(a)", "aa", true)]
+    [Arguments("*(a)", "aaaa", true)]
+    [Arguments("*(a)", "ab", false)]
+    [Arguments("*(a|b)", "", true)]
+    [Arguments("*(a|b)", "abab", true)]
+    [Arguments("*(a|b)", "c", false)]
+    [Arguments("foo*(x|y)bar", "foobar", true)]
+    [Arguments("foo*(x|y)bar", "fooxbar", true)]
+    [Arguments("foo*(x|y)bar", "fooxxxxxbar", true)]
+    [Arguments("foo*(x|y)bar", "fooxybar", true)]
+    [Arguments("foo*(x|y)bar", "foozbar", false)]
     public void Match_Star_ZeroOrMore(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- Multiple alternatives --------------------------------------------------------
 
-    [Theory]
-    [InlineData("@(foo|bar|baz)", "foo", true)]
-    [InlineData("@(foo|bar|baz)", "bar", true)]
-    [InlineData("@(foo|bar|baz)", "baz", true)]
-    [InlineData("@(foo|bar|baz)", "qux", false)]
+    [Test]
+    [Arguments("@(foo|bar|baz)", "foo", true)]
+    [Arguments("@(foo|bar|baz)", "bar", true)]
+    [Arguments("@(foo|bar|baz)", "baz", true)]
+    [Arguments("@(foo|bar|baz)", "qux", false)]
     public void Match_MultipleAlternatives(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- Empty alternatives -----------------------------------------------------------
 
-    [Theory]
-    [InlineData("@(|)", "", true)]
-    [InlineData("@(|)", "x", false)]
-    [InlineData("@(|a)", "", true)]
-    [InlineData("@(|a)", "a", true)]
-    [InlineData("@(a|)", "", true)]
-    [InlineData("@(a|)", "a", true)]
-    [InlineData("foo@(|x)bar", "foobar", true)]
-    [InlineData("foo@(|x)bar", "fooxbar", true)]
-    [InlineData("foo@(|x)bar", "fooybar", false)]
+    [Test]
+    [Arguments("@(|)", "", true)]
+    [Arguments("@(|)", "x", false)]
+    [Arguments("@(|a)", "", true)]
+    [Arguments("@(|a)", "a", true)]
+    [Arguments("@(a|)", "", true)]
+    [Arguments("@(a|)", "a", true)]
+    [Arguments("foo@(|x)bar", "foobar", true)]
+    [Arguments("foo@(|x)bar", "fooxbar", true)]
+    [Arguments("foo@(|x)bar", "fooybar", false)]
     public void Match_EmptyAlternatives(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- Inner wildcards inside alternatives ------------------------------------------
 
-    [Theory]
-    [InlineData("@(*.cs|*.txt)", "foo.cs", true)]
-    [InlineData("@(*.cs|*.txt)", "foo.txt", true)]
-    [InlineData("@(*.cs|*.txt)", "foo.json", false)]
-    [InlineData("@(a?b)", "axb", true)]
-    [InlineData("@(a?b)", "ab", false)]
-    [InlineData("@(a?b)", "axyb", false)]
+    [Test]
+    [Arguments("@(*.cs|*.txt)", "foo.cs", true)]
+    [Arguments("@(*.cs|*.txt)", "foo.txt", true)]
+    [Arguments("@(*.cs|*.txt)", "foo.json", false)]
+    [Arguments("@(a?b)", "axb", true)]
+    [Arguments("@(a?b)", "ab", false)]
+    [Arguments("@(a?b)", "axyb", false)]
     public void Match_InnerWildcards(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- Nested extglob ---------------------------------------------------------------
 
-    [Theory]
-    [InlineData("*(a|@(b|c))d", "d", true)]
-    [InlineData("*(a|@(b|c))d", "ad", true)]
-    [InlineData("*(a|@(b|c))d", "bd", true)]
-    [InlineData("*(a|@(b|c))d", "cd", true)]
-    [InlineData("*(a|@(b|c))d", "abcd", true)]
-    [InlineData("*(a|@(b|c))d", "abxd", false)]
-    [InlineData("?(@(foo|bar))", "foo", true)]
-    [InlineData("?(@(foo|bar))", "bar", true)]
-    [InlineData("?(@(foo|bar))", "", true)]
-    [InlineData("?(@(foo|bar))", "baz", false)]
+    [Test]
+    [Arguments("*(a|@(b|c))d", "d", true)]
+    [Arguments("*(a|@(b|c))d", "ad", true)]
+    [Arguments("*(a|@(b|c))d", "bd", true)]
+    [Arguments("*(a|@(b|c))d", "cd", true)]
+    [Arguments("*(a|@(b|c))d", "abcd", true)]
+    [Arguments("*(a|@(b|c))d", "abxd", false)]
+    [Arguments("?(@(foo|bar))", "foo", true)]
+    [Arguments("?(@(foo|bar))", "bar", true)]
+    [Arguments("?(@(foo|bar))", "", true)]
+    [Arguments("?(@(foo|bar))", "baz", false)]
     public void Match_Nested(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- Path-aware: inner wildcards don't cross the separator ------------------------
 
-    [Theory]
-    [InlineData("@(*.cs|*.txt)", "foo/bar.cs", false)]
-    [InlineData("@(*.cs|*.txt)", "foo.cs", true)]
-    [InlineData("dir/@(a|b)", "dir/a", true)]
-    [InlineData("dir/@(a|b)", "dir/b", true)]
-    [InlineData("dir/@(a|b)", "dir/c", false)]
+    [Test]
+    [Arguments("@(*.cs|*.txt)", "foo/bar.cs", false)]
+    [Arguments("@(*.cs|*.txt)", "foo.cs", true)]
+    [Arguments("dir/@(a|b)", "dir/a", true)]
+    [Arguments("dir/@(a|b)", "dir/b", true)]
+    [Arguments("dir/@(a|b)", "dir/c", false)]
     public void Match_PathAware(string pattern, string input, bool expected) =>
         Match(pattern, input, GlobDialect.Bash).Should().Be(expected);
 
     // -- IgnoreCase ------------------------------------------------------------------
 
-    [Theory]
-    [InlineData("@(FOO|BAR)", "foo", true)]
-    [InlineData("@(FOO|BAR)", "bar", true)]
-    [InlineData("@(FOO|BAR)", "baz", false)]
+    [Test]
+    [Arguments("@(FOO|BAR)", "foo", true)]
+    [Arguments("@(FOO|BAR)", "bar", true)]
+    [Arguments("@(FOO|BAR)", "baz", false)]
     public void Match_IgnoreCase(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(
             pattern,

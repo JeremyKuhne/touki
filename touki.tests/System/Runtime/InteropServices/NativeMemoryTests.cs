@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -6,7 +6,7 @@ namespace System.Runtime.InteropServices;
 
 public unsafe class NativeMemoryTests
 {
-    [Fact]
+    [Test]
     public void Alloc_ZeroSize_ReturnsValidPointer()
     {
         void* ptr = NativeMemory.Alloc(0);
@@ -14,7 +14,7 @@ public unsafe class NativeMemoryTests
         NativeMemory.Free(ptr);
     }
 
-    [Fact]
+    [Test]
     public void Alloc_ValidSize_ReturnsUsableMemory()
     {
         nuint size = 100;
@@ -37,7 +37,7 @@ public unsafe class NativeMemoryTests
         NativeMemory.Free(ptr);
     }
 
-    [Fact]
+    [Test]
     public void Alloc_ElementCountAndSize_ReturnsValidPointer()
     {
         nuint elementCount = 10;
@@ -47,7 +47,7 @@ public unsafe class NativeMemoryTests
         NativeMemory.Free(ptr);
     }
 
-    [Fact]
+    [Test]
     public void Alloc_ZeroElementCountOrSize_ReturnsValidPointer()
     {
         void* ptr1 = NativeMemory.Alloc(0, 4);
@@ -63,7 +63,7 @@ public unsafe class NativeMemoryTests
         NativeMemory.Free(ptr3);
     }
 
-    [Fact]
+    [Test]
     public void AllocZeroed_ValidSize_ReturnsZeroedMemory()
     {
         nuint size = 100;
@@ -80,7 +80,7 @@ public unsafe class NativeMemoryTests
         NativeMemory.Free(ptr);
     }
 
-    [Fact]
+    [Test]
     public void AllocZeroed_ElementCountAndSize_ReturnsZeroedMemory()
     {
         nuint elementCount = 10;
@@ -98,14 +98,14 @@ public unsafe class NativeMemoryTests
         NativeMemory.Free(ptr);
     }
 
-    [Fact]
+    [Test]
     public void Free_NullPointer_DoesNotThrow()
     {
         Action action = () => NativeMemory.Free(null);
         action.Should().NotThrow();
     }
 
-    [Fact]
+    [Test]
     public void Realloc_NullPointer_AllocatesNewMemory()
     {
         nuint size = 100;
@@ -114,7 +114,7 @@ public unsafe class NativeMemoryTests
         NativeMemory.Free(ptr);
     }
 
-    [Fact]
+    [Test]
     public void Realloc_ValidPointer_PreservesData()
     {
         nuint initialSize = 10;
@@ -144,7 +144,7 @@ public unsafe class NativeMemoryTests
         NativeMemory.Free(newPtr);
     }
 
-    [Fact]
+    [Test]
     public void Clear_ValidPointer_ClearsMemory()
     {
         nuint size = 100;
@@ -170,7 +170,7 @@ public unsafe class NativeMemoryTests
         NativeMemory.Free(ptr);
     }
 
-    [Fact]
+    [Test]
     public void Copy_ValidPointers_CopiesData()
     {
         nuint size = 100;
@@ -198,7 +198,7 @@ public unsafe class NativeMemoryTests
         NativeMemory.Free(destination);
     }
 
-    [Fact]
+    [Test]
     public void Fill_ValidPointer_FillsMemory()
     {
         nuint size = 100;
@@ -219,7 +219,7 @@ public unsafe class NativeMemoryTests
         NativeMemory.Free(ptr);
     }
 
-    [Fact]
+    [Test]
     public void AlignedAlloc_ValidAlignment_ReturnsAlignedPointer()
     {
         nuint size = 100;
@@ -234,7 +234,7 @@ public unsafe class NativeMemoryTests
         NativeMemory.AlignedFree(ptr);
     }
 
-    [Fact]
+    [Test]
     public void AlignedAlloc_NonPowerOfTwoAlignment_ThrowsArgumentException()
     {
         nuint size = 100;
@@ -244,14 +244,14 @@ public unsafe class NativeMemoryTests
         action.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Test]
     public void AlignedFree_NullPointer_DoesNotThrow()
     {
         Action action = () => NativeMemory.AlignedFree(null);
         action.Should().NotThrow();
     }
 
-    [Fact]
+    [Test]
     public void AlignedRealloc_ValidPointer_PreservesData()
     {
         nuint initialSize = 10;
@@ -286,7 +286,7 @@ public unsafe class NativeMemoryTests
         NativeMemory.AlignedFree(newPtr);
     }
 
-    [Fact]
+    [Test]
     public void AlignedRealloc_NonPowerOfTwoAlignment_ThrowsArgumentException()
     {
         nuint size = 100;

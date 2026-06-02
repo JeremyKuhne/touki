@@ -5,114 +5,93 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
-
 namespace Touki.TestSupport;
 
 /// <summary>
-///  Use (within a using) to eat asserts. Currently supports xUnit v3.
+///  Use (within a using) to eat asserts.
 /// </summary>
 public sealed class NoAssertContext : IDisposable
 {
-    // For any given thread we don't need to lock to decide how to route messages, as any messages for that
-    // given thread will not happen while we're in the constructor or dispose method on that thread. That
-    // means we can safely check to see if we've hooked our thread without locking (outside of using a
-    // concurrent collection to make sure the collection is in a known state).
+    // Suppression is tracked with an AsyncLocal depth so it follows the logical flow of execution -
+    // across threads and async continuations - rather than being pinned to the thread that created the
+    // context. A failure is only swallowed when the ambient flow has a non-zero suppression depth; any
+    // other flow (for example a parallel test) is routed to the original listeners and still fails.
     //
-    // We do, however need to lock around hooking/unhooking our custom listener to make sure that we
-    // are rerouting correctly if multiple threads are creating/disposing this class concurrently.
+    // The custom listener is installed into Trace.Listeners exactly once, from the static constructor.
+    // The CLR runs a static constructor a single time, fully serialized, with a happens-before guarantee
+    // for every thread that subsequently touches the type, so the listener swap is race-free and visible
+    // to all threads without any double-checked-locking or volatile gymnastics. It runs only when a test
+    // first creates a NoAssertContext (not for unrelated consumers of this package).
+    //
+    // All pre-existing listeners are captured and removed so that NoAssertListener is the sole listener.
+    // Debug.Fail/Trace invoke every registered listener, so a throwing listener (for example the test
+    // framework's own assert-to-exception listener, or touki's ThrowingTraceListener) left in the
+    // collection would fire even while we intend to suppress. By making our listener the only one and
+    // forwarding to the captured originals only when the ambient depth is zero, suppression is honored
+    // and normal behavior (including the throwing listeners) is preserved outside a context.
 
-    private static readonly Lock s_lock = new();
-    private static bool s_hooked;
-    private static bool s_hasThrowingListener;
+    // Ambient suppression depth for the current logical flow of execution.
+    private static readonly AsyncLocal<int> s_suppressionDepth;
 
-    private static readonly ConcurrentDictionary<int, int> s_suppressedThreads = new();
+    // The listeners that were present before we installed ours. Forwarded to when not suppressing.
+    private static readonly TraceListener[] s_originalListeners;
+    private static readonly NoAssertListener s_noAssertListener;
 
-    // "Default" is the listener that terminates the process when debug assertions fail.
-    private static readonly TraceListener? s_defaultListener = Trace.Listeners["Default"];
-    private static readonly TraceListener? s_xunitListener = Trace.Listeners["xUnit.net"];
-    private static readonly NoAssertListener s_noAssertListener = new();
+    private bool _disposed;
 
-    /// <summary>
-    ///  Instantiates a context that suppresses asserts on the current thread.
-    /// </summary>
-    public NoAssertContext()
+#pragma warning disable CA1810 // Initialize reference type static fields inline
+    // An explicit static constructor is intentional here: it performs the one-time Trace.Listeners swap
+    // with side effects and relies on the CLR's guarantee that a static constructor runs exactly once,
+    // fully serialized, and happens-before any thread that subsequently touches the type. That ordering
+    // is what makes the install race-free without volatile or double-checked locking.
+    static NoAssertContext()
+#pragma warning restore CA1810
     {
-        s_suppressedThreads.AddOrUpdate(Environment.CurrentManagedThreadId, 1, (key, oldValue) => oldValue + 1);
+        s_suppressionDepth = new();
+        s_noAssertListener = new();
 
-        // Lock to make sure we are hooked properly if two threads come into the constructor/dispose at the same time.
-        lock (s_lock)
+        // Capture every existing listener so we can forward to them when not suppressing.
+        s_originalListeners = [.. Trace.Listeners.Cast<TraceListener>()];
+
+        // Hook our custom listener first so we don't lose assertions during the swap, then remove the
+        // originals so ours is the only listener that Debug.Fail/Trace will invoke.
+        Trace.Listeners.Add(s_noAssertListener);
+
+        foreach (TraceListener listener in s_originalListeners)
         {
-            if (!s_hooked)
-            {
-                // Hook our custom listener first so we don't lose assertions from other threads when
-                // we disconnect the default listener.
-                Trace.Listeners.Add(s_noAssertListener);
-                if (s_defaultListener is not null && Trace.Listeners.Contains(s_defaultListener))
-                {
-                    Trace.Listeners.Remove(s_defaultListener);
-                }
-
-                if (s_xunitListener is not null && Trace.Listeners.Contains(s_xunitListener))
-                {
-                    Trace.Listeners.Remove(s_xunitListener);
-                }
-
-                if (Trace.Listeners.OfType<ThrowingTraceListener>().FirstOrDefault() is { } throwingTraceListener)
-                {
-                    s_hasThrowingListener = true;
-                    Trace.Listeners.Remove(throwingTraceListener);
-                }
-
-                s_hooked = true;
-            }
+            Trace.Listeners.Remove(listener);
         }
     }
 
     /// <summary>
-    ///  Disposes the context, restoring assert behavior on the current thread.
+    ///  Instantiates a context that suppresses asserts for the current flow of execution.
+    /// </summary>
+    public NoAssertContext()
+    {
+        // Increase the suppression depth for the current flow. Because this is tracked with an AsyncLocal
+        // it follows the execution context across threads and async continuations, so it stays correct
+        // even when disposal happens on a different thread than construction. The static constructor has
+        // already installed the suppressing listener by the time we get here.
+        s_suppressionDepth.Value++;
+    }
+
+    /// <summary>
+    ///  Disposes the context, restoring assert behavior for the current flow of execution.
     /// </summary>
     public void Dispose()
     {
         GC.SuppressFinalize(this);
 
-        int currentThread = Environment.CurrentManagedThreadId;
-        if (s_suppressedThreads.TryRemove(currentThread, out int count))
+        if (_disposed)
         {
-            if (count > 1)
-            {
-                // We're in a nested assert context on a given thread, re-add with a decremented count.
-                // This doesn't need to be atomic as we're currently on the thread that would care about
-                // being rerouted.
-                s_suppressedThreads.TryAdd(currentThread, --count);
-            }
+            return;
         }
 
-        lock (s_lock)
-        {
-            if (s_hooked && s_suppressedThreads.IsEmpty)
-            {
-                // We're the first to hit the need to unhook. Add the default listener back first to
-                // ensure we don't lose any asserts from other threads.
-                if (s_defaultListener is { } defaultListener)
-                {
-                    Trace.Listeners.Add(defaultListener);
-                }
+        _disposed = true;
 
-                if (s_xunitListener is { } xunitListener)
-                {
-                    Trace.Listeners.Add(xunitListener);
-                }
-
-                if (s_hasThrowingListener)
-                {
-                    Trace.Listeners.Add(ThrowingTraceListener.Instance);
-                }
-
-                Trace.Listeners.Remove(s_noAssertListener);
-                s_hooked = false;
-            }
-        }
+        // Decrease the suppression depth for the current flow. Nested contexts simply restore the prior
+        // depth; the listener stays installed and forwards to the original listeners once depth reaches zero.
+        s_suppressionDepth.Value--;
     }
 
 #pragma warning disable CA1821 // Remove empty Finalizers
@@ -133,23 +112,25 @@ public sealed class NoAssertContext : IDisposable
         {
         }
 
-        private static TraceListener? DefaultListener => s_hasThrowingListener
-            ? ThrowingTraceListener.Instance
-            : s_defaultListener;
-
         public override void Fail(string? message)
         {
-            if (!s_suppressedThreads.TryGetValue(Environment.CurrentManagedThreadId, out _))
+            if (s_suppressionDepth.Value == 0)
             {
-                DefaultListener?.Fail(message);
+                foreach (TraceListener listener in s_originalListeners)
+                {
+                    listener.Fail(message);
+                }
             }
         }
 
         public override void Fail(string? message, string? detailMessage)
         {
-            if (!s_suppressedThreads.TryGetValue(Environment.CurrentManagedThreadId, out _))
+            if (s_suppressionDepth.Value == 0)
             {
-                DefaultListener?.Fail(message, detailMessage);
+                foreach (TraceListener listener in s_originalListeners)
+                {
+                    listener.Fail(message, detailMessage);
+                }
             }
         }
 
@@ -157,17 +138,23 @@ public sealed class NoAssertContext : IDisposable
 
         public override void Write(string? message)
         {
-            if (!s_suppressedThreads.TryGetValue(Environment.CurrentManagedThreadId, out _))
+            if (s_suppressionDepth.Value == 0)
             {
-                DefaultListener?.Write(message);
+                foreach (TraceListener listener in s_originalListeners)
+                {
+                    listener.Write(message);
+                }
             }
         }
 
         public override void WriteLine(string? message)
         {
-            if (!s_suppressedThreads.TryGetValue(Environment.CurrentManagedThreadId, out _))
+            if (s_suppressionDepth.Value == 0)
             {
-                DefaultListener?.WriteLine(message);
+                foreach (TraceListener listener in s_originalListeners)
+                {
+                    listener.WriteLine(message);
+                }
             }
         }
     }

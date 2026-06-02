@@ -43,57 +43,57 @@ public class PortedTests_Bash
     // The bare `|` at upstream case-statement level is shell alternation, not
     // part of the extglob pattern. Wrap with `@(...)` to fold both alternatives
     // into a single matchable pattern.
-    [Theory]
-    [InlineData("@(0|[1-9]*([0-9]))", "12", true)]
-    [InlineData("@(0|[1-9]*([0-9]))", "12abc", false)]
-    [InlineData("@(0|[1-9]*([0-9]))", "1", true)]
-    [InlineData("@(0|[1-9]*([0-9]))", "0", true)]
+    [Test]
+    [Arguments("@(0|[1-9]*([0-9]))", "12", true)]
+    [Arguments("@(0|[1-9]*([0-9]))", "12abc", false)]
+    [Arguments("@(0|[1-9]*([0-9]))", "1", true)]
+    [Arguments("@(0|[1-9]*([0-9]))", "0", true)]
 
     // octal numbers via +([0-7]).
-    [InlineData("+([0-7])", "07", true)]
-    [InlineData("+([0-7])", "0377", true)]
-    [InlineData("+([0-7])", "09", false)]
+    [Arguments("+([0-7])", "07", true)]
+    [Arguments("+([0-7])", "0377", true)]
+    [Arguments("+([0-7])", "09", false)]
     public void IsMatch_Bash_NumberAlternations(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 
     // From extglob.tests: stuff from Korn's book.
     // para@(chute|graph), para?([345]|99)1, para*([0-9]), para+([0-9]),
     // para!(*.[0-9]).
-    [Theory]
-    [InlineData("para@(chute|graph)", "paragraph", true)]
-    [InlineData("para@(chute|graph)", "paramour", false)]
-    [InlineData("para?([345]|99)1", "para991", true)]
-    [InlineData("para?([345]|99)1", "para381", false)]
-    [InlineData("para*([0-9])", "paragraph", false)]
-    [InlineData("para*([0-9])", "para", true)]
-    [InlineData("para*([0-9])", "para13829383746592", true)]
-    [InlineData("para*([0-9])", "paragraph2", false)]
-    [InlineData("para+([0-9])", "para", false)]
-    [InlineData("para+([0-9])", "para987346523", true)]
-    [InlineData("para!(*.[0-9])", "paragraph", true)]
-    [InlineData("para!(*.[0-9])", "para.38", true)]
-    [InlineData("para!(*.[0-9])", "para.graph", true)]
-    [InlineData("para!(*.[0-9])", "para39", true)]
+    [Test]
+    [Arguments("para@(chute|graph)", "paragraph", true)]
+    [Arguments("para@(chute|graph)", "paramour", false)]
+    [Arguments("para?([345]|99)1", "para991", true)]
+    [Arguments("para?([345]|99)1", "para381", false)]
+    [Arguments("para*([0-9])", "paragraph", false)]
+    [Arguments("para*([0-9])", "para", true)]
+    [Arguments("para*([0-9])", "para13829383746592", true)]
+    [Arguments("para*([0-9])", "paragraph2", false)]
+    [Arguments("para+([0-9])", "para", false)]
+    [Arguments("para+([0-9])", "para987346523", true)]
+    [Arguments("para!(*.[0-9])", "paragraph", true)]
+    [Arguments("para!(*.[0-9])", "para.38", true)]
+    [Arguments("para!(*.[0-9])", "para.graph", true)]
+    [Arguments("para!(*.[0-9])", "para39", true)]
     public void IsMatch_Bash_KornBookShapes(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 
     // From extglob.tests: derived from Rosenblatt's korn shell book.
     // Empty / digit-set / extension shapes.
-    [Theory]
-    [InlineData("*(0|1|3|5|7|9)", "", true)]
-    [InlineData("*(0|1|3|5|7|9)", "137577991", true)]
-    [InlineData("*(0|1|3|5|7|9)", "2468", false)]
-    [InlineData("*.c?(c)", "file.c", true)]
-    [InlineData("*.c?(c)", "file.cc", true)]
-    [InlineData("*.c?(c)", "file.ccc", false)]
+    [Test]
+    [Arguments("*(0|1|3|5|7|9)", "", true)]
+    [Arguments("*(0|1|3|5|7|9)", "137577991", true)]
+    [Arguments("*(0|1|3|5|7|9)", "2468", false)]
+    [Arguments("*.c?(c)", "file.c", true)]
+    [Arguments("*.c?(c)", "file.cc", true)]
+    [Arguments("*.c?(c)", "file.ccc", false)]
     public void IsMatch_Bash_RosenblattShapes(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 
     // From extglob.tests: !(*.c|*.h|Makefile.in|config*|README) negation set.
-    [Theory]
-    [InlineData("!(*.c|*.h|Makefile.in|config*|README)", "parse.y", true)]
-    [InlineData("!(*.c|*.h|Makefile.in|config*|README)", "shell.c", false)]
-    [InlineData("!(*.c|*.h|Makefile.in|config*|README)", "Makefile", true)]
+    [Test]
+    [Arguments("!(*.c|*.h|Makefile.in|config*|README)", "parse.y", true)]
+    [Arguments("!(*.c|*.h|Makefile.in|config*|README)", "shell.c", false)]
+    [Arguments("!(*.c|*.h|Makefile.in|config*|README)", "Makefile", true)]
     public void IsMatch_Bash_NegationSet(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 
@@ -101,42 +101,42 @@ public class PortedTests_Bash
     // *\;[1-9]*([0-9]) where the backslash escapes the ';' for bash's
     // case-statement parser. Bash's pattern matcher never sees the
     // backslash; the equivalent touki pattern is the literal *;[1-9]*([0-9]).
-    [Theory]
-    [InlineData("*;[1-9]*([0-9])", "VMS.FILE;1", true)]
-    [InlineData("*;[1-9]*([0-9])", "VMS.FILE;0", false)]
-    [InlineData("*;[1-9]*([0-9])", "VMS.FILE;", false)]
-    [InlineData("*;[1-9]*([0-9])", "VMS.FILE;139", true)]
-    [InlineData("*;[1-9]*([0-9])", "VMS.FILE;1N", false)]
+    [Test]
+    [Arguments("*;[1-9]*([0-9])", "VMS.FILE;1", true)]
+    [Arguments("*;[1-9]*([0-9])", "VMS.FILE;0", false)]
+    [Arguments("*;[1-9]*([0-9])", "VMS.FILE;", false)]
+    [Arguments("*;[1-9]*([0-9])", "VMS.FILE;139", true)]
+    [Arguments("*;[1-9]*([0-9])", "VMS.FILE;1N", false)]
     public void IsMatch_Bash_VmsVersionShape(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 
     // From extglob.tests: pdksh-derived "stuck" alternations and Kleene-star
     // shapes against the four-file fixture (ab, abcdef, abef, abcfef).
-    [Theory]
-    [InlineData("ab*(e|f)", "ab", true)]
-    [InlineData("ab*(e|f)", "abef", true)]
-    [InlineData("ab*(e|f)", "abcdef", false)]
-    [InlineData("ab*(e|f)", "abcfef", false)]
-    [InlineData("ab?*(e|f)", "abef", true)]
-    [InlineData("ab?*(e|f)", "abcfef", true)]
-    [InlineData("ab?*(e|f)", "ab", false)]
-    [InlineData("ab*d+(e|f)", "abcdef", true)]
-    [InlineData("ab*d+(e|f)", "ab", false)]
-    [InlineData("ab*+(e|f)", "abcdef", true)]
-    [InlineData("ab*+(e|f)", "abcfef", true)]
-    [InlineData("ab*+(e|f)", "abef", true)]
-    [InlineData("ab*+(e|f)", "ab", false)]
+    [Test]
+    [Arguments("ab*(e|f)", "ab", true)]
+    [Arguments("ab*(e|f)", "abef", true)]
+    [Arguments("ab*(e|f)", "abcdef", false)]
+    [Arguments("ab*(e|f)", "abcfef", false)]
+    [Arguments("ab?*(e|f)", "abef", true)]
+    [Arguments("ab?*(e|f)", "abcfef", true)]
+    [Arguments("ab?*(e|f)", "ab", false)]
+    [Arguments("ab*d+(e|f)", "abcdef", true)]
+    [Arguments("ab*d+(e|f)", "ab", false)]
+    [Arguments("ab*+(e|f)", "abcdef", true)]
+    [Arguments("ab*+(e|f)", "abcfef", true)]
+    [Arguments("ab*+(e|f)", "abef", true)]
+    [Arguments("ab*+(e|f)", "ab", false)]
     public void IsMatch_Bash_PdkshKleeneShapes(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 
     // From extglob.tests: pdksh case-statement rows 37-42.
-    [Theory]
-    [InlineData("ab**(e|f)g", "abcfefg", true)]
-    [InlineData("ab*+(e|f)", "ab", false)]
-    [InlineData("ab**", "abef", true)]
+    [Test]
+    [Arguments("ab**(e|f)g", "abcfefg", true)]
+    [Arguments("ab*+(e|f)", "ab", false)]
+    [Arguments("ab**", "abef", true)]
     // Bug-fix regression rows (originally "bug in all versions up to and
     // including bash-2.05b"). *?(a)bc vs 123abc.
-    [InlineData("*?(a)bc", "123abc", true)]
+    [Arguments("*?(a)bc", "123abc", true)]
     public void IsMatch_Bash_PdkshRegressionShapes(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 
@@ -149,55 +149,55 @@ public class PortedTests_Bash
     //   - ab***(e|f)g   : three stars => `**` AnyRun + `*(e|f)` extglob.
     //   - @(a|c**(b))   : the carve-out also fires inside an extglob body.
     //   - ab**(e|f)     : trailing extglob with no literal tail.
-    [Theory]
-    [InlineData("ab**(e|f)g", "abcfefg", true)]
-    [InlineData("ab**(e|f)g", "abg", true)]          // `*` + `*(e|f)` both match empty
-    [InlineData("ab**(e|f)g", "abgh", false)]        // trailing literal `g` must be last
-    [InlineData("ab***(e|f)g", "abcfefg", true)]
-    [InlineData("ab***(e|f)g", "abcXfefg", true)]   // `***` -> `**` AnyRun crosses the X
-    [InlineData("ab**(e|f)", "ab", true)]            // `*(e|f)` accepts zero alts
-    [InlineData("ab**(e|f)", "abef", true)]
-    [InlineData("@(a|c**(b))", "a", true)]
-    [InlineData("@(a|c**(b))", "cbb", true)]
-    [InlineData("@(a|c**(b))", "cXbb", true)]
+    [Test]
+    [Arguments("ab**(e|f)g", "abcfefg", true)]
+    [Arguments("ab**(e|f)g", "abg", true)]          // `*` + `*(e|f)` both match empty
+    [Arguments("ab**(e|f)g", "abgh", false)]        // trailing literal `g` must be last
+    [Arguments("ab***(e|f)g", "abcfefg", true)]
+    [Arguments("ab***(e|f)g", "abcXfefg", true)]   // `***` -> `**` AnyRun crosses the X
+    [Arguments("ab**(e|f)", "ab", true)]            // `*(e|f)` accepts zero alts
+    [Arguments("ab**(e|f)", "abef", true)]
+    [Arguments("@(a|c**(b))", "a", true)]
+    [Arguments("@(a|c**(b))", "cbb", true)]
+    [Arguments("@(a|c**(b))", "cXbb", true)]
     public void IsMatch_Bash_DoubleStarExtGlobCarveOut(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 
     // From extglob.tests: /dev/@(tcp|udp)/*/* path-like alternation.
-    [Theory]
-    [InlineData("/dev/@(tcp|udp)/*/*", "/dev/udp/129.22.8.102/45", true)]
-    [InlineData("/dev/@(tcp|udp)/*/*", "/dev/tcp/host/22", true)]
-    [InlineData("/dev/@(tcp|udp)/*/*", "/dev/scp/host/22", false)]
+    [Test]
+    [Arguments("/dev/@(tcp|udp)/*/*", "/dev/udp/129.22.8.102/45", true)]
+    [Arguments("/dev/@(tcp|udp)/*/*", "/dev/tcp/host/22", true)]
+    [Arguments("/dev/@(tcp|udp)/*/*", "/dev/scp/host/22", false)]
     public void IsMatch_Bash_PathLikeAlternation(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 
     // From extglob.tests: a!(@(b|B))d - exactly one char after 'a' that's
     // neither 'b' nor 'B', before 'd'. Bash output: 'acd'.
-    [Theory]
-    [InlineData("a!(@(b|B))d", "acd", true)]
-    [InlineData("a!(@(b|B))d", "abd", false)]
-    [InlineData("a!(@(b|B))d", "aBd", false)]
+    [Test]
+    [Arguments("a!(@(b|B))d", "acd", true)]
+    [Arguments("a!(@(b|B))d", "abd", false)]
+    [Arguments("a!(@(b|B))d", "aBd", false)]
     public void IsMatch_Bash_NegatedAlternationGuard(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 
     // From extglob.tests: a+(b|c)d matches both abd and acd.
-    [Theory]
-    [InlineData("a+(b|c)d", "abd", true)]
-    [InlineData("a+(b|c)d", "acd", true)]
-    [InlineData("a+(b|c)d", "ad", false)]
-    [InlineData("a+(b|c)d", "abcd", true)]
+    [Test]
+    [Arguments("a+(b|c)d", "abd", true)]
+    [Arguments("a+(b|c)d", "acd", true)]
+    [Arguments("a+(b|c)d", "ad", false)]
+    [Arguments("a+(b|c)d", "abcd", true)]
     public void IsMatch_Bash_PlusAlternation(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 
     // From extglob.tests: no-file+(a|b)stuff, no-file+(a*(c)|b)stuff -
     // verifies that nested extglobs match correctly when present.
-    [Theory]
-    [InlineData("no-file+(a|b)stuff", "no-fileastuff", true)]
-    [InlineData("no-file+(a|b)stuff", "no-filebstuff", true)]
-    [InlineData("no-file+(a|b)stuff", "no-filestuff", false)]
-    [InlineData("no-file+(a*(c)|b)stuff", "no-fileastuff", true)]
-    [InlineData("no-file+(a*(c)|b)stuff", "no-fileaccstuff", true)]
-    [InlineData("no-file+(a*(c)|b)stuff", "no-filebstuff", true)]
+    [Test]
+    [Arguments("no-file+(a|b)stuff", "no-fileastuff", true)]
+    [Arguments("no-file+(a|b)stuff", "no-filebstuff", true)]
+    [Arguments("no-file+(a|b)stuff", "no-filestuff", false)]
+    [Arguments("no-file+(a*(c)|b)stuff", "no-fileastuff", true)]
+    [Arguments("no-file+(a*(c)|b)stuff", "no-fileaccstuff", true)]
+    [Arguments("no-file+(a*(c)|b)stuff", "no-filebstuff", true)]
     public void IsMatch_Bash_NestedExtGlob(string pattern, string input, bool expected) =>
         Compile(pattern).IsMatch(input).Should().Be(expected);
 

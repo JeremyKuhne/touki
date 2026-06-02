@@ -6,33 +6,33 @@ namespace Touki;
 
 public class StoringFloat
 {
-    public static TheoryData<float> FloatData => new()
+    public static IEnumerable<float> FloatData()
     {
-        { 0f },
-        { 42f },
-        { float.MaxValue },
-        { float.MinValue },
-        { float.NaN },
-        { float.NegativeInfinity },
-        { float.PositiveInfinity }
-    };
+        yield return 0f;
+        yield return 42f;
+        yield return float.MaxValue;
+        yield return float.MinValue;
+        yield return float.NaN;
+        yield return float.NegativeInfinity;
+        yield return float.PositiveInfinity;
+    }
 
-    [Theory]
-    [MemberData(nameof(FloatData))]
+    [Test]
+    [MethodDataSource(nameof(FloatData))]
     public void FloatImplicit(float @float)
     {
         Value value = @float;
-        Assert.Equal(@float, value.As<float>());
-        Assert.Equal(typeof(float), value.Type);
+        value.As<float>().Should().Be(@float);
+        value.Type.Should().Be(typeof(float));
 
         float? source = @float;
         value = source;
-        Assert.Equal(source, value.As<float?>());
-        Assert.Equal(typeof(float), value.Type);
+        value.As<float?>().Should().Be(source);
+        value.Type.Should().Be(typeof(float));
     }
 
-    [Theory]
-    [MemberData(nameof(FloatData))]
+    [Test]
+    [MethodDataSource(nameof(FloatData))]
     public void FloatCreate(float @float)
     {
         Value value;
@@ -41,8 +41,8 @@ public class StoringFloat
             value = Value.Create(@float);
         }
 
-        Assert.Equal(@float, value.As<float>());
-        Assert.Equal(typeof(float), value.Type);
+        value.As<float>().Should().Be(@float);
+        value.Type.Should().Be(typeof(float));
 
         float? source = @float;
 
@@ -51,101 +51,101 @@ public class StoringFloat
             value = Value.Create(source);
         }
 
-        Assert.Equal(source, value.As<float?>());
-        Assert.Equal(typeof(float), value.Type);
+        value.As<float?>().Should().Be(source);
+        value.Type.Should().Be(typeof(float));
     }
 
-    [Theory]
-    [MemberData(nameof(FloatData))]
+    [Test]
+    [MethodDataSource(nameof(FloatData))]
     public void FloatInOut(float @float)
     {
         Value value = @float;
         bool success = value.TryGetValue(out float result);
-        Assert.True(success);
-        Assert.Equal(@float, result);
+        success.Should().BeTrue();
+        result.Should().Be(@float);
 
-        Assert.Equal(@float, value.As<float>());
-        Assert.Equal(@float, (float)value);
+        value.As<float>().Should().Be(@float);
+        ((float)value).Should().Be(@float);
     }
 
-    [Theory]
-    [MemberData(nameof(FloatData))]
+    [Test]
+    [MethodDataSource(nameof(FloatData))]
     public void NullableFloatInFloatOut(float @float)
     {
         float? source = @float;
         Value value = source;
 
         bool success = value.TryGetValue(out float result);
-        Assert.True(success);
-        Assert.Equal(@float, result);
+        success.Should().BeTrue();
+        result.Should().Be(@float);
 
-        Assert.Equal(@float, value.As<float>());
+        value.As<float>().Should().Be(@float);
 
-        Assert.Equal(@float, (float)value);
+        ((float)value).Should().Be(@float);
     }
 
-    [Theory]
-    [MemberData(nameof(FloatData))]
+    [Test]
+    [MethodDataSource(nameof(FloatData))]
     public void FloatInNullableFloatOut(float @float)
     {
         float source = @float;
         Value value = source;
         bool success = value.TryGetValue(out float? result);
-        Assert.True(success);
-        Assert.Equal(@float, result);
+        success.Should().BeTrue();
+        result.Should().Be(@float);
 
-        Assert.Equal(@float, (float?)value);
+        ((float?)value).Should().Be(@float);
     }
 
-    [Theory]
-    [MemberData(nameof(FloatData))]
+    [Test]
+    [MethodDataSource(nameof(FloatData))]
     public void BoxedFloat(float @float)
     {
         float i = @float;
         object o = i;
         Value value = Value.Create(o);
 
-        Assert.Equal(typeof(float), value.Type);
-        Assert.True(value.TryGetValue(out float result));
-        Assert.Equal(@float, result);
-        Assert.True(value.TryGetValue(out float? nullableResult));
-        Assert.Equal(@float, nullableResult!.Value);
+        value.Type.Should().Be(typeof(float));
+        value.TryGetValue(out float result).Should().BeTrue();
+        result.Should().Be(@float);
+        value.TryGetValue(out float? nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@float);
 
 
         float? n = @float;
         o = n;
         value = Value.Create(o);
 
-        Assert.Equal(typeof(float), value.Type);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@float, result);
-        Assert.True(value.TryGetValue(out nullableResult));
-        Assert.Equal(@float, nullableResult!.Value);
+        value.Type.Should().Be(typeof(float));
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@float);
+        value.TryGetValue(out nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@float);
     }
 
-    [Fact]
+    [Test]
     public void NullFloat()
     {
         float? source = null;
         Value value = source;
-        Assert.Null(value.Type);
-        Assert.Equal(source, value.As<float?>());
-        Assert.False(value.As<float?>().HasValue);
+        value.Type.Should().BeNull();
+        value.As<float?>().Should().Be(source);
+        value.As<float?>().HasValue.Should().BeFalse();
     }
 
-    [Theory]
-    [MemberData(nameof(FloatData))]
+    [Test]
+    [MethodDataSource(nameof(FloatData))]
     public void OutAsObject(float @float)
     {
         Value value = @float;
         object o = value.As<object>();
-        Assert.Equal(typeof(float), o.GetType());
-        Assert.Equal(@float, (float)o);
+        o.GetType().Should().Be(typeof(float));
+        ((float)o).Should().Be(@float);
 
         float? n = @float;
         value = n;
         o = value.As<object>();
-        Assert.Equal(typeof(float), o.GetType());
-        Assert.Equal(@float, (float)o);
+        o.GetType().Should().Be(typeof(float));
+        ((float)o).Should().Be(@float);
     }
 }

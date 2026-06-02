@@ -36,7 +36,7 @@ public class RecordedDirectoryEnumeratorTests
         return folder;
     }
 
-    [Fact]
+    [Test]
     public void Replay_MSBuildMatcher_MatchesRealEnumerator()
     {
         using TempFolder folder = CreateFixture();
@@ -73,7 +73,7 @@ public class RecordedDirectoryEnumeratorTests
         actual.Should().NotContain(Path.Combine("obj", "Debug", "obj.cs"));
     }
 
-    [Fact]
+    [Test]
     public void Replay_GlobMatcher_MatchesRealEnumerator()
     {
         using TempFolder folder = CreateFixture();
@@ -108,7 +108,7 @@ public class RecordedDirectoryEnumeratorTests
         actual.Should().BeEquivalentTo(expected);
     }
 
-    [Fact]
+    [Test]
     public void Record_EmptyDirectory_IsCaptured()
     {
         using TempFolder folder = CreateFixture();
@@ -118,7 +118,7 @@ public class RecordedDirectoryEnumeratorTests
         fileSystem.DirectoryCount.Should().BeGreaterThan(1);
     }
 
-    [Fact]
+    [Test]
     public void CsvField_RoundTrips_ValuesNeedingQuoting()
     {
         AssertRoundTrip('D', "simple");

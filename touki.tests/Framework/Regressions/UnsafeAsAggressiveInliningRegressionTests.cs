@@ -29,7 +29,7 @@ namespace Touki.Framework.Regressions;
 /// </remarks>
 public class UnsafeAsAggressiveInliningRegressionTests
 {
-    [Fact]
+    [Test]
     public void Replace_SByteNegativeOne_ReplacesAllOccurrences()
     {
         sbyte[] data = [-1, 2, -1, 4, -1, 6, -1, 8];
@@ -37,7 +37,7 @@ public class UnsafeAsAggressiveInliningRegressionTests
         data.Should().Equal((sbyte)0, (sbyte)2, (sbyte)0, (sbyte)4, (sbyte)0, (sbyte)6, (sbyte)0, (sbyte)8);
     }
 
-    [Fact]
+    [Test]
     public void Replace_ByteMaxValue_ReplacesAllOccurrences()
     {
         byte[] data = [0xFF, 2, 0xFF, 4, 0xFF, 6, 0xFF, 8];
@@ -45,7 +45,7 @@ public class UnsafeAsAggressiveInliningRegressionTests
         data.Should().Equal((byte)0, (byte)2, (byte)0, (byte)4, (byte)0, (byte)6, (byte)0, (byte)8);
     }
 
-    [Fact]
+    [Test]
     public void Replace_ShortNegativeOne_ReplacesAllOccurrences()
     {
         short[] data = [-1, 2, -1, 4, -1, 6, -1, 8];
@@ -53,7 +53,7 @@ public class UnsafeAsAggressiveInliningRegressionTests
         data.Should().Equal((short)0, (short)2, (short)0, (short)4, (short)0, (short)6, (short)0, (short)8);
     }
 
-    [Fact]
+    [Test]
     public void Replace_UShortMaxValue_ReplacesAllOccurrences()
     {
         ushort[] data = [0xFFFF, 2, 0xFFFF, 4, 0xFFFF, 6, 0xFFFF, 8];
@@ -72,49 +72,49 @@ public class UnsafeAsAggressiveInliningRegressionTests
     // touki/Framework/Polyfills/System/SpanExtensions.Search.cs will fail
     // these tests on net481 Release.
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_SByteNegativeOne_FindsFirstNonMatch()
     {
         ReadOnlySpan<sbyte> span = [(sbyte)(-1), (sbyte)(-1), (sbyte)9];
         span.IndexOfAnyExcept((sbyte)(-1)).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_TwoValues_SByteNegativeOne_FindsFirstNonMatch()
     {
         ReadOnlySpan<sbyte> span = [(sbyte)(-1), (sbyte)2, (sbyte)9];
         span.IndexOfAnyExcept((sbyte)(-1), (sbyte)2).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ThreeValues_SByteNegativeOne_FindsFirstNonMatch()
     {
         ReadOnlySpan<sbyte> span = [(sbyte)(-1), (sbyte)2, (sbyte)3, (sbyte)9];
         span.IndexOfAnyExcept((sbyte)(-1), (sbyte)2, (sbyte)3).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SByteNegativeOne_FindsLastNonMatch()
     {
         ReadOnlySpan<sbyte> span = [(sbyte)9, (sbyte)(-1), (sbyte)(-1)];
         span.LastIndexOfAnyExcept((sbyte)(-1)).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_TwoValues_SByteNegativeOne_FindsLastNonMatch()
     {
         ReadOnlySpan<sbyte> span = [(sbyte)9, (sbyte)(-1), (sbyte)2];
         span.LastIndexOfAnyExcept((sbyte)(-1), (sbyte)2).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ShortNegativeOne_FindsFirstNonMatch()
     {
         ReadOnlySpan<short> span = [(short)(-1), (short)(-1), (short)9];
         span.IndexOfAnyExcept((short)(-1)).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_ShortNegativeOne_FindsLastNonMatch()
     {
         ReadOnlySpan<short> span = [(short)9, (short)(-1), (short)(-1)];

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -6,14 +6,14 @@ namespace Touki.Io;
 
 public class MatchSetTests
 {
-    [Fact]
+    [Test]
     public void Constructor_NullMatcher_ThrowsArgumentNullException()
     {
         Action action = () => new MatchSet(null!);
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void AddInclude_NullMatcher_ThrowsArgumentNullException()
     {
         using MatchSet matchSet = new(new MockMatcher());
@@ -21,7 +21,7 @@ public class MatchSetTests
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void AddExclude_NullMatcher_ThrowsArgumentNullException()
     {
         using MatchSet matchSet = new(new MockMatcher());
@@ -29,7 +29,7 @@ public class MatchSetTests
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void MatchesDirectory_SingleInclude_Matches()
     {
         using IEnumerationMatcher matcher = new MatchSet(
@@ -39,7 +39,7 @@ public class MatchSetTests
         matcher.MatchesDirectory(string.Empty, "docs", false).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesFile_SingleInclude_Matches()
     {
         using IEnumerationMatcher matcher = new MatchSet(
@@ -49,7 +49,7 @@ public class MatchSetTests
         matcher.MatchesFile(string.Empty, "file.doc").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesDirectory_MultipleIncludes_MatchesAny()
     {
         using MatchSet matcher = new(new MatchAnyDirectory("src", MatchType.Simple, MatchCasing.CaseSensitive));
@@ -61,7 +61,7 @@ public class MatchSetTests
         iMatcher.MatchesDirectory(string.Empty, "build", false).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesFile_MultipleIncludes_MatchesAny()
     {
         using MatchSet matcher = new(new MatchAnyFile("*.txt", MatchType.Simple, MatchCasing.CaseSensitive));
@@ -73,7 +73,7 @@ public class MatchSetTests
         iMatcher.MatchesFile(string.Empty, "file.doc").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesDirectory_ExcludeOverridesInclude()
     {
         using MatchSet matcher = new(new MatchAnyDirectory("src", MatchType.Simple, MatchCasing.CaseSensitive));
@@ -83,7 +83,7 @@ public class MatchSetTests
         iMatcher.MatchesDirectory(string.Empty, "src", false).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesFile_ExcludeOverridesInclude()
     {
         using MatchSet matcher = new(new MatchAnyFile("*.txt", MatchType.Simple, MatchCasing.CaseSensitive));
@@ -94,7 +94,7 @@ public class MatchSetTests
         iMatcher.MatchesFile(string.Empty, "important.txt").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesDirectory_ExcludeWithoutInclude_NoMatch()
     {
         using MatchSet matcher = new(new MatchAnyDirectory("src", MatchType.Simple, MatchCasing.CaseSensitive));
@@ -105,7 +105,7 @@ public class MatchSetTests
         iMatcher.MatchesDirectory(string.Empty, "docs", false).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesFile_ExcludeWithoutInclude_NoMatch()
     {
         using MatchSet matcher = new(new MatchAnyFile("*.txt", MatchType.Simple, MatchCasing.CaseSensitive));
@@ -116,7 +116,7 @@ public class MatchSetTests
         iMatcher.MatchesFile(string.Empty, "file.log").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesDirectory_NoIncludesMatch_ReturnsFalse()
     {
         using MatchSet matcher = new(new MatchAnyDirectory("src", MatchType.Simple, MatchCasing.CaseSensitive));
@@ -126,7 +126,7 @@ public class MatchSetTests
         iMatcher.MatchesDirectory(string.Empty, "build", false).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesFile_NoIncludesMatch_ReturnsFalse()
     {
         using MatchSet matcher = new(new MatchAnyFile("*.txt", MatchType.Simple, MatchCasing.CaseSensitive));
@@ -136,7 +136,7 @@ public class MatchSetTests
         iMatcher.MatchesFile(string.Empty, "file.doc").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void DirectoryFinished_CallsDirectoryFinishedOnAllMatchers()
     {
         MockMatcher include1 = new();
@@ -158,7 +158,7 @@ public class MatchSetTests
         exclude2.DirectoryFinishedCount.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void DirectoryFinished_NoExcludes_CallsDirectoryFinishedOnIncludes()
     {
         MockMatcher include1 = new();
@@ -174,7 +174,7 @@ public class MatchSetTests
         include2.DirectoryFinishedCount.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Dispose_DoesNotDisposeMatchers()
     {
         MockMatcher include1 = new();
@@ -195,7 +195,7 @@ public class MatchSetTests
         exclude2.IsDisposed.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesDirectory_ComplexScenario_WorksCorrectly()
     {
         using MatchSet matcher = new(new MatchAnyDirectory("src", MatchType.Simple, MatchCasing.CaseSensitive));
@@ -209,7 +209,7 @@ public class MatchSetTests
         iMatcher.MatchesDirectory(string.Empty, "docs", false).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesFile_ComplexScenario_WorksCorrectly()
     {
         using MatchSet matcher = new(new MatchAnyFile("*.cs", MatchType.Simple, MatchCasing.CaseSensitive));
@@ -224,7 +224,7 @@ public class MatchSetTests
         iMatcher.MatchesFile(string.Empty, "file.doc").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesDirectory_WithMockMatchers_EvaluatesCorrectly()
     {
         MockMatcher include1 = new() { OnMatchesDirectory = (_, name) => name == "include1" };
@@ -244,7 +244,7 @@ public class MatchSetTests
         iMatcher.MatchesDirectory(string.Empty, "other", false).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesFile_WithMockMatchers_EvaluatesCorrectly()
     {
         MockMatcher include1 = new() { OnMatchesFile = (_, name) => name == "file1.txt" };
@@ -264,7 +264,7 @@ public class MatchSetTests
         iMatcher.MatchesFile(string.Empty, "other.txt").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesDirectory_EmptyStrings_HandledCorrectly()
     {
         // Should never see an empty string, just make sure it doesn't throw.
@@ -276,7 +276,7 @@ public class MatchSetTests
         matcher.MatchesDirectory(string.Empty, "anydir", false).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MatchesFile_EmptyStrings_HandledCorrectly()
     {
         // Should never see an empty string, just make sure it doesn't throw.

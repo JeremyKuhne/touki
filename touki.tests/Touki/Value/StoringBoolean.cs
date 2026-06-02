@@ -6,14 +6,14 @@ namespace Touki;
 
 public class StoringBoolean
 {
-    public static TheoryData<bool> BoolData => new()
+    public static IEnumerable<bool> BoolData()
     {
-        { true },
-        { false }
-    };
+        yield return true;
+        yield return false;
+    }
 
-    [Theory]
-    [MemberData(nameof(BoolData))]
+    [Test]
+    [MethodDataSource(nameof(BoolData))]
     public void BooleanImplicit(bool @bool)
     {
         Value value;
@@ -22,20 +22,20 @@ public class StoringBoolean
             value = @bool;
         }
 
-        Assert.Equal(@bool, value.As<bool>());
-        Assert.Equal(typeof(bool), value.Type);
+        value.As<bool>().Should().Be(@bool);
+        value.Type.Should().Be(typeof(bool));
 
         bool? source = @bool;
         using (MemoryWatch.Create)
         {
             value = source;
         }
-        Assert.Equal(source, value.As<bool?>());
-        Assert.Equal(typeof(bool), value.Type);
+        value.As<bool?>().Should().Be(source);
+        value.Type.Should().Be(typeof(bool));
     }
 
-    [Theory]
-    [MemberData(nameof(BoolData))]
+    [Test]
+    [MethodDataSource(nameof(BoolData))]
     public void BooleanCreate(bool @bool)
     {
         Value value;
@@ -44,8 +44,8 @@ public class StoringBoolean
             value = Value.Create(@bool);
         }
 
-        Assert.Equal(@bool, value.As<bool>());
-        Assert.Equal(typeof(bool), value.Type);
+        value.As<bool>().Should().Be(@bool);
+        value.Type.Should().Be(typeof(bool));
 
         bool? source = @bool;
 
@@ -54,12 +54,12 @@ public class StoringBoolean
             value = Value.Create(source);
         }
 
-        Assert.Equal(source, value.As<bool?>());
-        Assert.Equal(typeof(bool), value.Type);
+        value.As<bool?>().Should().Be(source);
+        value.Type.Should().Be(typeof(bool));
     }
 
-    [Theory]
-    [MemberData(nameof(BoolData))]
+    [Test]
+    [MethodDataSource(nameof(BoolData))]
     public void BooleanInOut(bool @bool)
     {
         Value value;
@@ -72,15 +72,15 @@ public class StoringBoolean
             success = value.TryGetValue(out result);
         }
 
-        Assert.True(success);
-        Assert.Equal(@bool, result);
+        success.Should().BeTrue();
+        result.Should().Be(@bool);
 
-        Assert.Equal(@bool, value.As<bool>());
-        Assert.Equal(@bool, (bool)value);
+        value.As<bool>().Should().Be(@bool);
+        ((bool)value).Should().Be(@bool);
     }
 
-    [Theory]
-    [MemberData(nameof(BoolData))]
+    [Test]
+    [MethodDataSource(nameof(BoolData))]
     public void NullableBooleanInBooleanOut(bool @bool)
     {
         bool? source = @bool;
@@ -94,54 +94,54 @@ public class StoringBoolean
             success = value.TryGetValue(out result);
         }
 
-        Assert.True(success);
-        Assert.Equal(@bool, result);
+        success.Should().BeTrue();
+        result.Should().Be(@bool);
 
-        Assert.Equal(@bool, value.As<bool>());
+        value.As<bool>().Should().Be(@bool);
 
-        Assert.Equal(@bool, (bool)value);
+        ((bool)value).Should().Be(@bool);
     }
 
-    [Theory]
-    [MemberData(nameof(BoolData))]
+    [Test]
+    [MethodDataSource(nameof(BoolData))]
     public void BooleanInNullableBooleanOut(bool @bool)
     {
         bool source = @bool;
         Value value = source;
         bool success = value.TryGetValue(out bool? result);
-        Assert.True(success);
-        Assert.Equal(@bool, result);
+        success.Should().BeTrue();
+        result.Should().Be(@bool);
 
-        Assert.Equal(@bool, (bool?)value);
+        ((bool?)value).Should().Be(@bool);
     }
 
-    [Theory]
-    [MemberData(nameof(BoolData))]
+    [Test]
+    [MethodDataSource(nameof(BoolData))]
     public void BoxedBoolean(bool @bool)
     {
         bool i = @bool;
         object o = i;
         Value value = Value.Create(o);
 
-        Assert.Equal(typeof(bool), value.Type);
-        Assert.True(value.TryGetValue(out bool result));
-        Assert.Equal(@bool, result);
-        Assert.True(value.TryGetValue(out bool? nullableResult));
-        Assert.Equal(@bool, nullableResult!.Value);
+        value.Type.Should().Be(typeof(bool));
+        value.TryGetValue(out bool result).Should().BeTrue();
+        result.Should().Be(@bool);
+        value.TryGetValue(out bool? nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@bool);
 
 
         bool? n = @bool;
         o = n;
         value = Value.Create(o);
 
-        Assert.Equal(typeof(bool), value.Type);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@bool, result);
-        Assert.True(value.TryGetValue(out nullableResult));
-        Assert.Equal(@bool, nullableResult!.Value);
+        value.Type.Should().Be(typeof(bool));
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@bool);
+        value.TryGetValue(out nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@bool);
     }
 
-    [Fact]
+    [Test]
     public void NullBoolean()
     {
         bool? source = null;
@@ -152,24 +152,24 @@ public class StoringBoolean
             value = source;
         }
 
-        Assert.Null(value.Type);
-        Assert.Equal(source, value.As<bool?>());
-        Assert.False(value.As<bool?>().HasValue);
+        value.Type.Should().BeNull();
+        value.As<bool?>().Should().Be(source);
+        value.As<bool?>().HasValue.Should().BeFalse();
     }
 
-    [Theory]
-    [MemberData(nameof(BoolData))]
+    [Test]
+    [MethodDataSource(nameof(BoolData))]
     public void OutAsObject(bool @bool)
     {
         Value value = @bool;
         object o = value.As<object>();
-        Assert.Equal(typeof(bool), o.GetType());
-        Assert.Equal(@bool, (bool)o);
+        o.GetType().Should().Be(typeof(bool));
+        ((bool)o).Should().Be(@bool);
 
         bool? n = @bool;
         value = n;
         o = value.As<object>();
-        Assert.Equal(typeof(bool), o.GetType());
-        Assert.Equal(@bool, (bool)o);
+        o.GetType().Should().Be(typeof(bool));
+        ((bool)o).Should().Be(@bool);
     }
 }

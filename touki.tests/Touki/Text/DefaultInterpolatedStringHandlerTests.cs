@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -9,8 +9,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
     // On .NET Framework this is our implementation. On .NET we're getting built-in.
     // Testing both so we can validate behavior and expected allocations.
 
-    [Theory]
-    [MemberData(nameof(IntegerData))]
+    [Test]
+    [MethodDataSource(nameof(IntegerData))]
     public void InterpolatedStrings_Integer(int value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -18,8 +18,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(IntegerData))]
+    [Test]
+    [MethodDataSource(nameof(IntegerData))]
     public void InterpolatedStrings_Integer_WithHexFormat(int value)
     {
         string interpolatedResult = $"Value is {value:X8}.";
@@ -43,8 +43,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(ByteData))]
+    [Test]
+    [MethodDataSource(nameof(ByteData))]
     public void InterpolatedStrings_Byte(byte value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -52,8 +52,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(ByteData))]
+    [Test]
+    [MethodDataSource(nameof(ByteData))]
     public void InterpolatedStrings_Byte_WithHexFormat(byte value)
     {
         string interpolatedResult = $"Value is {value:X2}.";
@@ -65,8 +65,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(SByteData))]
+    [Test]
+    [MethodDataSource(nameof(SByteData))]
     public void InterpolatedStrings_SByte(sbyte value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -74,8 +74,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(ShortData))]
+    [Test]
+    [MethodDataSource(nameof(ShortData))]
     public void InterpolatedStrings_Short(short value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -83,8 +83,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(ShortData))]
+    [Test]
+    [MethodDataSource(nameof(ShortData))]
     public void InterpolatedStrings_Short_WithFormat(short value)
     {
         string interpolatedResult = $"Value is {value:D5}.";
@@ -96,8 +96,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(UShortData))]
+    [Test]
+    [MethodDataSource(nameof(UShortData))]
     public void InterpolatedStrings_UShort(ushort value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -105,8 +105,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(LongData))]
+    [Test]
+    [MethodDataSource(nameof(LongData))]
     public void InterpolatedStrings_Long(long value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -114,8 +114,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(LongData))]
+    [Test]
+    [MethodDataSource(nameof(LongData))]
     public void InterpolatedStrings_Long_WithFormat(long value)
     {
         string interpolatedResult = $"Value is {value:X16}.";
@@ -127,8 +127,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(ULongData))]
+    [Test]
+    [MethodDataSource(nameof(ULongData))]
     public void InterpolatedStrings_ULong(ulong value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -136,8 +136,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(UIntData))]
+    [Test]
+    [MethodDataSource(nameof(UIntData))]
     public void InterpolatedStrings_UInt(uint value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -145,8 +145,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(FloatData))]
+    [Test]
+    [MethodDataSource(nameof(FloatData))]
     public void InterpolatedStrings_Float(float value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -154,8 +154,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(FloatData))]
+    [Test]
+    [MethodDataSource(nameof(FloatData))]
     public void InterpolatedStrings_Float_WithFormat(float value)
     {
 #if NETFRAMEWORK
@@ -180,8 +180,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(DoubleData))]
+    [Test]
+    [MethodDataSource(nameof(DoubleData))]
     public void InterpolatedStrings_Double(double value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -189,8 +189,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(DoubleData))]
+    [Test]
+    [MethodDataSource(nameof(DoubleData))]
     public void InterpolatedStrings_Double_WithFormat(double value)
     {
 #if NETFRAMEWORK
@@ -215,8 +215,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(DecimalData))]
+    [Test]
+    [MethodDataSource(nameof(DecimalData))]
     public void InterpolatedStrings_Decimal(decimal value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -224,8 +224,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(DecimalData))]
+    [Test]
+    [MethodDataSource(nameof(DecimalData))]
     public void InterpolatedStrings_Decimal_WithFormat(decimal value)
     {
         string interpolatedResult = $"Value is {value:C2}.";
@@ -241,8 +241,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(DateTimeData))]
+    [Test]
+    [MethodDataSource(nameof(DateTimeData))]
     public void InterpolatedStrings_DateTime(DateTime value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -250,8 +250,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(DateTimeData))]
+    [Test]
+    [MethodDataSource(nameof(DateTimeData))]
     public void InterpolatedStrings_DateTime_WithFormat(DateTime value)
     {
         string interpolatedResult = $"Value is {value:yyyy-MM-dd}.";
@@ -275,8 +275,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(DateTimeOffsetData))]
+    [Test]
+    [MethodDataSource(nameof(DateTimeOffsetData))]
     public void InterpolatedStrings_DateTimeOffset(DateTimeOffset value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -284,8 +284,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(DateTimeOffsetData))]
+    [Test]
+    [MethodDataSource(nameof(DateTimeOffsetData))]
     public void InterpolatedStrings_DateTimeOffset_WithFormat(DateTimeOffset value)
     {
         string interpolatedResult = $"Value is {value:yyyy-MM-dd HH:mm:ss zzz}.";
@@ -305,8 +305,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Theory]
-    [MemberData(nameof(IntegerData))]
+    [Test]
+    [MethodDataSource(nameof(IntegerData))]
     public void InterpolatedStrings_Integer_WithVariousFormats(int value)
     {
         string interpolatedResult = $"Value is {value:C}.";
@@ -338,7 +338,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Fact]
+    [Test]
     public void InterpolatedStrings_MultipleValues()
     {
         int intValue = 42;
@@ -350,7 +350,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Fact]
+    [Test]
     public void InterpolatedStrings_WithAlignment()
     {
         int value = 42;
@@ -368,7 +368,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Fact]
+    [Test]
     public void InterpolatedStrings_SpecialFloatingPointValues()
     {
         double positiveInfinity = double.PositiveInfinity;
@@ -388,7 +388,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    public static TheoryData<int> IntegerData { get; } =
+    public static IEnumerable<int> IntegerData() =>
     [
         42,
         -42,
@@ -397,7 +397,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         int.MinValue
     ];
 
-    public static TheoryData<byte> ByteData { get; } =
+    public static IEnumerable<byte> ByteData() =>
     [
         1,
         42,
@@ -406,7 +406,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         byte.MinValue
     ];
 
-    public static TheoryData<sbyte> SByteData { get; } =
+    public static IEnumerable<sbyte> SByteData() =>
     [
         0,
         1,
@@ -417,7 +417,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         sbyte.MinValue
     ];
 
-    public static TheoryData<short> ShortData { get; } =
+    public static IEnumerable<short> ShortData() =>
     [
         0,
         1,
@@ -430,7 +430,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         short.MinValue
     ];
 
-    public static TheoryData<ushort> UShortData { get; } =
+    public static IEnumerable<ushort> UShortData() =>
     [
         1,
         42,
@@ -439,7 +439,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         ushort.MinValue
     ];
 
-    public static TheoryData<long> LongData { get; } =
+    public static IEnumerable<long> LongData() =>
     [
         0L,
         1L,
@@ -452,7 +452,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         long.MinValue
     ];
 
-    public static TheoryData<ulong> ULongData { get; } =
+    public static IEnumerable<ulong> ULongData() =>
     [
         1UL,
         42UL,
@@ -461,7 +461,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         ulong.MinValue
     ];
 
-    public static TheoryData<uint> UIntData { get; } =
+    public static IEnumerable<uint> UIntData() =>
     [
         1U,
         42U,
@@ -470,7 +470,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         uint.MinValue
     ];
 
-    public static TheoryData<float> FloatData { get; } =
+    public static IEnumerable<float> FloatData() =>
     [
         0.0f,
         1.0f,
@@ -486,7 +486,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         float.Epsilon
     ];
 
-    public static TheoryData<double> DoubleData { get; } =
+    public static IEnumerable<double> DoubleData() =>
     [
         0.0,
         1.0,
@@ -502,7 +502,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         double.Epsilon
     ];
 
-    public static TheoryData<decimal> DecimalData { get; } =
+    public static IEnumerable<decimal> DecimalData() =>
     [
         0.0m,
         1.0m,
@@ -517,7 +517,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         decimal.MinValue
     ];
 
-    public static TheoryData<DateTime> DateTimeData { get; } =
+    public static IEnumerable<DateTime> DateTimeData() =>
     [
         new DateTime(2025, 1, 1),
         new DateTime(2025, 6, 17, 14, 30, 45),
@@ -530,7 +530,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         new DateTime(2025, 6, 17, 12, 0, 0, DateTimeKind.Local)
     ];
 
-    public static TheoryData<DateTimeOffset> DateTimeOffsetData { get; } =
+    public static IEnumerable<DateTimeOffset> DateTimeOffsetData() =>
     [
         new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero),
         new DateTimeOffset(2025, 6, 17, 14, 30, 45, TimeSpan.FromHours(-5)),

@@ -18,56 +18,56 @@ public class SpanExtensionsSearchExtraTests
 {
     // ----- LastIndexOfAnyExcept (single value) -----
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SingleValue_AllMatch_ReturnsMinusOne()
     {
         ReadOnlySpan<int> span = [7, 7, 7, 7];
         span.LastIndexOfAnyExcept(7).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SingleValue_LastDifferent_ReturnsLastIndex()
     {
         ReadOnlySpan<int> span = [7, 7, 7, 5];
         span.LastIndexOfAnyExcept(7).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SingleValue_FirstDifferent_ReturnsFirstIndex()
     {
         ReadOnlySpan<int> span = [5, 7, 7, 7];
         span.LastIndexOfAnyExcept(7).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SingleValue_Empty_ReturnsMinusOne()
     {
         ReadOnlySpan<int> span = [];
         span.LastIndexOfAnyExcept(0).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_Byte_FindsLastNonMatch()
     {
         ReadOnlySpan<byte> span = [(byte)1, (byte)1, (byte)2, (byte)1];
         span.LastIndexOfAnyExcept((byte)1).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_Char_FindsLastNonMatch()
     {
         ReadOnlySpan<char> span = "aaab".AsSpan();
         span.LastIndexOfAnyExcept('a').Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_Short_FindsLastNonMatch()
     {
         ReadOnlySpan<short> span = [(short)0, (short)0, (short)1];
         span.LastIndexOfAnyExcept((short)0).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_Long_FindsLastNonMatch()
     {
         ReadOnlySpan<long> span = [0L, 0L, 1L];
@@ -76,28 +76,28 @@ public class SpanExtensionsSearchExtraTests
 
     // ----- LastIndexOfAnyExcept (two values) -----
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_TwoValues_AllMatch_ReturnsMinusOne()
     {
         ReadOnlySpan<int> span = [1, 2, 1, 2];
         span.LastIndexOfAnyExcept(1, 2).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_TwoValues_OneOutlier_ReturnsItsIndex()
     {
         ReadOnlySpan<int> span = [1, 2, 9, 1, 2];
         span.LastIndexOfAnyExcept(1, 2).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_TwoValues_Byte_FindsLastNonMatch()
     {
         ReadOnlySpan<byte> span = [(byte)1, (byte)2, (byte)9];
         span.LastIndexOfAnyExcept((byte)1, (byte)2).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_TwoValues_Char_FindsLastNonMatch()
     {
         ReadOnlySpan<char> span = "abXab".AsSpan();
@@ -106,21 +106,21 @@ public class SpanExtensionsSearchExtraTests
 
     // ----- LastIndexOfAnyExcept (three values) -----
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_ThreeValues_AllMatch_ReturnsMinusOne()
     {
         ReadOnlySpan<int> span = [1, 2, 3, 1];
         span.LastIndexOfAnyExcept(1, 2, 3).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_ThreeValues_OneOutlier_ReturnsItsIndex()
     {
         ReadOnlySpan<int> span = [1, 2, 3, 9, 1, 2];
         span.LastIndexOfAnyExcept(1, 2, 3).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_ThreeValues_Byte_FindsLastNonMatch()
     {
         ReadOnlySpan<byte> span = [(byte)1, (byte)2, (byte)3, (byte)9];
@@ -129,7 +129,7 @@ public class SpanExtensionsSearchExtraTests
 
     // ----- LastIndexOfAnyExcept (values span) -----
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_ValuesSpan_Empty_ReturnsLastIndex()
     {
         // Documented contract: empty values matches no element, so the last element is "not in the empty set".
@@ -137,13 +137,13 @@ public class SpanExtensionsSearchExtraTests
         span.LastIndexOfAnyExcept((ReadOnlySpan<int>)[]).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_ValuesSpan_BothEmpty_ReturnsMinusOne()
     {
         ReadOnlySpan<int>.Empty.LastIndexOfAnyExcept((ReadOnlySpan<int>)[]).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_ValuesSpan_FourValues_FindsLastOther()
     {
         ReadOnlySpan<int> span = [1, 2, 3, 4, 9, 1, 2];
@@ -151,7 +151,7 @@ public class SpanExtensionsSearchExtraTests
         span.LastIndexOfAnyExcept(values).Should().Be(4);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_ValuesSpan_AllMatch_ReturnsMinusOne()
     {
         ReadOnlySpan<int> span = [1, 2, 3, 4];
@@ -161,35 +161,35 @@ public class SpanExtensionsSearchExtraTests
 
     // ----- ContainsAny (multi-value) -----
 
-    [Fact]
+    [Test]
     public void ContainsAny_TwoValues_True()
     {
         ReadOnlySpan<int> span = [1, 2, 3];
         span.ContainsAny(2, 99).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAny_TwoValues_False()
     {
         ReadOnlySpan<int> span = [1, 2, 3];
         span.ContainsAny(98, 99).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAny_ThreeValues_True()
     {
         ReadOnlySpan<int> span = [1, 2, 3];
         span.ContainsAny(98, 99, 3).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAny_ThreeValues_False()
     {
         ReadOnlySpan<int> span = [1, 2, 3];
         span.ContainsAny(7, 8, 9).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAny_ValuesSpan_True()
     {
         ReadOnlySpan<int> span = [1, 2, 3, 4];
@@ -197,7 +197,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAny(values).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAny_ValuesSpan_False()
     {
         ReadOnlySpan<int> span = [1, 2, 3, 4];
@@ -207,21 +207,21 @@ public class SpanExtensionsSearchExtraTests
 
     // ----- ContainsAnyExcept -----
 
-    [Fact]
+    [Test]
     public void ContainsAnyExcept_SingleValue_True_WhenAnyDiffers()
     {
         ReadOnlySpan<int> span = [1, 1, 9, 1];
         span.ContainsAnyExcept(1).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAnyExcept_SingleValue_False_WhenAllMatch()
     {
         ReadOnlySpan<int> span = [1, 1, 1, 1];
         span.ContainsAnyExcept(1).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAnyExcept_TwoValues_TrueAndFalse()
     {
         ReadOnlySpan<int> matching = [1, 2, 1, 2];
@@ -231,7 +231,7 @@ public class SpanExtensionsSearchExtraTests
         withOther.ContainsAnyExcept(1, 2).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAnyExcept_ThreeValues_TrueAndFalse()
     {
         ReadOnlySpan<int> matching = [1, 2, 3, 1];
@@ -241,7 +241,7 @@ public class SpanExtensionsSearchExtraTests
         withOther.ContainsAnyExcept(1, 2, 3).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAnyExcept_ValuesSpan_TrueAndFalse()
     {
         ReadOnlySpan<int> matching = [1, 2, 3, 4];
@@ -253,34 +253,34 @@ public class SpanExtensionsSearchExtraTests
 
     // ----- Count -----
 
-    [Fact]
+    [Test]
     public void Count_SingleValue_CountsOccurrences()
     {
         ReadOnlySpan<int> span = [1, 2, 1, 3, 1];
         span.Count(1).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Count_SingleValue_NotPresent_ReturnsZero()
     {
         ReadOnlySpan<int> span = [1, 2, 3];
         span.Count(99).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Count_SingleValue_Empty_ReturnsZero()
     {
         ReadOnlySpan<int>.Empty.Count(1).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Count_Byte_CountsOccurrences()
     {
         ReadOnlySpan<byte> span = [(byte)1, (byte)2, (byte)1, (byte)1];
         span.Count((byte)1).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Count_Char_CountsOccurrences()
     {
         ReadOnlySpan<char> span = "banana".AsSpan();
@@ -289,14 +289,14 @@ public class SpanExtensionsSearchExtraTests
         span.Count('z').Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Count_Sequence_CountsNonOverlappingMatches()
     {
         ReadOnlySpan<char> span = "abcabcabc".AsSpan();
         span.Count("abc".AsSpan()).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Count_Sequence_OverlappingPattern_CountsNonOverlapping()
     {
         // "aa" inside "aaaa" non-overlapping count is 2.
@@ -304,14 +304,14 @@ public class SpanExtensionsSearchExtraTests
         span.Count("aa".AsSpan()).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void Count_Sequence_EmptyValue_ReturnsZero()
     {
         ReadOnlySpan<char> span = "abc".AsSpan();
         span.Count((ReadOnlySpan<char>)[]).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Count_Sequence_LongerThanSource_ReturnsZero()
     {
         ReadOnlySpan<char> span = "ab".AsSpan();
@@ -320,56 +320,56 @@ public class SpanExtensionsSearchExtraTests
 
     // ----- Span<T> wrappers -----
 
-    [Fact]
+    [Test]
     public void Span_LastIndexOfAnyExcept_SingleValue_DelegatesToReadOnly()
     {
         Span<int> span = [1, 1, 2, 1 ];
         span.LastIndexOfAnyExcept(1).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void Span_LastIndexOfAnyExcept_TwoValues_DelegatesToReadOnly()
     {
         Span<int> span = [1, 2, 9, 1 ];
         span.LastIndexOfAnyExcept(1, 2).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void Span_LastIndexOfAnyExcept_ThreeValues_DelegatesToReadOnly()
     {
         Span<int> span = [1, 2, 3, 9, 1 ];
         span.LastIndexOfAnyExcept(1, 2, 3).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Span_LastIndexOfAnyExcept_ValuesSpan_DelegatesToReadOnly()
     {
         Span<int> span = [1, 2, 3, 9 ];
         span.LastIndexOfAnyExcept((ReadOnlySpan<int>)[1, 2, 3]).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Span_IndexOfAnyExcept_SingleValue_DelegatesToReadOnly()
     {
         Span<int> span = [1, 1, 9, 1 ];
         span.IndexOfAnyExcept(1).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void Span_IndexOfAnyExcept_TwoValues_DelegatesToReadOnly()
     {
         Span<int> span = [1, 2, 9, 1, 2 ];
         span.IndexOfAnyExcept(1, 2).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void Span_IndexOfAnyExcept_ThreeValues_DelegatesToReadOnly()
     {
         Span<int> span = [1, 2, 3, 9, 1 ];
         span.IndexOfAnyExcept(1, 2, 3).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Span_IndexOfAnyExcept_ValuesSpan_DelegatesToReadOnly()
     {
         Span<int> span = [1, 2, 3, 9 ];
@@ -378,7 +378,7 @@ public class SpanExtensionsSearchExtraTests
 
     // ----- CommonPrefixLength comparer paths -----
 
-    [Fact]
+    [Test]
     public void CommonPrefixLength_DefaultComparer_String()
     {
         ReadOnlySpan<string> a = ["x", "y", "z"];
@@ -387,7 +387,7 @@ public class SpanExtensionsSearchExtraTests
         a.CommonPrefixLength(b, StringComparer.OrdinalIgnoreCase).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void CommonPrefixLength_NullComparer_FallsBackToDefault_String()
     {
         ReadOnlySpan<string> a = ["x", "y", "z"];
@@ -397,7 +397,7 @@ public class SpanExtensionsSearchExtraTests
 
     // ----- Span<T> wrappers (delegate to ReadOnlySpan<T> overloads) -----
 
-    [Fact]
+    [Test]
     public void ContainsAny_Span_TwoValues_True()
     {
         int[] data = [1, 2, 3];
@@ -405,7 +405,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAny(2, 99).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAny_Span_TwoValues_False()
     {
         int[] data = [1, 2, 3];
@@ -413,7 +413,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAny(98, 99).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAny_Span_ThreeValues_True()
     {
         int[] data = [1, 2, 3];
@@ -421,7 +421,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAny(7, 8, 3).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAny_Span_ThreeValues_False()
     {
         int[] data = [1, 2, 3];
@@ -429,7 +429,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAny(7, 8, 9).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAny_Span_ValuesSpan_True()
     {
         int[] data = [1, 2, 3];
@@ -438,7 +438,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAny(values).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAny_Span_ValuesSpan_False()
     {
         int[] data = [1, 2, 3];
@@ -447,7 +447,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAny(values).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAnyExcept_Span_SingleValue_True()
     {
         int[] data = [1, 2, 1];
@@ -455,7 +455,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAnyExcept(1).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAnyExcept_Span_SingleValue_False()
     {
         int[] data = [1, 1, 1];
@@ -463,7 +463,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAnyExcept(1).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAnyExcept_Span_TwoValues_True()
     {
         int[] data = [1, 2, 3];
@@ -471,7 +471,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAnyExcept(1, 2).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAnyExcept_Span_TwoValues_False()
     {
         int[] data = [1, 2, 1, 2];
@@ -479,7 +479,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAnyExcept(1, 2).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAnyExcept_Span_ThreeValues_True()
     {
         int[] data = [1, 2, 3, 4];
@@ -487,7 +487,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAnyExcept(1, 2, 3).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAnyExcept_Span_ThreeValues_False()
     {
         int[] data = [1, 2, 3];
@@ -495,7 +495,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAnyExcept(1, 2, 3).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAnyExcept_Span_ValuesSpan_True()
     {
         int[] data = [1, 2, 3, 9];
@@ -504,7 +504,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAnyExcept(values).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ContainsAnyExcept_Span_ValuesSpan_False()
     {
         int[] data = [1, 2, 3];
@@ -513,7 +513,7 @@ public class SpanExtensionsSearchExtraTests
         span.ContainsAnyExcept(values).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Count_Span_SingleValue_CountsOccurrences()
     {
         int[] data = [1, 2, 1, 3, 1];
@@ -521,7 +521,7 @@ public class SpanExtensionsSearchExtraTests
         span.Count(1).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Count_Span_ValuesSpan_CountsNonOverlappingOccurrences()
     {
         int[] data = [1, 2, 1, 2, 1, 2];
@@ -530,7 +530,7 @@ public class SpanExtensionsSearchExtraTests
         span.Count(values).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void CommonPrefixLength_Span_DelegatesToReadOnly()
     {
         int[] dataA = [1, 2, 3, 4];
@@ -540,7 +540,7 @@ public class SpanExtensionsSearchExtraTests
         a.CommonPrefixLength(b).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void CommonPrefixLength_Span_WithComparer_DelegatesToReadOnly()
     {
         string[] dataA = ["x", "y", "z"];
@@ -553,54 +553,54 @@ public class SpanExtensionsSearchExtraTests
 
     // ----- IndexOfAnyExcept extra coverage -----
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_SingleValue_AllMatch_ReturnsMinusOne()
     {
         ReadOnlySpan<int> span = [7, 7, 7];
         span.IndexOfAnyExcept(7).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_SingleValue_Empty_ReturnsMinusOne()
     {
         ReadOnlySpan<int>.Empty.IndexOfAnyExcept(0).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_TwoValues_FindsFirstOther()
     {
         ReadOnlySpan<int> span = [1, 2, 9, 1, 2];
         span.IndexOfAnyExcept(1, 2).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_TwoValues_AllMatch_ReturnsMinusOne()
     {
         ReadOnlySpan<int> span = [1, 2, 1, 2];
         span.IndexOfAnyExcept(1, 2).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_TwoValues_Empty_ReturnsMinusOne()
     {
         ReadOnlySpan<int>.Empty.IndexOfAnyExcept(1, 2).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ThreeValues_FindsFirstOther()
     {
         ReadOnlySpan<int> span = [1, 2, 3, 9, 1];
         span.IndexOfAnyExcept(1, 2, 3).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ThreeValues_AllMatch_ReturnsMinusOne()
     {
         ReadOnlySpan<int> span = [1, 2, 3, 1, 2];
         span.IndexOfAnyExcept(1, 2, 3).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ThreeValues_Empty_ReturnsMinusOne()
     {
         ReadOnlySpan<int>.Empty.IndexOfAnyExcept(1, 2, 3).Should().Be(-1);
@@ -608,98 +608,98 @@ public class SpanExtensionsSearchExtraTests
 
     // ----- IndexOfAnyExcept type-specialized branches (byte, sbyte, char, short, ushort) -----
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_TwoValues_Byte_FindsFirstNonMatch()
     {
         ReadOnlySpan<byte> span = [(byte)1, (byte)2, (byte)9, (byte)1];
         span.IndexOfAnyExcept((byte)1, (byte)2).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_TwoValues_Byte_AllMatch_ReturnsMinusOne()
     {
         ReadOnlySpan<byte> span = [(byte)1, (byte)2, (byte)1, (byte)2];
         span.IndexOfAnyExcept((byte)1, (byte)2).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_TwoValues_SByte_FindsFirstNonMatch()
     {
         ReadOnlySpan<sbyte> span = [(sbyte)(-1), (sbyte)2, (sbyte)9];
         span.IndexOfAnyExcept((sbyte)(-1), (sbyte)2).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_TwoValues_Char_FindsFirstNonMatch()
     {
         ReadOnlySpan<char> span = "abXab".AsSpan();
         span.IndexOfAnyExcept('a', 'b').Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_TwoValues_Char_AllMatch_ReturnsMinusOne()
     {
         ReadOnlySpan<char> span = "abab".AsSpan();
         span.IndexOfAnyExcept('a', 'b').Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_TwoValues_Short_FindsFirstNonMatch()
     {
         ReadOnlySpan<short> span = [(short)0, (short)1, (short)9];
         span.IndexOfAnyExcept((short)0, (short)1).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_TwoValues_UShort_FindsFirstNonMatch()
     {
         ReadOnlySpan<ushort> span = [(ushort)0, (ushort)1, (ushort)9];
         span.IndexOfAnyExcept((ushort)0, (ushort)1).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ThreeValues_Byte_FindsFirstNonMatch()
     {
         ReadOnlySpan<byte> span = [(byte)1, (byte)2, (byte)3, (byte)9, (byte)1];
         span.IndexOfAnyExcept((byte)1, (byte)2, (byte)3).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ThreeValues_Byte_AllMatch_ReturnsMinusOne()
     {
         ReadOnlySpan<byte> span = [(byte)1, (byte)2, (byte)3, (byte)1];
         span.IndexOfAnyExcept((byte)1, (byte)2, (byte)3).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ThreeValues_SByte_FindsFirstNonMatch()
     {
         ReadOnlySpan<sbyte> span = [(sbyte)(-1), (sbyte)2, (sbyte)3, (sbyte)9];
         span.IndexOfAnyExcept((sbyte)(-1), (sbyte)2, (sbyte)3).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ThreeValues_Char_FindsFirstNonMatch()
     {
         ReadOnlySpan<char> span = "abcXab".AsSpan();
         span.IndexOfAnyExcept('a', 'b', 'c').Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ThreeValues_Char_AllMatch_ReturnsMinusOne()
     {
         ReadOnlySpan<char> span = "abcabc".AsSpan();
         span.IndexOfAnyExcept('a', 'b', 'c').Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ThreeValues_Short_FindsFirstNonMatch()
     {
         ReadOnlySpan<short> span = [(short)0, (short)1, (short)2, (short)9];
         span.IndexOfAnyExcept((short)0, (short)1, (short)2).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ThreeValues_UShort_FindsFirstNonMatch()
     {
         ReadOnlySpan<ushort> span = [(ushort)0, (ushort)1, (ushort)2, (ushort)9];
@@ -708,7 +708,7 @@ public class SpanExtensionsSearchExtraTests
 
     // ----- IndexOfAnyExcept(T) single-value type-specialized branches -----
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_SingleValue_Byte_LongSpan_HitsUnrolledLoop()
     {
         byte[] data = new byte[33];
@@ -722,7 +722,7 @@ public class SpanExtensionsSearchExtraTests
         span.IndexOfAnyExcept((byte)1).Should().Be(10);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_SingleValue_Byte_TailRemainder_HitsScalarLoop()
     {
         byte[] data = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 9];
@@ -730,7 +730,7 @@ public class SpanExtensionsSearchExtraTests
         span.IndexOfAnyExcept((byte)1).Should().Be(13);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_SingleValue_Byte_AllMatch_ReturnsMinusOne()
     {
         byte[] data = [1, 1, 1, 1, 1];
@@ -738,14 +738,14 @@ public class SpanExtensionsSearchExtraTests
         span.IndexOfAnyExcept((byte)1).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_SingleValue_SByte_FindsFirstNonMatch()
     {
         ReadOnlySpan<sbyte> span = [(sbyte)(-1), (sbyte)(-1), (sbyte)9];
         span.IndexOfAnyExcept((sbyte)(-1)).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_SingleValue_Char_LongSpan_HitsUnrolledLoop()
     {
         char[] data = new string('a', 33).ToCharArray();
@@ -754,7 +754,7 @@ public class SpanExtensionsSearchExtraTests
         span.IndexOfAnyExcept('a').Should().Be(15);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_SingleValue_Char_TailRemainder_HitsScalarLoop()
     {
         char[] data = "aaaaaaaaaaaaaX".ToCharArray();
@@ -762,35 +762,35 @@ public class SpanExtensionsSearchExtraTests
         span.IndexOfAnyExcept('a').Should().Be(13);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_SingleValue_Char_AllMatch_ReturnsMinusOne()
     {
         ReadOnlySpan<char> span = "aaaa".AsSpan();
         span.IndexOfAnyExcept('a').Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_SingleValue_Short_FindsFirstNonMatch()
     {
         ReadOnlySpan<short> span = [(short)0, (short)0, (short)9];
         span.IndexOfAnyExcept((short)0).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_SingleValue_UShort_FindsFirstNonMatch()
     {
         ReadOnlySpan<ushort> span = [(ushort)0, (ushort)0, (ushort)9];
         span.IndexOfAnyExcept((ushort)0).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_SingleValue_String_FindsFirstNonMatch()
     {
         ReadOnlySpan<string> span = ["a", "a", "x"];
         span.IndexOfAnyExcept("a").Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_SingleValue_String_NullValue_FindsFirstNonNull()
     {
         ReadOnlySpan<string?> span = [null, null, "x"];
@@ -799,7 +799,7 @@ public class SpanExtensionsSearchExtraTests
 
     // ----- LastIndexOfAnyExcept type-specialized branches -----
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SingleValue_Byte_TailRemainder()
     {
         byte[] data = [9, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
@@ -807,14 +807,14 @@ public class SpanExtensionsSearchExtraTests
         span.LastIndexOfAnyExcept((byte)1).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_ThreeValues_Short_FindsLastNonMatch()
     {
         ReadOnlySpan<short> span = [(short)0, (short)1, (short)2, (short)9];
         span.LastIndexOfAnyExcept((short)0, (short)1, (short)2).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_TwoValues_Short_FindsLastNonMatch()
     {
         ReadOnlySpan<short> span = [(short)0, (short)1, (short)9];
@@ -823,7 +823,7 @@ public class SpanExtensionsSearchExtraTests
 
     // ----- More LastIndexOfAnyExcept type-specialized branches -----
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SingleValue_Char_LongSpan_HitsUnrolledLoop()
     {
         char[] data = new string('a', 33).ToCharArray();
@@ -832,28 +832,28 @@ public class SpanExtensionsSearchExtraTests
         span.LastIndexOfAnyExcept('a').Should().Be(15);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SingleValue_Char_AllMatch_ReturnsMinusOne()
     {
         ReadOnlySpan<char> span = "aaaa".AsSpan();
         span.LastIndexOfAnyExcept('a').Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SingleValue_Short_FindsLastNonMatch()
     {
         ReadOnlySpan<short> span = [(short)0, (short)1, (short)0];
         span.LastIndexOfAnyExcept((short)0).Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SingleValue_UShort_FindsLastNonMatch()
     {
         ReadOnlySpan<ushort> span = [(ushort)0, (ushort)1, (ushort)0];
         span.LastIndexOfAnyExcept((ushort)0).Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SingleValue_Byte_LongSpan_HitsUnrolledLoop()
     {
         byte[] data = new byte[33];
@@ -867,7 +867,7 @@ public class SpanExtensionsSearchExtraTests
         span.LastIndexOfAnyExcept((byte)1).Should().Be(20);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SingleValue_Byte_AllMatch_ReturnsMinusOne()
     {
         byte[] data = [1, 1, 1, 1, 1];
@@ -875,49 +875,49 @@ public class SpanExtensionsSearchExtraTests
         span.LastIndexOfAnyExcept((byte)1).Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SingleValue_SByte_FindsLastNonMatch()
     {
         ReadOnlySpan<sbyte> span = [(sbyte)9, (sbyte)(-1), (sbyte)(-1)];
         span.LastIndexOfAnyExcept((sbyte)(-1)).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SingleValue_String_NullValue_FindsLastNonNull()
     {
         ReadOnlySpan<string?> span = [null, "x", null];
         span.LastIndexOfAnyExcept((string?)null).Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_SingleValue_String_AllMatch_ReturnsMinusOne()
     {
         ReadOnlySpan<string> span = ["a", "a", "a"];
         span.LastIndexOfAnyExcept("a").Should().Be(-1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_TwoValues_SByte_FindsLastNonMatch()
     {
         ReadOnlySpan<sbyte> span = [(sbyte)(-1), (sbyte)9, (sbyte)(-1), (sbyte)2];
         span.LastIndexOfAnyExcept((sbyte)(-1), (sbyte)2).Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_ThreeValues_SByte_FindsLastNonMatch()
     {
         ReadOnlySpan<sbyte> span = [(sbyte)1, (sbyte)2, (sbyte)3, (sbyte)9, (sbyte)1];
         span.LastIndexOfAnyExcept((sbyte)1, (sbyte)2, (sbyte)3).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_ThreeValues_UShort_FindsLastNonMatch()
     {
         ReadOnlySpan<ushort> span = [(ushort)0, (ushort)1, (ushort)2, (ushort)9];
         span.LastIndexOfAnyExcept((ushort)0, (ushort)1, (ushort)2).Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ValuesSpan_FourOrMoreValues_GenericPath()
     {
         ReadOnlySpan<int> span = [1, 2, 3, 4, 9, 1];
@@ -925,7 +925,7 @@ public class SpanExtensionsSearchExtraTests
         span.IndexOfAnyExcept(values).Should().Be(4);
     }
 
-    [Fact]
+    [Test]
     public void LastIndexOfAnyExcept_ValuesSpan_FourOrMoreValues_GenericPath()
     {
         ReadOnlySpan<int> span = [1, 2, 3, 4, 9, 1, 2];
@@ -933,7 +933,7 @@ public class SpanExtensionsSearchExtraTests
         span.LastIndexOfAnyExcept(values).Should().Be(4);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ValuesSpan_SingleValue_DelegatesToSingleValueOverload()
     {
         ReadOnlySpan<int> span = [1, 1, 9, 1];
@@ -941,7 +941,7 @@ public class SpanExtensionsSearchExtraTests
         span.IndexOfAnyExcept(values).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ValuesSpan_TwoValues_DelegatesToTwoValueOverload()
     {
         ReadOnlySpan<int> span = [1, 2, 9, 1, 2];
@@ -949,7 +949,7 @@ public class SpanExtensionsSearchExtraTests
         span.IndexOfAnyExcept(values).Should().Be(2);
     }
 
-    [Fact]
+    [Test]
     public void IndexOfAnyExcept_ValuesSpan_ThreeValues_DelegatesToThreeValueOverload()
     {
         ReadOnlySpan<int> span = [1, 2, 3, 9, 1];

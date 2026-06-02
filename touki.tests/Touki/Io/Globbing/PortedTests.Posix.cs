@@ -60,164 +60,164 @@ namespace Touki.Io.Globbing;
 public class PortedTests_Posix
 {
     // B.6 004 / 005: literals (smoke test that the basic literal pass works).
-    [Theory]
-    [InlineData("!#%+,-./01234567889", "!#%+,-./01234567889", true)]
-    [InlineData("PQRSTUVWXYZ]abcdefg", "PQRSTUVWXYZ]abcdefg", true)]
-    [InlineData("^_{}~", "^_{}~", true)]
-    [InlineData("\"$&'()", "\\\"\\$\\&\\'\\(\\)", true)]
-    [InlineData("*?[\\`|", "\\*\\?\\[\\\\\\`\\|", true)]
-    [InlineData("<>", "\\<\\>", true)]
+    [Test]
+    [Arguments("!#%+,-./01234567889", "!#%+,-./01234567889", true)]
+    [Arguments("PQRSTUVWXYZ]abcdefg", "PQRSTUVWXYZ]abcdefg", true)]
+    [Arguments("^_{}~", "^_{}~", true)]
+    [Arguments("\"$&'()", "\\\"\\$\\&\\'\\(\\)", true)]
+    [Arguments("*?[\\`|", "\\*\\?\\[\\\\\\`\\|", true)]
+    [Arguments("<>", "\\<\\>", true)]
     public void IsMatch_Posix_LiteralsAndEscapes(string input, string pattern, bool expected) =>
         Posix(pattern).IsMatch(input).Should().Be(expected);
 
     // B.6 006 / 007: '?' wildcard with and without path-aware semantics.
-    [Theory]
-    [InlineData("?*[", "[?*[][?*[][?*[]", true)]
-    [InlineData("a/b", "?/b", true)]
-    [InlineData("a/b", "a?b", true)]
-    [InlineData("a/b", "a/?", true)]
-    [InlineData("aa/b", "?/b", false)]
-    [InlineData("aa/b", "a?b", false)]
-    [InlineData("a/bb", "a/?", false)]
+    [Test]
+    [Arguments("?*[", "[?*[][?*[][?*[]", true)]
+    [Arguments("a/b", "?/b", true)]
+    [Arguments("a/b", "a?b", true)]
+    [Arguments("a/b", "a/?", true)]
+    [Arguments("aa/b", "?/b", false)]
+    [Arguments("aa/b", "a?b", false)]
+    [Arguments("a/bb", "a/?", false)]
     public void IsMatch_Posix_QuestionWildcard(string input, string pattern, bool expected) =>
         Posix(pattern).IsMatch(input).Should().Be(expected);
 
     // B.6 009 / 010 / 011: bracket classes.
-    [Theory]
-    [InlineData("abc", "[abc]", false)]
-    [InlineData("x", "[abc]", false)]
-    [InlineData("a", "[abc]", true)]
-    [InlineData("[", "[[abc]", true)]
-    [InlineData("a", "[][abc]", true)]
-    [InlineData("xyz", "[!abc]", false)]
-    [InlineData("x", "[!abc]", true)]
-    [InlineData("a", "[!abc]", false)]
-    [InlineData("]", "[][abc]", true)]
-    [InlineData("abc]", "[][abc]", false)]
-    [InlineData("]", "[!]]", false)]
-    [InlineData("]", "[!a]", true)]
-    [InlineData("]]", "[!a]]", true)]
+    [Test]
+    [Arguments("abc", "[abc]", false)]
+    [Arguments("x", "[abc]", false)]
+    [Arguments("a", "[abc]", true)]
+    [Arguments("[", "[[abc]", true)]
+    [Arguments("a", "[][abc]", true)]
+    [Arguments("xyz", "[!abc]", false)]
+    [Arguments("x", "[!abc]", true)]
+    [Arguments("a", "[!abc]", false)]
+    [Arguments("]", "[][abc]", true)]
+    [Arguments("abc]", "[][abc]", false)]
+    [Arguments("]", "[!]]", false)]
+    [Arguments("]", "[!a]", true)]
+    [Arguments("]]", "[!a]]", true)]
     public void IsMatch_Posix_BracketClasses(string input, string pattern, bool expected) =>
         Posix(pattern).IsMatch(input).Should().Be(expected);
 
     // B.6 017: POSIX named classes. The full per-character enumeration in the
     // upstream corpus is condensed to one or two rows per class plus the
     // negation and embedded-in-class shapes.
-    [Theory]
-    [InlineData("a", "[[:alnum:]]", true)]
-    [InlineData("9", "[[:alnum:]]", true)]
-    [InlineData("-", "[[:alnum:]]", false)]
-    [InlineData("a", "[![:alnum:]]", false)]
-    [InlineData("-", "[![:alnum:]]", true)]
-    [InlineData("-", "[[:alnum:]-]", true)]
-    [InlineData("aa", "[[:alnum:]]a", true)]
-    [InlineData("a]a", "[[:alnum:]]a", false)]
-    [InlineData("\t", "[[:cntrl:]]", true)]
-    [InlineData("t", "[[:cntrl:]]", false)]
-    [InlineData("t", "[[:lower:]]", true)]
-    [InlineData("T", "[[:lower:]]", false)]
-    [InlineData("\t", "[[:space:]]", true)]
-    [InlineData("t", "[[:space:]]", false)]
-    [InlineData("t", "[[:alpha:]]", true)]
-    [InlineData("\t", "[[:alpha:]]", false)]
-    [InlineData("0", "[[:digit:]]", true)]
-    [InlineData("t", "[[:digit:]]", false)]
-    [InlineData("t", "[[:print:]]", true)]
-    [InlineData("\t", "[[:print:]]", false)]
-    [InlineData("T", "[[:upper:]]", true)]
-    [InlineData("t", "[[:upper:]]", false)]
-    [InlineData("\t", "[[:blank:]]", true)]
-    [InlineData("t", "[[:blank:]]", false)]
-    [InlineData("t", "[[:graph:]]", true)]
-    [InlineData("\t", "[[:graph:]]", false)]
-    [InlineData(".", "[[:punct:]]", true)]
-    [InlineData("t", "[[:punct:]]", false)]
-    [InlineData("0", "[[:xdigit:]]", true)]
-    [InlineData("a", "[[:xdigit:]]", true)]
-    [InlineData("A", "[[:xdigit:]]", true)]
-    [InlineData("t", "[[:xdigit:]]", false)]
+    [Test]
+    [Arguments("a", "[[:alnum:]]", true)]
+    [Arguments("9", "[[:alnum:]]", true)]
+    [Arguments("-", "[[:alnum:]]", false)]
+    [Arguments("a", "[![:alnum:]]", false)]
+    [Arguments("-", "[![:alnum:]]", true)]
+    [Arguments("-", "[[:alnum:]-]", true)]
+    [Arguments("aa", "[[:alnum:]]a", true)]
+    [Arguments("a]a", "[[:alnum:]]a", false)]
+    [Arguments("\t", "[[:cntrl:]]", true)]
+    [Arguments("t", "[[:cntrl:]]", false)]
+    [Arguments("t", "[[:lower:]]", true)]
+    [Arguments("T", "[[:lower:]]", false)]
+    [Arguments("\t", "[[:space:]]", true)]
+    [Arguments("t", "[[:space:]]", false)]
+    [Arguments("t", "[[:alpha:]]", true)]
+    [Arguments("\t", "[[:alpha:]]", false)]
+    [Arguments("0", "[[:digit:]]", true)]
+    [Arguments("t", "[[:digit:]]", false)]
+    [Arguments("t", "[[:print:]]", true)]
+    [Arguments("\t", "[[:print:]]", false)]
+    [Arguments("T", "[[:upper:]]", true)]
+    [Arguments("t", "[[:upper:]]", false)]
+    [Arguments("\t", "[[:blank:]]", true)]
+    [Arguments("t", "[[:blank:]]", false)]
+    [Arguments("t", "[[:graph:]]", true)]
+    [Arguments("\t", "[[:graph:]]", false)]
+    [Arguments(".", "[[:punct:]]", true)]
+    [Arguments("t", "[[:punct:]]", false)]
+    [Arguments("0", "[[:xdigit:]]", true)]
+    [Arguments("a", "[[:xdigit:]]", true)]
+    [Arguments("A", "[[:xdigit:]]", true)]
+    [Arguments("t", "[[:xdigit:]]", false)]
     public void IsMatch_Posix_NamedClasses(string input, string pattern, bool expected) =>
         Posix(pattern).IsMatch(input).Should().Be(expected);
 
     // B.6 018 / 019 / 020 / 021: ranges.
-    [Theory]
-    [InlineData("a", "[a-c]", true)]
-    [InlineData("b", "[a-c]", true)]
-    [InlineData("c", "[a-c]", true)]
-    [InlineData("d", "[a-c]", false)]
-    [InlineData("B", "[a-c]", false)]
-    [InlineData("", "[a-c]", false)]
-    [InlineData("as", "[a-ca-z]", false)]
-    [InlineData("a", "[c-a]", false)]            // inverted range matches nothing
-    [InlineData("c", "[c-a]", false)]
-    [InlineData("a", "[a-c0-9]", true)]
-    [InlineData("d", "[a-c0-9]", false)]
-    [InlineData("-", "[-a]", true)]
-    [InlineData("a", "[-b]", false)]
-    [InlineData("-", "[!-a]", false)]
-    [InlineData("a", "[!-b]", true)]
+    [Test]
+    [Arguments("a", "[a-c]", true)]
+    [Arguments("b", "[a-c]", true)]
+    [Arguments("c", "[a-c]", true)]
+    [Arguments("d", "[a-c]", false)]
+    [Arguments("B", "[a-c]", false)]
+    [Arguments("", "[a-c]", false)]
+    [Arguments("as", "[a-ca-z]", false)]
+    [Arguments("a", "[c-a]", false)]            // inverted range matches nothing
+    [Arguments("c", "[c-a]", false)]
+    [Arguments("a", "[a-c0-9]", true)]
+    [Arguments("d", "[a-c0-9]", false)]
+    [Arguments("-", "[-a]", true)]
+    [Arguments("a", "[-b]", false)]
+    [Arguments("-", "[!-a]", false)]
+    [Arguments("a", "[!-b]", true)]
     public void IsMatch_Posix_Ranges(string input, string pattern, bool expected) =>
         Posix(pattern).IsMatch(input).Should().Be(expected);
 
     // B.6 024 / 025 / 026 / 027: wildcards over multi-segment inputs.
-    [Theory]
-    [InlineData("", "*", true)]
-    [InlineData("asd/sdf", "*", true)]
-    [InlineData("as", "[a-c][a-z]", true)]
-    [InlineData("as", "??", true)]
-    [InlineData("asd/sdf", "as*df", true)]
-    [InlineData("asd/sdf", "as*", true)]
-    [InlineData("asd/sdf", "*df", true)]
-    [InlineData("asd/sdf", "as*dg", false)]
-    [InlineData("asdf", "as*df", true)]
-    [InlineData("asdf", "as*df?", false)]
-    [InlineData("asdf", "as*??", true)]
-    [InlineData("asdf", "a*???", true)]
-    [InlineData("asdf", "*????", true)]
-    [InlineData("asdf", "????*", true)]
-    [InlineData("asdf", "??*?", true)]
-    [InlineData("/", "/", true)]
-    [InlineData("/", "/*", true)]
-    [InlineData("/", "*/", true)]
-    [InlineData("/", "/?", false)]
-    [InlineData("/", "?/", false)]
-    [InlineData("/", "?", true)]
-    [InlineData(".", "?", true)]
-    [InlineData("/.", "??", true)]
-    [InlineData("/", "[!a-c]", true)]
-    [InlineData(".", "[!a-c]", true)]
+    [Test]
+    [Arguments("", "*", true)]
+    [Arguments("asd/sdf", "*", true)]
+    [Arguments("as", "[a-c][a-z]", true)]
+    [Arguments("as", "??", true)]
+    [Arguments("asd/sdf", "as*df", true)]
+    [Arguments("asd/sdf", "as*", true)]
+    [Arguments("asd/sdf", "*df", true)]
+    [Arguments("asd/sdf", "as*dg", false)]
+    [Arguments("asdf", "as*df", true)]
+    [Arguments("asdf", "as*df?", false)]
+    [Arguments("asdf", "as*??", true)]
+    [Arguments("asdf", "a*???", true)]
+    [Arguments("asdf", "*????", true)]
+    [Arguments("asdf", "????*", true)]
+    [Arguments("asdf", "??*?", true)]
+    [Arguments("/", "/", true)]
+    [Arguments("/", "/*", true)]
+    [Arguments("/", "*/", true)]
+    [Arguments("/", "/?", false)]
+    [Arguments("/", "?/", false)]
+    [Arguments("/", "?", true)]
+    [Arguments(".", "?", true)]
+    [Arguments("/.", "??", true)]
+    [Arguments("/", "[!a-c]", true)]
+    [Arguments(".", "[!a-c]", true)]
     public void IsMatch_Posix_StarWildcard(string input, string pattern, bool expected) =>
         Posix(pattern).IsMatch(input).Should().Be(expected);
 
     // B.6 029 / 030: PATHNAME (PosixPath dialect).
-    [Theory]
-    [InlineData("/", "/", true)]
-    [InlineData("//", "//", true)]
-    [InlineData("/.a", "/*", true)]
-    [InlineData("/.a", "/?a", true)]
-    [InlineData("/.a", "/[!a-z]a", true)]
-    [InlineData("/.a/.b", "/*/?b", true)]
-    [InlineData("/", "?", false)]
-    [InlineData("/", "*", false)]
-    [InlineData("a/b", "a?b", false)]
-    [InlineData("/.a/.b", "/*b", false)]
+    [Test]
+    [Arguments("/", "/", true)]
+    [Arguments("//", "//", true)]
+    [Arguments("/.a", "/*", true)]
+    [Arguments("/.a", "/?a", true)]
+    [Arguments("/.a", "/[!a-z]a", true)]
+    [Arguments("/.a/.b", "/*/?b", true)]
+    [Arguments("/", "?", false)]
+    [Arguments("/", "*", false)]
+    [Arguments("a/b", "a?b", false)]
+    [Arguments("/.a/.b", "/*b", false)]
     public void IsMatch_PosixPath_PathnameSemantics(string input, string pattern, bool expected) =>
         PosixPath(pattern).IsMatch(input).Should().Be(expected);
 
     // B.6 031: escape handling at the matcher (no NOESCAPE).
-    [Theory]
-    [InlineData("/$", "\\/\\$", true)]
-    [InlineData("/[", "\\/\\[", true)]
-    [InlineData("/[", "\\/[", true)]
-    [InlineData("/[]", "\\/\\[]", true)]
+    [Test]
+    [Arguments("/$", "\\/\\$", true)]
+    [Arguments("/[", "\\/\\[", true)]
+    [Arguments("/[", "\\/[", true)]
+    [Arguments("/[]", "\\/\\[]", true)]
     public void IsMatch_Posix_BackslashEscape(string input, string pattern, bool expected) =>
         Posix(pattern).IsMatch(input).Should().Be(expected);
 
     // B.6 032: NOESCAPE flag (backslash becomes literal).
-    [Theory]
-    [InlineData("/$", "\\/\\$", false)]
-    [InlineData("/\\$", "\\/\\$", false)]
-    [InlineData("\\/\\$", "\\/\\$", true)]
+    [Test]
+    [Arguments("/$", "\\/\\$", false)]
+    [Arguments("/\\$", "\\/\\$", false)]
+    [Arguments("\\/\\$", "\\/\\$", true)]
     public void IsMatch_Posix_NoEscape(string input, string pattern, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix, GlobOptions.NoEscape)
             .IsMatch(input).Should().Be(expected);
@@ -225,11 +225,11 @@ public class PortedTests_Posix
     // B.6 033 / 034: PERIOD flag. Upstream PERIOD means the leading '.' must be
     // matched by a literal '.'; that is touki's default for `Posix`, so these rows
     // compile without `GlobOptions.MatchLeadingDot`.
-    [Theory]
-    [InlineData(".asd", ".*", true)]
-    [InlineData(".asd", "*", false)]
-    [InlineData(".asd", "?asd", false)]
-    [InlineData(".asd", "[!a-z]*", false)]
+    [Test]
+    [Arguments(".asd", ".*", true)]
+    [Arguments(".asd", "*", false)]
+    [Arguments(".asd", "?asd", false)]
+    [Arguments(".asd", "[!a-z]*", false)]
     public void IsMatch_Posix_LeadingDot_Restricted(string input, string pattern, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input).Should().Be(expected);
 
@@ -245,16 +245,16 @@ public class PortedTests_Posix
     // (F2.1 "Known follow-up - per-segment leading-dot") and folded into the
     // F2.2 globstar follow-up. Affected rows are marked with Assert.Skip so the
     // suite stays green; remove the skip when the per-segment behavior lands.
-    [Theory]
-    [InlineData("/.", "/.", true, false)]
-    [InlineData("/.a./.b.", "/.*/.*", true, false)]
-    [InlineData("/.a./.b.", "/.??/.??", true, false)]
-    [InlineData("/.", "*", false, false)]
-    [InlineData("/.", "/*", false, true)]                  // per-segment dot rule
-    [InlineData("/.", "/?", false, true)]                  // per-segment dot rule
-    [InlineData("/.", "/[!a-z]", false, true)]             // per-segment dot rule
-    [InlineData("/a./.b.", "/*/*", false, true)]           // per-segment dot rule
-    [InlineData("/a./.b.", "/??/???", false, true)]        // per-segment dot rule
+    [Test]
+    [Arguments("/.", "/.", true, false)]
+    [Arguments("/.a./.b.", "/.*/.*", true, false)]
+    [Arguments("/.a./.b.", "/.??/.??", true, false)]
+    [Arguments("/.", "*", false, false)]
+    [Arguments("/.", "/*", false, true)]                  // per-segment dot rule
+    [Arguments("/.", "/?", false, true)]                  // per-segment dot rule
+    [Arguments("/.", "/[!a-z]", false, true)]             // per-segment dot rule
+    [Arguments("/a./.b.", "/*/*", false, true)]           // per-segment dot rule
+    [Arguments("/a./.b.", "/??/???", false, true)]        // per-segment dot rule
     public void IsMatch_PosixPath_PathnameAndPeriod(
         string input,
         string pattern,
@@ -263,37 +263,36 @@ public class PortedTests_Posix
     {
         if (requiresPerSegmentDotRule)
         {
-            Assert.Skip(
-                "Per-segment FNM_PERIOD enforcement (leading '.' restricted at every path segment, not only input[0]) is deferred; see docs/globbing-feature-plan.md F2.1 'Known follow-up - per-segment leading-dot'.");
+            Skip.Test("Per-segment FNM_PERIOD enforcement (leading '.' restricted at every path segment, not only input[0]) is deferred; see docs/globbing-feature-plan.md F2.1 'Known follow-up - per-segment leading-dot'.");
         }
 
         GlobSpecification.Compile(pattern, GlobDialect.PosixPath).IsMatch(input).Should().Be(expected);
     }
 
     // Home-grown rows from the upstream corpus.
-    [Theory]
-    [InlineData("foobar", "foo*[abc]z", false)]
-    [InlineData("foobaz", "foo*[abc][xyz]", true)]
-    [InlineData("foobaz", "foo?*[abc][xyz]", true)]
-    [InlineData("foobaz", "foo?*[abc][x/yz]", true)]
-    [InlineData("az", "[a-]z", true)]
-    [InlineData("bz", "[ab-]z", true)]
-    [InlineData("cz", "[ab-]z", false)]
-    [InlineData("-z", "[ab-]z", true)]
-    [InlineData("az", "[-a]z", true)]
-    [InlineData("bz", "[-ab]z", true)]
-    [InlineData("cz", "[-ab]z", false)]
-    [InlineData("-z", "[-ab]z", true)]
+    [Test]
+    [Arguments("foobar", "foo*[abc]z", false)]
+    [Arguments("foobaz", "foo*[abc][xyz]", true)]
+    [Arguments("foobaz", "foo?*[abc][xyz]", true)]
+    [Arguments("foobaz", "foo?*[abc][x/yz]", true)]
+    [Arguments("az", "[a-]z", true)]
+    [Arguments("bz", "[ab-]z", true)]
+    [Arguments("cz", "[ab-]z", false)]
+    [Arguments("-z", "[ab-]z", true)]
+    [Arguments("az", "[-a]z", true)]
+    [Arguments("bz", "[-ab]z", true)]
+    [Arguments("cz", "[-ab]z", false)]
+    [Arguments("-z", "[-ab]z", true)]
     public void IsMatch_Posix_HomeGrown(string input, string pattern, bool expected) =>
         Posix(pattern).IsMatch(input).Should().Be(expected);
 
     // PATHNAME home-grown rows.
-    [Theory]
-    [InlineData("foobaz", "foo?*[abc]/[xyz]", false)]
-    [InlineData("a", "a/", false)]
-    [InlineData("a/", "a", false)]
-    [InlineData("//a", "/a", false)]
-    [InlineData("/a", "//a", false)]
+    [Test]
+    [Arguments("foobaz", "foo?*[abc]/[xyz]", false)]
+    [Arguments("a", "a/", false)]
+    [Arguments("a/", "a", false)]
+    [Arguments("//a", "/a", false)]
+    [Arguments("/a", "//a", false)]
     public void IsMatch_PosixPath_HomeGrown(string input, string pattern, bool expected) =>
         PosixPath(pattern).IsMatch(input).Should().Be(expected);
 

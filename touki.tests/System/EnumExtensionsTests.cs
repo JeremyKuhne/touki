@@ -75,14 +75,14 @@ public class EnumExtensionsTests
 
     // ---- GetValues<TEnum> ----
 
-    [Fact]
+    [Test]
     public void GetValues_ReturnsAllValuesInDeclarationOrder()
     {
         Color[] values = Enum.GetValues<Color>();
         values.Should().Equal(Color.Red, Color.Green, Color.Blue);
     }
 
-    [Fact]
+    [Test]
     public void GetValues_FlagsEnum_IncludesCombinedValues()
     {
         FileAccess[] values = Enum.GetValues<FileAccess>();
@@ -91,7 +91,7 @@ public class EnumExtensionsTests
 
     // ---- GetNames<TEnum> ----
 
-    [Fact]
+    [Test]
     public void GetNames_ReturnsNamesInValueOrder()
     {
         string[] names = Enum.GetNames<Color>();
@@ -100,13 +100,13 @@ public class EnumExtensionsTests
 
     // ---- GetName<TEnum> ----
 
-    [Fact]
+    [Test]
     public void GetName_DefinedValue_ReturnsName()
     {
         Enum.GetName(Color.Green).Should().Be("Green");
     }
 
-    [Fact]
+    [Test]
     public void GetName_UndefinedValue_ReturnsNull()
     {
         Enum.GetName((Color)99).Should().BeNull();
@@ -114,18 +114,18 @@ public class EnumExtensionsTests
 
     // ---- IsDefined<TEnum> ----
 
-    [Theory]
-    [InlineData(Color.Red, true)]
-    [InlineData(Color.Green, true)]
-    [InlineData(Color.Blue, true)]
-    [InlineData((Color)99, false)]
-    [InlineData((Color)0, false)]
+    [Test]
+    [Arguments(Color.Red, true)]
+    [Arguments(Color.Green, true)]
+    [Arguments(Color.Blue, true)]
+    [Arguments((Color)99, false)]
+    [Arguments((Color)0, false)]
     public void IsDefined_ReturnsExpected(Color value, bool expected)
     {
         Enum.IsDefined(value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void IsDefined_FlagsEnumCombined_ReturnsTrueForExplicitlyDefined()
     {
         // ReadWrite is explicitly defined as Read | Write.
@@ -136,59 +136,59 @@ public class EnumExtensionsTests
 
     // ---- Parse<TEnum>(ROS<char>) ----
 
-    [Fact]
+    [Test]
     public void Parse_Generic_Name_ReturnsValue()
     {
         Enum.Parse<Color>("Red".AsSpan()).Should().Be(Color.Red);
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_NumericString_ReturnsValue()
     {
         Enum.Parse<Color>("2".AsSpan()).Should().Be(Color.Green);
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_NumericStringNotADefinedValue_StillReturnsCastValue()
     {
         // BCL behavior: numeric forms always parse, even if the value isn't a defined member.
         Enum.Parse<Color>("99".AsSpan()).Should().Be((Color)99);
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_FlagsCommaSeparated_ReturnsCombined()
     {
         Enum.Parse<FileAccess>("Read, Write".AsSpan()).Should().Be(FileAccess.ReadWrite);
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_CaseSensitiveByDefault_ThrowsForLowercase()
     {
         Action action = () => Enum.Parse<Color>("red".AsSpan());
         action.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_IgnoreCaseTrue_AcceptsLowercase()
     {
         Enum.Parse<Color>("red".AsSpan(), ignoreCase: true).Should().Be(Color.Red);
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_IgnoreCaseFalse_RejectsLowercase()
     {
         Action action = () => Enum.Parse<Color>("red".AsSpan(), ignoreCase: false);
         action.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_UnknownName_Throws()
     {
         Action action = () => Enum.Parse<Color>("Magenta".AsSpan());
         action.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_EmptySpan_Throws()
     {
         Action action = () => Enum.Parse<Color>([]);
@@ -197,48 +197,48 @@ public class EnumExtensionsTests
 
     // ---- TryParse<TEnum>(ROS<char>) ----
 
-    [Fact]
+    [Test]
     public void TryParse_Generic_ValidName_ReturnsTrue()
     {
         Enum.TryParse("Blue".AsSpan(), out Color value).Should().BeTrue();
         value.Should().Be(Color.Blue);
     }
 
-    [Fact]
+    [Test]
     public void TryParse_Generic_Numeric_ReturnsTrue()
     {
         Enum.TryParse("4".AsSpan(), out Color value).Should().BeTrue();
         value.Should().Be(Color.Blue);
     }
 
-    [Fact]
+    [Test]
     public void TryParse_Generic_Invalid_ReturnsFalse()
     {
         Enum.TryParse("Magenta".AsSpan(), out Color value).Should().BeFalse();
         value.Should().Be(default);
     }
 
-    [Fact]
+    [Test]
     public void TryParse_Generic_CaseSensitive_RejectsLowercase()
     {
         Enum.TryParse("red".AsSpan(), out Color _).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void TryParse_Generic_IgnoreCase_AcceptsLowercase()
     {
         Enum.TryParse("red".AsSpan(), ignoreCase: true, out Color value).Should().BeTrue();
         value.Should().Be(Color.Red);
     }
 
-    [Fact]
+    [Test]
     public void TryParse_Generic_EmptySpan_ReturnsFalse()
     {
         Enum.TryParse([], out Color value).Should().BeFalse();
         value.Should().Be(default);
     }
 
-    [Fact]
+    [Test]
     public void TryParse_Generic_FlagsCommaSeparated_ReturnsCombined()
     {
         Enum.TryParse("Read, Write".AsSpan(), out FileAccess value).Should().BeTrue();
@@ -247,19 +247,19 @@ public class EnumExtensionsTests
 
     // ---- Parse(Type, ROS<char>) ----
 
-    [Fact]
+    [Test]
     public void Parse_NonGeneric_Name_ReturnsBoxedValue()
     {
         Enum.Parse(typeof(Color), "Green".AsSpan()).Should().Be(Color.Green);
     }
 
-    [Fact]
+    [Test]
     public void Parse_NonGeneric_IgnoreCase_AcceptsLowercase()
     {
         Enum.Parse(typeof(Color), "blue".AsSpan(), ignoreCase: true).Should().Be(Color.Blue);
     }
 
-    [Fact]
+    [Test]
     public void Parse_NonGeneric_Unknown_Throws()
     {
         Action action = () => Enum.Parse(typeof(Color), "Magenta".AsSpan());
@@ -268,21 +268,21 @@ public class EnumExtensionsTests
 
     // ---- TryParse(Type, ROS<char>, out object?) ----
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_Valid_ReturnsTrue()
     {
         Enum.TryParse(typeof(Color), "Red".AsSpan(), out object? value).Should().BeTrue();
         value.Should().Be(Color.Red);
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_Invalid_ReturnsFalseAndNull()
     {
         Enum.TryParse(typeof(Color), "Magenta".AsSpan(), out object? value).Should().BeFalse();
         value.Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_IgnoreCase_AcceptsLowercase()
     {
         Enum.TryParse(typeof(Color), "green".AsSpan(), ignoreCase: true, out object? value)
@@ -290,7 +290,7 @@ public class EnumExtensionsTests
         value.Should().Be(Color.Green);
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_NullEnumType_Throws()
     {
         // BCL contract: invalid enumType throws even from TryParse.
@@ -298,21 +298,21 @@ public class EnumExtensionsTests
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_NonEnumType_Throws()
     {
         Action action = () => Enum.TryParse(typeof(int), "1".AsSpan(), out object? _);
         action.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_IgnoreCase_NullEnumType_Throws()
     {
         Action action = () => Enum.TryParse(null!, "Red".AsSpan(), ignoreCase: true, out object? _);
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_IgnoreCase_NonEnumType_Throws()
     {
         Action action = () => Enum.TryParse(typeof(int), "1".AsSpan(), ignoreCase: true, out object? _);
@@ -321,23 +321,23 @@ public class EnumExtensionsTests
 
     // ---- Whitespace handling (matches BCL: leading/trailing whitespace trimmed) ----
 
-    [Theory]
-    [InlineData(" Red", Color.Red)]
-    [InlineData("Red ", Color.Red)]
-    [InlineData(" Red ", Color.Red)]
-    [InlineData(" 1 ", Color.Red)]
+    [Test]
+    [Arguments(" Red", Color.Red)]
+    [Arguments("Red ", Color.Red)]
+    [Arguments(" Red ", Color.Red)]
+    [Arguments(" 1 ", Color.Red)]
     public void Parse_Generic_LeadingTrailingWhitespace_Trimmed(string input, Color expected)
     {
         Enum.Parse<Color>(input.AsSpan()).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_FlagsWithExtraInteriorSpaces_Parses()
     {
         Enum.Parse<FileAccess>(" Read , Write ".AsSpan()).Should().Be(FileAccess.ReadWrite);
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_FlagsWithDuplicateNames_CollapsesToOneFlag()
     {
         // BCL behavior: duplicates collapse via OR.
@@ -346,66 +346,65 @@ public class EnumExtensionsTests
 
     // ---- Negative numeric strings for signed enums ----
 
-    [Fact]
+    [Test]
     public void Parse_Generic_NegativeNumeric_Signed_ReturnsCastValue()
     {
         Enum.Parse<Int64Enum>("-42".AsSpan()).Should().Be((Int64Enum)(-42));
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_NegativeNumeric_Unsigned_Throws()
     {
         // Unsigned enum can't take a negative literal. The exact exception type depends on TFM:
         // older runtimes throw ArgumentException via the parser; modern runtimes throw OverflowException.
         Action action = () => Enum.Parse<UInt32Enum>("-1".AsSpan());
-        Exception? exception = Record.Exception(action);
-        exception.Should().NotBeNull();
+        Exception exception = action.Should().Throw<Exception>().Which;
         (exception is OverflowException or ArgumentException).Should().BeTrue();
     }
 
     // ---- Multiple underlying integral types ----
 
-    [Theory]
-    [InlineData("Min", true)]
-    [InlineData("One", true)]
-    [InlineData("Max", true)]
-    [InlineData("Bogus", false)]
+    [Test]
+    [Arguments("Min", true)]
+    [Arguments("One", true)]
+    [Arguments("Max", true)]
+    [Arguments("Bogus", false)]
     public void TryParse_Generic_SByteEnum(string input, bool expectedSuccess)
     {
         Enum.TryParse(input.AsSpan(), out SByteEnum _).Should().Be(expectedSuccess);
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_ByteEnum_NumericMaxValue()
     {
         Enum.Parse<ByteEnum>(byte.MaxValue.ToString().AsSpan()).Should().Be(ByteEnum.Max);
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_Int16Enum_NumericMinValue()
     {
         Enum.Parse<Int16Enum>(short.MinValue.ToString().AsSpan()).Should().Be(Int16Enum.Min);
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_UInt16Enum_NumericMaxValue()
     {
         Enum.Parse<UInt16Enum>(ushort.MaxValue.ToString().AsSpan()).Should().Be(UInt16Enum.Max);
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_UInt32Enum_NumericMaxValue()
     {
         Enum.Parse<UInt32Enum>(uint.MaxValue.ToString().AsSpan()).Should().Be(UInt32Enum.Max);
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_Int64Enum_NumericMinValue()
     {
         Enum.Parse<Int64Enum>(long.MinValue.ToString().AsSpan()).Should().Be(Int64Enum.Min);
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_UInt64Enum_NumericMaxValue()
     {
         Enum.Parse<UInt64Enum>(ulong.MaxValue.ToString().AsSpan()).Should().Be(UInt64Enum.Max);
@@ -413,13 +412,13 @@ public class EnumExtensionsTests
 
     // ---- IgnoreCase variations ----
 
-    [Fact]
+    [Test]
     public void Parse_Generic_IgnoreCase_MixedCase_Accepted()
     {
         Enum.Parse<Int16Enum>("mAx".AsSpan(), ignoreCase: true).Should().Be(Int16Enum.Max);
     }
 
-    [Fact]
+    [Test]
     public void Parse_Generic_IgnoreCase_AllUppercase_Accepted()
     {
         Enum.Parse<Color>("BLUE".AsSpan(), ignoreCase: true).Should().Be(Color.Blue);
@@ -427,17 +426,17 @@ public class EnumExtensionsTests
 
     // ---- IsDefined across underlying types ----
 
-    [Theory]
-    [InlineData(SByteEnum.One, true)]
-    [InlineData((SByteEnum)99, false)]
+    [Test]
+    [Arguments(SByteEnum.One, true)]
+    [Arguments((SByteEnum)99, false)]
     public void IsDefined_Generic_SByteEnum(SByteEnum value, bool expected)
     {
         Enum.IsDefined(value).Should().Be(expected);
     }
 
-    [Theory]
-    [InlineData(UInt64Enum.One, true)]
-    [InlineData((UInt64Enum)99UL, false)]
+    [Test]
+    [Arguments(UInt64Enum.One, true)]
+    [Arguments((UInt64Enum)99UL, false)]
     public void IsDefined_Generic_UInt64Enum(UInt64Enum value, bool expected)
     {
         Enum.IsDefined(value).Should().Be(expected);
@@ -445,9 +444,9 @@ public class EnumExtensionsTests
 
     // ---- Error-message details (BCL behavior: unknown name appears in message) ----
 
-    [Theory]
-    [InlineData("Yellow")]
-    [InlineData("Yellow,Orange")]
+    [Test]
+    [Arguments("Yellow")]
+    [Arguments("Yellow,Orange")]
     public void Parse_Generic_NonExistentValue_NameIncludedInErrorMessage(string value)
     {
         Action action = () => Enum.Parse<FileAccess>(value.AsSpan());
@@ -458,21 +457,21 @@ public class EnumExtensionsTests
 
     // ---- Non-generic TryParse(Type, ReadOnlySpan<char>, out object?) ----
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_ValidName_ReturnsTrue()
     {
         Enum.TryParse(typeof(FileAccess), "Read".AsSpan(), out object? result).Should().BeTrue();
         result.Should().Be(FileAccess.Read);
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_InvalidName_ReturnsFalse()
     {
         Enum.TryParse(typeof(FileAccess), "Bogus".AsSpan(), out object? result).Should().BeFalse();
         result.Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_OverflowValue_ReturnsFalse()
     {
         // Numeric value far outside the underlying type range.
@@ -480,49 +479,49 @@ public class EnumExtensionsTests
         result.Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_NullType_Throws()
     {
         Action action = () => Enum.TryParse(null!, "Read".AsSpan(), out _);
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_NotAnEnum_Throws()
     {
         Action action = () => Enum.TryParse(typeof(int), "1".AsSpan(), out _);
         action.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_IgnoreCase_True_MatchesCaseInsensitive()
     {
         Enum.TryParse(typeof(FileAccess), "read".AsSpan(), ignoreCase: true, out object? result).Should().BeTrue();
         result.Should().Be(FileAccess.Read);
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_IgnoreCase_False_RejectsWrongCase()
     {
         Enum.TryParse(typeof(FileAccess), "read".AsSpan(), ignoreCase: false, out object? result).Should().BeFalse();
         result.Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_IgnoreCase_OverflowValue_ReturnsFalse()
     {
         Enum.TryParse(typeof(FileAccess), "99999999999999999999".AsSpan(), ignoreCase: true, out object? result).Should().BeFalse();
         result.Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_IgnoreCase_NullType_Throws()
     {
         Action action = () => Enum.TryParse(null!, "Read".AsSpan(), ignoreCase: true, out _);
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void TryParse_NonGeneric_IgnoreCase_NotAnEnum_Throws()
     {
         Action action = () => Enum.TryParse(typeof(int), "1".AsSpan(), ignoreCase: true, out _);

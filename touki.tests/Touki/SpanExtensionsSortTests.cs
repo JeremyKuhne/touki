@@ -10,7 +10,7 @@ public class SpanExtensionsSortTests
     //  Sort<T>(Span<T>)
     // -----------------------------------------------------------------------
 
-    [Fact]
+    [Test]
     public void Sort_Empty_NoOp()
     {
         Span<int> span = [];
@@ -18,7 +18,7 @@ public class SpanExtensionsSortTests
         span.Length.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Sort_SingleElement_NoOp()
     {
         Span<int> span = [42];
@@ -26,7 +26,7 @@ public class SpanExtensionsSortTests
         span[0].Should().Be(42);
     }
 
-    [Fact]
+    [Test]
     public void Sort_TwoElements_Sorts()
     {
         Span<int> span = [2, 1];
@@ -34,7 +34,7 @@ public class SpanExtensionsSortTests
         span.ToArray().Should().Equal(1, 2);
     }
 
-    [Fact]
+    [Test]
     public void Sort_ThreeElements_Sorts()
     {
         Span<int> span = [3, 1, 2];
@@ -42,7 +42,7 @@ public class SpanExtensionsSortTests
         span.ToArray().Should().Equal(1, 2, 3);
     }
 
-    [Fact]
+    [Test]
     public void Sort_AlreadySorted_StaysSorted()
     {
         Span<int> span = [1, 2, 3, 4, 5];
@@ -50,7 +50,7 @@ public class SpanExtensionsSortTests
         span.ToArray().Should().Equal(1, 2, 3, 4, 5);
     }
 
-    [Fact]
+    [Test]
     public void Sort_ReverseSorted_Sorts()
     {
         Span<int> span = [5, 4, 3, 2, 1];
@@ -58,7 +58,7 @@ public class SpanExtensionsSortTests
         span.ToArray().Should().Equal(1, 2, 3, 4, 5);
     }
 
-    [Fact]
+    [Test]
     public void Sort_WithDuplicates_Sorts()
     {
         Span<int> span = [3, 1, 2, 1, 3, 2];
@@ -66,7 +66,7 @@ public class SpanExtensionsSortTests
         span.ToArray().Should().Equal(1, 1, 2, 2, 3, 3);
     }
 
-    [Fact]
+    [Test]
     public void Sort_LargeRandom_Sorts()
     {
         // Force IntroSort into HeapSort/QuickSort paths. Deterministic LCG avoids CA5394.
@@ -87,7 +87,7 @@ public class SpanExtensionsSortTests
         span.ToArray().Should().Equal(expected);
     }
 
-    [Fact]
+    [Test]
     public void Sort_AllEqual_NoChange()
     {
         Span<int> span = [5, 5, 5, 5, 5];
@@ -95,7 +95,7 @@ public class SpanExtensionsSortTests
         span.ToArray().Should().Equal(5, 5, 5, 5, 5);
     }
 
-    [Fact]
+    [Test]
     public void Sort_Strings_UsesIComparable()
     {
         Span<string> span = ["banana", "apple", "cherry"];
@@ -107,7 +107,7 @@ public class SpanExtensionsSortTests
     //  Sort<T>(Span<T>, Comparison<T>)
     // -----------------------------------------------------------------------
 
-    [Fact]
+    [Test]
     public void Sort_Comparison_Descending()
     {
         Span<int> span = [3, 1, 2, 5, 4];
@@ -115,7 +115,7 @@ public class SpanExtensionsSortTests
         span.ToArray().Should().Equal(5, 4, 3, 2, 1);
     }
 
-    [Fact]
+    [Test]
     public void Sort_NullComparison_Throws()
     {
         Action act = static () =>
@@ -130,7 +130,7 @@ public class SpanExtensionsSortTests
     //  Sort<T,TComparer>(Span<T>, TComparer)
     // -----------------------------------------------------------------------
 
-    [Fact]
+    [Test]
     public void Sort_Comparer_Works()
     {
         Span<int> span = [3, 1, 2];
@@ -138,7 +138,7 @@ public class SpanExtensionsSortTests
         span.ToArray().Should().Equal(1, 2, 3);
     }
 
-    [Fact]
+    [Test]
     public void Sort_NullComparer_UsesDefault()
     {
         Span<int> span = [3, 1, 2];
@@ -150,7 +150,7 @@ public class SpanExtensionsSortTests
     //  Sort<TKey,TValue>(Span<TKey>, Span<TValue>)
     // -----------------------------------------------------------------------
 
-    [Fact]
+    [Test]
     public void Sort_KeysItems_Basic()
     {
         Span<int> keys = [3, 1, 2];
@@ -160,7 +160,7 @@ public class SpanExtensionsSortTests
         items.ToArray().Should().Equal("one", "two", "three");
     }
 
-    [Fact]
+    [Test]
     public void Sort_KeysItems_LargeRandom()
     {
         uint state = 99;
@@ -183,7 +183,7 @@ public class SpanExtensionsSortTests
         values.Should().Equal(valuesCopy);
     }
 
-    [Fact]
+    [Test]
     public void Sort_KeysItems_ItemsTooShort_Throws()
     {
         Action act = static () =>
@@ -195,7 +195,7 @@ public class SpanExtensionsSortTests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Test]
     public void Sort_KeysItems_Comparison()
     {
         Span<int> keys = [3, 1, 2];
@@ -205,7 +205,7 @@ public class SpanExtensionsSortTests
         items.ToArray().Should().Equal("three", "two", "one");
     }
 
-    [Fact]
+    [Test]
     public void Sort_KeysItems_Comparer_NullUsesDefault()
     {
         Span<int> keys = [3, 1, 2];
@@ -220,7 +220,7 @@ public class SpanExtensionsSortTests
     //  that exercises deeper IntroSort recursion and partition paths.
     // -----------------------------------------------------------------------
 
-    [Fact]
+    [Test]
     public void Sort_LargeReverseSorted_ProducesSortedResult()
     {
         int[] data = new int[2048];
@@ -238,7 +238,7 @@ public class SpanExtensionsSortTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Sort_KeysItems_LargeReverseSorted_ProducesSortedResult()
     {
         int[] keys = new int[2048];

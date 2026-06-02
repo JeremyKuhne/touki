@@ -34,6 +34,9 @@
 
     <!-- This will no longer be needed for the .NET 10 SDK -->
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+
+    <!-- Data-source methods expose read-only string[] inputs; per-call Func<T> isolation is unnecessary. -->
+    <NoWarn>$(NoWarn);TUnit0046</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != 'net481'">
@@ -51,7 +54,8 @@
          a `git` executable on PATH. -->
     <PackageReference Include="LibGit2Sharp" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" PrivateAssets="all" />
-    <PackageReference Include="xunit.v3" />
+    <!-- PrivateAssets so the test framework does not flow transitively to any project that references this one. -->
+    <PackageReference Include="TUnit" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net481'">
@@ -59,11 +63,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\touki.msbuildshim\touki.msbuildshim.csproj" />
     <ProjectReference Include="..\touki.testsupport\touki.testsupport.csproj" />
     <ProjectReference Include="..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="Xunit" />
+    <Using Include="TUnit.Core" />
+    <Using Include="TUnit.Assertions" />
+    <Using Include="TUnit.Assertions.Extensions" />
   </ItemGroup>
 </Project>

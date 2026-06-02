@@ -11,7 +11,7 @@ public class BigIntegerTests
 {
     #region SetUInt32 Tests
 
-    [Fact]
+    [Test]
     public void SetUInt32_Zero_ShouldCreateZeroBigInteger()
     {
         BigInteger.SetUInt32(out BigInteger result, 0);
@@ -20,11 +20,11 @@ public class BigIntegerTests
         result.ToUInt32().Should().Be(0u);
     }
 
-    [Theory]
-    [InlineData(1u)]
-    [InlineData(42u)]
-    [InlineData(0x80000000u)] // Min value that requires sign bit
-    [InlineData(uint.MaxValue)]
+    [Test]
+    [Arguments(1u)]
+    [Arguments(42u)]
+    [Arguments(0x80000000u)] // Min value that requires sign bit
+    [Arguments(uint.MaxValue)]
     public void SetUInt32_NonZero_ShouldCreateCorrectBigInteger(uint value)
     {
         BigInteger.SetUInt32(out BigInteger result, value);
@@ -38,7 +38,7 @@ public class BigIntegerTests
 
     #region SetUInt64 Tests
 
-    [Fact]
+    [Test]
     public void SetUInt64_Zero_ShouldCreateZeroBigInteger()
     {
         BigInteger.SetUInt64(out BigInteger result, 0);
@@ -47,11 +47,11 @@ public class BigIntegerTests
         result.ToUInt64().Should().Be(0ul);
     }
 
-    [Theory]
-    [InlineData(1ul, 1)]
-    [InlineData(uint.MaxValue, 1)] // Fits in single block
-    [InlineData(0x100000000ul, 2)] // Requires two blocks
-    [InlineData(ulong.MaxValue, 2)]
+    [Test]
+    [Arguments(1ul, 1)]
+    [Arguments(uint.MaxValue, 1)] // Fits in single block
+    [Arguments(0x100000000ul, 2)] // Requires two blocks
+    [Arguments(ulong.MaxValue, 2)]
     public void SetUInt64_NonZero_ShouldCreateCorrectBigInteger(ulong value, int expectedLength)
     {
         BigInteger.SetUInt64(out BigInteger result, value);
@@ -60,7 +60,7 @@ public class BigIntegerTests
         result.ToUInt64().Should().Be(value);
     }
 
-    [Fact]
+    [Test]
     public void SetUInt64_MaxValue_ShouldHaveCorrectBlocks()
     {
         BigInteger.SetUInt64(out BigInteger result, ulong.MaxValue);
@@ -73,7 +73,7 @@ public class BigIntegerTests
 
     #region SetZero and SetValue Tests
 
-    [Fact]
+    [Test]
     public void SetZero_ShouldCreateZeroBigInteger()
     {
         BigInteger.SetZero(out BigInteger result);
@@ -83,7 +83,7 @@ public class BigIntegerTests
         result.ToUInt64().Should().Be(0ul);
     }
 
-    [Fact]
+    [Test]
     public void SetValue_ShouldCopyCorrectly()
     {
         BigInteger.SetUInt64(out BigInteger original, 0x123456789ABCDEFul);
@@ -98,7 +98,7 @@ public class BigIntegerTests
         }
     }
 
-    [Fact]
+    [Test]
     public void SetValue_FromZero_ShouldCreateZero()
     {
         BigInteger.SetZero(out BigInteger zero);
@@ -112,28 +112,28 @@ public class BigIntegerTests
 
     #region ToUInt32 and ToUInt64 Tests
 
-    [Fact]
+    [Test]
     public void ToUInt32_ZeroBigInteger_ShouldReturnZero()
     {
         BigInteger.SetZero(out BigInteger zero);
         zero.ToUInt32().Should().Be(0u);
     }
 
-    [Fact]
+    [Test]
     public void ToUInt64_ZeroBigInteger_ShouldReturnZero()
     {
         BigInteger.SetZero(out BigInteger zero);
         zero.ToUInt64().Should().Be(0ul);
     }
 
-    [Fact]
+    [Test]
     public void ToUInt64_SingleBlock_ShouldReturnFirstBlock()
     {
         BigInteger.SetUInt32(out BigInteger value, 42u);
         value.ToUInt64().Should().Be(42ul);
     }
 
-    [Fact]
+    [Test]
     public void ToUInt64_TwoBlocks_ShouldCombineCorrectly()
     {
         BigInteger.SetUInt64(out BigInteger value, 0x123456789ABCDEFul);
@@ -144,7 +144,7 @@ public class BigIntegerTests
 
     #region Compare Tests
 
-    [Fact]
+    [Test]
     public void Compare_BothZero_ShouldReturnZero()
     {
         BigInteger.SetZero(out BigInteger zero1);
@@ -152,7 +152,7 @@ public class BigIntegerTests
         BigInteger.Compare(ref zero1, ref zero2).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Compare_ZeroVsNonZero_ShouldReturnCorrectSign()
     {
         BigInteger.SetZero(out BigInteger zero);
@@ -162,7 +162,7 @@ public class BigIntegerTests
         BigInteger.Compare(ref one, ref zero).Should().BeGreaterThan(0);
     }
 
-    [Fact]
+    [Test]
     public void Compare_SameLengthDifferentValues_ShouldCompareCorrectly()
     {
         BigInteger.SetUInt32(out BigInteger small, 100);
@@ -173,7 +173,7 @@ public class BigIntegerTests
         BigInteger.Compare(ref small, ref small).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Compare_DifferentLengths_ShouldCompareLengthFirst()
     {
         BigInteger.SetUInt32(out BigInteger oneBlock, uint.MaxValue);
@@ -183,7 +183,7 @@ public class BigIntegerTests
         BigInteger.Compare(ref twoBlocks, ref oneBlock).Should().BeGreaterThan(0);
     }
 
-    [Fact]
+    [Test]
     public void Compare_MultiBlockValues_ShouldCompareHighestBlocksFirst()
     {
         BigInteger.SetUInt64(out BigInteger value1, 0x200000000ul); // High block = 2
@@ -197,7 +197,7 @@ public class BigIntegerTests
 
     #region Add Tests
 
-    [Fact]
+    [Test]
     public void Add_ZeroPlusZero_ShouldReturnZero()
     {
         BigInteger.SetZero(out BigInteger zero1);
@@ -208,7 +208,7 @@ public class BigIntegerTests
         result.GetLength().Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Add_ZeroPlusNonZero_ShouldReturnNonZero()
     {
         BigInteger.SetZero(out BigInteger zero);
@@ -219,7 +219,7 @@ public class BigIntegerTests
         result.GetLength().Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Add_NoCarry_ShouldAddCorrectly()
     {
         BigInteger.SetUInt32(out BigInteger a, 100);
@@ -230,7 +230,7 @@ public class BigIntegerTests
         result.GetLength().Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Add_WithCarry_ShouldExtendLength()
     {
         BigInteger.SetUInt32(out BigInteger a, uint.MaxValue);
@@ -243,7 +243,7 @@ public class BigIntegerTests
         result.ToUInt64().Should().Be(0x100000000ul);
     }
 
-    [Fact]
+    [Test]
     public void Add_DifferentLengths_ShouldHandleCorrectly()
     {
         BigInteger.SetUInt32(out BigInteger small, 100);
@@ -254,7 +254,7 @@ public class BigIntegerTests
         result.ToUInt64().Should().Be(0x200000064ul); // 0x200000000 + 100
     }
 
-    [Fact]
+    [Test]
     public void Add_MaxValueCarryPropagation_ShouldHandleCorrectly()
     {
         BigInteger.SetUInt64(out BigInteger a, 0xFFFFFFFFFFFFFFFFul);
@@ -271,7 +271,7 @@ public class BigIntegerTests
 
     #region Multiply Tests
 
-    [Fact]
+    [Test]
     public void Multiply_ByZero_ShouldReturnZero()
     {
         BigInteger.SetUInt32(out BigInteger value, 42);
@@ -280,7 +280,7 @@ public class BigIntegerTests
         result.IsZero().Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Multiply_ByOne_ShouldReturnSameValue()
     {
         BigInteger.SetUInt32(out BigInteger value, 42);
@@ -290,7 +290,7 @@ public class BigIntegerTests
         result.GetLength().Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Multiply_ZeroByValue_ShouldReturnZero()
     {
         BigInteger.SetZero(out BigInteger zero);
@@ -299,7 +299,7 @@ public class BigIntegerTests
         result.IsZero().Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Multiply_SingleBlockNoCarry_ShouldMultiplyCorrectly()
     {
         BigInteger.SetUInt32(out BigInteger value, 100);
@@ -309,7 +309,7 @@ public class BigIntegerTests
         result.GetLength().Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Multiply_SingleBlockWithCarry_ShouldExtendLength()
     {
         BigInteger.SetUInt32(out BigInteger value, 0x80000000u); // 2^31
@@ -319,7 +319,7 @@ public class BigIntegerTests
         result.ToUInt64().Should().Be(0x180000000ul); // 3 * 2^31
     }
 
-    [Fact]
+    [Test]
     public void Multiply_MaxUInt32_ShouldHandleCorrectly()
     {
         BigInteger.SetUInt32(out BigInteger value, uint.MaxValue);
@@ -329,7 +329,7 @@ public class BigIntegerTests
         result.ToUInt64().Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Multiply_BigIntegerByBigInteger_ShouldMultiplyCorrectly()
     {
         BigInteger.SetUInt32(out BigInteger a, 0x12345678u);
@@ -340,7 +340,7 @@ public class BigIntegerTests
         result.ToUInt64().Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Multiply_LargeNumbers_ShouldHandleCorrectly()
     {
         BigInteger.SetUInt64(out BigInteger a, 0x123456789ABCDEFul);
@@ -355,55 +355,55 @@ public class BigIntegerTests
 
     #region CountSignificantBits Tests
 
-    [Fact]
+    [Test]
     public void CountSignificantBits_UInt32Zero_ShouldReturnZero()
     {
         BigInteger.CountSignificantBits(0u).Should().Be(0u);
     }
 
-    [Theory]
-    [InlineData(1u, 1u)]
-    [InlineData(2u, 2u)]
-    [InlineData(3u, 2u)]
-    [InlineData(4u, 3u)]
-    [InlineData(0x80000000u, 32u)]
-    [InlineData(uint.MaxValue, 32u)]
+    [Test]
+    [Arguments(1u, 1u)]
+    [Arguments(2u, 2u)]
+    [Arguments(3u, 2u)]
+    [Arguments(4u, 3u)]
+    [Arguments(0x80000000u, 32u)]
+    [Arguments(uint.MaxValue, 32u)]
     public void CountSignificantBits_UInt32_ShouldReturnCorrectCount(uint value, uint expected)
     {
         BigInteger.CountSignificantBits(value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void CountSignificantBits_UInt64Zero_ShouldReturnZero()
     {
         BigInteger.CountSignificantBits(0ul).Should().Be(0u);
     }
 
-    [Theory]
-    [InlineData(1ul, 1u)]
-    [InlineData(0x100000000ul, 33u)]
-    [InlineData(0x8000000000000000ul, 64u)]
-    [InlineData(ulong.MaxValue, 64u)]
+    [Test]
+    [Arguments(1ul, 1u)]
+    [Arguments(0x100000000ul, 33u)]
+    [Arguments(0x8000000000000000ul, 64u)]
+    [Arguments(ulong.MaxValue, 64u)]
     public void CountSignificantBits_UInt64_ShouldReturnCorrectCount(ulong value, uint expected)
     {
         BigInteger.CountSignificantBits(value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void CountSignificantBits_BigIntegerZero_ShouldReturnZero()
     {
         BigInteger.SetZero(out BigInteger zero);
         BigInteger.CountSignificantBits(ref zero).Should().Be(0u);
     }
 
-    [Fact]
+    [Test]
     public void CountSignificantBits_BigIntegerSingleBlock_ShouldReturnCorrectCount()
     {
         BigInteger.SetUInt32(out BigInteger value, 0x80000000u);
         BigInteger.CountSignificantBits(ref value).Should().Be(32u);
     }
 
-    [Fact]
+    [Test]
     public void CountSignificantBits_BigIntegerMultiBlock_ShouldReturnCorrectCount()
     {
         BigInteger.SetUInt64(out BigInteger value, 0x8000000000000000ul);
@@ -414,7 +414,7 @@ public class BigIntegerTests
 
     #region ShiftLeft Tests
 
-    [Fact]
+    [Test]
     public void ShiftLeft_Zero_ShouldRemainZero()
     {
         BigInteger.SetZero(out BigInteger zero);
@@ -422,7 +422,7 @@ public class BigIntegerTests
         zero.IsZero().Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ShiftLeft_ByZero_ShouldNotChange()
     {
         BigInteger.SetUInt32(out BigInteger value, 42);
@@ -430,7 +430,7 @@ public class BigIntegerTests
         value.ToUInt32().Should().Be(42);
     }
 
-    [Fact]
+    [Test]
     public void ShiftLeft_WithinBlock_ShouldShiftCorrectly()
     {
         BigInteger.SetUInt32(out BigInteger value, 1);
@@ -438,7 +438,7 @@ public class BigIntegerTests
         value.ToUInt32().Should().Be(32u); // 1 << 5
     }
 
-    [Fact]
+    [Test]
     public void ShiftLeft_ExactBlockBoundary_ShouldAddZeroBlock()
     {
         BigInteger.SetUInt32(out BigInteger value, 1);
@@ -448,7 +448,7 @@ public class BigIntegerTests
         value.GetBlock(1).Should().Be(1u);
     }
 
-    [Fact]
+    [Test]
     public void ShiftLeft_CrossBlockBoundary_ShouldHandleCorrectly()
     {
         BigInteger.SetUInt32(out BigInteger value, 0x80000000u);
@@ -458,7 +458,7 @@ public class BigIntegerTests
         value.GetBlock(1).Should().Be(1u);
     }
 
-    [Fact]
+    [Test]
     public void ShiftLeft_LargeShift_ShouldHandleCorrectly()
     {
         BigInteger.SetUInt32(out BigInteger value, 1);
@@ -469,7 +469,7 @@ public class BigIntegerTests
         value.GetBlock(2).Should().Be(2u); // 1 << 1 (65 % 32 = 1, plus 2 zero blocks)
     }
 
-    [Fact]
+    [Test]
     public void ShiftLeft_VeryLargeShift_ShouldTriggerOverflowProtection()
     {
         BigInteger.SetUInt32(out BigInteger value, 1);
@@ -490,7 +490,7 @@ public class BigIntegerTests
 
     #region Pow2 Tests
 
-    [Fact]
+    [Test]
     public void Pow2_Zero_ShouldReturnOne()
     {
         BigInteger.Pow2(0, out BigInteger result);
@@ -498,18 +498,18 @@ public class BigIntegerTests
         result.GetLength().Should().Be(1);
     }
 
-    [Theory]
-    [InlineData(1u, 2u)]
-    [InlineData(2u, 4u)]
-    [InlineData(10u, 1024u)]
-    [InlineData(31u, 0x80000000u)]
+    [Test]
+    [Arguments(1u, 2u)]
+    [Arguments(2u, 4u)]
+    [Arguments(10u, 1024u)]
+    [Arguments(31u, 0x80000000u)]
     public void Pow2_SmallExponents_ShouldReturnCorrectPower(uint exponent, uint expected)
     {
         BigInteger.Pow2(exponent, out BigInteger result);
         result.ToUInt32().Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Pow2_ExactBlockBoundary_ShouldCreateCorrectLength()
     {
         BigInteger.Pow2(32, out BigInteger result);
@@ -518,7 +518,7 @@ public class BigIntegerTests
         result.GetBlock(1).Should().Be(1u);
     }
 
-    [Fact]
+    [Test]
     public void Pow2_LargeExponent_ShouldCreateMultipleBlocks()
     {
         BigInteger.Pow2(64, out BigInteger result);
@@ -532,7 +532,7 @@ public class BigIntegerTests
 
     #region Instance Method Tests
 
-    [Fact]
+    [Test]
     public void Add_InstanceMethod_ShouldAddCorrectly()
     {
         BigInteger.SetUInt32(out BigInteger value, 100);
@@ -540,7 +540,7 @@ public class BigIntegerTests
         value.ToUInt32().Should().Be(150);
     }
 
-    [Fact]
+    [Test]
     public void Add_InstanceMethodWithCarry_ShouldExtendLength()
     {
         BigInteger.SetUInt32(out BigInteger value, uint.MaxValue);
@@ -549,7 +549,7 @@ public class BigIntegerTests
         value.ToUInt64().Should().Be(0x100000000ul);
     }
 
-    [Fact]
+    [Test]
     public void Multiply_InstanceMethodByUInt_ShouldMultiplyCorrectly()
     {
         BigInteger.SetUInt32(out BigInteger value, 42);
@@ -557,7 +557,7 @@ public class BigIntegerTests
         value.ToUInt32().Should().Be(126);
     }
 
-    [Fact]
+    [Test]
     public void Multiply_InstanceMethodByBigInteger_ShouldMultiplyCorrectly()
     {
         BigInteger.SetUInt32(out BigInteger a, 6);
@@ -566,7 +566,7 @@ public class BigIntegerTests
         a.ToUInt32().Should().Be(42);
     }
 
-    [Fact]
+    [Test]
     public void Multiply10_ShouldMultiplyByTen()
     {
         BigInteger.SetUInt32(out BigInteger value, 42);
@@ -574,7 +574,7 @@ public class BigIntegerTests
         value.ToUInt32().Should().Be(420);
     }
 
-    [Fact]
+    [Test]
     public void Multiply10_Zero_ShouldRemainZero()
     {
         BigInteger.SetZero(out BigInteger zero);
@@ -582,7 +582,7 @@ public class BigIntegerTests
         zero.IsZero().Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void MultiplyPow10_ShouldMultiplyCorrectly()
     {
         BigInteger.SetUInt32(out BigInteger value, 42);
@@ -590,7 +590,7 @@ public class BigIntegerTests
         value.ToUInt32().Should().Be(42000);
     }
 
-    [Fact]
+    [Test]
     public void MultiplyPow10_Zero_ShouldRemainZero()
     {
         BigInteger.SetZero(out BigInteger zero);
@@ -601,7 +601,7 @@ public class BigIntegerTests
     #endregion
 
     #region Edge Cases and Error Conditions
-    [Fact]
+    [Test]
     public void GetBlock_ValidIndex_ShouldReturnCorrectBlock()
     {
         BigInteger.SetUInt64(out BigInteger value, 0x123456789ABCDEFul);
@@ -612,14 +612,14 @@ public class BigIntegerTests
         value.GetBlock(1).Should().Be(0x1234567u);  // High block
     }
 
-    [Fact]
+    [Test]
     public void ToUInt32_LargerThanUInt32_ShouldReturnFirstBlock()
     {
         BigInteger.SetUInt64(out BigInteger value, 0x123456789ABCDEFul);
         value.ToUInt32().Should().Be(0x89ABCDEFu); // First (low) block only
     }
 
-    [Fact]
+    [Test]
     public void ToUInt64_LargerThanUInt64_ShouldReturnFirstTwoBlocks()
     {
         // Create a 3-block number
@@ -634,7 +634,7 @@ public class BigIntegerTests
 
     #region DivRem Tests
 
-    [Fact]
+    [Test]
     public void DivRem_ZeroDividend_ShouldReturnZeros()
     {
         BigInteger.SetZero(out BigInteger dividend);
@@ -645,7 +645,7 @@ public class BigIntegerTests
         remainder.IsZero().Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void DivRem_SingleBlockNumbers_ShouldDivideCorrectly()
     {
         BigInteger.SetUInt32(out BigInteger dividend, 42);
@@ -657,7 +657,7 @@ public class BigIntegerTests
         remainder.ToUInt32().Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void DivRem_WithRemainder_ShouldReturnCorrectValues()
     {
         BigInteger.SetUInt32(out BigInteger dividend, 43);
@@ -669,7 +669,7 @@ public class BigIntegerTests
         remainder.ToUInt32().Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void DivRem_DivisorLargerThanDividend_ShouldReturnZeroQuotient()
     {
         BigInteger.SetUInt32(out BigInteger dividend, 7);
@@ -685,7 +685,7 @@ public class BigIntegerTests
 
     #region HeuristicDivide Tests
 
-    [Fact]
+    [Test]
     public void HeuristicDivide_DivisorLargerThanDividend_ShouldReturnZero()
     {
         BigInteger.SetUInt32(out BigInteger dividend, 7);
@@ -695,7 +695,7 @@ public class BigIntegerTests
         result.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void HeuristicDivide_EqualLengths_ShouldReturnEstimate()
     {
         BigInteger.SetUInt32(out BigInteger dividend, 100);
@@ -710,7 +710,7 @@ public class BigIntegerTests
 
     #region Additional Edge Case Tests
 
-    [Fact]
+    [Test]
     public void Add_MaxBlockCountScenario_ShouldHandleGracefully()
     {
         // Test near the maximum block count limit
@@ -731,7 +731,7 @@ public class BigIntegerTests
         result.GetLength().Should().BeGreaterThanOrEqualTo(0);
     }
 
-    [Fact]
+    [Test]
     public void Multiply_OverflowProtection_ShouldReturnZeroOnOverflow()
     {
         // Create a large number that could cause overflow
@@ -752,7 +752,7 @@ public class BigIntegerTests
         // The result should either be a valid BigInteger or zero due to overflow protection
         large.GetLength().Should().BeGreaterThanOrEqualTo(0);
     }
-    [Fact]
+    [Test]
     public void ShiftLeft_ExtremeShift_ShouldHandleGracefully()
     {
         BigInteger.SetUInt32(out BigInteger value, 1);
@@ -771,7 +771,7 @@ public class BigIntegerTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Compare_IdenticalValuesAfterOperations_ShouldBeEqual()
     {
         BigInteger.SetUInt32(out BigInteger a, 42);
@@ -783,7 +783,7 @@ public class BigIntegerTests
         BigInteger.Compare(ref a, ref b).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Pow10_LargeExponent_ShouldCalculateCorrectly()
     {
         BigInteger.Pow10(5, out BigInteger result);
@@ -793,7 +793,7 @@ public class BigIntegerTests
         result2.ToUInt32().Should().Be(1000000000u); // 10^9
     }
 
-    [Fact]
+    [Test]
     public void SetValue_ModificationIndependence_ShouldNotAffectOriginal()
     {
         BigInteger.SetUInt32(out BigInteger original, 42);
@@ -805,7 +805,7 @@ public class BigIntegerTests
         copy.ToUInt32().Should().Be(84);
     }
 
-    [Fact]
+    [Test]
     public void Add_CarryChainWithMaxValues_ShouldHandleCorrectly()
     {
         // Create a number with all blocks set to max value
@@ -819,15 +819,15 @@ public class BigIntegerTests
         result.GetBlock(0).Should().Be(0u);
         result.GetBlock(1).Should().Be(1u);
     }
-    [Theory]
-    [InlineData(0u)]
-    [InlineData(1u)]
-    [InlineData(31u)]
-    [InlineData(32u)]
-    [InlineData(33u)]
-    [InlineData(63u)]
-    [InlineData(64u)]
-    [InlineData(65u)]
+    [Test]
+    [Arguments(0u)]
+    [Arguments(1u)]
+    [Arguments(31u)]
+    [Arguments(32u)]
+    [Arguments(33u)]
+    [Arguments(63u)]
+    [Arguments(64u)]
+    [Arguments(65u)]
     public void ShiftLeft_VariousShiftAmounts_ShouldBeConsistent(uint shift)
     {
         BigInteger.SetUInt32(out BigInteger value, 1);
@@ -844,7 +844,7 @@ public class BigIntegerTests
         }
     }
 
-    [Fact]
+    [Test]
     public void CountSignificantBits_AfterOperations_ShouldBeCorrect()
     {
         BigInteger.SetUInt32(out BigInteger value, 1);
@@ -857,7 +857,7 @@ public class BigIntegerTests
         BigInteger.CountSignificantBits(ref value).Should().Be(12u); // 3072 requires 12 bits
     }
 
-    [Fact]
+    [Test]
     public void DivRem_EdgeCaseValues_ShouldHandleCorrectly()
     {
         // Test division where quotient is exactly 1
@@ -870,7 +870,7 @@ public class BigIntegerTests
         remainder.IsZero().Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void HeuristicDivide_SequentialCalls_ShouldReduceDividend()
     {
         BigInteger.SetUInt32(out BigInteger dividend, 1000);
@@ -971,7 +971,7 @@ public class BigIntegerTests
         }
     }
 
-    [Fact]
+    [Test]
     public void DivRem_MultiBlockDividendSingleBlockDivisor_MatchesBcl()
     {
         // dividend = 2^96 - 1 (3 blocks).
@@ -986,7 +986,7 @@ public class BigIntegerTests
         ToBcl(ref remainder).Should().Be(expectedRem);
     }
 
-    [Fact]
+    [Test]
     public void DivRem_MultiBlockGrammarSchool_MatchesBcl()
     {
         // Build dividend = 10^60 (multi-block) and divisor = 10^25 (multi-block).
@@ -1008,7 +1008,7 @@ public class BigIntegerTests
         ToBcl(ref remainder).Should().Be(expectedRem);
     }
 
-    [Fact]
+    [Test]
     public void DivRem_MultiBlockExactDivision_RemainderIsZero()
     {
         // dividend = 10^40, divisor = 10^20 -> quotient = 10^20, rem = 0.
@@ -1022,7 +1022,7 @@ public class BigIntegerTests
         remainder.IsZero().Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Pow10_ExponentEight_ShouldEqualBcl()
     {
         // exponent 8 forces use of s_pow10BigNumTable[0].
@@ -1030,24 +1030,24 @@ public class BigIntegerTests
         ToBcl(ref result).Should().Be(BclBigInteger.Pow(10, 8));
     }
 
-    [Theory]
-    [InlineData(10u)]
-    [InlineData(16u)]
-    [InlineData(17u)]
-    [InlineData(32u)]
-    [InlineData(50u)]
-    [InlineData(100u)]
-    [InlineData(255u)]
-    [InlineData(256u)]
-    [InlineData(500u)]
-    [InlineData(1000u)]
+    [Test]
+    [Arguments(10u)]
+    [Arguments(16u)]
+    [Arguments(17u)]
+    [Arguments(32u)]
+    [Arguments(50u)]
+    [Arguments(100u)]
+    [Arguments(255u)]
+    [Arguments(256u)]
+    [Arguments(500u)]
+    [Arguments(1000u)]
     public void Pow10_VariousExponents_ShouldEqualBcl(uint exponent)
     {
         BigInteger.Pow10(exponent, out BigInteger result);
         ToBcl(ref result).Should().Be(BclBigInteger.Pow(10, (int)exponent));
     }
 
-    [Fact]
+    [Test]
     public void MultiplyPow10_LargeExponent_ShouldEqualBcl()
     {
         BigInteger.SetUInt32(out BigInteger value, 7);
@@ -1057,7 +1057,7 @@ public class BigIntegerTests
         ToBcl(ref value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Multiply_LhsShorterThanRhs_ShouldSwapAndMultiply()
     {
         // lhs is single block, rhs is multi-block: triggers the lhs._length <= 1 fast path.
@@ -1070,7 +1070,7 @@ public class BigIntegerTests
         ToBcl(ref result).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Multiply_BothMultiBlockWithLhsShorter_ShouldSwapInternally()
     {
         // lhs (2 blocks) shorter than rhs (multi-block from Pow10).
@@ -1083,7 +1083,7 @@ public class BigIntegerTests
         ToBcl(ref result).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void Multiply_RhsZero_ShouldReturnZero()
     {
         BigInteger.Pow10(30, out BigInteger lhs);
@@ -1093,7 +1093,7 @@ public class BigIntegerTests
         result.IsZero().Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ShiftLeft_PartialShiftMultiBlock_ShouldEqualBcl()
     {
         // Build a multi-block value, then partial (non-block-aligned) shift.
@@ -1104,7 +1104,7 @@ public class BigIntegerTests
         ToBcl(ref value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void ShiftLeft_PartialShiftCrossingBlocks_ShouldEqualBcl()
     {
         BigInteger.Pow10(20, out BigInteger value);
@@ -1114,7 +1114,7 @@ public class BigIntegerTests
         ToBcl(ref value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void HeuristicDivide_QuotientCorrection_ShouldStillDivideExactly()
     {
         // dividend == divisor exercises the post-loop correction branch
@@ -1130,7 +1130,7 @@ public class BigIntegerTests
         dividend.IsZero().Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void HeuristicDivide_LargerDividend_RecoversFullQuotient()
     {
         // dividend = 7 * divisor + r where r < divisor. Construct dividend with
@@ -1149,7 +1149,7 @@ public class BigIntegerTests
         dividend.ToUInt32().Should().Be(12345u);
     }
 
-    [Fact]
+    [Test]
     public void Add_TwoMultiBlockValues_MatchesBcl()
     {
         BigInteger.Pow10(20, out BigInteger a);
@@ -1160,7 +1160,7 @@ public class BigIntegerTests
         ToBcl(ref result).Should().Be(BclBigInteger.Pow(10, 20) + BclBigInteger.Pow(10, 25));
     }
 
-    [Fact]
+    [Test]
     public void Multiply_Pow10Squared_MatchesBcl()
     {
         BigInteger.Pow10(40, out BigInteger a);
@@ -1170,7 +1170,7 @@ public class BigIntegerTests
         ToBcl(ref result).Should().Be(BclBigInteger.Pow(10, 80));
     }
 
-    [Fact]
+    [Test]
     public void Compare_EqualMultiBlock_ShouldReturnZero()
     {
         BigInteger.Pow10(50, out BigInteger a);
@@ -1179,7 +1179,7 @@ public class BigIntegerTests
         BigInteger.Compare(ref a, ref b).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Compare_MultiBlockDifferingInLowBlock_ShouldDetectDifference()
     {
         BigInteger.Pow10(30, out BigInteger a);
@@ -1190,7 +1190,7 @@ public class BigIntegerTests
         BigInteger.Compare(ref b, ref a).Should().BeGreaterThan(0);
     }
 
-    [Fact]
+    [Test]
     public void Multiply10_MultiBlockWithCarry_MatchesBcl()
     {
         BigInteger.SetUInt64(out BigInteger value, ulong.MaxValue);
@@ -1199,7 +1199,7 @@ public class BigIntegerTests
         ToBcl(ref value).Should().Be((BclBigInteger)ulong.MaxValue * 10);
     }
 
-    [Fact]
+    [Test]
     public void Add_InstanceMethod_OnZero_ShouldInitialize()
     {
         BigInteger.SetZero(out BigInteger value);
@@ -1208,7 +1208,7 @@ public class BigIntegerTests
         value.GetLength().Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Add_InstanceMethod_CarryAcrossMultipleBlocks_MatchesBcl()
     {
         // Build value = (2^64 - 1), then add 1 to force carry through two blocks.

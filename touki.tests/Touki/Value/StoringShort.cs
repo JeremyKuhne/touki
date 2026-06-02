@@ -6,30 +6,30 @@ namespace Touki;
 
 public class StoringShort
 {
-    public static TheoryData<short> ShortData => new()
+    public static IEnumerable<short> ShortData()
     {
-        { 0 },
-        { 42 },
-        { short.MaxValue },
-        { short.MinValue }
-    };
+        yield return 0;
+        yield return 42;
+        yield return short.MaxValue;
+        yield return short.MinValue;
+    }
 
-    [Theory]
-    [MemberData(nameof(ShortData))]
+    [Test]
+    [MethodDataSource(nameof(ShortData))]
     public void ShortImplicit(short @short)
     {
         Value value = @short;
-        Assert.Equal(@short, value.As<short>());
-        Assert.Equal(typeof(short), value.Type);
+        value.As<short>().Should().Be(@short);
+        value.Type.Should().Be(typeof(short));
 
         short? source = @short;
         value = source;
-        Assert.Equal(source, value.As<short?>());
-        Assert.Equal(typeof(short), value.Type);
+        value.As<short?>().Should().Be(source);
+        value.Type.Should().Be(typeof(short));
     }
 
-    [Theory]
-    [MemberData(nameof(ShortData))]
+    [Test]
+    [MethodDataSource(nameof(ShortData))]
     public void ShortCreate(short @short)
     {
         Value value;
@@ -38,8 +38,8 @@ public class StoringShort
             value = Value.Create(@short);
         }
 
-        Assert.Equal(@short, value.As<short>());
-        Assert.Equal(typeof(short), value.Type);
+        value.As<short>().Should().Be(@short);
+        value.Type.Should().Be(typeof(short));
 
         short? source = @short;
 
@@ -48,101 +48,101 @@ public class StoringShort
             value = Value.Create(source);
         }
 
-        Assert.Equal(source, value.As<short?>());
-        Assert.Equal(typeof(short), value.Type);
+        value.As<short?>().Should().Be(source);
+        value.Type.Should().Be(typeof(short));
     }
 
-    [Theory]
-    [MemberData(nameof(ShortData))]
+    [Test]
+    [MethodDataSource(nameof(ShortData))]
     public void ShortInOut(short @short)
     {
         Value value = @short;
         bool success = value.TryGetValue(out short result);
-        Assert.True(success);
-        Assert.Equal(@short, result);
+        success.Should().BeTrue();
+        result.Should().Be(@short);
 
-        Assert.Equal(@short, value.As<short>());
-        Assert.Equal(@short, (short)value);
+        value.As<short>().Should().Be(@short);
+        ((short)value).Should().Be(@short);
     }
 
-    [Theory]
-    [MemberData(nameof(ShortData))]
+    [Test]
+    [MethodDataSource(nameof(ShortData))]
     public void NullableShortInShortOut(short @short)
     {
         short? source = @short;
         Value value = source;
 
         bool success = value.TryGetValue(out short result);
-        Assert.True(success);
-        Assert.Equal(@short, result);
+        success.Should().BeTrue();
+        result.Should().Be(@short);
 
-        Assert.Equal(@short, value.As<short>());
+        value.As<short>().Should().Be(@short);
 
-        Assert.Equal(@short, (short)value);
+        ((short)value).Should().Be(@short);
     }
 
-    [Theory]
-    [MemberData(nameof(ShortData))]
+    [Test]
+    [MethodDataSource(nameof(ShortData))]
     public void ShortInNullableShortOut(short @short)
     {
         short source = @short;
         Value value = source;
         bool success = value.TryGetValue(out short? result);
-        Assert.True(success);
-        Assert.Equal(@short, result);
+        success.Should().BeTrue();
+        result.Should().Be(@short);
 
-        Assert.Equal(@short, (short?)value);
+        ((short?)value).Should().Be(@short);
     }
 
-    [Theory]
-    [MemberData(nameof(ShortData))]
+    [Test]
+    [MethodDataSource(nameof(ShortData))]
     public void BoxedShort(short @short)
     {
         short i = @short;
         object o = i;
         Value value = Value.Create(o);
 
-        Assert.Equal(typeof(short), value.Type);
-        Assert.True(value.TryGetValue(out short result));
-        Assert.Equal(@short, result);
-        Assert.True(value.TryGetValue(out short? nullableResult));
-        Assert.Equal(@short, nullableResult!.Value);
+        value.Type.Should().Be(typeof(short));
+        value.TryGetValue(out short result).Should().BeTrue();
+        result.Should().Be(@short);
+        value.TryGetValue(out short? nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@short);
 
 
         short? n = @short;
         o = n;
         value = Value.Create(o);
 
-        Assert.Equal(typeof(short), value.Type);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@short, result);
-        Assert.True(value.TryGetValue(out nullableResult));
-        Assert.Equal(@short, nullableResult!.Value);
+        value.Type.Should().Be(typeof(short));
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@short);
+        value.TryGetValue(out nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@short);
     }
 
-    [Fact]
+    [Test]
     public void NullShort()
     {
         short? source = null;
         Value value = source;
-        Assert.Null(value.Type);
-        Assert.Equal(source, value.As<short?>());
-        Assert.False(value.As<short?>().HasValue);
+        value.Type.Should().BeNull();
+        value.As<short?>().Should().Be(source);
+        value.As<short?>().HasValue.Should().BeFalse();
     }
 
-    [Theory]
-    [MemberData(nameof(ShortData))]
+    [Test]
+    [MethodDataSource(nameof(ShortData))]
     public void OutAsObject(short @short)
     {
         Value value = @short;
         object o = value.As<object>();
-        Assert.Equal(typeof(short), o.GetType());
-        Assert.Equal(@short, (short)o);
+        o.GetType().Should().Be(typeof(short));
+        ((short)o).Should().Be(@short);
 
         short? n = @short;
         value = n;
         o = value.As<object>();
-        Assert.Equal(typeof(short), o.GetType());
-        Assert.Equal(@short, (short)o);
+        o.GetType().Should().Be(typeof(short));
+        ((short)o).Should().Be(@short);
     }
 }

@@ -13,51 +13,51 @@ public class GlobSpecificationFactoryEdgeCoverageTests
 {
     // POSIX named character classes. Each `[[:NAME:]]` form expands inline to its
     // ASCII range list; coverage walks the lookup table in AppendPosixNamedClass.
-    [Theory]
-    [InlineData("[[:alpha:]]", "A", true)]
-    [InlineData("[[:alpha:]]", "1", false)]
-    [InlineData("[[:digit:]]", "7", true)]
-    [InlineData("[[:digit:]]", "a", false)]
-    [InlineData("[[:upper:]]", "M", true)]
-    [InlineData("[[:upper:]]", "m", false)]
-    [InlineData("[[:lower:]]", "m", true)]
-    [InlineData("[[:lower:]]", "M", false)]
-    [InlineData("[[:alnum:]]", "9", true)]
-    [InlineData("[[:alnum:]]", "Z", true)]
-    [InlineData("[[:alnum:]]", "_", false)]
-    [InlineData("[[:xdigit:]]", "F", true)]
-    [InlineData("[[:xdigit:]]", "f", true)]
-    [InlineData("[[:xdigit:]]", "g", false)]
-    [InlineData("[[:space:]]", " ", true)]
-    [InlineData("[[:space:]]", "\t", true)]
-    [InlineData("[[:space:]]", "A", false)]
-    [InlineData("[[:blank:]]", " ", true)]
-    [InlineData("[[:blank:]]", "\t", true)]
-    [InlineData("[[:blank:]]", "\n", false)]
-    [InlineData("[[:print:]]", "A", true)]
-    [InlineData("[[:print:]]", "\u0001", false)]
-    [InlineData("[[:graph:]]", "A", true)]
-    [InlineData("[[:graph:]]", " ", false)]
-    [InlineData("[[:punct:]]", "!", true)]
-    [InlineData("[[:punct:]]", "A", false)]
+    [Test]
+    [Arguments("[[:alpha:]]", "A", true)]
+    [Arguments("[[:alpha:]]", "1", false)]
+    [Arguments("[[:digit:]]", "7", true)]
+    [Arguments("[[:digit:]]", "a", false)]
+    [Arguments("[[:upper:]]", "M", true)]
+    [Arguments("[[:upper:]]", "m", false)]
+    [Arguments("[[:lower:]]", "m", true)]
+    [Arguments("[[:lower:]]", "M", false)]
+    [Arguments("[[:alnum:]]", "9", true)]
+    [Arguments("[[:alnum:]]", "Z", true)]
+    [Arguments("[[:alnum:]]", "_", false)]
+    [Arguments("[[:xdigit:]]", "F", true)]
+    [Arguments("[[:xdigit:]]", "f", true)]
+    [Arguments("[[:xdigit:]]", "g", false)]
+    [Arguments("[[:space:]]", " ", true)]
+    [Arguments("[[:space:]]", "\t", true)]
+    [Arguments("[[:space:]]", "A", false)]
+    [Arguments("[[:blank:]]", " ", true)]
+    [Arguments("[[:blank:]]", "\t", true)]
+    [Arguments("[[:blank:]]", "\n", false)]
+    [Arguments("[[:print:]]", "A", true)]
+    [Arguments("[[:print:]]", "\u0001", false)]
+    [Arguments("[[:graph:]]", "A", true)]
+    [Arguments("[[:graph:]]", " ", false)]
+    [Arguments("[[:punct:]]", "!", true)]
+    [Arguments("[[:punct:]]", "A", false)]
     public void PosixNamedClass(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // Equivalence class `[=c=]` expands to literal `c` (no locale support).
-    [InlineData("[[=a=]]", "a", true)]
-    [InlineData("[[=a=]]", "b", false)]
+    [Arguments("[[=a=]]", "a", true)]
+    [Arguments("[[=a=]]", "b", false)]
     public void PosixEquivalenceClass(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // Collating symbol `[.c.]` expands to literal `c` (no locale support).
-    [InlineData("[[.a.]]", "a", true)]
-    [InlineData("[[.a.]]", "z", false)]
+    [Arguments("[[.a.]]", "a", true)]
+    [Arguments("[[.a.]]", "z", false)]
     public void PosixCollatingSymbol(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input).Should().Be(expected);
 
-    [Fact]
+    [Test]
     public void TryCompile_DefaultMaxPatternLengthOverload_CallsThrough()
     {
         // The TryCompile overload without explicit maxPatternLength routes through
@@ -74,10 +74,10 @@ public class GlobSpecificationFactoryEdgeCoverageTests
         error.IsError.Should().BeFalse();
     }
 
-    [Theory]
+    [Test]
     // SuffixGlobStrategy's Unicode case-fold leading-dot equality returns false when
     // the suffix is genuinely different from the input.
-    [InlineData("*.\u00C9", "a.\u00ea", false)]
+    [Arguments("*.\u00C9", "a.\u00ea", false)]
     public void SuffixGlobStrategy_Unicode_LeadingDotFalseMismatch(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Simple, GlobOptions.IgnoreCase)
             .IsMatch(input).Should().Be(expected);

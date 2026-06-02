@@ -10,16 +10,18 @@ namespace Touki.Io.Globbing;
 ///  each verdict against <c>LibGit2Sharp</c>'s gitignore evaluator. Shares the
 ///  one-shot scratch repository fixture with the sequential-separator suite.
 /// </summary>
-public sealed class MultipleAsteriskGitOracleTests : IClassFixture<SequentialSeparatorGitOracleTests.RepoFixture>
+[ClassDataSource<SequentialSeparatorGitOracleTests.RepoFixture>(Shared = SharedType.PerClass)]
+[NotInParallel(nameof(MultipleAsteriskGitOracleTests))]
+public sealed class MultipleAsteriskGitOracleTests
 {
     private readonly SequentialSeparatorGitOracleTests.RepoFixture _fixture;
 
     public MultipleAsteriskGitOracleTests(SequentialSeparatorGitOracleTests.RepoFixture fixture) => _fixture = fixture;
 
-    public static TheoryData<string, string> Rows => MultipleAsteriskRows.Rows;
+    public static IEnumerable<(string, string)> Rows() => MultipleAsteriskRows.Rows();
 
-    [Theory]
-    [MemberData(nameof(Rows))]
+    [Test]
+    [MethodDataSource(nameof(Rows))]
     public void IsMatch_GitDialect_MultipleAsterisks_AgreesWithLibGit2(string pattern, string input)
     {
         // Documented Git dialect divergence. After `***`+ &rarr; `**` normalization
@@ -29,7 +31,7 @@ public sealed class MultipleAsteriskGitOracleTests : IClassFixture<SequentialSep
         // docs/globbing-feature-plan.md "Multiple-asterisk-run behavior" findings.
         if ((pattern, input) == ("a/***", "a/"))
         {
-            Assert.Skip("Documented Git trailing-globstar must-consume-one-segment divergence.");
+            Skip.Test("Documented Git trailing-globstar must-consume-one-segment divergence.");
             return;
         }
 

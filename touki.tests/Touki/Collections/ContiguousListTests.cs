@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -122,7 +122,7 @@ public class ContiguousListTests
         }
     }
 
-    [Fact]
+    [Test]
     public void UnsafeValues_WithEmptyList_ReturnsEmptySpan()
     {
         using TestContiguousList<int> list = new();
@@ -133,7 +133,7 @@ public class ContiguousListTests
         values.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void UnsafeValues_WithItems_ReturnsCorrectSpan()
     {
         using TestContiguousList<int> list = new()
@@ -151,7 +151,7 @@ public class ContiguousListTests
         values[2].Should().Be(30);
     }
 
-    [Fact]
+    [Test]
     public void UnsafeValues_CanModifyUnderlyingData()
     {
         using TestContiguousList<int> list = new()
@@ -168,7 +168,7 @@ public class ContiguousListTests
         list[1].Should().Be(888);
     }
 
-    [Fact]
+    [Test]
     public void Values_WithEmptyList_ReturnsEmptySpan()
     {
         using TestContiguousList<string> list = new();
@@ -179,7 +179,7 @@ public class ContiguousListTests
         values.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Values_WithItems_ReturnsCorrectReadOnlySpan()
     {
         using TestContiguousList<string> list = new()
@@ -197,7 +197,7 @@ public class ContiguousListTests
         values[2].Should().Be("third");
     }
 
-    [Fact]
+    [Test]
     public void Values_ReflectsListChanges()
     {
         using TestContiguousList<double> list = new()
@@ -215,7 +215,7 @@ public class ContiguousListTests
         values2[2].Should().Be(3.3);
     }
 
-    [Fact]
+    [Test]
     public void UnsafeValues_AttributesSetCorrectly()
     {
         Type type = typeof(ContiguousList<int>);
@@ -247,7 +247,7 @@ public class ContiguousListTests
 #endif
     }
 
-    [Fact]
+    [Test]
     public void Values_IsReadOnly()
     {
         using TestContiguousList<int> list = new()
@@ -262,7 +262,7 @@ public class ContiguousListTests
         values[0].Should().Be(42);
     }
 
-    [Fact]
+    [Test]
     public void ContiguousList_InheritsFromListBase()
     {
         using TestContiguousList<int> list = new();
@@ -270,7 +270,7 @@ public class ContiguousListTests
         list.Should().BeAssignableTo<ListBase<int>>();
     }
 
-    [Fact]
+    [Test]
     public void SpanAccess_WithReferenceTypes_WorksCorrectly()
     {
         using TestContiguousList<string> list = new()
@@ -293,7 +293,7 @@ public class ContiguousListTests
         }
     }
 
-    [Fact]
+    [Test]
     public void SpanAccess_AfterClear_ReturnsEmptySpan()
     {
         using TestContiguousList<int> list = new()
@@ -312,7 +312,7 @@ public class ContiguousListTests
         values.Length.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void SpanAccess_AfterRemoval_ReflectsChanges()
     {
         using TestContiguousList<int> list = new()
@@ -330,7 +330,7 @@ public class ContiguousListTests
         values[1].Should().Be(30);
     }
 
-    [Fact]
+    [Test]
     public void UnsafeValues_ModificationsConcerns_DocumentedByNaming()
     {
         // The "Unsafe" prefix indicates that modifications to the list after getting
@@ -351,7 +351,7 @@ public class ContiguousListTests
         unsafeSpan.Length.Should().Be(originalLength);
     }
 
-    [Fact]
+    [Test]
     public void ListBase_GenericConstraint_EnforcesNotNull()
     {
         // ContiguousList<T> should enforce where T : notnull constraint

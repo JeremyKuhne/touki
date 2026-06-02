@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -6,7 +6,7 @@ namespace Touki.Buffers;
 
 public class RunLengthEncoderTests
 {
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryEncode()
     {
         ReadOnlySpan<byte> data = [1, 1, 1, 2, 2, 3, 3, 3, 3];
@@ -16,11 +16,11 @@ public class RunLengthEncoderTests
         encoded.ToArray().Should().BeEquivalentTo([3, 1, 2, 2, 4, 3]);
     }
 
-    [Theory]
-    [InlineData(0, 0)]
-    [InlineData(1, 2)]
-    [InlineData(255, 2)]
-    [InlineData(256, 4)]
+    [Test]
+    [Arguments(0, 0)]
+    [Arguments(1, 2)]
+    [Arguments(255, 2)]
+    [Arguments(256, 4)]
     public void RunLengthEncoder_GetEncodedLength(int count, int expectedLength)
     {
         Span<byte> data = new byte[count];
@@ -30,7 +30,7 @@ public class RunLengthEncoderTests
         encoded.Length.Should().Be(expectedLength);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_RoundTrip()
     {
         ReadOnlySpan<byte> data = [1, 1, 1, 2, 2, 3, 3, 3, 3];
@@ -43,7 +43,7 @@ public class RunLengthEncoderTests
         decoded.ToArray().Should().BeEquivalentTo(data.ToArray());
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_GetEncodedLength_EmptyData()
     {
         ReadOnlySpan<byte> data = [];
@@ -51,7 +51,7 @@ public class RunLengthEncoderTests
         length.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_GetEncodedLength_SingleByte()
     {
         ReadOnlySpan<byte> data = [42];
@@ -59,7 +59,7 @@ public class RunLengthEncoderTests
         length.Should().Be(2); // 1 byte count + 1 byte value
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_GetEncodedLength_NoRepeats()
     {
         ReadOnlySpan<byte> data = [1, 2, 3, 4, 5];
@@ -67,7 +67,7 @@ public class RunLengthEncoderTests
         length.Should().Be(10); // 5 values * 2 bytes each (count + value)
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_GetEncodedLength_AllSameValue()
     {
         ReadOnlySpan<byte> data = [7, 7, 7, 7, 7];
@@ -75,7 +75,7 @@ public class RunLengthEncoderTests
         length.Should().Be(2); // Single run of 5 * value 7
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_GetEncodedLength_LargeRun()
     {
         // Test run longer than 255 (max byte value)
@@ -86,7 +86,7 @@ public class RunLengthEncoderTests
         length.Should().Be(4); // 255 + 45 = two runs
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_GetDecodedLength_EmptyData()
     {
         ReadOnlySpan<byte> encoded = [];
@@ -94,7 +94,7 @@ public class RunLengthEncoderTests
         length.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_GetDecodedLength_SingleRun()
     {
         ReadOnlySpan<byte> encoded = [5, 42]; // 5 times value 42
@@ -102,7 +102,7 @@ public class RunLengthEncoderTests
         length.Should().Be(5);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_GetDecodedLength_MultipleRuns()
     {
         ReadOnlySpan<byte> encoded = [3, 1, 2, 2, 4, 3]; // 3*1 + 2*2 + 4*3 = 3+2+4=9
@@ -110,7 +110,7 @@ public class RunLengthEncoderTests
         length.Should().Be(9);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_GetDecodedLength_OddLength()
     {
         // Invalid encoded data with odd length - processes all bytes in pairs
@@ -119,7 +119,7 @@ public class RunLengthEncoderTests
         length.Should().Be(5); // Processes [3, 1] as pair (3) + [2] as single count (2) = 5
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryEncode_EmptyData()
     {
         ReadOnlySpan<byte> data = [];
@@ -129,7 +129,7 @@ public class RunLengthEncoderTests
         written.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryEncode_SingleByte()
     {
         ReadOnlySpan<byte> data = [42];
@@ -140,7 +140,7 @@ public class RunLengthEncoderTests
         encoded.ToArray().Should().BeEquivalentTo([1, 42]);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryEncode_NoRepeats()
     {
         ReadOnlySpan<byte> data = [1, 2, 3];
@@ -151,7 +151,7 @@ public class RunLengthEncoderTests
         encoded.ToArray().Should().BeEquivalentTo([1, 1, 1, 2, 1, 3]);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryEncode_LargeRun()
     {
         // Test run of exactly 255
@@ -164,7 +164,7 @@ public class RunLengthEncoderTests
         encoded.ToArray().Should().BeEquivalentTo([255, 99]);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryEncode_VeryLargeRun()
     {
         // Test run longer than 255
@@ -177,7 +177,7 @@ public class RunLengthEncoderTests
         encoded.ToArray().Should().BeEquivalentTo([255, 77, 45, 77]); // 255 + 45 = 300
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryEncode_BufferTooSmall()
     {
         ReadOnlySpan<byte> data = [1, 1, 1];
@@ -187,7 +187,7 @@ public class RunLengthEncoderTests
         written.Should().Be(1); // Partial write - count byte written but value byte failed
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryEncode_ExactBufferSize()
     {
         ReadOnlySpan<byte> data = [1, 1, 2, 2, 2];
@@ -199,7 +199,7 @@ public class RunLengthEncoderTests
         encoded.ToArray().Should().BeEquivalentTo([2, 1, 3, 2]);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryDecode_EmptyData()
     {
         ReadOnlySpan<byte> encoded = [];
@@ -208,7 +208,7 @@ public class RunLengthEncoderTests
         RunLengthEncoder.TryDecode(encoded, decoded).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryDecode_SingleRun()
     {
         ReadOnlySpan<byte> encoded = [3, 42];
@@ -218,7 +218,7 @@ public class RunLengthEncoderTests
         decoded.ToArray().Should().BeEquivalentTo([42, 42, 42]);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryDecode_MultipleRuns()
     {
         ReadOnlySpan<byte> encoded = [2, 1, 3, 2, 1, 3];
@@ -228,7 +228,7 @@ public class RunLengthEncoderTests
         decoded.ToArray().Should().BeEquivalentTo([1, 1, 2, 2, 2, 3]);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryDecode_BufferTooSmall()
     {
         ReadOnlySpan<byte> encoded = [5, 42]; // Needs 5 bytes
@@ -237,7 +237,7 @@ public class RunLengthEncoderTests
         RunLengthEncoder.TryDecode(encoded, decoded).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryDecode_InvalidEncodedData_OddLength()
     {
         ReadOnlySpan<byte> encoded = [3, 42, 2]; // Missing value for count 2
@@ -246,7 +246,7 @@ public class RunLengthEncoderTests
         RunLengthEncoder.TryDecode(encoded, decoded).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryDecode_ZeroCount()
     {
         ReadOnlySpan<byte> encoded = [0, 42, 3, 99]; // Zero count followed by normal run
@@ -257,7 +257,7 @@ public class RunLengthEncoderTests
         decoded[..3].ToArray().Should().BeEquivalentTo([99, 99, 99]);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_TryDecode_ExactBufferSize()
     {
         ReadOnlySpan<byte> encoded = [2, 1, 3, 2];
@@ -268,7 +268,7 @@ public class RunLengthEncoderTests
         decoded.ToArray().Should().BeEquivalentTo([1, 1, 2, 2, 2]);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_RoundTrip_ComplexData()
     {
         ReadOnlySpan<byte> originalData = [1, 1, 1, 2, 3, 3, 4, 4, 4, 4, 4, 5];
@@ -285,7 +285,7 @@ public class RunLengthEncoderTests
         decoded.ToArray().Should().BeEquivalentTo(originalData.ToArray());
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_RoundTrip_LargeData()
     {
         // Create data with various run lengths
@@ -314,7 +314,7 @@ public class RunLengthEncoderTests
         decoded.ToArray().Should().BeEquivalentTo(originalData.ToArray());
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_EdgeCase_MaxByteValue()
     {
         ReadOnlySpan<byte> data = [255, 255, 255];
@@ -328,7 +328,7 @@ public class RunLengthEncoderTests
         decoded.ToArray().Should().BeEquivalentTo([255, 255, 255]);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_EdgeCase_AlternatingPattern()
     {
         ReadOnlySpan<byte> data = [1, 2, 1, 2, 1, 2];
@@ -345,7 +345,7 @@ public class RunLengthEncoderTests
         decoded.ToArray().Should().BeEquivalentTo(data.ToArray());
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_Consistency_GetEncodedLength()
     {
         // Verify that GetEncodedLength matches actual encoding output
@@ -358,7 +358,7 @@ public class RunLengthEncoderTests
         actualLength.Should().Be(predictedLength);
     }
 
-    [Fact]
+    [Test]
     public void RunLengthEncoder_Consistency_GetDecodedLength()
     {
         // Verify that GetDecodedLength matches actual decoding output

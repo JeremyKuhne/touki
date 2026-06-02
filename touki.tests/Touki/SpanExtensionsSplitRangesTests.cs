@@ -20,7 +20,7 @@ public class SpanExtensionsSplitRangesTests
     //  Split(Span<Range>, char, …)
     // -----------------------------------------------------------------------
 
-    [Fact]
+    [Test]
     public void Split_Char_Basic()
     {
         ReadOnlySpan<char> source = "a,b,c";
@@ -30,7 +30,7 @@ public class SpanExtensionsSplitRangesTests
         Materialize(source, ranges, count).Should().Equal(["a", "b", "c"]);
     }
 
-    [Fact]
+    [Test]
     public void Split_Char_Empty_ReturnsSingleEmptyRange()
     {
         ReadOnlySpan<char> source = "";
@@ -40,7 +40,7 @@ public class SpanExtensionsSplitRangesTests
         source[ranges[0]].Length.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Split_Char_NoSeparator_ReturnsWholeSource()
     {
         ReadOnlySpan<char> source = "hello";
@@ -50,7 +50,7 @@ public class SpanExtensionsSplitRangesTests
         source[ranges[0]].ToString().Should().Be("hello");
     }
 
-    [Fact]
+    [Test]
     public void Split_Char_LeadingSeparator_ProducesEmptyFirst()
     {
         ReadOnlySpan<char> source = ",a,b";
@@ -60,7 +60,7 @@ public class SpanExtensionsSplitRangesTests
         Materialize(source, ranges, count).Should().Equal(["", "a", "b"]);
     }
 
-    [Fact]
+    [Test]
     public void Split_Char_TrailingSeparator_ProducesEmptyLast()
     {
         ReadOnlySpan<char> source = "a,b,";
@@ -70,7 +70,7 @@ public class SpanExtensionsSplitRangesTests
         Materialize(source, ranges, count).Should().Equal(["a", "b", ""]);
     }
 
-    [Fact]
+    [Test]
     public void Split_Char_DestinationFull_LastRangeContainsRest()
     {
         ReadOnlySpan<char> source = "a,b,c,d,e";
@@ -80,7 +80,7 @@ public class SpanExtensionsSplitRangesTests
         Materialize(source, ranges, count).Should().Equal(["a", "b", "c,d,e"]);
     }
 
-    [Fact]
+    [Test]
     public void Split_Char_RemoveEmptyEntries()
     {
         ReadOnlySpan<char> source = "a,,b,,c";
@@ -90,7 +90,7 @@ public class SpanExtensionsSplitRangesTests
         Materialize(source, ranges, count).Should().Equal(["a", "b", "c"]);
     }
 
-    [Fact]
+    [Test]
     public void Split_Char_DestinationEmpty_ReturnsZero()
     {
         ReadOnlySpan<char> source = "a,b";
@@ -103,7 +103,7 @@ public class SpanExtensionsSplitRangesTests
     //  Split(Span<Range>, ROS<char>, …)
     // -----------------------------------------------------------------------
 
-    [Fact]
+    [Test]
     public void Split_StringSeparator_Basic()
     {
         ReadOnlySpan<char> source = "a--b--c";
@@ -113,7 +113,7 @@ public class SpanExtensionsSplitRangesTests
         Materialize(source, ranges, count).Should().Equal(["a", "b", "c"]);
     }
 
-    [Fact]
+    [Test]
     public void Split_StringSeparator_Empty_ReturnsWholeSource()
     {
         ReadOnlySpan<char> source = "abc";
@@ -127,7 +127,7 @@ public class SpanExtensionsSplitRangesTests
     //  SplitAny(Span<Range>, ROS<char>, …)
     // -----------------------------------------------------------------------
 
-    [Fact]
+    [Test]
     public void SplitAny_Char_Basic()
     {
         ReadOnlySpan<char> source = "a,b;c.d";
@@ -137,7 +137,7 @@ public class SpanExtensionsSplitRangesTests
         Materialize(source, ranges, count).Should().Equal(["a", "b", "c", "d"]);
     }
 
-    [Fact]
+    [Test]
     public void SplitAny_EmptySeparators_FallsBackToWhitespace()
     {
         ReadOnlySpan<char> source = "a b\tc\nd";
@@ -147,7 +147,7 @@ public class SpanExtensionsSplitRangesTests
         Materialize(source, ranges, count).Should().Equal(["a", "b", "c", "d"]);
     }
 
-    [Fact]
+    [Test]
     public void SplitAny_DestinationFull_LastRangeContainsRest()
     {
         ReadOnlySpan<char> source = "a,b;c.d";
@@ -157,7 +157,7 @@ public class SpanExtensionsSplitRangesTests
         Materialize(source, ranges, count).Should().Equal(["a", "b;c.d"]);
     }
 
-    [Fact]
+    [Test]
     public void SplitAny_RemoveEmptyEntries()
     {
         ReadOnlySpan<char> source = "a,;b,,c";
@@ -171,7 +171,7 @@ public class SpanExtensionsSplitRangesTests
     //  SplitAny(Span<Range>, ROS<string>, …)
     // -----------------------------------------------------------------------
 
-    [Fact]
+    [Test]
     public void SplitAny_StringSeparators_Basic()
     {
         ReadOnlySpan<char> source = "a--b//c--d";
@@ -181,7 +181,7 @@ public class SpanExtensionsSplitRangesTests
         Materialize(source, ranges, count).Should().Equal(["a", "b", "c", "d"]);
     }
 
-    [Fact]
+    [Test]
     public void SplitAny_StringSeparators_AllNullOrEmpty_ReturnsWholeSource()
     {
         ReadOnlySpan<char> source = "a b c";
@@ -191,7 +191,7 @@ public class SpanExtensionsSplitRangesTests
         source[ranges[0]].ToString().Should().Be("a b c");
     }
 
-    [Fact]
+    [Test]
     public void SplitAny_StringSeparators_RemoveEmptyEntries()
     {
         ReadOnlySpan<char> source = "a--b----c";
@@ -205,7 +205,7 @@ public class SpanExtensionsSplitRangesTests
     //  Validation
     // -----------------------------------------------------------------------
 
-    [Fact]
+    [Test]
     public void Split_InvalidOptions_Throws()
     {
         Action act = static () =>
@@ -222,7 +222,7 @@ public class SpanExtensionsSplitRangesTests
     // is .NET 5+ only and not present on net481's System.Memory polyfill. The
     // implementation honors the integer flag at runtime regardless.
 
-    [Fact]
+    [Test]
     public void Split_Char_TrimEntries_TrimsLeadingAndTrailingWhitespace()
     {
         ReadOnlySpan<char> source = "  apple , banana ,  cherry  ";
@@ -234,7 +234,7 @@ public class SpanExtensionsSplitRangesTests
         source[ranges[2]].ToString().Should().Be("cherry");
     }
 
-    [Fact]
+    [Test]
     public void Split_Char_TrimEntries_AllWhitespace_DropsWhenRemoveEmpty()
     {
         ReadOnlySpan<char> source = "   ,   ,   ";
@@ -243,7 +243,7 @@ public class SpanExtensionsSplitRangesTests
         count.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Split_Char_TrimEntries_AllWhitespace_KeepsEmptyEntries()
     {
         ReadOnlySpan<char> source = "   ,   ,   ";
@@ -255,7 +255,7 @@ public class SpanExtensionsSplitRangesTests
         source[ranges[2]].Length.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Split_OnAnyWhiteSpace_RemoveEmpty_DropsEmptySegments()
     {
         ReadOnlySpan<char> source = "  apple   banana   cherry  ";
@@ -264,7 +264,7 @@ public class SpanExtensionsSplitRangesTests
         count.Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public void Split_OnAnyWhiteSpace_TrimEntries_TrimsAndKeeps()
     {
         ReadOnlySpan<char> source = "  apple   banana   cherry  ";
@@ -279,7 +279,7 @@ public class SpanExtensionsSplitRangesTests
         source[ranges[2]].ToString().Should().Be("cherry");
     }
 
-    [Fact]
+    [Test]
     public void Split_WholeSource_TrimEntries_Trims()
     {
         ReadOnlySpan<char> source = "  hello  ";
@@ -289,7 +289,7 @@ public class SpanExtensionsSplitRangesTests
         source[ranges[0]].ToString().Should().Be("hello");
     }
 
-    [Fact]
+    [Test]
     public void Split_WholeSource_TrimEntries_AllWhitespace_RemoveEmpty_Empty()
     {
         ReadOnlySpan<char> source = "    ";
