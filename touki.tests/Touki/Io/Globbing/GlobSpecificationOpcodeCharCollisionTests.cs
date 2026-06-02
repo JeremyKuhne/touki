@@ -43,7 +43,7 @@ public class GlobSpecificationOpcodeCharCollisionTests
     private const char AltEnd = '\uFDD8';
 
     // (1) Reviewer's case: literal ending in GlobStar char, followed by '/**'.
-    [Fact]
+    [Test]
     public void Compile_LiteralEndsInGlobStar_FollowedByDoubleStar_EmitsGlobStar()
     {
         GlobSpecification matcher = PosixPath($"foo{GlobStar}/**/bar");
@@ -56,16 +56,16 @@ public class GlobSpecificationOpcodeCharCollisionTests
     // (2) Literal ending in every other opcode char, followed by '/**'.
     // Defensive coverage in case a future optimization peeks for any of
     // these.
-    [Theory]
-    [InlineData(Any)]
-    [InlineData(AnyRun)]
-    [InlineData(Literal)]
-    [InlineData(Class)]
-    [InlineData(NegClass)]
-    [InlineData(GlobStar)]
-    [InlineData(AltStart)]
-    [InlineData(AltSep)]
-    [InlineData(AltEnd)]
+    [Test]
+    [Arguments(Any)]
+    [Arguments(AnyRun)]
+    [Arguments(Literal)]
+    [Arguments(Class)]
+    [Arguments(NegClass)]
+    [Arguments(GlobStar)]
+    [Arguments(AltStart)]
+    [Arguments(AltSep)]
+    [Arguments(AltEnd)]
     public void Compile_LiteralEndsInOpcodeChar_FollowedByDoubleStar_StillMatches(char opcodeChar)
     {
         GlobSpecification matcher = PosixPath($"foo{opcodeChar}/**/bar");
@@ -75,16 +75,16 @@ public class GlobSpecificationOpcodeCharCollisionTests
 
     // (3) Pattern that is a bare literal opcode char (or a leading one
     // followed by other literals) round-trips through the encoder.
-    [Theory]
-    [InlineData(Any)]
-    [InlineData(AnyRun)]
-    [InlineData(Literal)]
-    [InlineData(Class)]
-    [InlineData(NegClass)]
-    [InlineData(GlobStar)]
-    [InlineData(AltStart)]
-    [InlineData(AltSep)]
-    [InlineData(AltEnd)]
+    [Test]
+    [Arguments(Any)]
+    [Arguments(AnyRun)]
+    [Arguments(Literal)]
+    [Arguments(Class)]
+    [Arguments(NegClass)]
+    [Arguments(GlobStar)]
+    [Arguments(AltStart)]
+    [Arguments(AltSep)]
+    [Arguments(AltEnd)]
     public void Compile_BareLiteralOpcodeChar_RoundTrips(char opcodeChar)
     {
         GlobSpecification matcher = Posix(opcodeChar.ToString());
@@ -93,16 +93,16 @@ public class GlobSpecificationOpcodeCharCollisionTests
     }
 
     // (4) Class body containing every opcode char.
-    [Theory]
-    [InlineData(Any)]
-    [InlineData(AnyRun)]
-    [InlineData(Literal)]
-    [InlineData(Class)]
-    [InlineData(NegClass)]
-    [InlineData(GlobStar)]
-    [InlineData(AltStart)]
-    [InlineData(AltSep)]
-    [InlineData(AltEnd)]
+    [Test]
+    [Arguments(Any)]
+    [Arguments(AnyRun)]
+    [Arguments(Literal)]
+    [Arguments(Class)]
+    [Arguments(NegClass)]
+    [Arguments(GlobStar)]
+    [Arguments(AltStart)]
+    [Arguments(AltSep)]
+    [Arguments(AltEnd)]
     public void Compile_ClassWithOpcodeChar_MatchesAndExcludes(char opcodeChar)
     {
         GlobSpecification matcher = Posix($"[a{opcodeChar}b]");
@@ -113,10 +113,10 @@ public class GlobSpecificationOpcodeCharCollisionTests
     }
 
     // (5) Negated class with opcode char.
-    [Theory]
-    [InlineData(GlobStar)]
-    [InlineData(AltStart)]
-    [InlineData(Literal)]
+    [Test]
+    [Arguments(GlobStar)]
+    [Arguments(AltStart)]
+    [Arguments(Literal)]
     public void Compile_NegatedClassWithOpcodeChar_ExcludesIt(char opcodeChar)
     {
         GlobSpecification matcher = Posix($"[!{opcodeChar}]");
@@ -128,7 +128,7 @@ public class GlobSpecificationOpcodeCharCollisionTests
     // (6) Class whose body ends in GlobStar, followed by '/**'. Mirrors
     // the reviewer's case but for the Class opcode (whose body tail is
     // the position a buffer-peek collapse would see).
-    [Fact]
+    [Test]
     public void Compile_ClassEndingInGlobStarChar_FollowedByDoubleStar_EmitsGlobStar()
     {
         GlobSpecification matcher = PosixPath($"[a{GlobStar}]/**/bar");
@@ -140,7 +140,7 @@ public class GlobSpecificationOpcodeCharCollisionTests
 
     // (7) Class body ending in two adjacent GlobStar chars (covers a
     // hypothetical [^2] peek even when [^1] is also the opcode char).
-    [Fact]
+    [Test]
     public void Compile_ClassEndingInTwoGlobStarChars_FollowedByDoubleStar_EmitsGlobStar()
     {
         GlobSpecification matcher = PosixPath($"[a{GlobStar}{GlobStar}]/**/bar");
@@ -153,7 +153,7 @@ public class GlobSpecificationOpcodeCharCollisionTests
     // (8) Any / AnyRun immediately before a '/**'. The encoder emits
     // these as single-char opcodes; a hypothetical optimization that
     // peeks at [^1] for a GlobStar must distinguish them.
-    [Fact]
+    [Test]
     public void Compile_AnyRunFollowedByDoubleStar_BothEmitted()
     {
         GlobSpecification matcher = PosixPath("foo*/**/bar");
@@ -164,7 +164,7 @@ public class GlobSpecificationOpcodeCharCollisionTests
         matcher.IsMatch("xfoo/bar").Should().BeFalse();    // pattern starts at "foo"
     }
 
-    [Fact]
+    [Test]
     public void Compile_AnyFollowedByDoubleStar_BothEmitted()
     {
         GlobSpecification matcher = PosixPath("foo?/**/bar");
@@ -175,7 +175,7 @@ public class GlobSpecificationOpcodeCharCollisionTests
 
     // (9) Multi-segment pattern with literal opcode chars mid-segment
     // -- after a '**'.
-    [Fact]
+    [Test]
     public void Compile_DoubleStarFollowedByLiteralOpcodeChar_RoundTrips()
     {
         GlobSpecification matcher = PosixPath($"**/foo{GlobStar}bar");
@@ -186,7 +186,7 @@ public class GlobSpecificationOpcodeCharCollisionTests
     }
 
     // (10) Extglob alternative whose body ends in GlobStar char.
-    [Fact]
+    [Test]
     public void Compile_ExtGlobAlternativeEndsInGlobStarChar_FollowedByDoubleStar_EmitsGlobStar()
     {
         GlobSpecification matcher = GlobSpecification.Compile(
@@ -210,7 +210,7 @@ public class GlobSpecificationOpcodeCharCollisionTests
     // exercise the easier case of any class followed by '/**' to lock
     // in correct behavior, and let the tail-of-class collision tests
     // above cover the malicious shape.
-    [Fact]
+    [Test]
     public void Compile_ClassFollowedByDoubleStar_BothEmitted()
     {
         GlobSpecification matcher = PosixPath("[abc]/**/x");
@@ -224,7 +224,7 @@ public class GlobSpecificationOpcodeCharCollisionTests
     // prior literal containing GlobStar char. Regression for the
     // interaction between the GlobStar-cursor collapse and the
     // strip-trailing-separator-from-prior-Literal logic.
-    [Fact]
+    [Test]
     public void Compile_LiteralWithGlobStarChar_ThenTripleGlobStarChain_AllCollapse()
     {
         GlobSpecification matcher = PosixPath($"foo{GlobStar}/**/**/**/bar");
@@ -237,7 +237,7 @@ public class GlobSpecificationOpcodeCharCollisionTests
     // (13) Single GlobStar where the input also contains the GlobStar
     // opcode char. Validates that the runtime walker doesn't accidentally
     // confuse the input.
-    [Fact]
+    [Test]
     public void IsMatch_GlobStarPattern_InputContainsGlobStarChar_Matches()
     {
         GlobSpecification matcher = PosixPath("**/bar");

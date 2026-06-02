@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -6,7 +6,7 @@ namespace Touki;
 
 public class DebuggingTests
 {
-    [Fact]
+    [Test]
     public void Assert_ExpressionNotEvaluated_WhenConditionTrue()
     {
         int value = 0;
@@ -15,7 +15,7 @@ public class DebuggingTests
     }
 
 #if !DEBUG
-    [Fact]
+    [Test]
     public void Assert_Elided_InRelease()
     {
         int value = 0;

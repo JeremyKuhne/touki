@@ -16,114 +16,114 @@ public class GlobAdditionalCoverageTests
 {
     private static string Root => Path.Combine(Path.GetTempPath(), "glob-coverage-root");
 
-    [Theory]
-    [InlineData("abc", "abc", true)]
-    [InlineData("a*c", "axc", true)]
-    [InlineData("a*c", "abz", false)]
+    [Test]
+    [Arguments("abc", "abc", true)]
+    [Arguments("a*c", "axc", true)]
+    [Arguments("a*c", "abz", false)]
     public void Glob_IsMatch_OneShotHelper(string pattern, string input, bool expected) =>
         Glob.IsMatch(pattern, input.AsSpan(), GlobDialect.Posix).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // Path-unaware Posix with IgnoreCase picks the Ascii fold path for Prefix.
-    [InlineData("ABC*", "abcdef", true)]
-    [InlineData("ABC*", "xabc", false)]
+    [Arguments("ABC*", "abcdef", true)]
+    [Arguments("ABC*", "xabc", false)]
     public void PrefixGlobStrategy_IgnoreCase_Ascii(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix, GlobOptions.IgnoreCase)
             .IsMatch(input).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // Simple dialect with IgnoreCase picks the Unicode fold path for Prefix.
-    [InlineData("\u00c9*", "\u00e9foo", true)]   // É* matches éfoo
+    [Arguments("\u00c9*", "\u00e9foo", true)]   // É* matches éfoo
     public void PrefixGlobStrategy_IgnoreCase_Unicode(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Simple, GlobOptions.IgnoreCase)
             .IsMatch(input).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // Ascii ignore-case + leading-dot input forces the suffix-equality branch.
-    [InlineData("*.HIDDEN", ".hidden", true)]
-    [InlineData("*.HIDDEN", "x.hidden", true)]
-    [InlineData("*.HIDDEN", ".other", false)]
+    [Arguments("*.HIDDEN", ".hidden", true)]
+    [Arguments("*.HIDDEN", "x.hidden", true)]
+    [Arguments("*.HIDDEN", ".other", false)]
     public void SuffixGlobStrategy_IgnoreCase_Ascii(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix, GlobOptions.IgnoreCase)
             .IsMatch(input).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // Unicode ignore-case leading-dot equality + normal endswith.
-    [InlineData("*.\u00C9", ".\u00e9", true)]
-    [InlineData("*.\u00C9", "file.\u00e9", true)]
-    [InlineData("*.\u00C9", ".\u00ea", false)]
+    [Arguments("*.\u00C9", ".\u00e9", true)]
+    [Arguments("*.\u00C9", "file.\u00e9", true)]
+    [Arguments("*.\u00C9", ".\u00ea", false)]
     public void SuffixGlobStrategy_IgnoreCase_Unicode(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Simple, GlobOptions.IgnoreCase)
             .IsMatch(input).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // Suffix matcher, leading dot, no fold: requires exact equality of input to suffix.
-    [InlineData("*.cs", ".cs", true)]
-    [InlineData("*.cs", "a.cs", true)]
-    [InlineData("*.cs", ".foo.cs", false)]
+    [Arguments("*.cs", ".cs", true)]
+    [Arguments("*.cs", "a.cs", true)]
+    [Arguments("*.cs", ".foo.cs", false)]
     public void SuffixGlobStrategy_LeadingDot_NoFold(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // Contains matcher: leading dot path requires needle to start at index 0.
-    [InlineData("*foo*", ".foobar", false)]
-    [InlineData("*.foo*", ".foobar", true)]
-    [InlineData("*foo*", ".x", false)]
+    [Arguments("*foo*", ".foobar", false)]
+    [Arguments("*.foo*", ".foobar", true)]
+    [Arguments("*foo*", ".x", false)]
     public void ContainsGlobStrategy_LeadingDot_NoFold(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // Contains matcher IgnoreCase paths (both leading-dot and non).
-    [InlineData("*FOO*", "abcfoo", true)]
-    [InlineData("*FOO*", "abcbar", false)]
-    [InlineData("*.FOO*", ".foobar", true)]
+    [Arguments("*FOO*", "abcfoo", true)]
+    [Arguments("*FOO*", "abcbar", false)]
+    [Arguments("*.FOO*", ".foobar", true)]
     public void ContainsGlobStrategy_IgnoreCase(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix, GlobOptions.IgnoreCase)
             .IsMatch(input).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // Contains matcher leading-dot path with input shorter than needle returns false.
-    [InlineData("*.foobar*", ".foo", false)]
+    [Arguments("*.foobar*", ".foo", false)]
     public void ContainsGlobStrategy_LeadingDot_InputShorterThanNeedle(
         string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // Contains matcher Posix+IgnoreCase: only ASCII letters fold; non-ASCII chars
     // compare ordinally. `*é*` must NOT match `É` (U+00C9 vs U+00E9 differ outside
     // the ASCII range). This pins down the IgnoreCaseKind.Ascii dispatch.
-    [InlineData("*\u00E9*", "X\u00E9X", true)]   // exact match of '\u00E9'
-    [InlineData("*\u00E9*", "X\u00C9X", false)]  // '\u00C9' (uppercase) must NOT fold to '\u00E9'
-    [InlineData("*FOO*", "abcfoo", true)]        // ASCII letters DO fold
+    [Arguments("*\u00E9*", "X\u00E9X", true)]   // exact match of '\u00E9'
+    [Arguments("*\u00E9*", "X\u00C9X", false)]  // '\u00C9' (uppercase) must NOT fold to '\u00E9'
+    [Arguments("*FOO*", "abcfoo", true)]        // ASCII letters DO fold
     public void ContainsGlobStrategy_PosixIgnoreCase_AsciiOnlyFold(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix, GlobOptions.IgnoreCase)
             .IsMatch(input).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // Contrast with Simple+IgnoreCase (Unicode fold): '\u00E9' DOES fold to '\u00C9'.
-    [InlineData("*\u00E9*", "X\u00C9X", true)]
+    [Arguments("*\u00E9*", "X\u00C9X", true)]
     public void ContainsGlobStrategy_SimpleIgnoreCase_UnicodeFold(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Simple, GlobOptions.IgnoreCase)
             .IsMatch(input).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // Contains matcher Posix+IgnoreCase leading-dot branch with ASCII-only fold.
-    [InlineData("*.FOO*", ".foobar", true)]
-    [InlineData("*.\u00E9*", ".\u00C9oo", false)]  // non-ASCII does not fold
+    [Arguments("*.FOO*", ".foobar", true)]
+    [Arguments("*.\u00E9*", ".\u00C9oo", false)]  // non-ASCII does not fold
     public void ContainsGlobStrategy_PosixIgnoreCase_LeadingDot_AsciiOnlyFold(
         string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix, GlobOptions.IgnoreCase)
             .IsMatch(input).Should().Be(expected);
 
-    [Theory]
+    [Test]
     // PrefixSuffix matcher Unicode ignore-case branch.
-    [InlineData("\u00C9*\u00C9", "\u00e9X\u00e9", true)]
-    [InlineData("\u00C9*\u00C9", "\u00eaX\u00e9", false)]
+    [Arguments("\u00C9*\u00C9", "\u00e9X\u00e9", true)]
+    [Arguments("\u00C9*\u00C9", "\u00eaX\u00e9", false)]
     public void PrefixSuffixGlobStrategy_IgnoreCase_Unicode(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Simple, GlobOptions.IgnoreCase)
             .IsMatch(input).Should().Be(expected);
 
-    [Fact]
+    [Test]
     public void NeverMatchGlobStrategy_MatchesFile_AlwaysReturnsFalse()
     {
         // MSBuild treats `***` (three or more *) as a never-match sentinel. The matcher
@@ -137,7 +137,7 @@ public class GlobAdditionalCoverageTests
         matcher.Dispose();
     }
 
-    [Fact]
+    [Test]
     public void LiteralGlobStrategy_MatchesFile_TwoSpan_CaseSensitive()
     {
         // PosixPath + literal `a/b/file.cs` → LiteralGlobStrategy; path-aware so
@@ -151,7 +151,7 @@ public class GlobAdditionalCoverageTests
         matcher.Dispose();
     }
 
-    [Fact]
+    [Test]
     public void LiteralGlobStrategy_MatchesFile_TwoSpan_Ascii()
     {
         // PosixPath + IgnoreCase → IgnoreCaseKind.Ascii branch in two-span MatchCore.
@@ -167,7 +167,7 @@ public class GlobAdditionalCoverageTests
         matcher.Dispose();
     }
 
-    [Fact]
+    [Test]
     public void LiteralGlobStrategy_MatchesFile_TwoSpan_Unicode()
     {
         // MSBuild dialect's default IgnoreCaseKind is Unicode; a pure literal pattern
@@ -181,7 +181,7 @@ public class GlobAdditionalCoverageTests
         matcher.Dispose();
     }
 
-    [Fact]
+    [Test]
     public void LiteralGlobStrategy_MatchesFile_TwoSpan_LengthMismatch()
     {
         // total != _literal.Length short-circuit branch (line 44 of LiteralGlobStrategy).
@@ -193,17 +193,17 @@ public class GlobAdditionalCoverageTests
         matcher.Dispose();
     }
 
-    [Theory]
+    [Test]
     // MSBuild input-side coalesce path: input has a `//` run, exercising
     // ContainsSeparatorRun and CoalesceSeparatorRuns. The pattern collapses
     // to a single segment, but the input's run must be coalesced before match.
-    [InlineData("a/b", "a//b", true)]
-    [InlineData("a/b", "a///b", true)]
-    [InlineData("a/b", "a/b", true)]
+    [Arguments("a/b", "a//b", true)]
+    [Arguments("a/b", "a///b", true)]
+    [Arguments("a/b", "a/b", true)]
     public void GlobSpecification_CoalesceInputSeparators_MSBuild(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.MSBuild).IsMatch(input).Should().Be(expected);
 
-    [Fact]
+    [Test]
     public void GlobSpecification_DisallowEmptyInput_Simple()
     {
         // Simple dialect's empty-input contract: never matches even when the pattern
@@ -211,7 +211,7 @@ public class GlobAdditionalCoverageTests
         GlobSpecification.Compile("*", GlobDialect.Simple).IsMatch("".AsSpan()).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void TryCompile_InvalidPattern_ReportsError()
     {
         // Dangling escape produces a compile error; the TryCompile entry point
@@ -233,7 +233,7 @@ public class GlobAdditionalCoverageTests
         error.Message.Should().NotBeNullOrEmpty();
     }
 
-    [Fact]
+    [Test]
     public void TryCompile_PatternTooLarge_ReportsError()
     {
         bool ok = GlobSpecification.TryCompile(
@@ -251,7 +251,7 @@ public class GlobAdditionalCoverageTests
         error.Code.Should().Be(GlobCompileErrorCode.PatternTooLarge);
     }
 
-    [Fact]
+    [Test]
     public void Compile_InvalidPattern_Throws()
     {
         Action act = () => GlobSpecification.Compile("abc\\", GlobDialect.Posix);

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -23,7 +23,7 @@ public class CacheTests
         public void Dispose() => IsDisposed = true;
     }
 
-    [Fact]
+    [Test]
     public void Constructor_ZeroSize_DefaultsToProcessorCountMultiplied()
     {
         using Cache<TestItem> cache = new(0);
@@ -59,14 +59,14 @@ public class CacheTests
         count.Should().BeGreaterThan(0);
     }
 
-    [Fact]
+    [Test]
     public void Constructor_NegativeSize_DefaultsToProcessorCountMultiplied()
     {
         using Cache<TestItem> cache = new(-5);
         // Should behave same as zero constructor
     }
 
-    [Fact]
+    [Test]
     public void Acquire_ReturnsNewItem_WhenCacheEmpty()
     {
         using Cache<TestItem> cache = new(5);
@@ -77,7 +77,7 @@ public class CacheTests
         item.Should().BeOfType<TestItem>();
     }
 
-    [Fact]
+    [Test]
     public void Acquire_ReturnsCachedItem_AfterRelease()
     {
         using Cache<TestItem> cache = new(5);
@@ -95,7 +95,7 @@ public class CacheTests
         recycledItem.Should().BeSameAs(item);
     }
 
-    [Fact]
+    [Test]
     public void Acquire_ThreadLocalItem_TakesPriority()
     {
         using Cache<TestItem> cache = new(5);
@@ -122,7 +122,7 @@ public class CacheTests
         secondRecycled.Should().BeSameAs(item2);
     }
 
-    [Fact]
+    [Test]
     public void Release_StoresInThreadLocal_WhenThreadLocalEmpty()
     {
         using Cache<TestItem> cache = new(5);
@@ -138,7 +138,7 @@ public class CacheTests
         recycledItem.Should().BeSameAs(item);
     }
 
-    [Fact]
+    [Test]
     public void Release_StoresInCache_WhenThreadLocalFull()
     {
         using Cache<TestItem> cache = new(5);
@@ -164,7 +164,7 @@ public class CacheTests
         secondRecycled.Should().BeSameAs(item2);
     }
 
-    [Fact]
+    [Test]
     public void Release_DisposesItems_WhenCacheFull()
     {
         using Cache<DisposableTestItem> cache = new(2);
@@ -188,7 +188,7 @@ public class CacheTests
         items[1].IsDisposed.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Dispose_DisposesAllCachedItems()
     {
         Cache<DisposableTestItem> cache = new(5);
@@ -217,7 +217,7 @@ public class CacheTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Dispose_SafeToCallMultipleTimes()
     {
         Cache<TestItem> cache = new(5);
@@ -231,7 +231,7 @@ public class CacheTests
         cache.Dispose();
     }
 
-    [Fact]
+    [Test]
     public void Acquire_ReturnsNewItem_AfterDispose()
     {
         Cache<object> cache = new(5);
@@ -248,7 +248,7 @@ public class CacheTests
         newItem.Should().NotBeSameAs(item);
     }
 
-    [Fact]
+    [Test]
     public void EdgeCase_NullItem_HandlesSafely()
     {
         // This tests for null safety, though the Cache implementation should
@@ -265,7 +265,7 @@ public class CacheTests
         }
     }
 
-    [Fact]
+    [Test]
     public void MultithreadedUsage_WorksCorrectly()
     {
         using Cache<TestItem> cache = new(Environment.ProcessorCount * 2);
@@ -307,13 +307,13 @@ public class CacheTests
         }
 
         // Wait for all threads to finish
-        countdown.Wait(TestContext.Current.CancellationToken);
+        countdown.Wait(CancellationToken.None);
 
         // Verify no exceptions occurred
         exceptions.Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void EdgeCase_ReleaseAfterDispose_Throws()
     {
         Cache<TestItem> cache = new(5);
@@ -327,7 +327,7 @@ public class CacheTests
         action.Should().Throw<ObjectDisposedException>();
     }
 
-    [Fact]
+    [Test]
     public void EdgeCase_ExceedCacheCapacity_RecoversGracefully()
     {
         int cacheSize = 3;

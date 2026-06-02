@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -6,7 +6,7 @@ namespace Touki.Text;
 
 public class CharsTests
 {
-    [Fact]
+    [Test]
     public void GetRandomSimpleChar_WithNullRandom_ReturnsAllowedBmpChar()
     {
         int samples = 200;
@@ -28,7 +28,7 @@ public class CharsTests
         }
     }
 
-    [Fact]
+    [Test]
     public void GetRandomSimpleChar_WithDeterministicRandom_ReturnsOnlyAllowedRanges()
     {
         int samples = 10000;
@@ -61,7 +61,7 @@ public class CharsTests
         }
     }
 
-    [Fact]
+    [Test]
     public void GetRandomSimpleChar_WithDeterministicRandom_NeverReturnsFdd0ToFdef()
     {
         int samples = 10000;

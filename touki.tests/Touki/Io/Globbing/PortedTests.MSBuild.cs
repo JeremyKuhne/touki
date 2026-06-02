@@ -36,71 +36,71 @@ public class PortedTests_MSBuild
 {
     // From FileMatcher_Tests.WildcardMatching.
     // Tuple order in the upstream source is (input, pattern, expected).
-    [Theory]
+    [Test]
     // No wildcards
-    [InlineData("a", "a", true)]
-    [InlineData("a", "", false)]
-    [InlineData("", "a", false)]
+    [Arguments("a", "a", true)]
+    [Arguments("a", "", false)]
+    [Arguments("", "a", false)]
 
     // Non-ASCII characters
-    [InlineData("šđčćž", "šđčćž", true)]
+    [Arguments("šđčćž", "šđčćž", true)]
 
     // '*' wildcard
-    [InlineData("abc", "*bc", true)]
-    [InlineData("abc", "a*c", true)]
-    [InlineData("abc", "ab*", true)]
-    [InlineData("ab", "*ab", true)]
-    [InlineData("ab", "a*b", true)]
-    [InlineData("ab", "ab*", true)]
-    [InlineData("aba", "ab*ba", false)]
-    [InlineData("", "*", true)]
+    [Arguments("abc", "*bc", true)]
+    [Arguments("abc", "a*c", true)]
+    [Arguments("abc", "ab*", true)]
+    [Arguments("ab", "*ab", true)]
+    [Arguments("ab", "a*b", true)]
+    [Arguments("ab", "ab*", true)]
+    [Arguments("aba", "ab*ba", false)]
+    [Arguments("", "*", true)]
 
     // '?' wildcard
-    [InlineData("abc", "?bc", true)]
-    [InlineData("abc", "a?c", true)]
-    [InlineData("abc", "ab?", true)]
-    [InlineData("ab", "?ab", false)]
-    [InlineData("ab", "a?b", false)]
-    [InlineData("ab", "ab?", false)]
-    [InlineData("", "?", false)]
+    [Arguments("abc", "?bc", true)]
+    [Arguments("abc", "a?c", true)]
+    [Arguments("abc", "ab?", true)]
+    [Arguments("ab", "?ab", false)]
+    [Arguments("ab", "a?b", false)]
+    [Arguments("ab", "ab?", false)]
+    [Arguments("", "?", false)]
 
     // Mixed '*' / '?'
-    [InlineData("a", "*?", true)]
-    [InlineData("a", "?*", true)]
-    [InlineData("ab", "*?", true)]
-    [InlineData("ab", "?*", true)]
-    [InlineData("abc", "*?", true)]
-    [InlineData("abc", "?*", true)]
+    [Arguments("a", "*?", true)]
+    [Arguments("a", "?*", true)]
+    [Arguments("ab", "*?", true)]
+    [Arguments("ab", "?*", true)]
+    [Arguments("abc", "*?", true)]
+    [Arguments("abc", "?*", true)]
 
     // Multiple mixed wildcards
-    [InlineData("a", "??", false)]
-    [InlineData("ab", "?*?", true)]
-    [InlineData("ab", "*?*?*", true)]
-    [InlineData("abc", "?**?*?", true)]
-    [InlineData("abc", "?**?*c?", false)]
-    [InlineData("abcd", "?b*??", true)]
-    [InlineData("abcd", "?a*??", false)]
-    [InlineData("abcd", "?**?c?", true)]
-    [InlineData("abcd", "?**?d?", false)]
-    [InlineData("abcde", "?*b*?*d*?", true)]
+    [Arguments("a", "??", false)]
+    [Arguments("ab", "?*?", true)]
+    [Arguments("ab", "*?*?*", true)]
+    [Arguments("abc", "?**?*?", true)]
+    [Arguments("abc", "?**?*c?", false)]
+    [Arguments("abcd", "?b*??", true)]
+    [Arguments("abcd", "?a*??", false)]
+    [Arguments("abcd", "?**?c?", true)]
+    [Arguments("abcd", "?**?d?", false)]
+    [Arguments("abcde", "?*b*?*d*?", true)]
 
     // '?' literal in the input string
-    [InlineData("?", "?", true)]
-    [InlineData("?a", "?a", true)]
-    [InlineData("a?", "a?", true)]
-    [InlineData("a?b", "a?", false)]
-    [InlineData("a?ab", "a?aab", false)]
-    [InlineData("aa?bbbc?d", "aa?bbc?dd", false)]
+    [Arguments("?", "?", true)]
+    [Arguments("?a", "?a", true)]
+    [Arguments("a?", "a?", true)]
+    [Arguments("a?b", "a?", false)]
+    [Arguments("a?ab", "a?aab", false)]
+    [Arguments("aa?bbbc?d", "aa?bbc?dd", false)]
 
     // '*' literal in the input string
-    [InlineData("*", "*", true)]
-    [InlineData("*a", "*a", true)]
-    [InlineData("a*", "a*", true)]
-    [InlineData("a*b", "a*", true)]
-    [InlineData("a*ab", "a*aab", false)]
-    [InlineData("a*abab", "a*b", true)]
-    [InlineData("aa*bbbc*d", "aa*bbc*dd", false)]
-    [InlineData("aa*bbbc*d", "a*bbc*d", true)]
+    [Arguments("*", "*", true)]
+    [Arguments("*a", "*a", true)]
+    [Arguments("a*", "a*", true)]
+    [Arguments("a*b", "a*", true)]
+    [Arguments("a*ab", "a*aab", false)]
+    [Arguments("a*abab", "a*b", true)]
+    [Arguments("aa*bbbc*d", "aa*bbc*dd", false)]
+    [Arguments("aa*bbbc*d", "a*bbc*d", true)]
     public void IsMatch_WildcardMatching(string input, string pattern, bool expected)
     {
         GlobSpecification matcher = GlobSpecification.Compile(pattern, GlobDialect.MSBuild);
@@ -126,80 +126,80 @@ public class PortedTests_MSBuild
     // Files in the upstream set:
     //   Foo.cs, Foo2.cs, file.txt, file1.txt, file1.txtother, fie1.txt,
     //   fire1.txt, file.bak.txt.
-    [Theory]
+    [Test]
     // *.txt - 5 matches
-    [InlineData("*.txt", "file.txt", true)]
-    [InlineData("*.txt", "file1.txt", true)]
-    [InlineData("*.txt", "fie1.txt", true)]
-    [InlineData("*.txt", "fire1.txt", true)]
-    [InlineData("*.txt", "file.bak.txt", true)]
-    [InlineData("*.txt", "Foo.cs", false)]
-    [InlineData("*.txt", "Foo2.cs", false)]
-    [InlineData("*.txt", "file1.txtother", false)]
+    [Arguments("*.txt", "file.txt", true)]
+    [Arguments("*.txt", "file1.txt", true)]
+    [Arguments("*.txt", "fie1.txt", true)]
+    [Arguments("*.txt", "fire1.txt", true)]
+    [Arguments("*.txt", "file.bak.txt", true)]
+    [Arguments("*.txt", "Foo.cs", false)]
+    [Arguments("*.txt", "Foo2.cs", false)]
+    [Arguments("*.txt", "file1.txtother", false)]
 
     // ???.cs - 1 match (exactly 3 chars before the .cs)
-    [InlineData("???.cs", "Foo.cs", true)]
-    [InlineData("???.cs", "Foo2.cs", false)]
+    [Arguments("???.cs", "Foo.cs", true)]
+    [Arguments("???.cs", "Foo2.cs", false)]
 
     // ????.cs - 1 match
-    [InlineData("????.cs", "Foo2.cs", true)]
-    [InlineData("????.cs", "Foo.cs", false)]
+    [Arguments("????.cs", "Foo2.cs", true)]
+    [Arguments("????.cs", "Foo.cs", false)]
 
     // file?.txt - 1 match
-    [InlineData("file?.txt", "file1.txt", true)]
-    [InlineData("file?.txt", "file.txt", false)]
-    [InlineData("file?.txt", "file1.txtother", false)]
+    [Arguments("file?.txt", "file1.txt", true)]
+    [Arguments("file?.txt", "file.txt", false)]
+    [Arguments("file?.txt", "file1.txtother", false)]
 
     // fi?e?.txt - 2 matches
-    [InlineData("fi?e?.txt", "file1.txt", true)]
-    [InlineData("fi?e?.txt", "fire1.txt", true)]
-    [InlineData("fi?e?.txt", "file.txt", false)]
+    [Arguments("fi?e?.txt", "file1.txt", true)]
+    [Arguments("fi?e?.txt", "fire1.txt", true)]
+    [Arguments("fi?e?.txt", "file.txt", false)]
 
     // ???.* - 1 match
-    [InlineData("???.*", "Foo.cs", true)]
-    [InlineData("???.*", "Foo2.cs", false)]
+    [Arguments("???.*", "Foo.cs", true)]
+    [Arguments("???.*", "Foo2.cs", false)]
 
     // ????.* - 4 matches
-    [InlineData("????.*", "Foo2.cs", true)]
-    [InlineData("????.*", "fie1.txt", true)]
-    [InlineData("????.*", "file.txt", true)]
-    [InlineData("????.*", "Foo.cs", false)]
+    [Arguments("????.*", "Foo2.cs", true)]
+    [Arguments("????.*", "fie1.txt", true)]
+    [Arguments("????.*", "file.txt", true)]
+    [Arguments("????.*", "Foo.cs", false)]
 
     // *.??? - 5 matches
-    [InlineData("*.???", "Foo.cs", false)]  // .cs is two chars, not three
-    [InlineData("*.???", "file.txt", true)]
-    [InlineData("*.???", "file.bak.txt", true)]
+    [Arguments("*.???", "Foo.cs", false)]  // .cs is two chars, not three
+    [Arguments("*.???", "file.txt", true)]
+    [Arguments("*.???", "file.bak.txt", true)]
 
     // f??e1.txt - 2 matches
-    [InlineData("f??e1.txt", "file1.txt", true)]
-    [InlineData("f??e1.txt", "fire1.txt", true)]
-    [InlineData("f??e1.txt", "fie1.txt", false)]
+    [Arguments("f??e1.txt", "file1.txt", true)]
+    [Arguments("f??e1.txt", "fire1.txt", true)]
+    [Arguments("f??e1.txt", "fie1.txt", false)]
 
     // file.*.txt - 1 match
-    [InlineData("file.*.txt", "file.bak.txt", true)]
-    [InlineData("file.*.txt", "file.txt", false)]
+    [Arguments("file.*.txt", "file.bak.txt", true)]
+    [Arguments("file.*.txt", "file.txt", false)]
     public void IsMatch_GetFilesPatternMatching(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.MSBuild).IsMatch(input).Should().Be(expected);
 
     // From MSBuildGlob_Tests.GlobMatchingShouldWorkWithLiteralStrings, etc.
-    [Theory]
-    [InlineData("abc", "abc", true)]
-    [InlineData("ab?c*", "acd", false)]
-    [InlineData("%42", "B", false)]      // %-escapes not unescaped at the matcher layer
-    [InlineData("%42", "%42", true)]
+    [Test]
+    [Arguments("abc", "abc", true)]
+    [Arguments("ab?c*", "acd", false)]
+    [Arguments("%42", "B", false)]      // %-escapes not unescaped at the matcher layer
+    [Arguments("%42", "%42", true)]
     public void IsMatch_MSBuildGlob_PatternLevelRows(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.MSBuild).IsMatch(input).Should().Be(expected);
 
     // From MSBuildGlob_Tests.GlobShouldMatchEmptyArgWhenGlob...
-    [Fact]
+    [Test]
     public void IsMatch_EmptyPattern_MatchesEmptyInput() =>
         GlobSpecification.Compile(string.Empty, GlobDialect.MSBuild).IsMatch(string.Empty).Should().BeTrue();
 
-    [Fact]
+    [Test]
     public void IsMatch_StarPattern_MatchesEmptyInput() =>
         GlobSpecification.Compile("*", GlobDialect.MSBuild).IsMatch(string.Empty).Should().BeTrue();
 
-    [Fact]
+    [Test]
     public void IsMatch_StarAStarPattern_DoesNotMatchEmptyInput() =>
         GlobSpecification.Compile("*a*", GlobDialect.MSBuild).IsMatch(string.Empty).Should().BeFalse();
 }

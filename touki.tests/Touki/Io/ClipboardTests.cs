@@ -10,7 +10,7 @@ namespace Touki.Io;
 /// <remarks>
 ///  <para>
 ///   Clipboard access is global process state and races other tests that touch the
-///   clipboard, so the entire class is serialized via <see cref="SequentialCollection"/>.
+///   clipboard, so the entire class is serialized via <see cref="NotInParallelAttribute"/>.
 ///   Tests are gated on <see cref="Clipboard.IsAvailable"/>; on a headless Linux host
 ///   with no clipboard helper installed they skip rather than fail.
 ///  </para>
@@ -19,19 +19,15 @@ namespace Touki.Io;
 ///   workstation or CI agent (browsers, password managers, IME helpers, ...) can briefly
 ///   own it and cause a single <see cref="Clipboard.TrySetText(ReadOnlySpan{char})"/> or
 ///   <see cref="Clipboard.TryGetText(out string?)"/> call to fail even when the provider
-///   itself is healthy. Tests are decorated with <see cref="RetryFactAttribute"/> so that
-///   transient contention is absorbed by re-executing the test rather than baking retry
-///   logic into the production clipboard surface.
+///   itself is healthy. Tests are marked with a retry so that transient contention is
+///   absorbed by re-executing the test rather than baking retry logic into the production
+///   clipboard surface.
 ///  </para>
 /// </remarks>
-[Collection("SequentialCollection")]
+[NotInParallel("Sequential")]
 public class ClipboardTests
 {
-    [RetryFact(
-        MaxRetries = 5,
-        Skip = "Clipboard is not available on this host.",
-        SkipUnless = nameof(Clipboard.IsAvailable),
-        SkipType = typeof(Clipboard))]
+    [Test, Retry(4), SkipUnlessClipboardAvailable]
     public void TrySetText_ThenTryGetText_RoundTrips()
     {
         string original = SnapshotText();
@@ -48,11 +44,7 @@ public class ClipboardTests
         }
     }
 
-    [RetryFact(
-        MaxRetries = 5,
-        Skip = "Clipboard is not available on this host.",
-        SkipUnless = nameof(Clipboard.IsAvailable),
-        SkipType = typeof(Clipboard))]
+    [Test, Retry(4), SkipUnlessClipboardAvailable]
     public void TrySetText_Empty_RoundTripsAsEmpty()
     {
         string original = SnapshotText();
@@ -68,11 +60,7 @@ public class ClipboardTests
         }
     }
 
-    [RetryFact(
-        MaxRetries = 5,
-        Skip = "Clipboard is not available on this host.",
-        SkipUnless = nameof(Clipboard.IsAvailable),
-        SkipType = typeof(Clipboard))]
+    [Test, Retry(4), SkipUnlessClipboardAvailable]
     public void TrySetText_TextWithUnicode_RoundTrips()
     {
         string original = SnapshotText();
@@ -90,11 +78,7 @@ public class ClipboardTests
         }
     }
 
-    [RetryFact(
-        MaxRetries = 5,
-        Skip = "Clipboard is not available on this host.",
-        SkipUnless = nameof(Clipboard.IsAvailable),
-        SkipType = typeof(Clipboard))]
+    [Test, Retry(4), SkipUnlessClipboardAvailable]
     public void HasText_AfterTrySetText_IsTrue()
     {
         string original = SnapshotText();
@@ -109,11 +93,7 @@ public class ClipboardTests
         }
     }
 
-    [RetryFact(
-        MaxRetries = 5,
-        Skip = "Clipboard is not available on this host.",
-        SkipUnless = nameof(Clipboard.IsAvailable),
-        SkipType = typeof(Clipboard))]
+    [Test, Retry(4), SkipUnlessClipboardAvailable]
     public void TryClear_AfterTrySetText_ClearsClipboard()
     {
         string original = SnapshotText();

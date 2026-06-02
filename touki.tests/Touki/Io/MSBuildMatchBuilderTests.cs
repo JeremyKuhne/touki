@@ -8,7 +8,7 @@ namespace Touki.Io;
 
 public class MSBuildMatchBuilderTests
 {
-    [Fact]
+    [Test]
     public void FromSpecification_StringStringOverload_NoExcludes_MatchesIncludeFiles()
     {
         using TempFolder folder = new();
@@ -28,7 +28,7 @@ public class MSBuildMatchBuilderTests
         matcher.MatchesFile(folder.TempPath.AsSpan(), "b.cs".AsSpan()).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void FromSpecification_StringStringOverload_WithExcludes_FiltersExcluded()
     {
         using TempFolder folder = new();
@@ -46,7 +46,7 @@ public class MSBuildMatchBuilderTests
         matcher.MatchesFile(folder.TempPath.AsSpan(), "skip.cs".AsSpan()).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void FromSpecification_StringStringOverload_NullRoot_UsesCurrentDirectory()
     {
         using IEnumerationMatcher matcher = MSBuildMatchBuilder.FromSpecification(

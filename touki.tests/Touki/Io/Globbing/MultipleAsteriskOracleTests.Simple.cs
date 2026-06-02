@@ -20,10 +20,10 @@ namespace Touki.Io.Globbing;
 /// </remarks>
 public class MultipleAsteriskSimpleOracleTests
 {
-    public static TheoryData<string, string> Rows => MultipleAsteriskRows.Rows;
+    public static IEnumerable<(string, string)> Rows() => MultipleAsteriskRows.Rows();
 
-    [Theory]
-    [MemberData(nameof(Rows))]
+    [Test]
+    [MethodDataSource(nameof(Rows))]
     public void IsMatch_SimpleDialect_MultipleAsterisks_AgreesWithBcl(string pattern, string input)
     {
         bool oracle = FileSystemName.MatchesSimpleExpression(pattern.AsSpan(), input.AsSpan(), ignoreCase: false);

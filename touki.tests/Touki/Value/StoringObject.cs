@@ -6,48 +6,48 @@ namespace Touki;
 
 public class StoringObject
 {
-    [Fact]
+    [Test]
     public void BasicStorage()
     {
         A a = new();
         Value value = Value.Create(a);
-        Assert.Equal(typeof(A), value.Type);
-        Assert.Same(a, value.As<A>());
+        value.Type.Should().Be(typeof(A));
+        value.As<A>().Should().BeSameAs(a);
 
         bool success = value.TryGetValue(out B result);
-        Assert.False(success);
-        Assert.Null(result);
+        success.Should().BeFalse();
+        result.Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void DerivedRetrieval()
     {
         B b = new();
         Value value = Value.Create(b);
-        Assert.Equal(typeof(B), value.Type);
-        Assert.Same(b, value.As<A>());
-        Assert.Same(b, value.As<B>());
+        value.Type.Should().Be(typeof(B));
+        value.As<A>().Should().BeSameAs(b);
+        value.As<B>().Should().BeSameAs(b);
 
         bool success = value.TryGetValue(out C result);
-        Assert.False(success);
-        Assert.Null(result);
+        success.Should().BeFalse();
+        result.Should().BeNull();
 
         Assert.Throws<InvalidCastException>(() => value.As<C>());
 
         A a = new B();
         value = Value.Create(a);
-        Assert.Equal(typeof(B), value.Type);
+        value.Type.Should().Be(typeof(B));
     }
 
-    [Fact]
+    [Test]
     public void AsInterface()
     {
         I a = new A();
         Value value = Value.Create(a);
-        Assert.Equal(typeof(A), value.Type);
+        value.Type.Should().Be(typeof(A));
 
-        Assert.Same(a, value.As<A>());
-        Assert.Same(a, value.As<I>());
+        value.As<A>().Should().BeSameAs(a);
+        value.As<I>().Should().BeSameAs(a);
     }
 
     private class A : I { }
@@ -59,7 +59,7 @@ public class StoringObject
         string? ToString();
     }
 
-    [Fact]
+    [Test]
     public void Box_StoresObject()
     {
         A a = new();
@@ -67,7 +67,7 @@ public class StoringObject
         value.As<A>().Should().BeSameAs(a);
     }
 
-    [Fact]
+    [Test]
     public void Box_NullObject_HasNoStoredValue()
     {
         // Per Value docs, a Type of null means "no value is stored".

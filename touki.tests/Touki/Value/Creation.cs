@@ -6,7 +6,7 @@ namespace Touki;
 
 public class Creation
 {
-    [Fact]
+    [Test]
     public void CreateIsAllocationFree()
     {
         var watch = MemoryWatch.Create;

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -55,7 +55,7 @@ public class EnumerableBaseTests
         protected override void Dispose(bool disposing) { }
     }
 
-    [Fact]
+    [Test]
     public void EnumeratorAndEnumerableAreTheSameInstance()
     {
         TestEnumerable enumerable = new(1, 2, 3);
@@ -64,7 +64,7 @@ public class EnumerableBaseTests
         enumerator.Should().BeSameAs(enumerable);
     }
 
-    [Fact]
+    [Test]
     public void NonGenericGetEnumerator_ReturnsThisInstance()
     {
         TestEnumerable enumerable = new(1, 2, 3);
@@ -74,7 +74,7 @@ public class EnumerableBaseTests
         enumerator.Should().BeSameAs(enumerable);
     }
 
-    [Fact]
+    [Test]
     public void MoveNext_ReturnsTrue_AndUpdatesCurrent_WhenThereAreMoreItems()
     {
         TestEnumerable enumerable = new(42, 84);
@@ -88,7 +88,7 @@ public class EnumerableBaseTests
         enumerable.Current.Should().Be(84);
     }
 
-    [Fact]
+    [Test]
     public void MoveNext_ReturnsFalse_WhenNoMoreItemsAvailable()
     {
         TestEnumerable enumerable = new(42);
@@ -100,7 +100,7 @@ public class EnumerableBaseTests
         hasSecond.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void MoveNext_ReturnsFalse_WhenEnumerableIsEmpty()
     {
         TestEnumerable enumerable = new();
@@ -110,7 +110,7 @@ public class EnumerableBaseTests
         hasItem.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Current_AfterCreation_ReturnsDefault()
     {
         TestEnumerable enumerable = new(42);
@@ -119,7 +119,7 @@ public class EnumerableBaseTests
         enumerable.Current.Should().Be(default);
     }
 
-    [Fact]
+    [Test]
     public void Enumerable_WorksWithForeach()
     {
         TestEnumerable enumerable = new(1, 2, 3);
@@ -133,7 +133,7 @@ public class EnumerableBaseTests
         items.Should().Equal([1, 2, 3]);
     }
 
-    [Fact]
+    [Test]
     public void Enumerable_WithNoItems_ProducesEmptyCollection()
     {
         TestEnumerable enumerable = new();
@@ -147,7 +147,7 @@ public class EnumerableBaseTests
         items.Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void NonGenericCurrent_ReturnsSameAsGenericCurrent()
     {
         TestEnumerable enumerable = new(42);
@@ -159,7 +159,7 @@ public class EnumerableBaseTests
         nonGenericCurrent.Should().Be(enumerable.Current);
     }
 
-    [Fact]
+    [Test]
     public void Reset_SetsCurrentToDefault_AndRestartsEnumeration()
     {
         TestEnumerable enumerable = new(1, 2, 3);
@@ -178,7 +178,7 @@ public class EnumerableBaseTests
         enumerable.Current.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Reset_ThrowsNotSupported_WhenUsingBaseImplementation()
     {
         ThrowingEnumerable enumerable = new();
@@ -188,7 +188,7 @@ public class EnumerableBaseTests
         reset.Should().Throw<NotSupportedException>();
     }
 
-    [Fact]
+    [Test]
     public void Dispose_Properly_DisposesTheEnumerator()
     {
         TestEnumerable enumerable = new(1, 2, 3);
@@ -198,7 +198,7 @@ public class EnumerableBaseTests
         enumerable.IsDisposed.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Enumerable_CanBeUsedMultipleTimes()
     {
         TestEnumerable enumerable = new(1, 2, 3);

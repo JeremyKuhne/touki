@@ -35,7 +35,7 @@ public class GlobEnumeratorTests
         return folder;
     }
 
-    [Fact]
+    [Test]
     public void Create_IncludeOnly_PosixPathDefault_FindsExpectedFiles()
     {
         using TempFolder folder = CreateFixture();
@@ -55,7 +55,7 @@ public class GlobEnumeratorTests
         results.Should().NotContain(JoinSep("src", "b.user"));
     }
 
-    [Fact]
+    [Test]
     public void Create_IncludeWithEmptyExcludeString_BehavesAsIncludeOnly()
     {
         using TempFolder folder = CreateFixture();
@@ -70,7 +70,7 @@ public class GlobEnumeratorTests
         results.Should().Contain(JoinSep("obj", "Debug", "obj.cs"));
     }
 
-    [Fact]
+    [Test]
     public void Create_SingleExcludePattern_ExcludesMatchingFiles()
     {
         using TempFolder folder = CreateFixture();
@@ -86,7 +86,7 @@ public class GlobEnumeratorTests
         results.Should().NotContain(JoinSep("obj", "Debug", "obj.cs"));
     }
 
-    [Fact]
+    [Test]
     public void Create_DialectOverload_HonorsDialect()
     {
         using TempFolder folder = CreateFixture();
@@ -100,7 +100,7 @@ public class GlobEnumeratorTests
         results.Should().Contain(JoinSep("top.cs"));
     }
 
-    [Fact]
+    [Test]
     public void Create_DialectAndOptionsOverload_HonorsOptions()
     {
         using TempFolder folder = CreateFixture();
@@ -115,7 +115,7 @@ public class GlobEnumeratorTests
         results.Should().Contain(JoinSep("top.cs"));
     }
 
-    [Fact]
+    [Test]
     public void Create_MultipleExcludes_Default_AllExcludesApply()
     {
         using TempFolder folder = CreateFixture();
@@ -130,7 +130,7 @@ public class GlobEnumeratorTests
         results.Should().Contain(JoinSep("src", "a.cs"));
     }
 
-    [Fact]
+    [Test]
     public void Create_MultipleExcludes_DialectOverload()
     {
         using TempFolder folder = CreateFixture();
@@ -144,7 +144,7 @@ public class GlobEnumeratorTests
         results.Should().NotContain(JoinSep("obj", "Debug", "obj.cs"));
     }
 
-    [Fact]
+    [Test]
     public void Create_MultipleExcludes_DialectAndOptionsOverload()
     {
         using TempFolder folder = CreateFixture();
@@ -159,7 +159,7 @@ public class GlobEnumeratorTests
         results.Should().NotContain(JoinSep("obj", "Debug", "obj.cs"));
     }
 
-    [Fact]
+    [Test]
     public void Create_MultipleExcludes_SubtreeSubsumption_RedundantSubdirSkipped()
     {
         // `obj/**` subsumes `obj/Debug/**`; the dedupe pass marks the redundant
@@ -174,7 +174,7 @@ public class GlobEnumeratorTests
         results.Should().NotContain(JoinSep("obj", "Debug", "obj.cs"));
     }
 
-    [Fact]
+    [Test]
     public void Create_MultipleExcludes_FileNameDisjointness_DropsUnreachableExclude()
     {
         // The include's trailing literal is `.cs`; the `.user` exclude can never
@@ -191,7 +191,7 @@ public class GlobEnumeratorTests
         results.Should().NotContain(JoinSep("src", "b.user"));
     }
 
-    [Fact]
+    [Test]
     public void Create_MultipleExcludes_EmptyEntriesAreIgnored()
     {
         // Empty exclude strings are tolerated and skipped.
@@ -206,7 +206,7 @@ public class GlobEnumeratorTests
         results.Should().Contain(JoinSep("src", "a.cs"));
     }
 
-    [Fact]
+    [Test]
     public void Create_TrailingSlashSubtreeSubsumption()
     {
         // `obj/**/` (with trailing slash) is still recognized as a subtree pattern.
@@ -220,7 +220,7 @@ public class GlobEnumeratorTests
         results.Should().NotContain(JoinSep("obj", "Debug", "obj.cs"));
     }
 
-    [Fact]
+    [Test]
     public void Create_BackslashSubtreePatternRecognized()
     {
         // The subsumption pass recognizes either separator.
@@ -235,7 +235,7 @@ public class GlobEnumeratorTests
         _ = Collect(enumerator);
     }
 
-    [Fact]
+    [Test]
     public void Create_CustomEnumerationOptions_Respected()
     {
         using TempFolder folder = CreateFixture();
@@ -261,7 +261,7 @@ public class GlobEnumeratorTests
         results.Should().NotContain(JoinSep("src", "a.cs"));
     }
 
-    [Fact]
+    [Test]
     public void Create_NullIncludePattern_Throws()
     {
         using TempFolder folder = CreateFixture();
@@ -271,7 +271,7 @@ public class GlobEnumeratorTests
             .Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void Create_NullExcludeList_Throws()
     {
         using TempFolder folder = CreateFixture();
@@ -281,7 +281,7 @@ public class GlobEnumeratorTests
             .Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void Create_NullRootDirectory_Throws()
     {
         FluentActions.Invoking(() =>
@@ -289,7 +289,7 @@ public class GlobEnumeratorTests
             .Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void Create_NullRootDirectory_ExcludeListOverload_Throws()
     {
         FluentActions.Invoking(() =>
@@ -297,7 +297,7 @@ public class GlobEnumeratorTests
             .Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void Enumerate_RootWithTrailingSeparator_TopLevelFilesReturnedBareName()
     {
         // The root directory length calculation accounts for a trailing separator;

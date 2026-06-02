@@ -43,7 +43,7 @@ public class GlobMatchFirstSegmentNegationPruningTests
         GlobSpecification.Compile(pattern, GlobDialect.MSBuild, GlobOptions.AllowExtGlob)
             .CreateMatcher(root);
 
-    [Fact]
+    [Test]
     public void MatchesDirectory_FirstSegmentNegation_PrunesNegatedRootDirectories()
     {
         using TempFolder folder = CreateFixture();
@@ -63,7 +63,7 @@ public class GlobMatchFirstSegmentNegationPruningTests
         boundary.MatchesDirectory(root, "binx".AsSpan(), matchForExclusion: false).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void MatchesDirectory_FirstSegmentNegation_DoesNotPruneNestedDirectories()
     {
         using TempFolder folder = CreateFixture();
@@ -78,7 +78,7 @@ public class GlobMatchFirstSegmentNegationPruningTests
         boundary.MatchesDirectory(srcDir, "bin".AsSpan(), matchForExclusion: false).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void MatchesDirectory_NonFirstSegmentNegation_DoesNotPrune()
     {
         using TempFolder folder = CreateFixture();
@@ -92,7 +92,7 @@ public class GlobMatchFirstSegmentNegationPruningTests
         boundary.MatchesDirectory(root, "bin".AsSpan(), matchForExclusion: false).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void MatchesDirectory_NestedAnchoredNegation_PrunesNegatedSubdirectory()
     {
         using TempFolder folder = CreateFixture();
@@ -111,7 +111,7 @@ public class GlobMatchFirstSegmentNegationPruningTests
         boundary.MatchesDirectory(root, "src".AsSpan(), matchForExclusion: false).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Enumerate_NestedAnchoredNegation_ExcludesNegatedSubdirectory()
     {
         using TempFolder folder = CreateFixture();
@@ -129,7 +129,7 @@ public class GlobMatchFirstSegmentNegationPruningTests
         results.Should().NotContain(JoinSep("src", "bin", "d.cs"));
     }
 
-    [Fact]
+    [Test]
     public void Enumerate_FirstSegmentNegation_ExcludesNegatedSubtrees()
     {
         using TempFolder folder = CreateFixture();
@@ -149,7 +149,7 @@ public class GlobMatchFirstSegmentNegationPruningTests
         results.Should().NotContain(JoinSep("bin", "Release", "bin.cs"));
     }
 
-    [Fact]
+    [Test]
     public void Enumerate_NonFirstSegmentNegation_StillDescendsBin()
     {
         using TempFolder folder = CreateFixture();

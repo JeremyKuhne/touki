@@ -6,91 +6,91 @@ namespace Touki;
 
 public class StoringDecimal
 {
-    public static TheoryData<decimal> DecimalData => new()
+    public static IEnumerable<decimal> DecimalData()
     {
-        { 42 },
-        { decimal.MaxValue },
-        { decimal.MinValue }
-    };
+        yield return 42;
+        yield return decimal.MaxValue;
+        yield return decimal.MinValue;
+    }
 
-    [Fact]
+    [Test]
     public void DecimalImplicit()
     {
         Value value = (decimal)42.0;
-        Assert.Equal((decimal)42.0, value.As<decimal>());
-        Assert.Equal(typeof(decimal), value.Type);
+        value.As<decimal>().Should().Be((decimal)42.0);
+        value.Type.Should().Be(typeof(decimal));
 
         decimal? source = (decimal?)42.0;
         value = source;
-        Assert.Equal(source, value.As<decimal?>());
-        Assert.Equal(typeof(decimal), value.Type);
+        value.As<decimal?>().Should().Be(source);
+        value.Type.Should().Be(typeof(decimal));
     }
 
-    [Theory]
-    [MemberData(nameof(DecimalData))]
+    [Test]
+    [MethodDataSource(nameof(DecimalData))]
     public void DecimalInOut(decimal @decimal)
     {
         Value value = @decimal;
         bool success = value.TryGetValue(out decimal result);
-        Assert.True(success);
-        Assert.Equal(@decimal, result);
+        success.Should().BeTrue();
+        result.Should().Be(@decimal);
 
-        Assert.Equal(@decimal, value.As<decimal>());
-        Assert.Equal(@decimal, (decimal)value);
+        value.As<decimal>().Should().Be(@decimal);
+        ((decimal)value).Should().Be(@decimal);
     }
 
-    [Theory]
-    [MemberData(nameof(DecimalData))]
+    [Test]
+    [MethodDataSource(nameof(DecimalData))]
     public void NullableDecimalInDecimalOut(decimal @decimal)
     {
         decimal? source = @decimal;
         Value value = Value.Create(source);
 
         bool success = value.TryGetValue(out decimal result);
-        Assert.True(success);
-        Assert.Equal(@decimal, result);
+        success.Should().BeTrue();
+        result.Should().Be(@decimal);
 
-        Assert.Equal(@decimal, value.As<decimal>());
+        value.As<decimal>().Should().Be(@decimal);
 
-        Assert.Equal(@decimal, (decimal)value);
+        ((decimal)value).Should().Be(@decimal);
     }
 
-    [Theory]
-    [MemberData(nameof(DecimalData))]
+    [Test]
+    [MethodDataSource(nameof(DecimalData))]
     public void DecimalInNullableDecimalOut(decimal @decimal)
     {
         decimal source = @decimal;
         Value value = Value.Create(source);
         bool success = value.TryGetValue(out decimal? result);
-        Assert.True(success);
-        Assert.Equal(@decimal, result);
+        success.Should().BeTrue();
+        result.Should().Be(@decimal);
 
-        Assert.Equal(@decimal, (decimal?)value);
+        ((decimal?)value).Should().Be(@decimal);
     }
 
-    [Fact]
+    [Test]
     public void NullDecimal()
     {
         decimal? source = null;
         Value value = source;
-        Assert.Null(value.Type);
-        Assert.Equal(source, value.As<decimal?>());
-        Assert.False(value.As<decimal?>().HasValue);
+        value.Type.Should().BeNull();
+        value.As<decimal?>().Should().Be(source);
+        value.As<decimal?>().HasValue.Should().BeFalse();
     }
 
-    [Theory]
-    [MemberData(nameof(DecimalData))]
+    [Test]
+    [MethodDataSource(nameof(DecimalData))]
     public void OutAsObject(decimal @decimal)
     {
         Value value = Value.Create(@decimal);
         object o = value.As<object>();
-        Assert.Equal(typeof(decimal), o.GetType());
-        Assert.Equal(@decimal, (decimal)o);
+        o.GetType().Should().Be(typeof(decimal));
+        ((decimal)o).Should().Be(@decimal);
 
         decimal? n = @decimal;
         value = n;
         o = value.As<object>();
-        Assert.Equal(typeof(decimal), o.GetType());
-        Assert.Equal(@decimal, (decimal)o);
+        o.GetType().Should().Be(typeof(decimal));
+        ((decimal)o).Should().Be(@decimal);
     }
 }

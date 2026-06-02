@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -6,7 +6,7 @@ namespace Touki.Text;
 
 public class StringSegmentComparerTests
 {
-    [Fact]
+    [Test]
     public void Ordinal_Compare_Equal_Segments_Returns_Zero()
     {
         StringSegment first = new("test", 0, 4);
@@ -15,7 +15,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.Ordinal.Compare(first, second).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void Ordinal_Compare_Different_Segments_Returns_NonZero()
     {
         StringSegment first = new("test", 0, 4);
@@ -24,7 +24,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.Ordinal.Compare(first, second).Should().NotBe(0);
     }
 
-    [Fact]
+    [Test]
     public void Ordinal_Compare_Is_CaseSensitive()
     {
         StringSegment first = new("Test", 0, 4);
@@ -33,7 +33,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.Ordinal.Compare(first, second).Should().NotBe(0);
     }
 
-    [Fact]
+    [Test]
     public void Ordinal_Equals_Same_Segments_Returns_True()
     {
         StringSegment first = new("test", 0, 4);
@@ -42,7 +42,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.Ordinal.Equals(first, second).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Ordinal_Equals_Different_Segments_Returns_False()
     {
         StringSegment first = new("test", 0, 4);
@@ -51,7 +51,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.Ordinal.Equals(first, second).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Ordinal_Equals_Is_CaseSensitive()
     {
         StringSegment first = new("Test", 0, 4);
@@ -60,7 +60,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.Ordinal.Equals(first, second).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Ordinal_GetHashCode_Same_Segments_Same_Hash()
     {
         StringSegment first = new("test", 0, 4);
@@ -70,7 +70,7 @@ public class StringSegmentComparerTests
             StringSegmentComparer.Ordinal.GetHashCode(second));
     }
 
-    [Fact]
+    [Test]
     public void OrdinalIgnoreCase_Compare_Equal_Segments_Returns_Zero()
     {
         StringSegment first = new("test", 0, 4);
@@ -79,7 +79,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.OrdinalIgnoreCase.Compare(first, second).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void OrdinalIgnoreCase_Compare_Equal_Segments_DifferentCase_Returns_Zero()
     {
         StringSegment first = new("Test", 0, 4);
@@ -88,7 +88,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.OrdinalIgnoreCase.Compare(first, second).Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void OrdinalIgnoreCase_Compare_Different_Segments_Returns_NonZero()
     {
         StringSegment first = new("test", 0, 4);
@@ -97,7 +97,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.OrdinalIgnoreCase.Compare(first, second).Should().NotBe(0);
     }
 
-    [Fact]
+    [Test]
     public void OrdinalIgnoreCase_Equals_Same_Segments_Returns_True()
     {
         StringSegment first = new("test", 0, 4);
@@ -106,7 +106,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.OrdinalIgnoreCase.Equals(first, second).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void OrdinalIgnoreCase_Equals_Same_Segments_DifferentCase_Returns_True()
     {
         StringSegment first = new("Test", 0, 4);
@@ -115,7 +115,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.OrdinalIgnoreCase.Equals(first, second).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void OrdinalIgnoreCase_Equals_Different_Segments_Returns_False()
     {
         StringSegment first = new("test", 0, 4);
@@ -124,7 +124,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.OrdinalIgnoreCase.Equals(first, second).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void OrdinalIgnoreCase_GetHashCode_Same_Segments_Same_Hash()
     {
         StringSegment first = new("test", 0, 4);

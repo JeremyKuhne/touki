@@ -30,32 +30,32 @@ public class SequentialSeparatorSimpleOracleTests
     private static bool ToukiMatches(string pattern, string input) =>
         GlobSpecification.Compile(pattern, GlobDialect.Simple).IsMatch(input);
 
-    [Theory]
+    [Test]
     // --- Doubled separator: must NOT be coalesced (Simple is path-unaware) ---
-    [InlineData("a//b", "a/b")]
-    [InlineData("a//b", "a//b")]
-    [InlineData("a//b", "a///b")]
-    [InlineData("a//b", "ab")]
+    [Arguments("a//b", "a/b")]
+    [Arguments("a//b", "a//b")]
+    [Arguments("a//b", "a///b")]
+    [Arguments("a//b", "ab")]
     // --- Tripled / quadrupled separator runs ---
-    [InlineData("a///b", "a/b")]
-    [InlineData("a///b", "a//b")]
-    [InlineData("a///b", "a///b")]
-    [InlineData("a////b", "a///b")]
-    [InlineData("a////b", "a////b")]
+    [Arguments("a///b", "a/b")]
+    [Arguments("a///b", "a//b")]
+    [Arguments("a///b", "a///b")]
+    [Arguments("a////b", "a///b")]
+    [Arguments("a////b", "a////b")]
     // --- Leading separator runs ---
-    [InlineData("//a", "/a")]
-    [InlineData("//a", "//a")]
-    [InlineData("//a", "a")]
+    [Arguments("//a", "/a")]
+    [Arguments("//a", "//a")]
+    [Arguments("//a", "a")]
     // --- Trailing separator runs ---
-    [InlineData("a//", "a/")]
-    [InlineData("a//", "a//")]
-    [InlineData("a//", "a")]
+    [Arguments("a//", "a/")]
+    [Arguments("a//", "a//")]
+    [Arguments("a//", "a")]
     // --- Doubled separator surrounding a wildcard ---
-    [InlineData("a//*", "a/b")]
-    [InlineData("a//*", "a//b")]
-    [InlineData("*//b", "a/b")]
-    [InlineData("*//b", "a//b")]
-    [InlineData("*//b", "//b")]
+    [Arguments("a//*", "a/b")]
+    [Arguments("a//*", "a//b")]
+    [Arguments("*//b", "a/b")]
+    [Arguments("*//b", "a//b")]
+    [Arguments("*//b", "//b")]
     public void IsMatch_SimpleDialect_SequentialSeparators_AgreesWithBcl(string pattern, string input)
     {
         bool oracle = OracleMatches(pattern, input);

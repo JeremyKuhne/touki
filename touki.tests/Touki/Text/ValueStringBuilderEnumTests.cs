@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -155,7 +155,7 @@ public unsafe class ValueStringBuilderEnumTests
         All = Flag1 | Flag2 | Flag4
     }
 
-    [Fact]
+    [Test]
     public void AppendFormat_EnumBackedByAllIntegerTypes()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
@@ -203,7 +203,7 @@ public unsafe class ValueStringBuilderEnumTests
         builder.ToString().Should().Be("ULong: Max");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormat_UndefinedEnumValues()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
@@ -233,7 +233,7 @@ public unsafe class ValueStringBuilderEnumTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void AppendFormat_FlagsEnumAllBackingTypes()
     {
         using ValueStringBuilder builder = new(stackalloc char[300]);
@@ -265,7 +265,7 @@ public unsafe class ValueStringBuilderEnumTests
         builder.ToString().Should().Be("ZeroFlags: None, None, None");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormat_EnumFormattingConsistency()
     {
         ValueStringBuilder builder = new(stackalloc char[100]);
@@ -315,7 +315,7 @@ public unsafe class ValueStringBuilderEnumTests
         builder.Clear();
     }
 
-    [Fact]
+    [Test]
     public void AppendFormat_EnumFormatsAllBackingTypes()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
@@ -342,7 +342,7 @@ public unsafe class ValueStringBuilderEnumTests
         builder.ToString().Should().Be("General: Positive, Value");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormat_EnumExtremeValues()
     {
         using ValueStringBuilder builder = new(stackalloc char[300]);

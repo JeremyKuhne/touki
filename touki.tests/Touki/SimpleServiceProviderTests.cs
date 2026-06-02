@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -18,7 +18,7 @@ public class SimpleServiceProviderTests
         public int Value => 42;
     }
 
-    [Fact]
+    [Test]
     public void AddService_RegistersServiceByExactType()
     {
         SimpleServiceProvider provider = new();
@@ -30,7 +30,7 @@ public class SimpleServiceProviderTests
         result.Should().BeSameAs(service);
     }
 
-    [Fact]
+    [Test]
     public void AddService_OverwritesPreviousRegistration()
     {
         SimpleServiceProvider provider = new();
@@ -45,7 +45,7 @@ public class SimpleServiceProviderTests
         result.Should().NotBeSameAs(service1);
     }
 
-    [Fact]
+    [Test]
     public void GetService_WithType_ReturnsNullForUnregisteredService()
     {
         SimpleServiceProvider provider = new();
@@ -55,7 +55,7 @@ public class SimpleServiceProviderTests
         result.Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void GetService_WithType_ReturnsRegisteredService()
     {
         SimpleServiceProvider provider = new();
@@ -67,7 +67,7 @@ public class SimpleServiceProviderTests
         result.Should().BeSameAs(service);
     }
 
-    [Fact]
+    [Test]
     public void GetService_Generic_ReturnsNullForUnregisteredService()
     {
         SimpleServiceProvider provider = new();
@@ -77,7 +77,7 @@ public class SimpleServiceProviderTests
         result.Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void GetService_Generic_ReturnsRegisteredService()
     {
         SimpleServiceProvider provider = new();
@@ -89,7 +89,7 @@ public class SimpleServiceProviderTests
         result.Should().BeSameAs(service);
     }
 
-    [Fact]
+    [Test]
     public void TryGetService_ReturnsFalseForUnregisteredService()
     {
         SimpleServiceProvider provider = new();
@@ -100,7 +100,7 @@ public class SimpleServiceProviderTests
         result.Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void TryGetService_ReturnsTrueAndServiceForRegisteredService()
     {
         SimpleServiceProvider provider = new();
@@ -114,7 +114,7 @@ public class SimpleServiceProviderTests
         result.Should().BeSameAs(service);
     }
 
-    [Fact]
+    [Test]
     public void GetService_DoesNotRetrieveByInterface()
     {
         SimpleServiceProvider provider = new();
@@ -126,7 +126,7 @@ public class SimpleServiceProviderTests
         result.Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void AddService_CanRegisterImplementationsByInterface()
     {
         SimpleServiceProvider provider = new();
@@ -138,7 +138,7 @@ public class SimpleServiceProviderTests
         result.Should().BeSameAs(service);
     }
 
-    [Fact]
+    [Test]
     public void GetService_InterfaceHierarchy_RequiresExactRegistration()
     {
         SimpleServiceProvider provider = new();
@@ -155,7 +155,7 @@ public class SimpleServiceProviderTests
         result2.Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public void AddService_MultipleDifferentServices()
     {
         SimpleServiceProvider provider = new();
@@ -172,7 +172,7 @@ public class SimpleServiceProviderTests
         result2.Should().BeSameAs(extendedService);
     }
 
-    [Fact]
+    [Test]
     public void AddService_NullService_StoresNullReference()
     {
         SimpleServiceProvider provider = new();
@@ -192,7 +192,7 @@ public class SimpleServiceProviderTests
         outResult.Should().BeNull();
     }
 
-    [Fact]
+    [Test]
     public async Task MultipleThreads_CanAddAndRetrieveServices()
     {
         SimpleServiceProvider provider = new();
@@ -221,11 +221,11 @@ public class SimpleServiceProviderTests
                     await Task.Delay(1).ConfigureAwait(continueOnCapturedContext: false);
                 }
             },
-            TestContext.Current.CancellationToken));
+            CancellationToken.None));
         }
 
         // Wait for all tasks to complete asynchronously
-        await Task.WhenAll(tasks);
+        await Task.WhenAll(tasks).ConfigureAwait(false);
 
         // The last added service should be available
         CustomService? lastService = provider.GetService<CustomService>();

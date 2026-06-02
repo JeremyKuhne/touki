@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -32,7 +32,7 @@ public class ComponentBaseTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Dispose_RaisesDisposedEvent()
     {
         ComponentBase component = new();
@@ -45,7 +45,7 @@ public class ComponentBaseTests
         tracker.Sender.Should().BeSameAs(component);
     }
 
-    [Fact]
+    [Test]
     public void Dispose_MultipleCallsOnlyRaisesEventOnce()
     {
         ComponentBase component = new();
@@ -60,7 +60,7 @@ public class ComponentBaseTests
         callCount.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Dispose_RemovesComponentFromContainer()
     {
         TestContainer container = new();
@@ -76,7 +76,7 @@ public class ComponentBaseTests
         container.Components.OfType<ComponentBase>().Should().NotContain(component);
     }
 
-    [Fact]
+    [Test]
     public void DisposedEvent_CanBeAddedAndRemoved()
     {
         ComponentBase component = new();
@@ -93,7 +93,7 @@ public class ComponentBaseTests
         tracker.DisposedCalled.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Dispose_WithNullSite_DoesNotThrow()
     {
         ComponentBase component = new();
@@ -101,7 +101,7 @@ public class ComponentBaseTests
         action.Should().NotThrow();
     }
 
-    [Fact]
+    [Test]
     public void Dispose_NullDisposedHandler_DoesNotThrow()
     {
         ComponentBase component = new();

@@ -13,41 +13,41 @@ namespace Touki.Io;
 /// </summary>
 public class EscapingUtilitiesOracleTests
 {
-    [Theory]
+    [Test]
     // Strings with no escape characters round-trip unchanged.
-    [InlineData("")]
-    [InlineData("file.cs")]
-    [InlineData("foo/bar/baz.txt")]
-    [InlineData("**/*.cs")]
+    [Arguments("")]
+    [Arguments("file.cs")]
+    [Arguments("foo/bar/baz.txt")]
+    [Arguments("**/*.cs")]
     // Valid %XX escapes are decoded.
-    [InlineData("foo%20bar")]                 // %20 = space
-    [InlineData("foo%2520bar")]               // %25 = '%', then "20bar"
-    [InlineData("%2A.cs")]                    // %2A = '*'
-    [InlineData("dir%2Fname")]                // %2F = '/'
-    [InlineData("100%25done")]                // %25 = '%'
-    [InlineData("%00")]                       // %00 = NUL - decoded but illegal at the spec layer
-    [InlineData("file%2Bname")]               // %2B = '+'
-    [InlineData("hex%41%42%43")]              // %41-%43 = 'A','B','C'
+    [Arguments("foo%20bar")]                 // %20 = space
+    [Arguments("foo%2520bar")]               // %25 = '%', then "20bar"
+    [Arguments("%2A.cs")]                    // %2A = '*'
+    [Arguments("dir%2Fname")]                // %2F = '/'
+    [Arguments("100%25done")]                // %25 = '%'
+    [Arguments("%00")]                       // %00 = NUL - decoded but illegal at the spec layer
+    [Arguments("file%2Bname")]               // %2B = '+'
+    [Arguments("hex%41%42%43")]              // %41-%43 = 'A','B','C'
     // Lowercase hex digits.
-    [InlineData("foo%2abar")]
-    [InlineData("foo%2fbar")]
+    [Arguments("foo%2abar")]
+    [Arguments("foo%2fbar")]
     // Mixed-case hex digits.
-    [InlineData("foo%2Abar")]
-    [InlineData("foo%2Fbar")]
+    [Arguments("foo%2Abar")]
+    [Arguments("foo%2Fbar")]
     // Malformed escapes (non-hex digits, truncated). MSBuild leaves these literal.
-    [InlineData("%XX")]
-    [InlineData("%GG")]
-    [InlineData("%2")]                        // truncated, single hex digit
-    [InlineData("%")]                         // bare %
-    [InlineData("foo%")]                      // bare % at end
-    [InlineData("foo%Z")]
-    [InlineData("foo%2Zbar")]                 // valid first hex, invalid second
-    [InlineData("100% done")]                 // % followed by non-hex
-    [InlineData("%%20")]                      // bare % followed by valid escape
-    [InlineData("a%20%XX%20b")]               // mix of valid and malformed
+    [Arguments("%XX")]
+    [Arguments("%GG")]
+    [Arguments("%2")]                        // truncated, single hex digit
+    [Arguments("%")]                         // bare %
+    [Arguments("foo%")]                      // bare % at end
+    [Arguments("foo%Z")]
+    [Arguments("foo%2Zbar")]                 // valid first hex, invalid second
+    [Arguments("100% done")]                 // % followed by non-hex
+    [Arguments("%%20")]                      // bare % followed by valid escape
+    [Arguments("a%20%XX%20b")]               // mix of valid and malformed
     // Multiple escapes in sequence.
-    [InlineData("%20%20%20")]
-    [InlineData("%2A%2A%2F%2A%2E%63%73")]     // "**/*.cs" as escapes
+    [Arguments("%20%20%20")]
+    [Arguments("%2A%2A%2F%2A%2E%63%73")]     // "**/*.cs" as escapes
     public void Unescape_MatchesMSBuildUnescapeAll(string input)
     {
         string toukiResult = MSBuildSpecification.Unescape(input).ToString();

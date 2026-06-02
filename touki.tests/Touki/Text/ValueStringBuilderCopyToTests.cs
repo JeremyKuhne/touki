@@ -13,7 +13,7 @@ public class ValueStringBuilderCopyToTests
 {
     // ---------- CopyTo(Stream) ----------
 
-    [Fact]
+    [Test]
     public void CopyTo_Stream_PopulatedBuilder_WithStackBuffer_WritesBytes()
     {
         using MemoryStream stream = new();
@@ -26,7 +26,7 @@ public class ValueStringBuilderCopyToTests
         stream.ToArray().Should().Equal(expected);
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_Stream_PopulatedBuilder_WithRentedBuffer_WritesBytes()
     {
         using MemoryStream stream = new();
@@ -42,7 +42,7 @@ public class ValueStringBuilderCopyToTests
 
     // ---------- CopyTo(TextWriter) ----------
 
-    [Fact]
+    [Test]
     public void CopyTo_TextWriter_StringWriter_AppendsContent()
     {
         System.IO.StringWriter writer = new();
@@ -53,7 +53,7 @@ public class ValueStringBuilderCopyToTests
         writer.ToString().Should().Be("first-second");
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_TextWriter_StringWriterWithExistingContent_Appends()
     {
         System.IO.StringWriter writer = new();
@@ -65,7 +65,7 @@ public class ValueStringBuilderCopyToTests
         writer.ToString().Should().Be("prefix-body");
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_TextWriter_IndentedTextWriter_ForwardsContent()
     {
         System.IO.StringWriter inner = new();
@@ -80,7 +80,7 @@ public class ValueStringBuilderCopyToTests
         inner.ToString().Should().EndWith("indented");
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_TextWriter_StreamWriter_WritesUtf8()
     {
         using MemoryStream stream = new();
@@ -96,7 +96,7 @@ public class ValueStringBuilderCopyToTests
         Encoding.UTF8.GetString(bytes).Should().Be("stream!");
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_TextWriter_DerivedStreamWriter_UsesGenericFallback()
     {
         // A subclass of StreamWriter does NOT match `writer.GetType() == typeof(StreamWriter)`,
@@ -114,7 +114,7 @@ public class ValueStringBuilderCopyToTests
         Encoding.UTF8.GetString(bytes).Should().Be("derived");
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_TextWriter_CustomTextWriter_WritesContent()
     {
         RecordingTextWriter writer = new();
@@ -129,7 +129,7 @@ public class ValueStringBuilderCopyToTests
 
     // ---------- Constructor (literalLength, formattedCount, provider) ----------
 
-    [Fact]
+    [Test]
     public void Constructor_LiteralLengthFormattedCount_Provider_UsesProvider()
     {
         // Use a culture whose number format differs from invariant so we can
@@ -141,7 +141,7 @@ public class ValueStringBuilderCopyToTests
         builder.ToString().Should().Be("1.234,5");
     }
 
-    [Fact]
+    [Test]
     public void Constructor_LiteralLengthFormattedCount_NullProvider_UsesCurrent()
     {
         using ValueStringBuilder builder = new(literalLength: 0, formattedCount: 1, provider: null);
@@ -161,7 +161,7 @@ public class ValueStringBuilderCopyToTests
     // boxing. These tests exercise that path and the DoubleRemaining grow
     // loop it sits inside.
 
-    [Fact]
+    [Test]
     public void AppendFormatted_CustomSpanFormattableStruct_AppendsFormattedValue()
     {
         using ValueStringBuilder builder = new(stackalloc char[32]);
@@ -176,7 +176,7 @@ public class ValueStringBuilderCopyToTests
     // representative of production behavior and that the test cannot
     // control. MemoryWatch is only meaningful when the JIT optimizations
     // it's measuring against are actually in effect.
-    [Fact]
+    [Test]
     public void AppendFormatted_CustomSpanFormattableStruct_DoesNotAllocate()
     {
         // Warm up the FormatterHelper<T> static (delegate creation
@@ -201,7 +201,7 @@ public class ValueStringBuilderCopyToTests
     }
 #endif
 
-    [Fact]
+    [Test]
     public void AppendFormatted_CustomSpanFormattableStruct_GrowsToFit()
     {
         // Start with a tiny buffer so the formatter's first TryFormat call

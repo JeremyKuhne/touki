@@ -65,7 +65,7 @@ public class MSBuildFileSystemPlaybackTests
         return copy;
     }
 
-    [Fact]
+    [Test]
     public void GetFiles_RecursiveCSharp_DiskAndPlaybackMatch()
     {
         string root = LocateRepoRoot();
@@ -73,14 +73,14 @@ public class MSBuildFileSystemPlaybackTests
         AssertDiskMatchesPlayback(root, "**/*.cs", excludes);
     }
 
-    [Fact]
+    [Test]
     public void GetFiles_TopLevelMarkdown_DiskAndPlaybackMatch()
     {
         string root = LocateRepoRoot();
         AssertDiskMatchesPlayback(root, "*.md", excludes: null);
     }
 
-    [Fact]
+    [Test]
     public void GetFiles_NoExcludes_DiskAndPlaybackMatch()
     {
         string root = LocateRepoRoot();

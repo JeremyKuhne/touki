@@ -6,7 +6,7 @@ namespace System.Runtime.CompilerServices;
 
 public class UnsafeExtensionsTests
 {
-    [Fact]
+    [Test]
     public void BitCast_FloatToUInt32_RoundTrips()
     {
         const float Value = 3.14159f;
@@ -15,7 +15,7 @@ public class UnsafeExtensionsTests
         roundTripped.Should().Be(Value);
     }
 
-    [Fact]
+    [Test]
     public void BitCast_DoubleToUInt64_MatchesBitConverter()
     {
         const double Value = -123.456;
@@ -23,7 +23,7 @@ public class UnsafeExtensionsTests
         bits.Should().Be((ulong)BitConverter.DoubleToInt64Bits(Value));
     }
 
-    [Fact]
+    [Test]
     public void BitCast_Int32ToFloat_PreservesBitPattern()
     {
         int bits = unchecked((int)0xC0490FDB);
@@ -31,14 +31,14 @@ public class UnsafeExtensionsTests
         result.Should().Be(BitConverter.Int32BitsToSingle(bits));
     }
 
-    [Fact]
+    [Test]
     public void BitCast_DifferentSizes_ThrowsNotSupportedException()
     {
         Action act = () => _ = Unsafe.BitCast<int, long>(1);
         act.Should().Throw<NotSupportedException>();
     }
 
-    [Fact]
+    [Test]
     public void BitCast_FromShortToUShort_RoundTrips()
     {
         const short Value = -1234;

@@ -19,26 +19,22 @@ namespace Touki.Io.Providers;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   The class shares <see cref="ClipboardTests"/>' <c>SequentialCollection</c>
+///   The class shares <see cref="ClipboardTests"/>' sequential <c>NotInParallel</c> group
 ///   so the clipboard is not touched by parallel tests. Tests skip at runtime on
 ///   non-Windows hosts because the .NET 10 build also runs on Linux and macOS.
 ///  </para>
 /// </remarks>
-[Collection("SequentialCollection")]
+[NotInParallel("Sequential")]
 [SupportedOSPlatform("windows5.1.2600")]
 public unsafe class WindowsClipboardProviderTests
 {
-    [RetryFact(
-        MaxRetries = 5,
-        Skip = "Clipboard is not available on this host.",
-        SkipUnless = nameof(Clipboard.IsAvailable),
-        SkipType = typeof(Clipboard))]
+    [Test, Retry(4), SkipUnlessClipboardAvailable]
     public void TryGetText_WhenClipboardHasZeroByteUnicodeTextHandle_ExercisesDefensivePath()
     {
 #if NET
         if (!OperatingSystem.IsWindows())
         {
-            Assert.Skip("Exercises Win32 PInvoke surface; Windows-only test.");
+            Skip.Test("Exercises Win32 PInvoke surface; Windows-only test.");
         }
 #endif
         string original = SnapshotText();
@@ -61,12 +57,11 @@ public unsafe class WindowsClipboardProviderTests
                     // Some Windows hosts (notably the Windows Server SKUs used by GitHub
                     // Actions runners) refuse SetClipboardData(CF_UNICODETEXT) with a
                     // zero-byte HGLOBAL. That is a property of the host's clipboard
-                    // subsystem, not a transient race, so RetryFact will not recover.
+                    // subsystem, not a transient race, so a retry will not recover.
                     // Free the orphan handle, then skip with a clear reason instead of
                     // silently returning success or hard-failing.
                     PInvoke.GlobalFree(hGlobal);
-                    Assert.Skip(
-                        "Host rejected SetClipboardData(CF_UNICODETEXT) with a zero-byte HGLOBAL; "
+                    Skip.Test("Host rejected SetClipboardData(CF_UNICODETEXT) with a zero-byte HGLOBAL; "
                         + "cannot exercise the zero-byte defensive path on this configuration.");
                 }
             }

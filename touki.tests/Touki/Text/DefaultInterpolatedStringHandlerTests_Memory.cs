@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Touki;
 
-[Collection("SequentialCollection")]
+[NotInParallel("Sequential")]
 public unsafe class DefaultInterpolatedStringHandlerTests_Memory
 {
     // On .NET Framework this is our implementation. On .NET we're getting built-in.
@@ -17,9 +17,9 @@ public unsafe class DefaultInterpolatedStringHandlerTests_Memory
     // string formatting (which will give different memory usage results occasionally).
 
 #pragma warning disable xUnit1004 // Test methods should not be skipped
-    [Theory(Skip = "No way to make this completely consistent, run manually.")]
+    [Test, Skip("No way to make this completely consistent, run manually.")]
 #pragma warning restore xUnit1004
-    [InlineData(DayOfWeek.Monday)]
+    [Arguments(DayOfWeek.Monday)]
     public void ValidateAllocations(DayOfWeek value)
     {
         StringBuilder builder = new(256);

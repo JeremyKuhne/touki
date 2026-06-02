@@ -8,7 +8,7 @@ namespace Touki.Exceptions;
 
 public class HResultExceptionTests
 {
-    [Fact]
+    [Test]
     public void HResultException_HResultCtor_FormatsHexMessage()
     {
         HRESULT hresult = (HRESULT)unchecked((int)0x80004005);
@@ -17,7 +17,7 @@ public class HResultExceptionTests
         exception.Message.Should().Be("HRESULT: 0x80004005");
     }
 
-    [Fact]
+    [Test]
     public void HResultException_IntMessageCtor_PreservesBoth()
     {
         HResultException exception = new(unchecked((int)0x80070005), "Access denied");
@@ -25,7 +25,7 @@ public class HResultExceptionTests
         exception.Message.Should().Be("Access denied");
     }
 
-    [Fact]
+    [Test]
     public void HResultException_ZeroSuccessHResult_PreservesValue()
     {
         HRESULT hresult = (HRESULT)0;
@@ -34,7 +34,7 @@ public class HResultExceptionTests
         exception.Message.Should().Be("HRESULT: 0x00000000");
     }
 
-    [Fact]
+    [Test]
     public void InvalidOperationHResultException_HResultCtor_FormatsHexMessage()
     {
         HRESULT hresult = (HRESULT)unchecked((int)0x80004001);
@@ -43,7 +43,7 @@ public class HResultExceptionTests
         exception.Message.Should().Be("Invalid operation HRESULT: 0x80004001");
     }
 
-    [Fact]
+    [Test]
     public void InvalidOperationHResultException_IntMessageCtor_PreservesBoth()
     {
         InvalidOperationHResultException exception = new(unchecked((int)0x8000FFFF), "Catastrophic failure");

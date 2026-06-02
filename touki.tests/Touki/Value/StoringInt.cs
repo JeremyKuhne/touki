@@ -6,30 +6,30 @@ namespace Touki;
 
 public class StoringInt
 {
-    public static TheoryData<int> IntData => new()
+    public static IEnumerable<int> IntData()
     {
-        { 0 },
-        { 42 },
-        { int.MaxValue },
-        { int.MinValue }
-    };
+        yield return 0;
+        yield return 42;
+        yield return int.MaxValue;
+        yield return int.MinValue;
+    }
 
-    [Theory]
-    [MemberData(nameof(IntData))]
+    [Test]
+    [MethodDataSource(nameof(IntData))]
     public void IntImplicit(int @int)
     {
         Value value = @int;
-        Assert.Equal(@int, value.As<int>());
-        Assert.Equal(typeof(int), value.Type);
+        value.As<int>().Should().Be(@int);
+        value.Type.Should().Be(typeof(int));
 
         int? source = @int;
         value = source;
-        Assert.Equal(source, value.As<int?>());
-        Assert.Equal(typeof(int), value.Type);
+        value.As<int?>().Should().Be(source);
+        value.Type.Should().Be(typeof(int));
     }
 
-    [Theory]
-    [MemberData(nameof(IntData))]
+    [Test]
+    [MethodDataSource(nameof(IntData))]
     public void IntCreate(int @int)
     {
         Value value;
@@ -38,8 +38,8 @@ public class StoringInt
             value = Value.Create(@int);
         }
 
-        Assert.Equal(@int, value.As<int>());
-        Assert.Equal(typeof(int), value.Type);
+        value.As<int>().Should().Be(@int);
+        value.Type.Should().Be(typeof(int));
 
         int? source = @int;
 
@@ -48,100 +48,100 @@ public class StoringInt
             value = Value.Create(source);
         }
 
-        Assert.Equal(source, value.As<int?>());
-        Assert.Equal(typeof(int), value.Type);
+        value.As<int?>().Should().Be(source);
+        value.Type.Should().Be(typeof(int));
     }
 
-    [Theory]
-    [MemberData(nameof(IntData))]
+    [Test]
+    [MethodDataSource(nameof(IntData))]
     public void IntInOut(int @int)
     {
         Value value = @int;
         bool success = value.TryGetValue(out int result);
-        Assert.True(success);
-        Assert.Equal(@int, result);
+        success.Should().BeTrue();
+        result.Should().Be(@int);
 
-        Assert.Equal(@int, value.As<int>());
-        Assert.Equal(@int, (int)value);
+        value.As<int>().Should().Be(@int);
+        ((int)value).Should().Be(@int);
     }
 
-    [Theory]
-    [MemberData(nameof(IntData))]
+    [Test]
+    [MethodDataSource(nameof(IntData))]
     public void NullableIntInIntOut(int @int)
     {
         int? source = @int;
         Value value = source;
 
         bool success = value.TryGetValue(out int result);
-        Assert.True(success);
-        Assert.Equal(@int, result);
+        success.Should().BeTrue();
+        result.Should().Be(@int);
 
-        Assert.Equal(@int, value.As<int>());
+        value.As<int>().Should().Be(@int);
 
-        Assert.Equal(@int, (int)value);
+        ((int)value).Should().Be(@int);
     }
 
-    [Theory]
-    [MemberData(nameof(IntData))]
+    [Test]
+    [MethodDataSource(nameof(IntData))]
     public void IntInNullableIntOut(int @int)
     {
         int source = @int;
         Value value = source;
-        Assert.True(value.TryGetValue(out int? result));
-        Assert.Equal(@int, result);
+        value.TryGetValue(out int? result).Should().BeTrue();
+        result.Should().Be(@int);
 
-        Assert.Equal(@int, (int?)value);
+        ((int?)value).Should().Be(@int);
     }
 
-    [Theory]
-    [MemberData(nameof(IntData))]
+    [Test]
+    [MethodDataSource(nameof(IntData))]
     public void BoxedInt(int @int)
     {
         int i = @int;
         object o = i;
         Value value = Value.Create(o);
 
-        Assert.Equal(typeof(int), value.Type);
-        Assert.True(value.TryGetValue(out int result));
-        Assert.Equal(@int, result);
-        Assert.True(value.TryGetValue(out int? nullableResult));
-        Assert.Equal(@int, nullableResult!.Value);
+        value.Type.Should().Be(typeof(int));
+        value.TryGetValue(out int result).Should().BeTrue();
+        result.Should().Be(@int);
+        value.TryGetValue(out int? nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@int);
 
 
         int? n = @int;
         o = n;
         value = Value.Create(o);
 
-        Assert.Equal(typeof(int), value.Type);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@int, result);
-        Assert.True(value.TryGetValue(out nullableResult));
-        Assert.Equal(@int, nullableResult!.Value);
+        value.Type.Should().Be(typeof(int));
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@int);
+        value.TryGetValue(out nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@int);
     }
 
-    [Fact]
+    [Test]
     public void NullInt()
     {
         int? source = null;
         Value value = source;
-        Assert.Null(value.Type);
-        Assert.Equal(source, value.As<int?>());
-        Assert.False(value.As<int?>().HasValue);
+        value.Type.Should().BeNull();
+        value.As<int?>().Should().Be(source);
+        value.As<int?>().HasValue.Should().BeFalse();
     }
 
-    [Theory]
-    [MemberData(nameof(IntData))]
+    [Test]
+    [MethodDataSource(nameof(IntData))]
     public void OutAsObject(int @int)
     {
         Value value = @int;
         object o = value.As<object>();
-        Assert.Equal(typeof(int), o.GetType());
-        Assert.Equal(@int, (int)o);
+        o.GetType().Should().Be(typeof(int));
+        ((int)o).Should().Be(@int);
 
         int? n = @int;
         value = n;
         o = value.As<object>();
-        Assert.Equal(typeof(int), o.GetType());
-        Assert.Equal(@int, (int)o);
+        o.GetType().Should().Be(typeof(int));
+        ((int)o).Should().Be(@int);
     }
 }

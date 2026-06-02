@@ -6,29 +6,29 @@ namespace Touki;
 
 public class StoringByte
 {
-    public static TheoryData<byte> ByteData => new()
+    public static IEnumerable<byte> ByteData()
     {
-        { 42 },
-        { byte.MaxValue },
-        { byte.MinValue }
-    };
+        yield return 42;
+        yield return byte.MaxValue;
+        yield return byte.MinValue;
+    }
 
-    [Theory]
-    [MemberData(nameof(ByteData))]
+    [Test]
+    [MethodDataSource(nameof(ByteData))]
     public void ByteImplicit(byte @byte)
     {
         Value value = @byte;
-        Assert.Equal(@byte, value.As<byte>());
-        Assert.Equal(typeof(byte), value.Type);
+        value.As<byte>().Should().Be(@byte);
+        value.Type.Should().Be(typeof(byte));
 
         byte? source = @byte;
         value = source;
-        Assert.Equal(source, value.As<byte?>());
-        Assert.Equal(typeof(byte), value.Type);
+        value.As<byte?>().Should().Be(source);
+        value.Type.Should().Be(typeof(byte));
     }
 
-    [Theory]
-    [MemberData(nameof(ByteData))]
+    [Test]
+    [MethodDataSource(nameof(ByteData))]
     public void ByteCreate(byte @byte)
     {
         Value value;
@@ -37,8 +37,8 @@ public class StoringByte
             value = Value.Create(@byte);
         }
 
-        Assert.Equal(@byte, value.As<byte>());
-        Assert.Equal(typeof(byte), value.Type);
+        value.As<byte>().Should().Be(@byte);
+        value.Type.Should().Be(typeof(byte));
 
         byte? source = @byte;
 
@@ -47,101 +47,101 @@ public class StoringByte
             value = Value.Create(source);
         }
 
-        Assert.Equal(source, value.As<byte?>());
-        Assert.Equal(typeof(byte), value.Type);
+        value.As<byte?>().Should().Be(source);
+        value.Type.Should().Be(typeof(byte));
     }
 
-    [Theory]
-    [MemberData(nameof(ByteData))]
+    [Test]
+    [MethodDataSource(nameof(ByteData))]
     public void ByteInOut(byte @byte)
     {
         Value value = @byte;
         bool success = value.TryGetValue(out byte result);
-        Assert.True(success);
-        Assert.Equal(@byte, result);
+        success.Should().BeTrue();
+        result.Should().Be(@byte);
 
-        Assert.Equal(@byte, value.As<byte>());
-        Assert.Equal(@byte, (byte)value);
+        value.As<byte>().Should().Be(@byte);
+        ((byte)value).Should().Be(@byte);
     }
 
-    [Theory]
-    [MemberData(nameof(ByteData))]
+    [Test]
+    [MethodDataSource(nameof(ByteData))]
     public void NullableByteInByteOut(byte @byte)
     {
         byte? source = @byte;
         Value value = source;
 
         bool success = value.TryGetValue(out byte result);
-        Assert.True(success);
-        Assert.Equal(@byte, result);
+        success.Should().BeTrue();
+        result.Should().Be(@byte);
 
-        Assert.Equal(@byte, value.As<byte>());
+        value.As<byte>().Should().Be(@byte);
 
-        Assert.Equal(@byte, (byte)value);
+        ((byte)value).Should().Be(@byte);
     }
 
-    [Theory]
-    [MemberData(nameof(ByteData))]
+    [Test]
+    [MethodDataSource(nameof(ByteData))]
     public void ByteInNullableByteOut(byte @byte)
     {
         byte source = @byte;
         Value value = source;
         bool success = value.TryGetValue(out byte? result);
-        Assert.True(success);
-        Assert.Equal(@byte, result);
+        success.Should().BeTrue();
+        result.Should().Be(@byte);
 
-        Assert.Equal(@byte, (byte?)value);
+        ((byte?)value).Should().Be(@byte);
     }
 
-    [Theory]
-    [MemberData(nameof(ByteData))]
+    [Test]
+    [MethodDataSource(nameof(ByteData))]
     public void BoxedByte(byte @byte)
     {
         byte i = @byte;
         object o = i;
         Value value = Value.Create(o);
 
-        Assert.Equal(typeof(byte), value.Type);
-        Assert.True(value.TryGetValue(out byte result));
-        Assert.Equal(@byte, result);
-        Assert.True(value.TryGetValue(out byte? nullableResult));
-        Assert.Equal(@byte, nullableResult!.Value);
+        value.Type.Should().Be(typeof(byte));
+        value.TryGetValue(out byte result).Should().BeTrue();
+        result.Should().Be(@byte);
+        value.TryGetValue(out byte? nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@byte);
 
 
         byte? n = @byte;
         o = n;
         value = Value.Create(o);
 
-        Assert.Equal(typeof(byte), value.Type);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@byte, result);
-        Assert.True(value.TryGetValue(out nullableResult));
-        Assert.Equal(@byte, nullableResult!.Value);
+        value.Type.Should().Be(typeof(byte));
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@byte);
+        value.TryGetValue(out nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@byte);
     }
 
-    [Fact]
+    [Test]
     public void NullByte()
     {
         byte? source = null;
         Value value = source;
-        Assert.Null(value.Type);
-        Assert.Equal(source, value.As<byte?>());
-        Assert.False(value.As<byte?>().HasValue);
+        value.Type.Should().BeNull();
+        value.As<byte?>().Should().Be(source);
+        value.As<byte?>().HasValue.Should().BeFalse();
     }
 
-    [Theory]
-    [MemberData(nameof(ByteData))]
+    [Test]
+    [MethodDataSource(nameof(ByteData))]
     public void OutAsObject(byte @byte)
     {
         Value value = @byte;
         object o = value.As<object>();
-        Assert.Equal(typeof(byte), o.GetType());
-        Assert.Equal(@byte, (byte)o);
+        o.GetType().Should().Be(typeof(byte));
+        ((byte)o).Should().Be(@byte);
 
         byte? n = @byte;
         value = n;
         o = value.As<object>();
-        Assert.Equal(typeof(byte), o.GetType());
-        Assert.Equal(@byte, (byte)o);
+        o.GetType().Should().Be(typeof(byte));
+        ((byte)o).Should().Be(@byte);
     }
 }

@@ -37,7 +37,7 @@ namespace Touki.Io.Globbing;
 /// </remarks>
 public class NegationPruningBashOracleTests
 {
-    public static TheoryData<string> NegationPatterns =>
+    public static IEnumerable<string> NegationPatterns() =>
     [
         // First-segment anchored negation.
         "!(bin|obj)/**/*.cs",
@@ -53,14 +53,14 @@ public class NegationPruningBashOracleTests
         "**/*.cs",
     ];
 
-    [Theory]
-    [MemberData(nameof(NegationPatterns))]
+    [Test]
+    [MethodDataSource(nameof(NegationPatterns))]
     public void Enumerate_DirectoryPruning_AgreesWithBash(string pattern)
     {
         string? bashPath = BashInterop.ResolveBashPath();
         if (bashPath is null)
         {
-            Assert.Skip("bash oracle requires bash 4+ on PATH (or Git for Windows installed).");
+            Skip.Test("bash oracle requires bash 4+ on PATH (or Git for Windows installed).");
             return;
         }
 

@@ -6,30 +6,30 @@ namespace Touki;
 
 public class StoringLong
 {
-    public static TheoryData<long> LongData => new()
+    public static IEnumerable<long> LongData()
     {
-        { 0 },
-        { 42 },
-        { long.MaxValue },
-        { long.MinValue }
-    };
+        yield return 0;
+        yield return 42;
+        yield return long.MaxValue;
+        yield return long.MinValue;
+    }
 
-    [Theory]
-    [MemberData(nameof(LongData))]
+    [Test]
+    [MethodDataSource(nameof(LongData))]
     public void LongImplicit(long @long)
     {
         Value value = @long;
-        Assert.Equal(@long, value.As<long>());
-        Assert.Equal(typeof(long), value.Type);
+        value.As<long>().Should().Be(@long);
+        value.Type.Should().Be(typeof(long));
 
         long? source = @long;
         value = source;
-        Assert.Equal(source, value.As<long>());
-        Assert.Equal(typeof(long), value.Type);
+        value.As<long>().Should().Be(source);
+        value.Type.Should().Be(typeof(long));
     }
 
-    [Theory]
-    [MemberData(nameof(LongData))]
+    [Test]
+    [MethodDataSource(nameof(LongData))]
     public void LongCreate(long @long)
     {
         Value value;
@@ -38,8 +38,8 @@ public class StoringLong
             value = Value.Create(@long);
         }
 
-        Assert.Equal(@long, value.As<long>());
-        Assert.Equal(typeof(long), value.Type);
+        value.As<long>().Should().Be(@long);
+        value.Type.Should().Be(typeof(long));
 
         long? source = @long;
 
@@ -48,101 +48,101 @@ public class StoringLong
             value = Value.Create(source);
         }
 
-        Assert.Equal(source, value.As<long?>());
-        Assert.Equal(typeof(long), value.Type);
+        value.As<long?>().Should().Be(source);
+        value.Type.Should().Be(typeof(long));
     }
 
-    [Theory]
-    [MemberData(nameof(LongData))]
+    [Test]
+    [MethodDataSource(nameof(LongData))]
     public void LongInOut(long @long)
     {
         Value value = @long;
         bool success = value.TryGetValue(out long result);
-        Assert.True(success);
-        Assert.Equal(@long, result);
+        success.Should().BeTrue();
+        result.Should().Be(@long);
 
-        Assert.Equal(@long, value.As<long>());
-        Assert.Equal(@long, (long)value);
+        value.As<long>().Should().Be(@long);
+        ((long)value).Should().Be(@long);
     }
 
-    [Theory]
-    [MemberData(nameof(LongData))]
+    [Test]
+    [MethodDataSource(nameof(LongData))]
     public void NullableLongInLongOut(long @long)
     {
         long? source = @long;
         Value value = source;
 
         bool success = value.TryGetValue(out long result);
-        Assert.True(success);
-        Assert.Equal(@long, result);
+        success.Should().BeTrue();
+        result.Should().Be(@long);
 
-        Assert.Equal(@long, value.As<long>());
+        value.As<long>().Should().Be(@long);
 
-        Assert.Equal(@long, (long)value);
+        ((long)value).Should().Be(@long);
     }
 
-    [Theory]
-    [MemberData(nameof(LongData))]
+    [Test]
+    [MethodDataSource(nameof(LongData))]
     public void LongInNullableLongOut(long @long)
     {
         long source = @long;
         Value value = source;
         bool success = value.TryGetValue(out long? result);
-        Assert.True(success);
-        Assert.Equal(@long, result);
+        success.Should().BeTrue();
+        result.Should().Be(@long);
 
-        Assert.Equal(@long, (long?)value);
+        ((long?)value).Should().Be(@long);
     }
 
-    [Theory]
-    [MemberData(nameof(LongData))]
+    [Test]
+    [MethodDataSource(nameof(LongData))]
     public void BoxedLong(long @long)
     {
         long i = @long;
         object o = i;
         Value value = Value.Create(o);
 
-        Assert.Equal(typeof(long), value.Type);
-        Assert.True(value.TryGetValue(out long result));
-        Assert.Equal(@long, result);
-        Assert.True(value.TryGetValue(out long? nullableResult));
-        Assert.Equal(@long, nullableResult!.Value);
+        value.Type.Should().Be(typeof(long));
+        value.TryGetValue(out long result).Should().BeTrue();
+        result.Should().Be(@long);
+        value.TryGetValue(out long? nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@long);
 
 
         long? n = @long;
         o = n;
         value = Value.Create(o);
 
-        Assert.Equal(typeof(long), value.Type);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@long, result);
-        Assert.True(value.TryGetValue(out nullableResult));
-        Assert.Equal(@long, nullableResult!.Value);
+        value.Type.Should().Be(typeof(long));
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@long);
+        value.TryGetValue(out nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@long);
     }
 
-    [Fact]
+    [Test]
     public void NullLong()
     {
         long? source = null;
         Value value = source;
-        Assert.Null(value.Type);
-        Assert.Equal(source, value.As<long?>());
-        Assert.False(value.As<long?>().HasValue);
+        value.Type.Should().BeNull();
+        value.As<long?>().Should().Be(source);
+        value.As<long?>().HasValue.Should().BeFalse();
     }
 
-    [Theory]
-    [MemberData(nameof(LongData))]
+    [Test]
+    [MethodDataSource(nameof(LongData))]
     public void OutAsObject(long @long)
     {
         Value value = @long;
         object o = value.As<object>();
-        Assert.Equal(typeof(long), o.GetType());
-        Assert.Equal(@long, (long)o);
+        o.GetType().Should().Be(typeof(long));
+        ((long)o).Should().Be(@long);
 
         long? n = @long;
         value = n;
         o = value.As<object>();
-        Assert.Equal(typeof(long), o.GetType());
-        Assert.Equal(@long, (long)o);
+        o.GetType().Should().Be(typeof(long));
+        ((long)o).Should().Be(@long);
     }
 }

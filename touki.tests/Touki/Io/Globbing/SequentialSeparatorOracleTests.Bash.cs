@@ -13,37 +13,37 @@ namespace Touki.Io.Globbing;
 /// </summary>
 public class SequentialSeparatorBashOracleTests
 {
-    [Theory]
-    [InlineData("a//b", "a/b")]
-    [InlineData("a//b", "a//b")]
-    [InlineData("a//b", "a///b")]
-    [InlineData("a//b", "ab")]
-    [InlineData("a//b", "a/x/b")]
-    [InlineData("a///b", "a/b")]
-    [InlineData("a///b", "a//b")]
-    [InlineData("a////b", "a/b")]
-    [InlineData("//a", "/a")]
-    [InlineData("//a", "//a")]
-    [InlineData("//a", "a")]
-    [InlineData("a//", "a/")]
-    [InlineData("a//", "a//")]
-    [InlineData("a//", "a")]
-    [InlineData("a//*", "a/b")]
-    [InlineData("a//*", "a//b")]
-    [InlineData("*//b", "a/b")]
-    [InlineData("*//b", "a//b")]
-    [InlineData("**//*.cs", "Foo.cs")]
-    [InlineData("**//*.cs", "src/Foo.cs")]
-    [InlineData("**//*.cs", "src/sub/Foo.cs")]
-    [InlineData("a//**//b", "a/b")]
-    [InlineData("a//**//b", "a/x/b")]
-    [InlineData("a//**//b", "a/x/y/b")]
+    [Test]
+    [Arguments("a//b", "a/b")]
+    [Arguments("a//b", "a//b")]
+    [Arguments("a//b", "a///b")]
+    [Arguments("a//b", "ab")]
+    [Arguments("a//b", "a/x/b")]
+    [Arguments("a///b", "a/b")]
+    [Arguments("a///b", "a//b")]
+    [Arguments("a////b", "a/b")]
+    [Arguments("//a", "/a")]
+    [Arguments("//a", "//a")]
+    [Arguments("//a", "a")]
+    [Arguments("a//", "a/")]
+    [Arguments("a//", "a//")]
+    [Arguments("a//", "a")]
+    [Arguments("a//*", "a/b")]
+    [Arguments("a//*", "a//b")]
+    [Arguments("*//b", "a/b")]
+    [Arguments("*//b", "a//b")]
+    [Arguments("**//*.cs", "Foo.cs")]
+    [Arguments("**//*.cs", "src/Foo.cs")]
+    [Arguments("**//*.cs", "src/sub/Foo.cs")]
+    [Arguments("a//**//b", "a/b")]
+    [Arguments("a//**//b", "a/x/b")]
+    [Arguments("a//**//b", "a/x/y/b")]
     public void IsMatch_BashDialect_SequentialSeparators_AgreesWithBash(string pattern, string input)
     {
         string? bashPath = BashInterop.ResolveBashPath();
         if (bashPath is null)
         {
-            Assert.Skip("bash oracle requires bash on PATH (or Git for Windows installed).");
+            Skip.Test("bash oracle requires bash on PATH (or Git for Windows installed).");
             return;
         }
 

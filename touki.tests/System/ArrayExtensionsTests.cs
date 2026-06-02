@@ -6,7 +6,7 @@ namespace System;
 
 public class ArrayExtensionsTests
 {
-    [Fact]
+    [Test]
     public void Fill_FillsAllElements()
     {
         int[] array = new int[5];
@@ -14,7 +14,7 @@ public class ArrayExtensionsTests
         array.Should().Equal(7, 7, 7, 7, 7);
     }
 
-    [Fact]
+    [Test]
     public void Fill_EmptyArray_NoOp()
     {
         int[] array = [];
@@ -22,7 +22,7 @@ public class ArrayExtensionsTests
         array.Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void Fill_Range_FillsOnlySpecifiedElements()
     {
         int[] array = new int[5];
@@ -30,7 +30,7 @@ public class ArrayExtensionsTests
         array.Should().Equal(0, 9, 9, 9, 0);
     }
 
-    [Fact]
+    [Test]
     public void Fill_Range_FullArray_FillsAll()
     {
         int[] array = new int[5];
@@ -38,7 +38,7 @@ public class ArrayExtensionsTests
         array.Should().Equal(1, 1, 1, 1, 1);
     }
 
-    [Fact]
+    [Test]
     public void Fill_Range_ZeroCount_NoChange()
     {
         int[] array = [1, 2, 3];
@@ -46,21 +46,21 @@ public class ArrayExtensionsTests
         array.Should().Equal(1, 2, 3);
     }
 
-    [Fact]
+    [Test]
     public void Fill_NullArray_Throws()
     {
         Action action = () => Array.Fill<int>(null!, 0);
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void Fill_Range_NullArray_Throws()
     {
         Action action = () => Array.Fill<int>(null!, 0, 0, 0);
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Test]
     public void Fill_Range_NegativeStartIndex_Throws()
     {
         int[] array = new int[5];
@@ -68,7 +68,7 @@ public class ArrayExtensionsTests
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Fill_Range_StartIndexBeyondLength_Throws()
     {
         int[] array = new int[5];
@@ -76,7 +76,7 @@ public class ArrayExtensionsTests
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Fill_Range_CountTooLarge_Throws()
     {
         int[] array = new int[5];
@@ -84,7 +84,7 @@ public class ArrayExtensionsTests
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Fill_ReferenceType_AssignsSameReference()
     {
         string[] array = new string[3];
@@ -92,7 +92,7 @@ public class ArrayExtensionsTests
         array.Should().Equal("x", "x", "x");
     }
 
-    [Fact]
+    [Test]
     public void Fill_Range_NegativeCount_Throws()
     {
         int[] array = new int[5];
@@ -100,7 +100,7 @@ public class ArrayExtensionsTests
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Fill_Range_StartIndexAtLength_ZeroCount_DoesNotThrow()
     {
         // BCL: startIndex == length is valid as long as count is 0.
@@ -109,7 +109,7 @@ public class ArrayExtensionsTests
         array.Should().Equal(0, 0, 0);
     }
 
-    [Fact]
+    [Test]
     public void Fill_Range_StartIndexAtLength_NonZeroCount_Throws()
     {
         int[] array = new int[3];
@@ -117,7 +117,7 @@ public class ArrayExtensionsTests
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Fact]
+    [Test]
     public void Fill_OverwritesExistingValues()
     {
         int[] array = [1, 2, 3, 4, 5];
@@ -125,7 +125,7 @@ public class ArrayExtensionsTests
         array.Should().Equal(0, 0, 0, 0, 0);
     }
 
-    [Fact]
+    [Test]
     public void Fill_Range_OverwritesOnlyRange()
     {
         int[] array = [1, 2, 3, 4, 5];
@@ -133,7 +133,7 @@ public class ArrayExtensionsTests
         array.Should().Equal(1, 0, 0, 0, 5);
     }
 
-    [Fact]
+    [Test]
     public void Fill_Range_NullValue_AllowedForReferenceType()
     {
         string[] array = ["a", "b", "c"];

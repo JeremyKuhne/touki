@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -7,70 +7,70 @@
 
 namespace System.Threading;
 
-public static class LockTests
+public class LockTests
 {
 #pragma warning disable CS9216 // casting Lock to object
-    [Fact]
-    public static void LockStatementWithLockVsMonitor()
+    [Test]
+    public void LockStatementWithLockVsMonitor()
     {
         Lock lockObj = new();
         lock (lockObj)
         {
-            Assert.True(lockObj.IsHeldByCurrentThread);
-            Assert.False(Monitor.IsEntered(lockObj));
+            lockObj.IsHeldByCurrentThread.Should().BeTrue();
+            Monitor.IsEntered(lockObj).Should().BeFalse();
         }
 
         lock ((object)lockObj)
         {
-            Assert.False(lockObj.IsHeldByCurrentThread);
-            Assert.True(Monitor.IsEntered(lockObj));
+            lockObj.IsHeldByCurrentThread.Should().BeFalse();
+            Monitor.IsEntered(lockObj).Should().BeTrue();
         }
 
         LockOnTWhereTIsLock(lockObj);
 
         static void LockOnTWhereTIsLock<T>(T lockObj) where T : class
         {
-            Assert.IsType<Lock>(lockObj);
+            lockObj.Should().BeOfType<Lock>();
             lock (lockObj)
             {
-                Assert.False(((Lock)(object)lockObj).IsHeldByCurrentThread);
-                Assert.True(Monitor.IsEntered(lockObj));
+                ((Lock)(object)lockObj).IsHeldByCurrentThread.Should().BeFalse();
+                Monitor.IsEntered(lockObj).Should().BeTrue();
             }
         }
     }
 #pragma warning restore CS9216
 
     // Attempts a single recursive acquisition/release cycle of a newly-created lock.
-    [Fact]
-    public static void BasicRecursion()
+    [Test]
+    public void BasicRecursion()
     {
         Lock lockObj = new();
-        Assert.True(lockObj.TryEnter());
-        Assert.True(lockObj.TryEnter());
+        lockObj.TryEnter().Should().BeTrue();
+        lockObj.TryEnter().Should().BeTrue();
         lockObj.Exit();
-        Assert.True(lockObj.IsHeldByCurrentThread);
+        lockObj.IsHeldByCurrentThread.Should().BeTrue();
         lockObj.Enter();
-        Assert.True(lockObj.IsHeldByCurrentThread);
+        lockObj.IsHeldByCurrentThread.Should().BeTrue();
         lockObj.Exit();
 
         using (lockObj.EnterScope())
         {
-            Assert.True(lockObj.IsHeldByCurrentThread);
+            lockObj.IsHeldByCurrentThread.Should().BeTrue();
         }
 
         lock (lockObj)
         {
-            Assert.True(lockObj.IsHeldByCurrentThread);
+            lockObj.IsHeldByCurrentThread.Should().BeTrue();
         }
 
-        Assert.True(lockObj.IsHeldByCurrentThread);
+        lockObj.IsHeldByCurrentThread.Should().BeTrue();
         lockObj.Exit();
-        Assert.False(lockObj.IsHeldByCurrentThread);
+        lockObj.IsHeldByCurrentThread.Should().BeFalse();
     }
 
     // Attempts to overflow the recursion count of a newly-created lock.
-    [Fact]
-    public static void DeepRecursion()
+    [Test]
+    public void DeepRecursion()
     {
         Lock lockObj = new();
         const int successLimit = 10000;
@@ -78,37 +78,37 @@ public static class LockTests
         int i = 0;
         for (; i < successLimit; i++)
         {
-            Assert.True(lockObj.TryEnter());
+            lockObj.TryEnter().Should().BeTrue();
         }
 
         for (; i > 1; i--)
         {
             lockObj.Exit();
-            Assert.True(lockObj.IsHeldByCurrentThread);
+            lockObj.IsHeldByCurrentThread.Should().BeTrue();
         }
 
         lockObj.Exit();
-        Assert.False(lockObj.IsHeldByCurrentThread);
+        lockObj.IsHeldByCurrentThread.Should().BeFalse();
     }
 
-    [Fact]
-    public static void IsHeldByCurrentThread()
+    [Test]
+    public void IsHeldByCurrentThread()
     {
         Lock lockObj = new();
-        Assert.False(lockObj.IsHeldByCurrentThread);
+        lockObj.IsHeldByCurrentThread.Should().BeFalse();
         using (lockObj.EnterScope())
         {
-            Assert.True(lockObj.IsHeldByCurrentThread);
+            lockObj.IsHeldByCurrentThread.Should().BeTrue();
         }
         lock (lockObj)
         {
-            Assert.True(lockObj.IsHeldByCurrentThread);
+            lockObj.IsHeldByCurrentThread.Should().BeTrue();
         }
-        Assert.False(lockObj.IsHeldByCurrentThread);
+        lockObj.IsHeldByCurrentThread.Should().BeFalse();
     }
 
-    [Fact]
-    public static void IsHeldByCurrentThread_WhenHeldBySomeoneElse()
+    [Test]
+    public void IsHeldByCurrentThread_WhenHeldBySomeoneElse()
     {
         Lock lockObj = new();
         var b = new Barrier(2);
@@ -117,32 +117,30 @@ public static class LockTests
         {
             using (lockObj.EnterScope())
             {
-                b.SignalAndWait(TestContext.Current.CancellationToken);
-                Assert.True(lockObj.IsHeldByCurrentThread);
-                b.SignalAndWait(TestContext.Current.CancellationToken);
+                b.SignalAndWait(CancellationToken.None);
+                lockObj.IsHeldByCurrentThread.Should().BeTrue();
+                b.SignalAndWait(CancellationToken.None);
             }
         },
-        TestContext.Current.CancellationToken);
+        CancellationToken.None);
 
-        b.SignalAndWait(TestContext.Current.CancellationToken);
-        Assert.False(lockObj.IsHeldByCurrentThread);
-        b.SignalAndWait(TestContext.Current.CancellationToken);
+        b.SignalAndWait(CancellationToken.None);
+        lockObj.IsHeldByCurrentThread.Should().BeFalse();
+        b.SignalAndWait(CancellationToken.None);
 
-#pragma warning disable xUnit1031 // Do not use blocking task operations in test method
-        t.Wait(TestContext.Current.CancellationToken);
-#pragma warning restore xUnit1031
+        t.Wait(CancellationToken.None);
     }
 
-    [Fact]
-    public static void Exit_Invalid()
+    [Test]
+    public void Exit_Invalid()
     {
         Lock lockObj = new();
         Assert.Throws<SynchronizationLockException>(lockObj.Exit);
         default(Lock.Scope).Dispose();
     }
 
-    [Fact]
-    public static void Exit_WhenHeldBySomeoneElse_ThrowsSynchronizationLockException()
+    [Test]
+    public void Exit_WhenHeldBySomeoneElse_ThrowsSynchronizationLockException()
     {
         Lock lockObj = new();
         var b = new Barrier(2);
@@ -157,13 +155,13 @@ public static class LockTests
         {
             using (lockObj.EnterScope())
             {
-                b.SignalAndWait(TestContext.Current.CancellationToken);
-                b.SignalAndWait(TestContext.Current.CancellationToken);
+                b.SignalAndWait(CancellationToken.None);
+                b.SignalAndWait(CancellationToken.None);
             }
         },
-        TestContext.Current.CancellationToken);
+        CancellationToken.None);
 
-        b.SignalAndWait(TestContext.Current.CancellationToken);
+        b.SignalAndWait(CancellationToken.None);
 
         Assert.Throws<SynchronizationLockException>(lockObj.Exit);
 
@@ -182,14 +180,12 @@ public static class LockTests
             Assert.Fail($"Expected SynchronizationLockException but got a different exception instead: {ex}");
         }
 
-        b.SignalAndWait(TestContext.Current.CancellationToken);
-#pragma warning disable xUnit1031 // Do not use blocking task operations in test method
-        t.Wait(TestContext.Current.CancellationToken);
-#pragma warning restore xUnit1031
+        b.SignalAndWait(CancellationToken.None);
+        t.Wait(CancellationToken.None);
     }
 
-    [Fact]
-    public static void TryEnter_Invalid()
+    [Test]
+    public void TryEnter_Invalid()
     {
         Lock lockObj = new();
 
@@ -198,8 +194,8 @@ public static class LockTests
         Assert.Throws<ArgumentOutOfRangeException>(() => lockObj.TryEnter(TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
     }
 
-    [Fact]
-    public static void Enter_HasToWait()
+    [Test]
+    public void Enter_HasToWait()
     {
         Lock lockObj = new();
 
@@ -227,14 +223,14 @@ public static class LockTests
             backgroundTestDelegates.Add(() =>
             {
                 readyBarrier!.SignalAndWait();
-                Assert.True(lockObj.TryEnter(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+                lockObj.TryEnter(ThreadTestHelpers.UnexpectedTimeoutMilliseconds).Should().BeTrue();
                 lockObj.Exit();
             });
 
             backgroundTestDelegates.Add(() =>
             {
                 readyBarrier!.SignalAndWait();
-                Assert.True(lockObj.TryEnter(TimeSpan.FromMilliseconds(ThreadTestHelpers.UnexpectedTimeoutMilliseconds)));
+                lockObj.TryEnter(TimeSpan.FromMilliseconds(ThreadTestHelpers.UnexpectedTimeoutMilliseconds)).Should().BeTrue();
                 lockObj.Exit();
             });
 
@@ -253,7 +249,7 @@ public static class LockTests
 
             using (lockObj.EnterScope())
             {
-                readyBarrier.SignalAndWait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds, TestContext.Current.CancellationToken);
+                readyBarrier.SignalAndWait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds, CancellationToken.None);
                 Thread.Sleep(ThreadTestHelpers.ExpectedTimeoutMilliseconds);
             }
             foreach (Action waitForThread in waitForThreadArray)
@@ -269,13 +265,13 @@ public static class LockTests
             backgroundTestDelegates.Add(() =>
             {
                 readyBarrier!.SignalAndWait();
-                Assert.False(lockObj.TryEnter(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+                lockObj.TryEnter(ThreadTestHelpers.ExpectedTimeoutMilliseconds).Should().BeFalse();
             });
 
             backgroundTestDelegates.Add(() =>
             {
                 readyBarrier!.SignalAndWait();
-                Assert.False(lockObj.TryEnter(TimeSpan.FromMilliseconds(ThreadTestHelpers.ExpectedTimeoutMilliseconds)));
+                lockObj.TryEnter(TimeSpan.FromMilliseconds(ThreadTestHelpers.ExpectedTimeoutMilliseconds)).Should().BeFalse();
             });
 
             int testCount = backgroundTestDelegates.Count;
@@ -293,7 +289,7 @@ public static class LockTests
 
             using (lockObj.EnterScope())
             {
-                readyBarrier.SignalAndWait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds, TestContext.Current.CancellationToken);
+                readyBarrier.SignalAndWait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds, CancellationToken.None);
                 foreach (Action waitForThread in waitForThreadArray)
                     waitForThread();
             }
@@ -301,23 +297,23 @@ public static class LockTests
     }
 
 #if NETFRAMEWORK
-    [Fact]
-    public static void UseTrivialWaits_Constructor()
+    [Test]
+    public void UseTrivialWaits_Constructor()
     {
         // Test that the constructor with useTrivialWaits parameter works correctly
         Lock lockWithTrivialWaits = new(true);
         Lock lockWithoutTrivialWaits = new(false);
 
-        Assert.True(lockWithTrivialWaits.TryEnter());
+        lockWithTrivialWaits.TryEnter().Should().BeTrue();
         lockWithTrivialWaits.Exit();
 
-        Assert.True(lockWithoutTrivialWaits.TryEnter());
+        lockWithoutTrivialWaits.TryEnter().Should().BeTrue();
         lockWithoutTrivialWaits.Exit();
     }
 #endif
 
-    [Fact]
-    public static void ContentionCount_IncreasesUnderContention()
+    [Test]
+    public void ContentionCount_IncreasesUnderContention()
     {
         Lock lockObj = new();
         long initialCount = typeof(Lock).TestAccessor.Dynamic.ContentionCount;
@@ -338,25 +334,23 @@ public static class LockTests
                     lockObj.TryEnter(50); // Try to enter with timeout - will contend with main thread
                     barrier.SignalAndWait(); // Signal completion
                 },
-                TestContext.Current.CancellationToken);
+                CancellationToken.None);
             }
 
-            barrier.SignalAndWait(TestContext.Current.CancellationToken); // Let all threads try to acquire
+            barrier.SignalAndWait(CancellationToken.None); // Let all threads try to acquire
             Thread.Sleep(100); // Hold lock while other threads try to acquire it
         }
 
-        barrier.SignalAndWait(TestContext.Current.CancellationToken); // Wait for all threads to complete
+        barrier.SignalAndWait(CancellationToken.None); // Wait for all threads to complete
 
-#pragma warning disable xUnit1031 // Do not use blocking task operations in test method
-        Task.WaitAll(tasks, TestContext.Current.CancellationToken);
-#pragma warning restore xUnit1031
+        Task.WaitAll(tasks, CancellationToken.None);
 
         // Contention count should have increased
-        Assert.True(typeof(Lock).TestAccessor.Dynamic.ContentionCount > initialCount);
+        ((long)typeof(Lock).TestAccessor.Dynamic.ContentionCount > initialCount).Should().BeTrue();
     }
 
-    [Fact]
-    public static void TryEnter_Timeout_Precision()
+    [Test]
+    public void TryEnter_Timeout_Precision()
     {
         Lock lockObj = new();
         ManualResetEventSlim backgroundTaskStarted = new(false);
@@ -381,11 +375,9 @@ public static class LockTests
 
             // Wait here until the background task has signaled that it's running.
             // This guarantees the lock is still held when TryEnter is called.
-            backgroundTaskStarted.Wait(TestContext.Current.CancellationToken);
+            backgroundTaskStarted.Wait(CancellationToken.None);
 
-#pragma warning disable xUnit1031 // Do not use blocking task operations in test method
             (bool success, TimeSpan duration) = durationTask.Result;
-#pragma warning restore xUnit1031
 
             success.Should().BeFalse();
 
@@ -399,8 +391,8 @@ public static class LockTests
         }
     }
 
-    [Fact]
-    public static void EnterExit_Multiple_Threads_Fairness()
+    [Test]
+    public void EnterExit_Multiple_Threads_Fairness()
     {
         const int iterations = 100;
         const int threadCount = 5;
@@ -433,26 +425,24 @@ public static class LockTests
                     Thread.Yield(); // Give other threads a chance
                 }
             },
-            TestContext.Current.CancellationToken);
+            CancellationToken.None);
         }
 
         // Wait for all threads to be ready
-        ready.Wait(TestContext.Current.CancellationToken);
+        ready.Wait(CancellationToken.None);
         // Start all threads simultaneously
         start.Set();
 
-#pragma warning disable xUnit1031 // Do not use blocking task operations in test method
-        Task.WaitAll(tasks, TestContext.Current.CancellationToken);
-#pragma warning restore xUnit1031
+        Task.WaitAll(tasks, CancellationToken.None);
 
         // Verify total operations
-        Assert.Equal(iterations * threadCount, sharedCounter);
+        sharedCounter.Should().Be(iterations * threadCount);
 
         // Check for reasonable distribution of lock acquisitions
         // Each thread should have gotten approximately the same number
         foreach (int acquisitions in threadAcquisitions)
         {
-            Assert.Equal(iterations, acquisitions);
+            acquisitions.Should().Be(iterations);
         }
     }
 }

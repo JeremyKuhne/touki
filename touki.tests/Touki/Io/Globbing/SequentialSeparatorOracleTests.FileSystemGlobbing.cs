@@ -39,33 +39,33 @@ public class SequentialSeparatorFileSystemGlobbingOracleTests
     private static bool ToukiMatches(string pattern, string input) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing).IsMatch(input);
 
-    [Theory]
+    [Test]
     // --- Doubled separator between literal segments ---
-    [InlineData("a//b", "a/b")]
-    [InlineData("a//b", "a//b")]
-    [InlineData("a//b", "ab")]
-    [InlineData("a//b", "a/x/b")]
+    [Arguments("a//b", "a/b")]
+    [Arguments("a//b", "a//b")]
+    [Arguments("a//b", "ab")]
+    [Arguments("a//b", "a/x/b")]
     // --- Tripled / quadrupled separator runs ---
-    [InlineData("a///b", "a/b")]
-    [InlineData("a///b", "a//b")]
-    [InlineData("a////b", "a/b")]
+    [Arguments("a///b", "a/b")]
+    [Arguments("a///b", "a//b")]
+    [Arguments("a////b", "a/b")]
     // --- Leading separator runs (rooted by Matcher) ---
-    [InlineData("//a", "a")]
-    [InlineData("//a", "/a")]
+    [Arguments("//a", "a")]
+    [Arguments("//a", "/a")]
     // --- Trailing separator runs ---
-    [InlineData("a//", "a")]
-    [InlineData("a//", "a/")]
+    [Arguments("a//", "a")]
+    [Arguments("a//", "a/")]
     // --- Doubled separator surrounding a wildcard ---
-    [InlineData("a//*", "a/b")]
-    [InlineData("*//b", "a/b")]
-    [InlineData("*//b", "x/b")]
+    [Arguments("a//*", "a/b")]
+    [Arguments("*//b", "a/b")]
+    [Arguments("*//b", "x/b")]
     // --- Doubled separator adjacent to globstar ---
-    [InlineData("**//*.cs", "Foo.cs")]
-    [InlineData("**//*.cs", "src/Foo.cs")]
-    [InlineData("**//*.cs", "src/sub/Foo.cs")]
-    [InlineData("a//**//b", "a/b")]
-    [InlineData("a//**//b", "a/x/b")]
-    [InlineData("a//**//b", "a/x/y/b")]
+    [Arguments("**//*.cs", "Foo.cs")]
+    [Arguments("**//*.cs", "src/Foo.cs")]
+    [Arguments("**//*.cs", "src/sub/Foo.cs")]
+    [Arguments("a//**//b", "a/b")]
+    [Arguments("a//**//b", "a/x/b")]
+    [Arguments("a//**//b", "a/x/y/b")]
     public void IsMatch_FileSystemGlobbingDialect_SequentialSeparators_AgreesWithMatcher(string pattern, string input)
     {
         bool oracle = OracleMatches(pattern, input);

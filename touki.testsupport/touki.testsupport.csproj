@@ -43,17 +43,6 @@
     <PackageReference Include="Microsoft.CSharp" />
   </ItemGroup>
 
-  <!--
-    The xUnit v3 extensibility SDK is referenced so test-support can provide the `RetryFact`
-    attribute and the supporting test case / runner / discoverer machinery in the `Xunit`
-    namespace. The extensibility package is used (rather than the full `xunit.v3` meta) so
-    that this assembly is not treated as a test project. The reference flows transitively
-    to consumers, which is intentional - the package's purpose is to support xUnit tests.
-  -->
-  <ItemGroup>
-    <PackageReference Include="xunit.v3.extensibility.core" />
-  </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\touki\touki.csproj" />
   </ItemGroup>

@@ -13,15 +13,15 @@ namespace Touki.Io.Globbing;
 /// </summary>
 public class MultipleAsteriskPosixOracleTests
 {
-    public static TheoryData<string, string> Rows => MultipleAsteriskRows.Rows;
+    public static IEnumerable<(string, string)> Rows() => MultipleAsteriskRows.Rows();
 
-    [Theory]
-    [MemberData(nameof(Rows))]
+    [Test]
+    [MethodDataSource(nameof(Rows))]
     public void IsMatch_PosixDialect_MultipleAsterisks_AgreesWithFnmatch(string pattern, string input)
     {
         if (!FnmatchInterop.IsSupported)
         {
-            Assert.Skip("fnmatch(3) oracle requires Linux or macOS.");
+            Skip.Test("fnmatch(3) oracle requires Linux or macOS.");
             return;
         }
 

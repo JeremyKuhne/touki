@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -12,7 +12,7 @@ namespace Touki;
 
 public class StreamExtensionsTests
 {
-    [Fact]
+    [Test]
     public void Read_Write_ArraySegment()
     {
         using MemoryStream memory = new();
@@ -28,23 +28,23 @@ public class StreamExtensionsTests
         readBuffer.Should().BeEquivalentTo([2, 3, 4]);
     }
 
-    [Fact]
+    [Test]
     public async Task ReadAsync_WriteAsync_ArraySegment()
     {
         using MemoryStream memory = new();
         byte[] data = [6, 7, 8, 9, 10];
 
         // Write asynchronously using ArraySegment
-        await memory.WriteAsync(new ArraySegment<byte>(data, 2, 2), TestContext.Current.CancellationToken);
+        await memory.WriteAsync(new ArraySegment<byte>(data, 2, 2), CancellationToken.None).ConfigureAwait(false);
         memory.Position = 0;
 
         byte[] readBuffer = new byte[2];
-        int read = await memory.ReadAsync(new ArraySegment<byte>(readBuffer), TestContext.Current.CancellationToken);
+        int read = await memory.ReadAsync(new ArraySegment<byte>(readBuffer), CancellationToken.None).ConfigureAwait(false);
         read.Should().Be(2);
         readBuffer.Should().BeEquivalentTo([8, 9]);
     }
 
-    [Fact]
+    [Test]
     public void DefaultSegment_IsIgnored()
     {
         using MemoryStream memory = new();
@@ -62,26 +62,26 @@ public class StreamExtensionsTests
         memory.Position.Should().Be(initial);
     }
 
-    [Fact]
+    [Test]
     public async Task DefaultSegmentAsync_IsIgnored()
     {
         using MemoryStream memory = new();
 
-        await memory.WriteAsync(new ArraySegment<byte>(), TestContext.Current.CancellationToken);
+        await memory.WriteAsync(new ArraySegment<byte>(), CancellationToken.None).ConfigureAwait(false);
         memory.Length.Should().Be(0);
 
         byte[] data = [4, 5];
-        await memory.WriteAsync(new ArraySegment<byte>(data), TestContext.Current.CancellationToken);
+        await memory.WriteAsync(new ArraySegment<byte>(data), CancellationToken.None).ConfigureAwait(false);
 
         memory.Position = 0;
 
         long initial = memory.Position;
-        int read = await memory.ReadAsync(new ArraySegment<byte>(), TestContext.Current.CancellationToken);
+        int read = await memory.ReadAsync(new ArraySegment<byte>(), CancellationToken.None).ConfigureAwait(false);
         read.Should().Be(0);
         memory.Position.Should().Be(initial);
     }
 
-    [Fact]
+    [Test]
     public void WriteFormatted_SimpleString_WritesToMemoryStream()
     {
         using MemoryStream stream = new();
@@ -94,7 +94,7 @@ public class StreamExtensionsTests
     }
 
 #if NET
-    [Fact]
+    [Test]
     public void WriteFormatted_StringOverload_WritesUtf16Bytes()
     {
         using MemoryStream stream = new();
@@ -105,7 +105,7 @@ public class StreamExtensionsTests
     }
 #endif
 
-    [Fact]
+    [Test]
     public void WriteFormatted_EmptyBuilder_WritesNothing()
     {
         using MemoryStream stream = new();
@@ -115,7 +115,7 @@ public class StreamExtensionsTests
         stream.Length.Should().Be(0);
     }
 
-    [Fact]
+    [Test]
     public void WriteFormatted_InterpolatedString_WritesToMemoryStream()
     {
         using MemoryStream stream = new();
@@ -130,7 +130,7 @@ public class StreamExtensionsTests
         result.Should().Be("Library: Touki, Version: 42");
     }
 
-    [Fact]
+    [Test]
     public void WriteFormatted_MultipleWrites_AppendToStream()
     {
         using MemoryStream stream = new();
@@ -144,7 +144,7 @@ public class StreamExtensionsTests
         result.Should().Be("First part. Second part.");
     }
 
-    [Fact]
+    [Test]
     public void Write_ReadOnlySpan_WritesToTextWriter()
     {
         StringWriter writer = new();
@@ -156,7 +156,7 @@ public class StreamExtensionsTests
         result.Should().Be("Hello Span World");
     }
 
-    [Fact]
+    [Test]
     public void Write_EmptyReadOnlySpan_WritesNothing()
     {
         StringWriter writer = new();
@@ -168,7 +168,7 @@ public class StreamExtensionsTests
         result.Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void WriteLine_ReadOnlySpan_WritesToTextWriterWithNewLine()
     {
         StringWriter writer = new();
@@ -180,7 +180,7 @@ public class StreamExtensionsTests
         result.Should().Be($"Hello Span Line{Environment.NewLine}");
     }
 
-    [Fact]
+    [Test]
     public void WriteLine_EmptyReadOnlySpan_WritesOnlyNewLine()
     {
         StringWriter writer = new();

@@ -6,29 +6,29 @@ namespace Touki;
 
 public class StoringChar
 {
-    public static TheoryData<char> CharData => new()
+    public static IEnumerable<char> CharData()
     {
-        { '!' },
-        { char.MaxValue },
-        { char.MinValue }
-    };
+        yield return '!';
+        yield return char.MaxValue;
+        yield return char.MinValue;
+    }
 
-    [Theory]
-    [MemberData(nameof(CharData))]
+    [Test]
+    [MethodDataSource(nameof(CharData))]
     public void CharImplicit(char @char)
     {
         Value value = @char;
-        Assert.Equal(@char, value.As<char>());
-        Assert.Equal(typeof(char), value.Type);
+        value.As<char>().Should().Be(@char);
+        value.Type.Should().Be(typeof(char));
 
         char? source = @char;
         value = source;
-        Assert.Equal(source, value.As<char?>());
-        Assert.Equal(typeof(char), value.Type);
+        value.As<char?>().Should().Be(source);
+        value.Type.Should().Be(typeof(char));
     }
 
-    [Theory]
-    [MemberData(nameof(CharData))]
+    [Test]
+    [MethodDataSource(nameof(CharData))]
     public void CharCreate(char @char)
     {
         Value value;
@@ -37,8 +37,8 @@ public class StoringChar
             value = Value.Create(@char);
         }
 
-        Assert.Equal(@char, value.As<char>());
-        Assert.Equal(typeof(char), value.Type);
+        value.As<char>().Should().Be(@char);
+        value.Type.Should().Be(typeof(char));
 
         char? source = @char;
 
@@ -47,101 +47,101 @@ public class StoringChar
             value = Value.Create(source);
         }
 
-        Assert.Equal(source, value.As<char?>());
-        Assert.Equal(typeof(char), value.Type);
+        value.As<char?>().Should().Be(source);
+        value.Type.Should().Be(typeof(char));
     }
 
-    [Theory]
-    [MemberData(nameof(CharData))]
+    [Test]
+    [MethodDataSource(nameof(CharData))]
     public void CharInOut(char @char)
     {
         Value value = @char;
         bool success = value.TryGetValue(out char result);
-        Assert.True(success);
-        Assert.Equal(@char, result);
+        success.Should().BeTrue();
+        result.Should().Be(@char);
 
-        Assert.Equal(@char, value.As<char>());
-        Assert.Equal(@char, (char)value);
+        value.As<char>().Should().Be(@char);
+        ((char)value).Should().Be(@char);
     }
 
-    [Theory]
-    [MemberData(nameof(CharData))]
+    [Test]
+    [MethodDataSource(nameof(CharData))]
     public void NullableCharInCharOut(char @char)
     {
         char? source = @char;
         Value value = source;
 
         bool success = value.TryGetValue(out char result);
-        Assert.True(success);
-        Assert.Equal(@char, result);
+        success.Should().BeTrue();
+        result.Should().Be(@char);
 
-        Assert.Equal(@char, value.As<char>());
+        value.As<char>().Should().Be(@char);
 
-        Assert.Equal(@char, (char)value);
+        ((char)value).Should().Be(@char);
     }
 
-    [Theory]
-    [MemberData(nameof(CharData))]
+    [Test]
+    [MethodDataSource(nameof(CharData))]
     public void CharInNullableCharOut(char @char)
     {
         char source = @char;
         Value value = source;
         bool success = value.TryGetValue(out char? result);
-        Assert.True(success);
-        Assert.Equal(@char, result);
+        success.Should().BeTrue();
+        result.Should().Be(@char);
 
-        Assert.Equal(@char, (char?)value);
+        ((char?)value).Should().Be(@char);
     }
 
-    [Theory]
-    [MemberData(nameof(CharData))]
+    [Test]
+    [MethodDataSource(nameof(CharData))]
     public void BoxedChar(char @char)
     {
         char i = @char;
         object o = i;
         Value value = Value.Create(o);
 
-        Assert.Equal(typeof(char), value.Type);
-        Assert.True(value.TryGetValue(out char result));
-        Assert.Equal(@char, result);
-        Assert.True(value.TryGetValue(out char? nullableResult));
-        Assert.Equal(@char, nullableResult!.Value);
+        value.Type.Should().Be(typeof(char));
+        value.TryGetValue(out char result).Should().BeTrue();
+        result.Should().Be(@char);
+        value.TryGetValue(out char? nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@char);
 
 
         char? n = @char;
         o = n;
         value = Value.Create(o);
 
-        Assert.Equal(typeof(char), value.Type);
-        Assert.True(value.TryGetValue(out result));
-        Assert.Equal(@char, result);
-        Assert.True(value.TryGetValue(out nullableResult));
-        Assert.Equal(@char, nullableResult!.Value);
+        value.Type.Should().Be(typeof(char));
+        value.TryGetValue(out result).Should().BeTrue();
+        result.Should().Be(@char);
+        value.TryGetValue(out nullableResult).Should().BeTrue();
+        nullableResult!.Value.Should().Be(@char);
     }
 
-    [Fact]
+    [Test]
     public void NullChar()
     {
         char? source = null;
         Value value = source;
-        Assert.Null(value.Type);
-        Assert.Equal(source, value.As<char?>());
-        Assert.False(value.As<char?>().HasValue);
+        value.Type.Should().BeNull();
+        value.As<char?>().Should().Be(source);
+        value.As<char?>().HasValue.Should().BeFalse();
     }
 
-    [Theory]
-    [MemberData(nameof(CharData))]
+    [Test]
+    [MethodDataSource(nameof(CharData))]
     public void OutAsObject(char @char)
     {
         Value value = @char;
         object o = value.As<object>();
-        Assert.Equal(typeof(char), o.GetType());
-        Assert.Equal(@char, (char)o);
+        o.GetType().Should().Be(typeof(char));
+        ((char)o).Should().Be(@char);
 
         char? n = @char;
         value = n;
         o = value.As<object>();
-        Assert.Equal(typeof(char), o.GetType());
-        Assert.Equal(@char, (char)o);
+        o.GetType().Should().Be(typeof(char));
+        ((char)o).Should().Be(@char);
     }
 }

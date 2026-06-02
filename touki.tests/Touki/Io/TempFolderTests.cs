@@ -6,14 +6,14 @@ namespace Touki.Io;
 
 public class TempFolderTests
 {
-    [Fact]
+    [Test]
     public void Constructor_CreatesDirectory()
     {
         using TempFolder folder = new();
         Directory.Exists(folder.TempPath).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void ImplicitConversion_ToString_ReturnsTempPath()
     {
         using TempFolder folder = new();
@@ -21,7 +21,7 @@ public class TempFolderTests
         path.Should().Be(folder.TempPath);
     }
 
-    [Fact]
+    [Test]
     public void Dispose_DeletesDirectory()
     {
         TempFolder folder = new();
@@ -41,7 +41,7 @@ public class TempFolderTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Dispose_DirectoryAlreadyRemoved_DoesNotThrow()
     {
         TempFolder folder = new();
@@ -58,7 +58,7 @@ public class TempFolderTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Dispose_CalledTwice_DoesNotThrow()
     {
         TempFolder folder = new();

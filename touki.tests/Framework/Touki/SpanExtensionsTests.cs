@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -8,7 +8,7 @@ public class SpanExtensionsTests
 {
     // We're replicating the functionality of the SpanExtensions.Replace .NET method, so testing against both.
 
-    [Fact]
+    [Test]
     public void Replace_BasicReplacement_ReplacesCharacter()
     {
         Span<char> span = "hello".ToCharArray();
@@ -17,7 +17,7 @@ public class SpanExtensionsTests
         span.ToString().Should().Be("hallo");
     }
 
-    [Fact]
+    [Test]
     public void Replace_MultipleOccurrences_ReplacesAllCharacters()
     {
         Span<char> span = "mississippi".ToCharArray();
@@ -26,7 +26,7 @@ public class SpanExtensionsTests
         span.ToString().Should().Be("mxssxssxppx");
     }
 
-    [Fact]
+    [Test]
     public void Replace_CharacterNotFound_MakesNoChanges()
     {
         Span<char> span = "hello".ToCharArray();
@@ -35,7 +35,7 @@ public class SpanExtensionsTests
         span.ToString().Should().Be("hello");
     }
 
-    [Fact]
+    [Test]
     public void Replace_SameCharacters_ReturnsImmediately()
     {
         Span<char> span = "hello".ToCharArray();
@@ -44,7 +44,7 @@ public class SpanExtensionsTests
         span.ToString().Should().Be("hello");
     }
 
-    [Fact]
+    [Test]
     public void Replace_EmptySpan_HandlesCorrectly()
     {
         Span<char> span = [];
@@ -53,7 +53,7 @@ public class SpanExtensionsTests
         span.IsEmpty.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Replace_SingleCharacter_ReplacesIfMatches()
     {
         Span<char> span = ['a'];
@@ -62,7 +62,7 @@ public class SpanExtensionsTests
         span.ToString().Should().Be("b");
     }
 
-    [Fact]
+    [Test]
     public void Replace_AllSameCharacters_ReplacesAll()
     {
         Span<char> span = "aaaaa".ToCharArray();

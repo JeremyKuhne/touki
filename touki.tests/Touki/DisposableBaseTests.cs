@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -41,7 +41,7 @@ public class DisposableBaseTests
         }
     }
 
-    [Fact]
+    [Test]
     public void Disposed_ReturnsFalse_WhenNotDisposed()
     {
         TestDisposable disposable = new();
@@ -49,7 +49,7 @@ public class DisposableBaseTests
         disposable.IsDisposed.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Disposed_ReturnsTrue_AfterDisposal()
     {
         TestDisposable disposable = new();
@@ -57,7 +57,7 @@ public class DisposableBaseTests
         disposable.IsDisposed.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Dispose_CallsDisposeMethod_WithTrueParameter()
     {
         TestDisposable disposable = new();
@@ -68,7 +68,7 @@ public class DisposableBaseTests
         disposable.LastDisposeParameter.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Dispose_DoesNotCallDisposeMethodTwice_WhenCalledMultipleTimes()
     {
         TestDisposable disposable = new();
@@ -80,7 +80,7 @@ public class DisposableBaseTests
         disposable.DisposeCallCount.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void Dispose_StillMarksAsDisposed_WhenDisposeThrowsException()
     {
         TestDisposable disposable = new() { ThrowOnDispose = true };
@@ -89,7 +89,7 @@ public class DisposableBaseTests
         disposable.IsDisposed.Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Finalize_MarksAsDisposed()
     {
         TestFinalizableDisposable disposable = new();
@@ -99,7 +99,7 @@ public class DisposableBaseTests
         disposable.LastDisposeParameter.Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Dispose_AfterFinalization_DoesNothing()
     {
         TestFinalizableDisposable disposable = new();

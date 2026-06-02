@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -9,7 +9,7 @@ namespace Touki.Io;
 
 public class TextWriterExtensionsTests
 {
-    [Fact]
+    [Test]
     public void Write_ReadOnlySpan_AppendsToStringWriter()
     {
         System.IO.StringWriter writer = new();
@@ -20,7 +20,7 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [Test]
     public void Write_ReadOnlySpan_Empty_DoesNothing()
     {
         System.IO.StringWriter writer = new();
@@ -30,7 +30,7 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().BeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void WriteLine_ReadOnlySpan_AppendsAndAddsNewLine()
     {
         System.IO.StringWriter writer = new();
@@ -41,7 +41,7 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().Be($"Hello{Environment.NewLine}");
     }
 
-    [Fact]
+    [Test]
     public void WriteLine_ReadOnlySpan_Empty_WritesOnlyNewLine()
     {
         System.IO.StringWriter writer = new();
@@ -51,7 +51,7 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().Be(Environment.NewLine);
     }
 
-    [Fact]
+    [Test]
     public void Write_StringSegment_WritesSegmentContent()
     {
         System.IO.StringWriter writer = new();
@@ -62,7 +62,7 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().Be("World");
     }
 
-    [Fact]
+    [Test]
     public void WriteLine_StringSegment_WritesSegmentContentAndNewLine()
     {
         System.IO.StringWriter writer = new();
@@ -73,7 +73,7 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().Be($"Hello{Environment.NewLine}");
     }
 
-    [Fact]
+    [Test]
     public void WriteFormatted_InterpolatedString_AppendsToStreamWriter()
     {
         using MemoryStream stream = new();
@@ -92,7 +92,7 @@ public class TextWriterExtensionsTests
         result.Should().Be("Library: Touki, Version: 42");
     }
 
-    [Fact]
+    [Test]
     public void WriteFormatted_EmptyBuilder_WritesNothing()
     {
         using MemoryStream stream = new();
@@ -108,7 +108,7 @@ public class TextWriterExtensionsTests
     }
 
 #if NET
-    [Fact]
+    [Test]
     public void WriteFormatted_StringOverload_WritesLiteralWithoutBuilder()
     {
         System.IO.StringWriter writer = new();
@@ -119,7 +119,7 @@ public class TextWriterExtensionsTests
     }
 #endif
 
-    [Fact]
+    [Test]
     public void Write_StringSegmentOverload_WritesSegmentContent()
     {
         System.IO.StringWriter writer = new();
@@ -130,7 +130,7 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().Be("World");
     }
 
-    [Fact]
+    [Test]
     public void WriteLine_StringSegmentOverload_WritesSegmentContentAndNewLine()
     {
         System.IO.StringWriter writer = new();

@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-#pragma warning disable xUnit1025 // duplicate InlineData (xUnit doesn't distinguish 0.0 from -0.0)
-
 namespace Touki;
 
 public class SingleExtensionsTests
@@ -17,27 +15,27 @@ public class SingleExtensionsTests
 
     // ---- IsFinite ----
 
-    [Theory]
-    [InlineData(float.NegativeInfinity, false)]
-    [InlineData(float.MinValue, true)]
-    [InlineData(-1f, true)]
-    [InlineData(NegativeMinNormal, true)]
-    [InlineData(NegativeMaxSubnormal, true)]
-    [InlineData(NegativeEpsilon, true)]
-    [InlineData(float.NaN, false)]
-    [InlineData(0f, true)]
-    [InlineData(float.Epsilon, true)]
-    [InlineData(MaxSubnormal, true)]
-    [InlineData(MinNormal, true)]
-    [InlineData(1f, true)]
-    [InlineData(float.MaxValue, true)]
-    [InlineData(float.PositiveInfinity, false)]
+    [Test]
+    [Arguments(float.NegativeInfinity, false)]
+    [Arguments(float.MinValue, true)]
+    [Arguments(-1f, true)]
+    [Arguments(NegativeMinNormal, true)]
+    [Arguments(NegativeMaxSubnormal, true)]
+    [Arguments(NegativeEpsilon, true)]
+    [Arguments(float.NaN, false)]
+    [Arguments(0f, true)]
+    [Arguments(float.Epsilon, true)]
+    [Arguments(MaxSubnormal, true)]
+    [Arguments(MinNormal, true)]
+    [Arguments(1f, true)]
+    [Arguments(float.MaxValue, true)]
+    [Arguments(float.PositiveInfinity, false)]
     public void IsFinite_ReturnsExpected(float value, bool expected)
     {
         float.IsFinite(value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void IsFinite_NegativeZero_ReturnsTrue()
     {
         float.IsFinite(NegativeZero).Should().BeTrue();
@@ -45,27 +43,27 @@ public class SingleExtensionsTests
 
     // ---- IsNegative ----
 
-    [Theory]
-    [InlineData(float.NegativeInfinity, true)]
-    [InlineData(float.MinValue, true)]
-    [InlineData(-1f, true)]
-    [InlineData(NegativeMinNormal, true)]
-    [InlineData(NegativeMaxSubnormal, true)]
-    [InlineData(NegativeEpsilon, true)]
-    [InlineData(float.NaN, true)]
-    [InlineData(0f, false)]
-    [InlineData(float.Epsilon, false)]
-    [InlineData(MaxSubnormal, false)]
-    [InlineData(MinNormal, false)]
-    [InlineData(1f, false)]
-    [InlineData(float.MaxValue, false)]
-    [InlineData(float.PositiveInfinity, false)]
+    [Test]
+    [Arguments(float.NegativeInfinity, true)]
+    [Arguments(float.MinValue, true)]
+    [Arguments(-1f, true)]
+    [Arguments(NegativeMinNormal, true)]
+    [Arguments(NegativeMaxSubnormal, true)]
+    [Arguments(NegativeEpsilon, true)]
+    [Arguments(float.NaN, true)]
+    [Arguments(0f, false)]
+    [Arguments(float.Epsilon, false)]
+    [Arguments(MaxSubnormal, false)]
+    [Arguments(MinNormal, false)]
+    [Arguments(1f, false)]
+    [Arguments(float.MaxValue, false)]
+    [Arguments(float.PositiveInfinity, false)]
     public void IsNegative_ReturnsExpected(float value, bool expected)
     {
         float.IsNegative(value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void IsNegative_NegativeZero_ReturnsTrue()
     {
         float.IsNegative(NegativeZero).Should().BeTrue();
@@ -73,27 +71,27 @@ public class SingleExtensionsTests
 
     // ---- IsNormal ----
 
-    [Theory]
-    [InlineData(float.NegativeInfinity, false)]
-    [InlineData(float.MinValue, true)]
-    [InlineData(-1f, true)]
-    [InlineData(NegativeMinNormal, true)]
-    [InlineData(NegativeMaxSubnormal, false)]
-    [InlineData(NegativeEpsilon, false)]
-    [InlineData(float.NaN, false)]
-    [InlineData(0f, false)]
-    [InlineData(float.Epsilon, false)]
-    [InlineData(MaxSubnormal, false)]
-    [InlineData(MinNormal, true)]
-    [InlineData(1f, true)]
-    [InlineData(float.MaxValue, true)]
-    [InlineData(float.PositiveInfinity, false)]
+    [Test]
+    [Arguments(float.NegativeInfinity, false)]
+    [Arguments(float.MinValue, true)]
+    [Arguments(-1f, true)]
+    [Arguments(NegativeMinNormal, true)]
+    [Arguments(NegativeMaxSubnormal, false)]
+    [Arguments(NegativeEpsilon, false)]
+    [Arguments(float.NaN, false)]
+    [Arguments(0f, false)]
+    [Arguments(float.Epsilon, false)]
+    [Arguments(MaxSubnormal, false)]
+    [Arguments(MinNormal, true)]
+    [Arguments(1f, true)]
+    [Arguments(float.MaxValue, true)]
+    [Arguments(float.PositiveInfinity, false)]
     public void IsNormal_ReturnsExpected(float value, bool expected)
     {
         float.IsNormal(value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void IsNormal_NegativeZero_ReturnsFalse()
     {
         float.IsNormal(NegativeZero).Should().BeFalse();
@@ -101,27 +99,27 @@ public class SingleExtensionsTests
 
     // ---- IsSubnormal ----
 
-    [Theory]
-    [InlineData(float.NegativeInfinity, false)]
-    [InlineData(float.MinValue, false)]
-    [InlineData(-1f, false)]
-    [InlineData(NegativeMinNormal, false)]
-    [InlineData(NegativeMaxSubnormal, true)]
-    [InlineData(NegativeEpsilon, true)]
-    [InlineData(float.NaN, false)]
-    [InlineData(0f, false)]
-    [InlineData(float.Epsilon, true)]
-    [InlineData(MaxSubnormal, true)]
-    [InlineData(MinNormal, false)]
-    [InlineData(1f, false)]
-    [InlineData(float.MaxValue, false)]
-    [InlineData(float.PositiveInfinity, false)]
+    [Test]
+    [Arguments(float.NegativeInfinity, false)]
+    [Arguments(float.MinValue, false)]
+    [Arguments(-1f, false)]
+    [Arguments(NegativeMinNormal, false)]
+    [Arguments(NegativeMaxSubnormal, true)]
+    [Arguments(NegativeEpsilon, true)]
+    [Arguments(float.NaN, false)]
+    [Arguments(0f, false)]
+    [Arguments(float.Epsilon, true)]
+    [Arguments(MaxSubnormal, true)]
+    [Arguments(MinNormal, false)]
+    [Arguments(1f, false)]
+    [Arguments(float.MaxValue, false)]
+    [Arguments(float.PositiveInfinity, false)]
     public void IsSubnormal_ReturnsExpected(float value, bool expected)
     {
         float.IsSubnormal(value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void IsSubnormal_NegativeZero_ReturnsFalse()
     {
         float.IsSubnormal(NegativeZero).Should().BeFalse();
@@ -129,21 +127,21 @@ public class SingleExtensionsTests
 
     // ---- IsPositive ----
 
-    [Theory]
-    [InlineData(float.NegativeInfinity, false)]
-    [InlineData(float.MinValue, false)]
-    [InlineData(-1f, false)]
-    [InlineData(float.NaN, false)]
-    [InlineData(0f, true)]
-    [InlineData(1f, true)]
-    [InlineData(float.MaxValue, true)]
-    [InlineData(float.PositiveInfinity, true)]
+    [Test]
+    [Arguments(float.NegativeInfinity, false)]
+    [Arguments(float.MinValue, false)]
+    [Arguments(-1f, false)]
+    [Arguments(float.NaN, false)]
+    [Arguments(0f, true)]
+    [Arguments(1f, true)]
+    [Arguments(float.MaxValue, true)]
+    [Arguments(float.PositiveInfinity, true)]
     public void IsPositive_ReturnsExpected(float value, bool expected)
     {
         float.IsPositive(value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void IsPositive_NegativeZero_ReturnsFalse()
     {
         float.IsPositive(NegativeZero).Should().BeFalse();
@@ -151,13 +149,13 @@ public class SingleExtensionsTests
 
     // ---- IsRealNumber ----
 
-    [Theory]
-    [InlineData(float.NegativeInfinity, true)]
-    [InlineData(-1f, true)]
-    [InlineData(float.NaN, false)]
-    [InlineData(0f, true)]
-    [InlineData(1f, true)]
-    [InlineData(float.PositiveInfinity, true)]
+    [Test]
+    [Arguments(float.NegativeInfinity, true)]
+    [Arguments(-1f, true)]
+    [Arguments(float.NaN, false)]
+    [Arguments(0f, true)]
+    [Arguments(1f, true)]
+    [Arguments(float.PositiveInfinity, true)]
     public void IsRealNumber_ReturnsExpected(float value, bool expected)
     {
         float.IsRealNumber(value).Should().Be(expected);
@@ -165,26 +163,26 @@ public class SingleExtensionsTests
 
     // ---- IsInteger ----
 
-    [Theory]
-    [InlineData(float.NegativeInfinity, false)]
-    [InlineData(float.MinValue, true)]
-    [InlineData(-1f, true)]
-    [InlineData(NegativeMinNormal, false)]
-    [InlineData(NegativeEpsilon, false)]
-    [InlineData(float.NaN, false)]
-    [InlineData(0f, true)]
-    [InlineData(float.Epsilon, false)]
-    [InlineData(MinNormal, false)]
-    [InlineData(1f, true)]
-    [InlineData(1.5f, false)]
-    [InlineData(float.MaxValue, true)]
-    [InlineData(float.PositiveInfinity, false)]
+    [Test]
+    [Arguments(float.NegativeInfinity, false)]
+    [Arguments(float.MinValue, true)]
+    [Arguments(-1f, true)]
+    [Arguments(NegativeMinNormal, false)]
+    [Arguments(NegativeEpsilon, false)]
+    [Arguments(float.NaN, false)]
+    [Arguments(0f, true)]
+    [Arguments(float.Epsilon, false)]
+    [Arguments(MinNormal, false)]
+    [Arguments(1f, true)]
+    [Arguments(1.5f, false)]
+    [Arguments(float.MaxValue, true)]
+    [Arguments(float.PositiveInfinity, false)]
     public void IsInteger_ReturnsExpected(float value, bool expected)
     {
         float.IsInteger(value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void IsInteger_NegativeZero_ReturnsTrue()
     {
         float.IsInteger(NegativeZero).Should().BeTrue();
@@ -192,25 +190,25 @@ public class SingleExtensionsTests
 
     // ---- IsEvenInteger ----
 
-    [Theory]
-    [InlineData(float.NegativeInfinity, false)]
-    [InlineData(float.MinValue, true)]
-    [InlineData(-1f, false)]
-    [InlineData(-2f, true)]
-    [InlineData(NegativeEpsilon, false)]
-    [InlineData(float.NaN, false)]
-    [InlineData(0f, true)]
-    [InlineData(float.Epsilon, false)]
-    [InlineData(1f, false)]
-    [InlineData(2f, true)]
-    [InlineData(float.MaxValue, true)]
-    [InlineData(float.PositiveInfinity, false)]
+    [Test]
+    [Arguments(float.NegativeInfinity, false)]
+    [Arguments(float.MinValue, true)]
+    [Arguments(-1f, false)]
+    [Arguments(-2f, true)]
+    [Arguments(NegativeEpsilon, false)]
+    [Arguments(float.NaN, false)]
+    [Arguments(0f, true)]
+    [Arguments(float.Epsilon, false)]
+    [Arguments(1f, false)]
+    [Arguments(2f, true)]
+    [Arguments(float.MaxValue, true)]
+    [Arguments(float.PositiveInfinity, false)]
     public void IsEvenInteger_ReturnsExpected(float value, bool expected)
     {
         float.IsEvenInteger(value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void IsEvenInteger_NegativeZero_ReturnsTrue()
     {
         float.IsEvenInteger(NegativeZero).Should().BeTrue();
@@ -218,23 +216,23 @@ public class SingleExtensionsTests
 
     // ---- IsOddInteger ----
 
-    [Theory]
-    [InlineData(float.NegativeInfinity, false)]
-    [InlineData(float.MinValue, false)]
-    [InlineData(-1f, true)]
-    [InlineData(-2f, false)]
-    [InlineData(float.NaN, false)]
-    [InlineData(0f, false)]
-    [InlineData(1f, true)]
-    [InlineData(2f, false)]
-    [InlineData(float.MaxValue, false)]
-    [InlineData(float.PositiveInfinity, false)]
+    [Test]
+    [Arguments(float.NegativeInfinity, false)]
+    [Arguments(float.MinValue, false)]
+    [Arguments(-1f, true)]
+    [Arguments(-2f, false)]
+    [Arguments(float.NaN, false)]
+    [Arguments(0f, false)]
+    [Arguments(1f, true)]
+    [Arguments(2f, false)]
+    [Arguments(float.MaxValue, false)]
+    [Arguments(float.PositiveInfinity, false)]
     public void IsOddInteger_ReturnsExpected(float value, bool expected)
     {
         float.IsOddInteger(value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void IsOddInteger_NegativeZero_ReturnsFalse()
     {
         float.IsOddInteger(NegativeZero).Should().BeFalse();
@@ -242,28 +240,28 @@ public class SingleExtensionsTests
 
     // ---- IsPow2 ----
 
-    [Theory]
-    [InlineData(float.NegativeInfinity, false)]
-    [InlineData(-1f, false)]
-    [InlineData(-2f, false)]
-    [InlineData(float.NaN, false)]
-    [InlineData(0f, false)]
-    [InlineData(float.Epsilon, true)]   // smallest subnormal is 2^-149
-    [InlineData(MinNormal, true)]       // 2^-126
-    [InlineData(0.5f, true)]
-    [InlineData(1f, true)]
-    [InlineData(2f, true)]
-    [InlineData(4f, true)]
-    [InlineData(3f, false)]
-    [InlineData(1.5f, false)]
-    [InlineData(float.MaxValue, false)]
-    [InlineData(float.PositiveInfinity, false)]
+    [Test]
+    [Arguments(float.NegativeInfinity, false)]
+    [Arguments(-1f, false)]
+    [Arguments(-2f, false)]
+    [Arguments(float.NaN, false)]
+    [Arguments(0f, false)]
+    [Arguments(float.Epsilon, true)]   // smallest subnormal is 2^-149
+    [Arguments(MinNormal, true)]       // 2^-126
+    [Arguments(0.5f, true)]
+    [Arguments(1f, true)]
+    [Arguments(2f, true)]
+    [Arguments(4f, true)]
+    [Arguments(3f, false)]
+    [Arguments(1.5f, false)]
+    [Arguments(float.MaxValue, false)]
+    [Arguments(float.PositiveInfinity, false)]
     public void IsPow2_ReturnsExpected(float value, bool expected)
     {
         float.IsPow2(value).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void IsPow2_NegativeZero_ReturnsFalse()
     {
         float.IsPow2(NegativeZero).Should().BeFalse();

@@ -15,7 +15,7 @@ public partial class GlobSpecificationTests
     // /(a+)+$/. These tests pin that property so a future refactor can't silently
     // reintroduce a ReDoS surface.
 
-    [Fact]
+    [Test]
     public void IsMatch_PathologicalAnyRun_TerminatesPromptly()
     {
         // 16 `*a` repetitions then a literal that doesn't exist in the input would be
@@ -34,7 +34,7 @@ public partial class GlobSpecificationTests
         sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
     }
 
-    [Fact]
+    [Test]
     public void IsMatch_PathologicalGlobStar_TerminatesPromptly()
     {
         // Many `**/` segments against an input that ultimately can't match must not
@@ -53,7 +53,7 @@ public partial class GlobSpecificationTests
         sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
     }
 
-    [Fact]
+    [Test]
     public void IsMatch_AlternatingAnyRunAndGlobStar_TerminatesPromptly()
     {
         // Mixing `*` (AnyRun) and `**` (GlobStar) exercises both savepoint slots.
@@ -72,7 +72,7 @@ public partial class GlobSpecificationTests
         sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
     }
 
-    [Fact]
+    [Test]
     public void IsMatch_PathologicalExtGlobRepetition_TerminatesPromptly()
     {
         // Catastrophic backtracking in the recursive extglob walker (fuzz finding
@@ -95,7 +95,7 @@ public partial class GlobSpecificationTests
         sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
     }
 
-    [Fact]
+    [Test]
     public void IsMatch_MinimalExtGlobRepetition_TerminatesPromptly()
     {
         // Smallest pattern that reproduces the extglob catastrophic backtracking:
@@ -119,7 +119,7 @@ public partial class GlobSpecificationTests
         sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
     }
 
-    [Fact]
+    [Test]
     public void IsMatch_DeepExtGlobRepetition_DoesNotStackOverflow()
     {
         // StackOverflow DOS regression. The previous recursive extglob walker
@@ -144,7 +144,7 @@ public partial class GlobSpecificationTests
         sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
     }
 
-    [Fact]
+    [Test]
     public void IsMatch_DeepExtGlobRepetitionNonMatch_DoesNotStackOverflow()
     {
         // Companion to the matching case: the same deep repetition against an input
@@ -167,7 +167,7 @@ public partial class GlobSpecificationTests
         sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
     }
 
-    [Fact]
+    [Test]
     public void IsMatch_PathologicalExtGlobNegation_TerminatesPromptly()
     {
         // Companion to the `+(...)` repetition cases above, for the `!(...)` negation
@@ -193,7 +193,7 @@ public partial class GlobSpecificationTests
         sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
     }
 
-    [Fact]
+    [Test]
     public void IsMatch_LongInputAgainstWildcard_IsLinear()
     {
         // Bare `*` against a long input must walk the input once. Anything worse
@@ -209,7 +209,7 @@ public partial class GlobSpecificationTests
         sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
     }
 
-    [Fact]
+    [Test]
     public void IsMatch_EmptyInput_DoesNotDereferenceNullSpan()
     {
         // MatchOrdinal walks the input via ReadOnlySpan indexer; empty input must
@@ -225,7 +225,7 @@ public partial class GlobSpecificationTests
         klass.IsMatch([]).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void Compile_LiteralBodyOverflow_ReturnsPatternTooLarge()
     {
         // 4A guard: a Literal opcode body stores its length in a single char header.
@@ -255,7 +255,7 @@ public partial class GlobSpecificationTests
             .Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void Compile_ClassBodyOverflow_ReturnsPatternTooLarge()
     {
         // 4A guard: same length-header constraint applies to Class/NegClass bodies.
@@ -275,7 +275,7 @@ public partial class GlobSpecificationTests
         error.Code.Should().Be(GlobCompileErrorCode.PatternTooLarge);
     }
 
-    [Fact]
+    [Test]
     public void Compile_MaxPatternLengthExceeded_ReturnsPatternTooLarge()
     {
         // 5B: caller-supplied upper bound on pattern length. Patterns longer than the
@@ -296,7 +296,7 @@ public partial class GlobSpecificationTests
         error.Code.Should().Be(GlobCompileErrorCode.PatternTooLarge);
     }
 
-    [Fact]
+    [Test]
     public void Compile_MaxPatternLengthAtLimit_Succeeds()
     {
         // 5B boundary: pattern length equal to the limit must be accepted.
@@ -315,7 +315,7 @@ public partial class GlobSpecificationTests
         result.Should().NotBeNull();
     }
 
-    [Fact]
+    [Test]
     public void Compile_MaxPatternLengthNegative_DisablesCheck()
     {
         // 5B opt-in: -1 (the default) leaves the cap disabled.
@@ -333,7 +333,7 @@ public partial class GlobSpecificationTests
         result.Should().NotBeNull();
     }
 
-    [Fact]
+    [Test]
     public void Compile_MaxPatternLengthExceeded_ThrowsGlobFormatException()
     {
         // 5B via the throwing Compile overload: oversized pattern surfaces as
@@ -351,7 +351,7 @@ public partial class GlobSpecificationTests
             .Which.Error.Code.Should().Be(GlobCompileErrorCode.PatternTooLarge);
     }
 
-    [Fact]
+    [Test]
     public void IsMatch_NoncharacterOpcodesInInput_AreTreatedAsLiteralData()
     {
         // GlobOpCodes uses U+FDD0..U+FDD5 (Unicode noncharacters) as bytecode markers
@@ -366,7 +366,7 @@ public partial class GlobSpecificationTests
         matcher.IsMatch("anything-else").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void IsMatch_ManyLiveExtGlobChoicePoints_GrowsPooledStacks()
     {
         // The iterative engine seeds its frame and arena (range-snapshot) stacks
@@ -395,7 +395,7 @@ public partial class GlobSpecificationTests
         sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(2));
     }
 
-    [Fact]
+    [Test]
     public void IsMatch_AmbiguousConsumingRepetition_MemoizesRecurringFailures()
     {
         // `+(a|aa)` can tile a run of 'a's in exponentially many ways (each

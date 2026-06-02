@@ -26,58 +26,58 @@ namespace Touki.Io.Globbing;
 public class PortedTests_FileSystemGlobbing
 {
     // From PatternMatchingTests.PatternMatchingWorks.
-    [Theory]
-    [InlineData("*.txt", "alpha.txt", true)]
-    [InlineData("*.txt", "beta.txt", true)]
-    [InlineData("*.txt", "gamma.dat", false)]
-    [InlineData("alpha.*", "alpha.txt", true)]
-    [InlineData("alpha.*", "beta.txt", false)]
-    [InlineData("*.*", "alpha.txt", true)]
-    [InlineData("*.*", "gamma.dat", true)]
-    [InlineData("*", "alpha.txt", true)]
-    [InlineData("*", "gamma.dat", true)]
-    [InlineData("*et*", "alpha.txt", false)]
-    [InlineData("*et*", "beta.txt", true)]
-    [InlineData("*et*", "gamma.dat", false)]
-    [InlineData("b*et*t", "alpha.txt", false)]
-    [InlineData("b*et*t", "beta.txt", true)]
-    [InlineData("b*et*x", "beta.txt", false)]
+    [Test]
+    [Arguments("*.txt", "alpha.txt", true)]
+    [Arguments("*.txt", "beta.txt", true)]
+    [Arguments("*.txt", "gamma.dat", false)]
+    [Arguments("alpha.*", "alpha.txt", true)]
+    [Arguments("alpha.*", "beta.txt", false)]
+    [Arguments("*.*", "alpha.txt", true)]
+    [Arguments("*.*", "gamma.dat", true)]
+    [Arguments("*", "alpha.txt", true)]
+    [Arguments("*", "gamma.dat", true)]
+    [Arguments("*et*", "alpha.txt", false)]
+    [Arguments("*et*", "beta.txt", true)]
+    [Arguments("*et*", "gamma.dat", false)]
+    [Arguments("b*et*t", "alpha.txt", false)]
+    [Arguments("b*et*t", "beta.txt", true)]
+    [Arguments("b*et*x", "beta.txt", false)]
     public void IsMatch_PatternMatchingWorks(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
             .IsMatch(input).Should().Be(expected);
 
     // From PatternMatchingTests.PatternBeginAndEndCantOverlap. Confirms that the prefix
     // and suffix portions of a `*`-bracketed pattern cannot share characters in the input.
-    [Theory]
-    [InlineData("1234*5678", "12345678", true)]
-    [InlineData("12345*5678", "12345678", false)]
-    [InlineData("12*3456*78", "12345678", true)]
-    [InlineData("12*23*", "12345678", false)]
-    [InlineData("*67*78", "12345678", false)]
-    [InlineData("*45*56", "12345678", false)]
+    [Test]
+    [Arguments("1234*5678", "12345678", true)]
+    [Arguments("12345*5678", "12345678", false)]
+    [Arguments("12*3456*78", "12345678", true)]
+    [Arguments("12*23*", "12345678", false)]
+    [Arguments("*67*78", "12345678", false)]
+    [Arguments("*45*56", "12345678", false)]
     public void IsMatch_PatternBeginAndEndCantOverlap(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
             .IsMatch(input).Should().Be(expected);
 
     // From PatternMatchingTests.PatternMatchingWorksInFolders. Files under test:
     // alpha/hello.txt, beta/hello.txt, gamma/hello.txt.
-    [Theory]
-    [InlineData("*mm*/*", "gamma/hello.txt", true)]
-    [InlineData("*mm*/*", "alpha/hello.txt", false)]
-    [InlineData("*mm*/*", "beta/hello.txt", false)]
-    [InlineData("/*mm*/*", "gamma/hello.txt", true)]
-    [InlineData("/*mm*/*", "alpha/hello.txt", false)]
-    [InlineData("*alpha*/*", "alpha/hello.txt", true)]
-    [InlineData("*alpha*/*", "beta/hello.txt", false)]
-    [InlineData("/*alpha*/*", "alpha/hello.txt", true)]
-    [InlineData("*/*", "alpha/hello.txt", true)]
-    [InlineData("*/*", "beta/hello.txt", true)]
-    [InlineData("*/*", "gamma/hello.txt", true)]
-    [InlineData("/*/*", "alpha/hello.txt", true)]
-    [InlineData("/*/*", "beta/hello.txt", true)]
-    [InlineData("*.*/*", "alpha/hello.txt", true)]
-    [InlineData("*.*/*", "beta/hello.txt", true)]
-    [InlineData("/*.*/*", "gamma/hello.txt", true)]
+    [Test]
+    [Arguments("*mm*/*", "gamma/hello.txt", true)]
+    [Arguments("*mm*/*", "alpha/hello.txt", false)]
+    [Arguments("*mm*/*", "beta/hello.txt", false)]
+    [Arguments("/*mm*/*", "gamma/hello.txt", true)]
+    [Arguments("/*mm*/*", "alpha/hello.txt", false)]
+    [Arguments("*alpha*/*", "alpha/hello.txt", true)]
+    [Arguments("*alpha*/*", "beta/hello.txt", false)]
+    [Arguments("/*alpha*/*", "alpha/hello.txt", true)]
+    [Arguments("*/*", "alpha/hello.txt", true)]
+    [Arguments("*/*", "beta/hello.txt", true)]
+    [Arguments("*/*", "gamma/hello.txt", true)]
+    [Arguments("/*/*", "alpha/hello.txt", true)]
+    [Arguments("/*/*", "beta/hello.txt", true)]
+    [Arguments("*.*/*", "alpha/hello.txt", true)]
+    [Arguments("*.*/*", "beta/hello.txt", true)]
+    [Arguments("/*.*/*", "gamma/hello.txt", true)]
     public void IsMatch_PatternMatchingWorksInFolders(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
             .IsMatch(input).Should().Be(expected);
@@ -85,109 +85,109 @@ public class PortedTests_FileSystemGlobbing
     // From PatternMatchingTests.PatternMatchingCurrent. Patterns with leading `./` or
     // embedded `/./` should be equivalent to the same pattern with the dot-segments
     // removed. Files: alpha/hello.txt, beta/hello.txt, gamma/hello.txt.
-    [Theory]
-    [InlineData("./alpha/hello.txt", "alpha/hello.txt", true)]
-    [InlineData("./alpha/hello.txt", "beta/hello.txt", false)]
-    [InlineData("./**/hello.txt", "alpha/hello.txt", true)]
-    [InlineData("./**/hello.txt", "gamma/hello.txt", true)]
-    [InlineData("././**/hello.txt", "alpha/hello.txt", true)]
-    [InlineData("././**/./hello.txt", "alpha/hello.txt", true)]
-    [InlineData("././**/./**/hello.txt", "alpha/hello.txt", true)]
-    [InlineData("./*mm*/hello.txt", "gamma/hello.txt", true)]
-    [InlineData("./*mm*/hello.txt", "alpha/hello.txt", false)]
-    [InlineData("./*mm*/*", "gamma/hello.txt", true)]
-    [InlineData("./*mm*/*", "beta/hello.txt", false)]
+    [Test]
+    [Arguments("./alpha/hello.txt", "alpha/hello.txt", true)]
+    [Arguments("./alpha/hello.txt", "beta/hello.txt", false)]
+    [Arguments("./**/hello.txt", "alpha/hello.txt", true)]
+    [Arguments("./**/hello.txt", "gamma/hello.txt", true)]
+    [Arguments("././**/hello.txt", "alpha/hello.txt", true)]
+    [Arguments("././**/./hello.txt", "alpha/hello.txt", true)]
+    [Arguments("././**/./**/hello.txt", "alpha/hello.txt", true)]
+    [Arguments("./*mm*/hello.txt", "gamma/hello.txt", true)]
+    [Arguments("./*mm*/hello.txt", "alpha/hello.txt", false)]
+    [Arguments("./*mm*/*", "gamma/hello.txt", true)]
+    [Arguments("./*mm*/*", "beta/hello.txt", false)]
     public void IsMatch_PatternMatchingCurrent(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
             .IsMatch(input).Should().Be(expected);
 
     // From PatternMatchingTests.StarDotStarIsSameAsStar. Pattern `*.*` matches every
     // file regardless of whether it actually contains a dot.
-    [Theory]
-    [InlineData("*.*", "alpha.txt", true)]
-    [InlineData("*.*", "alpha.", true)]
-    [InlineData("*.*", ".txt", true)]
-    [InlineData("*.*", ".", true)]
-    [InlineData("*.*", "alpha", true)]
-    [InlineData("*.*", "txt", true)]
+    [Test]
+    [Arguments("*.*", "alpha.txt", true)]
+    [Arguments("*.*", "alpha.", true)]
+    [Arguments("*.*", ".txt", true)]
+    [Arguments("*.*", ".", true)]
+    [Arguments("*.*", "alpha", true)]
+    [Arguments("*.*", "txt", true)]
     public void IsMatch_StarDotStarMatchesEverything(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
             .IsMatch(input).Should().Be(expected);
 
     // From PatternMatchingTests.IncompletePatternsDoNotInclude. `*/*.txt` requires a
     // directory component; bare `x.txt` does not match.
-    [Theory]
-    [InlineData("*/*.txt", "one/x.txt", true)]
-    [InlineData("*/*.txt", "two/x.txt", true)]
-    [InlineData("*/*.txt", "x.txt", false)]
+    [Test]
+    [Arguments("*/*.txt", "one/x.txt", true)]
+    [Arguments("*/*.txt", "two/x.txt", true)]
+    [Arguments("*/*.txt", "x.txt", false)]
     public void IsMatch_IncompletePatternsRequireSegments(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
             .IsMatch(input).Should().Be(expected);
 
     // From PatternMatchingTests.TrailingRecursiveWildcardMatchesAllFiles.
-    [Theory]
-    [InlineData("one/**", "one/x.txt", true)]
-    [InlineData("one/**", "two/x.txt", false)]
-    [InlineData("one/**", "one/x/y.txt", true)]
+    [Test]
+    [Arguments("one/**", "one/x.txt", true)]
+    [Arguments("one/**", "two/x.txt", false)]
+    [Arguments("one/**", "one/x/y.txt", true)]
     public void IsMatch_TrailingRecursiveWildcardMatchesAllFiles(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
             .IsMatch(input).Should().Be(expected);
 
     // From PatternMatchingTests.LeadingRecursiveWildcardMatchesAllLeadingPaths.
-    [Theory]
-    [InlineData("**/*.cs", "one/x.cs", true)]
-    [InlineData("**/*.cs", "two/x.cs", true)]
-    [InlineData("**/*.cs", "one/two/x.cs", true)]
-    [InlineData("**/*.cs", "x.cs", true)]
-    [InlineData("**/*.cs", "one/x.txt", false)]
-    [InlineData("**/*.cs", "x.txt", false)]
+    [Test]
+    [Arguments("**/*.cs", "one/x.cs", true)]
+    [Arguments("**/*.cs", "two/x.cs", true)]
+    [Arguments("**/*.cs", "one/two/x.cs", true)]
+    [Arguments("**/*.cs", "x.cs", true)]
+    [Arguments("**/*.cs", "one/x.txt", false)]
+    [Arguments("**/*.cs", "x.txt", false)]
     public void IsMatch_LeadingRecursiveWildcardMatchesAllLeadingPaths(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
             .IsMatch(input).Should().Be(expected);
 
     // From PatternMatchingTests.InnerRecursiveWildcardMuseStartWithAndEndWith [sic].
-    [Theory]
-    [InlineData("one/**/*.cs", "one/x.cs", true)]
-    [InlineData("one/**/*.cs", "two/x.cs", false)]
-    [InlineData("one/**/*.cs", "one/two/x.cs", true)]
-    [InlineData("one/**/*.cs", "x.cs", false)]
-    [InlineData("one/**/*.cs", "one/x.txt", false)]
+    [Test]
+    [Arguments("one/**/*.cs", "one/x.cs", true)]
+    [Arguments("one/**/*.cs", "two/x.cs", false)]
+    [Arguments("one/**/*.cs", "one/two/x.cs", true)]
+    [Arguments("one/**/*.cs", "x.cs", false)]
+    [Arguments("one/**/*.cs", "one/x.txt", false)]
     public void IsMatch_InnerRecursiveWildcardMustStartAndEnd(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
             .IsMatch(input).Should().Be(expected);
 
     // From PatternMatchingTests.RecursiveWildcardSurroundingContainsWith [sic].
-    [Theory]
-    [InlineData("**/x/**", "x/1", true)]
-    [InlineData("**/x/**", "1/x/2", true)]
-    [InlineData("**/x/**", "1/x", false)]
-    [InlineData("**/x/**", "x", false)]
-    [InlineData("**/x/**", "1", false)]
-    [InlineData("**/x/**", "1/2", false)]
+    [Test]
+    [Arguments("**/x/**", "x/1", true)]
+    [Arguments("**/x/**", "1/x/2", true)]
+    [Arguments("**/x/**", "1/x", false)]
+    [Arguments("**/x/**", "x", false)]
+    [Arguments("**/x/**", "1", false)]
+    [Arguments("**/x/**", "1/2", false)]
     public void IsMatch_RecursiveWildcardSurrounding(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
             .IsMatch(input).Should().Be(expected);
 
     // From PatternMatchingTests.SequentialFoldersMayBeRequired. Long pattern with
     // multiple globstars and required literal segments.
-    [Theory]
-    [InlineData("a/b/**/1/2/**/2/3/**", "1/2/2/3/x", false)]
-    [InlineData("a/b/**/1/2/**/2/3/**", "1/2/3/y", false)]
-    [InlineData("a/b/**/1/2/**/2/3/**", "a/1/2/4/2/3/b", false)]
-    [InlineData("a/b/**/1/2/**/2/3/**", "a/2/3/1/2/b", false)]
-    [InlineData("a/b/**/1/2/**/2/3/**", "a/b/1/2/2/3/x", true)]
-    [InlineData("a/b/**/1/2/**/2/3/**", "a/b/1/2/3/y", false)]
-    [InlineData("a/b/**/1/2/**/2/3/**", "a/b/a/1/2/4/2/3/b", true)]
-    [InlineData("a/b/**/1/2/**/2/3/**", "a/b/a/2/3/1/2/b", false)]
+    [Test]
+    [Arguments("a/b/**/1/2/**/2/3/**", "1/2/2/3/x", false)]
+    [Arguments("a/b/**/1/2/**/2/3/**", "1/2/3/y", false)]
+    [Arguments("a/b/**/1/2/**/2/3/**", "a/1/2/4/2/3/b", false)]
+    [Arguments("a/b/**/1/2/**/2/3/**", "a/2/3/1/2/b", false)]
+    [Arguments("a/b/**/1/2/**/2/3/**", "a/b/1/2/2/3/x", true)]
+    [Arguments("a/b/**/1/2/**/2/3/**", "a/b/1/2/3/y", false)]
+    [Arguments("a/b/**/1/2/**/2/3/**", "a/b/a/1/2/4/2/3/b", true)]
+    [Arguments("a/b/**/1/2/**/2/3/**", "a/b/a/2/3/1/2/b", false)]
     public void IsMatch_SequentialFoldersMayBeRequired(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
             .IsMatch(input).Should().Be(expected);
 
     // From PatternMatchingTests.RecursiveAloneIncludesEverything.
-    [Theory]
-    [InlineData("**", "1/2/2/3/x", true)]
-    [InlineData("**", "1/2/3/y", true)]
-    [InlineData("**", "x", true)]
+    [Test]
+    [Arguments("**", "1/2/2/3/x", true)]
+    [Arguments("**", "1/2/3/y", true)]
+    [Arguments("**", "x", true)]
     public void IsMatch_RecursiveAloneIncludesEverything(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
             .IsMatch(input).Should().Be(expected);
@@ -195,13 +195,13 @@ public class PortedTests_FileSystemGlobbing
     // From PatternMatchingTests.LeadingDotDotCanComeThroughPattern. The `..` segment
     // is treated as a literal path component at the matcher level (the enumerator is
     // what resolves it against the current sub-directory).
-    [Theory]
-    [InlineData("../2/*.cs", "../2/x.cs", true)]
-    [InlineData("../2/*.cs", "../2/x.txt", false)]
-    [InlineData("../2/**/*.cs", "../2/x.cs", true)]
-    [InlineData("../2/**/*.cs", "../2/3/x.cs", true)]
-    [InlineData("../2/**/*.cs", "../2/3/4/z.cs", true)]
-    [InlineData("../2/**/*.cs", "../2/3/x.txt", false)]
+    [Test]
+    [Arguments("../2/*.cs", "../2/x.cs", true)]
+    [Arguments("../2/*.cs", "../2/x.txt", false)]
+    [Arguments("../2/**/*.cs", "../2/x.cs", true)]
+    [Arguments("../2/**/*.cs", "../2/3/x.cs", true)]
+    [Arguments("../2/**/*.cs", "../2/3/4/z.cs", true)]
+    [Arguments("../2/**/*.cs", "../2/3/x.txt", false)]
     public void IsMatch_LeadingDotDotCanComeThroughPattern(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
             .IsMatch(input).Should().Be(expected);

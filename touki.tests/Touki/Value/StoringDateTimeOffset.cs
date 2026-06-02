@@ -6,93 +6,93 @@ namespace Touki;
 
 public class StoringDateTimeOffset
 {
-    public static TheoryData<DateTimeOffset> DateTimeOffsetData => new()
+    public static IEnumerable<DateTimeOffset> DateTimeOffsetData()
     {
-        { DateTimeOffset.Now },
-        { DateTimeOffset.UtcNow },
-        { DateTimeOffset.MaxValue },
-        { DateTimeOffset.MinValue }
-    };
+        yield return DateTimeOffset.Now;
+        yield return DateTimeOffset.UtcNow;
+        yield return DateTimeOffset.MaxValue;
+        yield return DateTimeOffset.MinValue;
+    }
 
-    [Theory]
-    [MemberData(nameof(DateTimeOffsetData))]
+    [Test]
+    [MethodDataSource(nameof(DateTimeOffsetData))]
     public void DateTimeOffsetImplicit(DateTimeOffset dateTimeOffset)
     {
         Value value = dateTimeOffset;
-        Assert.Equal(dateTimeOffset, value.As<DateTimeOffset>());
-        Assert.Equal(typeof(DateTimeOffset), value.Type);
+        value.As<DateTimeOffset>().Should().Be(dateTimeOffset);
+        value.Type.Should().Be(typeof(DateTimeOffset));
 
         DateTimeOffset? source = dateTimeOffset;
         value = source;
-        Assert.Equal(source, value.As<DateTimeOffset?>());
-        Assert.Equal(typeof(DateTimeOffset), value.Type);
+        value.As<DateTimeOffset?>().Should().Be(source);
+        value.Type.Should().Be(typeof(DateTimeOffset));
     }
 
-    [Theory]
-    [MemberData(nameof(DateTimeOffsetData))]
+    [Test]
+    [MethodDataSource(nameof(DateTimeOffsetData))]
     public void DateTimeOffsetInOut(DateTimeOffset dateTimeOffset)
     {
         Value value = dateTimeOffset;
         bool success = value.TryGetValue(out DateTimeOffset result);
-        Assert.True(success);
-        Assert.Equal(dateTimeOffset, result);
+        success.Should().BeTrue();
+        result.Should().Be(dateTimeOffset);
 
-        Assert.Equal(dateTimeOffset, value.As<DateTimeOffset>());
-        Assert.Equal(dateTimeOffset, (DateTimeOffset)value);
+        value.As<DateTimeOffset>().Should().Be(dateTimeOffset);
+        ((DateTimeOffset)value).Should().Be(dateTimeOffset);
     }
 
-    [Theory]
-    [MemberData(nameof(DateTimeOffsetData))]
+    [Test]
+    [MethodDataSource(nameof(DateTimeOffsetData))]
     public void NullableDateTimeOffsetInDateTimeOffsetOut(DateTimeOffset dateTimeOffset)
     {
         DateTimeOffset? source = dateTimeOffset;
         Value value = source;
 
         bool success = value.TryGetValue(out DateTimeOffset result);
-        Assert.True(success);
-        Assert.Equal(dateTimeOffset, result);
+        success.Should().BeTrue();
+        result.Should().Be(dateTimeOffset);
 
-        Assert.Equal(dateTimeOffset, value.As<DateTimeOffset>());
+        value.As<DateTimeOffset>().Should().Be(dateTimeOffset);
 
-        Assert.Equal(dateTimeOffset, (DateTimeOffset)value);
+        ((DateTimeOffset)value).Should().Be(dateTimeOffset);
     }
 
-    [Theory]
-    [MemberData(nameof(DateTimeOffsetData))]
+    [Test]
+    [MethodDataSource(nameof(DateTimeOffsetData))]
     public void DateTimeOffsetInNullableDateTimeOffsetOut(DateTimeOffset dateTimeOffset)
     {
         DateTimeOffset source = dateTimeOffset;
         Value value = source;
         bool success = value.TryGetValue(out DateTimeOffset? result);
-        Assert.True(success);
-        Assert.Equal(dateTimeOffset, result);
+        success.Should().BeTrue();
+        result.Should().Be(dateTimeOffset);
 
-        Assert.Equal(dateTimeOffset, (DateTimeOffset?)value);
+        ((DateTimeOffset?)value).Should().Be(dateTimeOffset);
     }
 
-    [Fact]
+    [Test]
     public void NullDateTimeOffset()
     {
         DateTimeOffset? source = null;
         Value value = source;
-        Assert.Null(value.Type);
-        Assert.Equal(source, value.As<DateTimeOffset?>());
-        Assert.False(value.As<DateTimeOffset?>().HasValue);
+        value.Type.Should().BeNull();
+        value.As<DateTimeOffset?>().Should().Be(source);
+        value.As<DateTimeOffset?>().HasValue.Should().BeFalse();
     }
 
-    [Theory]
-    [MemberData(nameof(DateTimeOffsetData))]
+    [Test]
+    [MethodDataSource(nameof(DateTimeOffsetData))]
     public void OutAsObject(DateTimeOffset dateTimeOffset)
     {
         Value value = dateTimeOffset;
         object o = value.As<object>();
-        Assert.Equal(typeof(DateTimeOffset), o.GetType());
-        Assert.Equal(dateTimeOffset, (DateTimeOffset)o);
+        o.GetType().Should().Be(typeof(DateTimeOffset));
+        ((DateTimeOffset)o).Should().Be(dateTimeOffset);
 
         DateTimeOffset? n = dateTimeOffset;
         value = n;
         o = value.As<object>();
-        Assert.Equal(typeof(DateTimeOffset), o.GetType());
-        Assert.Equal(dateTimeOffset, (DateTimeOffset)o);
+        o.GetType().Should().Be(typeof(DateTimeOffset));
+        ((DateTimeOffset)o).Should().Be(dateTimeOffset);
     }
 }

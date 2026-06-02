@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Jeremy W Kuhne
+// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -11,7 +11,7 @@ namespace Touki.Text;
 /// </summary>
 public unsafe class StringBuilderExtensionsTests
 {
-    [Fact]
+    [Test]
     public void AppendFormatted_SimpleInterpolatedString()
     {
         StringBuilder builder = new();
@@ -22,7 +22,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Value is 42.");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_MultipleValues()
     {
         StringBuilder builder = new();
@@ -35,7 +35,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Name: Alice, Age: 30, Salary: $75000.50");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_WithFormattingSpecifiers()
     {
         StringBuilder builder = new();
@@ -47,7 +47,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Date: 2025-06-23 14:30:45, Hex: 0xFF");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_EmptyInterpolatedString()
     {
         StringBuilder builder = new();
@@ -57,7 +57,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_OnlyLiteralString()
     {
         StringBuilder builder = new();
@@ -67,7 +67,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Hello World!");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_ChainedCalls()
     {
         StringBuilder builder = new();
@@ -79,7 +79,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("First: 1, Second: 2, Third: 3");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_WithExistingContent()
     {
         StringBuilder builder = new("Prefix ");
@@ -90,7 +90,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Prefix Value: 123");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_NullValues()
     {
         StringBuilder builder = new();
@@ -102,7 +102,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("String: '', Object: ''");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_GenericOverload_WithStringFormat()
     {
         StringBuilder builder = new();
@@ -113,7 +113,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("The answer is 42!");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_GenericOverload_WithSpanFormat()
     {
         StringBuilder builder = new();
@@ -124,7 +124,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Pi is approximately 3.14");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_ValueArrayOverload_WithStringFormat()
     {
         StringBuilder builder = new();
@@ -132,7 +132,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Numbers: 1, 2, 3");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_ValueArrayOverload_WithSpanFormat()
     {
         StringBuilder builder = new();
@@ -140,7 +140,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Values: Hello, 42, True");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_TwoValueOverload_WithStringFormat()
     {
         StringBuilder builder = new();
@@ -148,7 +148,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("First: 10, Second: 20");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_TwoValueOverload_WithSpanFormat()
     {
         StringBuilder builder = new();
@@ -156,7 +156,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("A: FF, B: 3.1");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_ThreeValueOverload_WithStringFormat()
     {
         StringBuilder builder = new();
@@ -164,7 +164,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("RGB: (255, 128, 0)");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_ThreeValueOverload_WithSpanFormat()
     {
         StringBuilder builder = new();
@@ -172,7 +172,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Point: (1.50, 2.70, 3.90)");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_FourValueOverload_WithStringFormat()
     {
         StringBuilder builder = new();
@@ -180,7 +180,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("RGBA: (255, 128, 64, 192)");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_FourValueOverload_WithSpanFormat()
     {
         StringBuilder builder = new();
@@ -188,7 +188,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Rect: (10, 20, 100, 200)");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_WithEnums()
     {
         StringBuilder builder = new();
@@ -196,7 +196,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Today is Monday");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_WithEnumValues()
     {
         StringBuilder builder = new();
@@ -204,7 +204,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Day: Friday");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_MixedOverloads()
     {
         StringBuilder builder = new();
@@ -221,7 +221,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Start: 1, Middle: 2, End: 3 and 4");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_LargeContent()
     {
         StringBuilder builder = new();
@@ -232,7 +232,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be($"Large: {largeText}");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_EmptyFormatString()
     {
         StringBuilder builder = new();
@@ -242,7 +242,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_FormatStringWithoutPlaceholders()
     {
         StringBuilder builder = new();
@@ -252,7 +252,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("No placeholders here");
     }
 
-    [Fact]
+    [Test]
     public void AppendJoin_EmptyValues_ReturnsUnchanged()
     {
         StringBuilder builder = new("Prefix");
@@ -262,7 +262,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Prefix");
     }
 
-    [Fact]
+    [Test]
     public void AppendJoin_SingleValue_AppendsWithoutSeparator()
     {
         StringBuilder builder = new();
@@ -273,7 +273,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("A");
     }
 
-    [Fact]
+    [Test]
     public void AppendJoin_MultipleValues_AppendsWithSeparators()
     {
         StringBuilder builder = new();
@@ -284,7 +284,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("A,B,C");
     }
 
-    [Fact]
+    [Test]
     public void AppendJoin_NullValue_AppendsEmptyForNull()
     {
         StringBuilder builder = new();
@@ -295,7 +295,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("A,,C");
     }
 
-    [Fact]
+    [Test]
     public void AppendJoin_ExistingContent_AppendsAfterExisting()
     {
         StringBuilder builder = new("Prefix:");
@@ -313,7 +313,7 @@ public unsafe class StringBuilderExtensionsTests
         Third
     }
 
-    [Fact]
+    [Test]
     public void GetChunks_NonFrameworkTarget_DoesNotHaveExtension()
     {
 #if NET481
@@ -326,7 +326,7 @@ public unsafe class StringBuilderExtensionsTests
 #endif
     }
 
-    [Fact]
+    [Test]
     public void GetChunks_EmptyStringBuilder_MoveNextReturnsFalse()
     {
         StringBuilder builder = new();
@@ -340,7 +340,7 @@ public unsafe class StringBuilderExtensionsTests
         count.Should().Be(1);
     }
 
-    [Fact]
+    [Test]
     public void GetChunks_BeforeMoveNext_CurrentThrowsInvalidOperation()
     {
         StringBuilder builder = new();
@@ -355,7 +355,7 @@ public unsafe class StringBuilderExtensionsTests
         action.Should().Throw<InvalidOperationException>();
     }
 
-    [Fact]
+    [Test]
     public void GetChunks_AfterEnd_CurrentReturnsLastChunk()
     {
         StringBuilder builder = new();
@@ -371,7 +371,7 @@ public unsafe class StringBuilderExtensionsTests
         chunks.Current.ToString().Should().Be(first.ToString());
     }
 
-    [Fact]
+    [Test]
     public void GetChunks_SingleChunk_ReturnsSingleChunkThatMatchesToString()
     {
         StringBuilder builder = new();
@@ -386,7 +386,7 @@ public unsafe class StringBuilderExtensionsTests
         chunkStrings.Should().Equal([builder.ToString()]);
     }
 
-    [Fact]
+    [Test]
     public void GetChunks_ForcedMultipleChunks_ConcatenationMatchesToString()
     {
         StringBuilder builder = new(capacity: 8);
@@ -407,7 +407,7 @@ public unsafe class StringBuilderExtensionsTests
         string.Concat(chunkStrings).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void GetChunks_ManyChunks_ConcatenationMatchesToString()
     {
         StringBuilder builder = new(capacity: 16);
@@ -431,7 +431,7 @@ public unsafe class StringBuilderExtensionsTests
         string.Concat(chunkStrings).Should().Be(expected);
     }
 
-    [Fact]
+    [Test]
     public void GetChunks_AllChunks_NonEmpty()
     {
         StringBuilder builder = new(capacity: 8);
@@ -445,7 +445,7 @@ public unsafe class StringBuilderExtensionsTests
         }
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_FullContent_CopiesAllCharacters()
     {
         StringBuilder builder = new("Hello, World!");
@@ -456,7 +456,7 @@ public unsafe class StringBuilderExtensionsTests
         destination.ToString().Should().Be("Hello, World!");
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_PartialFromMiddle_CopiesRequestedRange()
     {
         StringBuilder builder = new("Hello, World!");
@@ -467,7 +467,7 @@ public unsafe class StringBuilderExtensionsTests
         destination.ToString().Should().Be("World");
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_ZeroCount_CopiesNothing()
     {
         StringBuilder builder = new("Hello");
@@ -479,7 +479,7 @@ public unsafe class StringBuilderExtensionsTests
         destination.ToString().Should().Be("XXXXX");
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_EmptyBuilder_ZeroCount_Succeeds()
     {
         StringBuilder builder = new();
@@ -488,7 +488,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.CopyTo(0, destination, 0);
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_DestinationLargerThanCount_OnlyWritesCount()
     {
         StringBuilder builder = new("Hello");
@@ -500,7 +500,7 @@ public unsafe class StringBuilderExtensionsTests
         destination.ToString().Should().Be("HelXXXXXXX");
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_AcrossMultipleChunks_CopiesContiguousData()
     {
         // Force multiple chunks by exceeding capacity.
@@ -519,7 +519,7 @@ public unsafe class StringBuilderExtensionsTests
         partial.ToString().Should().Be("FGHIJK");
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_ManyChunks_CopiesContiguousData()
     {
         // Use the same pattern as GetChunks_ManyChunks_ConcatenationMatchesToString to
@@ -556,7 +556,7 @@ public unsafe class StringBuilderExtensionsTests
         new string(tail).Should().Be(expected.Substring(sourceIndex, 40));
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_NegativeCount_Throws()
     {
         StringBuilder builder = new("Hello");
@@ -567,7 +567,7 @@ public unsafe class StringBuilderExtensionsTests
         action.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("count");
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_NegativeSourceIndex_Throws()
     {
         StringBuilder builder = new("Hello");
@@ -578,7 +578,7 @@ public unsafe class StringBuilderExtensionsTests
         action.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("sourceIndex");
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_SourceIndexBeyondLength_Throws()
     {
         StringBuilder builder = new("Hello");
@@ -589,7 +589,7 @@ public unsafe class StringBuilderExtensionsTests
         action.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("sourceIndex");
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_SourceIndexPlusCountExceedsLength_Throws()
     {
         StringBuilder builder = new("Hello");
@@ -600,7 +600,7 @@ public unsafe class StringBuilderExtensionsTests
         action.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Test]
     public void CopyTo_DestinationTooShort_Throws()
     {
         StringBuilder builder = new("Hello");
@@ -611,7 +611,7 @@ public unsafe class StringBuilderExtensionsTests
         action.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Test]
     public void AppendSpan_MemoryOverload_NonEmpty_AppendsContent()
     {
         StringBuilder builder = new("Prefix:");
@@ -621,7 +621,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Prefix:abc");
     }
 
-    [Fact]
+    [Test]
     public void AppendSpan_MemoryOverload_Empty_LeavesBuilderUnchanged()
     {
         StringBuilder builder = new("Prefix");
@@ -631,7 +631,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Prefix");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_StringFormat_ValueSpan_FormatsAllPlaceholders()
     {
         StringBuilder builder = new();
@@ -642,7 +642,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("a-1-True");
     }
 
-    [Fact]
+    [Test]
     public void AppendFormatted_SpanFormat_ValueSpan_FormatsAllPlaceholders()
     {
         StringBuilder builder = new();
@@ -653,7 +653,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("x=42");
     }
 
-    [Fact]
+    [Test]
     public void AppendJoin_ReadOnlySpanOverload_EmptyValues_ReturnsBuilderUnchanged()
     {
         StringBuilder builder = new("Prefix");
@@ -663,7 +663,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("Prefix");
     }
 
-    [Fact]
+    [Test]
     public void AppendJoin_ReadOnlySpanOverload_SingleValue_AppendsWithoutSeparator()
     {
         StringBuilder builder = new();
@@ -674,7 +674,7 @@ public unsafe class StringBuilderExtensionsTests
         builder.ToString().Should().Be("A");
     }
 
-    [Fact]
+    [Test]
     public void AppendJoin_ReadOnlySpanOverload_MultipleValues_JoinsWithSeparator()
     {
         StringBuilder builder = new();

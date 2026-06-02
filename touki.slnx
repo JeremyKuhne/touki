@@ -31,6 +31,9 @@
   <Project Path="touki.fuzz/touki.fuzz.csproj">
     <Platform Project="x64" />
   </Project>
+  <Project Path="touki.msbuildshim/touki.msbuildshim.csproj">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="touki.perf/touki.perf.csproj">
     <Platform Project="x64" />
   </Project>

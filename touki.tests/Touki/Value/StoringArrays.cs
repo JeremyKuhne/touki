@@ -6,35 +6,35 @@ namespace Touki;
 
 public class StoringArrays
 {
-    [Fact]
+    [Test]
     public void ByteArray()
     {
         byte[] b = new byte[10];
         Value value;
 
         value = Value.Create(b);
-        Assert.Equal(typeof(byte[]), value.Type);
-        Assert.Same(b, value.As<byte[]>());
-        Assert.Equal(b, (byte[])value.As<object>());
+        value.Type.Should().Be(typeof(byte[]));
+        value.As<byte[]>().Should().BeSameAs(b);
+        ((byte[])value.As<object>()).Should().Equal(b);
 
         Assert.Throws<InvalidCastException>(() => value.As<ArraySegment<byte>>());
     }
 
-    [Fact]
+    [Test]
     public void CharArray()
     {
         char[] b = new char[10];
         Value value;
 
         value = Value.Create(b);
-        Assert.Equal(typeof(char[]), value.Type);
-        Assert.Same(b, value.As<char[]>());
-        Assert.Equal(b, (char[])value.As<object>());
+        value.Type.Should().Be(typeof(char[]));
+        value.As<char[]>().Should().BeSameAs(b);
+        ((char[])value.As<object>()).Should().Equal(b);
 
         Assert.Throws<InvalidCastException>(() => value.As<ArraySegment<char>>());
     }
 
-    [Fact]
+    [Test]
     public void ByteSegment()
     {
         byte[] b = new byte[10];
@@ -42,27 +42,27 @@ public class StoringArrays
 
         ArraySegment<byte> segment = new(b);
         value = Value.Create(segment);
-        Assert.Equal(typeof(ArraySegment<byte>), value.Type);
-        Assert.Equal(segment, value.As<ArraySegment<byte>>());
-        Assert.Equal(segment, (ArraySegment<byte>)value.As<object>());
+        value.Type.Should().Be(typeof(ArraySegment<byte>));
+        value.As<ArraySegment<byte>>().Should().Equal(segment);
+        ((ArraySegment<byte>)value.As<object>()).Should().Equal(segment);
         Assert.Throws<InvalidCastException>(() => value.As<byte[]>());
 
         segment = new(b, 0, 0);
         value = Value.Create(segment);
-        Assert.Equal(typeof(ArraySegment<byte>), value.Type);
-        Assert.Equal(segment, value.As<ArraySegment<byte>>());
-        Assert.Equal(segment, (ArraySegment<byte>)value.As<object>());
+        value.Type.Should().Be(typeof(ArraySegment<byte>));
+        value.As<ArraySegment<byte>>().Should().Equal(segment);
+        ((ArraySegment<byte>)value.As<object>()).Should().Equal(segment);
         Assert.Throws<InvalidCastException>(() => value.As<byte[]>());
 
         segment = new(b, 1, 1);
         value = Value.Create(segment);
-        Assert.Equal(typeof(ArraySegment<byte>), value.Type);
-        Assert.Equal(segment, value.As<ArraySegment<byte>>());
-        Assert.Equal(segment, (ArraySegment<byte>)value.As<object>());
+        value.Type.Should().Be(typeof(ArraySegment<byte>));
+        value.As<ArraySegment<byte>>().Should().Equal(segment);
+        ((ArraySegment<byte>)value.As<object>()).Should().Equal(segment);
         Assert.Throws<InvalidCastException>(() => value.As<byte[]>());
     }
 
-    [Fact]
+    [Test]
     public void CharSegment()
     {
         char[] b = new char[10];
@@ -70,34 +70,34 @@ public class StoringArrays
 
         ArraySegment<char> segment = new(b);
         value = Value.Create(segment);
-        Assert.Equal(typeof(ArraySegment<char>), value.Type);
-        Assert.Equal(segment, value.As<ArraySegment<char>>());
-        Assert.Equal(segment, (ArraySegment<char>)value.As<object>());
+        value.Type.Should().Be(typeof(ArraySegment<char>));
+        value.As<ArraySegment<char>>().Should().Equal(segment);
+        ((ArraySegment<char>)value.As<object>()).Should().Equal(segment);
         Assert.Throws<InvalidCastException>(() => value.As<char[]>());
 
         segment = new(b, 0, 0);
         value = Value.Create(segment);
-        Assert.Equal(typeof(ArraySegment<char>), value.Type);
-        Assert.Equal(segment, value.As<ArraySegment<char>>());
-        Assert.Equal(segment, (ArraySegment<char>)value.As<object>());
+        value.Type.Should().Be(typeof(ArraySegment<char>));
+        value.As<ArraySegment<char>>().Should().Equal(segment);
+        ((ArraySegment<char>)value.As<object>()).Should().Equal(segment);
         Assert.Throws<InvalidCastException>(() => value.As<char[]>());
 
         segment = new(b, 1, 1);
         value = Value.Create(segment);
-        Assert.Equal(typeof(ArraySegment<char>), value.Type);
-        Assert.Equal(segment, value.As<ArraySegment<char>>());
-        Assert.Equal(segment, (ArraySegment<char>)value.As<object>());
+        value.Type.Should().Be(typeof(ArraySegment<char>));
+        value.As<ArraySegment<char>>().Should().Equal(segment);
+        ((ArraySegment<char>)value.As<object>()).Should().Equal(segment);
         Assert.Throws<InvalidCastException>(() => value.As<char[]>());
     }
 
-    [Fact]
+    [Test]
     public void ArraySegment_NullByteArray_Throws()
     {
         ArraySegment<byte> segment = default;
         Assert.Throws<ArgumentNullException>(() => Value.Create(segment));
     }
 
-    [Fact]
+    [Test]
     public void ArraySegment_NullCharArray_Throws()
     {
         ArraySegment<char> segment = default;

@@ -6,35 +6,35 @@ namespace Touki;
 
 public class SpanExtensionsStartsEndsWithTests
 {
-    [Fact]
+    [Test]
     public void StartsWith_Char_Match_ReturnsTrue()
     {
         ReadOnlySpan<char> span = "hello".AsSpan();
         span.StartsWith('h').Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_Char_NoMatch_ReturnsFalse()
     {
         ReadOnlySpan<char> span = "hello".AsSpan();
         span.StartsWith('e').Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_EmptySpan_ReturnsFalse()
     {
         ReadOnlySpan<char> span = default;
         span.StartsWith('h').Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_SingleElement_Match_ReturnsTrue()
     {
         ReadOnlySpan<int> span = [42];
         span.StartsWith(42).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_Byte_Match_ReturnsTrue()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -42,7 +42,7 @@ public class SpanExtensionsStartsEndsWithTests
         span.StartsWith((byte)2).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_String_ReferenceType_ReturnsCorrect()
     {
         ReadOnlySpan<string> span = ["a", "b", "c"];
@@ -50,14 +50,14 @@ public class SpanExtensionsStartsEndsWithTests
         span.StartsWith("b").Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_NullReference_Match_ReturnsTrue()
     {
         ReadOnlySpan<string?> span = [null, "b"];
         span.StartsWith((string?)null).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void StartsWith_OnSpan_Char_ReturnsCorrect()
     {
         Span<char> span = "hello".ToCharArray();
@@ -65,35 +65,35 @@ public class SpanExtensionsStartsEndsWithTests
         span.StartsWith('e').Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_Char_Match_ReturnsTrue()
     {
         ReadOnlySpan<char> span = "hello".AsSpan();
         span.EndsWith('o').Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_Char_NoMatch_ReturnsFalse()
     {
         ReadOnlySpan<char> span = "hello".AsSpan();
         span.EndsWith('l').Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_EmptySpan_ReturnsFalse()
     {
         ReadOnlySpan<char> span = default;
         span.EndsWith('o').Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_SingleElement_Match_ReturnsTrue()
     {
         ReadOnlySpan<int> span = [42];
         span.EndsWith(42).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_Byte_Match_ReturnsTrue()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -101,14 +101,14 @@ public class SpanExtensionsStartsEndsWithTests
         span.EndsWith((byte)2).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_NullReference_Match_ReturnsTrue()
     {
         ReadOnlySpan<string?> span = ["a", null];
         span.EndsWith((string?)null).Should().BeTrue();
     }
 
-    [Fact]
+    [Test]
     public void EndsWith_OnSpan_Char_ReturnsCorrect()
     {
         Span<char> span = "hello".ToCharArray();
