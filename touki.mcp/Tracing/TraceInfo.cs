@@ -42,7 +42,10 @@ internal sealed class TraceInfo
     public TraceFormat Format { get; }
 
     /// <summary>
-    ///  Total scoped wall-clock time across all samples, in milliseconds.
+    ///  Sum of the per-sample weights across all samples, in milliseconds. This is
+    ///  CPU time, not wall-clock: because every thread's samples are included, the
+    ///  value can exceed the trace's wall-clock span when multiple threads ran
+    ///  concurrently.
     /// </summary>
     public double DurationMs { get; }
 

@@ -14,6 +14,9 @@ namespace Touki.Mcp.Tracing;
 /// </summary>
 internal static partial class FrameNames
 {
+    // Cap any single fold-pattern match so a pathological user pattern cannot hang the server.
+    private static readonly TimeSpan s_foldPatternTimeout = TimeSpan.FromSeconds(1);
+
     /// <summary>
     ///  The default set of leaf-frame fold patterns. A leaf frame whose shortened
     ///  name matches any of these is folded into its caller. Covers the synthetic
@@ -60,7 +63,9 @@ internal static partial class FrameNames
         Regex[] compiled = new Regex[patterns.Count];
         for (int i = 0; i < patterns.Count; i++)
         {
-            compiled[i] = new Regex(patterns[i], RegexOptions.CultureInvariant);
+            // The fold patterns are user-influenced (the MCP `fold` parameter), so a
+            // match timeout guards against a pathological pattern hanging the server.
+            compiled[i] = new Regex(patterns[i], RegexOptions.CultureInvariant, s_foldPatternTimeout);
         }
 
         return compiled;

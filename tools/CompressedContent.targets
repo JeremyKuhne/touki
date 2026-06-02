@@ -28,8 +28,19 @@
   -->
 
   <PropertyGroup>
-    <!-- Staging location for extracted files; kept out of the output until copied. -->
-    <CompressedContentIntermediateDirectory Condition="'$(CompressedContentIntermediateDirectory)' == ''">$(IntermediateOutputPath)CompressedContent\</CompressedContentIntermediateDirectory>
+    <!--
+      Staging location for extracted files; kept out of the output until copied.
+
+      The trailing $(TargetFramework) is required for correctness, not just tidiness.
+      This file is imported from the project body, so this PropertyGroup is evaluated
+      before the SDK appends the target framework to $(IntermediateOutputPath). Without
+      the explicit $(TargetFramework), every inner build of a multi-targeted project
+      (e.g. touki.perf's net10.0;net481) would share one staging directory, and two
+      inner builds running in parallel race on the Unzip below, failing intermittently
+      with MSB3936 ("the process cannot access the file ... because it is being used by
+      another process"). Isolating per target framework removes the race.
+    -->
+    <CompressedContentIntermediateDirectory Condition="'$(CompressedContentIntermediateDirectory)' == ''">$(IntermediateOutputPath)CompressedContent\$(TargetFramework)\</CompressedContentIntermediateDirectory>
   </PropertyGroup>
 
   <!--

@@ -72,9 +72,9 @@ internal static class ConsoleAnalyzer
 
                     break;
                 case "--top":
-                    if (i + 1 < args.Length)
+                    if (i + 1 < args.Length && int.TryParse(args[++i], out int parsedTop))
                     {
-                        _ = int.TryParse(args[++i], out top);
+                        top = parsedTop;
                     }
 
                     break;

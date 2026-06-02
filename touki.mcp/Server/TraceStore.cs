@@ -14,7 +14,12 @@ namespace Touki.Mcp.Server;
 public sealed class TraceStore
 {
     private readonly TraceLoader _loader = new();
-    private readonly ConcurrentDictionary<string, LoadedTrace> _cache = new(StringComparer.OrdinalIgnoreCase);
+
+    // Match the cache's path comparison to the host file system: Windows and macOS
+    // are case-insensitive, Linux is case-sensitive, so distinct-by-case paths must
+    // not be conflated there.
+    private readonly ConcurrentDictionary<string, LoadedTrace> _cache = new(
+        OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     ///  Returns the loaded trace for <paramref name="path"/>, loading and caching

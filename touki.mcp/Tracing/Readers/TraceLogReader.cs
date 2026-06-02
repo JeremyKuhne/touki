@@ -71,7 +71,7 @@ internal abstract class TraceLogReader : ITraceReader
         {
             if (extractedPdbDirectory is not null)
             {
-                symbolReader.SymbolPath = $"{symbolsDirectory};{extractedPdbDirectory}";
+                symbolReader.SymbolPath = $"{symbolsDirectory}{Path.PathSeparator}{extractedPdbDirectory}";
             }
             else if (!string.IsNullOrEmpty(symbolsDirectory))
             {

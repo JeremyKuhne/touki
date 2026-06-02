@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
 namespace Touki.Mcp.Tracing;
@@ -35,7 +36,11 @@ namespace Touki.Mcp.Tracing;
 internal sealed class FoldingAggregator
 {
     private readonly IReadOnlyList<SampleStack> _samples;
-    private readonly Dictionary<string, string> _shortCache = new(StringComparer.Ordinal);
+
+    // A single FoldingAggregator is cached on LoadedTrace and can be queried
+    // concurrently through the singleton TraceStore, so the short-name cache must
+    // be safe for parallel readers and writers.
+    private readonly ConcurrentDictionary<string, string> _shortCache = new(StringComparer.Ordinal);
 
     /// <summary>
     ///  Initializes a new <see cref="FoldingAggregator"/> over the given samples.
@@ -46,16 +51,7 @@ internal sealed class FoldingAggregator
         _samples = samples;
     }
 
-    private string ShortOf(string name)
-    {
-        if (!_shortCache.TryGetValue(name, out string? value))
-        {
-            value = FrameNames.Short(name);
-            _shortCache[name] = value;
-        }
-
-        return value;
-    }
+    private string ShortOf(string name) => _shortCache.GetOrAdd(name, static n => FrameNames.Short(n));
 
     /// <summary>
     ///  Finds the index of the first frame (outermost-first) containing
