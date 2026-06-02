@@ -75,10 +75,9 @@ jobs:
 
         dotnet test -c $configuration --no-build `
           -p:TestingPlatformCaptureOutput=false `
-          -- `
           --results-directory "$resultsDir" `
-          --report-xunit-trx `
-          --show-live-output on `
+          --report-trx `
+          --output Detailed `
           @extraArgs
     - name: Generate coverage report
       if: always() && matrix.configuration == 'Release'
@@ -209,10 +208,9 @@ jobs:
         dotnet test touki.tests/touki.tests.csproj -c Release -f net10.0 --no-build \
           $_PlatformArgs \
           -p:TestingPlatformCaptureOutput=false \
-          -- \
           --results-directory "$resultsDir" \
-          --report-xunit-trx \
-          --show-live-output on
+          --report-trx \
+          --output Detailed
     - name: Upload raw logs
       if: always()
       uses: actions/upload-artifact@v4
@@ -256,10 +254,9 @@ jobs:
 
         xvfb-run --auto-servernum dotnet test touki.tests/touki.tests.csproj -c Release -f net10.0 --no-build \
           -p:TestingPlatformCaptureOutput=false \
-          -- \
           --results-directory "$resultsDir" \
-          --report-xunit-trx \
-          --show-live-output on
+          --report-trx \
+          --output Detailed
     - name: Upload raw logs
       if: always()
       uses: actions/upload-artifact@v4
