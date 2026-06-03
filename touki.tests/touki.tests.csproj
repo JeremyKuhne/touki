@@ -58,6 +58,8 @@
          a `git` executable on PATH. -->
     <PackageReference Include="LibGit2Sharp" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" PrivateAssets="all" />
+    <!-- Enables the MTP runner's TRX report option used by CI. -->
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" PrivateAssets="all" />
     <!-- PrivateAssets so the test framework does not flow transitively to any project that references this one. -->
     <PackageReference Include="MSTest.TestFramework" PrivateAssets="all" />
     <PackageReference Include="MSTest.TestAdapter" PrivateAssets="all" />
