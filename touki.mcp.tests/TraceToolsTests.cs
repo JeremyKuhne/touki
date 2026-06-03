@@ -98,6 +98,19 @@ public class TraceToolsTests
     }
 
     [Test]
+    public void SourceHeatmap_SpeedscopeHasNoLineData_ReturnsEmptyLinesWithNote()
+    {
+        TraceStore store = new();
+
+        JsonElement root = Parse(TraceTools.SourceHeatmap(store, Fixture, "Engine.cs"));
+
+        root.GetProperty("lines").GetArrayLength().Should().Be(0);
+        root.GetProperty("sourceFound").GetBoolean().Should().BeFalse();
+        root.GetProperty("annotatedSource").ValueKind.Should().Be(JsonValueKind.Null);
+        root.GetProperty("note").GetString().Should().Contain("Engine.cs");
+    }
+
+    [Test]
     public void ListThreads_ReportsPerThreadSampleCounts()
     {
         TraceStore store = new();

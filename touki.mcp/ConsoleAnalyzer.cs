@@ -12,7 +12,7 @@ namespace Touki.Mcp;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   Usage: <c>touki.mcp analyze &lt;trace&gt; [--root &lt;substr&gt;] [--callers &lt;substr&gt;] [--lines [&lt;methodSubstr&gt;]] [--symbols &lt;dir&gt;] [--top N]</c>.
+///   Usage: <c>touki.mcp analyze &lt;trace&gt; [--root &lt;substr&gt;] [--callers &lt;substr&gt;] [--lines [&lt;methodSubstr&gt;]] [--heatmap &lt;sourceFile&gt;] [--symbols &lt;dir&gt;] [--top N]</c>.
 ///  </para>
 /// </remarks>
 internal static class ConsoleAnalyzer
@@ -26,7 +26,7 @@ internal static class ConsoleAnalyzer
     {
         if (args.Length == 0)
         {
-            Console.Error.WriteLine("Usage: touki.mcp analyze <trace> [--root <substr>] [--callers <substr>] [--lines [<methodSubstr>]] [--symbols <dir>] [--top N]");
+            Console.Error.WriteLine("Usage: touki.mcp analyze <trace> [--root <substr>] [--callers <substr>] [--lines [<methodSubstr>]] [--heatmap <sourceFile>] [--symbols <dir>] [--top N]");
             return 1;
         }
 
@@ -34,6 +34,7 @@ internal static class ConsoleAnalyzer
         string root = "";
         string callers = "";
         string lines = "";
+        string heatmap = "";
         string symbols = "";
         bool linesRequested = false;
         int top = 25;
@@ -61,6 +62,13 @@ internal static class ConsoleAnalyzer
                     if (i + 1 < args.Length && !args[i + 1].StartsWith("--", StringComparison.Ordinal))
                     {
                         lines = args[++i];
+                    }
+
+                    break;
+                case "--heatmap":
+                    if (i + 1 < args.Length)
+                    {
+                        heatmap = args[++i];
                     }
 
                     break;
@@ -119,6 +127,37 @@ internal static class ConsoleAnalyzer
             foreach (LineRow row in result.Rows)
             {
                 Console.WriteLine($"  {row.Milliseconds,9:N1} ms  {row.PercentOfScope,5:N1}%  {row.Location}  {row.Method}");
+            }
+
+            return 0;
+        }
+
+        if (heatmap.Length > 0)
+        {
+            string fileName = Path.GetFileName(heatmap);
+            SourceHeatmapResult result = trace.Aggregator.SourceHeatmap(fileName, FrameNames.DefaultFoldPatterns);
+            Console.WriteLine(
+                $"\nSOURCE HEATMAP '{result.File}' ({result.FileMilliseconds:N1} ms, "
+                + $"{(result.ScopeMilliseconds > 0 ? 100.0 * result.FileMilliseconds / result.ScopeMilliseconds : 0.0):N1}% of trace)");
+
+            if (result.Lines.Count == 0)
+            {
+                Console.WriteLine($"  No samples attributed to '{fileName}'. Check the trace has PDBs (--symbols) and the file name.");
+                return 0;
+            }
+
+            if (SourceAnnotator.TryReadSourceLines(heatmap, out string[] sourceLines))
+            {
+                Console.WriteLine();
+                Console.Write(SourceAnnotator.Render(sourceLines, result.Lines, result.FileMilliseconds));
+            }
+            else
+            {
+                Console.WriteLine("  (pass the full on-disk path to render annotated source; showing line data only)");
+                foreach (HeatLine row in result.Lines)
+                {
+                    Console.WriteLine($"  {row.Milliseconds,9:N1} ms  {row.PercentOfScope,5:N1}%  line {row.Line,5}  {row.Method}");
+                }
             }
 
             return 0;

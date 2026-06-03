@@ -139,4 +139,14 @@ public class ConsoleAnalyzerTests
         exit.Should().Be(0);
         output.Should().Contain("TOP SELF-TIME");
     }
+
+    [Test]
+    public void Run_HeatmapFlag_SpeedscopeHasNoLineData_PrintsHeaderAndEmptyNote()
+    {
+        (int exit, string output, _) = Run(Fixture, "--heatmap", "Engine.cs");
+
+        exit.Should().Be(0);
+        output.Should().Contain("SOURCE HEATMAP");
+        output.Should().Contain("No samples attributed to 'Engine.cs'");
+    }
 }

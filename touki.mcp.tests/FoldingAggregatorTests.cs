@@ -87,6 +87,26 @@ public class FoldingAggregatorTests
     }
 
     [Test]
+    public void CallersOf_MoreCallersThanTop_TruncatesToHeaviest()
+    {
+        // Three distinct callers of Target; top of 2 keeps only the two heaviest.
+        List<SampleStack> samples =
+        [
+            new(["Ccc", "Target"], 1.0, "1"),
+            new(["Bbb", "Target"], 2.0, "1"),
+            new(["Aaa", "Target"], 3.0, "1")
+        ];
+
+        CallersResult result = new FoldingAggregator(samples).CallersOf("Target", "", top: 2);
+
+        result.Callers.Should().HaveCount(2);
+        result.Callers[0].Milliseconds.Should().Be(3.0);
+        result.Callers[1].Milliseconds.Should().Be(2.0);
+        // The 1 ms caller is dropped by the truncation.
+        result.Callers.Should().NotContain(static c => c.Milliseconds == 1.0);
+    }
+
+    [Test]
     public void SelfTime_RootScoping_ExcludesSamplesWithoutRootFrame()
     {
         RankingResult result = LoadFolding().Aggregator.SelfTime("MyApp.Work", FrameNames.DefaultFoldPatterns, 25);
@@ -222,5 +242,129 @@ public class FoldingAggregatorTests
         result.Callers.Should().ContainSingle();
         result.Callers[0].Caller.Should().Be("<root>");
         result.Callers[0].Milliseconds.Should().Be(25.0);
+    }
+
+    [Test]
+    public void SourceHeatmap_BucketsLeafSamplesByLineFoldingHelperLeaves()
+    {
+        List<SampleStack> samples =
+        [
+            new(["app!Run"], 5.0, "1", ["Engine.cs:10"]),
+            new(["app!Run"], 3.0, "1", ["Engine.cs:20"]),
+            new(["app!Run", "app!WriteBarrier"], 4.0, "1", ["Engine.cs:10", "Helpers.cs:99"]),
+            new(["app!Other"], 8.0, "1", ["Other.cs:1"])
+        ];
+
+        SourceHeatmapResult result = new FoldingAggregator(samples).SourceHeatmap("Engine.cs", FrameNames.DefaultFoldPatterns);
+
+        // Percent is over the whole trace (20 ms), file total is the 12 ms in Engine.cs.
+        result.ScopeMilliseconds.Should().Be(20.0);
+        result.File.Should().Be("Engine.cs");
+        result.FileMilliseconds.Should().Be(12.0);
+
+        result.Lines.Should().HaveCount(2);
+        // Ordered by line number, not by time.
+        result.Lines[0].Line.Should().Be(10);
+        result.Lines[0].Milliseconds.Should().Be(9.0);
+        result.Lines[0].SampleCount.Should().Be(2);
+        result.Lines[0].Method.Should().Be("Run");
+        result.Lines[0].PercentOfScope.Should().Be(45.0);
+        result.Lines[1].Line.Should().Be(20);
+        result.Lines[1].Milliseconds.Should().Be(3.0);
+    }
+
+    [Test]
+    public void SourceHeatmap_MatchesFileNameCaseInsensitively()
+    {
+        List<SampleStack> samples =
+        [
+            new(["app!Run"], 5.0, "1", ["Engine.cs:10"])
+        ];
+
+        SourceHeatmapResult result = new FoldingAggregator(samples).SourceHeatmap("ENGINE.CS", FrameNames.DefaultFoldPatterns);
+
+        result.Lines.Should().ContainSingle();
+        // The file name keeps the casing recorded in the trace.
+        result.File.Should().Be("Engine.cs");
+    }
+
+    [Test]
+    public void SourceHeatmap_SamplesWithoutLocationsOrOtherFiles_AreExcluded()
+    {
+        List<SampleStack> samples =
+        [
+            new(["app!Run"], 5.0, "1", ["Engine.cs:10"]),
+            new(["app!Run"], 9.0, "1"),
+            new(["app!Run"], 4.0, "1", [""]),
+            new(["app!Run"], 2.0, "1", ["Other.cs:3"])
+        ];
+
+        SourceHeatmapResult result = new FoldingAggregator(samples).SourceHeatmap("Engine.cs", FrameNames.DefaultFoldPatterns);
+
+        // Whole-trace total still counts every sample; only Engine.cs contributes lines.
+        result.ScopeMilliseconds.Should().Be(20.0);
+        result.FileMilliseconds.Should().Be(5.0);
+        result.Lines.Should().ContainSingle();
+        result.Lines[0].Line.Should().Be(10);
+    }
+
+    [Test]
+    public void SourceHeatmap_NoMatchingFile_ReturnsEmptyLines()
+    {
+        List<SampleStack> samples =
+        [
+            new(["app!Run"], 5.0, "1", ["Engine.cs:10"])
+        ];
+
+        SourceHeatmapResult result = new FoldingAggregator(samples).SourceHeatmap("Missing.cs", FrameNames.DefaultFoldPatterns);
+
+        result.Lines.Should().BeEmpty();
+        result.FileMilliseconds.Should().Be(0.0);
+        result.ScopeMilliseconds.Should().Be(5.0);
+    }
+
+    [Test]
+    public void SourceHeatmap_CompetingMethodsOnOneLine_ReportsDominantByTime()
+    {
+        // Two methods resolve to the same Engine.cs:10; the heaviest one dominates.
+        List<SampleStack> samples =
+        [
+            new(["app!Run"], 3.0, "1", ["Engine.cs:10"]),
+            new(["app!Helper"], 7.0, "1", ["Engine.cs:10"])
+        ];
+
+        SourceHeatmapResult result = new FoldingAggregator(samples).SourceHeatmap("Engine.cs", FrameNames.DefaultFoldPatterns);
+
+        result.Lines.Should().ContainSingle();
+        result.Lines[0].Line.Should().Be(10);
+        result.Lines[0].Milliseconds.Should().Be(10.0);
+        result.Lines[0].SampleCount.Should().Be(2);
+        // Helper (7 ms) outweighs Run (3 ms) for the line.
+        result.Lines[0].Method.Should().Be("Helper");
+    }
+
+    [Test]
+    [Arguments("Engine.cs")]
+    [Arguments("Engine.cs:")]
+    [Arguments("Engine.cs:abc")]
+    [Arguments(":10")]
+    [Arguments("Engine.cs:0")]
+    [Arguments("Engine.cs:-1")]
+    public void SourceHeatmap_MalformedLeafLocation_IsExcluded(string location)
+    {
+        // A location with no colon, a trailing colon, a non-numeric line, no file
+        // name, or a non-positive (non 1-based) line cannot be split into file:line
+        // and must not contribute to any file.
+        List<SampleStack> samples =
+        [
+            new(["app!Run"], 5.0, "1", [location])
+        ];
+
+        SourceHeatmapResult result = new FoldingAggregator(samples).SourceHeatmap("Engine.cs", FrameNames.DefaultFoldPatterns);
+
+        result.Lines.Should().BeEmpty();
+        result.FileMilliseconds.Should().Be(0.0);
+        // The sample still counts toward the whole-trace total.
+        result.ScopeMilliseconds.Should().Be(5.0);
     }
 }

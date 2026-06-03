@@ -55,6 +55,12 @@ is fine." On `net481` a hand-written specialized loop frequently beats the BCL b
 ## Decision flow for a new framework-only fast path
 
 1. Start with the simplest possible scalar loop and measure it as the baseline.
+   Capture the baseline on **both** `net10.0` and `net481` before editing, and
+   keep the full BenchmarkDotNet rows (`Mean`/`Error`/`StdDev`/`Allocated`), not
+   a one-line summary - see the before/after discipline in
+   [performance-testing](../performance-testing/SKILL.md). EventPipe line
+   profiling is net10-only, but every change still has to be re-measured on
+   net481 overall.
 2. Decide whether to specialize. See [specialization.md](specialization.md) for the
    `typeof(T)` pattern and primitive equivalence classes.
 3. Decide whether to defer to a BCL primitive. See
@@ -72,6 +78,10 @@ is fine." On `net481` a hand-written specialized loop frequently beats the BCL b
    modern path. If a specialization is harmful on net10 (because the BCL is
    actually vectorized there), guard it with `#if NETFRAMEWORK` so only `net481`
    gets the loop.
+8. Report both TFMs' before/after tables together, and confirm the targeted hot
+   line/method from the net10 trace actually shrank (e.g. `System.Array.Copy`
+   self-time dropping). A faster `Mean` with the targeted frame unchanged is
+   usually noise or an unrelated win.
 
 ## Quick reference: ratios from real benchmarks
 

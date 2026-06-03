@@ -60,3 +60,35 @@ internal sealed record LineRow(string Method, string Location, double Millisecon
 /// <param name="MethodFilter">The substring the methods were matched on, or empty for every method.</param>
 /// <param name="Rows">The ranked source lines, highest first.</param>
 internal sealed record LineRankingResult(double ScopeMilliseconds, string MethodFilter, IReadOnlyList<LineRow> Rows);
+
+/// <summary>
+///  Self-time attributed to a single source line of a file in a heat map.
+/// </summary>
+/// <param name="Line">The 1-based source line number.</param>
+/// <param name="Milliseconds">Self-time attributed to the line, in milliseconds.</param>
+/// <param name="PercentOfScope">Share of the whole-trace self-time, in percent.</param>
+/// <param name="SampleCount">Number of leaf samples attributed to the line.</param>
+/// <param name="Method">The shortened method that dominates the line's self-time.</param>
+internal sealed record HeatLine(int Line, double Milliseconds, double PercentOfScope, int SampleCount, string Method);
+
+/// <summary>
+///  A per-line self-time heat map for a single source file: each leaf sample
+///  (after folding JIT-helper leaves into their caller) is bucketed by the source
+///  line that was executing, ordered by line number for overlaying onto the source.
+/// </summary>
+/// <remarks>
+///  <para>
+///   Only samples carrying per-frame source locations contribute; speedscope
+///   inputs have none, so a heat map is meaningful only for <c>.nettrace</c> and
+///   <c>.etl</c> traces read with local PDBs present.
+///  </para>
+/// </remarks>
+/// <param name="ScopeMilliseconds">Total whole-trace time, in milliseconds (the percent denominator).</param>
+/// <param name="File">The source file name the lines belong to (no directory).</param>
+/// <param name="FileMilliseconds">Self-time attributed to the file across all its lines, in milliseconds.</param>
+/// <param name="Lines">The hot lines of the file, ordered by line number.</param>
+internal sealed record SourceHeatmapResult(
+    double ScopeMilliseconds,
+    string File,
+    double FileMilliseconds,
+    IReadOnlyList<HeatLine> Lines);
