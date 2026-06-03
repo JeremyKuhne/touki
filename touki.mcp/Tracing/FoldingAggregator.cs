@@ -293,6 +293,114 @@ internal sealed class FoldingAggregator
         return new LineRankingResult(total, methodFilter, rows);
     }
 
+    /// <summary>
+    ///  Computes a per-line self-time heat map for a single source file: each leaf
+    ///  sample (after folding JIT-helper leaves into their caller) whose executing
+    ///  source line belongs to <paramref name="fileName"/> is bucketed by line
+    ///  number, ordered by line for overlaying onto the source.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Matching is by file name only (the trace records the build-time file name,
+    ///   not its full path), so two source files that share a name are merged. The
+    ///   percent on each line is the share of whole-trace time, making absolute
+    ///   hotness comparable across files.
+    ///  </para>
+    /// </remarks>
+    /// <param name="fileName">The source file name to build the heat map for (no directory).</param>
+    /// <param name="foldPatterns">Leaf-frame fold patterns.</param>
+    /// <returns>The per-line heat map, ordered by line number.</returns>
+    public SourceHeatmapResult SourceHeatmap(string fileName, IReadOnlyList<string> foldPatterns)
+    {
+        Regex[] fold = FrameNames.CompileFoldPatterns(foldPatterns);
+        Dictionary<int, LineAccumulator> lines = new();
+        double traceTotal = 0.0;
+        double fileTotal = 0.0;
+        string matchedFile = fileName;
+
+        foreach (SampleStack sample in _samples)
+        {
+            IReadOnlyList<string> frames = sample.Frames;
+            if (frames.Count == 0)
+            {
+                continue;
+            }
+
+            traceTotal += sample.WeightMs;
+
+            IReadOnlyList<string>? locations = sample.FrameLocations;
+            if (locations is null)
+            {
+                continue;
+            }
+
+            int leafIdx = frames.Count - 1;
+            while (leafIdx > 0 && FrameNames.IsFolded(ShortOf(frames[leafIdx]), fold))
+            {
+                leafIdx--;
+            }
+
+            if (leafIdx >= locations.Count
+                || !TrySplitLocation(locations[leafIdx], out string leafFile, out int line)
+                || !string.Equals(leafFile, fileName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            // Preserve the file name's casing as recorded in the trace.
+            matchedFile = leafFile;
+            fileTotal += sample.WeightMs;
+
+            if (!lines.TryGetValue(line, out LineAccumulator? accumulator))
+            {
+                accumulator = new LineAccumulator();
+                lines[line] = accumulator;
+            }
+
+            accumulator.Add(sample.WeightMs, ShortOf(frames[leafIdx]));
+        }
+
+        List<HeatLine> rows = new(lines.Count);
+        foreach (KeyValuePair<int, LineAccumulator> pair in lines)
+        {
+            LineAccumulator accumulator = pair.Value;
+            double pct = traceTotal > 0 ? 100.0 * accumulator.Milliseconds / traceTotal : 0.0;
+            rows.Add(new HeatLine(pair.Key, accumulator.Milliseconds, pct, accumulator.SampleCount, accumulator.DominantMethod));
+        }
+
+        rows.Sort(static (a, b) => a.Line.CompareTo(b.Line));
+        return new SourceHeatmapResult(traceTotal, matchedFile, fileTotal, rows);
+    }
+
+    /// <summary>
+    ///  Splits a <c>file:line</c> location into its file name and line number.
+    ///  Returns <see langword="false"/> for empty, unresolved (<c>&lt;no source&gt;</c>)
+    ///  or otherwise malformed locations.
+    /// </summary>
+    private static bool TrySplitLocation(string location, out string file, out int line)
+    {
+        file = "";
+        line = 0;
+        if (location.Length == 0)
+        {
+            return false;
+        }
+
+        int colon = location.LastIndexOf(':');
+        if (colon <= 0 || colon == location.Length - 1)
+        {
+            return false;
+        }
+
+        if (!int.TryParse(location.AsSpan(colon + 1), out line))
+        {
+            return false;
+        }
+
+        file = location[..colon];
+        return true;
+    }
+
     private static List<RankRow> RankRows(Dictionary<string, double> times, double total, int top)
     {
         List<RankRow> rows = [];
@@ -309,5 +417,45 @@ internal sealed class FoldingAggregator
         }
 
         return rows;
+    }
+
+    /// <summary>
+    ///  Accumulates the self-time and sample count attributed to one source line,
+    ///  tracking which method dominates the line's time.
+    /// </summary>
+    private sealed class LineAccumulator
+    {
+        private readonly Dictionary<string, double> _methods = new(StringComparer.Ordinal);
+
+        public double Milliseconds { get; private set; }
+
+        public int SampleCount { get; private set; }
+
+        public void Add(double milliseconds, string method)
+        {
+            Milliseconds += milliseconds;
+            SampleCount++;
+            _methods.TryGetValue(method, out double current);
+            _methods[method] = current + milliseconds;
+        }
+
+        public string DominantMethod
+        {
+            get
+            {
+                string dominant = "";
+                double dominantMs = -1.0;
+                foreach (KeyValuePair<string, double> pair in _methods)
+                {
+                    if (pair.Value > dominantMs)
+                    {
+                        dominantMs = pair.Value;
+                        dominant = pair.Key;
+                    }
+                }
+
+                return dominant;
+            }
+        }
     }
 }

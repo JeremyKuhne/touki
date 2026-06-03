@@ -171,6 +171,82 @@ public static class TraceTools
     }
 
     /// <summary>
+    ///  Builds a per-line self-time heat map for one source file and, when the
+    ///  file is found on disk, a ready-to-render annotated source view.
+    /// </summary>
+    /// <param name="store">The trace cache (injected).</param>
+    /// <param name="path">Path to the trace file.</param>
+    /// <param name="file">Path or file name of the source file to map.</param>
+    /// <param name="fold">Optional fold patterns; defaults to the built-in JIT-helper list.</param>
+    /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
+    /// <returns>A JSON heat map plus, when resolvable, an annotated source listing.</returns>
+    [McpServerTool(Name = "source_heatmap")]
+    [Description(
+        "Per-line self-time heat map for a single source file: every leaf sample (after folding JIT-helper leaves "
+        + "into their caller) attributed to the line that was executing, ordered by line number so you can overlay "
+        + "hotness onto the source. Pass 'file' as the full on-disk path (e.g. n:/repos/touki/touki/Io/ExtGlob.cs) to "
+        + "also get a ready-to-render annotated listing with a per-line ms/percent/heat gutter; a bare file name still "
+        + "returns the JSON line data. Requires a .nettrace or .etl trace whose modules have portable PDBs; pass "
+        + "'symbols' pointing at the build-output directory (e.g. artifacts/.../touki.perf/net10.0). Speedscope inputs "
+        + "carry no line data and yield an empty map.")]
+    public static string SourceHeatmap(
+        TraceStore store,
+        [Description("Path to a .nettrace or .etl trace file (speedscope carries no line data).")] string path,
+        [Description("Full on-disk path (preferred) or bare name of the source file to map, e.g. ExtGlob.cs.")] string file,
+        [Description("Optional regex fold patterns; omit to use the built-in JIT-helper defaults.")] string[]? fold = null,
+        [Description(
+            "Optional build-output directory (e.g. artifacts/.../touki.perf/net10.0) whose assemblies' embedded "
+            + "portable PDBs are extracted so managed frames resolve to source lines.")]
+        string symbols = "")
+    {
+        FoldingAggregator aggregator = store.Get(path, NullIfEmpty(symbols)).Aggregator;
+        string fileName = Path.GetFileName(file);
+        SourceHeatmapResult result = aggregator.SourceHeatmap(fileName, fold ?? FrameNames.DefaultFoldPatterns);
+
+        string? annotatedSource = null;
+        bool sourceFound = false;
+        string? note = null;
+
+        if (result.Lines.Count == 0)
+        {
+            note =
+                $"No samples were attributed to '{fileName}'. Confirm the trace is a .nettrace or .etl read with "
+                + "PDBs (pass 'symbols'), and that the file name is correct - hot_lines lists the files that resolved.";
+        }
+        else if (SourceAnnotator.TryReadSourceLines(file, out string[] sourceLines))
+        {
+            sourceFound = true;
+            annotatedSource = SourceAnnotator.Render(sourceLines, result.Lines, result.FileMilliseconds);
+        }
+        else
+        {
+            note =
+                "Pass 'file' as the full on-disk path to also get an annotated source listing; "
+                + "the file was not found on disk, so only line data is returned.";
+        }
+
+        return Serialize(new
+        {
+            scopeMilliseconds = result.ScopeMilliseconds,
+            file = result.File,
+            fileMilliseconds = result.FileMilliseconds,
+            sourceFound,
+            sourcePath = sourceFound ? Path.GetFullPath(file) : null,
+            note,
+            lines = result.Lines.Select(line => new
+            {
+                line = line.Line,
+                method = line.Method,
+                milliseconds = line.Milliseconds,
+                percentOfTrace = line.PercentOfScope,
+                percentOfFile = result.FileMilliseconds > 0 ? 100.0 * line.Milliseconds / result.FileMilliseconds : 0.0,
+                sampleCount = line.SampleCount
+            }),
+            annotatedSource
+        });
+    }
+
+    /// <summary>
     ///  Lists the per-thread sample counts for a trace, to help pick a root frame
     ///  or spot idle thread-pool noise.
     /// </summary>

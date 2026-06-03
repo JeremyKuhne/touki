@@ -587,8 +587,14 @@ internal sealed partial class CompiledGlobStrategy
                     // terminal/deadend state.
                     while (true)
                     {
-                        while (Head < WorkCount && _work[Head].Start >= _work[Head].End)
+                        while (Head < WorkCount)
                         {
+                            ref ProgramRange skip = ref _work[Head];
+                            if (skip.Start < skip.End)
+                            {
+                                break;
+                            }
+
                             Head++;
                         }
 
@@ -612,20 +618,28 @@ internal sealed partial class CompiledGlobStrategy
                             break;
                         }
 
-                        int programIndex = _work[Head].Start;
+                        // Head is invariant for the remainder of this deterministic
+                        // iteration (only the skip loop above advances it), so resolve
+                        // the head range reference once instead of re-indexing the work
+                        // span on every field read and write below. The net481 slow-span
+                        // layout costs ~8 micro-ops per indexer access; a single hoisted
+                        // ref collapses that to one address computation.
+                        ref ProgramRange head = ref _work[Head];
+
+                        int programIndex = head.Start;
                         char opcode = _program[programIndex];
 
                         if (opcode == GlobOpCodes.AltStart
-                            && _work[Head].KindOverride != '\0'
-                            && WorkInput <= _work[Head].MinProgressInput)
+                            && head.KindOverride != '\0'
+                            && WorkInput <= head.MinProgressInput)
                         {
                             // Progress guard: refuse another iteration of a
                             // repeating block when the previous one consumed no
                             // input. Collapse the block (skip it) and continue
                             // with the rest, avoiding unbounded empty iterations.
                             int guardedBlockLength = _program[programIndex + 2];
-                            _work[Head].Start = programIndex + guardedBlockLength;
-                            _work[Head].KindOverride = '\0';
+                            head.Start = programIndex + guardedBlockLength;
+                            head.KindOverride = '\0';
                             continue;
                         }
 
@@ -638,7 +652,7 @@ internal sealed partial class CompiledGlobStrategy
                                 break;
                             }
 
-                            _work[Head].Start = programIndex + 2 + literalLength;
+                            head.Start = programIndex + 2 + literalLength;
                             WorkInput += literalLength;
                             continue;
                         }
@@ -656,7 +670,7 @@ internal sealed partial class CompiledGlobStrategy
                                 break;
                             }
 
-                            _work[Head].Start = programIndex + 1;
+                            head.Start = programIndex + 1;
                             WorkInput++;
                             continue;
                         }
@@ -684,7 +698,7 @@ internal sealed partial class CompiledGlobStrategy
                                 break;
                             }
 
-                            _work[Head].Start = programIndex + 2 + classLength;
+                            head.Start = programIndex + 2 + classLength;
                             WorkInput++;
                             continue;
                         }
@@ -734,14 +748,7 @@ internal sealed partial class CompiledGlobStrategy
                         int limit = _totalLength;
                         if (_separator != '\0')
                         {
-                            for (int j = WorkInput; j < _totalLength; j++)
-                            {
-                                if (CharAt(_first, _second, _firstLength, j) == _separator)
-                                {
-                                    limit = j;
-                                    break;
-                                }
-                            }
+                            limit = IndexOfSeparator(WorkInput);
                         }
 
                         auxValue = limit;
@@ -777,7 +784,7 @@ internal sealed partial class CompiledGlobStrategy
                     // Snapshot the choice configuration and push a frame.
                     int snapshotCount = WorkCount - Head;
                     EnsureArena(_arenaTop + snapshotCount);
-                    _work[Head..WorkCount].CopyTo(_arena[_arenaTop..]);
+                    CopyRanges(_work.Slice(Head, snapshotCount), _arena[_arenaTop..], snapshotCount);
 
                     EnsureFrames(_frameCount + 1);
                     _frames[_frameCount] = new Frame
@@ -885,6 +892,100 @@ internal sealed partial class CompiledGlobStrategy
             _arena = bigger;
         }
 
+        // Copies the first `count` ProgramRange values from `source` to
+        // `destination`. The backtracking save/restore moves only a few ranges per
+        // choice point, and at those tiny lengths the fixed per-call overhead of
+        // Span.CopyTo (its Buffer.Memmove length dispatch) dominates the actual
+        // copy - this save/restore was the single hottest cluster in the
+        // GlobEnumeratorExtGlobSingleWithRoot CPU trace. The common one-to-three
+        // range cases are unrolled into direct assignments off a hoisted ref (no
+        // bounds check, no Memmove setup); larger snapshots fall back to the bulk
+        // copy. Every call site copies between two distinct buffers (work, arena,
+        // rest) so the regions never overlap and a forward copy is always correct.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CopyRanges(ReadOnlySpan<ProgramRange> source, Span<ProgramRange> destination, int count)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            if (count > 3)
+            {
+                source[..count].CopyTo(destination);
+                return;
+            }
+
+            ref ProgramRange src = ref MemoryMarshal.GetReference(source);
+            ref ProgramRange dst = ref MemoryMarshal.GetReference(destination);
+            dst = src;
+            if (count == 1)
+            {
+                return;
+            }
+
+            Unsafe.Add(ref dst, 1) = Unsafe.Add(ref src, 1);
+            if (count == 2)
+            {
+                return;
+            }
+
+            Unsafe.Add(ref dst, 2) = Unsafe.Add(ref src, 2);
+        }
+
+        // Returns the index of the first separator at or after 'start' in the
+        // virtual _first + _second concatenation, clamped to _totalLength when none
+        // is found. The path-aware AnyRun choice point calls this once per push to
+        // bound its run, and it was the hottest scan in the engine after the literal
+        // compare. The previous form walked one character at a time through CharAt,
+        // paying the virtual-concatenation branch on every character; this routes
+        // each contiguous half through the vectorized span IndexOf instead.
+        //
+        // _totalLength can be clipped below _first.Length + _second.Length (the
+        // negation handler shortens it per candidate), so every search is bounded by
+        // it rather than by the raw span lengths.
+        private readonly int IndexOfSeparator(int start)
+        {
+            int total = _totalLength;
+            char separator = _separator;
+
+            if (start < _firstLength)
+            {
+                int firstEnd = Math.Min(_firstLength, total);
+                if (start < firstEnd)
+                {
+                    int relative = _first[start..firstEnd].IndexOf(separator);
+                    if (relative >= 0)
+                    {
+                        return start + relative;
+                    }
+                }
+
+                if (total > _firstLength)
+                {
+                    int found = _second[..(total - _firstLength)].IndexOf(separator);
+                    if (found >= 0)
+                    {
+                        return _firstLength + found;
+                    }
+                }
+
+                return total;
+            }
+
+            int secondCount = total - start;
+            if (secondCount > 0)
+            {
+                int found = _second.Slice(start - _firstLength, secondCount).IndexOf(separator);
+                if (found >= 0)
+                {
+                    return start + found;
+                }
+            }
+
+            return total;
+        }
+
         // Records the choice configuration captured by the given frame as a
         // proven failure.
         private readonly void RecordFrameFailure(int frameIdx, ref ExtGlobMatchState state)
@@ -921,7 +1022,7 @@ internal sealed partial class CompiledGlobStrategy
                     return false;
                 }
 
-                snap.CopyTo(_work);
+                CopyRanges(snap, _work, snapCount);
                 WorkCount = snapCount;
                 Head = 0;
                 _work[0].Start = programIndex + 1;
@@ -944,7 +1045,7 @@ internal sealed partial class CompiledGlobStrategy
                     return false;
                 }
 
-                snap.CopyTo(_work);
+                CopyRanges(snap, _work, snapCount);
                 WorkCount = snapCount;
                 Head = 0;
                 _work[0].Start = programIndex + 2;
@@ -981,7 +1082,7 @@ internal sealed partial class CompiledGlobStrategy
                         frame.Cursor = j + 1;
                         int altBodyStart = programIndex + _program[altOffsetBase + j];
                         int altBodyEnd = (j + 1 < altCount) ? programIndex + _program[altOffsetBase + j + 1] - 1 : altEndIndex;
-                        snap.CopyTo(_rest);
+                        CopyRanges(snap, _rest, snapCount);
                         _rest[0].Start = afterEnd;
                         _rest[0].KindOverride = '\0';
                         if (BuildRangesWithAlternative(altBodyStart, altBodyEnd, _rest[..snapCount], _work, out WorkCount))
@@ -1001,7 +1102,7 @@ internal sealed partial class CompiledGlobStrategy
                         frame.Cursor = j + 1;
                         int altBodyStart = programIndex + _program[altOffsetBase + j];
                         int altBodyEnd = (j + 1 < altCount) ? programIndex + _program[altOffsetBase + j + 1] - 1 : altEndIndex;
-                        snap.CopyTo(_rest);
+                        CopyRanges(snap, _rest, snapCount);
                         _rest[0].Start = afterEnd;
                         _rest[0].KindOverride = '\0';
                         if (BuildRangesWithAlternative(altBodyStart, altBodyEnd, _rest[..snapCount], _work, out WorkCount))
@@ -1016,7 +1117,7 @@ internal sealed partial class CompiledGlobStrategy
                     {
                         // Zero-consume: skip the entire alternation block.
                         frame.Cursor = altCount + 1;
-                        snap.CopyTo(_work);
+                        CopyRanges(snap, _work, snapCount);
                         WorkCount = snapCount;
                         Head = 0;
                         _work[0].Start = afterEnd;
@@ -1034,7 +1135,7 @@ internal sealed partial class CompiledGlobStrategy
                         frame.Cursor = j + 1;
                         int altBodyStart = programIndex + _program[altOffsetBase + j];
                         int altBodyEnd = (j + 1 < altCount) ? programIndex + _program[altOffsetBase + j + 1] - 1 : altEndIndex;
-                        snap.CopyTo(_rest);
+                        CopyRanges(snap, _rest, snapCount);
                         _rest[0].Start = afterEnd;
                         _rest[0].KindOverride = '\0';
                         int restCount = CompactEmptyRanges(_rest, snapCount);
@@ -1044,7 +1145,7 @@ internal sealed partial class CompiledGlobStrategy
                             // Empty alternative: the progress guard refuses to
                             // re-enter the block with no input consumed, so this
                             // collapses to matching just the rest.
-                            _rest[..restCount].CopyTo(_work);
+                            CopyRanges(_rest, _work, restCount);
                             WorkCount = restCount;
                             Head = 0;
                             WorkInput = savedInput;
@@ -1069,14 +1170,14 @@ internal sealed partial class CompiledGlobStrategy
                         frame.Cursor = j + 1;
                         int altBodyStart = programIndex + _program[altOffsetBase + j];
                         int altBodyEnd = (j + 1 < altCount) ? programIndex + _program[altOffsetBase + j + 1] - 1 : altEndIndex;
-                        snap.CopyTo(_rest);
+                        CopyRanges(snap, _rest, snapCount);
                         _rest[0].Start = afterEnd;
                         _rest[0].KindOverride = '\0';
                         int restCount = CompactEmptyRanges(_rest, snapCount);
 
                         if (altBodyStart >= altBodyEnd)
                         {
-                            _rest[..restCount].CopyTo(_work);
+                            CopyRanges(_rest, _work, restCount);
                             WorkCount = restCount;
                             Head = 0;
                             WorkInput = savedInput;
@@ -1096,7 +1197,7 @@ internal sealed partial class CompiledGlobStrategy
                     {
                         // Zero iterations: skip the entire alternation block.
                         frame.Cursor = altCount + 1;
-                        snap.CopyTo(_work);
+                        CopyRanges(snap, _work, snapCount);
                         WorkCount = snapCount;
                         Head = 0;
                         _work[0].Start = afterEnd;
@@ -1238,7 +1339,7 @@ internal sealed partial class CompiledGlobStrategy
                             continue;
                         }
 
-                        snap.CopyTo(_work);
+                        CopyRanges(snap, _work, snapCount);
                         WorkCount = snapCount;
                         Head = 0;
                         _work[0].Start = afterEnd;
