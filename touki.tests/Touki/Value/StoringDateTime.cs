@@ -4,18 +4,19 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringDateTime
 {
-    public static IEnumerable<DateTime> DateTimeData()
+    public static IEnumerable<object[]> DateTimeData()
     {
-        yield return DateTime.Now;
-        yield return DateTime.UtcNow;
-        yield return DateTime.MaxValue;
-        yield return DateTime.MinValue;
+        yield return [DateTime.Now];
+        yield return [DateTime.UtcNow];
+        yield return [DateTime.MaxValue];
+        yield return [DateTime.MinValue];
     }
 
-    [Test]
-    [MethodDataSource(nameof(DateTimeData))]
+    [TestMethod]
+    [DynamicData(nameof(DateTimeData))]
     public void DateTimeImplicit(DateTime dateTime)
     {
         Value value = dateTime;
@@ -28,8 +29,8 @@ public class StoringDateTime
         value.Type.Should().Be(typeof(DateTime));
     }
 
-    [Test]
-    [MethodDataSource(nameof(DateTimeData))]
+    [TestMethod]
+    [DynamicData(nameof(DateTimeData))]
     public void DateTimeInOut(DateTime dateTime)
     {
         Value value = dateTime;
@@ -41,8 +42,8 @@ public class StoringDateTime
         ((DateTime)value).Should().Be(dateTime);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DateTimeData))]
+    [TestMethod]
+    [DynamicData(nameof(DateTimeData))]
     public void NullableDateTimeInDateTimeOut(DateTime dateTime)
     {
         DateTime? source = dateTime;
@@ -57,8 +58,8 @@ public class StoringDateTime
         ((DateTime)value).Should().Be(dateTime);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DateTimeData))]
+    [TestMethod]
+    [DynamicData(nameof(DateTimeData))]
     public void DateTimeInNullableDateTimeOut(DateTime dateTime)
     {
         DateTime source = dateTime;
@@ -70,7 +71,7 @@ public class StoringDateTime
         ((DateTime?)value).Should().Be(dateTime);
     }
 
-    [Test]
+    [TestMethod]
     public void NullDateTime()
     {
         DateTime? source = null;
@@ -80,8 +81,8 @@ public class StoringDateTime
         value.As<DateTime?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(DateTimeData))]
+    [TestMethod]
+    [DynamicData(nameof(DateTimeData))]
     public void OutAsObject(DateTime dateTime)
     {
         Value value = dateTime;

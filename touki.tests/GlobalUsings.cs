@@ -33,3 +33,5 @@ global using Touki.TestSupport;
 #pragma warning restore IDE0005
 
 global using AwesomeAssertions;
+
+global using Microsoft.VisualStudio.TestTools.UnitTesting;

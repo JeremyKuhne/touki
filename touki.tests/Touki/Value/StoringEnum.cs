@@ -4,9 +4,10 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringEnum
 {
-    [Test]
+    [TestMethod]
     public void BasicFunctionality()
     {
         InitType();
@@ -21,7 +22,7 @@ public class StoringEnum
         value.Type.Should().Be(typeof(DayOfWeek));
     }
 
-    [Test]
+    [TestMethod]
     public void NullableEnum()
     {
         DayOfWeek? day = DayOfWeek.Monday;
@@ -33,7 +34,7 @@ public class StoringEnum
         value.Type.Should().Be(typeof(DayOfWeek));
     }
 
-    [Test]
+    [TestMethod]
     public void ToFromNullableEnum()
     {
         DayOfWeek day = DayOfWeek.Monday;
@@ -46,7 +47,7 @@ public class StoringEnum
         outDay.Should().Be(day);
     }
 
-    [Test]
+    [TestMethod]
     public void BoxedEnum()
     {
         DayOfWeek day = DayOfWeek.Monday;
@@ -59,9 +60,9 @@ public class StoringEnum
         outDay.Should().Be(day);
     }
 
-    [Test]
-    [Arguments(ByteEnum.MinValue)]
-    [Arguments(ByteEnum.MaxValue)]
+    [TestMethod]
+    [DataRow(ByteEnum.MinValue)]
+    [DataRow(ByteEnum.MaxValue)]
     public void ByteSize(ByteEnum @enum)
     {
         Value value = Value.Create(@enum);
@@ -88,9 +89,9 @@ public class StoringEnum
         nullResult!.Value.Should().Be(@enum);
     }
 
-    [Test]
-    [Arguments(ShortEnum.MinValue)]
-    [Arguments(ShortEnum.MaxValue)]
+    [TestMethod]
+    [DataRow(ShortEnum.MinValue)]
+    [DataRow(ShortEnum.MaxValue)]
     public void ShortSize(ShortEnum @enum)
     {
         Value value = Value.Create(@enum);
@@ -117,9 +118,9 @@ public class StoringEnum
         nullResult!.Value.Should().Be(@enum);
     }
 
-    [Test]
-    [Arguments(LongEnum.MinValue)]
-    [Arguments(LongEnum.MaxValue)]
+    [TestMethod]
+    [DataRow(LongEnum.MinValue)]
+    [DataRow(LongEnum.MaxValue)]
     public void LongSize(LongEnum @enum)
     {
         Value value = Value.Create(@enum);

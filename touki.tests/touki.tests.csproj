@@ -31,12 +31,16 @@
 
     <!-- Use the Microsoft Testing Platform -->
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <EnableMSTestRunner>true</EnableMSTestRunner>
 
     <!-- This will no longer be needed for the .NET 10 SDK -->
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
 
-    <!-- Data-source methods expose read-only string[] inputs; per-call Func<T> isolation is unnecessary. -->
-    <NoWarn>$(NoWarn);TUnit0046</NoWarn>
+    <!--
+     MSTEST0055 flags discarded bool results from String.Contains/StartsWith. Several tests
+     intentionally discard those results inside Action lambdas that assert on thrown exceptions.
+    -->
+    <NoWarn>$(NoWarn);MSTEST0055</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != 'net481'">
@@ -54,8 +58,11 @@
          a `git` executable on PATH. -->
     <PackageReference Include="LibGit2Sharp" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" PrivateAssets="all" />
+    <!-- Enables the MTP runner's TRX report option used by CI. -->
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" PrivateAssets="all" />
     <!-- PrivateAssets so the test framework does not flow transitively to any project that references this one. -->
-    <PackageReference Include="TUnit" PrivateAssets="all" />
+    <PackageReference Include="MSTest.TestFramework" PrivateAssets="all" />
+    <PackageReference Include="MSTest.TestAdapter" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net481'">
@@ -66,11 +73,5 @@
     <ProjectReference Include="..\touki.msbuildshim\touki.msbuildshim.csproj" />
     <ProjectReference Include="..\touki.testsupport\touki.testsupport.csproj" />
     <ProjectReference Include="..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Using Include="TUnit.Core" />
-    <Using Include="TUnit.Assertions" />
-    <Using Include="TUnit.Assertions.Extensions" />
   </ItemGroup>
 </Project>

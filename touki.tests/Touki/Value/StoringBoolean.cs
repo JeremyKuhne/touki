@@ -4,16 +4,17 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringBoolean
 {
-    public static IEnumerable<bool> BoolData()
+    public static IEnumerable<object[]> BoolData()
     {
-        yield return true;
-        yield return false;
+        yield return [true];
+        yield return [false];
     }
 
-    [Test]
-    [MethodDataSource(nameof(BoolData))]
+    [TestMethod]
+    [DynamicData(nameof(BoolData))]
     public void BooleanImplicit(bool @bool)
     {
         Value value;
@@ -34,8 +35,8 @@ public class StoringBoolean
         value.Type.Should().Be(typeof(bool));
     }
 
-    [Test]
-    [MethodDataSource(nameof(BoolData))]
+    [TestMethod]
+    [DynamicData(nameof(BoolData))]
     public void BooleanCreate(bool @bool)
     {
         Value value;
@@ -58,8 +59,8 @@ public class StoringBoolean
         value.Type.Should().Be(typeof(bool));
     }
 
-    [Test]
-    [MethodDataSource(nameof(BoolData))]
+    [TestMethod]
+    [DynamicData(nameof(BoolData))]
     public void BooleanInOut(bool @bool)
     {
         Value value;
@@ -79,8 +80,8 @@ public class StoringBoolean
         ((bool)value).Should().Be(@bool);
     }
 
-    [Test]
-    [MethodDataSource(nameof(BoolData))]
+    [TestMethod]
+    [DynamicData(nameof(BoolData))]
     public void NullableBooleanInBooleanOut(bool @bool)
     {
         bool? source = @bool;
@@ -102,8 +103,8 @@ public class StoringBoolean
         ((bool)value).Should().Be(@bool);
     }
 
-    [Test]
-    [MethodDataSource(nameof(BoolData))]
+    [TestMethod]
+    [DynamicData(nameof(BoolData))]
     public void BooleanInNullableBooleanOut(bool @bool)
     {
         bool source = @bool;
@@ -115,8 +116,8 @@ public class StoringBoolean
         ((bool?)value).Should().Be(@bool);
     }
 
-    [Test]
-    [MethodDataSource(nameof(BoolData))]
+    [TestMethod]
+    [DynamicData(nameof(BoolData))]
     public void BoxedBoolean(bool @bool)
     {
         bool i = @bool;
@@ -141,7 +142,7 @@ public class StoringBoolean
         nullableResult!.Value.Should().Be(@bool);
     }
 
-    [Test]
+    [TestMethod]
     public void NullBoolean()
     {
         bool? source = null;
@@ -157,8 +158,8 @@ public class StoringBoolean
         value.As<bool?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(BoolData))]
+    [TestMethod]
+    [DynamicData(nameof(BoolData))]
     public void OutAsObject(bool @bool)
     {
         Value value = @bool;

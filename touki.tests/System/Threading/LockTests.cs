@@ -7,10 +7,11 @@
 
 namespace System.Threading;
 
+[TestClass]
 public class LockTests
 {
 #pragma warning disable CS9216 // casting Lock to object
-    [Test]
+    [TestMethod]
     public void LockStatementWithLockVsMonitor()
     {
         Lock lockObj = new();
@@ -41,7 +42,7 @@ public class LockTests
 #pragma warning restore CS9216
 
     // Attempts a single recursive acquisition/release cycle of a newly-created lock.
-    [Test]
+    [TestMethod]
     public void BasicRecursion()
     {
         Lock lockObj = new();
@@ -69,7 +70,7 @@ public class LockTests
     }
 
     // Attempts to overflow the recursion count of a newly-created lock.
-    [Test]
+    [TestMethod]
     public void DeepRecursion()
     {
         Lock lockObj = new();
@@ -91,7 +92,7 @@ public class LockTests
         lockObj.IsHeldByCurrentThread.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IsHeldByCurrentThread()
     {
         Lock lockObj = new();
@@ -107,7 +108,7 @@ public class LockTests
         lockObj.IsHeldByCurrentThread.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IsHeldByCurrentThread_WhenHeldBySomeoneElse()
     {
         Lock lockObj = new();
@@ -131,7 +132,7 @@ public class LockTests
         t.Wait(CancellationToken.None);
     }
 
-    [Test]
+    [TestMethod]
     public void Exit_Invalid()
     {
         Lock lockObj = new();
@@ -139,7 +140,7 @@ public class LockTests
         default(Lock.Scope).Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void Exit_WhenHeldBySomeoneElse_ThrowsSynchronizationLockException()
     {
         Lock lockObj = new();
@@ -184,7 +185,7 @@ public class LockTests
         t.Wait(CancellationToken.None);
     }
 
-    [Test]
+    [TestMethod]
     public void TryEnter_Invalid()
     {
         Lock lockObj = new();
@@ -194,7 +195,7 @@ public class LockTests
         Assert.Throws<ArgumentOutOfRangeException>(() => lockObj.TryEnter(TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
     }
 
-    [Test]
+    [TestMethod]
     public void Enter_HasToWait()
     {
         Lock lockObj = new();
@@ -297,7 +298,7 @@ public class LockTests
     }
 
 #if NETFRAMEWORK
-    [Test]
+    [TestMethod]
     public void UseTrivialWaits_Constructor()
     {
         // Test that the constructor with useTrivialWaits parameter works correctly
@@ -312,7 +313,7 @@ public class LockTests
     }
 #endif
 
-    [Test]
+    [TestMethod]
     public void ContentionCount_IncreasesUnderContention()
     {
         Lock lockObj = new();
@@ -349,7 +350,7 @@ public class LockTests
         ((long)typeof(Lock).TestAccessor.Dynamic.ContentionCount > initialCount).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void TryEnter_Timeout_Precision()
     {
         Lock lockObj = new();
@@ -391,7 +392,7 @@ public class LockTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void EnterExit_Multiple_Threads_Fairness()
     {
         const int iterations = 100;

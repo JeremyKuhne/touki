@@ -4,6 +4,7 @@
 
 namespace Touki;
 
+[TestClass]
 public class MathExtensionsTests
 {
     // BCL test files use 2^-50 instead of 2^-52 for cross-platform libm tolerance.
@@ -11,27 +12,27 @@ public class MathExtensionsTests
 
     // ---- Clamp ----
 
-    [Test]
-    [Arguments(5, 0, 10, 5)]
-    [Arguments(-5, 0, 10, 0)]
-    [Arguments(15, 0, 10, 10)]
-    [Arguments(0, 0, 10, 0)]
-    [Arguments(10, 0, 10, 10)]
+    [TestMethod]
+    [DataRow(5, 0, 10, 5)]
+    [DataRow(-5, 0, 10, 0)]
+    [DataRow(15, 0, 10, 10)]
+    [DataRow(0, 0, 10, 0)]
+    [DataRow(10, 0, 10, 10)]
     public void Clamp_Int_ReturnsExpected(int value, int min, int max, int expected)
     {
         Math.Clamp(value, min, max).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(0.5, 0.0, 1.0, 0.5)]
-    [Arguments(-0.5, 0.0, 1.0, 0.0)]
-    [Arguments(1.5, 0.0, 1.0, 1.0)]
+    [TestMethod]
+    [DataRow(0.5, 0.0, 1.0, 0.5)]
+    [DataRow(-0.5, 0.0, 1.0, 0.0)]
+    [DataRow(1.5, 0.0, 1.0, 1.0)]
     public void Clamp_Double_ReturnsExpected(double value, double min, double max, double expected)
     {
         Math.Clamp(value, min, max).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void Clamp_AllSignedAndUnsigned_RoundTrips()
     {
         Math.Clamp((byte)5, (byte)0, (byte)10).Should().Be((byte)5);
@@ -45,7 +46,7 @@ public class MathExtensionsTests
         Math.Clamp(0.5m, 0m, 1m).Should().Be(0.5m);
     }
 
-    [Test]
+    [TestMethod]
     public void Clamp_AllTypes_BelowMin_ReturnsMin()
     {
         Math.Clamp((byte)0, (byte)5, (byte)10).Should().Be((byte)5);
@@ -59,7 +60,7 @@ public class MathExtensionsTests
         Math.Clamp(-1m, 0m, 1m).Should().Be(0m);
     }
 
-    [Test]
+    [TestMethod]
     public void Clamp_AllTypes_AboveMax_ReturnsMax()
     {
         Math.Clamp((byte)20, (byte)0, (byte)10).Should().Be((byte)10);
@@ -74,7 +75,7 @@ public class MathExtensionsTests
     }
 
     // Mirror of BCL Clamp_MinGreaterThanMax_ThrowsArgumentException across all overloads.
-    [Test]
+    [TestMethod]
     public void Clamp_MinGreaterThanMax_AllTypes_Throw()
     {
         ((Action)(() => Math.Clamp((sbyte)1, (sbyte)2, (sbyte)1))).Should().Throw<ArgumentException>();
@@ -92,14 +93,14 @@ public class MathExtensionsTests
 
     // ---- DivRem (tuple-returning overloads) ----
 
-    [Test]
-    [Arguments((sbyte)sbyte.MaxValue, (sbyte)sbyte.MaxValue, (sbyte)1, (sbyte)0)]
-    [Arguments((sbyte)sbyte.MaxValue, (sbyte)2, (sbyte)63, (sbyte)1)]
-    [Arguments((sbyte)80, (sbyte)22, (sbyte)3, (sbyte)14)]
-    [Arguments((sbyte)80, (sbyte)-22, (sbyte)-3, (sbyte)14)]
-    [Arguments((sbyte)-80, (sbyte)22, (sbyte)-3, (sbyte)-14)]
-    [Arguments((sbyte)-80, (sbyte)-22, (sbyte)3, (sbyte)-14)]
-    [Arguments((sbyte)0, (sbyte)1, (sbyte)0, (sbyte)0)]
+    [TestMethod]
+    [DataRow((sbyte)sbyte.MaxValue, (sbyte)sbyte.MaxValue, (sbyte)1, (sbyte)0)]
+    [DataRow((sbyte)sbyte.MaxValue, (sbyte)2, (sbyte)63, (sbyte)1)]
+    [DataRow((sbyte)80, (sbyte)22, (sbyte)3, (sbyte)14)]
+    [DataRow((sbyte)80, (sbyte)-22, (sbyte)-3, (sbyte)14)]
+    [DataRow((sbyte)-80, (sbyte)22, (sbyte)-3, (sbyte)-14)]
+    [DataRow((sbyte)-80, (sbyte)-22, (sbyte)3, (sbyte)-14)]
+    [DataRow((sbyte)0, (sbyte)1, (sbyte)0, (sbyte)0)]
     public void DivRem_Sbyte_ReturnsTuple(sbyte dividend, sbyte divisor, sbyte expectedQuotient, sbyte expectedRemainder)
     {
         (sbyte q, sbyte r) = Math.DivRem(dividend, divisor);
@@ -107,18 +108,18 @@ public class MathExtensionsTests
         r.Should().Be(expectedRemainder);
     }
 
-    [Test]
+    [TestMethod]
     public void DivRem_Sbyte_ZeroDivisor_Throws()
     {
         ((Action)(() => Math.DivRem((sbyte)1, (sbyte)0))).Should().Throw<DivideByZeroException>();
     }
 
-    [Test]
-    [Arguments((byte)byte.MaxValue, (byte)byte.MaxValue, (byte)1, (byte)0)]
-    [Arguments((byte)byte.MaxValue, (byte)2, (byte)127, (byte)1)]
-    [Arguments((byte)52, (byte)5, (byte)10, (byte)2)]
-    [Arguments((byte)100, (byte)33, (byte)3, (byte)1)]
-    [Arguments((byte)0, (byte)1, (byte)0, (byte)0)]
+    [TestMethod]
+    [DataRow((byte)byte.MaxValue, (byte)byte.MaxValue, (byte)1, (byte)0)]
+    [DataRow((byte)byte.MaxValue, (byte)2, (byte)127, (byte)1)]
+    [DataRow((byte)52, (byte)5, (byte)10, (byte)2)]
+    [DataRow((byte)100, (byte)33, (byte)3, (byte)1)]
+    [DataRow((byte)0, (byte)1, (byte)0, (byte)0)]
     public void DivRem_Byte_ReturnsTuple(byte dividend, byte divisor, byte expectedQuotient, byte expectedRemainder)
     {
         (byte q, byte r) = Math.DivRem(dividend, divisor);
@@ -126,18 +127,18 @@ public class MathExtensionsTests
         r.Should().Be(expectedRemainder);
     }
 
-    [Test]
+    [TestMethod]
     public void DivRem_Byte_ZeroDivisor_Throws()
     {
         ((Action)(() => Math.DivRem((byte)1, (byte)0))).Should().Throw<DivideByZeroException>();
     }
 
-    [Test]
-    [Arguments((short)short.MaxValue, (short)2, (short)16383, (short)1)]
-    [Arguments((short)12345, (short)22424, (short)0, (short)12345)]
-    [Arguments((short)300, (short)22, (short)13, (short)14)]
-    [Arguments((short)-300, (short)-22, (short)13, (short)-14)]
-    [Arguments((short)13952, (short)2000, (short)6, (short)1952)]
+    [TestMethod]
+    [DataRow((short)short.MaxValue, (short)2, (short)16383, (short)1)]
+    [DataRow((short)12345, (short)22424, (short)0, (short)12345)]
+    [DataRow((short)300, (short)22, (short)13, (short)14)]
+    [DataRow((short)-300, (short)-22, (short)13, (short)-14)]
+    [DataRow((short)13952, (short)2000, (short)6, (short)1952)]
     public void DivRem_Short_ReturnsTuple(short dividend, short divisor, short expectedQuotient, short expectedRemainder)
     {
         (short q, short r) = Math.DivRem(dividend, divisor);
@@ -145,16 +146,16 @@ public class MathExtensionsTests
         r.Should().Be(expectedRemainder);
     }
 
-    [Test]
+    [TestMethod]
     public void DivRem_Short_ZeroDivisor_Throws()
     {
         ((Action)(() => Math.DivRem((short)1, (short)0))).Should().Throw<DivideByZeroException>();
     }
 
-    [Test]
-    [Arguments((ushort)ushort.MaxValue, (ushort)2, (ushort)32767, (ushort)1)]
-    [Arguments((ushort)51474, (ushort)31474, (ushort)1, (ushort)20000)]
-    [Arguments((ushort)10000, (ushort)333, (ushort)30, (ushort)10)]
+    [TestMethod]
+    [DataRow((ushort)ushort.MaxValue, (ushort)2, (ushort)32767, (ushort)1)]
+    [DataRow((ushort)51474, (ushort)31474, (ushort)1, (ushort)20000)]
+    [DataRow((ushort)10000, (ushort)333, (ushort)30, (ushort)10)]
     public void DivRem_Ushort_ReturnsTuple(ushort dividend, ushort divisor, ushort expectedQuotient, ushort expectedRemainder)
     {
         (ushort q, ushort r) = Math.DivRem(dividend, divisor);
@@ -162,18 +163,18 @@ public class MathExtensionsTests
         r.Should().Be(expectedRemainder);
     }
 
-    [Test]
+    [TestMethod]
     public void DivRem_Ushort_ZeroDivisor_Throws()
     {
         ((Action)(() => Math.DivRem((ushort)1, (ushort)0))).Should().Throw<DivideByZeroException>();
     }
 
-    [Test]
-    [Arguments(9223372036854775807L, 2000L, 4611686018427387L, 1807L)]
-    [Arguments(-9223372036854775808L, -2000L, 4611686018427387L, -1808L)]
-    [Arguments(9223372036854775807L, -2000L, -4611686018427387L, 1807L)]
-    [Arguments(13952L, 2000L, 6L, 1952L)]
-    [Arguments(-14032L, 2000L, -7L, -32L)]
+    [TestMethod]
+    [DataRow(9223372036854775807L, 2000L, 4611686018427387L, 1807L)]
+    [DataRow(-9223372036854775808L, -2000L, 4611686018427387L, -1808L)]
+    [DataRow(9223372036854775807L, -2000L, -4611686018427387L, 1807L)]
+    [DataRow(13952L, 2000L, 6L, 1952L)]
+    [DataRow(-14032L, 2000L, -7L, -32L)]
     public void DivRem_Long_ReturnsTuple(long dividend, long divisor, long expectedQuotient, long expectedRemainder)
     {
         (long q, long r) = Math.DivRem(dividend, divisor);
@@ -181,7 +182,7 @@ public class MathExtensionsTests
         r.Should().Be(expectedRemainder);
     }
 
-    [Test]
+    [TestMethod]
     public void DivRem_Long_ZeroDivisor_Throws()
     {
         ((Action)(() => Math.DivRem(1L, 0L))).Should().Throw<DivideByZeroException>();
@@ -189,15 +190,15 @@ public class MathExtensionsTests
 
     // ---- Acosh ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, double.NaN)]
-    [Arguments(-1.0, double.NaN)]
-    [Arguments(0.0, double.NaN)]
-    [Arguments(0.5, double.NaN)]
-    [Arguments(0.99999999, double.NaN)]
-    [Arguments(double.NaN, double.NaN)]
-    [Arguments(1.0, 0.0)]
-    [Arguments(double.PositiveInfinity, double.PositiveInfinity)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, double.NaN)]
+    [DataRow(-1.0, double.NaN)]
+    [DataRow(0.0, double.NaN)]
+    [DataRow(0.5, double.NaN)]
+    [DataRow(0.99999999, double.NaN)]
+    [DataRow(double.NaN, double.NaN)]
+    [DataRow(1.0, 0.0)]
+    [DataRow(double.PositiveInfinity, double.PositiveInfinity)]
     public void Acosh_EdgeCases_ReturnsExpected(double value, double expected)
     {
         double actual = Math.Acosh(value);
@@ -211,16 +212,16 @@ public class MathExtensionsTests
         }
     }
 
-    [Test]
-    [Arguments(1.5430806348152438, 1.0)]
-    [Arguments(2.5091784786580568, 1.5707963267948966)]   // (pi / 2)
-    [Arguments(11.591953275521521, 3.1415926535897932)]   // (pi)
+    [TestMethod]
+    [DataRow(1.5430806348152438, 1.0)]
+    [DataRow(2.5091784786580568, 1.5707963267948966)]   // (pi / 2)
+    [DataRow(11.591953275521521, 3.1415926535897932)]   // (pi)
     public void Acosh_KnownValues_MatchBcl(double value, double expected)
     {
         Math.Acosh(value).Should().BeApproximately(expected, CrossPlatformMachineEpsilon * 10);
     }
 
-    [Test]
+    [TestMethod]
     public void Acosh_LargeValue_DoesNotOverflow()
     {
         double result = Math.Acosh(1e308);
@@ -230,11 +231,11 @@ public class MathExtensionsTests
 
     // ---- Asinh ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, double.NegativeInfinity)]
-    [Arguments(double.NaN, double.NaN)]
-    [Arguments(0.0, 0.0)]
-    [Arguments(double.PositiveInfinity, double.PositiveInfinity)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, double.NegativeInfinity)]
+    [DataRow(double.NaN, double.NaN)]
+    [DataRow(0.0, 0.0)]
+    [DataRow(double.PositiveInfinity, double.PositiveInfinity)]
     public void Asinh_EdgeCases_ReturnsExpected(double value, double expected)
     {
         double actual = Math.Asinh(value);
@@ -248,20 +249,20 @@ public class MathExtensionsTests
         }
     }
 
-    [Test]
-    [Arguments(1.1752011936438015, 1.0)]
-    [Arguments(2.3012989023072949, 1.5707963267948966)]   // (pi / 2)
-    [Arguments(11.548739357257748, 3.1415926535897932)]   // (pi)
+    [TestMethod]
+    [DataRow(1.1752011936438015, 1.0)]
+    [DataRow(2.3012989023072949, 1.5707963267948966)]   // (pi / 2)
+    [DataRow(11.548739357257748, 3.1415926535897932)]   // (pi)
     public void Asinh_KnownValues_MatchBcl(double value, double expected)
     {
         Math.Asinh(value).Should().BeApproximately(expected, CrossPlatformMachineEpsilon * 10);
     }
 
-    [Test]
-    [Arguments(1.0)]
-    [Arguments(0.5)]
-    [Arguments(123.456)]
-    [Arguments(1e308)]
+    [TestMethod]
+    [DataRow(1.0)]
+    [DataRow(0.5)]
+    [DataRow(123.456)]
+    [DataRow(1e308)]
     public void Asinh_OddSymmetry_NegEqualsNegated(double value)
     {
         Math.Asinh(-value).Should().Be(-Math.Asinh(value));
@@ -269,15 +270,15 @@ public class MathExtensionsTests
 
     // ---- Atanh ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, double.NaN)]
-    [Arguments(-1.5, double.NaN)]
-    [Arguments(-1.0, double.NegativeInfinity)]
-    [Arguments(0.0, 0.0)]
-    [Arguments(1.0, double.PositiveInfinity)]
-    [Arguments(1.5, double.NaN)]
-    [Arguments(double.PositiveInfinity, double.NaN)]
-    [Arguments(double.NaN, double.NaN)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, double.NaN)]
+    [DataRow(-1.5, double.NaN)]
+    [DataRow(-1.0, double.NegativeInfinity)]
+    [DataRow(0.0, 0.0)]
+    [DataRow(1.0, double.PositiveInfinity)]
+    [DataRow(1.5, double.NaN)]
+    [DataRow(double.PositiveInfinity, double.NaN)]
+    [DataRow(double.NaN, double.NaN)]
     public void Atanh_EdgeCases_ReturnsExpected(double value, double expected)
     {
         double actual = Math.Atanh(value);
@@ -291,9 +292,9 @@ public class MathExtensionsTests
         }
     }
 
-    [Test]
-    [Arguments(0.76159415595576489, 1.0)]
-    [Arguments(0.91715233566727435, 1.5707963267948966)]   // (pi / 2)
+    [TestMethod]
+    [DataRow(0.76159415595576489, 1.0)]
+    [DataRow(0.91715233566727435, 1.5707963267948966)]   // (pi / 2)
     public void Atanh_KnownValues_MatchBcl(double value, double expected)
     {
         Math.Atanh(value).Should().BeApproximately(expected, CrossPlatformMachineEpsilon * 10);
@@ -301,16 +302,16 @@ public class MathExtensionsTests
 
     // ---- Cbrt ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, double.NegativeInfinity)]
-    [Arguments(-8.0, -2.0)]
-    [Arguments(-1.0, -1.0)]
-    [Arguments(0.0, 0.0)]
-    [Arguments(1.0, 1.0)]
-    [Arguments(8.0, 2.0)]
-    [Arguments(27.0, 3.0)]
-    [Arguments(double.PositiveInfinity, double.PositiveInfinity)]
-    [Arguments(double.NaN, double.NaN)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, double.NegativeInfinity)]
+    [DataRow(-8.0, -2.0)]
+    [DataRow(-1.0, -1.0)]
+    [DataRow(0.0, 0.0)]
+    [DataRow(1.0, 1.0)]
+    [DataRow(8.0, 2.0)]
+    [DataRow(27.0, 3.0)]
+    [DataRow(double.PositiveInfinity, double.PositiveInfinity)]
+    [DataRow(double.NaN, double.NaN)]
     public void Cbrt_EdgeCases_ReturnsExpected(double value, double expected)
     {
         double actual = Math.Cbrt(value);
@@ -324,7 +325,7 @@ public class MathExtensionsTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void Cbrt_NegativeZero_PreservesSign()
     {
         double negativeZero = BitConverter.Int64BitsToDouble(unchecked((long)0x8000_0000_0000_0000UL));
@@ -335,12 +336,12 @@ public class MathExtensionsTests
 
     // ---- BitDecrement / BitIncrement ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, double.NegativeInfinity)]
-    [Arguments(double.PositiveInfinity, double.MaxValue)]
-    [Arguments(double.NaN, double.NaN)]
-    [Arguments(1.0, 0.99999999999999989)]
-    [Arguments(0.0, -double.Epsilon)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, double.NegativeInfinity)]
+    [DataRow(double.PositiveInfinity, double.MaxValue)]
+    [DataRow(double.NaN, double.NaN)]
+    [DataRow(1.0, 0.99999999999999989)]
+    [DataRow(0.0, -double.Epsilon)]
     public void BitDecrement_EdgeCases_ReturnsExpected(double value, double expected)
     {
         double actual = Math.BitDecrement(value);
@@ -354,11 +355,11 @@ public class MathExtensionsTests
         }
     }
 
-    [Test]
-    [Arguments(double.NegativeInfinity, double.MinValue)]
-    [Arguments(double.PositiveInfinity, double.PositiveInfinity)]
-    [Arguments(double.NaN, double.NaN)]
-    [Arguments(1.0, 1.0000000000000002)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, double.MinValue)]
+    [DataRow(double.PositiveInfinity, double.PositiveInfinity)]
+    [DataRow(double.NaN, double.NaN)]
+    [DataRow(1.0, 1.0000000000000002)]
     public void BitIncrement_EdgeCases_ReturnsExpected(double value, double expected)
     {
         double actual = Math.BitIncrement(value);
@@ -372,14 +373,14 @@ public class MathExtensionsTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void BitIncrement_NegativeZero_ReturnsEpsilon()
     {
         double negativeZero = BitConverter.Int64BitsToDouble(unchecked((long)0x8000_0000_0000_0000UL));
         Math.BitIncrement(negativeZero).Should().Be(double.Epsilon);
     }
 
-    [Test]
+    [TestMethod]
     public void BitIncrement_BitDecrement_AreInverse()
     {
         double[] values = [1.0, 2.0, -3.0, 1e-100, 1e100];
@@ -392,19 +393,19 @@ public class MathExtensionsTests
 
     // ---- CopySign ----
 
-    [Test]
-    [Arguments(5.0, -1.0, -5.0)]
-    [Arguments(-5.0, 1.0, 5.0)]
-    [Arguments(5.0, double.NegativeInfinity, -5.0)]
-    [Arguments(5.0, double.PositiveInfinity, 5.0)]
-    [Arguments(double.PositiveInfinity, -1.0, double.NegativeInfinity)]
-    [Arguments(double.NegativeInfinity, 1.0, double.PositiveInfinity)]
+    [TestMethod]
+    [DataRow(5.0, -1.0, -5.0)]
+    [DataRow(-5.0, 1.0, 5.0)]
+    [DataRow(5.0, double.NegativeInfinity, -5.0)]
+    [DataRow(5.0, double.PositiveInfinity, 5.0)]
+    [DataRow(double.PositiveInfinity, -1.0, double.NegativeInfinity)]
+    [DataRow(double.NegativeInfinity, 1.0, double.PositiveInfinity)]
     public void CopySign_EdgeCases_ReturnsExpected(double x, double y, double expected)
     {
         Math.CopySign(x, y).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void CopySign_NegativeNaNSign_PropagatesSignBit()
     {
         double negNaN = BitConverter.Int64BitsToDouble(unchecked((long)0xFFF8000000000000UL));
@@ -415,9 +416,9 @@ public class MathExtensionsTests
 
     // ---- FusedMultiplyAdd ----
 
-    [Test]
-    [Arguments(2.0, 3.0, 4.0, 10.0)]
-    [Arguments(0.0, double.PositiveInfinity, 1.0, double.NaN)]
+    [TestMethod]
+    [DataRow(2.0, 3.0, 4.0, 10.0)]
+    [DataRow(0.0, double.PositiveInfinity, 1.0, double.NaN)]
     public void FusedMultiplyAdd_EdgeCases_ReturnsExpected(double x, double y, double z, double expected)
     {
         double actual = Math.FusedMultiplyAdd(x, y, z);
@@ -431,7 +432,7 @@ public class MathExtensionsTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void FusedMultiplyAdd_NaNInput_ReturnsNaN()
     {
         double.IsNaN(Math.FusedMultiplyAdd(double.NaN, 1.0, 1.0)).Should().BeTrue();
@@ -441,24 +442,24 @@ public class MathExtensionsTests
 
     // ---- ILogB ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, int.MaxValue)]
-    [Arguments(double.PositiveInfinity, int.MaxValue)]
-    [Arguments(double.NaN, int.MaxValue)]
-    [Arguments(0.0, int.MinValue)]
-    [Arguments(1.0, 0)]
-    [Arguments(2.0, 1)]
-    [Arguments(0.5, -1)]
-    [Arguments(8.0, 3)]
-    [Arguments(0.125, -3)]
-    [Arguments(double.Epsilon, -1074)]
-    [Arguments(double.MaxValue, 1023)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, int.MaxValue)]
+    [DataRow(double.PositiveInfinity, int.MaxValue)]
+    [DataRow(double.NaN, int.MaxValue)]
+    [DataRow(0.0, int.MinValue)]
+    [DataRow(1.0, 0)]
+    [DataRow(2.0, 1)]
+    [DataRow(0.5, -1)]
+    [DataRow(8.0, 3)]
+    [DataRow(0.125, -3)]
+    [DataRow(double.Epsilon, -1074)]
+    [DataRow(double.MaxValue, 1023)]
     public void ILogB_EdgeCases_ReturnsExpected(double value, int expected)
     {
         Math.ILogB(value).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void ILogB_NegativeZero_ReturnsIntMinValue()
     {
         double negativeZero = BitConverter.Int64BitsToDouble(unchecked((long)0x8000_0000_0000_0000UL));
@@ -467,16 +468,16 @@ public class MathExtensionsTests
 
     // ---- Log2 ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, double.NaN)]
-    [Arguments(-1.0, double.NaN)]
-    [Arguments(0.0, double.NegativeInfinity)]
-    [Arguments(1.0, 0.0)]
-    [Arguments(2.0, 1.0)]
-    [Arguments(8.0, 3.0)]
-    [Arguments(0.5, -1.0)]
-    [Arguments(double.PositiveInfinity, double.PositiveInfinity)]
-    [Arguments(double.NaN, double.NaN)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, double.NaN)]
+    [DataRow(-1.0, double.NaN)]
+    [DataRow(0.0, double.NegativeInfinity)]
+    [DataRow(1.0, 0.0)]
+    [DataRow(2.0, 1.0)]
+    [DataRow(8.0, 3.0)]
+    [DataRow(0.5, -1.0)]
+    [DataRow(double.PositiveInfinity, double.PositiveInfinity)]
+    [DataRow(double.NaN, double.NaN)]
     public void Log2_EdgeCases_ReturnsExpected(double value, double expected)
     {
         double actual = Math.Log2(value);
@@ -492,36 +493,36 @@ public class MathExtensionsTests
 
     // ---- MaxMagnitude / MinMagnitude ----
 
-    [Test]
-    [Arguments(-5.0, 3.0, -5.0)]
-    [Arguments(2.0, -7.0, -7.0)]
-    [Arguments(3.0, 3.0, 3.0)]
-    [Arguments(-3.0, 3.0, 3.0)]
-    [Arguments(double.PositiveInfinity, 1.0, double.PositiveInfinity)]
-    [Arguments(double.NegativeInfinity, 1.0, double.NegativeInfinity)]
+    [TestMethod]
+    [DataRow(-5.0, 3.0, -5.0)]
+    [DataRow(2.0, -7.0, -7.0)]
+    [DataRow(3.0, 3.0, 3.0)]
+    [DataRow(-3.0, 3.0, 3.0)]
+    [DataRow(double.PositiveInfinity, 1.0, double.PositiveInfinity)]
+    [DataRow(double.NegativeInfinity, 1.0, double.NegativeInfinity)]
     public void MaxMagnitude_EdgeCases_ReturnsExpected(double x, double y, double expected)
     {
         Math.MaxMagnitude(x, y).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void MaxMagnitude_NaNInput_ReturnsNaN()
     {
         double.IsNaN(Math.MaxMagnitude(double.NaN, 1.0)).Should().BeTrue();
         double.IsNaN(Math.MaxMagnitude(1.0, double.NaN)).Should().BeTrue();
     }
 
-    [Test]
-    [Arguments(-5.0, 3.0, 3.0)]
-    [Arguments(2.0, -7.0, 2.0)]
-    [Arguments(3.0, 3.0, 3.0)]
-    [Arguments(-3.0, 3.0, -3.0)]
+    [TestMethod]
+    [DataRow(-5.0, 3.0, 3.0)]
+    [DataRow(2.0, -7.0, 2.0)]
+    [DataRow(3.0, 3.0, 3.0)]
+    [DataRow(-3.0, 3.0, -3.0)]
     public void MinMagnitude_EdgeCases_ReturnsExpected(double x, double y, double expected)
     {
         Math.MinMagnitude(x, y).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void MinMagnitude_NaNInput_ReturnsNaN()
     {
         double.IsNaN(Math.MinMagnitude(double.NaN, 1.0)).Should().BeTrue();
@@ -530,17 +531,17 @@ public class MathExtensionsTests
 
     // ---- ScaleB ----
 
-    [Test]
-    [Arguments(1.0, 1, 2.0)]
-    [Arguments(1.0, 10, 1024.0)]
-    [Arguments(1.0, -1, 0.5)]
-    [Arguments(3.0, 0, 3.0)]
-    [Arguments(0.0, 100, 0.0)]
-    [Arguments(double.PositiveInfinity, 0, double.PositiveInfinity)]
-    [Arguments(double.NegativeInfinity, 0, double.NegativeInfinity)]
-    [Arguments(double.NaN, 0, double.NaN)]
-    [Arguments(1.0, int.MaxValue, double.PositiveInfinity)]
-    [Arguments(double.MaxValue, 1, double.PositiveInfinity)]
+    [TestMethod]
+    [DataRow(1.0, 1, 2.0)]
+    [DataRow(1.0, 10, 1024.0)]
+    [DataRow(1.0, -1, 0.5)]
+    [DataRow(3.0, 0, 3.0)]
+    [DataRow(0.0, 100, 0.0)]
+    [DataRow(double.PositiveInfinity, 0, double.PositiveInfinity)]
+    [DataRow(double.NegativeInfinity, 0, double.NegativeInfinity)]
+    [DataRow(double.NaN, 0, double.NaN)]
+    [DataRow(1.0, int.MaxValue, double.PositiveInfinity)]
+    [DataRow(double.MaxValue, 1, double.PositiveInfinity)]
     public void ScaleB_EdgeCases_ReturnsExpected(double x, int n, double expected)
     {
         double actual = Math.ScaleB(x, n);
@@ -554,7 +555,7 @@ public class MathExtensionsTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void ScaleB_LargeNegativeN_ReachesSubnormal()
     {
         // 1.0 * 2^-1074 == double.Epsilon (smallest subnormal).
@@ -570,19 +571,19 @@ public class MathExtensionsTests
     // for ReciprocalEstimate(2.0). 1e-2 covers both architectures with margin.
     private const double ReciprocalEstimateTolerance = 1e-2;
 
-    [Test]
+    [TestMethod]
     public void ReciprocalEstimate_OfTwo_IsHalf()
     {
         Math.ReciprocalEstimate(2.0).Should().BeApproximately(0.5, ReciprocalEstimateTolerance);
     }
 
-    [Test]
+    [TestMethod]
     public void ReciprocalSqrtEstimate_OfFour_IsHalf()
     {
         Math.ReciprocalSqrtEstimate(4.0).Should().BeApproximately(0.5, ReciprocalEstimateTolerance);
     }
 
-    [Test]
+    [TestMethod]
     public void SinCos_ReturnsSinAndCos()
     {
         (double sin, double cos) = Math.SinCos(0.0);
@@ -590,10 +591,10 @@ public class MathExtensionsTests
         cos.Should().Be(1.0);
     }
 
-    [Test]
-    [Arguments(1.0)]
-    [Arguments(1.5707963267948966)] // pi/2
-    [Arguments(3.1415926535897932)] // pi
+    [TestMethod]
+    [DataRow(1.0)]
+    [DataRow(1.5707963267948966)] // pi/2
+    [DataRow(3.1415926535897932)] // pi
     public void SinCos_MatchesIndividualSinAndCos(double value)
     {
         (double sin, double cos) = Math.SinCos(value);
@@ -603,26 +604,26 @@ public class MathExtensionsTests
 
     // ---- BigMul ----
 
-    [Test]
-    [Arguments(0, 0, 0L)]
-    [Arguments(2, 3, 6L)]
-    [Arguments(3, -2, -6L)]
-    [Arguments(-1, -1, 1L)]
-    [Arguments(int.MaxValue, 2, (long)int.MaxValue * 2)]
-    [Arguments(int.MinValue, 2, (long)int.MinValue * 2)]
+    [TestMethod]
+    [DataRow(0, 0, 0L)]
+    [DataRow(2, 3, 6L)]
+    [DataRow(3, -2, -6L)]
+    [DataRow(-1, -1, 1L)]
+    [DataRow(int.MaxValue, 2, (long)int.MaxValue * 2)]
+    [DataRow(int.MinValue, 2, (long)int.MinValue * 2)]
     public void BigMul_Int_ReturnsLong(int a, int b, long expected)
     {
         Math.BigMul(a, b).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(0L, 0L, 0L, 0L)]
-    [Arguments(2L, 3L, 0L, 6L)]
-    [Arguments(3L, -2L, -1L, -6L)]
-    [Arguments(-1L, -1L, 0L, 1L)]
-    [Arguments(-1L, long.MinValue, 0L, long.MinValue)]
-    [Arguments(1L, long.MinValue, -1L, long.MinValue)]
-    [Arguments(long.MaxValue, 2L, 0L, -2L)]
+    [TestMethod]
+    [DataRow(0L, 0L, 0L, 0L)]
+    [DataRow(2L, 3L, 0L, 6L)]
+    [DataRow(3L, -2L, -1L, -6L)]
+    [DataRow(-1L, -1L, 0L, 1L)]
+    [DataRow(-1L, long.MinValue, 0L, long.MinValue)]
+    [DataRow(1L, long.MinValue, -1L, long.MinValue)]
+    [DataRow(long.MaxValue, 2L, 0L, -2L)]
     public void BigMul_Long_ReturnsHighAndLow(long a, long b, long expectedHigh, long expectedLow)
     {
         long high = Math.BigMul(a, b, out long low);
@@ -630,10 +631,10 @@ public class MathExtensionsTests
         low.Should().Be(expectedLow);
     }
 
-    [Test]
-    [Arguments(0UL, 0UL, 0UL, 0UL)]
-    [Arguments(2UL, 3UL, 0UL, 6UL)]
-    [Arguments(ulong.MaxValue, 1UL, 0UL, ulong.MaxValue)]
+    [TestMethod]
+    [DataRow(0UL, 0UL, 0UL, 0UL)]
+    [DataRow(2UL, 3UL, 0UL, 6UL)]
+    [DataRow(ulong.MaxValue, 1UL, 0UL, ulong.MaxValue)]
     public void BigMul_Ulong_ReturnsHighAndLow(ulong a, ulong b, ulong expectedHigh, ulong expectedLow)
     {
         ulong high = Math.BigMul(a, b, out ulong low);
@@ -641,7 +642,7 @@ public class MathExtensionsTests
         low.Should().Be(expectedLow);
     }
 
-    [Test]
+    [TestMethod]
     public void BigMul_Ulong_MaxTimesMax_HighIsMaxMinusOne()
     {
         // ulong.MaxValue * ulong.MaxValue = 0xFFFFFFFFFFFFFFFE_0000000000000001 (128-bit)
@@ -650,7 +651,7 @@ public class MathExtensionsTests
         low.Should().Be(1UL);
     }
 
-    [Test]
+    [TestMethod]
     public void BigMul_Ulong_MaxTimesTwo_OverflowsCleanly()
     {
         ulong high = Math.BigMul(ulong.MaxValue, 2UL, out ulong low);

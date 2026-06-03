@@ -4,18 +4,19 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringInt
 {
-    public static IEnumerable<int> IntData()
+    public static IEnumerable<object[]> IntData()
     {
-        yield return 0;
-        yield return 42;
-        yield return int.MaxValue;
-        yield return int.MinValue;
+        yield return [0];
+        yield return [42];
+        yield return [int.MaxValue];
+        yield return [int.MinValue];
     }
 
-    [Test]
-    [MethodDataSource(nameof(IntData))]
+    [TestMethod]
+    [DynamicData(nameof(IntData))]
     public void IntImplicit(int @int)
     {
         Value value = @int;
@@ -28,8 +29,8 @@ public class StoringInt
         value.Type.Should().Be(typeof(int));
     }
 
-    [Test]
-    [MethodDataSource(nameof(IntData))]
+    [TestMethod]
+    [DynamicData(nameof(IntData))]
     public void IntCreate(int @int)
     {
         Value value;
@@ -52,8 +53,8 @@ public class StoringInt
         value.Type.Should().Be(typeof(int));
     }
 
-    [Test]
-    [MethodDataSource(nameof(IntData))]
+    [TestMethod]
+    [DynamicData(nameof(IntData))]
     public void IntInOut(int @int)
     {
         Value value = @int;
@@ -65,8 +66,8 @@ public class StoringInt
         ((int)value).Should().Be(@int);
     }
 
-    [Test]
-    [MethodDataSource(nameof(IntData))]
+    [TestMethod]
+    [DynamicData(nameof(IntData))]
     public void NullableIntInIntOut(int @int)
     {
         int? source = @int;
@@ -81,8 +82,8 @@ public class StoringInt
         ((int)value).Should().Be(@int);
     }
 
-    [Test]
-    [MethodDataSource(nameof(IntData))]
+    [TestMethod]
+    [DynamicData(nameof(IntData))]
     public void IntInNullableIntOut(int @int)
     {
         int source = @int;
@@ -93,8 +94,8 @@ public class StoringInt
         ((int?)value).Should().Be(@int);
     }
 
-    [Test]
-    [MethodDataSource(nameof(IntData))]
+    [TestMethod]
+    [DynamicData(nameof(IntData))]
     public void BoxedInt(int @int)
     {
         int i = @int;
@@ -119,7 +120,7 @@ public class StoringInt
         nullableResult!.Value.Should().Be(@int);
     }
 
-    [Test]
+    [TestMethod]
     public void NullInt()
     {
         int? source = null;
@@ -129,8 +130,8 @@ public class StoringInt
         value.As<int?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(IntData))]
+    [TestMethod]
+    [DynamicData(nameof(IntData))]
     public void OutAsObject(int @int)
     {
         Value value = @int;

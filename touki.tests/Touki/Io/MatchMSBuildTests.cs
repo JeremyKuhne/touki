@@ -4,6 +4,7 @@
 
 namespace Touki.Io;
 
+[TestClass]
 public class MatchMSBuildTests
 {
     private static MatchMSBuild CreateSpec(string pattern, string root)
@@ -72,8 +73,8 @@ public class MatchMSBuildTests
             ["src/tests/tracing/runtimeeventsource/NativeRuntimeEventSourceTest.cs"]);
     }
 
-    [Test]
-    [MethodDataSource(nameof(EnumerationData))]
+    [TestMethod]
+    [DynamicData(nameof(EnumerationData))]
     public void SpecEnumeration(string pattern, string[] files, string[] expected)
     {
         string root = Path.Join(Path.GetTempPath(), "SpecEnumerationTests");
@@ -81,10 +82,10 @@ public class MatchMSBuildTests
         results.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
-    [Arguments("C:/temp/*.txt", "C:/temp", MatchType.Simple, MatchCasing.CaseInsensitive)]
-    [Arguments("C:/projects/**/*.cs", "C:/projects", MatchType.Simple, MatchCasing.CaseSensitive)]
-    [Arguments("C:/src/test/**/bin/*.dll", "C:/src/test", MatchType.Win32, MatchCasing.CaseInsensitive)]
+    [TestMethod]
+    [DataRow("C:/temp/*.txt", "C:/temp", MatchType.Simple, MatchCasing.CaseInsensitive)]
+    [DataRow("C:/projects/**/*.cs", "C:/projects", MatchType.Simple, MatchCasing.CaseSensitive)]
+    [DataRow("C:/src/test/**/bin/*.dll", "C:/src/test", MatchType.Win32, MatchCasing.CaseInsensitive)]
     public void Constructor_InitializesCorrectFields(string fullPathSpec, string startDirectory, MatchType matchType, MatchCasing matchCasing)
     {
         // Create the spec with the provided parameters
@@ -100,11 +101,11 @@ public class MatchMSBuildTests
         ((int)accessor._startDirectoryLength).Should().Be(startDirectory.Length);
     }
 
-    [Test]
-    [Arguments("C:/temp/*.txt", false, false)]
-    [Arguments("C:/temp/**/*.txt", true, true)]
-    [Arguments("C:/temp/**", true, true)]
-    [Arguments("C:/temp/**/bin/*.dll", false, false)]
+    [TestMethod]
+    [DataRow("C:/temp/*.txt", false, false)]
+    [DataRow("C:/temp/**/*.txt", true, true)]
+    [DataRow("C:/temp/**", true, true)]
+    [DataRow("C:/temp/**/bin/*.dll", false, false)]
     public void Constructor_SetsRecursionFlags(string fullPathSpec, bool expectedAlwaysRecurse, bool expectedEndsInAnyDirectory)
     {
         // Use a common directory and matching options
@@ -117,7 +118,7 @@ public class MatchMSBuildTests
         match.EndsInAnyDirectory.Should().Be(expectedEndsInAnyDirectory);
     }
 
-    [Test]
+    [TestMethod]
     public void CacheInvalidation_WorksCorrectly()
     {
         MSBuildSpecification specification = new("C:/temp/*.txt".Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));

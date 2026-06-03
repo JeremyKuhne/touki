@@ -4,9 +4,10 @@
 
 namespace Touki;
 
+[TestClass]
 public class SpanSplitTests
 {
-    [Test]
+    [TestMethod]
     public void Split_WithSingleCharSeparator_EmptySource_ReturnsEmptySegment()
     {
         ReadOnlySpan<char> source = "";
@@ -18,7 +19,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithSingleCharSeparator_NoSeparatorFound_ReturnsWholeSource()
     {
         ReadOnlySpan<char> source = "hello";
@@ -30,7 +31,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithSingleCharSeparator_OneSeparator_ReturnsTwoSegments()
     {
         ReadOnlySpan<char> source = "hello,world";
@@ -45,7 +46,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithSingleCharSeparator_MultipleSeparators_ReturnsMultipleSegments()
     {
         ReadOnlySpan<char> source = "a,b,c,d";
@@ -66,7 +67,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithSingleCharSeparator_ConsecutiveSeparators_ReturnsEmptySegments()
     {
         ReadOnlySpan<char> source = "a,,b";
@@ -84,7 +85,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithSingleCharSeparator_LeadingSeparator_ReturnsEmptyFirstSegment()
     {
         ReadOnlySpan<char> source = ",hello";
@@ -99,7 +100,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithSingleCharSeparator_TrailingSeparator_ReturnsEmptyLastSegment()
     {
         ReadOnlySpan<char> source = "hello,";
@@ -114,7 +115,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithSingleCharSeparator_OnlySeparator_ReturnsTwoEmptySegments()
     {
         ReadOnlySpan<char> source = ",";
@@ -129,7 +130,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithSpanSeparator_EmptySource_ReturnsEmptySegment()
     {
         ReadOnlySpan<char> source = "";
@@ -141,7 +142,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithSpanSeparator_NoSeparatorFound_ReturnsWholeSource()
     {
         ReadOnlySpan<char> source = "hello world";
@@ -153,7 +154,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithSpanSeparator_OneSeparator_ReturnsTwoSegments()
     {
         ReadOnlySpan<char> source = "hello::world";
@@ -169,7 +170,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithSpanSeparator_MultipleSeparators_ReturnsMultipleSegments()
     {
         ReadOnlySpan<char> source = "a::b::c";
@@ -188,7 +189,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithSpanSeparator_ConsecutiveSeparators_ReturnsEmptySegment()
     {
         ReadOnlySpan<char> source = "a::::b";
@@ -207,7 +208,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithEmptySeparator_ReturnsWholeSource()
     {
         ReadOnlySpan<char> source = "hello";
@@ -219,7 +220,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithEmptySeparator_EmptySource_ReturnsEmptySegment()
     {
         ReadOnlySpan<char> source = "";
@@ -231,7 +232,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SplitAny_WithMultipleSeparators_SplitsOnAny()
     {
         ReadOnlySpan<char> source = "a,b;c:d";
@@ -253,7 +254,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SplitAny_WithSingleSeparator_Works()
     {
         ReadOnlySpan<char> source = "a,b,c";
@@ -272,7 +273,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SplitAny_WithNoSeparatorsProvided_UsesWhitespace()
     {
         ReadOnlySpan<char> source = "hello world\ttab\nnewline";
@@ -294,7 +295,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SplitAny_WithNoSeparatorsProvided_HandlesVariousWhitespace()
     {
         // Test various Unicode whitespace characters
@@ -320,7 +321,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SplitAny_WithNoSeparatorsProvided_EmptySource_ReturnsEmptySegment()
     {
         ReadOnlySpan<char> source = "";
@@ -332,7 +333,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SplitAny_WithNoSeparatorsProvided_OnlyWhitespace_ReturnsEmptySegments()
     {
         ReadOnlySpan<char> source = " \t ";
@@ -354,7 +355,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SplitAny_WithNoSeparatorsFound_ReturnsWholeSource()
     {
         ReadOnlySpan<char> source = "hello";
@@ -366,7 +367,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithIntSpan_Works()
     {
         ReadOnlySpan<int> source = [1, 2, 0, 3, 4, 0, 5];
@@ -384,7 +385,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_GetEnumerator_ReturnsItself()
     {
         ReadOnlySpan<char> source = "a,b";
@@ -396,7 +397,7 @@ public class SpanSplitTests
         enumerator2.MoveNext().Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_SourceProperty_ReturnsOriginalSource()
     {
         ReadOnlySpan<char> source = "hello,world";
@@ -405,7 +406,7 @@ public class SpanSplitTests
         enumerator.Source.ToString().Should().Be("hello,world");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_CurrentProperty_ReturnsCorrectRange()
     {
         ReadOnlySpan<char> source = "hello,world";
@@ -422,7 +423,7 @@ public class SpanSplitTests
         enumerator.Current.End.Value.Should().Be(11);
     }
 
-    [Test]
+    [TestMethod]
     public void Split_MultipleMoveNextAfterEnd_ReturnsFalse()
     {
         ReadOnlySpan<char> source = "a";
@@ -434,7 +435,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_ForeachPattern_Works()
     {
         ReadOnlySpan<char> source = "a,b,c";
@@ -448,7 +449,7 @@ public class SpanSplitTests
         segments.Should().Equal(["a", "b", "c"]);
     }
 
-    [Test]
+    [TestMethod]
     public void SplitAny_ForeachPattern_WithWhitespace_Works()
     {
         ReadOnlySpan<char> source = "hello world\ttab";
@@ -462,7 +463,7 @@ public class SpanSplitTests
         segments.Should().Equal(["hello", "world", "tab"]);
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithSpanSeparator_LeadingAndTrailing_Works()
     {
         ReadOnlySpan<char> source = "::a::b::";
@@ -484,7 +485,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SplitAny_ConsecutiveDifferentSeparators_ReturnsEmptySegments()
     {
         ReadOnlySpan<char> source = "a,;b";
@@ -503,7 +504,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithLongSpanSeparator_Works()
     {
         ReadOnlySpan<char> source = "start<separator>middle<separator>end";
@@ -522,7 +523,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_PartialMatchNotTreatedAsSeparator_Works()
     {
         ReadOnlySpan<char> source = "a:b::c";
@@ -538,7 +539,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithStringSeparator_NoSeparatorFound_ReturnsWholeSource()
     {
         ReadOnlySpan<string> source = ["alpha", "beta", "gamma"];
@@ -550,7 +551,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithStringSeparator_MultipleSeparators_ReturnsSegments()
     {
         ReadOnlySpan<string> source = ["a", "|", "b", "|", "c"];
@@ -569,7 +570,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithStringSeparator_LeadingAndTrailingSeparator_ReturnsEmptySegments()
     {
         ReadOnlySpan<string> source = ["|", "a", "|"];
@@ -588,7 +589,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithStringSpanSeparator_SequenceMatch_SplitsCorrectly()
     {
         ReadOnlySpan<string> source = ["a", "<", "sep", ">", "b", "<", "sep", ">", "c"];
@@ -607,7 +608,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithStringSpanSeparator_PartialMatchNotSeparator()
     {
         ReadOnlySpan<string> source = ["a", "<", "sep", "b", ">", "c"];
@@ -619,7 +620,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithIntSequenceSeparator_SplitsOnSequence()
     {
         ReadOnlySpan<int> source = [1, 0, 0, 2, 3, 0, 0, 4];
@@ -638,7 +639,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SplitAny_WithIntSeparators_SplitsOnEither()
     {
         ReadOnlySpan<int> source = [1, 0, 2, 9, 3];
@@ -657,7 +658,7 @@ public class SpanSplitTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithIntEmptySeparator_ReturnsWholeSource()
     {
         ReadOnlySpan<int> source = [1, 2, 3];

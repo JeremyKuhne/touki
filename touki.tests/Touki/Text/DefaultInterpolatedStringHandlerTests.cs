@@ -4,13 +4,14 @@
 
 namespace Touki;
 
+[TestClass]
 public unsafe class DefaultInterpolatedStringHandlerTests
 {
     // On .NET Framework this is our implementation. On .NET we're getting built-in.
     // Testing both so we can validate behavior and expected allocations.
 
-    [Test]
-    [MethodDataSource(nameof(IntegerData))]
+    [TestMethod]
+    [DynamicData(nameof(IntegerData))]
     public void InterpolatedStrings_Integer(int value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -18,8 +19,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(IntegerData))]
+    [TestMethod]
+    [DynamicData(nameof(IntegerData))]
     public void InterpolatedStrings_Integer_WithHexFormat(int value)
     {
         string interpolatedResult = $"Value is {value:X8}.";
@@ -43,8 +44,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(ByteData))]
+    [TestMethod]
+    [DynamicData(nameof(ByteData))]
     public void InterpolatedStrings_Byte(byte value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -52,8 +53,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(ByteData))]
+    [TestMethod]
+    [DynamicData(nameof(ByteData))]
     public void InterpolatedStrings_Byte_WithHexFormat(byte value)
     {
         string interpolatedResult = $"Value is {value:X2}.";
@@ -65,8 +66,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(SByteData))]
+    [TestMethod]
+    [DynamicData(nameof(SByteData))]
     public void InterpolatedStrings_SByte(sbyte value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -74,8 +75,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(ShortData))]
+    [TestMethod]
+    [DynamicData(nameof(ShortData))]
     public void InterpolatedStrings_Short(short value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -83,8 +84,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(ShortData))]
+    [TestMethod]
+    [DynamicData(nameof(ShortData))]
     public void InterpolatedStrings_Short_WithFormat(short value)
     {
         string interpolatedResult = $"Value is {value:D5}.";
@@ -96,8 +97,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(UShortData))]
+    [TestMethod]
+    [DynamicData(nameof(UShortData))]
     public void InterpolatedStrings_UShort(ushort value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -105,8 +106,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(LongData))]
+    [TestMethod]
+    [DynamicData(nameof(LongData))]
     public void InterpolatedStrings_Long(long value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -114,8 +115,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(LongData))]
+    [TestMethod]
+    [DynamicData(nameof(LongData))]
     public void InterpolatedStrings_Long_WithFormat(long value)
     {
         string interpolatedResult = $"Value is {value:X16}.";
@@ -127,8 +128,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(ULongData))]
+    [TestMethod]
+    [DynamicData(nameof(ULongData))]
     public void InterpolatedStrings_ULong(ulong value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -136,8 +137,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(UIntData))]
+    [TestMethod]
+    [DynamicData(nameof(UIntData))]
     public void InterpolatedStrings_UInt(uint value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -145,8 +146,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(FloatData))]
+    [TestMethod]
+    [DynamicData(nameof(FloatData))]
     public void InterpolatedStrings_Float(float value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -154,8 +155,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(FloatData))]
+    [TestMethod]
+    [DynamicData(nameof(FloatData))]
     public void InterpolatedStrings_Float_WithFormat(float value)
     {
 #if NETFRAMEWORK
@@ -180,8 +181,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DoubleData))]
+    [TestMethod]
+    [DynamicData(nameof(DoubleData))]
     public void InterpolatedStrings_Double(double value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -189,8 +190,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DoubleData))]
+    [TestMethod]
+    [DynamicData(nameof(DoubleData))]
     public void InterpolatedStrings_Double_WithFormat(double value)
     {
 #if NETFRAMEWORK
@@ -215,8 +216,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DecimalData))]
+    [TestMethod]
+    [DynamicData(nameof(DecimalData))]
     public void InterpolatedStrings_Decimal(decimal value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -224,8 +225,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DecimalData))]
+    [TestMethod]
+    [DynamicData(nameof(DecimalData))]
     public void InterpolatedStrings_Decimal_WithFormat(decimal value)
     {
         string interpolatedResult = $"Value is {value:C2}.";
@@ -241,8 +242,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DateTimeData))]
+    [TestMethod]
+    [DynamicData(nameof(DateTimeData))]
     public void InterpolatedStrings_DateTime(DateTime value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -250,8 +251,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DateTimeData))]
+    [TestMethod]
+    [DynamicData(nameof(DateTimeData))]
     public void InterpolatedStrings_DateTime_WithFormat(DateTime value)
     {
         string interpolatedResult = $"Value is {value:yyyy-MM-dd}.";
@@ -275,8 +276,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DateTimeOffsetData))]
+    [TestMethod]
+    [DynamicData(nameof(DateTimeOffsetData))]
     public void InterpolatedStrings_DateTimeOffset(DateTimeOffset value)
     {
         string interpolatedResult = $"Value is {value}.";
@@ -284,8 +285,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DateTimeOffsetData))]
+    [TestMethod]
+    [DynamicData(nameof(DateTimeOffsetData))]
     public void InterpolatedStrings_DateTimeOffset_WithFormat(DateTimeOffset value)
     {
         string interpolatedResult = $"Value is {value:yyyy-MM-dd HH:mm:ss zzz}.";
@@ -305,8 +306,8 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
-    [MethodDataSource(nameof(IntegerData))]
+    [TestMethod]
+    [DynamicData(nameof(IntegerData))]
     public void InterpolatedStrings_Integer_WithVariousFormats(int value)
     {
         string interpolatedResult = $"Value is {value:C}.";
@@ -338,7 +339,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
+    [TestMethod]
     public void InterpolatedStrings_MultipleValues()
     {
         int intValue = 42;
@@ -350,7 +351,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
+    [TestMethod]
     public void InterpolatedStrings_WithAlignment()
     {
         int value = 42;
@@ -368,7 +369,7 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    [Test]
+    [TestMethod]
     public void InterpolatedStrings_SpecialFloatingPointValues()
     {
         double positiveInfinity = double.PositiveInfinity;
@@ -388,157 +389,157 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
-    public static IEnumerable<int> IntegerData() =>
+    public static IEnumerable<object[]> IntegerData() =>
     [
-        42,
-        -42,
-        0,
-        int.MaxValue,
-        int.MinValue
+        [42],
+        [-42],
+        [0],
+        [int.MaxValue],
+        [int.MinValue]
     ];
 
-    public static IEnumerable<byte> ByteData() =>
+    public static IEnumerable<object[]> ByteData() =>
     [
-        1,
-        42,
-        127,
-        byte.MaxValue,
-        byte.MinValue
+        [(byte)1],
+        [(byte)42],
+        [(byte)127],
+        [byte.MaxValue],
+        [byte.MinValue]
     ];
 
-    public static IEnumerable<sbyte> SByteData() =>
+    public static IEnumerable<object[]> SByteData() =>
     [
-        0,
-        1,
-        -1,
-        42,
-        -42,
-        sbyte.MaxValue,
-        sbyte.MinValue
+        [(sbyte)0],
+        [(sbyte)1],
+        [(sbyte)-1],
+        [(sbyte)42],
+        [(sbyte)-42],
+        [sbyte.MaxValue],
+        [sbyte.MinValue]
     ];
 
-    public static IEnumerable<short> ShortData() =>
+    public static IEnumerable<object[]> ShortData() =>
     [
-        0,
-        1,
-        -1,
-        42,
-        -42,
-        1000,
-        -1000,
-        short.MaxValue,
-        short.MinValue
+        [(short)0],
+        [(short)1],
+        [(short)-1],
+        [(short)42],
+        [(short)-42],
+        [(short)1000],
+        [(short)-1000],
+        [short.MaxValue],
+        [short.MinValue]
     ];
 
-    public static IEnumerable<ushort> UShortData() =>
+    public static IEnumerable<object[]> UShortData() =>
     [
-        1,
-        42,
-        1000,
-        ushort.MaxValue,
-        ushort.MinValue
+        [(ushort)1],
+        [(ushort)42],
+        [(ushort)1000],
+        [ushort.MaxValue],
+        [ushort.MinValue]
     ];
 
-    public static IEnumerable<long> LongData() =>
+    public static IEnumerable<object[]> LongData() =>
     [
-        0L,
-        1L,
-        -1L,
-        42L,
-        -42L,
-        1000000000000L,
-        -1000000000000L,
-        long.MaxValue,
-        long.MinValue
+        [0L],
+        [1L],
+        [-1L],
+        [42L],
+        [-42L],
+        [1000000000000L],
+        [-1000000000000L],
+        [long.MaxValue],
+        [long.MinValue]
     ];
 
-    public static IEnumerable<ulong> ULongData() =>
+    public static IEnumerable<object[]> ULongData() =>
     [
-        1UL,
-        42UL,
-        1000000000000UL,
-        ulong.MaxValue,
-        ulong.MinValue
+        [1UL],
+        [42UL],
+        [1000000000000UL],
+        [ulong.MaxValue],
+        [ulong.MinValue]
     ];
 
-    public static IEnumerable<uint> UIntData() =>
+    public static IEnumerable<object[]> UIntData() =>
     [
-        1U,
-        42U,
-        1000000U,
-        uint.MaxValue,
-        uint.MinValue
+        [1U],
+        [42U],
+        [1000000U],
+        [uint.MaxValue],
+        [uint.MinValue]
     ];
 
-    public static IEnumerable<float> FloatData() =>
+    public static IEnumerable<object[]> FloatData() =>
     [
-        0.0f,
-        1.0f,
-        -1.0f,
-        3.14159f,
-        -3.14159f,
-        42.5f,
-        -42.5f,
-        0.000123f,
-        123000000.0f,
-        float.MaxValue,
-        float.MinValue,
-        float.Epsilon
+        [0.0f],
+        [1.0f],
+        [-1.0f],
+        [3.14159f],
+        [-3.14159f],
+        [42.5f],
+        [-42.5f],
+        [0.000123f],
+        [123000000.0f],
+        [float.MaxValue],
+        [float.MinValue],
+        [float.Epsilon]
     ];
 
-    public static IEnumerable<double> DoubleData() =>
+    public static IEnumerable<object[]> DoubleData() =>
     [
-        0.0,
-        1.0,
-        -1.0,
-        3.141592653589793,
-        -3.141592653589793,
-        42.123456789,
-        -42.123456789,
-        0.000000000123,
-        123000000000000.0,
-        double.MaxValue,
-        double.MinValue,
-        double.Epsilon
+        [0.0],
+        [1.0],
+        [-1.0],
+        [3.141592653589793],
+        [-3.141592653589793],
+        [42.123456789],
+        [-42.123456789],
+        [0.000000000123],
+        [123000000000000.0],
+        [double.MaxValue],
+        [double.MinValue],
+        [double.Epsilon]
     ];
 
-    public static IEnumerable<decimal> DecimalData() =>
+    public static IEnumerable<object[]> DecimalData() =>
     [
-        0.0m,
-        1.0m,
-        -1.0m,
-        3.141592653589793m,
-        -3.141592653589793m,
-        42.123456789123456789m,
-        -42.123456789123456789m,
-        0.000000000000000001m,
-        123456789012345678.90m,
-        decimal.MaxValue,
-        decimal.MinValue
+        [0.0m],
+        [1.0m],
+        [-1.0m],
+        [3.141592653589793m],
+        [-3.141592653589793m],
+        [42.123456789123456789m],
+        [-42.123456789123456789m],
+        [0.000000000000000001m],
+        [123456789012345678.90m],
+        [decimal.MaxValue],
+        [decimal.MinValue]
     ];
 
-    public static IEnumerable<DateTime> DateTimeData() =>
+    public static IEnumerable<object[]> DateTimeData() =>
     [
-        new DateTime(2025, 1, 1),
-        new DateTime(2025, 6, 17, 14, 30, 45),
-        new DateTime(2025, 12, 31, 23, 59, 59),
-        new DateTime(1900, 1, 1),
-        new DateTime(2100, 12, 31),
-        DateTime.MinValue,
-        DateTime.MaxValue,
-        new DateTime(2025, 6, 17, 0, 0, 0, DateTimeKind.Utc),
-        new DateTime(2025, 6, 17, 12, 0, 0, DateTimeKind.Local)
+        [new DateTime(2025, 1, 1)],
+        [new DateTime(2025, 6, 17, 14, 30, 45)],
+        [new DateTime(2025, 12, 31, 23, 59, 59)],
+        [new DateTime(1900, 1, 1)],
+        [new DateTime(2100, 12, 31)],
+        [DateTime.MinValue],
+        [DateTime.MaxValue],
+        [new DateTime(2025, 6, 17, 0, 0, 0, DateTimeKind.Utc)],
+        [new DateTime(2025, 6, 17, 12, 0, 0, DateTimeKind.Local)]
     ];
 
-    public static IEnumerable<DateTimeOffset> DateTimeOffsetData() =>
+    public static IEnumerable<object[]> DateTimeOffsetData() =>
     [
-        new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero),
-        new DateTimeOffset(2025, 6, 17, 14, 30, 45, TimeSpan.FromHours(-5)),
-        new DateTimeOffset(2025, 12, 31, 23, 59, 59, TimeSpan.FromHours(8)),
-        new DateTimeOffset(2025, 6, 17, 12, 0, 0, TimeSpan.FromMinutes(330)),
-        DateTimeOffset.MinValue,
-        DateTimeOffset.MaxValue,
-        DateTimeOffset.UtcNow,
-        new DateTimeOffset(2025, 6, 17, 0, 0, 0, 123, TimeSpan.Zero)
+        [new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero)],
+        [new DateTimeOffset(2025, 6, 17, 14, 30, 45, TimeSpan.FromHours(-5))],
+        [new DateTimeOffset(2025, 12, 31, 23, 59, 59, TimeSpan.FromHours(8))],
+        [new DateTimeOffset(2025, 6, 17, 12, 0, 0, TimeSpan.FromMinutes(330))],
+        [DateTimeOffset.MinValue],
+        [DateTimeOffset.MaxValue],
+        [DateTimeOffset.UtcNow],
+        [new DateTimeOffset(2025, 6, 17, 0, 0, 0, 123, TimeSpan.Zero)]
     ];
 }

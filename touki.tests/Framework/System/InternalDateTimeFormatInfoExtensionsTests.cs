@@ -4,9 +4,10 @@
 
 namespace System.Globalization;
 
+[TestClass]
 public class InternalDateTimeFormatInfoExtensionsTests
 {
-    [Test]
+    [TestMethod]
     public void DateTimeOffsetPattern_ReturnNonEmptyString()
     {
         // Get DateTimeFormatInfo from current culture
@@ -17,7 +18,7 @@ public class InternalDateTimeFormatInfoExtensionsTests
         pattern.Should().NotBeNullOrEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void DateTimeOffsetPattern_DifferentCultures_ReturnsDifferentPatterns()
     {
         // Test with English and Japanese cultures
@@ -31,7 +32,7 @@ public class InternalDateTimeFormatInfoExtensionsTests
         jpPattern.Should().NotBeNullOrEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void GetMonthName_RegularStyle_ReturnsCorrectName()
     {
         DateTimeFormatInfo formatInfo = CultureInfo.GetCultureInfo("en-US").DateTimeFormat;
@@ -43,7 +44,7 @@ public class InternalDateTimeFormatInfoExtensionsTests
         december.Should().Be("December");
     }
 
-    [Test]
+    [TestMethod]
     public void GetMonthName_AbbreviatedRegularStyle_ReturnsCorrectName()
     {
         DateTimeFormatInfo formatInfo = CultureInfo.GetCultureInfo("en-US").DateTimeFormat;
@@ -55,7 +56,7 @@ public class InternalDateTimeFormatInfoExtensionsTests
         december.Should().Be("Dec");
     }
 
-    [Test]
+    [TestMethod]
     public void GetMonthName_GenitiveStyle_ReturnsName()
     {
         // Ukranian has distinct genitive forms
@@ -64,7 +65,7 @@ public class InternalDateTimeFormatInfoExtensionsTests
         january.Should().Be("січня");
     }
 
-    [Test]
+    [TestMethod]
     public void GetMonthName_AbbreviatedGenitiveStyle_ReturnsName()
     {
         DateTimeFormatInfo formatInfo = CultureInfo.GetCultureInfo("uk-UA").DateTimeFormat;
@@ -72,7 +73,7 @@ public class InternalDateTimeFormatInfoExtensionsTests
         january.Should().Be("січ");
     }
 
-    [Test]
+    [TestMethod]
     public void GetMonthName_LeapYearStyle_InvariantCulture_ReturnsName()
     {
         DateTimeFormatInfo formatInfo = CultureInfo.InvariantCulture.DateTimeFormat;
@@ -80,7 +81,7 @@ public class InternalDateTimeFormatInfoExtensionsTests
         february.Should().Be("February");
     }
 
-    [Test]
+    [TestMethod]
     public void GetMonthName_InvalidMonth_ThrowsArgumentOutOfRangeException()
     {
         DateTimeFormatInfo formatInfo = CultureInfo.InvariantCulture.DateTimeFormat;
@@ -92,7 +93,7 @@ public class InternalDateTimeFormatInfoExtensionsTests
         action2.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void FormatFlags_Ukrainian_ReturnsGenitive()
     {
         DateTimeFormatInfo formatInfo = CultureInfo.GetCultureInfo("uk-UA").DateTimeFormat;
@@ -102,7 +103,7 @@ public class InternalDateTimeFormatInfoExtensionsTests
         flags.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void FormatFlags_UnitedStates_ReturnsNonGenitive()
     {
         DateTimeFormatInfo usFormatInfo = CultureInfo.GetCultureInfo("en-US").DateTimeFormat;

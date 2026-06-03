@@ -4,11 +4,12 @@
 
 namespace Touki.Io;
 
+[TestClass]
 public class MSBuildEnumeratorTests
 {
     private static readonly string s_projectRoot = Path.GetFullPath(Path.Join(Environment.CurrentDirectory, "../../../../.."));
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithGlobPattern_ReturnsMatchingFiles()
     {
         using TempFolder tempFolder = new();
@@ -32,7 +33,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_MatchesDirectoryEnumerate()
     {
         // Skip on non-Windows: relative path navigation uses the project folder
@@ -41,7 +42,7 @@ public class MSBuildEnumeratorTests
         // accidentally mixes casings, so we keep the parity check Windows-only.
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
         {
-            Skip.Test("Path casing parity requires a case-insensitive filesystem; Windows-only test.");
+            Assert.Inconclusive("Path casing parity requires a case-insensitive filesystem; Windows-only test.");
         }
 
         // N:\repos\touki\artifacts\x64\Release\touki.tests\net9.0
@@ -63,7 +64,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_MatchesDirectoryEnumerate_Recursive()
     {
         // Skip on non-Windows: enumerating the whole repo on CI picks up generated /
@@ -72,7 +73,7 @@ public class MSBuildEnumeratorTests
         // exclusion semantics. The Windows job is the canonical parity check.
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
         {
-            Skip.Test("Recursive parity check is run only on the canonical Windows job.");
+            Assert.Inconclusive("Recursive parity check is run only on the canonical Windows job.");
         }
 
         // N:\repos\touki\artifacts\x64\Release\touki.tests\net9.0
@@ -91,7 +92,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithQuestionMarkPattern_MatchesSingleCharacter()
     {
         using TempFolder tempFolder = new();
@@ -116,7 +117,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithMultipleQuestionMarks_MatchesExactLength()
     {
         using TempFolder tempFolder = new();
@@ -140,7 +141,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithMixedWildcards_MatchesPattern()
     {
         using TempFolder tempFolder = new();
@@ -167,7 +168,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithSubdirectoryPattern_MatchesInSpecificDirectory()
     {
         using TempFolder tempFolder = new();
@@ -194,7 +195,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithDeepRecursivePattern_MatchesAllSubdirectories()
     {
         using TempFolder tempFolder = new();
@@ -228,7 +229,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithSpecificDirectoryRecursivePattern_MatchesFromSpecificLevel()
     {
         using TempFolder tempFolder = new();
@@ -262,7 +263,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithComplexPattern_MatchesCombinedWildcards()
     {
         using TempFolder tempFolder = new();
@@ -291,7 +292,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithNoMatches_ReturnsEmpty()
     {
         using TempFolder tempFolder = new();
@@ -312,7 +313,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithExactFileName_MatchesSpecificFile()
     {
         using TempFolder tempFolder = new();
@@ -335,7 +336,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithNestedRecursivePattern_MatchesDeepPaths()
     {
         using TempFolder tempFolder = new();
@@ -361,7 +362,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithMultipleExtensionPattern_MatchesVariousExtensions()
     {
         using TempFolder tempFolder = new();
@@ -386,7 +387,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithDirectoryNamePattern_MatchesDirectoryNames()
     {
         using TempFolder tempFolder = new();
@@ -419,7 +420,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithEmptyDirectory_ReturnsEmpty()
     {
         using TempFolder tempFolder = new();
@@ -437,7 +438,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithStarStarAtEnd_MatchesAllFilesRecursively()
     {
         using TempFolder tempFolder = new();
@@ -464,7 +465,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithCaseVariations_MatchesBasedOnPlatform()
     {
         using TempFolder tempFolder = new();
@@ -496,7 +497,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithDoubleStarAtStart_MatchesFromAnyLevel()
     {
         using TempFolder tempFolder = new();
@@ -524,7 +525,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithDeepSpecificDirectoryPattern_MatchesMultipleLevels()
     {
         using TempFolder tempFolder = new();
@@ -559,7 +560,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithMiddleRecursivePattern_MatchesInterveningDirectories()
     {
         using TempFolder tempFolder = new();
@@ -601,7 +602,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithMultipleRecursiveSegments_MatchesComplexPatterns()
     {
         using TempFolder tempFolder = new();
@@ -639,7 +640,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithConsecutiveWildcardSegments_DeduplicatesCorrectly()
     {
         using TempFolder tempFolder = new();
@@ -682,7 +683,7 @@ public class MSBuildEnumeratorTests
         files1.Should().BeEquivalentTo(files2);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithTripleConsecutiveWildcards_HandlesDeduplication()
     {
         using TempFolder tempFolder = new();
@@ -715,7 +716,7 @@ public class MSBuildEnumeratorTests
         files1.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithRecursiveBeforeSpecificDirectory_MatchesCorrectPaths()
     {
         using TempFolder tempFolder = new();
@@ -747,7 +748,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithSpecificDirectoryThenRecursive_MatchesAfterSpecificPath()
     {
         using TempFolder tempFolder = new();
@@ -779,7 +780,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_WithComplexMixedPattern_HandlesAllWildcardTypes()
     {
         using TempFolder tempFolder = new();
@@ -812,7 +813,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_ComplexMixedPattern_Issue()
     {
         using TempFolder tempFolder = new();
@@ -832,7 +833,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo([Path.Join("src", "v1", "a.cs")]);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_MatchSpec_QuestionMarkStar()
     {
         using TempFolder tempFolder = new();
@@ -850,7 +851,7 @@ public class MSBuildEnumeratorTests
         files.Should().Contain("a.cs");
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_ThreeCharDirectory()
     {
         using TempFolder tempFolder = new();
@@ -870,7 +871,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo([Path.Join("src", "a.cs")]);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_TwoLevelDirectory()
     {
         using TempFolder tempFolder = new();
@@ -890,7 +891,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo([Path.Join("src", "v1", "a.cs")]);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_SpecificIssue()
     {
         using TempFolder tempFolder = new();
@@ -908,7 +909,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_ToukiProject_SimpleCSharp()
     {
         string toukiFolder = Path.Join(s_projectRoot, "touki");
@@ -923,7 +924,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_ToukiProject_CSharpOneExclude()
     {
         string toukiFolder = Path.Join(s_projectRoot, "touki");
@@ -939,7 +940,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test, Skip("Local testing")]
+    [TestMethod, Ignore("Local testing")]
     public void EnumerateFiles_ToukiProject_CSharpDefaultExclude()
     {
         string toukiFolder = Path.Join(s_projectRoot, "touki");
@@ -972,7 +973,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
-    [Test, Skip("Local testing")]
+    [TestMethod, Ignore("Local testing")]
     public void EnumerateFiles_RuntimeFolder_CSharpDefaultExclude()
     {
         string toukiFolder = @"n:\repos\runtime\";
@@ -1005,7 +1006,7 @@ public class MSBuildEnumeratorTests
         files.Count.Should().Be(expected.Count);
     }
 
-    [Test, Skip("Local test")]
+    [TestMethod, Ignore("Local test")]
     public void EnumerateFiles_RuntimeFolder_ComplexPath()
     {
         string rootFolder = @"n:\repos\runtime\";
@@ -1038,7 +1039,7 @@ public class MSBuildEnumeratorTests
         files.Count.Should().Be(expected.Count);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_FullyQualifiedSpec_ReturnsFullPaths()
     {
         // A fully-qualified file spec disables project-directory stripping. This covers the
@@ -1062,7 +1063,7 @@ public class MSBuildEnumeratorTests
         files.Should().AllSatisfy(f => Path.IsPathFullyQualified(f).Should().BeTrue());
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateFiles_NullProjectDirectory_ReturnsFullPaths()
     {
         // A null project directory also disables stripping.

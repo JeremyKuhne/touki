@@ -4,9 +4,10 @@
 
 namespace Touki;
 
+[TestClass]
 public class Creation
 {
-    [Test]
+    [TestMethod]
     public void CreateIsAllocationFree()
     {
         var watch = MemoryWatch.Create;

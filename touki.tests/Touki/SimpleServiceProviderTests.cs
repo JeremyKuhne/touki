@@ -6,6 +6,7 @@ namespace Touki;
 
 #pragma warning disable CA2263 // Prefer the generic overload for GetService
 
+[TestClass]
 public class SimpleServiceProviderTests
 {
     // Test interfaces and classes for service registration
@@ -18,7 +19,7 @@ public class SimpleServiceProviderTests
         public int Value => 42;
     }
 
-    [Test]
+    [TestMethod]
     public void AddService_RegistersServiceByExactType()
     {
         SimpleServiceProvider provider = new();
@@ -30,7 +31,7 @@ public class SimpleServiceProviderTests
         result.Should().BeSameAs(service);
     }
 
-    [Test]
+    [TestMethod]
     public void AddService_OverwritesPreviousRegistration()
     {
         SimpleServiceProvider provider = new();
@@ -45,7 +46,7 @@ public class SimpleServiceProviderTests
         result.Should().NotBeSameAs(service1);
     }
 
-    [Test]
+    [TestMethod]
     public void GetService_WithType_ReturnsNullForUnregisteredService()
     {
         SimpleServiceProvider provider = new();
@@ -55,7 +56,7 @@ public class SimpleServiceProviderTests
         result.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void GetService_WithType_ReturnsRegisteredService()
     {
         SimpleServiceProvider provider = new();
@@ -67,7 +68,7 @@ public class SimpleServiceProviderTests
         result.Should().BeSameAs(service);
     }
 
-    [Test]
+    [TestMethod]
     public void GetService_Generic_ReturnsNullForUnregisteredService()
     {
         SimpleServiceProvider provider = new();
@@ -77,7 +78,7 @@ public class SimpleServiceProviderTests
         result.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void GetService_Generic_ReturnsRegisteredService()
     {
         SimpleServiceProvider provider = new();
@@ -89,7 +90,7 @@ public class SimpleServiceProviderTests
         result.Should().BeSameAs(service);
     }
 
-    [Test]
+    [TestMethod]
     public void TryGetService_ReturnsFalseForUnregisteredService()
     {
         SimpleServiceProvider provider = new();
@@ -100,7 +101,7 @@ public class SimpleServiceProviderTests
         result.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void TryGetService_ReturnsTrueAndServiceForRegisteredService()
     {
         SimpleServiceProvider provider = new();
@@ -114,7 +115,7 @@ public class SimpleServiceProviderTests
         result.Should().BeSameAs(service);
     }
 
-    [Test]
+    [TestMethod]
     public void GetService_DoesNotRetrieveByInterface()
     {
         SimpleServiceProvider provider = new();
@@ -126,7 +127,7 @@ public class SimpleServiceProviderTests
         result.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void AddService_CanRegisterImplementationsByInterface()
     {
         SimpleServiceProvider provider = new();
@@ -138,7 +139,7 @@ public class SimpleServiceProviderTests
         result.Should().BeSameAs(service);
     }
 
-    [Test]
+    [TestMethod]
     public void GetService_InterfaceHierarchy_RequiresExactRegistration()
     {
         SimpleServiceProvider provider = new();
@@ -155,7 +156,7 @@ public class SimpleServiceProviderTests
         result2.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void AddService_MultipleDifferentServices()
     {
         SimpleServiceProvider provider = new();
@@ -172,7 +173,7 @@ public class SimpleServiceProviderTests
         result2.Should().BeSameAs(extendedService);
     }
 
-    [Test]
+    [TestMethod]
     public void AddService_NullService_StoresNullReference()
     {
         SimpleServiceProvider provider = new();
@@ -192,7 +193,7 @@ public class SimpleServiceProviderTests
         outResult.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public async Task MultipleThreads_CanAddAndRetrieveServices()
     {
         SimpleServiceProvider provider = new();

@@ -11,12 +11,13 @@ namespace Touki.Io.Globbing;
 ///  handles runs of three or more consecutive <c>*</c> characters in the pattern, by
 ///  comparing each verdict against <see cref="Matcher"/>.
 /// </summary>
+[TestClass]
 public class MultipleAsteriskFileSystemGlobbingOracleTests
 {
     public static IEnumerable<(string, string)> Rows() => MultipleAsteriskRows.Rows();
 
-    [Test]
-    [MethodDataSource(nameof(Rows))]
+    [TestMethod]
+    [DynamicData(nameof(Rows))]
     public void IsMatch_FileSystemGlobbingDialect_MultipleAsterisks_AgreesWithMatcher(string pattern, string input)
     {
         Matcher matcher = new(StringComparison.Ordinal);

@@ -4,17 +4,18 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringULong
 {
-    public static IEnumerable<ulong> ULongData()
+    public static IEnumerable<object[]> ULongData()
     {
-        yield return 42;
-        yield return ulong.MaxValue;
-        yield return ulong.MinValue;
+        yield return [42UL];
+        yield return [ulong.MaxValue];
+        yield return [ulong.MinValue];
     }
 
-    [Test]
-    [MethodDataSource(nameof(ULongData))]
+    [TestMethod]
+    [DynamicData(nameof(ULongData))]
     public void ULongImplicit(ulong @ulong)
     {
         Value value = @ulong;
@@ -27,8 +28,8 @@ public class StoringULong
         value.Type.Should().Be(typeof(ulong));
     }
 
-    [Test]
-    [MethodDataSource(nameof(ULongData))]
+    [TestMethod]
+    [DynamicData(nameof(ULongData))]
     public void ULongCreate(ulong @ulong)
     {
         Value value;
@@ -51,8 +52,8 @@ public class StoringULong
         value.Type.Should().Be(typeof(ulong));
     }
 
-    [Test]
-    [MethodDataSource(nameof(ULongData))]
+    [TestMethod]
+    [DynamicData(nameof(ULongData))]
     public void ULongInOut(ulong @ulong)
     {
         Value value = @ulong;
@@ -64,8 +65,8 @@ public class StoringULong
         ((ulong)value).Should().Be(@ulong);
     }
 
-    [Test]
-    [MethodDataSource(nameof(ULongData))]
+    [TestMethod]
+    [DynamicData(nameof(ULongData))]
     public void NullableULongInULongOut(ulong @ulong)
     {
         ulong? source = @ulong;
@@ -80,8 +81,8 @@ public class StoringULong
         ((ulong)value).Should().Be(@ulong);
     }
 
-    [Test]
-    [MethodDataSource(nameof(ULongData))]
+    [TestMethod]
+    [DynamicData(nameof(ULongData))]
     public void ULongInNullableULongOut(ulong @ulong)
     {
         ulong source = @ulong;
@@ -93,8 +94,8 @@ public class StoringULong
         ((ulong?)value).Should().Be(@ulong);
     }
 
-    [Test]
-    [MethodDataSource(nameof(ULongData))]
+    [TestMethod]
+    [DynamicData(nameof(ULongData))]
     public void BoxedULong(ulong @ulong)
     {
         ulong i = @ulong;
@@ -119,7 +120,7 @@ public class StoringULong
         nullableResult!.Value.Should().Be(@ulong);
     }
 
-    [Test]
+    [TestMethod]
     public void NullULong()
     {
         ulong? source = null;
@@ -129,8 +130,8 @@ public class StoringULong
         value.As<ulong?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(ULongData))]
+    [TestMethod]
+    [DynamicData(nameof(ULongData))]
     public void OutAsObject(ulong @ulong)
     {
         Value value = @ulong;

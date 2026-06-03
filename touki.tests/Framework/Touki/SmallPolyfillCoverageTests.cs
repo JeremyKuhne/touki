@@ -10,11 +10,12 @@ namespace Framework.Touki;
 ///  Coverage tests for several small framework polyfills and helpers that
 ///  were previously at 0% line coverage.
 /// </summary>
+[TestClass]
 public class SmallPolyfillCoverageTests
 {
     // ---------- ArgumentNullExtensions.ThrowIfNull ----------
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNull_Object_NonNull_DoesNotThrow()
     {
         object value = new();
@@ -22,7 +23,7 @@ public class SmallPolyfillCoverageTests
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNull_Object_Null_Throws()
     {
         object? value = null;
@@ -30,7 +31,7 @@ public class SmallPolyfillCoverageTests
         action.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("value");
     }
 
-    [Test]
+    [TestMethod]
     public unsafe void ThrowIfNull_VoidPointer_NonNull_DoesNotThrow()
     {
         int local = 42;
@@ -39,14 +40,14 @@ public class SmallPolyfillCoverageTests
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public unsafe void ThrowIfNull_VoidPointer_Null_Throws()
     {
         Action action = () => ArgumentNullException.ThrowIfNull((void*)null);
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNull_IntPtr_NonZero_DoesNotThrow()
     {
         IntPtr p = new(0x1);
@@ -54,7 +55,7 @@ public class SmallPolyfillCoverageTests
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNull_IntPtr_Zero_Throws()
     {
         IntPtr p = IntPtr.Zero;
@@ -62,7 +63,7 @@ public class SmallPolyfillCoverageTests
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNull_Object_ExceptionArgument_NonNull_DoesNotThrow()
     {
         // Internal overload that takes the ExceptionArgument enum.
@@ -71,7 +72,7 @@ public class SmallPolyfillCoverageTests
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNull_Object_ExceptionArgument_Null_Throws()
     {
         Action action = () => ArgumentNullException.ThrowIfNull((object?)null, ExceptionArgument.value);
@@ -80,14 +81,14 @@ public class SmallPolyfillCoverageTests
 
     // ---------- OverflowAdapter ----------
 
-    [Test]
+    [TestMethod]
     public void OverflowAdapter_Throw_ThrowsOverflowException()
     {
         Action action = () => OverflowAdapter.Throw("custom message");
         action.Should().Throw<OverflowException>().WithMessage("custom message");
     }
 
-    [Test]
+    [TestMethod]
     public void OverflowAdapter_Throw_NullMessage_ThrowsOverflowException()
     {
         Action action = () => OverflowAdapter.Throw(null);
@@ -96,7 +97,7 @@ public class SmallPolyfillCoverageTests
 
     // ---------- ValueStringBuilder.AppendFormatted overloads ----------
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_Object_NullValue_LeavesEmpty()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -112,7 +113,7 @@ public class SmallPolyfillCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_Object_WithAlignmentAndFormat_FormatsAndPads()
     {
         ValueStringBuilder builder = new(stackalloc char[32]);
@@ -128,7 +129,7 @@ public class SmallPolyfillCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_String_WithAlignment_RightAlignsByDefault()
     {
         ValueStringBuilder builder = new(stackalloc char[32]);
@@ -143,7 +144,7 @@ public class SmallPolyfillCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_String_WithNegativeAlignment_LeftAligns()
     {
         ValueStringBuilder builder = new(stackalloc char[32]);
@@ -158,7 +159,7 @@ public class SmallPolyfillCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_ReadOnlySpan_LeftAligned_AddsTrailingSpaces()
     {
         ValueStringBuilder builder = new(stackalloc char[32]);
@@ -173,7 +174,7 @@ public class SmallPolyfillCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_GenericValue_WithFormat_UsesFormat()
     {
         ValueStringBuilder builder = new(stackalloc char[32]);
@@ -188,7 +189,7 @@ public class SmallPolyfillCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_GenericValue_WithAlignmentAndStringFormat()
     {
         ValueStringBuilder builder = new(stackalloc char[32]);
@@ -203,7 +204,7 @@ public class SmallPolyfillCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_ReadOnlySpan_RightAligned_AddsLeadingSpaces()
     {
         ValueStringBuilder builder = new(stackalloc char[32]);
@@ -220,7 +221,7 @@ public class SmallPolyfillCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_ReadOnlySpan_AlignmentLessThanValueLength_NoPadding()
     {
         ValueStringBuilder builder = new(stackalloc char[32]);
@@ -235,7 +236,7 @@ public class SmallPolyfillCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_Value_WithStringFormat()
     {
         ValueStringBuilder builder = new(stackalloc char[32]);
@@ -250,7 +251,7 @@ public class SmallPolyfillCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_GenericT_AsValue_FormatsViaValuePath()
     {
         ValueStringBuilder builder = new(stackalloc char[32]);
@@ -267,7 +268,7 @@ public class SmallPolyfillCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_BraceMismatch_Throws()
     {
         Action action = () =>
@@ -291,7 +292,7 @@ public class SmallPolyfillCoverageTests
         action.Should().Throw<FormatException>();
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_FormatTrailingMissingClose_Throws()
     {
         Action action = () =>
@@ -312,7 +313,7 @@ public class SmallPolyfillCoverageTests
         action.Should().Throw<FormatException>();
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_NoClosingBrace_Throws()
     {
         Action action = () =>
@@ -333,7 +334,7 @@ public class SmallPolyfillCoverageTests
         action.Should().Throw<FormatException>();
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_WithCustomFormatter_UsesFormatter()
     {
         IFormatProvider provider = new CustomFormatProvider();
@@ -349,7 +350,7 @@ public class SmallPolyfillCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_GenericT_WithCustomFormatter_UsesFormatter()
     {
         IFormatProvider provider = new CustomFormatProvider();
@@ -376,28 +377,28 @@ public class SmallPolyfillCoverageTests
 
     // ---------- ArgumentOutOfRangeException comparison polyfills ----------
 
-    [Test]
+    [TestMethod]
     public void ThrowIfZero_Int_Zero_Throws()
     {
         Action action = () => ArgumentOutOfRangeException.ThrowIfZero(0);
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfZero_Int_NonZero_DoesNotThrow()
     {
         Action action = () => ArgumentOutOfRangeException.ThrowIfZero(1);
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNegative_Int_Negative_Throws()
     {
         Action action = () => ArgumentOutOfRangeException.ThrowIfNegative(-1);
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNegative_Int_NonNegative_DoesNotThrow()
     {
         Action action = () =>
@@ -408,49 +409,49 @@ public class SmallPolyfillCoverageTests
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNegativeOrZero_Int_Zero_Throws()
     {
         Action action = () => ArgumentOutOfRangeException.ThrowIfNegativeOrZero(0);
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfEqual_Equal_Throws()
     {
         Action action = () => ArgumentOutOfRangeException.ThrowIfEqual(5, 5);
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfEqual_Different_DoesNotThrow()
     {
         Action action = () => ArgumentOutOfRangeException.ThrowIfEqual(5, 7);
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNotEqual_Different_Throws()
     {
         Action action = () => ArgumentOutOfRangeException.ThrowIfNotEqual(5, 7);
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNotEqual_Equal_DoesNotThrow()
     {
         Action action = () => ArgumentOutOfRangeException.ThrowIfNotEqual(5, 5);
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfGreaterThan_Greater_Throws()
     {
         Action action = () => ArgumentOutOfRangeException.ThrowIfGreaterThan(10, 5);
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfGreaterThan_LessOrEqual_DoesNotThrow()
     {
         Action action = () =>
@@ -461,7 +462,7 @@ public class SmallPolyfillCoverageTests
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfGreaterThanOrEqual_GreaterOrEqual_Throws()
     {
         Action a1 = () => ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(10, 5);
@@ -470,14 +471,14 @@ public class SmallPolyfillCoverageTests
         a2.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfLessThan_Less_Throws()
     {
         Action action = () => ArgumentOutOfRangeException.ThrowIfLessThan(3, 5);
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfLessThan_GreaterOrEqual_DoesNotThrow()
     {
         Action action = () =>
@@ -488,7 +489,7 @@ public class SmallPolyfillCoverageTests
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfLessThanOrEqual_LessOrEqual_Throws()
     {
         Action a1 = () => ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(3, 5);
@@ -500,7 +501,7 @@ public class SmallPolyfillCoverageTests
     // Non-throw paths for every overload; the existing test suite only validates
     // the throwing branches, leaving the closing braces of each method uncovered.
 
-    [Test]
+    [TestMethod]
     public void ThrowIfZero_AllOverloads_NonZero_DoesNotThrow()
     {
         Action action = () =>
@@ -518,7 +519,7 @@ public class SmallPolyfillCoverageTests
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNegative_AllOverloads_NonNegative_DoesNotThrow()
     {
         Action action = () =>
@@ -533,7 +534,7 @@ public class SmallPolyfillCoverageTests
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNegativeOrZero_AllOverloads_Positive_DoesNotThrow()
     {
         Action action = () =>
@@ -550,7 +551,7 @@ public class SmallPolyfillCoverageTests
 
     // ---------- EnumerationMatcherExtensions ----------
 
-    [Test]
+    [TestMethod]
     public void EnumerationMatcherExtensions_MatchesDirectory_ForwardsToInterface()
     {
         TestMatcher matcher = new() { DirectoryResult = true };
@@ -562,7 +563,7 @@ public class SmallPolyfillCoverageTests
         matcher.LastMatchForExclusion.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerationMatcherExtensions_MatchesDirectory_DefaultsToInclusion()
     {
         TestMatcher matcher = new() { DirectoryResult = false };
@@ -571,7 +572,7 @@ public class SmallPolyfillCoverageTests
         matcher.LastMatchForExclusion.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerationMatcherExtensions_MatchesFile_ForwardsToInterface()
     {
         TestMatcher matcher = new() { FileResult = true };
@@ -611,14 +612,14 @@ public class SmallPolyfillCoverageTests
         B = 2
     }
 
-    [Test]
+    [TestMethod]
     public void EnumData_Constructor_NonEnum_Throws()
     {
         Action action = () => new global::Touki.EnumDataCache.EnumData(typeof(int));
         action.Should().Throw<ArgumentException>();
     }
 
-    [Test]
+    [TestMethod]
     public void EnumData_Constructor_Enum_PopulatesType()
     {
         global::Touki.EnumDataCache.EnumData data = new(typeof(SampleFlags));
@@ -635,7 +636,7 @@ public class SmallPolyfillCoverageTests
         public int Value;
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_NonISpanFormattableStruct_FallsBackToObjectFormat()
     {
         // Exercises FormatterHelper<T>.Init's branch where T does not implement

@@ -10,6 +10,7 @@ namespace Touki.Io.Globbing;
 ///  (<c>!(...)</c>) is covered in a later step and intentionally still
 ///  reports no match here.
 /// </summary>
+[TestClass]
 public class ExtGlobPositiveMatchTests
 {
     private static bool Match(string pattern, string input, GlobDialect dialect = GlobDialect.Bash) =>
@@ -20,156 +21,156 @@ public class ExtGlobPositiveMatchTests
 
     // -- @(...) : exactly one alternative must match --------------------------------
 
-    [Test]
-    [Arguments("@(foo)", "foo", true)]
-    [Arguments("@(foo)", "bar", false)]
-    [Arguments("@(foo|bar)", "foo", true)]
-    [Arguments("@(foo|bar)", "bar", true)]
-    [Arguments("@(foo|bar)", "baz", false)]
-    [Arguments("@(a|b|c)", "a", true)]
-    [Arguments("@(a|b|c)", "c", true)]
-    [Arguments("@(a|b|c)", "d", false)]
-    [Arguments("@(a|b)", "", false)]
-    [Arguments("@(a|b)", "ab", false)]
+    [TestMethod]
+    [DataRow("@(foo)", "foo", true)]
+    [DataRow("@(foo)", "bar", false)]
+    [DataRow("@(foo|bar)", "foo", true)]
+    [DataRow("@(foo|bar)", "bar", true)]
+    [DataRow("@(foo|bar)", "baz", false)]
+    [DataRow("@(a|b|c)", "a", true)]
+    [DataRow("@(a|b|c)", "c", true)]
+    [DataRow("@(a|b|c)", "d", false)]
+    [DataRow("@(a|b)", "", false)]
+    [DataRow("@(a|b)", "ab", false)]
     public void Match_At_ExactlyOneAlternative(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     // @(...) embedded in surrounding literals.
-    [Arguments("foo@(x|y)bar", "fooxbar", true)]
-    [Arguments("foo@(x|y)bar", "fooybar", true)]
-    [Arguments("foo@(x|y)bar", "foozbar", false)]
-    [Arguments("foo@(x|y)bar", "fooxybar", false)]
-    [Arguments("foo@(x|y)bar", "foobar", false)]
+    [DataRow("foo@(x|y)bar", "fooxbar", true)]
+    [DataRow("foo@(x|y)bar", "fooybar", true)]
+    [DataRow("foo@(x|y)bar", "foozbar", false)]
+    [DataRow("foo@(x|y)bar", "fooxybar", false)]
+    [DataRow("foo@(x|y)bar", "foobar", false)]
     public void Match_At_WithSurroundingLiterals(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- ?(...) : zero or one alternative ---------------------------------------------
 
-    [Test]
-    [Arguments("?(foo)", "", true)]
-    [Arguments("?(foo)", "foo", true)]
-    [Arguments("?(foo)", "bar", false)]
-    [Arguments("?(foo)", "foofoo", false)]
-    [Arguments("?(a|b)", "", true)]
-    [Arguments("?(a|b)", "a", true)]
-    [Arguments("?(a|b)", "b", true)]
-    [Arguments("?(a|b)", "c", false)]
-    [Arguments("foo?(x|y)bar", "fooxbar", true)]
-    [Arguments("foo?(x|y)bar", "foobar", true)]
-    [Arguments("foo?(x|y)bar", "fooxxbar", false)]
+    [TestMethod]
+    [DataRow("?(foo)", "", true)]
+    [DataRow("?(foo)", "foo", true)]
+    [DataRow("?(foo)", "bar", false)]
+    [DataRow("?(foo)", "foofoo", false)]
+    [DataRow("?(a|b)", "", true)]
+    [DataRow("?(a|b)", "a", true)]
+    [DataRow("?(a|b)", "b", true)]
+    [DataRow("?(a|b)", "c", false)]
+    [DataRow("foo?(x|y)bar", "fooxbar", true)]
+    [DataRow("foo?(x|y)bar", "foobar", true)]
+    [DataRow("foo?(x|y)bar", "fooxxbar", false)]
     public void Match_Question_ZeroOrOne(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- +(...) : one or more alternatives --------------------------------------------
 
-    [Test]
-    [Arguments("+(a)", "", false)]
-    [Arguments("+(a)", "a", true)]
-    [Arguments("+(a)", "aa", true)]
-    [Arguments("+(a)", "aaaa", true)]
-    [Arguments("+(a)", "ab", false)]
-    [Arguments("+(a|b)", "ab", true)]
-    [Arguments("+(a|b)", "aabb", true)]
-    [Arguments("+(a|b)", "abab", true)]
-    [Arguments("+(a|b)", "abc", false)]
-    [Arguments("+(a|b)", "", false)]
-    [Arguments("foo+(x|y)bar", "fooxbar", true)]
-    [Arguments("foo+(x|y)bar", "fooxxbar", true)]
-    [Arguments("foo+(x|y)bar", "fooxyxbar", true)]
-    [Arguments("foo+(x|y)bar", "foobar", false)]
+    [TestMethod]
+    [DataRow("+(a)", "", false)]
+    [DataRow("+(a)", "a", true)]
+    [DataRow("+(a)", "aa", true)]
+    [DataRow("+(a)", "aaaa", true)]
+    [DataRow("+(a)", "ab", false)]
+    [DataRow("+(a|b)", "ab", true)]
+    [DataRow("+(a|b)", "aabb", true)]
+    [DataRow("+(a|b)", "abab", true)]
+    [DataRow("+(a|b)", "abc", false)]
+    [DataRow("+(a|b)", "", false)]
+    [DataRow("foo+(x|y)bar", "fooxbar", true)]
+    [DataRow("foo+(x|y)bar", "fooxxbar", true)]
+    [DataRow("foo+(x|y)bar", "fooxyxbar", true)]
+    [DataRow("foo+(x|y)bar", "foobar", false)]
     public void Match_Plus_OneOrMore(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- *(...) : zero or more alternatives -------------------------------------------
 
-    [Test]
-    [Arguments("*(a)", "", true)]
-    [Arguments("*(a)", "a", true)]
-    [Arguments("*(a)", "aa", true)]
-    [Arguments("*(a)", "aaaa", true)]
-    [Arguments("*(a)", "ab", false)]
-    [Arguments("*(a|b)", "", true)]
-    [Arguments("*(a|b)", "abab", true)]
-    [Arguments("*(a|b)", "c", false)]
-    [Arguments("foo*(x|y)bar", "foobar", true)]
-    [Arguments("foo*(x|y)bar", "fooxbar", true)]
-    [Arguments("foo*(x|y)bar", "fooxxxxxbar", true)]
-    [Arguments("foo*(x|y)bar", "fooxybar", true)]
-    [Arguments("foo*(x|y)bar", "foozbar", false)]
+    [TestMethod]
+    [DataRow("*(a)", "", true)]
+    [DataRow("*(a)", "a", true)]
+    [DataRow("*(a)", "aa", true)]
+    [DataRow("*(a)", "aaaa", true)]
+    [DataRow("*(a)", "ab", false)]
+    [DataRow("*(a|b)", "", true)]
+    [DataRow("*(a|b)", "abab", true)]
+    [DataRow("*(a|b)", "c", false)]
+    [DataRow("foo*(x|y)bar", "foobar", true)]
+    [DataRow("foo*(x|y)bar", "fooxbar", true)]
+    [DataRow("foo*(x|y)bar", "fooxxxxxbar", true)]
+    [DataRow("foo*(x|y)bar", "fooxybar", true)]
+    [DataRow("foo*(x|y)bar", "foozbar", false)]
     public void Match_Star_ZeroOrMore(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- Multiple alternatives --------------------------------------------------------
 
-    [Test]
-    [Arguments("@(foo|bar|baz)", "foo", true)]
-    [Arguments("@(foo|bar|baz)", "bar", true)]
-    [Arguments("@(foo|bar|baz)", "baz", true)]
-    [Arguments("@(foo|bar|baz)", "qux", false)]
+    [TestMethod]
+    [DataRow("@(foo|bar|baz)", "foo", true)]
+    [DataRow("@(foo|bar|baz)", "bar", true)]
+    [DataRow("@(foo|bar|baz)", "baz", true)]
+    [DataRow("@(foo|bar|baz)", "qux", false)]
     public void Match_MultipleAlternatives(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- Empty alternatives -----------------------------------------------------------
 
-    [Test]
-    [Arguments("@(|)", "", true)]
-    [Arguments("@(|)", "x", false)]
-    [Arguments("@(|a)", "", true)]
-    [Arguments("@(|a)", "a", true)]
-    [Arguments("@(a|)", "", true)]
-    [Arguments("@(a|)", "a", true)]
-    [Arguments("foo@(|x)bar", "foobar", true)]
-    [Arguments("foo@(|x)bar", "fooxbar", true)]
-    [Arguments("foo@(|x)bar", "fooybar", false)]
+    [TestMethod]
+    [DataRow("@(|)", "", true)]
+    [DataRow("@(|)", "x", false)]
+    [DataRow("@(|a)", "", true)]
+    [DataRow("@(|a)", "a", true)]
+    [DataRow("@(a|)", "", true)]
+    [DataRow("@(a|)", "a", true)]
+    [DataRow("foo@(|x)bar", "foobar", true)]
+    [DataRow("foo@(|x)bar", "fooxbar", true)]
+    [DataRow("foo@(|x)bar", "fooybar", false)]
     public void Match_EmptyAlternatives(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- Inner wildcards inside alternatives ------------------------------------------
 
-    [Test]
-    [Arguments("@(*.cs|*.txt)", "foo.cs", true)]
-    [Arguments("@(*.cs|*.txt)", "foo.txt", true)]
-    [Arguments("@(*.cs|*.txt)", "foo.json", false)]
-    [Arguments("@(a?b)", "axb", true)]
-    [Arguments("@(a?b)", "ab", false)]
-    [Arguments("@(a?b)", "axyb", false)]
+    [TestMethod]
+    [DataRow("@(*.cs|*.txt)", "foo.cs", true)]
+    [DataRow("@(*.cs|*.txt)", "foo.txt", true)]
+    [DataRow("@(*.cs|*.txt)", "foo.json", false)]
+    [DataRow("@(a?b)", "axb", true)]
+    [DataRow("@(a?b)", "ab", false)]
+    [DataRow("@(a?b)", "axyb", false)]
     public void Match_InnerWildcards(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- Nested extglob ---------------------------------------------------------------
 
-    [Test]
-    [Arguments("*(a|@(b|c))d", "d", true)]
-    [Arguments("*(a|@(b|c))d", "ad", true)]
-    [Arguments("*(a|@(b|c))d", "bd", true)]
-    [Arguments("*(a|@(b|c))d", "cd", true)]
-    [Arguments("*(a|@(b|c))d", "abcd", true)]
-    [Arguments("*(a|@(b|c))d", "abxd", false)]
-    [Arguments("?(@(foo|bar))", "foo", true)]
-    [Arguments("?(@(foo|bar))", "bar", true)]
-    [Arguments("?(@(foo|bar))", "", true)]
-    [Arguments("?(@(foo|bar))", "baz", false)]
+    [TestMethod]
+    [DataRow("*(a|@(b|c))d", "d", true)]
+    [DataRow("*(a|@(b|c))d", "ad", true)]
+    [DataRow("*(a|@(b|c))d", "bd", true)]
+    [DataRow("*(a|@(b|c))d", "cd", true)]
+    [DataRow("*(a|@(b|c))d", "abcd", true)]
+    [DataRow("*(a|@(b|c))d", "abxd", false)]
+    [DataRow("?(@(foo|bar))", "foo", true)]
+    [DataRow("?(@(foo|bar))", "bar", true)]
+    [DataRow("?(@(foo|bar))", "", true)]
+    [DataRow("?(@(foo|bar))", "baz", false)]
     public void Match_Nested(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- Path-aware: inner wildcards don't cross the separator ------------------------
 
-    [Test]
-    [Arguments("@(*.cs|*.txt)", "foo/bar.cs", false)]
-    [Arguments("@(*.cs|*.txt)", "foo.cs", true)]
-    [Arguments("dir/@(a|b)", "dir/a", true)]
-    [Arguments("dir/@(a|b)", "dir/b", true)]
-    [Arguments("dir/@(a|b)", "dir/c", false)]
+    [TestMethod]
+    [DataRow("@(*.cs|*.txt)", "foo/bar.cs", false)]
+    [DataRow("@(*.cs|*.txt)", "foo.cs", true)]
+    [DataRow("dir/@(a|b)", "dir/a", true)]
+    [DataRow("dir/@(a|b)", "dir/b", true)]
+    [DataRow("dir/@(a|b)", "dir/c", false)]
     public void Match_PathAware(string pattern, string input, bool expected) =>
         Match(pattern, input, GlobDialect.Bash).Should().Be(expected);
 
     // -- IgnoreCase ------------------------------------------------------------------
 
-    [Test]
-    [Arguments("@(FOO|BAR)", "foo", true)]
-    [Arguments("@(FOO|BAR)", "bar", true)]
-    [Arguments("@(FOO|BAR)", "baz", false)]
+    [TestMethod]
+    [DataRow("@(FOO|BAR)", "foo", true)]
+    [DataRow("@(FOO|BAR)", "bar", true)]
+    [DataRow("@(FOO|BAR)", "baz", false)]
     public void Match_IgnoreCase(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(
             pattern,

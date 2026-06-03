@@ -4,16 +4,17 @@
 
 namespace Touki.Exceptions;
 
+[TestClass]
 public class ExceptionExtensionsTests
 {
-    [Test]
+    [TestMethod]
     public void InvalidOperationException_Throw_ThrowsWithMessage()
     {
         Action action = () => InvalidOperationException.Throw("boom");
         action.Should().Throw<InvalidOperationException>().WithMessage("boom");
     }
 
-    [Test]
+    [TestMethod]
     public void ArgumentOutOfRangeException_Throw_ThrowsWithParamName()
     {
         Action action = () => ArgumentOutOfRangeException.Throw("count");
@@ -21,7 +22,7 @@ public class ExceptionExtensionsTests
             .Which.ParamName.Should().Be("count");
     }
 
-    [Test]
+    [TestMethod]
     public void ArgumentOutOfRangeException_Throw_ThrowsWithParamNameAndMessage()
     {
         Action action = () => ArgumentOutOfRangeException.Throw("count", "must be positive");
@@ -31,21 +32,21 @@ public class ExceptionExtensionsTests
         ex.Message.Should().Contain("must be positive");
     }
 
-    [Test]
+    [TestMethod]
     public void OutOfMemoryException_Throw_Throws()
     {
         Action action = OutOfMemoryException.Throw;
         action.Should().Throw<OutOfMemoryException>();
     }
 
-    [Test]
+    [TestMethod]
     public void NotSupportedException_Throw_DefaultMessage_Throws()
     {
         Action action = () => NotSupportedException.Throw();
         action.Should().Throw<NotSupportedException>();
     }
 
-    [Test]
+    [TestMethod]
     public void NotSupportedException_Throw_WithMessage_ThrowsWithMessage()
     {
         Action action = () => NotSupportedException.Throw("not here");

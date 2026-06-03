@@ -4,6 +4,7 @@
 
 namespace Touki.Interop;
 
+[TestClass]
 public class HandleRefTests
 {
     private sealed class TestWrapper
@@ -17,7 +18,7 @@ public class HandleRefTests
         public object? Wrapper => this;
     }
 
-    [Test]
+    [TestMethod]
     public void Ctor_WrapperAndHandle_AssignsBoth()
     {
         TestWrapper wrapper = new();
@@ -26,7 +27,7 @@ public class HandleRefTests
         reference.Handle.Should().Be(123);
     }
 
-    [Test]
+    [TestMethod]
     public void Ctor_NullWrapper_AssignsNull()
     {
         HandleRef<int> reference = new(null, 42);
@@ -34,7 +35,7 @@ public class HandleRefTests
         reference.Handle.Should().Be(42);
     }
 
-    [Test]
+    [TestMethod]
     public void Ctor_FromIHandle_AssignsWrapperAndHandle()
     {
         TestHandleProvider provider = new() { Handle = 99 };
@@ -43,7 +44,7 @@ public class HandleRefTests
         reference.Handle.Should().Be(99);
     }
 
-    [Test]
+    [TestMethod]
     public void Ctor_FromNullIHandle_HandleDefaultsToZero()
     {
         HandleRef<int> reference = new((IHandle<int>?)null);
@@ -51,7 +52,7 @@ public class HandleRefTests
         reference.Handle.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_TypedSameWrapperAndHandle_ReturnsTrue()
     {
         TestWrapper wrapper = new();
@@ -62,7 +63,7 @@ public class HandleRefTests
         (a != b).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_TypedDifferentHandle_ReturnsFalse()
     {
         TestWrapper wrapper = new();
@@ -73,7 +74,7 @@ public class HandleRefTests
         (a != b).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_TypedDifferentWrapper_ReturnsFalse()
     {
         HandleRef<int> a = new(new TestWrapper(), 5);
@@ -81,7 +82,7 @@ public class HandleRefTests
         a.Equals(b).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_BoxedSameWrapperAndHandle_ReturnsTrue()
     {
         TestWrapper wrapper = new();
@@ -90,7 +91,7 @@ public class HandleRefTests
         a.Equals(boxed).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_BoxedDifferentHandle_ReturnsFalse()
     {
         TestWrapper wrapper = new();
@@ -99,7 +100,7 @@ public class HandleRefTests
         a.Equals(boxed).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_BoxedRawHandleValue_ReturnsFalse()
     {
         // Regression test: previously the override was `obj is THandle other`,
@@ -110,21 +111,21 @@ public class HandleRefTests
         a.Equals(boxedHandle).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_Null_ReturnsFalse()
     {
         HandleRef<int> a = new(null, 5);
         a.Equals((object?)null).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_DifferentType_ReturnsFalse()
     {
         HandleRef<int> a = new(null, 5);
         a.Equals("not a HandleRef").Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void GetHashCode_EqualHandleRefs_AreEqual()
     {
         TestWrapper wrapper = new();
@@ -133,14 +134,14 @@ public class HandleRefTests
         a.GetHashCode().Should().Be(b.GetHashCode());
     }
 
-    [Test]
+    [TestMethod]
     public void IsNull_DefaultHandle_ReturnsTrue()
     {
         HandleRef<int> a = new(null, default);
         a.IsNull.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void IsNull_NonDefaultHandle_ReturnsFalse()
     {
         HandleRef<int> a = new(null, 1);

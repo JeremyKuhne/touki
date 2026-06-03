@@ -28,6 +28,7 @@ namespace Touki.Io;
 ///   <see cref="MSBuildSpecification.Normalize"/>'s remarks.
 ///  </para>
 /// </remarks>
+[TestClass]
 public class MSBuildSpecificationTrailingSeparatorTests
 {
     private static void CreateFixture(string root)
@@ -62,15 +63,15 @@ public class MSBuildSpecificationTrailingSeparatorTests
         return [.. files.Select(f => f.Replace('\\', '/'))];
     }
 
-    [Test]
+    [TestMethod]
     // Wildcard trailing-separator specs: touki and MSBuild's FileMatcher.GetFiles agree on these
     // because they all bypass the no-wildcard shortcut and go through the regex/enumeration path.
-    [Arguments("Foo/**", new[] { "Foo/b.txt", "Foo/Bar/c.txt" })]
-    [Arguments("Foo/**/", new[] { "Foo/b.txt", "Foo/Bar/c.txt" })]
-    [Arguments("Foo/**/*.txt", new[] { "Foo/b.txt", "Foo/Bar/c.txt" })]
-    [Arguments("**", new[] { "a.txt", "Foo/b.txt", "Foo/Bar/c.txt" })]
-    [Arguments("**/", new[] { "a.txt", "Foo/b.txt", "Foo/Bar/c.txt" })]
-    [Arguments("**/*.txt", new[] { "a.txt", "Foo/b.txt", "Foo/Bar/c.txt" })]
+    [DataRow("Foo/**", new[] { "Foo/b.txt", "Foo/Bar/c.txt" })]
+    [DataRow("Foo/**/", new[] { "Foo/b.txt", "Foo/Bar/c.txt" })]
+    [DataRow("Foo/**/*.txt", new[] { "Foo/b.txt", "Foo/Bar/c.txt" })]
+    [DataRow("**", new[] { "a.txt", "Foo/b.txt", "Foo/Bar/c.txt" })]
+    [DataRow("**/", new[] { "a.txt", "Foo/b.txt", "Foo/Bar/c.txt" })]
+    [DataRow("**/*.txt", new[] { "a.txt", "Foo/b.txt", "Foo/Bar/c.txt" })]
     public void MSBuildEnumerator_TrailingSeparatorWildcardSpec_MatchesExpected(string spec, string[] expected)
     {
         using TempFolder tempFolder = new();
@@ -81,14 +82,14 @@ public class MSBuildSpecificationTrailingSeparatorTests
         actual.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     // Specs whose resolved fixed directory does exist on disk, but the spec itself names a directory
     // (or an empty filename via a trailing separator on a directory). FixedPath = the existing
     // directory, FileName = empty, so enumeration runs but matches nothing because no real on-disk
     // filename is empty. RunSearch action with an empty enumeration result, mirroring MSBuild's
     // parsing-layer behavior (FileMatcher.SplitFileSpec leaves filenamePart empty here too).
-    [Arguments("Foo")]
-    [Arguments("Foo/")]
+    [DataRow("Foo")]
+    [DataRow("Foo/")]
     public void MSBuildEnumerator_LiteralDirectorySpec_RunsSearchAndYieldsNothing(string spec)
     {
         using TempFolder tempFolder = new();
@@ -111,16 +112,16 @@ public class MSBuildSpecificationTrailingSeparatorTests
         files.Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     // Specs whose resolved fixed path is missing or is a file rather than a directory. Without the
     // CreateResult guard the underlying FileSystemEnumerator would throw on first iteration; with the
     // guard, CreateResult short-circuits to ReturnEmptyList and a null Enumerator, mirroring
     // MSBuild's FileMatcher.GetFileSearchData "fixed directory does not exist" branch.
-    [Arguments("Foo/b.txt/")]
-    [Arguments("Missing/")]
-    [Arguments("Missing/file.txt")]
-    [Arguments("Missing/**")]
-    [Arguments("Missing/*.txt")]
+    [DataRow("Foo/b.txt/")]
+    [DataRow("Missing/")]
+    [DataRow("Missing/file.txt")]
+    [DataRow("Missing/**")]
+    [DataRow("Missing/*.txt")]
     public void CreateResult_FixedDirectoryMissingOrFile_ReturnsEmptyListAction(string spec)
     {
         using TempFolder tempFolder = new();
@@ -136,16 +137,16 @@ public class MSBuildSpecificationTrailingSeparatorTests
         result.FailedExcludeSpec.Should().BeNull();
     }
 
-    [Test]
-    [Arguments("Foo/", "Foo", "", "", false)]
-    [Arguments("Foo/Bar/", "Foo/Bar", "", "", false)]
-    [Arguments("Foo/b.txt/", "Foo/b.txt", "", "", false)]
+    [TestMethod]
+    [DataRow("Foo/", "Foo", "", "", false)]
+    [DataRow("Foo/Bar/", "Foo/Bar", "", "", false)]
+    [DataRow("Foo/b.txt/", "Foo/b.txt", "", "", false)]
     // Trailing separator on a recursive spec: touki keeps WildPath="**" and synthesizes
     // FileName="*" because the wildcard path is the simple recursive match (the
     // IsSimpleRecursiveMatch && FileName.IsEmpty branch in the constructor). End-to-end this
     // matches MSBuild's FileMatcher.GetFiles behavior for the same spec.
-    [Arguments("Foo/**/", "Foo", "**", "*", true)]
-    [Arguments("**/", "", "**", "*", true)]
+    [DataRow("Foo/**/", "Foo", "**", "*", true)]
+    [DataRow("**/", "", "**", "*", true)]
     public void MSBuildSpecification_TrailingSeparator_Parses(
         string spec,
         string expectedFixed,

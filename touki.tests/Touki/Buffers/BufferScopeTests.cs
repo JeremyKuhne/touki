@@ -4,9 +4,10 @@
 
 namespace Touki.Buffers;
 
+[TestClass]
 public unsafe class BufferScopeTests
 {
-    [Test]
+    [TestMethod]
     public void Construct_WithStackAlloc()
     {
         using BufferScope<char> buffer = new(stackalloc char[10]);
@@ -15,7 +16,7 @@ public unsafe class BufferScopeTests
         buffer[..1].ToString().Should().Be("Y");
     }
 
-    [Test]
+    [TestMethod]
     public void Construct_WithStackAlloc_GrowAndCopy()
     {
         using BufferScope<char> buffer = new(stackalloc char[10]);
@@ -26,7 +27,7 @@ public unsafe class BufferScopeTests
         buffer[..1].ToString().Should().Be("Y");
     }
 
-    [Test]
+    [TestMethod]
     public void Construct_WithStackAlloc_Pin()
     {
         using BufferScope<char> buffer = new(stackalloc char[10]);
@@ -41,7 +42,7 @@ public unsafe class BufferScopeTests
         buffer[..1].ToString().Should().Be("Z");
     }
 
-    [Test]
+    [TestMethod]
     public void Construct_GrowAndCopy()
     {
         using BufferScope<char> buffer = new(32);
@@ -52,7 +53,7 @@ public unsafe class BufferScopeTests
         buffer[..1].ToString().Should().Be("Y");
     }
 
-    [Test]
+    [TestMethod]
     public void Construct_Pin()
     {
         using BufferScope<char> buffer = new(64);
@@ -67,28 +68,28 @@ public unsafe class BufferScopeTests
         buffer[..1].ToString().Should().Be("Z");
     }
 
-    [Test]
+    [TestMethod]
     public void Construct_WithMinimumLength_ZeroLength()
     {
         using BufferScope<int> buffer = new(0);
         buffer.Length.Should().BeGreaterThanOrEqualTo(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Construct_WithMinimumLength_SmallLength()
     {
         using BufferScope<byte> buffer = new(5);
         buffer.Length.Should().BeGreaterThanOrEqualTo(5);
     }
 
-    [Test]
+    [TestMethod]
     public void Construct_WithSpan_EmptySpan()
     {
         using BufferScope<int> buffer = new([]);
         buffer.Length.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Construct_WithSpanAndMinimumLength_SpanLargerThanMinimum()
     {
         using BufferScope<char> buffer = new(stackalloc char[20], 10);
@@ -99,21 +100,21 @@ public unsafe class BufferScopeTests
         buffer[19].Should().Be('Z');
     }
 
-    [Test]
+    [TestMethod]
     public void Construct_WithSpanAndMinimumLength_SpanSmallerThanMinimum()
     {
         using BufferScope<char> buffer = new(stackalloc char[5], 20);
         buffer.Length.Should().BeGreaterThanOrEqualTo(20);
     }
 
-    [Test]
+    [TestMethod]
     public void Construct_WithSpanAndMinimumLength_SpanEqualsMinimum()
     {
         using BufferScope<char> buffer = new(stackalloc char[10], 10);
         buffer.Length.Should().Be(10);
     }
 
-    [Test]
+    [TestMethod]
     public void EnsureCapacity_AlreadySufficientCapacity()
     {
         using BufferScope<int> buffer = new(20);
@@ -126,7 +127,7 @@ public unsafe class BufferScopeTests
         buffer[0].Should().Be(42);
     }
 
-    [Test]
+    [TestMethod]
     public void EnsureCapacity_GrowWithoutCopy()
     {
         using BufferScope<int> buffer = new(10);
@@ -139,7 +140,7 @@ public unsafe class BufferScopeTests
         // Data should not be copied when copy is false
     }
 
-    [Test]
+    [TestMethod]
     public void EnsureCapacity_GrowFromStackAllocWithCopy()
     {
         using BufferScope<char> buffer = new(stackalloc char[5]);
@@ -159,7 +160,7 @@ public unsafe class BufferScopeTests
         buffer[4].Should().Be('o');
     }
 
-    [Test]
+    [TestMethod]
     public void EnsureCapacity_MultipleGrows()
     {
         using BufferScope<int> buffer = new(5);
@@ -176,7 +177,7 @@ public unsafe class BufferScopeTests
         buffer[1].Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void Indexer_Range_FullRange()
     {
         using BufferScope<char> buffer = new(stackalloc char[5]);
@@ -192,7 +193,7 @@ public unsafe class BufferScopeTests
         slice[4].Should().Be('E');
     }
 
-    [Test]
+    [TestMethod]
     public void Indexer_Range_PartialRange()
     {
         using BufferScope<int> buffer = new(stackalloc int[10]);
@@ -207,7 +208,7 @@ public unsafe class BufferScopeTests
         slice[5].Should().Be(7);
     }
 
-    [Test]
+    [TestMethod]
     public void Indexer_Range_EmptyRange()
     {
         using BufferScope<byte> buffer = new(10);
@@ -215,7 +216,7 @@ public unsafe class BufferScopeTests
         slice.Length.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Slice_ValidRange()
     {
         using BufferScope<char> buffer = new(stackalloc char[10]);
@@ -230,7 +231,7 @@ public unsafe class BufferScopeTests
         slice[3].Should().Be('G');
     }
 
-    [Test]
+    [TestMethod]
     public void Slice_ZeroLength()
     {
         using BufferScope<int> buffer = new(10);
@@ -238,7 +239,7 @@ public unsafe class BufferScopeTests
         slice.Length.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void AsSpan_ReturnsCorrectSpan()
     {
         using BufferScope<double> buffer = new(5);
@@ -251,7 +252,7 @@ public unsafe class BufferScopeTests
         span[1].Should().Be(2.71);
     }
 
-    [Test]
+    [TestMethod]
     public void ImplicitOperator_ToSpan()
     {
         using BufferScope<int> buffer = new(stackalloc int[3]);
@@ -266,7 +267,7 @@ public unsafe class BufferScopeTests
         span[2].Should().Be(30);
     }
 
-    [Test]
+    [TestMethod]
     public void ImplicitOperator_ToReadOnlySpan()
     {
         using BufferScope<char> buffer = new(stackalloc char[3]);
@@ -281,7 +282,7 @@ public unsafe class BufferScopeTests
         readOnlySpan[2].Should().Be('Z');
     }
 
-    [Test]
+    [TestMethod]
     public void GetEnumerator_IteratesCorrectly()
     {
         using BufferScope<int> buffer = new(stackalloc int[5]);
@@ -299,7 +300,7 @@ public unsafe class BufferScopeTests
         values.Should().Equal(0, 10, 20, 30, 40);
     }
 
-    [Test]
+    [TestMethod]
     public void GetEnumerator_EmptyBuffer()
     {
         using BufferScope<string> buffer = new([]);
@@ -313,7 +314,7 @@ public unsafe class BufferScopeTests
         values.Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void ToString_WithCharBuffer()
     {
         using BufferScope<char> buffer = new(stackalloc char[5]);
@@ -327,7 +328,7 @@ public unsafe class BufferScopeTests
         result.Should().Be("Hello");
     }
 
-    [Test]
+    [TestMethod]
     public void ToString_EmptyBuffer()
     {
         using BufferScope<char> buffer = new([]);
@@ -335,7 +336,7 @@ public unsafe class BufferScopeTests
         result.Should().Be("");
     }
 
-    [Test]
+    [TestMethod]
     public void GetPinnableReference_WithStackAlloc()
     {
         using BufferScope<byte> buffer = new(stackalloc byte[10]);
@@ -350,7 +351,7 @@ public unsafe class BufferScopeTests
         buffer[0].Should().Be(100);
     }
 
-    [Test]
+    [TestMethod]
     public void GetPinnableReference_EmptyBuffer()
     {
         using BufferScope<int> buffer = new([]);
@@ -358,7 +359,7 @@ public unsafe class BufferScopeTests
         // Should not throw, but reference may be to null location
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_MultipleCallsSafe()
     {
         BufferScope<int> buffer = new(100);
@@ -368,7 +369,7 @@ public unsafe class BufferScopeTests
         buffer.Dispose(); // Should not throw
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_StackAllocBuffer()
     {
         BufferScope<int> buffer = new(stackalloc int[10]);
@@ -377,22 +378,22 @@ public unsafe class BufferScopeTests
         buffer.Dispose(); // Should not throw for stack allocated buffer
     }
 
-    [Test]
-    [Arguments(1)]
-    [Arguments(100)]
-    [Arguments(1000)]
-    [Arguments(10000)]
+    [TestMethod]
+    [DataRow(1)]
+    [DataRow(100)]
+    [DataRow(1000)]
+    [DataRow(10000)]
     public void Construct_WithMinimumLength_VariousSizes(int minimumLength)
     {
         using BufferScope<long> buffer = new(minimumLength);
         buffer.Length.Should().BeGreaterThanOrEqualTo(minimumLength);
     }
 
-    [Test]
-    [Arguments(0)]
-    [Arguments(1)]
-    [Arguments(10)]
-    [Arguments(100)]
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(1)]
+    [DataRow(10)]
+    [DataRow(100)]
     public void EnsureCapacity_BoundaryConditions(int capacity)
     {
         using BufferScope<short> buffer = new(5);
@@ -400,7 +401,7 @@ public unsafe class BufferScopeTests
         buffer.Length.Should().BeGreaterThanOrEqualTo(Math.Max(5, capacity));
     }
 
-    [Test]
+    [TestMethod]
     public void WorksWithDifferentTypes_String()
     {
         using BufferScope<string> buffer = new(5);
@@ -410,7 +411,7 @@ public unsafe class BufferScopeTests
         buffer[1].Should().Be("World");
     }
 
-    [Test]
+    [TestMethod]
     public void WorksWithDifferentTypes_CustomStruct()
     {
         using BufferScope<DateTime> buffer = new(3);
@@ -424,7 +425,7 @@ public unsafe class BufferScopeTests
         buffer[1].Should().Be(date2);
     }
 
-    [Test]
+    [TestMethod]
     public void CombinedOperations_ComplexScenario()
     {
         using BufferScope<int> buffer = new(stackalloc int[5], 10);

@@ -4,9 +4,10 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringNull
 {
-    [Test]
+    [TestMethod]
     public void GetIntFromStoredNull()
     {
         Value nullFastValue = Value.Create((object?)null);

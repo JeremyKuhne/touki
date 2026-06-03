@@ -4,17 +4,18 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringChar
 {
-    public static IEnumerable<char> CharData()
+    public static IEnumerable<object[]> CharData()
     {
-        yield return '!';
-        yield return char.MaxValue;
-        yield return char.MinValue;
+        yield return ['!'];
+        yield return [char.MaxValue];
+        yield return [char.MinValue];
     }
 
-    [Test]
-    [MethodDataSource(nameof(CharData))]
+    [TestMethod]
+    [DynamicData(nameof(CharData))]
     public void CharImplicit(char @char)
     {
         Value value = @char;
@@ -27,8 +28,8 @@ public class StoringChar
         value.Type.Should().Be(typeof(char));
     }
 
-    [Test]
-    [MethodDataSource(nameof(CharData))]
+    [TestMethod]
+    [DynamicData(nameof(CharData))]
     public void CharCreate(char @char)
     {
         Value value;
@@ -51,8 +52,8 @@ public class StoringChar
         value.Type.Should().Be(typeof(char));
     }
 
-    [Test]
-    [MethodDataSource(nameof(CharData))]
+    [TestMethod]
+    [DynamicData(nameof(CharData))]
     public void CharInOut(char @char)
     {
         Value value = @char;
@@ -64,8 +65,8 @@ public class StoringChar
         ((char)value).Should().Be(@char);
     }
 
-    [Test]
-    [MethodDataSource(nameof(CharData))]
+    [TestMethod]
+    [DynamicData(nameof(CharData))]
     public void NullableCharInCharOut(char @char)
     {
         char? source = @char;
@@ -80,8 +81,8 @@ public class StoringChar
         ((char)value).Should().Be(@char);
     }
 
-    [Test]
-    [MethodDataSource(nameof(CharData))]
+    [TestMethod]
+    [DynamicData(nameof(CharData))]
     public void CharInNullableCharOut(char @char)
     {
         char source = @char;
@@ -93,8 +94,8 @@ public class StoringChar
         ((char?)value).Should().Be(@char);
     }
 
-    [Test]
-    [MethodDataSource(nameof(CharData))]
+    [TestMethod]
+    [DynamicData(nameof(CharData))]
     public void BoxedChar(char @char)
     {
         char i = @char;
@@ -119,7 +120,7 @@ public class StoringChar
         nullableResult!.Value.Should().Be(@char);
     }
 
-    [Test]
+    [TestMethod]
     public void NullChar()
     {
         char? source = null;
@@ -129,8 +130,8 @@ public class StoringChar
         value.As<char?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(CharData))]
+    [TestMethod]
+    [DynamicData(nameof(CharData))]
     public void OutAsObject(char @char)
     {
         Value value = @char;

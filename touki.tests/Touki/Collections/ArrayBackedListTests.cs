@@ -4,6 +4,7 @@
 
 namespace Touki.Collections;
 
+[TestClass]
 public class ArrayBackedListTests
 {
     /// <summary>
@@ -20,7 +21,7 @@ public class ArrayBackedListTests
         protected override void ReturnArray(T[] array) { /* No-op for testing */ }
     }
 
-    [Test]
+    [TestMethod]
     public void Add_MultipleItems_IncrementsCount()
     {
         using TestArrayBackedList<int> list = new();
@@ -36,7 +37,7 @@ public class ArrayBackedListTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void Add_NullItem_ThrowsArgumentNullException()
     {
         using TestArrayBackedList<string> list = new();
@@ -44,7 +45,7 @@ public class ArrayBackedListTests
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Add_SingleItem_IncrementsCount()
     {
         using TestArrayBackedList<int> list = new()
@@ -57,7 +58,7 @@ public class ArrayBackedListTests
         list.Empty.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Clear_RemovesAllItems()
     {
         using TestArrayBackedList<int> list = new()
@@ -74,7 +75,7 @@ public class ArrayBackedListTests
         list.Count.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_WithEmptyArray_InitializesCorrectly()
     {
         using TestArrayBackedList<int> list = new();
@@ -84,7 +85,7 @@ public class ArrayBackedListTests
         list.Count.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_WithInitialItems_InitializesCorrectly()
     {
         using TestArrayBackedList<int> list = new([1, 2, 3]);
@@ -93,14 +94,14 @@ public class ArrayBackedListTests
         list.Empty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_WithNullArray_ThrowsArgumentNullException()
     {
         Action act = () => new TestArrayBackedList<int>(null!);
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Contains_ExistingItem_ReturnsTrue()
     {
         using TestArrayBackedList<int> list = new()
@@ -114,7 +115,7 @@ public class ArrayBackedListTests
         list.Contains(2).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Contains_NonExistingItem_ReturnsFalse()
     {
         using TestArrayBackedList<int> list = new()
@@ -127,7 +128,7 @@ public class ArrayBackedListTests
         list.Contains(2).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_CopiesAllElements()
     {
         using TestArrayBackedList<int> list = new()
@@ -147,7 +148,7 @@ public class ArrayBackedListTests
         array[4].Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_GenericArray_CopiesAllElements()
     {
         using TestArrayBackedList<int> list = new()
@@ -167,7 +168,7 @@ public class ArrayBackedListTests
         array.GetValue(4).Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_GenericArrayWithInvalidRank_ThrowsArgumentException()
     {
         using TestArrayBackedList<int> list = new()
@@ -182,7 +183,7 @@ public class ArrayBackedListTests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_WithRangeParameters_CopiesCorrectElements()
     {
         using TestArrayBackedList<int> list = new()
@@ -201,7 +202,7 @@ public class ArrayBackedListTests
         array[2].Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_ClearsArrayAndCount()
     {
         TestArrayBackedList<int> list = new()
@@ -216,7 +217,7 @@ public class ArrayBackedListTests
         list.Empty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void EnsureCapacity_GrowsCapacity()
     {
         using TestArrayBackedList<int> list = new();
@@ -237,7 +238,7 @@ public class ArrayBackedListTests
         list.Count.Should().Be(15);
     }
 
-    [Test]
+    [TestMethod]
     public void EnsureCapacity_NegativeOrZeroCapacity_ThrowsArgumentOutOfRangeException()
     {
         using TestArrayBackedList<int> list = new();
@@ -249,7 +250,7 @@ public class ArrayBackedListTests
         actZero.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Enumeration_WorksCorrectly()
     {
         using TestArrayBackedList<int> list = new()
@@ -269,7 +270,7 @@ public class ArrayBackedListTests
         index.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void Indexer_GetWithInvalidIndex_ThrowsArgumentOutOfRangeException()
     {
         using TestArrayBackedList<int> list = new()
@@ -284,7 +285,7 @@ public class ArrayBackedListTests
         actTooLarge.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Indexer_SetWithInvalidIndex_ThrowsArgumentOutOfRangeException()
     {
         using TestArrayBackedList<int> list = new()
@@ -299,14 +300,14 @@ public class ArrayBackedListTests
         actTooLarge.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOf_EmptyList_ReturnsNegativeOne()
     {
         using TestArrayBackedList<int> list = new();
         list.IndexOf(1).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOf_ExistingItem_ReturnsIndex()
     {
         using TestArrayBackedList<int> list = new()
@@ -319,7 +320,7 @@ public class ArrayBackedListTests
         list.IndexOf(2).Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOf_NonExistingItem_ReturnsNegativeOne()
     {
         using TestArrayBackedList<int> list = new()
@@ -331,7 +332,7 @@ public class ArrayBackedListTests
         list.IndexOf(2).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_AtValidPositions_ShiftsItems()
     {
         using TestArrayBackedList<int> list = new()
@@ -347,7 +348,7 @@ public class ArrayBackedListTests
         list[2].Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_NullItem_ThrowsArgumentNullException()
     {
         using TestArrayBackedList<string> list = new()
@@ -359,7 +360,7 @@ public class ArrayBackedListTests
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_WithInvalidIndex_ThrowsArgumentOutOfRangeException()
     {
         using TestArrayBackedList<int> list = new()
@@ -374,7 +375,7 @@ public class ArrayBackedListTests
         actTooLarge.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Remove_ExistingItem_RemovesAndReturnsTrue()
     {
         using TestArrayBackedList<int> list = new()
@@ -392,7 +393,7 @@ public class ArrayBackedListTests
         list[1].Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void Remove_NonExistingItem_ReturnsFalse()
     {
         using TestArrayBackedList<int> list = new()
@@ -407,7 +408,7 @@ public class ArrayBackedListTests
         list.Count.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveAll_AllMatchingItems_ClearsList()
     {
         using TestArrayBackedList<int> list = new()
@@ -423,7 +424,7 @@ public class ArrayBackedListTests
         list.Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveAll_NoMatchingItems_DoesNothing()
     {
         using TestArrayBackedList<int> list = new()
@@ -440,7 +441,7 @@ public class ArrayBackedListTests
         list.Should().Equal([1, 3, 5]);
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveAll_NullMatch_ThrowsArgumentNullException()
     {
         using TestArrayBackedList<int> list = new();
@@ -448,7 +449,7 @@ public class ArrayBackedListTests
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveAll_RemovesMatchingItems()
     {
         using TestArrayBackedList<int> list = new()
@@ -467,7 +468,7 @@ public class ArrayBackedListTests
         list.Should().Equal([1, 3, 5]);
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveAt_InvalidIndex_ThrowsArgumentOutOfRangeException()
     {
         using TestArrayBackedList<int> list = new()
@@ -482,7 +483,7 @@ public class ArrayBackedListTests
         actTooLarge.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveAt_ValidIndex_RemovesItem()
     {
         using TestArrayBackedList<int> list = new()
@@ -499,7 +500,7 @@ public class ArrayBackedListTests
         list[1].Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void UnsafeValues_CanBeModified()
     {
         using TestArrayBackedList<int> list = new() { 1, 2, 3 };
@@ -508,21 +509,21 @@ public class ArrayBackedListTests
         list[1].Should().Be(42);
     }
 
-    [Test]
+    [TestMethod]
     public void UnsafeValues_EmptyList_ReturnsEmptySpan()
     {
         using TestArrayBackedList<int> list = new();
         list.UnsafeValues.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Values_EmptyList_ReturnsEmptySpan()
     {
         using TestArrayBackedList<int> list = new();
         list.Values.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Values_ReturnsCorrectData()
     {
         using TestArrayBackedList<int> list = new() { 1, 2, 3 };

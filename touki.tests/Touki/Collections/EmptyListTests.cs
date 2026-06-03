@@ -4,16 +4,17 @@
 
 namespace Touki.Collections;
 
+[TestClass]
 public class EmptyListTests
 {
-    [Test]
+    [TestMethod]
     public void Instance_RequestedMultipleTimes_ReturnsSameInstance()
     {
         EmptyList<int>.Instance.Should().BeSameAs(EmptyList<int>.Instance);
         EmptyList<string>.Instance.Should().BeSameAs(EmptyList<string>.Instance);
     }
 
-    [Test]
+    [TestMethod]
     public void Indexer_Get_ThrowsArgumentOutOfRangeException()
     {
         EmptyList<int> list = EmptyList<int>.Instance;
@@ -22,7 +23,7 @@ public class EmptyListTests
         act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("index");
     }
 
-    [Test]
+    [TestMethod]
     public void Indexer_Set_ThrowsArgumentOutOfRangeException()
     {
         EmptyList<int> list = EmptyList<int>.Instance;
@@ -31,45 +32,45 @@ public class EmptyListTests
         act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("index");
     }
 
-    [Test]
+    [TestMethod]
     public void IsReadOnly_Get_ReturnsTrue()
     {
         EmptyList<int>.Instance.IsReadOnly.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void UnsafeValues_Get_ReturnsEmptySpan()
     {
         EmptyList<int>.Instance.UnsafeValues.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Values_Get_ReturnsEmptySpan()
     {
         EmptyList<int>.Instance.Values.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Count_Get_ReturnsZero()
     {
         EmptyList<int>.Instance.Count.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Add_AnyItem_ThrowsNotImplementedException()
     {
         Action act = () => EmptyList<int>.Instance.Add(42);
         act.Should().Throw<NotImplementedException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Clear_Called_DoesNotThrow()
     {
         Action act = EmptyList<int>.Instance.Clear;
         act.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_ArrayWithNonZeroIndex_ThrowsArgumentOutOfRangeException()
     {
         int[] array = new int[1];
@@ -77,7 +78,7 @@ public class EmptyListTests
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_ArrayWithZeroIndex_DoesNotThrow()
     {
         int[] array = [];
@@ -85,7 +86,7 @@ public class EmptyListTests
         act.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_SystemArrayWithNonZeroIndex_ThrowsArgumentOutOfRangeException()
     {
         Array array = new int[1];
@@ -93,7 +94,7 @@ public class EmptyListTests
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_SystemArrayWithZeroIndex_DoesNotThrow()
     {
         Array array = Array.Empty<int>();
@@ -101,20 +102,20 @@ public class EmptyListTests
         act.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOf_AnyItem_ReturnsMinusOne()
     {
         EmptyList<int>.Instance.IndexOf(42).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_AnyItemAtAnyIndex_ThrowsInvalidOperationException()
     {
         Action act = () => EmptyList<int>.Instance.Insert(0, 42);
         act.Should().Throw<InvalidOperationException>();
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveAt_AnyIndex_ThrowsInvalidOperationException()
     {
         Action act = () => EmptyList<int>.Instance.RemoveAt(0);

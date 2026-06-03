@@ -4,6 +4,7 @@
 
 namespace Touki.Collections;
 
+[TestClass]
 public class RefCountedCacheTests
 {
     private class TestCache : RefCountedCache<string, string, string>
@@ -76,7 +77,7 @@ public class RefCountedCacheTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_ValidParameters_CreatesCache()
     {
         TestCache cache = new(10, 20);
@@ -84,7 +85,7 @@ public class RefCountedCacheTests
         cache.Count.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_DefaultParameters_CreatesCache()
     {
         TestCache cache = new();
@@ -92,7 +93,7 @@ public class RefCountedCacheTests
         cache.Count.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void GetEntry_NullKey_ThrowsArgumentNullException()
     {
         TestCache cache = new();
@@ -100,7 +101,7 @@ public class RefCountedCacheTests
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void GetEntry_NewKey_CreatesEntry()
     {
         TestCache cache = new();
@@ -113,7 +114,7 @@ public class RefCountedCacheTests
         cache.Count.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void GetEntry_ExistingKey_ReturnsSameEntry()
     {
         TestCache cache = new();
@@ -124,7 +125,7 @@ public class RefCountedCacheTests
         cache.Count.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void GetEntry_MultipleKeys_CreatesMultipleEntries()
     {
         TestCache cache = new();
@@ -137,7 +138,7 @@ public class RefCountedCacheTests
         cache.Count.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void CacheEntry_AddRef_IncrementsRefCount()
     {
         TestCache cache = new();
@@ -150,7 +151,7 @@ public class RefCountedCacheTests
         entry.RefCount.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void CacheEntry_RemoveRef_DecrementsRefCount()
     {
         TestCache cache = new();
@@ -166,7 +167,7 @@ public class RefCountedCacheTests
         entry.RefCount.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void CacheEntry_CreateScope_AddsReference()
     {
         TestCache cache = new();
@@ -179,7 +180,7 @@ public class RefCountedCacheTests
         scope.Object.Should().Be("test");
     }
 
-    [Test]
+    [TestMethod]
     public void Scope_Dispose_RemovesReference()
     {
         TestCache cache = new();
@@ -195,7 +196,7 @@ public class RefCountedCacheTests
         entry.RefCount.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Scope_ImplicitConversion_ReturnsObject()
     {
         TestCache cache = new();
@@ -206,7 +207,7 @@ public class RefCountedCacheTests
         value.Should().Be("test");
     }
 
-    [Test]
+    [TestMethod]
     public void Scope_TryGetCacheData_ReturnsData()
     {
         TestCache cache = new();
@@ -219,7 +220,7 @@ public class RefCountedCacheTests
         data.Should().Be("test");
     }
 
-    [Test]
+    [TestMethod]
     public void Scope_UncachedObject_TryGetCacheDataReturnsFalse()
     {
         using RefCountedCache<string, string, string>.Scope scope = new("uncached");
@@ -231,7 +232,7 @@ public class RefCountedCacheTests
         scope.Object.Should().Be("uncached");
     }
 
-    [Test]
+    [TestMethod]
     public void Cache_SoftLimitReached_CleansUnreferencedEntries()
     {
         using TestCache cache = new(softLimit: 3, hardLimit: 5);
@@ -255,7 +256,7 @@ public class RefCountedCacheTests
         cache.Count.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void Cache_HardLimitReached_DoesNotAddToCache()
     {
         using TestCache cache = new(softLimit: 2, hardLimit: 3);
@@ -282,7 +283,7 @@ public class RefCountedCacheTests
         entry4.Data.Should().Be("test4");
     }
 
-    [Test]
+    [TestMethod]
     public void Cache_UncachedEntry_DisposesWhenUnreferenced()
     {
         DisposableTestCache cache = new(softLimit: 1, hardLimit: 1);
@@ -304,7 +305,7 @@ public class RefCountedCacheTests
         value2.IsDisposed.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Cache_Dispose_DisposesAllEntries()
     {
         DisposableTestCache cache = new();
@@ -324,7 +325,7 @@ public class RefCountedCacheTests
         value2.IsDisposed.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void CacheEntry_Dispose_DisposesObjectAndData()
     {
         DisposableTestCache cache = new();
@@ -337,7 +338,7 @@ public class RefCountedCacheTests
         value.IsDisposed.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Cache_MoveToFront_OptimizesAccess()
     {
         TestCache cache = new();
@@ -358,7 +359,7 @@ public class RefCountedCacheTests
         firstAccess.Should().BeSameAs(lastEntry);
     }
 
-    [Test]
+    [TestMethod]
     public void Cache_MultipleScopes_TrackReferencesCorrectly()
     {
         TestCache cache = new();

@@ -4,17 +4,18 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringUInt
 {
-    public static IEnumerable<uint> UIntData()
+    public static IEnumerable<object[]> UIntData()
     {
-        yield return 42;
-        yield return uint.MaxValue;
-        yield return uint.MinValue;
+        yield return [42U];
+        yield return [uint.MaxValue];
+        yield return [uint.MinValue];
     }
 
-    [Test]
-    [MethodDataSource(nameof(UIntData))]
+    [TestMethod]
+    [DynamicData(nameof(UIntData))]
     public void UIntImplicit(uint @uint)
     {
         Value value = @uint;
@@ -27,8 +28,8 @@ public class StoringUInt
         value.Type.Should().Be(typeof(uint));
     }
 
-    [Test]
-    [MethodDataSource(nameof(UIntData))]
+    [TestMethod]
+    [DynamicData(nameof(UIntData))]
     public void UIntCreate(uint @uint)
     {
         Value value;
@@ -51,8 +52,8 @@ public class StoringUInt
         value.Type.Should().Be(typeof(uint));
     }
 
-    [Test]
-    [MethodDataSource(nameof(UIntData))]
+    [TestMethod]
+    [DynamicData(nameof(UIntData))]
     public void UIntInOut(uint @uint)
     {
         Value value = @uint;
@@ -64,8 +65,8 @@ public class StoringUInt
         ((uint)value).Should().Be(@uint);
     }
 
-    [Test]
-    [MethodDataSource(nameof(UIntData))]
+    [TestMethod]
+    [DynamicData(nameof(UIntData))]
     public void NullableUIntInUIntOut(uint @uint)
     {
         uint? source = @uint;
@@ -80,8 +81,8 @@ public class StoringUInt
         ((uint)value).Should().Be(@uint);
     }
 
-    [Test]
-    [MethodDataSource(nameof(UIntData))]
+    [TestMethod]
+    [DynamicData(nameof(UIntData))]
     public void UIntInNullableUIntOut(uint @uint)
     {
         uint source = @uint;
@@ -93,8 +94,8 @@ public class StoringUInt
         ((uint?)value).Should().Be(@uint);
     }
 
-    [Test]
-    [MethodDataSource(nameof(UIntData))]
+    [TestMethod]
+    [DynamicData(nameof(UIntData))]
     public void BoxedUInt(uint @uint)
     {
         uint i = @uint;
@@ -119,7 +120,7 @@ public class StoringUInt
         nullableResult!.Value.Should().Be(@uint);
     }
 
-    [Test]
+    [TestMethod]
     public void NullUInt()
     {
         uint? source = null;
@@ -129,8 +130,8 @@ public class StoringUInt
         value.As<uint?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(UIntData))]
+    [TestMethod]
+    [DynamicData(nameof(UIntData))]
     public void OutAsObject(uint @uint)
     {
         Value value = @uint;

@@ -10,14 +10,15 @@ namespace Touki.Text;
 ///  Running against both .NET Framework and .NET, even if there is an implemenation on .NET to
 ///  ensure matching behavior.
 /// </remarks>
+[TestClass]
 public class StringsTests
 {
-    [Test]
-    [Arguments(null)]
-    [Arguments("")]
-    [Arguments(" ")]
-    [Arguments("Aar")]
-    [Arguments("The quick brown fox jumps over the lazy dog.")]
+    [TestMethod]
+    [DataRow((object?)null)]
+    [DataRow("")]
+    [DataRow(" ")]
+    [DataRow("Aar")]
+    [DataRow("The quick brown fox jumps over the lazy dog.")]
     public void GetHashCode_EqualsString(string? value)
     {
         ReadOnlySpan<char> span = value.AsSpan();
@@ -29,7 +30,7 @@ public class StringsTests
         hash1.Should().Be(hash2);
     }
 
-    [Test]
+    [TestMethod]
     public void GetHashCode_EqualsString_Sliced()
     {
         string test = "The quick brown fox jumps over the lazy dog.";
@@ -41,23 +42,23 @@ public class StringsTests
         hash1.Should().Be(hash2);
     }
 
-    [Test]
-    [Arguments(-1)]
-    [Arguments(-100)]
+    [TestMethod]
+    [DataRow(-1)]
+    [DataRow(-100)]
     public void Create_NegativeLength_Throws(int length)
     {
         Action action = () => string.Create(length, 0, (span, state) => { });
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Create_NullAction_Throws()
     {
         Action act = () => string.Create(10, 0, null!);
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Create_ZeroLength_ReturnsEmpty()
     {
         string result = string.Create(0, 0, (span, state) => { });
@@ -65,7 +66,7 @@ public class StringsTests
         result.Should().BeSameAs(string.Empty);
     }
 
-    [Test]
+    [TestMethod]
     public void Create_WithState_CreatesStringCorrectly()
     {
         string result = string.Create(5, 'A', (span, state) =>
@@ -79,7 +80,7 @@ public class StringsTests
         result.Should().Be("AAAAA");
     }
 
-    [Test]
+    [TestMethod]
     public void Create_WithComplexState_CreatesStringCorrectly()
     {
         (int start, int count) state = (65, 5);
@@ -94,7 +95,7 @@ public class StringsTests
         result.Should().Be("ABCDE");
     }
 
-    [Test]
+    [TestMethod]
     public void Create_WithInterpolatedString_FormatsCorrectly()
     {
         int value = 42;
@@ -104,7 +105,7 @@ public class StringsTests
         result.Should().Be("Value: 42, Name: test");
     }
 
-    [Test]
+    [TestMethod]
     public void Create_WithInterpolatedStringAndNull_FormatsCorrectly()
     {
         string? nullValue = null;
@@ -113,7 +114,7 @@ public class StringsTests
         result.Should().Be("Null: ");
     }
 
-    [Test]
+    [TestMethod]
     public void Create_WithInterpolatedStringAndFormat_FormatsCorrectly()
     {
         double value = 123.456;
@@ -122,7 +123,7 @@ public class StringsTests
         result.Should().Be("Value: 123.46");
     }
 
-    [Test]
+    [TestMethod]
     public void Create_WithInterpolatedStringAndCulture_FormatsCorrectly()
     {
         double value = 1234.56;
@@ -132,7 +133,7 @@ public class StringsTests
         result.Should().Be("1.234,56");
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_SufficientDestination_CopiesSuccessfully()
     {
         string source = "Hello";
@@ -143,7 +144,7 @@ public class StringsTests
         destination[..5].ToString().Should().Be("Hello");
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_ExactDestination_CopiesSuccessfully()
     {
         string source = "Test";
@@ -154,7 +155,7 @@ public class StringsTests
         destination.ToString().Should().Be("Test");
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_EmptyString_DoesNotThrow()
     {
         string source = "";
@@ -165,7 +166,7 @@ public class StringsTests
         destination[0].Should().Be('\0');
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_DestinationTooShort_Throws()
     {
         string source = "Hello";
@@ -182,7 +183,7 @@ public class StringsTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_EmptyDestination_Throws()
     {
         string source = "Test";
@@ -199,7 +200,7 @@ public class StringsTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void TryCopyTo_SufficientDestination_ReturnsTrue()
     {
         string source = "Hello";
@@ -208,7 +209,7 @@ public class StringsTests
         destination[..5].ToString().Should().Be("Hello");
     }
 
-    [Test]
+    [TestMethod]
     public void TryCopyTo_ExactDestination_ReturnsTrue()
     {
         string source = "Test";
@@ -217,7 +218,7 @@ public class StringsTests
         destination.ToString().Should().Be("Test");
     }
 
-    [Test]
+    [TestMethod]
     public void TryCopyTo_DestinationTooShort_ReturnsFalse()
     {
         string source = "Hello";
@@ -225,7 +226,7 @@ public class StringsTests
         source.TryCopyTo(destination).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void TryCopyTo_EmptyDestination_ReturnsFalse()
     {
         string source = "Test";
@@ -233,7 +234,7 @@ public class StringsTests
         source.TryCopyTo(destination).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void TryCopyTo_EmptyString_ReturnsTrue()
     {
         string source = "";
@@ -241,18 +242,18 @@ public class StringsTests
         source.TryCopyTo(destination).Should().BeTrue();
     }
 
-    [Test]
-    [Arguments("", "")]
-    [Arguments("a", "a")]
-    [Arguments("a", "b")]
-    [Arguments("b", "a")]
-    [Arguments("abc", "abc")]
-    [Arguments("abc", "abd")]
-    [Arguments("abd", "abc")]
-    [Arguments("abc", "abcd")]
-    [Arguments("abcd", "abc")]
-    [Arguments("The quick brown fox", "The quick brown fox")]
-    [Arguments("The quick brown fox", "The quick brown dog")]
+    [TestMethod]
+    [DataRow("", "")]
+    [DataRow("a", "a")]
+    [DataRow("a", "b")]
+    [DataRow("b", "a")]
+    [DataRow("abc", "abc")]
+    [DataRow("abc", "abd")]
+    [DataRow("abd", "abc")]
+    [DataRow("abc", "abcd")]
+    [DataRow("abcd", "abc")]
+    [DataRow("The quick brown fox", "The quick brown fox")]
+    [DataRow("The quick brown fox", "The quick brown dog")]
     public void CompareOrdinalAsString_MatchesStringCompare(string first, string second)
     {
         ReadOnlySpan<char> span1 = first.AsSpan();
@@ -264,7 +265,7 @@ public class StringsTests
         actualResult.Should().Be(expectedResult);
     }
 
-    [Test]
+    [TestMethod]
     public void CompareOrdinalAsString_WithSlicedSpans_MatchesStringCompare()
     {
         string source1 = "abcdefghijklmnop";
@@ -282,7 +283,7 @@ public class StringsTests
         actualResult.Should().Be(expectedResult);
     }
 
-    [Test]
+    [TestMethod]
     public void CompareOrdinalAsString_WithEmbeddedNulls_MatchesStringCompare()
     {
         // Create strings with embedded null characters
@@ -298,7 +299,7 @@ public class StringsTests
         actualResult.Should().Be(expectedResult);
     }
 
-    [Test]
+    [TestMethod]
     public void CompareOrdinalAsString_WithNullsAtDifferentPositions_MatchesStringCompare()
     {
         string str1 = "ab\0cdef";
@@ -313,9 +314,9 @@ public class StringsTests
         actualResult.Should().Be(expectedResult);
     }
 
-    [Test]
-    [Arguments("", "abc")]
-    [Arguments("abc", "")]
+    [TestMethod]
+    [DataRow("", "abc")]
+    [DataRow("abc", "")]
     public void CompareOrdinalAsString_OneEmptySpan_MatchesStringCompare(string first, string second)
     {
         ReadOnlySpan<char> span1 = first.AsSpan();
@@ -327,9 +328,9 @@ public class StringsTests
         actualResult.Should().Be(expectedResult);
     }
 
-    [Test]
-    [Arguments("a", "")]
-    [Arguments("", "a")]
+    [TestMethod]
+    [DataRow("a", "")]
+    [DataRow("", "a")]
     public void CompareOrdinalAsString_SingleCharAndEmpty_MatchesStringCompare(string first, string second)
     {
         ReadOnlySpan<char> span1 = first.AsSpan();
@@ -341,9 +342,9 @@ public class StringsTests
         actualResult.Should().Be(expectedResult);
     }
 
-    [Test]
-    [Arguments("xyz", "abc")]
-    [Arguments("zzz", "aaa")]
+    [TestMethod]
+    [DataRow("xyz", "abc")]
+    [DataRow("zzz", "aaa")]
     public void CompareOrdinalAsString_CompletelyDifferentStrings_MatchesStringCompare(string first, string second)
     {
         ReadOnlySpan<char> span1 = first.AsSpan();
@@ -355,11 +356,11 @@ public class StringsTests
         actualResult.Should().Be(expectedResult);
     }
 
-    [Test]
-    [Arguments("a", "ab")]      // Odd shared length (1)
-    [Arguments("ab", "a")]      // Odd shared length (1)
-    [Arguments("ab", "abc")]    // Even shared length (2)
-    [Arguments("abc", "ab")]    // Even shared length (2)
+    [TestMethod]
+    [DataRow("a", "ab")]      // Odd shared length (1)
+    [DataRow("ab", "a")]      // Odd shared length (1)
+    [DataRow("ab", "abc")]    // Even shared length (2)
+    [DataRow("abc", "ab")]    // Even shared length (2)
     public void CompareOrdinalAsString_OddVsEvenSharedLength_MatchesStringCompare(string first, string second)
     {
         ReadOnlySpan<char> span1 = first.AsSpan();
@@ -371,7 +372,7 @@ public class StringsTests
         actualResult.Should().Be(expectedResult);
     }
 
-    [Test]
+    [TestMethod]
     public void CompareOrdinalAsString_WithUnicodeCharacters_MatchesStringCompare()
     {
         string str1 = "café \u00A9 文字";
@@ -386,7 +387,7 @@ public class StringsTests
         actualResult.Should().Be(expectedResult);
     }
 
-    [Test]
+    [TestMethod]
     public void CompareOrdinalAsString_WithSurrogatePairs_MatchesStringCompare()
     {
         // Surrogate pairs for emoji characters
@@ -402,34 +403,34 @@ public class StringsTests
         actualResult.Should().Be(expectedResult);
     }
 
-    [Test]
-    [Arguments(0, 4, 8)]
-    [Arguments(-1, 4, 8)]
+    [TestMethod]
+    [DataRow(0, 4, 8)]
+    [DataRow(-1, 4, 8)]
     public void GenerateRandomStrings_CountLessThanOrEqualZero_Throws(int count, int minLength, int maxLength)
     {
         Action action = () => string.GenerateRandomStrings(count, minLength, maxLength, allowSurrogatePairs: false, random: new Random(1));
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
-    [Arguments(1, 0, 8)]
-    [Arguments(1, -5, 8)]
+    [TestMethod]
+    [DataRow(1, 0, 8)]
+    [DataRow(1, -5, 8)]
     public void GenerateRandomStrings_MinLengthLessThanOrEqualZero_Throws(int count, int minLength, int maxLength)
     {
         Action action = () => string.GenerateRandomStrings(count, minLength, maxLength, allowSurrogatePairs: false, random: new Random(1));
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
-    [Arguments(1, 10, 9)]
-    [Arguments(5, 10, 5)]
+    [TestMethod]
+    [DataRow(1, 10, 9)]
+    [DataRow(5, 10, 5)]
     public void GenerateRandomStrings_MaxLengthLessThanMinLength_Throws(int count, int minLength, int maxLength)
     {
         Action action = () => string.GenerateRandomStrings(count, minLength, maxLength, allowSurrogatePairs: false, random: new Random(1));
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void GenerateRandomStrings_NoSurrogates_ReturnsCountAndLengthsWithinBounds()
     {
         int count = 100;
@@ -468,7 +469,7 @@ public class StringsTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void GenerateRandomStrings_DeterministicWithSameSeed_AndDifferentWithDifferentSeed()
     {
         List<string> a = string.GenerateRandomStrings(10, 4, 10, allowSurrogatePairs: false, random: new Random(1));
@@ -479,7 +480,7 @@ public class StringsTests
         a.Should().NotEqual(c);
     }
 
-    [Test]
+    [TestMethod]
     public void GenerateRandomStrings_MinEqualsMax_ReturnsExactLength()
     {
         int exactLength = 8;
@@ -491,7 +492,7 @@ public class StringsTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void GenerateRandomStrings_WithSurrogatePairs_WellFormedAndNoForbiddenScalars()
     {
         int count = 200;
@@ -541,7 +542,7 @@ public class StringsTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_TwoSpans_EmptySpans_ReturnsEmpty()
     {
         ReadOnlySpan<char> str0 = [];
@@ -553,7 +554,7 @@ public class StringsTests
         result.Should().BeSameAs(string.Empty);
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_TwoSpans_FirstEmpty_ReturnsSecond()
     {
         ReadOnlySpan<char> str0 = [];
@@ -564,7 +565,7 @@ public class StringsTests
         result.Should().Be("Hello");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_TwoSpans_SecondEmpty_ReturnsFirst()
     {
         ReadOnlySpan<char> str0 = "World".AsSpan();
@@ -575,7 +576,7 @@ public class StringsTests
         result.Should().Be("World");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_TwoSpans_BothNonEmpty_ConcatenatesCorrectly()
     {
         ReadOnlySpan<char> str0 = "Hello".AsSpan();
@@ -586,7 +587,7 @@ public class StringsTests
         result.Should().Be("HelloWorld");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_TwoSpans_WithSlicedSpans_ConcatenatesCorrectly()
     {
         string source1 = "abcdefg";
@@ -599,7 +600,7 @@ public class StringsTests
         result.Should().Be("cde2345");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_ThreeSpans_AllEmpty_ReturnsEmpty()
     {
         ReadOnlySpan<char> str0 = [];
@@ -612,7 +613,7 @@ public class StringsTests
         result.Should().BeSameAs(string.Empty);
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_ThreeSpans_SomeEmpty_ConcatenatesNonEmpty()
     {
         ReadOnlySpan<char> str0 = "Hello".AsSpan();
@@ -624,7 +625,7 @@ public class StringsTests
         result.Should().Be("HelloWorld");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_ThreeSpans_AllNonEmpty_ConcatenatesCorrectly()
     {
         ReadOnlySpan<char> str0 = "Hello".AsSpan();
@@ -636,7 +637,7 @@ public class StringsTests
         result.Should().Be("Hello World");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_ThreeSpans_WithUnicode_ConcatenatesCorrectly()
     {
         ReadOnlySpan<char> str0 = "café".AsSpan();
@@ -648,7 +649,7 @@ public class StringsTests
         result.Should().Be("café ♥ 文字");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_FourSpans_AllEmpty_ReturnsEmpty()
     {
         ReadOnlySpan<char> str0 = [];
@@ -662,7 +663,7 @@ public class StringsTests
         result.Should().BeSameAs(string.Empty);
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_FourSpans_SomeEmpty_ConcatenatesNonEmpty()
     {
         ReadOnlySpan<char> str0 = "The".AsSpan();
@@ -675,7 +676,7 @@ public class StringsTests
         result.Should().Be("Thequickfox");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_FourSpans_AllNonEmpty_ConcatenatesCorrectly()
     {
         ReadOnlySpan<char> str0 = "The".AsSpan();
@@ -688,7 +689,7 @@ public class StringsTests
         result.Should().Be("The quick brown fox");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_FourSpans_WithSurrogatePairs_ConcatenatesCorrectly()
     {
         ReadOnlySpan<char> str0 = "Test".AsSpan();
@@ -701,7 +702,7 @@ public class StringsTests
         result.Should().Be("Test \uD83D\uDE00 emoji \uD83D\uDE01");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_FourSpans_LargeStrings_ConcatenatesCorrectly()
     {
         string large1 = new('a', 1000);
@@ -718,7 +719,7 @@ public class StringsTests
         result[3000..].Should().Be(large4);
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_NoNewlines_ReturnsSameString()
     {
         string input = "Hello World";
@@ -727,7 +728,7 @@ public class StringsTests
         result.Should().BeSameAs(input);
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_WithCRLF_ReplacesWithEnvironmentNewLine()
     {
         string input = "Hello\r\nWorld";
@@ -736,7 +737,7 @@ public class StringsTests
         result.Should().Be($"Hello{Environment.NewLine}World");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_WithLF_ReplacesWithEnvironmentNewLine()
     {
         string input = "Hello\nWorld";
@@ -745,7 +746,7 @@ public class StringsTests
         result.Should().Be($"Hello{Environment.NewLine}World");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_WithCR_ReplacesWithEnvironmentNewLine()
     {
         string input = "Hello\rWorld";
@@ -754,7 +755,7 @@ public class StringsTests
         result.Should().Be($"Hello{Environment.NewLine}World");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_WithFormFeed_ReplacesWithEnvironmentNewLine()
     {
         string input = "Hello\fWorld";
@@ -763,7 +764,7 @@ public class StringsTests
         result.Should().Be($"Hello{Environment.NewLine}World");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_WithNEL_ReplacesWithEnvironmentNewLine()
     {
         string input = "Hello\u0085World";
@@ -772,7 +773,7 @@ public class StringsTests
         result.Should().Be($"Hello{Environment.NewLine}World");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_WithLS_ReplacesWithEnvironmentNewLine()
     {
         string input = "Hello\u2028World";
@@ -781,7 +782,7 @@ public class StringsTests
         result.Should().Be($"Hello{Environment.NewLine}World");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_WithPS_ReplacesWithEnvironmentNewLine()
     {
         string input = "Hello\u2029World";
@@ -790,7 +791,7 @@ public class StringsTests
         result.Should().Be($"Hello{Environment.NewLine}World");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_WithMixedNewlines_ReplacesAll()
     {
         string input = "Line1\r\nLine2\nLine3\rLine4\fLine5";
@@ -800,7 +801,7 @@ public class StringsTests
         result.Should().Be($"Line1{nl}Line2{nl}Line3{nl}Line4{nl}Line5");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_WithCustomReplacement_ReplacesWithCustom()
     {
         string input = "Hello\r\nWorld\nTest";
@@ -809,7 +810,7 @@ public class StringsTests
         result.Should().Be("Hello||World||Test");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_WithEmptyReplacement_RemovesNewlines()
     {
         string input = "Hello\r\nWorld\nTest";
@@ -818,7 +819,7 @@ public class StringsTests
         result.Should().Be("HelloWorldTest");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_WithLineFeed_UsesOptimizedPath()
     {
         string input = "Hello\r\nWorld\rTest\fEnd";
@@ -827,7 +828,7 @@ public class StringsTests
         result.Should().Be("Hello\nWorld\nTest\nEnd");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_EmptyString_ReturnsEmpty()
     {
         string input = "";
@@ -836,7 +837,7 @@ public class StringsTests
         result.Should().BeSameAs(input);
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_OnlyNewlines_ReplacesAll()
     {
         string input = "\r\n\n\r\f";
@@ -845,7 +846,7 @@ public class StringsTests
         result.Should().Be("XXXX");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_ConsecutiveNewlines_ReplacesEach()
     {
         string input = "Hello\r\r\nWorld";
@@ -854,7 +855,7 @@ public class StringsTests
         result.Should().Be("Hello||World");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_WithNullReplacement_Throws()
     {
         string input = "Hello\nWorld";
@@ -863,7 +864,7 @@ public class StringsTests
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_MultipleUnicodeNewlines_ReplacesAll()
     {
         string input = "A\u0085B\u2028C\u2029D";
@@ -872,7 +873,7 @@ public class StringsTests
         result.Should().Be("A-B-C-D");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_LongStringWithManyNewlines_ReplacesAll()
     {
         string input = string.Join("\n", Enumerable.Range(0, 100).Select(i => $"Line{i}"));

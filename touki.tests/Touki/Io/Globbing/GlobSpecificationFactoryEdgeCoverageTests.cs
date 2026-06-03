@@ -9,55 +9,56 @@ namespace Touki.Io.Globbing;
 ///  <c>AppendPosixNamedClass</c> entries that don't appear in the dialect/oracle
 ///  suites, plus the MSBuild input-side separator-coalescing path.
 /// </summary>
+[TestClass]
 public class GlobSpecificationFactoryEdgeCoverageTests
 {
     // POSIX named character classes. Each `[[:NAME:]]` form expands inline to its
     // ASCII range list; coverage walks the lookup table in AppendPosixNamedClass.
-    [Test]
-    [Arguments("[[:alpha:]]", "A", true)]
-    [Arguments("[[:alpha:]]", "1", false)]
-    [Arguments("[[:digit:]]", "7", true)]
-    [Arguments("[[:digit:]]", "a", false)]
-    [Arguments("[[:upper:]]", "M", true)]
-    [Arguments("[[:upper:]]", "m", false)]
-    [Arguments("[[:lower:]]", "m", true)]
-    [Arguments("[[:lower:]]", "M", false)]
-    [Arguments("[[:alnum:]]", "9", true)]
-    [Arguments("[[:alnum:]]", "Z", true)]
-    [Arguments("[[:alnum:]]", "_", false)]
-    [Arguments("[[:xdigit:]]", "F", true)]
-    [Arguments("[[:xdigit:]]", "f", true)]
-    [Arguments("[[:xdigit:]]", "g", false)]
-    [Arguments("[[:space:]]", " ", true)]
-    [Arguments("[[:space:]]", "\t", true)]
-    [Arguments("[[:space:]]", "A", false)]
-    [Arguments("[[:blank:]]", " ", true)]
-    [Arguments("[[:blank:]]", "\t", true)]
-    [Arguments("[[:blank:]]", "\n", false)]
-    [Arguments("[[:print:]]", "A", true)]
-    [Arguments("[[:print:]]", "\u0001", false)]
-    [Arguments("[[:graph:]]", "A", true)]
-    [Arguments("[[:graph:]]", " ", false)]
-    [Arguments("[[:punct:]]", "!", true)]
-    [Arguments("[[:punct:]]", "A", false)]
+    [TestMethod]
+    [DataRow("[[:alpha:]]", "A", true)]
+    [DataRow("[[:alpha:]]", "1", false)]
+    [DataRow("[[:digit:]]", "7", true)]
+    [DataRow("[[:digit:]]", "a", false)]
+    [DataRow("[[:upper:]]", "M", true)]
+    [DataRow("[[:upper:]]", "m", false)]
+    [DataRow("[[:lower:]]", "m", true)]
+    [DataRow("[[:lower:]]", "M", false)]
+    [DataRow("[[:alnum:]]", "9", true)]
+    [DataRow("[[:alnum:]]", "Z", true)]
+    [DataRow("[[:alnum:]]", "_", false)]
+    [DataRow("[[:xdigit:]]", "F", true)]
+    [DataRow("[[:xdigit:]]", "f", true)]
+    [DataRow("[[:xdigit:]]", "g", false)]
+    [DataRow("[[:space:]]", " ", true)]
+    [DataRow("[[:space:]]", "\t", true)]
+    [DataRow("[[:space:]]", "A", false)]
+    [DataRow("[[:blank:]]", " ", true)]
+    [DataRow("[[:blank:]]", "\t", true)]
+    [DataRow("[[:blank:]]", "\n", false)]
+    [DataRow("[[:print:]]", "A", true)]
+    [DataRow("[[:print:]]", "\u0001", false)]
+    [DataRow("[[:graph:]]", "A", true)]
+    [DataRow("[[:graph:]]", " ", false)]
+    [DataRow("[[:punct:]]", "!", true)]
+    [DataRow("[[:punct:]]", "A", false)]
     public void PosixNamedClass(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     // Equivalence class `[=c=]` expands to literal `c` (no locale support).
-    [Arguments("[[=a=]]", "a", true)]
-    [Arguments("[[=a=]]", "b", false)]
+    [DataRow("[[=a=]]", "a", true)]
+    [DataRow("[[=a=]]", "b", false)]
     public void PosixEquivalenceClass(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     // Collating symbol `[.c.]` expands to literal `c` (no locale support).
-    [Arguments("[[.a.]]", "a", true)]
-    [Arguments("[[.a.]]", "z", false)]
+    [DataRow("[[.a.]]", "a", true)]
+    [DataRow("[[.a.]]", "z", false)]
     public void PosixCollatingSymbol(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     public void TryCompile_DefaultMaxPatternLengthOverload_CallsThrough()
     {
         // The TryCompile overload without explicit maxPatternLength routes through
@@ -74,10 +75,10 @@ public class GlobSpecificationFactoryEdgeCoverageTests
         error.IsError.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     // SuffixGlobStrategy's Unicode case-fold leading-dot equality returns false when
     // the suffix is genuinely different from the input.
-    [Arguments("*.\u00C9", "a.\u00ea", false)]
+    [DataRow("*.\u00C9", "a.\u00ea", false)]
     public void SuffixGlobStrategy_Unicode_LeadingDotFalseMismatch(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Simple, GlobOptions.IgnoreCase)
             .IsMatch(input).Should().Be(expected);

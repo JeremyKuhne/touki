@@ -4,9 +4,10 @@
 
 namespace Touki;
 
+[TestClass]
 public class DebuggingTests
 {
-    [Test]
+    [TestMethod]
     public void Assert_ExpressionNotEvaluated_WhenConditionTrue()
     {
         int value = 0;
@@ -15,7 +16,7 @@ public class DebuggingTests
     }
 
 #if !DEBUG
-    [Test]
+    [TestMethod]
     public void Assert_Elided_InRelease()
     {
         int value = 0;

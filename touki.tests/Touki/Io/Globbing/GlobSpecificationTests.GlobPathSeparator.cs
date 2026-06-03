@@ -8,31 +8,31 @@ public partial class GlobSpecificationTests
 {
     // --- GlobPathSeparator overload ---
 
-    [Test]
+    [TestMethod]
     // DialectDefault keeps each dialect's documented separator.
-    [Arguments(GlobDialect.PosixPath, GlobPathSeparator.DialectDefault, '/')]
-    [Arguments(GlobDialect.Bash, GlobPathSeparator.DialectDefault, '/')]
-    [Arguments(GlobDialect.MSBuild, GlobPathSeparator.DialectDefault, '/')]
-    [Arguments(GlobDialect.Git, GlobPathSeparator.DialectDefault, '/')]
-    [Arguments(GlobDialect.FileSystemGlobbing, GlobPathSeparator.DialectDefault, '/')]
+    [DataRow(GlobDialect.PosixPath, GlobPathSeparator.DialectDefault, '/')]
+    [DataRow(GlobDialect.Bash, GlobPathSeparator.DialectDefault, '/')]
+    [DataRow(GlobDialect.MSBuild, GlobPathSeparator.DialectDefault, '/')]
+    [DataRow(GlobDialect.Git, GlobPathSeparator.DialectDefault, '/')]
+    [DataRow(GlobDialect.FileSystemGlobbing, GlobPathSeparator.DialectDefault, '/')]
     // Explicit ForwardSlash / Backslash forces the chosen char.
-    [Arguments(GlobDialect.PosixPath, GlobPathSeparator.ForwardSlash, '/')]
-    [Arguments(GlobDialect.PosixPath, GlobPathSeparator.Backslash, '\\')]
-    [Arguments(GlobDialect.MSBuild, GlobPathSeparator.Backslash, '\\')]
-    [Arguments(GlobDialect.Git, GlobPathSeparator.Backslash, '\\')]
+    [DataRow(GlobDialect.PosixPath, GlobPathSeparator.ForwardSlash, '/')]
+    [DataRow(GlobDialect.PosixPath, GlobPathSeparator.Backslash, '\\')]
+    [DataRow(GlobDialect.MSBuild, GlobPathSeparator.Backslash, '\\')]
+    [DataRow(GlobDialect.Git, GlobPathSeparator.Backslash, '\\')]
     public void Compile_GlobPathSeparator_PathAware(GlobDialect dialect, GlobPathSeparator separator, char expected) =>
         GlobSpecification.Compile("*", dialect, GlobOptions.None, separator).Separator.Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     // Path-unaware dialects ignore the GlobPathSeparator override; their separator stays '\0'.
-    [Arguments(GlobDialect.Posix, GlobPathSeparator.ForwardSlash)]
-    [Arguments(GlobDialect.Posix, GlobPathSeparator.Backslash)]
-    [Arguments(GlobDialect.Simple, GlobPathSeparator.ForwardSlash)]
-    [Arguments(GlobDialect.PowerShell, GlobPathSeparator.Backslash)]
+    [DataRow(GlobDialect.Posix, GlobPathSeparator.ForwardSlash)]
+    [DataRow(GlobDialect.Posix, GlobPathSeparator.Backslash)]
+    [DataRow(GlobDialect.Simple, GlobPathSeparator.ForwardSlash)]
+    [DataRow(GlobDialect.PowerShell, GlobPathSeparator.Backslash)]
     public void Compile_GlobPathSeparator_PathUnaware_IsIgnored(GlobDialect dialect, GlobPathSeparator separator) =>
         GlobSpecification.Compile("*", dialect, GlobOptions.None, separator).Separator.Should().Be('\0');
 
-    [Test]
+    [TestMethod]
     public void Compile_GlobPathSeparator_Backslash_GlobStarRecognizedAcrossBackslash()
     {
         // With Backslash separator, the encoder must treat `**\` as a segment-bounded globstar
@@ -49,7 +49,7 @@ public partial class GlobSpecificationTests
         matcher.IsMatch(@"a\b\Foo\Bar.cs").Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Compile_GlobPathSeparator_Backslash_StarBlockedByBackslash()
     {
         // Pattern `*.cs` with backslash separator: `*` is path-aware AnyRun and cannot
@@ -65,7 +65,7 @@ public partial class GlobSpecificationTests
         matcher.IsMatch("a/Foo.cs").Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Compile_GlobPathSeparator_OSDefault_ResolvesToPlatformSeparator()
     {
         char expected = Path.DirectorySeparatorChar;
@@ -77,7 +77,7 @@ public partial class GlobSpecificationTests
         matcher.Separator.Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void Compile_GlobPathSeparator_NoEscapeDialect_NormalizesCrossSeparator()
     {
         // Compile-time normalization: when the dialect has no escape character
@@ -100,7 +100,7 @@ public partial class GlobSpecificationTests
         matcher.IsMatch(@"Foo.txt").Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Compile_GlobPathSeparator_EscapeDialect_LeavesCrossSeparatorAlone()
     {
         // For dialects with `\` as escape (POSIX-family, Bash, Git), the compile-time

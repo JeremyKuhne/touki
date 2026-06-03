@@ -7,9 +7,10 @@ namespace Touki.Io;
 /// <summary>
 ///  Tests for <see cref="SpanReaderExtensions"/>.
 /// </summary>
+[TestClass]
 public class SpanReaderExtensionsTests
 {
-    [Test]
+    [TestMethod]
     public void TryReadPositiveInteger_ValidInteger()
     {
         ReadOnlySpan<char> span = "12345".AsSpan();
@@ -21,7 +22,7 @@ public class SpanReaderExtensionsTests
         reader.End.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void TryReadPositiveInteger_SingleDigit()
     {
         ReadOnlySpan<char> span = "7".AsSpan();
@@ -33,7 +34,7 @@ public class SpanReaderExtensionsTests
         reader.End.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void TryReadPositiveInteger_Zero()
     {
         ReadOnlySpan<char> span = "0".AsSpan();
@@ -45,7 +46,7 @@ public class SpanReaderExtensionsTests
         reader.End.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void TryReadPositiveInteger_NoDigits()
     {
         ReadOnlySpan<char> span = "abc".AsSpan();
@@ -56,7 +57,7 @@ public class SpanReaderExtensionsTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void TryReadPositiveInteger_EmptySpan()
     {
         ReadOnlySpan<char> span = "".AsSpan();
@@ -67,7 +68,7 @@ public class SpanReaderExtensionsTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void TryReadPositiveInteger_PartialDigits()
     {
         ReadOnlySpan<char> span = "123abc456".AsSpan();
@@ -82,7 +83,7 @@ public class SpanReaderExtensionsTests
         next.Should().Be('a');
     }
 
-    [Test]
+    [TestMethod]
     public void TryReadPositiveInteger_LeadingZeros()
     {
         ReadOnlySpan<char> span = "00123".AsSpan();
@@ -94,7 +95,7 @@ public class SpanReaderExtensionsTests
         reader.End.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void TryReadPositiveInteger_MaxValue()
     {
         string maxValueStr = uint.MaxValue.ToString();
@@ -107,9 +108,9 @@ public class SpanReaderExtensionsTests
         reader.End.Should().BeTrue();
     }
 
-    [Test]
-    [Arguments("4294967296")] // uint.MaxValue + 1
-    [Arguments("99999999999999999999")] // Very large number
+    [TestMethod]
+    [DataRow("4294967296")] // uint.MaxValue + 1
+    [DataRow("99999999999999999999")] // Very large number
     public void TryReadPositiveInteger_Overflow(string input)
     {
         ReadOnlySpan<char> span = input.AsSpan();
@@ -121,7 +122,7 @@ public class SpanReaderExtensionsTests
         reader.End.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void TryReadPositiveInteger_AfterOtherOperations()
     {
         ReadOnlySpan<char> span = "abc123def".AsSpan();
@@ -139,7 +140,7 @@ public class SpanReaderExtensionsTests
         next.Should().Be('d');
     }
 
-    [Test]
+    [TestMethod]
     public void TryReadPositiveInteger_MultipleIntegers()
     {
         ReadOnlySpan<char> span = "12,34,56".AsSpan();
@@ -168,7 +169,7 @@ public class SpanReaderExtensionsTests
         reader.End.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void TryReadPositiveInteger_WithSpaces()
     {
         ReadOnlySpan<char> span = " 123 ".AsSpan();

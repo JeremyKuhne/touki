@@ -11,6 +11,7 @@ namespace Touki.Io;
 ///  These cover the abstraction in isolation; full <c>.gitignore</c> integration
 ///  tests live in the gitignore loader's own test class.
 /// </summary>
+[TestClass]
 public class OrderedMatchSetTests
 {
     private static string Root => Path.Combine(Path.GetTempPath(), "ordered-match-set-root");
@@ -18,7 +19,7 @@ public class OrderedMatchSetTests
     private static GlobMatch CompileGit(string pattern) =>
         GlobSpecification.Compile(pattern, GlobDialect.Git).CreateMatcher(Root);
 
-    [Test]
+    [TestMethod]
     public void Empty_MatchesFile_ReturnsFalse()
     {
         using OrderedMatchSet set = new();
@@ -27,7 +28,7 @@ public class OrderedMatchSetTests
         boundary.MatchesFile(Root, "anything".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SingleInclude_Matched_FileIncluded()
     {
         using OrderedMatchSet set = new();
@@ -39,7 +40,7 @@ public class OrderedMatchSetTests
         boundary.MatchesFile(Root, "Foo.txt".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SingleExclude_Matched_FileExcluded()
     {
         using OrderedMatchSet set = new();
@@ -53,7 +54,7 @@ public class OrderedMatchSetTests
         boundary.MatchesFile(Root, "Foo.cs".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IncludeThenExclude_LaterExcludeWins()
     {
         using OrderedMatchSet set = new();
@@ -67,7 +68,7 @@ public class OrderedMatchSetTests
         boundary.MatchesFile(Root, "secret.txt".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void ExcludeThenInclude_LaterIncludeWins()
     {
         // Models a `.gitignore` `bin/` exclude followed by `!bin/keep.txt` re-include.
@@ -83,7 +84,7 @@ public class OrderedMatchSetTests
         boundary.MatchesFile(Root, "other.log".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void ThreeRules_LastMatchingWins()
     {
         using OrderedMatchSet set = new();
@@ -103,7 +104,7 @@ public class OrderedMatchSetTests
         boundary.MatchesFile(Root, "foo.bin".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void DirectoryFinished_FansOutToAllRules()
     {
         // Verifies that the set propagates DirectoryFinished to every rule's matcher;
@@ -123,7 +124,7 @@ public class OrderedMatchSetTests
         boundary.MatchesFile(bDir, "Foo.cs".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void MatchesDirectory_DirectoryOnlyExclude_ClaimsSubtree()
     {
         // `bin/` (DirectoryOnly exclude) should claim the whole `bin` subtree.
@@ -139,7 +140,7 @@ public class OrderedMatchSetTests
         boundary.MatchesDirectory(Root, "src".AsSpan(), matchForExclusion: true).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Count_ReturnsAddedRules()
     {
         using OrderedMatchSet set = new();
@@ -152,7 +153,7 @@ public class OrderedMatchSetTests
         set.Count.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void AddInclude_NullMatcher_Throws()
     {
         using OrderedMatchSet set = new();
@@ -160,7 +161,7 @@ public class OrderedMatchSetTests
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void AddExclude_NullMatcher_Throws()
     {
         using OrderedMatchSet set = new();
@@ -168,21 +169,21 @@ public class OrderedMatchSetTests
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Ctor_IncludeByDefaultFalse_IsDefault()
     {
         using OrderedMatchSet set = new();
         set.IncludeByDefault.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Ctor_IncludeByDefaultTrue_FlagRoundTrips()
     {
         using OrderedMatchSet set = new(includeByDefault: true);
         set.IncludeByDefault.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void IncludeByDefault_Empty_MatchesFile_ReturnsTrue()
     {
         // Gitignore mode: with no rules, every file is included.
@@ -192,7 +193,7 @@ public class OrderedMatchSetTests
         boundary.MatchesFile(Root, "anything".AsSpan()).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void IncludeByDefault_OnlyExclude_NonMatchingFileStillIncluded()
     {
         // Gitignore-style: `*.log` excludes log files; everything else stays included.
@@ -205,7 +206,7 @@ public class OrderedMatchSetTests
         boundary.MatchesFile(Root, "trace.log".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IncludeByDefault_ExcludeThenInclude_RescuesFile()
     {
         // Gitignore "exclude all logs, but keep important.log".
@@ -221,7 +222,7 @@ public class OrderedMatchSetTests
         boundary.MatchesFile(Root, "readme.md".AsSpan()).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void IncludeByDefault_DirectoryOnlyExclude_ClaimsSubtree()
     {
         // Strict gitignore semantics: `bin/` claims the whole subtree at the
@@ -246,7 +247,7 @@ public class OrderedMatchSetTests
         boundary.MatchesDirectory(Root, "src".AsSpan(), matchForExclusion: true).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IncludeByDefault_DirectoryExcludeThenFileInclude_SubtreeStillSkipped()
     {
         // Strict gitignore semantics: a later file-level include cannot rescue

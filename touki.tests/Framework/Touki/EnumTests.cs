@@ -4,9 +4,10 @@
 
 namespace Framework.Touki;
 
+[TestClass]
 public class EnumTests
 {
-    [Test]
+    [TestMethod]
     public void TestGetValuesAndNames()
     {
         var expectedValues = new ulong[] { 0, 1, 2, 3, 4, 5, 6 };

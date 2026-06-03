@@ -11,18 +11,19 @@ namespace Touki.Io.Globbing;
 ///  runs of three or more consecutive <c>*</c> characters in the pattern, by shelling out
 ///  to <c>bash</c> via <see cref="BashInterop"/>.
 /// </summary>
+[TestClass]
 public class MultipleAsteriskBashOracleTests
 {
     public static IEnumerable<(string, string)> Rows() => MultipleAsteriskRows.Rows();
 
-    [Test]
-    [MethodDataSource(nameof(Rows))]
+    [TestMethod]
+    [DynamicData(nameof(Rows))]
     public void IsMatch_BashDialect_MultipleAsterisks_AgreesWithBash(string pattern, string input)
     {
         string? bashPath = BashInterop.ResolveBashPath();
         if (bashPath is null)
         {
-            Skip.Test("bash oracle requires bash on PATH (or Git for Windows installed).");
+            Assert.Inconclusive("bash oracle requires bash on PATH (or Git for Windows installed).");
             return;
         }
 
@@ -37,7 +38,7 @@ public class MultipleAsteriskBashOracleTests
             or ("a/***/b", "a/b")
             or ("a***b", "a/b"))
         {
-            Skip.Test("Documented Bash shell-glob vs `[[ == ]]` string-match divergence.");
+            Assert.Inconclusive("Documented Bash shell-glob vs `[[ == ]]` string-match divergence.");
             return;
         }
 

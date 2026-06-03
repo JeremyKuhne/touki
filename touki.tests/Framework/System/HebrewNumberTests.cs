@@ -6,6 +6,7 @@ using Touki.Text;
 
 namespace System.Globalization;
 
+[TestClass]
 public class HebrewNumberTests
 {
     private static string Format(int number)
@@ -40,53 +41,53 @@ public class HebrewNumberTests
         _ => throw new ArgumentOutOfRangeException(nameof(n)),
     };
 
-    [Test]
-    [Arguments(1)]
-    [Arguments(2)]
-    [Arguments(3)]
-    [Arguments(4)]
-    [Arguments(5)]
-    [Arguments(6)]
-    [Arguments(7)]
-    [Arguments(8)]
-    [Arguments(9)]
+    [TestMethod]
+    [DataRow(1)]
+    [DataRow(2)]
+    [DataRow(3)]
+    [DataRow(4)]
+    [DataRow(5)]
+    [DataRow(6)]
+    [DataRow(7)]
+    [DataRow(8)]
+    [DataRow(9)]
     public void Append_SingleDigit_AppendsLetterAndApostrophe(int number)
     {
         // Single-character output gets a trailing apostrophe.
         Format(number).Should().Be($"{Unit(number)}'");
     }
 
-    [Test]
-    [Arguments(10)]
-    [Arguments(20)]
-    [Arguments(30)]
-    [Arguments(40)]
-    [Arguments(50)]
-    [Arguments(60)]
-    [Arguments(70)]
-    [Arguments(80)]
-    [Arguments(90)]
+    [TestMethod]
+    [DataRow(10)]
+    [DataRow(20)]
+    [DataRow(30)]
+    [DataRow(40)]
+    [DataRow(50)]
+    [DataRow(60)]
+    [DataRow(70)]
+    [DataRow(80)]
+    [DataRow(90)]
     public void Append_RoundTens_AppendsTensLetterAndApostrophe(int number)
     {
         // 10, 20, ..., 90 are single-letter outputs.
         Format(number).Should().Be($"{Tens(number)}'");
     }
 
-    [Test]
-    [Arguments(11, '\x05d9', '\x05d0')] // 11 = 10 + 1, yod + alef
-    [Arguments(12, '\x05d9', '\x05d1')] // 10 + 2
-    [Arguments(13, '\x05d9', '\x05d2')] // 10 + 3
-    [Arguments(14, '\x05d9', '\x05d3')] // 10 + 4
-    [Arguments(17, '\x05d9', '\x05d6')] // 10 + 7
-    [Arguments(18, '\x05d9', '\x05d7')] // 10 + 8
-    [Arguments(19, '\x05d9', '\x05d8')] // 10 + 9
+    [TestMethod]
+    [DataRow(11, '\x05d9', '\x05d0')] // 11 = 10 + 1, yod + alef
+    [DataRow(12, '\x05d9', '\x05d1')] // 10 + 2
+    [DataRow(13, '\x05d9', '\x05d2')] // 10 + 3
+    [DataRow(14, '\x05d9', '\x05d3')] // 10 + 4
+    [DataRow(17, '\x05d9', '\x05d6')] // 10 + 7
+    [DataRow(18, '\x05d9', '\x05d7')] // 10 + 8
+    [DataRow(19, '\x05d9', '\x05d8')] // 10 + 9
     public void Append_TwoCharNumber_InsertsGershayimBeforeLastChar(int number, char tens, char units)
     {
         // Multi-character output gets a gershayim (") inserted before the last character.
         Format(number).Should().Be($"{tens}\"{units}");
     }
 
-    [Test]
+    [TestMethod]
     public void Append_Fifteen_UsesNineSixSpelling()
     {
         // The number 15 is traditionally written as 9+6 (טו) rather than 10+5 (יה)
@@ -94,50 +95,50 @@ public class HebrewNumberTests
         Format(15).Should().Be("\x05d8\"\x05d5"); // tet + gershayim + vav
     }
 
-    [Test]
+    [TestMethod]
     public void Append_Sixteen_UsesNineSevenSpelling()
     {
         // 16 is similarly written as 9+7 (טז) rather than 10+6 (יו).
         Format(16).Should().Be("\x05d8\"\x05d6"); // tet + gershayim + zayin
     }
 
-    [Test]
-    [Arguments(100, '\x05e7')] // qof
-    [Arguments(200, '\x05e8')] // resh
-    [Arguments(300, '\x05e9')] // shin
-    [Arguments(400, '\x05ea')] // tav
+    [TestMethod]
+    [DataRow(100, '\x05e7')] // qof
+    [DataRow(200, '\x05e8')] // resh
+    [DataRow(300, '\x05e9')] // shin
+    [DataRow(400, '\x05ea')] // tav
     public void Append_RoundHundreds_UpToFourHundred(int number, char hundreds)
     {
         // Hundreds 100-400 use single letters qof/resh/shin/tav and end with apostrophe.
         Format(number).Should().Be($"{hundreds}'");
     }
 
-    [Test]
-    [Arguments(500, "\x05ea\"\x05e7")] // 400 + 100
-    [Arguments(600, "\x05ea\"\x05e8")] // 400 + 200
-    [Arguments(700, "\x05ea\"\x05e9")] // 400 + 300
-    [Arguments(800, "\x05ea\"\x05ea")] // 400 + 400, with gershayim before the last tav
-    [Arguments(900, "\x05ea\x05ea\"\x05e7")] // 400 + 400 + 100
+    [TestMethod]
+    [DataRow(500, "\x05ea\"\x05e7")] // 400 + 100
+    [DataRow(600, "\x05ea\"\x05e8")] // 400 + 200
+    [DataRow(700, "\x05ea\"\x05e9")] // 400 + 300
+    [DataRow(800, "\x05ea\"\x05ea")] // 400 + 400, with gershayim before the last tav
+    [DataRow(900, "\x05ea\x05ea\"\x05e7")] // 400 + 400 + 100
     public void Append_HundredsAboveFourHundred_UsesTavMultiples(int number, string expected)
     {
         Format(number).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(101, "\x05e7\"\x05d0")] // 100 + 1
-    [Arguments(115, "\x05e7\x05d8\"\x05d5")] // 100 + 15 (qof + tet + gershayim + vav)
-    [Arguments(116, "\x05e7\x05d8\"\x05d6")] // 100 + 16
-    [Arguments(248, "\x05e8\x05de\"\x05d7")] // 200 + 40 + 8 - "Ramach", classical mitzvot count
-    [Arguments(613, "\x05ea\x05e8\x05d9\"\x05d2")] // 400 + 200 + 10 + 3 - taryag
-    [Arguments(999, "\x05ea\x05ea\x05e7\x05e6\"\x05d8")] // 400 + 400 + 100 + 90 + 9
+    [TestMethod]
+    [DataRow(101, "\x05e7\"\x05d0")] // 100 + 1
+    [DataRow(115, "\x05e7\x05d8\"\x05d5")] // 100 + 15 (qof + tet + gershayim + vav)
+    [DataRow(116, "\x05e7\x05d8\"\x05d6")] // 100 + 16
+    [DataRow(248, "\x05e8\x05de\"\x05d7")] // 200 + 40 + 8 - "Ramach", classical mitzvot count
+    [DataRow(613, "\x05ea\x05e8\x05d9\"\x05d2")] // 400 + 200 + 10 + 3 - taryag
+    [DataRow(999, "\x05ea\x05ea\x05e7\x05e6\"\x05d8")] // 400 + 400 + 100 + 90 + 9
     public void Append_CompositeNumbers_FormatCorrectly(int number, string expected)
     {
         Format(number).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(5001, "\x05d0'")] // 5000 + 1 -> 'alef + apostrophe (single-letter form)
-    [Arguments(5781, "\x05ea\x05e9\x05e4\"\x05d0")] // 5781 -> 781 = 400 + 300 + 80 + 1
+    [TestMethod]
+    [DataRow(5001, "\x05d0'")] // 5000 + 1 -> 'alef + apostrophe (single-letter form)
+    [DataRow(5781, "\x05ea\x05e9\x05e4\"\x05d0")] // 5781 -> 781 = 400 + 300 + 80 + 1
     public void Append_NumberAbove5000_SubtractsFiveThousand(int input, string expected)
     {
         // Numbers above 5000 are reduced by 5000 before formatting (per the source comments).
@@ -146,7 +147,7 @@ public class HebrewNumberTests
         Format(input).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void Append_AppendsToExistingBuilderContents()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -162,7 +163,7 @@ public class HebrewNumberTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void DateTimeFormat_WithHebrewCalendar_EmitsGematria()
     {
         // Regression test for the by-ref forwarding in DateTimeFormat.HebrewFormatDigits.

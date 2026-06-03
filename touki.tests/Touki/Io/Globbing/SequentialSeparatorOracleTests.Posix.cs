@@ -15,9 +15,10 @@ namespace Touki.Io.Globbing;
 /// <remarks>
 ///  <para>
 ///   Linux/macOS only - the oracle calls <c>libc</c>'s <c>fnmatch</c> via P/Invoke.
-///   Windows runs skip via <see cref="Skip.Test(string)"/>.
+///   Windows runs skip via <see cref="Assert.Inconclusive(string)"/>.
 ///  </para>
 /// </remarks>
+[TestClass]
 public class SequentialSeparatorPosixOracleTests
 {
     private static bool OracleMatches(string pattern, string input) =>
@@ -26,38 +27,38 @@ public class SequentialSeparatorPosixOracleTests
     private static bool ToukiMatches(string pattern, string input) =>
         GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input);
 
-    [Test]
+    [TestMethod]
     // --- Doubled separator between literal segments (Posix: / is just a literal) ---
-    [Arguments("a//b", "a/b")]
-    [Arguments("a//b", "a//b")]
-    [Arguments("a//b", "a///b")]
-    [Arguments("a//b", "ab")]
-    [Arguments("a//b", "a/x/b")]
+    [DataRow("a//b", "a/b")]
+    [DataRow("a//b", "a//b")]
+    [DataRow("a//b", "a///b")]
+    [DataRow("a//b", "ab")]
+    [DataRow("a//b", "a/x/b")]
     // --- Tripled / quadrupled separator runs ---
-    [Arguments("a///b", "a/b")]
-    [Arguments("a///b", "a//b")]
-    [Arguments("a///b", "a///b")]
-    [Arguments("a////b", "a///b")]
-    [Arguments("a////b", "a////b")]
+    [DataRow("a///b", "a/b")]
+    [DataRow("a///b", "a//b")]
+    [DataRow("a///b", "a///b")]
+    [DataRow("a////b", "a///b")]
+    [DataRow("a////b", "a////b")]
     // --- Leading separator runs ---
-    [Arguments("//a", "/a")]
-    [Arguments("//a", "//a")]
-    [Arguments("//a", "a")]
+    [DataRow("//a", "/a")]
+    [DataRow("//a", "//a")]
+    [DataRow("//a", "a")]
     // --- Trailing separator runs ---
-    [Arguments("a//", "a/")]
-    [Arguments("a//", "a//")]
-    [Arguments("a//", "a")]
+    [DataRow("a//", "a/")]
+    [DataRow("a//", "a//")]
+    [DataRow("a//", "a")]
     // --- Doubled separator surrounding a wildcard ---
-    [Arguments("a//*", "a/b")]
-    [Arguments("a//*", "a//b")]
-    [Arguments("*//b", "a/b")]
-    [Arguments("*//b", "a//b")]
-    [Arguments("*//b", "//b")]
+    [DataRow("a//*", "a/b")]
+    [DataRow("a//*", "a//b")]
+    [DataRow("*//b", "a/b")]
+    [DataRow("*//b", "a//b")]
+    [DataRow("*//b", "//b")]
     public void IsMatch_PosixDialect_SequentialSeparators_AgreesWithFnmatch(string pattern, string input)
     {
         if (!FnmatchInterop.IsSupported)
         {
-            Skip.Test("fnmatch(3) oracle requires Linux or macOS.");
+            Assert.Inconclusive("fnmatch(3) oracle requires Linux or macOS.");
             return;
         }
 

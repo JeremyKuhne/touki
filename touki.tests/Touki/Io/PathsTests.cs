@@ -6,27 +6,28 @@ using System.Text;
 
 namespace Touki.Io;
 
+[TestClass]
 public class PathsTests
 {
     private static readonly char s_separator = Path.DirectorySeparatorChar;
 
-    [Test]
-    [Arguments("foo", "foo", MatchCasing.CaseSensitive, false)]
-    [Arguments("foo", "FOO", MatchCasing.CaseSensitive, true)]
-    [Arguments("foo", "FOO", MatchCasing.CaseInsensitive, false)]
-    [Arguments("", "", MatchCasing.CaseSensitive, false)]
-    [Arguments("a", "b", MatchCasing.CaseSensitive, true)]
+    [TestMethod]
+    [DataRow("foo", "foo", MatchCasing.CaseSensitive, false)]
+    [DataRow("foo", "FOO", MatchCasing.CaseSensitive, true)]
+    [DataRow("foo", "FOO", MatchCasing.CaseInsensitive, false)]
+    [DataRow("", "", MatchCasing.CaseSensitive, false)]
+    [DataRow("a", "b", MatchCasing.CaseSensitive, true)]
     public void ArePatternsExclusive_LiteralVsLiteral_RespectsCasing(string p1, string p2, MatchCasing casing, bool expected)
     {
         Paths.AreExpressionsExclusive(p1, p2, MatchType.Simple, casing).Should().Be(expected);
         Paths.AreExpressionsExclusive(p2, p1, MatchType.Simple, casing).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments("foo", "f*", false)]
-    [Arguments("foo", "b*", true)]
-    [Arguments("bar", "?ar", false)]
-    [Arguments("bar", "?az", true)]
+    [TestMethod]
+    [DataRow("foo", "f*", false)]
+    [DataRow("foo", "b*", true)]
+    [DataRow("bar", "?ar", false)]
+    [DataRow("bar", "?az", true)]
     public void ArePatternsExclusive_LiteralVsWildcard_Basic(string literal, string wildcard, bool expected)
     {
         // Simple matching, explicit case-insensitive and case-sensitive should give same exclusivity for ASCII inputs
@@ -37,7 +38,7 @@ public class PathsTests
         Paths.AreExpressionsExclusive(wildcard, literal, MatchType.Simple, MatchCasing.CaseSensitive).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void ArePatternsExclusive_StarAndWin32DotStarDotStar_NeverExclusive()
     {
         // '*' against anything is never exclusive
@@ -50,77 +51,77 @@ public class PathsTests
         Paths.AreExpressionsExclusive("*.*", "*.*", MatchType.Win32, MatchCasing.CaseSensitive).Should().BeFalse();
     }
 
-    [Test]
-    [Arguments("ab*cd", "ab*ef")] // incompatible fixed suffixes
-    [Arguments("foo*", "bar*")]   // incompatible fixed prefixes
-    [Arguments("*foo", "*bar")]   // incompatible fixed suffixes
-    [Arguments("foo?", "bar?")]   // incompatible fixed prefixes with '?'
+    [TestMethod]
+    [DataRow("ab*cd", "ab*ef")] // incompatible fixed suffixes
+    [DataRow("foo*", "bar*")]   // incompatible fixed prefixes
+    [DataRow("*foo", "*bar")]   // incompatible fixed suffixes
+    [DataRow("foo?", "bar?")]   // incompatible fixed prefixes with '?'
     public void ArePatternsExclusive_BothWildcards_ObviousExclusiveCases(string p1, string p2)
     {
         Paths.AreExpressionsExclusive(p1, p2, MatchType.Simple, MatchCasing.CaseSensitive).Should().BeTrue();
         Paths.AreExpressionsExclusive(p2, p1, MatchType.Simple, MatchCasing.CaseSensitive).Should().BeTrue();
     }
 
-    [Test]
-    [Arguments("*abc*", "*def*")] // could overlap (e.g., "abcdef")
-    [Arguments("*a*c*", "*b*d*")] // uncertain overlap; should not claim exclusive
-    [Arguments("pre*mid*suf", "pre*X*suf")] // same fixed prefix/suffix; not provably exclusive
+    [TestMethod]
+    [DataRow("*abc*", "*def*")] // could overlap (e.g., "abcdef")
+    [DataRow("*a*c*", "*b*d*")] // uncertain overlap; should not claim exclusive
+    [DataRow("pre*mid*suf", "pre*X*suf")] // same fixed prefix/suffix; not provably exclusive
     public void ArePatternsExclusive_BothWildcards_OnlyProveObviousCases(string p1, string p2)
     {
         Paths.AreExpressionsExclusive(p1, p2, MatchType.Simple, MatchCasing.CaseSensitive).Should().BeFalse();
         Paths.AreExpressionsExclusive(p2, p1, MatchType.Simple, MatchCasing.CaseSensitive).Should().BeFalse();
     }
 
-    [Test]
-    [Arguments("*.CS", "*.cs", MatchCasing.CaseSensitive, true)]
-    [Arguments("*.CS", "*.cs", MatchCasing.CaseInsensitive, false)]
+    [TestMethod]
+    [DataRow("*.CS", "*.cs", MatchCasing.CaseSensitive, true)]
+    [DataRow("*.CS", "*.cs", MatchCasing.CaseInsensitive, false)]
     public void ArePatternsExclusive_BothWildcards_RespectsCasing(string p1, string p2, MatchCasing casing, bool expected)
     {
         Paths.AreExpressionsExclusive(p1, p2, MatchType.Simple, casing).Should().Be(expected);
         Paths.AreExpressionsExclusive(p2, p1, MatchType.Simple, casing).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void IsSameOrSubdirectory_SameDirectoryNoTrailingSeparator_ReturnsTrue()
     {
         Paths.IsSameOrSubdirectory("foo".AsSpan(), "foo".AsSpan(), ignoreCase: false).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void IsSameOrSubdirectory_SameDirectoryFirstHasTrailingSeparator_ReturnsTrue()
     {
         string first = $"foo{s_separator}";
         Paths.IsSameOrSubdirectory(first.AsSpan(), "foo".AsSpan(), ignoreCase: false).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void IsSameOrSubdirectory_Subdirectory_ReturnsTrue()
     {
         string second = $"foo{s_separator}bar";
         Paths.IsSameOrSubdirectory("foo".AsSpan(), second.AsSpan(), ignoreCase: false).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void IsSameOrSubdirectory_PrefixNotDirectoryBoundary_ReturnsFalse()
     {
         Paths.IsSameOrSubdirectory("foo".AsSpan(), "foobar".AsSpan(), ignoreCase: false).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IsSameOrSubdirectory_CaseDifferenceIgnoredWhenIgnoringCase_ReturnsTrue()
     {
         string second = $"FOO{s_separator}BAR";
         Paths.IsSameOrSubdirectory("foo".AsSpan(), second.AsSpan(), ignoreCase: true).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void IsSameOrSubdirectory_CaseDifferenceHonoredWhenNotIgnoringCase_ReturnsFalse()
     {
         string second = $"FOO{s_separator}BAR";
         Paths.IsSameOrSubdirectory("foo".AsSpan(), second.AsSpan(), ignoreCase: false).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IsSameOrSubdirectory_SecondHasTrailingSeparatorNotNormalized_ReturnsTrue()
     {
         string second = $"foo{s_separator}";
@@ -151,8 +152,8 @@ public class PathsTests
             true);
     }
 
-    [Test]
-    [MethodDataSource(nameof(IsSameOrSubdirectoryEdgeCasesData))]
+    [TestMethod]
+    [DynamicData(nameof(IsSameOrSubdirectoryEdgeCasesData))]
     public void IsSameOrSubdirectory_EdgeCases_ReturnsExpected(string first, string second, bool expected)
     {
         Paths.IsSameOrSubdirectory(first.AsSpan(), second.AsSpan(), ignoreCase: true).Should().Be(expected);
@@ -190,8 +191,8 @@ public class PathsTests
         yield return (@"C:A\..\..\..",              @"C:..\..");
     }
 
-    [Test,
-        MethodDataSource(nameof(RemoveRelativeSegmentsNotFullyQualifiedData))]
+    [TestMethod,
+        DynamicData(nameof(RemoveRelativeSegmentsNotFullyQualifiedData))]
     public void RemoveRelativeSegments_NotFullyQualified(string path, string expected)
     {
 #if NET
@@ -266,9 +267,9 @@ public class PathsTests
         yield return (@"C:\\..\..",                     @"C:\");
     }
 
-    [Test,
-        MethodDataSource(nameof(RemoveRelativeSegmentsData)),
-        MethodDataSource(nameof(RemoveRelativeSegmentsFirstRelativeSegment))]
+    [TestMethod,
+        DynamicData(nameof(RemoveRelativeSegmentsData)),
+        DynamicData(nameof(RemoveRelativeSegmentsFirstRelativeSegment))]
     public void RemoveRelativeSegments(string path, string expected)
     {
 #if NET
@@ -299,8 +300,8 @@ public class PathsTests
         yield return (@"Server\Share\git\temp\..\runtime\",    @"Server\Share\git\runtime\");
     }
 
-    [Test,
-        MethodDataSource(nameof(RemoveRelativeSegmentsUncData))]
+    [TestMethod,
+        DynamicData(nameof(RemoveRelativeSegmentsUncData))]
     public void RemoveRelativeSegments_Unc(string path, string expected)
     {
 #if NET
@@ -363,8 +364,8 @@ public class PathsTests
         yield return (@"\\.\\temp\..\runtime\",          @"\\.\runtime\");
     }
 
-    [Test,
-        MethodDataSource(nameof(RemoveRelativeSegmentsDeviceData))]
+    [TestMethod,
+        DynamicData(nameof(RemoveRelativeSegmentsDeviceData))]
     public void RemoveRelativeSegments_Device(string path, string expected)
     {
 #if NET
@@ -401,8 +402,8 @@ public class PathsTests
     }
 
 #if NET
-    [Test,
-        MethodDataSource(nameof(RemoveRelativeSegmentUnixData))]
+    [TestMethod,
+        DynamicData(nameof(RemoveRelativeSegmentUnixData))]
     public void RemoveRelativeSegments_Unix(string path, string expected)
     {
         if (OperatingSystem.IsWindows())
@@ -414,7 +415,7 @@ public class PathsTests
     }
 #endif
 
-    [Test]
+    [TestMethod]
     public void MatchesExpression_Win32_UsesWin32Semantics()
     {
         // Win32 treats '*.*' as matching anything that has a dot in it (and more).
@@ -425,7 +426,7 @@ public class PathsTests
             .Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void MatchesExpression_Simple_RequiresLiteralDot()
     {
         // Simple semantics treat '*.*' as needing a literal '.'.

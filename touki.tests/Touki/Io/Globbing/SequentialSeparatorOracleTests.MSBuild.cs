@@ -25,6 +25,7 @@ namespace Touki.Io.Globbing;
 ///   update to the dialect contract documented in <c>docs/globbing.md</c>.
 ///  </para>
 /// </remarks>
+[TestClass]
 public class SequentialSeparatorMSBuildOracleTests
 {
     private static bool OracleMatches(string pattern, string input)
@@ -40,37 +41,37 @@ public class SequentialSeparatorMSBuildOracleTests
     private static bool ToukiMatches(string pattern, string input) =>
         GlobSpecification.Compile(pattern, GlobDialect.MSBuild).IsMatch(input);
 
-    [Test]
+    [TestMethod]
     // --- Doubled separator between literal segments ---
-    [Arguments("a//b", "a/b")]
-    [Arguments("a//b", "a//b")]
-    [Arguments("a//b", "a///b")]
-    [Arguments("a//b", "ab")]
-    [Arguments("a//b", "a/x/b")]
+    [DataRow("a//b", "a/b")]
+    [DataRow("a//b", "a//b")]
+    [DataRow("a//b", "a///b")]
+    [DataRow("a//b", "ab")]
+    [DataRow("a//b", "a/x/b")]
     // --- Tripled / quadrupled separator runs ---
-    [Arguments("a///b", "a/b")]
-    [Arguments("a///b", "a//b")]
-    [Arguments("a////b", "a/b")]
+    [DataRow("a///b", "a/b")]
+    [DataRow("a///b", "a//b")]
+    [DataRow("a////b", "a/b")]
     // --- Leading separator runs ---
-    [Arguments("//a", "/a")]
-    [Arguments("//a", "a")]
-    [Arguments("//a", "//a")]
+    [DataRow("//a", "/a")]
+    [DataRow("//a", "a")]
+    [DataRow("//a", "//a")]
     // --- Trailing separator runs ---
-    [Arguments("a//", "a/")]
-    [Arguments("a//", "a")]
-    [Arguments("a//", "a//")]
+    [DataRow("a//", "a/")]
+    [DataRow("a//", "a")]
+    [DataRow("a//", "a//")]
     // --- Doubled separator surrounding a wildcard ---
-    [Arguments("a//*", "a/b")]
-    [Arguments("a//*", "a//b")]
-    [Arguments("*//b", "a/b")]
-    [Arguments("*//b", "a//b")]
+    [DataRow("a//*", "a/b")]
+    [DataRow("a//*", "a//b")]
+    [DataRow("*//b", "a/b")]
+    [DataRow("*//b", "a//b")]
     // --- Doubled separator adjacent to globstar ---
-    [Arguments("**//*.cs", "Foo.cs")]
-    [Arguments("**//*.cs", "src/Foo.cs")]
-    [Arguments("**//*.cs", "src/sub/Foo.cs")]
-    [Arguments("a//**//b", "a/b")]
-    [Arguments("a//**//b", "a/x/b")]
-    [Arguments("a//**//b", "a/x/y/b")]
+    [DataRow("**//*.cs", "Foo.cs")]
+    [DataRow("**//*.cs", "src/Foo.cs")]
+    [DataRow("**//*.cs", "src/sub/Foo.cs")]
+    [DataRow("a//**//b", "a/b")]
+    [DataRow("a//**//b", "a/x/b")]
+    [DataRow("a//**//b", "a/x/y/b")]
     public void IsMatch_MSBuildDialect_SequentialSeparators_AgreesWithMSBuildGlob(string pattern, string input)
     {
         bool oracle = OracleMatches(pattern, input);

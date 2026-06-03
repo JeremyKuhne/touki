@@ -4,6 +4,7 @@
 
 namespace Touki;
 
+[TestClass]
 public class DoubleExtensionsTests
 {
     private const double MinNormal = 2.2250738585072014e-308;
@@ -14,32 +15,32 @@ public class DoubleExtensionsTests
     private const double NegativeEpsilon = -double.Epsilon;
 
     // The BCL test files exercise this canonical 15-row table for each predicate.
-    // -0.0 cases are handled in dedicated [Test] tests because parameterized
+    // -0.0 cases are handled in dedicated [TestMethod] tests because parameterized
     // arguments can't distinguish 0.0 from -0.0.
 
     // ---- IsFinite ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, false)]
-    [Arguments(double.MinValue, true)]
-    [Arguments(-1.0, true)]
-    [Arguments(NegativeMinNormal, true)]
-    [Arguments(NegativeMaxSubnormal, true)]
-    [Arguments(NegativeEpsilon, true)]
-    [Arguments(double.NaN, false)]
-    [Arguments(0.0, true)]
-    [Arguments(double.Epsilon, true)]
-    [Arguments(MaxSubnormal, true)]
-    [Arguments(MinNormal, true)]
-    [Arguments(1.0, true)]
-    [Arguments(double.MaxValue, true)]
-    [Arguments(double.PositiveInfinity, false)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, false)]
+    [DataRow(double.MinValue, true)]
+    [DataRow(-1.0, true)]
+    [DataRow(NegativeMinNormal, true)]
+    [DataRow(NegativeMaxSubnormal, true)]
+    [DataRow(NegativeEpsilon, true)]
+    [DataRow(double.NaN, false)]
+    [DataRow(0.0, true)]
+    [DataRow(double.Epsilon, true)]
+    [DataRow(MaxSubnormal, true)]
+    [DataRow(MinNormal, true)]
+    [DataRow(1.0, true)]
+    [DataRow(double.MaxValue, true)]
+    [DataRow(double.PositiveInfinity, false)]
     public void IsFinite_ReturnsExpected(double value, bool expected)
     {
         double.IsFinite(value).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void IsFinite_NegativeZero_ReturnsTrue()
     {
         double.IsFinite(NegativeZero).Should().BeTrue();
@@ -47,27 +48,27 @@ public class DoubleExtensionsTests
 
     // ---- IsNegative ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, true)]
-    [Arguments(double.MinValue, true)]
-    [Arguments(-1.0, true)]
-    [Arguments(NegativeMinNormal, true)]
-    [Arguments(NegativeMaxSubnormal, true)]
-    [Arguments(NegativeEpsilon, true)]
-    [Arguments(double.NaN, true)]
-    [Arguments(0.0, false)]
-    [Arguments(double.Epsilon, false)]
-    [Arguments(MaxSubnormal, false)]
-    [Arguments(MinNormal, false)]
-    [Arguments(1.0, false)]
-    [Arguments(double.MaxValue, false)]
-    [Arguments(double.PositiveInfinity, false)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, true)]
+    [DataRow(double.MinValue, true)]
+    [DataRow(-1.0, true)]
+    [DataRow(NegativeMinNormal, true)]
+    [DataRow(NegativeMaxSubnormal, true)]
+    [DataRow(NegativeEpsilon, true)]
+    [DataRow(double.NaN, true)]
+    [DataRow(0.0, false)]
+    [DataRow(double.Epsilon, false)]
+    [DataRow(MaxSubnormal, false)]
+    [DataRow(MinNormal, false)]
+    [DataRow(1.0, false)]
+    [DataRow(double.MaxValue, false)]
+    [DataRow(double.PositiveInfinity, false)]
     public void IsNegative_ReturnsExpected(double value, bool expected)
     {
         double.IsNegative(value).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void IsNegative_NegativeZero_ReturnsTrue()
     {
         double.IsNegative(NegativeZero).Should().BeTrue();
@@ -75,27 +76,27 @@ public class DoubleExtensionsTests
 
     // ---- IsNormal ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, false)]
-    [Arguments(double.MinValue, true)]
-    [Arguments(-1.0, true)]
-    [Arguments(NegativeMinNormal, true)]
-    [Arguments(NegativeMaxSubnormal, false)]
-    [Arguments(NegativeEpsilon, false)]
-    [Arguments(double.NaN, false)]
-    [Arguments(0.0, false)]
-    [Arguments(double.Epsilon, false)]
-    [Arguments(MaxSubnormal, false)]
-    [Arguments(MinNormal, true)]
-    [Arguments(1.0, true)]
-    [Arguments(double.MaxValue, true)]
-    [Arguments(double.PositiveInfinity, false)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, false)]
+    [DataRow(double.MinValue, true)]
+    [DataRow(-1.0, true)]
+    [DataRow(NegativeMinNormal, true)]
+    [DataRow(NegativeMaxSubnormal, false)]
+    [DataRow(NegativeEpsilon, false)]
+    [DataRow(double.NaN, false)]
+    [DataRow(0.0, false)]
+    [DataRow(double.Epsilon, false)]
+    [DataRow(MaxSubnormal, false)]
+    [DataRow(MinNormal, true)]
+    [DataRow(1.0, true)]
+    [DataRow(double.MaxValue, true)]
+    [DataRow(double.PositiveInfinity, false)]
     public void IsNormal_ReturnsExpected(double value, bool expected)
     {
         double.IsNormal(value).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void IsNormal_NegativeZero_ReturnsFalse()
     {
         double.IsNormal(NegativeZero).Should().BeFalse();
@@ -103,27 +104,27 @@ public class DoubleExtensionsTests
 
     // ---- IsSubnormal ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, false)]
-    [Arguments(double.MinValue, false)]
-    [Arguments(-1.0, false)]
-    [Arguments(NegativeMinNormal, false)]
-    [Arguments(NegativeMaxSubnormal, true)]
-    [Arguments(NegativeEpsilon, true)]
-    [Arguments(double.NaN, false)]
-    [Arguments(0.0, false)]
-    [Arguments(double.Epsilon, true)]
-    [Arguments(MaxSubnormal, true)]
-    [Arguments(MinNormal, false)]
-    [Arguments(1.0, false)]
-    [Arguments(double.MaxValue, false)]
-    [Arguments(double.PositiveInfinity, false)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, false)]
+    [DataRow(double.MinValue, false)]
+    [DataRow(-1.0, false)]
+    [DataRow(NegativeMinNormal, false)]
+    [DataRow(NegativeMaxSubnormal, true)]
+    [DataRow(NegativeEpsilon, true)]
+    [DataRow(double.NaN, false)]
+    [DataRow(0.0, false)]
+    [DataRow(double.Epsilon, true)]
+    [DataRow(MaxSubnormal, true)]
+    [DataRow(MinNormal, false)]
+    [DataRow(1.0, false)]
+    [DataRow(double.MaxValue, false)]
+    [DataRow(double.PositiveInfinity, false)]
     public void IsSubnormal_ReturnsExpected(double value, bool expected)
     {
         double.IsSubnormal(value).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void IsSubnormal_NegativeZero_ReturnsFalse()
     {
         double.IsSubnormal(NegativeZero).Should().BeFalse();
@@ -131,33 +132,33 @@ public class DoubleExtensionsTests
 
     // ---- IsPositive ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, false)]
-    [Arguments(double.MinValue, false)]
-    [Arguments(-1.0, false)]
-    [Arguments(NegativeMinNormal, false)]
-    [Arguments(NegativeMaxSubnormal, false)]
-    [Arguments(NegativeEpsilon, false)]
-    [Arguments(double.NaN, false)]
-    [Arguments(0.0, true)]
-    [Arguments(double.Epsilon, true)]
-    [Arguments(MaxSubnormal, true)]
-    [Arguments(MinNormal, true)]
-    [Arguments(1.0, true)]
-    [Arguments(double.MaxValue, true)]
-    [Arguments(double.PositiveInfinity, true)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, false)]
+    [DataRow(double.MinValue, false)]
+    [DataRow(-1.0, false)]
+    [DataRow(NegativeMinNormal, false)]
+    [DataRow(NegativeMaxSubnormal, false)]
+    [DataRow(NegativeEpsilon, false)]
+    [DataRow(double.NaN, false)]
+    [DataRow(0.0, true)]
+    [DataRow(double.Epsilon, true)]
+    [DataRow(MaxSubnormal, true)]
+    [DataRow(MinNormal, true)]
+    [DataRow(1.0, true)]
+    [DataRow(double.MaxValue, true)]
+    [DataRow(double.PositiveInfinity, true)]
     public void IsPositive_ReturnsExpected(double value, bool expected)
     {
         double.IsPositive(value).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void IsPositive_NegativeZero_ReturnsFalse()
     {
         double.IsPositive(NegativeZero).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IsPositive_NegativeNaN_ReturnsFalse()
     {
         double negNaN = BitConverter.Int64BitsToDouble(unchecked((long)0xFFF8000000000000UL));
@@ -167,13 +168,13 @@ public class DoubleExtensionsTests
     // ---- IsRealNumber ----
     // Always true except NaN.
 
-    [Test]
-    [Arguments(double.NegativeInfinity, true)]
-    [Arguments(-1.0, true)]
-    [Arguments(double.NaN, false)]
-    [Arguments(0.0, true)]
-    [Arguments(1.0, true)]
-    [Arguments(double.PositiveInfinity, true)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, true)]
+    [DataRow(-1.0, true)]
+    [DataRow(double.NaN, false)]
+    [DataRow(0.0, true)]
+    [DataRow(1.0, true)]
+    [DataRow(double.PositiveInfinity, true)]
     public void IsRealNumber_ReturnsExpected(double value, bool expected)
     {
         double.IsRealNumber(value).Should().Be(expected);
@@ -181,27 +182,27 @@ public class DoubleExtensionsTests
 
     // ---- IsInteger ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, false)]
-    [Arguments(double.MinValue, true)]
-    [Arguments(-1.0, true)]
-    [Arguments(NegativeMinNormal, false)]
-    [Arguments(NegativeMaxSubnormal, false)]
-    [Arguments(NegativeEpsilon, false)]
-    [Arguments(double.NaN, false)]
-    [Arguments(0.0, true)]
-    [Arguments(double.Epsilon, false)]
-    [Arguments(MaxSubnormal, false)]
-    [Arguments(MinNormal, false)]
-    [Arguments(1.0, true)]
-    [Arguments(double.MaxValue, true)]
-    [Arguments(double.PositiveInfinity, false)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, false)]
+    [DataRow(double.MinValue, true)]
+    [DataRow(-1.0, true)]
+    [DataRow(NegativeMinNormal, false)]
+    [DataRow(NegativeMaxSubnormal, false)]
+    [DataRow(NegativeEpsilon, false)]
+    [DataRow(double.NaN, false)]
+    [DataRow(0.0, true)]
+    [DataRow(double.Epsilon, false)]
+    [DataRow(MaxSubnormal, false)]
+    [DataRow(MinNormal, false)]
+    [DataRow(1.0, true)]
+    [DataRow(double.MaxValue, true)]
+    [DataRow(double.PositiveInfinity, false)]
     public void IsInteger_ReturnsExpected(double value, bool expected)
     {
         double.IsInteger(value).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void IsInteger_NegativeZero_ReturnsTrue()
     {
         double.IsInteger(NegativeZero).Should().BeTrue();
@@ -211,29 +212,29 @@ public class DoubleExtensionsTests
     // Note: BCL says double.MinValue and double.MaxValue are even (they're enormous integers
     // whose lowest bits are zero by the FP representation).
 
-    [Test]
-    [Arguments(double.NegativeInfinity, false)]
-    [Arguments(double.MinValue, true)]
-    [Arguments(-1.0, false)]
-    [Arguments(-2.0, true)]
-    [Arguments(NegativeMinNormal, false)]
-    [Arguments(NegativeMaxSubnormal, false)]
-    [Arguments(NegativeEpsilon, false)]
-    [Arguments(double.NaN, false)]
-    [Arguments(0.0, true)]
-    [Arguments(double.Epsilon, false)]
-    [Arguments(MaxSubnormal, false)]
-    [Arguments(MinNormal, false)]
-    [Arguments(1.0, false)]
-    [Arguments(2.0, true)]
-    [Arguments(double.MaxValue, true)]
-    [Arguments(double.PositiveInfinity, false)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, false)]
+    [DataRow(double.MinValue, true)]
+    [DataRow(-1.0, false)]
+    [DataRow(-2.0, true)]
+    [DataRow(NegativeMinNormal, false)]
+    [DataRow(NegativeMaxSubnormal, false)]
+    [DataRow(NegativeEpsilon, false)]
+    [DataRow(double.NaN, false)]
+    [DataRow(0.0, true)]
+    [DataRow(double.Epsilon, false)]
+    [DataRow(MaxSubnormal, false)]
+    [DataRow(MinNormal, false)]
+    [DataRow(1.0, false)]
+    [DataRow(2.0, true)]
+    [DataRow(double.MaxValue, true)]
+    [DataRow(double.PositiveInfinity, false)]
     public void IsEvenInteger_ReturnsExpected(double value, bool expected)
     {
         double.IsEvenInteger(value).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void IsEvenInteger_NegativeZero_ReturnsTrue()
     {
         double.IsEvenInteger(NegativeZero).Should().BeTrue();
@@ -241,29 +242,29 @@ public class DoubleExtensionsTests
 
     // ---- IsOddInteger ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, false)]
-    [Arguments(double.MinValue, false)]
-    [Arguments(-1.0, true)]
-    [Arguments(-2.0, false)]
-    [Arguments(NegativeMinNormal, false)]
-    [Arguments(NegativeMaxSubnormal, false)]
-    [Arguments(NegativeEpsilon, false)]
-    [Arguments(double.NaN, false)]
-    [Arguments(0.0, false)]
-    [Arguments(double.Epsilon, false)]
-    [Arguments(MaxSubnormal, false)]
-    [Arguments(MinNormal, false)]
-    [Arguments(1.0, true)]
-    [Arguments(2.0, false)]
-    [Arguments(double.MaxValue, false)]
-    [Arguments(double.PositiveInfinity, false)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, false)]
+    [DataRow(double.MinValue, false)]
+    [DataRow(-1.0, true)]
+    [DataRow(-2.0, false)]
+    [DataRow(NegativeMinNormal, false)]
+    [DataRow(NegativeMaxSubnormal, false)]
+    [DataRow(NegativeEpsilon, false)]
+    [DataRow(double.NaN, false)]
+    [DataRow(0.0, false)]
+    [DataRow(double.Epsilon, false)]
+    [DataRow(MaxSubnormal, false)]
+    [DataRow(MinNormal, false)]
+    [DataRow(1.0, true)]
+    [DataRow(2.0, false)]
+    [DataRow(double.MaxValue, false)]
+    [DataRow(double.PositiveInfinity, false)]
     public void IsOddInteger_ReturnsExpected(double value, bool expected)
     {
         double.IsOddInteger(value).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void IsOddInteger_NegativeZero_ReturnsFalse()
     {
         double.IsOddInteger(NegativeZero).Should().BeFalse();
@@ -271,31 +272,31 @@ public class DoubleExtensionsTests
 
     // ---- IsPow2 ----
 
-    [Test]
-    [Arguments(double.NegativeInfinity, false)]
-    [Arguments(double.MinValue, false)]
-    [Arguments(-1.0, false)]
-    [Arguments(-2.0, false)] // negative 2^1 is NOT a pow2 (sign-bit set).
-    [Arguments(NegativeMinNormal, false)]
-    [Arguments(NegativeEpsilon, false)]
-    [Arguments(double.NaN, false)]
-    [Arguments(0.0, false)]
-    [Arguments(double.Epsilon, true)]   // 2^-1074
-    [Arguments(MinNormal, true)]        // 2^-1022
-    [Arguments(0.5, true)]
-    [Arguments(1.0, true)]
-    [Arguments(2.0, true)]
-    [Arguments(4.0, true)]
-    [Arguments(3.0, false)]
-    [Arguments(1.5, false)]
-    [Arguments(double.MaxValue, false)]
-    [Arguments(double.PositiveInfinity, false)]
+    [TestMethod]
+    [DataRow(double.NegativeInfinity, false)]
+    [DataRow(double.MinValue, false)]
+    [DataRow(-1.0, false)]
+    [DataRow(-2.0, false)] // negative 2^1 is NOT a pow2 (sign-bit set).
+    [DataRow(NegativeMinNormal, false)]
+    [DataRow(NegativeEpsilon, false)]
+    [DataRow(double.NaN, false)]
+    [DataRow(0.0, false)]
+    [DataRow(double.Epsilon, true)]   // 2^-1074
+    [DataRow(MinNormal, true)]        // 2^-1022
+    [DataRow(0.5, true)]
+    [DataRow(1.0, true)]
+    [DataRow(2.0, true)]
+    [DataRow(4.0, true)]
+    [DataRow(3.0, false)]
+    [DataRow(1.5, false)]
+    [DataRow(double.MaxValue, false)]
+    [DataRow(double.PositiveInfinity, false)]
     public void IsPow2_ReturnsExpected(double value, bool expected)
     {
         double.IsPow2(value).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void IsPow2_NegativeZero_ReturnsFalse()
     {
         double.IsPow2(NegativeZero).Should().BeFalse();

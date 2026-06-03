@@ -4,9 +4,10 @@
 
 namespace Touki.Collections;
 
+[TestClass]
 public class SingleOptimizedListTests
 {
-    [Test]
+    [TestMethod]
     public void Add_MultipleItems_UsesBackingList()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [];
@@ -30,7 +31,7 @@ public class SingleOptimizedListTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void Add_SingleItem_SetsItemField()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [42];
@@ -45,7 +46,7 @@ public class SingleOptimizedListTests
         accessor.BackingList.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void Add_TwoItems_UsesBackingList()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [42, 43];
@@ -61,7 +62,7 @@ public class SingleOptimizedListTests
         accessor.BackingList!.Count.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void Clear_EmptiesList()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2];
@@ -81,7 +82,7 @@ public class SingleOptimizedListTests
         accessor.BackingList.Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void Clear_StateTransition_MultipleToEmpty()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
@@ -98,7 +99,7 @@ public class SingleOptimizedListTests
         accessorAfter.BackingList.Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_InitializesCorrectly()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [];
@@ -112,7 +113,7 @@ public class SingleOptimizedListTests
         accessor.BackingList.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void Contains_FindsExistingItems()
     {
         // Empty list
@@ -132,7 +133,7 @@ public class SingleOptimizedListTests
         multiList.Contains(4).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_EmptyList_DoesNothing()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [];
@@ -143,7 +144,7 @@ public class SingleOptimizedListTests
         array[0].Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_MultipleItems_CopiesCorrectly()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
@@ -158,7 +159,7 @@ public class SingleOptimizedListTests
         array[4].Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_SingleItem_CopiesCorrectly()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [42];
@@ -170,7 +171,7 @@ public class SingleOptimizedListTests
         array[1].Should().Be(42);
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_ClearsBackingList()
     {
         SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2];
@@ -186,7 +187,7 @@ public class SingleOptimizedListTests
         // potentially use disposed resources
     }
 
-    [Test]
+    [TestMethod]
     public void Enumeration_EmptyList_NoItems()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [];
@@ -200,7 +201,7 @@ public class SingleOptimizedListTests
         count.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Enumeration_MultipleItems_YieldsCorrectly()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
@@ -215,7 +216,7 @@ public class SingleOptimizedListTests
         index.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void Enumeration_SingleItem_YieldsCorrectly()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [42];
@@ -230,7 +231,7 @@ public class SingleOptimizedListTests
         count.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void ICollection_IsReadOnly_ReturnsFalse()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [];
@@ -238,7 +239,7 @@ public class SingleOptimizedListTests
         collection.IsReadOnly.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Indexer_GetWithInvalidIndex_ThrowsArgumentOutOfRangeException()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [];
@@ -256,7 +257,7 @@ public class SingleOptimizedListTests
         actTooLarge.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Indexer_SetWithInvalidIndex_ThrowsArgumentOutOfRangeException()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [];
@@ -274,7 +275,7 @@ public class SingleOptimizedListTests
         actTooLarge.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOf_FindsExistingItem()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list =
@@ -292,7 +293,7 @@ public class SingleOptimizedListTests
         list.IndexOf(99).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_AtBeginning_ShiftsItems()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [2];
@@ -309,7 +310,7 @@ public class SingleOptimizedListTests
         accessor.BackingList!.Count.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_AtEnd_AppendsProperly()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1];
@@ -324,7 +325,7 @@ public class SingleOptimizedListTests
         accessor.BackingList.Should().NotBeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_InMiddle_ShiftsItems()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 3];
@@ -336,7 +337,7 @@ public class SingleOptimizedListTests
         list[2].Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_IntoEmptyList_AddsSingleItem()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [];
@@ -352,7 +353,7 @@ public class SingleOptimizedListTests
         accessor.BackingList.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_InvalidIndex_ThrowsException()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2];
@@ -364,7 +365,7 @@ public class SingleOptimizedListTests
         actTooLarge.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_StateTransition_SingleToMultiple()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [42];
@@ -386,7 +387,7 @@ public class SingleOptimizedListTests
         accessorAfter.BackingList!.Count.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void Remove_ExistingItem_RemovesCorrectly()
     {
         // Single item case
@@ -413,7 +414,7 @@ public class SingleOptimizedListTests
         list3.Count.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveAll_RemovesMatchingItems()
     {
         // Single item matching predicate
@@ -441,7 +442,7 @@ public class SingleOptimizedListTests
         list3.Count.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveAt_LeavesOneItem_DoesNotSwitchToSingleItem()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2];
@@ -458,7 +459,7 @@ public class SingleOptimizedListTests
         accessor.BackingList!.Count.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveAt_MultipleItems_RemovesCorrectItem()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
@@ -470,7 +471,7 @@ public class SingleOptimizedListTests
         list[1].Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveAt_MultipleItemsDownToOne_MaintainsBackingList()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
@@ -487,7 +488,7 @@ public class SingleOptimizedListTests
         accessor.BackingList!.Count.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveAt_SingleItem_EmptiesList()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [42];
@@ -502,7 +503,7 @@ public class SingleOptimizedListTests
         accessor.HasItem.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveAt_StateTransition_SingleToEmpty()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [42];
@@ -520,14 +521,14 @@ public class SingleOptimizedListTests
         accessorAfter.BackingList.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void UnsafeValues_EmptyList_ReturnsEmptySpan()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [];
         list.UnsafeValues.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void UnsafeValues_MultipleItems_ReturnsCorrectSpan()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
@@ -539,7 +540,7 @@ public class SingleOptimizedListTests
         values[2].Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void UnsafeValues_SingleItem_ReturnsCorrectSpan()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [42];
@@ -549,14 +550,14 @@ public class SingleOptimizedListTests
         values[0].Should().Be(42);
     }
 
-    [Test]
+    [TestMethod]
     public void Values_EmptyList_ReturnsEmptySpan()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [];
         list.Values.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Values_MultipleItems_ReturnsCorrectSpan()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
@@ -568,7 +569,7 @@ public class SingleOptimizedListTests
         values[2].Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void Values_SingleItem_ReturnsCorrectSpan()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [42];
@@ -578,7 +579,7 @@ public class SingleOptimizedListTests
         values[0].Should().Be(42);
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_NonGenericArray_EmptyList_DoesNothing()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [];
@@ -587,7 +588,7 @@ public class SingleOptimizedListTests
         ((int[])array).Should().Equal(0, 0, 0);
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_NonGenericArray_SingleItem_CopiesCorrectly()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [42];
@@ -596,7 +597,7 @@ public class SingleOptimizedListTests
         ((int[])array).Should().Equal(0, 42, 0);
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_NonGenericArray_MultipleItems_CopiesCorrectly()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
@@ -605,7 +606,7 @@ public class SingleOptimizedListTests
         ((int[])array).Should().Equal(0, 1, 2, 3, 0);
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_NonGenericArray_NullArray_Throws()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1];
@@ -613,7 +614,7 @@ public class SingleOptimizedListTests
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_NonGenericArray_NegativeIndex_Throws()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1];
@@ -622,7 +623,7 @@ public class SingleOptimizedListTests
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_NonGenericArray_TooSmall_Throws()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
@@ -631,7 +632,7 @@ public class SingleOptimizedListTests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_GenericArray_TooSmall_Throws()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
@@ -640,7 +641,7 @@ public class SingleOptimizedListTests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Clear_MultipleItems_ClearsBackingList()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1, 2, 3];
@@ -648,7 +649,7 @@ public class SingleOptimizedListTests
         list.Count.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Clear_EmptyList_NoOp()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [];

@@ -25,6 +25,7 @@ namespace Touki.Io.Globbing;
 ///   Tracked in <c>docs/globbing-feature-plan.md</c>.
 ///  </para>
 /// </remarks>
+[TestClass]
 public class ExtGlobBashOracleTests
 {
     public static IEnumerable<(string, string)> Rows()
@@ -85,14 +86,14 @@ public class ExtGlobBashOracleTests
             }
     }
 
-    [Test]
-    [MethodDataSource(nameof(Rows))]
+    [TestMethod]
+    [DynamicData(nameof(Rows))]
     public void IsMatch_BashDialect_ExtGlob_AgreesWithBash(string pattern, string input)
     {
         string? bashPath = BashInterop.ResolveBashPath();
         if (bashPath is null)
         {
-            Skip.Test("bash oracle requires bash on PATH (or Git for Windows installed).");
+            Assert.Inconclusive("bash oracle requires bash on PATH (or Git for Windows installed).");
             return;
         }
 
@@ -101,7 +102,7 @@ public class ExtGlobBashOracleTests
         // gate.
         if (pattern == "!(*)" && input == "")
         {
-            Skip.Test("Documented divergence: bash accepts `!(*)` against empty input; touki rejects (`*` matches the empty alt slice exactly).");
+            Assert.Inconclusive("Documented divergence: bash accepts `!(*)` against empty input; touki rejects (`*` matches the empty alt slice exactly).");
             return;
         }
 

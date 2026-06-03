@@ -4,17 +4,18 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringUShort
 {
-    public static IEnumerable<ushort> UShortData()
+    public static IEnumerable<object[]> UShortData()
     {
-        yield return 42;
-        yield return ushort.MaxValue;
-        yield return ushort.MinValue;
+        yield return [(ushort)42];
+        yield return [ushort.MaxValue];
+        yield return [ushort.MinValue];
     }
 
-    [Test]
-    [MethodDataSource(nameof(UShortData))]
+    [TestMethod]
+    [DynamicData(nameof(UShortData))]
     public void UShortImplicit(ushort @ushort)
     {
         Value value = @ushort;
@@ -27,8 +28,8 @@ public class StoringUShort
         value.Type.Should().Be(typeof(ushort));
     }
 
-    [Test]
-    [MethodDataSource(nameof(UShortData))]
+    [TestMethod]
+    [DynamicData(nameof(UShortData))]
     public void UShortCreate(ushort @ushort)
     {
         Value value;
@@ -51,8 +52,8 @@ public class StoringUShort
         value.Type.Should().Be(typeof(ushort));
     }
 
-    [Test]
-    [MethodDataSource(nameof(UShortData))]
+    [TestMethod]
+    [DynamicData(nameof(UShortData))]
     public void UShortInOut(ushort @ushort)
     {
         Value value = @ushort;
@@ -64,8 +65,8 @@ public class StoringUShort
         ((ushort)value).Should().Be(@ushort);
     }
 
-    [Test]
-    [MethodDataSource(nameof(UShortData))]
+    [TestMethod]
+    [DynamicData(nameof(UShortData))]
     public void NullableUShortInUShortOut(ushort @ushort)
     {
         ushort? source = @ushort;
@@ -80,8 +81,8 @@ public class StoringUShort
         ((ushort)value).Should().Be(@ushort);
     }
 
-    [Test]
-    [MethodDataSource(nameof(UShortData))]
+    [TestMethod]
+    [DynamicData(nameof(UShortData))]
     public void UShortInNullableUShortOut(ushort @ushort)
     {
         ushort source = @ushort;
@@ -93,8 +94,8 @@ public class StoringUShort
         ((ushort?)value).Should().Be(@ushort);
     }
 
-    [Test]
-    [MethodDataSource(nameof(UShortData))]
+    [TestMethod]
+    [DynamicData(nameof(UShortData))]
     public void BoxedUShort(ushort @ushort)
     {
         ushort i = @ushort;
@@ -119,7 +120,7 @@ public class StoringUShort
         nullableResult!.Value.Should().Be(@ushort);
     }
 
-    [Test]
+    [TestMethod]
     public void NullUShort()
     {
         ushort? source = null;
@@ -129,8 +130,8 @@ public class StoringUShort
         value.As<ushort?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(UShortData))]
+    [TestMethod]
+    [DynamicData(nameof(UShortData))]
     public void OutAsObject(ushort @ushort)
     {
         Value value = @ushort;

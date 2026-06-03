@@ -7,34 +7,35 @@ using Touki.Text;
 
 namespace Touki.Io;
 
+[TestClass]
 public class MSBuildSpecificationTests
 {
     private static string Sep(string path) => Paths.ChangeAlternateDirectorySeparators(path);
 
-    [Test]
-    [Arguments("file.txt", "", "", "file.txt", false)]
-    [Arguments("**", "", "**", "*", true)]
-    [Arguments("*.txt", "", "", "*.txt", true)]
-    [Arguments("a/b/file.txt", "a/b", "", "file.txt", false)]
-    [Arguments("a/b/*.txt", "a/b", "", "*.txt", true)]
-    [Arguments("a/*/file.txt", "a", "*", "file.txt", true)]
-    [Arguments("a/**/file.txt", "a", "**", "file.txt", true)]
-    [Arguments("a/?/file.txt", "a", "?", "file.txt", true)]
-    [Arguments("*/file.txt", "", "*", "file.txt", true)]
-    [Arguments("**/file.txt", "", "**", "file.txt", true)]
-    [Arguments("a/b/**", "a/b", "**", "*", true)]
-    [Arguments("**/b/**", "", "**/b/**", "*", true)]
+    [TestMethod]
+    [DataRow("file.txt", "", "", "file.txt", false)]
+    [DataRow("**", "", "**", "*", true)]
+    [DataRow("*.txt", "", "", "*.txt", true)]
+    [DataRow("a/b/file.txt", "a/b", "", "file.txt", false)]
+    [DataRow("a/b/*.txt", "a/b", "", "*.txt", true)]
+    [DataRow("a/*/file.txt", "a", "*", "file.txt", true)]
+    [DataRow("a/**/file.txt", "a", "**", "file.txt", true)]
+    [DataRow("a/?/file.txt", "a", "?", "file.txt", true)]
+    [DataRow("*/file.txt", "", "*", "file.txt", true)]
+    [DataRow("**/file.txt", "", "**", "file.txt", true)]
+    [DataRow("a/b/**", "a/b", "**", "*", true)]
+    [DataRow("**/b/**", "", "**/b/**", "*", true)]
     // Rooted-with-only-leading-separator cases. FixedPath is the root separator (e.g. "/" on
     // Unix, "\" on Windows) instead of an empty slice, and WildPath/FileName line up with the
     // suffix the same way they would for non-rooted specs.
-    [Arguments("/", "/", "", "", false)]
-    [Arguments("/foo.txt", "/", "", "foo.txt", false)]
-    [Arguments("/*.cs", "/", "", "*.cs", true)]
-    [Arguments("/**", "/", "**", "*", true)]
-    [Arguments("/**/file.txt", "/", "**", "file.txt", true)]
-    [Arguments("/**/*.cs", "/", "**", "*.cs", true)]
-    [Arguments("/**/foo/*.cs", "/", "**/foo", "*.cs", true)]
-    [Arguments("/**/foo/**", "/", "**/foo/**", "*", true)]
+    [DataRow("/", "/", "", "", false)]
+    [DataRow("/foo.txt", "/", "", "foo.txt", false)]
+    [DataRow("/*.cs", "/", "", "*.cs", true)]
+    [DataRow("/**", "/", "**", "*", true)]
+    [DataRow("/**/file.txt", "/", "**", "file.txt", true)]
+    [DataRow("/**/*.cs", "/", "**", "*.cs", true)]
+    [DataRow("/**/foo/*.cs", "/", "**/foo", "*.cs", true)]
+    [DataRow("/**/foo/**", "/", "**/foo/**", "*", true)]
     public void MSBuildSpecification_ParsesCorrectly(
         string original,
         string expectedFixed,
@@ -56,10 +57,10 @@ public class MSBuildSpecificationTests
         spec.HasAnyWildCards.Should().Be(expectedAnyWildCards);
     }
 
-    [Test]
-    [Arguments("a\\b\\file.txt", "a/b/file.txt")]
-    [Arguments("a/b\\file.txt", "a/b/file.txt")]
-    [Arguments("\\a\\b\\file.txt", "/a/b/file.txt")]
+    [TestMethod]
+    [DataRow("a\\b\\file.txt", "a/b/file.txt")]
+    [DataRow("a/b\\file.txt", "a/b/file.txt")]
+    [DataRow("\\a\\b\\file.txt", "/a/b/file.txt")]
     public void MSBuildSpecification_NormalizesPaths(string original, string expected)
     {
         expected = expected.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
@@ -68,18 +69,18 @@ public class MSBuildSpecificationTests
         spec.Normalized.ToString().Should().Be(expected);
     }
 
-    [Test]
-    [Arguments("a/**/**/b", "a/**/b")]
-    [Arguments("a/**/**/**/b", "a/**/b")]
-    [Arguments("**/**", "**")]
-    [Arguments("**/**/", "**/")]
-    [Arguments("a/**/**", "a/**")]
-    [Arguments("a/**/**/", "a/**/")]
-    [Arguments("/a/**/**/b", "/a/**/b")]
-    [Arguments("/a/**/**/b/", "/a/**/b/")]
-    [Arguments("a\\**\\**\\b", "a/**/b")]
-    [Arguments("a/**\\**/b", "a/**/b")]
-    [Arguments("a/**/c/**/b", "a/**/c/**/b")]
+    [TestMethod]
+    [DataRow("a/**/**/b", "a/**/b")]
+    [DataRow("a/**/**/**/b", "a/**/b")]
+    [DataRow("**/**", "**")]
+    [DataRow("**/**/", "**/")]
+    [DataRow("a/**/**", "a/**")]
+    [DataRow("a/**/**/", "a/**/")]
+    [DataRow("/a/**/**/b", "/a/**/b")]
+    [DataRow("/a/**/**/b/", "/a/**/b/")]
+    [DataRow("a\\**\\**\\b", "a/**/b")]
+    [DataRow("a/**\\**/b", "a/**/b")]
+    [DataRow("a/**/c/**/b", "a/**/c/**/b")]
     public void MSBuildSpecification_NormalizesDuplicateRecursiveWildcards(string original, string expected)
     {
         expected = expected.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
@@ -88,9 +89,9 @@ public class MSBuildSpecificationTests
         spec.Normalized.ToString().Should().Be(expected);
     }
 
-    [Test]
-    [Arguments("file.txt", "file.txt")]
-    [Arguments("a/b/c.txt", "a/b/c.txt")]
+    [TestMethod]
+    [DataRow("file.txt", "file.txt")]
+    [DataRow("a/b/c.txt", "a/b/c.txt")]
     public void MSBuildSpecification_ToString_ReturnsNormalized(string original, string expected)
     {
         expected = expected.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
@@ -99,30 +100,30 @@ public class MSBuildSpecificationTests
         spec.ToString().Should().Be(expected);
     }
 
-    [Test]
-    [Arguments("./file.txt", "", "", "file.txt", false)]
-    [Arguments("../file.txt", "..", "", "file.txt", false)]
-    [Arguments("a/./file.txt", "a", "", "file.txt", false)]
-    [Arguments("a/../file.txt", "", "", "file.txt", false)]
-    [Arguments("a/b/../../file.txt", "", "", "file.txt", false)]
-    [Arguments("a/./b/c/file.txt", "a/b/c", "", "file.txt", false)]
-    [Arguments("a/b/c/./../file.txt", "a/b", "", "file.txt", false)]
-    [Arguments("a//b///file.txt", "a/b", "", "file.txt", false)]
+    [TestMethod]
+    [DataRow("./file.txt", "", "", "file.txt", false)]
+    [DataRow("../file.txt", "..", "", "file.txt", false)]
+    [DataRow("a/./file.txt", "a", "", "file.txt", false)]
+    [DataRow("a/../file.txt", "", "", "file.txt", false)]
+    [DataRow("a/b/../../file.txt", "", "", "file.txt", false)]
+    [DataRow("a/./b/c/file.txt", "a/b/c", "", "file.txt", false)]
+    [DataRow("a/b/c/./../file.txt", "a/b", "", "file.txt", false)]
+    [DataRow("a//b///file.txt", "a/b", "", "file.txt", false)]
     // Trailing separator on a path with no wildcards: FixedPath becomes the directory portion and
     // FileName is empty. End-to-end this matches MSBuild's FileMatcher behavior at the parsing layer
     // (an empty filenamePart matches nothing on disk). See MSBuildSpecificationTrailingSeparatorTests
     // for the full discussion, including MSBuild's no-wildcard GetFiles shortcut.
-    [Arguments("a/b/file.txt/", "a/b/file.txt", "", "", false)]
-    [Arguments("a/b/./", "a/b", "", "", false)]
-    [Arguments("./*/file.txt", "", "*", "file.txt", true)]
-    [Arguments("../*/file.txt", "..", "*", "file.txt", true)]
-    [Arguments("a/./**/file.txt", "a", "**", "file.txt", true)]
-    [Arguments("a/../**/file.txt", "", "**", "file.txt", true)]
-    [Arguments("a/b/../../*/file.txt", "", "*", "file.txt", true)]
-    [Arguments("a/./b/*/c/*.txt", "a/b", "*/c", "*.txt", true)]
-    [Arguments("a//b//*/file.txt", "a/b", "*", "file.txt", true)]
-    [Arguments("a/b/**/", "a/b", "**", "*", true)]
-    [Arguments("./a/../**", "", "**", "*", true)]
+    [DataRow("a/b/file.txt/", "a/b/file.txt", "", "", false)]
+    [DataRow("a/b/./", "a/b", "", "", false)]
+    [DataRow("./*/file.txt", "", "*", "file.txt", true)]
+    [DataRow("../*/file.txt", "..", "*", "file.txt", true)]
+    [DataRow("a/./**/file.txt", "a", "**", "file.txt", true)]
+    [DataRow("a/../**/file.txt", "", "**", "file.txt", true)]
+    [DataRow("a/b/../../*/file.txt", "", "*", "file.txt", true)]
+    [DataRow("a/./b/*/c/*.txt", "a/b", "*/c", "*.txt", true)]
+    [DataRow("a//b//*/file.txt", "a/b", "*", "file.txt", true)]
+    [DataRow("a/b/**/", "a/b", "**", "*", true)]
+    [DataRow("./a/../**", "", "**", "*", true)]
     public void MSBuildSpecification_ParsesNonNormalizedPaths(
         string original,
         string expectedFixed,
@@ -143,14 +144,14 @@ public class MSBuildSpecificationTests
         spec.HasAnyWildCards.Should().Be(expectedAnyWildCards);
     }
 
-    [Test]
-    [Arguments("C:/path/file.txt", true, false)]
-    [Arguments("/absolute/path/file.txt", false, false)]
-    [Arguments("//server/share/file.txt", true, false)]
-    [Arguments("relative/path/file.txt", false, true)]
-    [Arguments("./relative/path/file.txt", false, true)]
-    [Arguments("../parent/path/file.txt", false, false)]
-    [Arguments("C:relative/file.txt", false, false)] // Drive-relative path
+    [TestMethod]
+    [DataRow("C:/path/file.txt", true, false)]
+    [DataRow("/absolute/path/file.txt", false, false)]
+    [DataRow("//server/share/file.txt", true, false)]
+    [DataRow("relative/path/file.txt", false, true)]
+    [DataRow("./relative/path/file.txt", false, true)]
+    [DataRow("../parent/path/file.txt", false, false)]
+    [DataRow("C:relative/file.txt", false, false)] // Drive-relative path
     public void MSBuildSpecification_SetsPathQualificationPropertiesCorrectly(
         string path,
         bool expectedIsFullyQualified,
@@ -169,13 +170,13 @@ public class MSBuildSpecificationTests
         spec.IsNestedRelative.Should().Be(expectedIsNestedRelative);
     }
 
-    [Test]
-    [Arguments("file.txt", false, true)]
-    [Arguments("folder/file.txt", false, true)]
-    [Arguments("../file.txt", false, false)]
-    [Arguments("../../file.txt", false, false)]
-    [Arguments("folder/../file.txt", false, true)] // Normalized doesn't contain '..'
-    [Arguments("C:/folder/file.txt", true, false)]
+    [TestMethod]
+    [DataRow("file.txt", false, true)]
+    [DataRow("folder/file.txt", false, true)]
+    [DataRow("../file.txt", false, false)]
+    [DataRow("../../file.txt", false, false)]
+    [DataRow("folder/../file.txt", false, true)] // Normalized doesn't contain '..'
+    [DataRow("C:/folder/file.txt", true, false)]
     public void MSBuildSpecification_HandlesSpecialPathsCorrectly(
         string path,
         bool expectedIsFullyQualified,
@@ -194,7 +195,7 @@ public class MSBuildSpecificationTests
         spec.IsNestedRelative.Should().Be(expectedIsNestedRelative);
     }
 
-    [Test]
+    [TestMethod]
     public void IsNestedRelative_ReturnsTrue_ForPathsBelow_CurrentDirectory()
     {
         // These paths are guaranteed to be below the current directory
@@ -203,7 +204,7 @@ public class MSBuildSpecificationTests
         new MSBuildSpecification("folder/file.txt").IsNestedRelative.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void IsNestedRelative_ReturnsFalse_ForPathsNotGuaranteedToBeBelow_CurrentDirectory()
     {
 #if NET
@@ -220,10 +221,10 @@ public class MSBuildSpecificationTests
         new MSBuildSpecification("/root/file.txt").IsNestedRelative.Should().BeFalse();
     }
 
-    [Test]
-    [Arguments("C:/file.txt", true)]
-    [Arguments("C:\\file.txt", true)]
-    [Arguments("\\\\server\\share\\file.txt", true)]
+    [TestMethod]
+    [DataRow("C:/file.txt", true)]
+    [DataRow("C:\\file.txt", true)]
+    [DataRow("\\\\server\\share\\file.txt", true)]
     public void IsFullyQualified_WindowsSpecificPaths(string path, bool expected)
     {
 #if NET
@@ -238,9 +239,9 @@ public class MSBuildSpecificationTests
     }
 
 #if NET
-    [Test]
-    [Arguments("/root/file.txt", true)]
-    [Arguments("~/file.txt", false)] // Not fully qualified, needs expansion
+    [TestMethod]
+    [DataRow("/root/file.txt", true)]
+    [DataRow("~/file.txt", false)] // Not fully qualified, needs expansion
     public void IsFullyQualified_UnixSpecificPaths(string path, bool expected)
     {
         if (OperatingSystem.IsWindows())
@@ -255,27 +256,27 @@ public class MSBuildSpecificationTests
 
     // TODO: Add Windows specific tests for UNCs.
 
-    [Test]
-    [Arguments("**", true)]
-    [Arguments("**/", true)]
-    [Arguments("/**/", true)]
-    [Arguments("a/**", true)]
-    [Arguments("a/**/", true)]
-    [Arguments("a/b/**", true)]
-    [Arguments("**/file.txt", true)]
-    [Arguments("a/**/file.txt", true)]
-    [Arguments("a/*/file.txt", false)]
-    [Arguments("a/?/file.txt", false)]
-    [Arguments("a/?/**/file.txt", false)]
-    [Arguments("a/b/*.txt", false)]
-    [Arguments("a/b/**/c", true)]
+    [TestMethod]
+    [DataRow("**", true)]
+    [DataRow("**/", true)]
+    [DataRow("/**/", true)]
+    [DataRow("a/**", true)]
+    [DataRow("a/**/", true)]
+    [DataRow("a/b/**", true)]
+    [DataRow("**/file.txt", true)]
+    [DataRow("a/**/file.txt", true)]
+    [DataRow("a/*/file.txt", false)]
+    [DataRow("a/?/file.txt", false)]
+    [DataRow("a/?/**/file.txt", false)]
+    [DataRow("a/b/*.txt", false)]
+    [DataRow("a/b/**/c", true)]
     public void SimpleRecursiveMatch_IsSetCorrectly(string pattern, bool expected)
     {
         MSBuildSpecification spec = new(pattern);
         spec.IsSimpleRecursiveMatch.Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void Unescape_ReturnsOriginalSegment_WhenNoEscapeCharacters()
     {
         StringSegment original = "file.txt";
@@ -283,21 +284,21 @@ public class MSBuildSpecificationTests
         result.Should().Be(original);
     }
 
-    [Test]
-    [Arguments("file%2A.txt", "file*.txt")]
-    [Arguments("file%3F.txt", "file?.txt")]
-    [Arguments("file%25.txt", "file%.txt")]
-    [Arguments("file%20name.txt", "file name.txt")]
-    [Arguments("file%invalidhex.txt", "file%invalidhex.txt")]
-    [Arguments("file%2", "file%2")]
-    [Arguments("file%", "file%")]
+    [TestMethod]
+    [DataRow("file%2A.txt", "file*.txt")]
+    [DataRow("file%3F.txt", "file?.txt")]
+    [DataRow("file%25.txt", "file%.txt")]
+    [DataRow("file%20name.txt", "file name.txt")]
+    [DataRow("file%invalidhex.txt", "file%invalidhex.txt")]
+    [DataRow("file%2", "file%2")]
+    [DataRow("file%", "file%")]
     public void Unescape_HandlesEscapeSequences(string escaped, string expected)
     {
         StringSegment result = MSBuildSpecification.Unescape(escaped);
         result.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_NoSeparators_ReturnsOriginalSegment()
     {
         StringSegment segment = new("HelloWorld");
@@ -306,7 +307,7 @@ public class MSBuildSpecificationTests
         result.Should().Be(segment);
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_SingleForwardSlash_NormalizesToPlatformSeparator()
     {
         StringSegment segment = new("Hello/World");
@@ -315,7 +316,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().Be(Sep("Hello/World"));
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_SingleBackslash_NormalizesToPlatformSeparator()
     {
         StringSegment segment = new(@"Hello\World");
@@ -324,7 +325,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().Be(Sep("Hello/World"));
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_ConsecutiveForwardSlashes_CollapsesToSingle()
     {
         StringSegment segment = new("Hello////World");
@@ -333,7 +334,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().Be(Sep("Hello/World"));
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_ConsecutiveBackslashes_CollapsesToSingle()
     {
         StringSegment segment = new(@"Hello\\\\World");
@@ -342,7 +343,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().Be(Sep("Hello/World"));
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_MixedSeparators_NormalizesCorrectly()
     {
         StringSegment segment = new(@"Hello\/\/\World");
@@ -351,7 +352,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().Be(Sep("Hello/World"));
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_LeadingSeparator_Preserved()
     {
         StringSegment segment = new("/Hello/World");
@@ -360,7 +361,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().Be(Sep("/Hello/World"));
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_TrailingSeparator_Preserved()
     {
         StringSegment segment = new("Hello/World/");
@@ -369,7 +370,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().Be(Sep("Hello/World/"));
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_MultipleSeparatorsInPath_AllNormalized()
     {
         StringSegment segment = new("path/to/some/file.txt");
@@ -378,7 +379,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().Be(Sep("path/to/some/file.txt"));
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_EmptySegment_ReturnsEmptySegment()
     {
         StringSegment segment = new("");
@@ -387,7 +388,7 @@ public class MSBuildSpecificationTests
         result.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_MixedConsecutiveSeparators()
     {
         StringSegment segment = new("Hello/\\//\\World");
@@ -395,7 +396,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().Be(Sep("Hello/World"));
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_LeadingWhitespace_IsTrimmed()
     {
         StringSegment segment = new("  Hello/World");
@@ -404,7 +405,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().Be(Sep("Hello/World"));
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_TrailingWhitespace_IsTrimmed()
     {
         StringSegment segment = new("Hello/World  ");
@@ -413,7 +414,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().Be(Sep("Hello/World"));
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_LeadingAndTrailingWhitespace_IsTrimmed()
     {
         StringSegment segment = new("  Hello/World  ");
@@ -422,7 +423,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().Be(Sep("Hello/World"));
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_WhitespaceBetweenSeparators_IsPreserved()
     {
         StringSegment segment = new("Hello/ World/Test");
@@ -431,7 +432,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().Be(Sep("Hello/ World/Test"));
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_OnlyWhitespace_ReturnsEmptySegment()
     {
         StringSegment segment = new("   ");
@@ -440,7 +441,7 @@ public class MSBuildSpecificationTests
         result.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_WhitespaceAroundSeparators_IsPreserved()
     {
         StringSegment segment = new("Hello / World \\ Test");
@@ -449,14 +450,14 @@ public class MSBuildSpecificationTests
         result.ToString().Should().Be(Sep("Hello / World / Test"));
     }
 
-    [Test]
+    [TestMethod]
     public void Split_EmptyString_ReturnsEmptyList()
     {
         ListBase<MSBuildSpecification> specs = MSBuildSpecification.Split("", ignoreCase: false);
         specs.Count.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Split_SingleSpec_ReturnsSingleItem()
     {
         ListBase<MSBuildSpecification> specs = MSBuildSpecification.Split("file.txt", ignoreCase: false);
@@ -464,7 +465,7 @@ public class MSBuildSpecificationTests
         specs[0].Normalized.ToString().Should().Be("file.txt");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_MultipleSpecs_ReturnsMultipleItems()
     {
         ListBase<MSBuildSpecification> specs = MSBuildSpecification.Split(
@@ -477,7 +478,7 @@ public class MSBuildSpecificationTests
         specs[2].Normalized.ToString().Should().Be(Paths.ChangeAlternateDirectorySeparators("docs/**"));
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithEmptySegments_IgnoresEmptySegments()
     {
         ListBase<MSBuildSpecification> specs = MSBuildSpecification.Split("file.txt;;*.cs;", ignoreCase: false);
@@ -486,7 +487,7 @@ public class MSBuildSpecificationTests
         specs[1].Normalized.ToString().Should().Be("*.cs");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WithDuplicates_SkipsDuplicates()
     {
         ListBase<MSBuildSpecification> specs = MSBuildSpecification.Split("file.txt;file.txt;*.cs", ignoreCase: false);
@@ -495,7 +496,7 @@ public class MSBuildSpecificationTests
         specs[1].Normalized.ToString().Should().Be("*.cs");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_CaseInsensitive_SkipsCaseInsensitiveDuplicates()
     {
         ListBase<MSBuildSpecification> specs = MSBuildSpecification.Split("file.txt;FILE.txt;*.cs", ignoreCase: true);
@@ -504,7 +505,7 @@ public class MSBuildSpecificationTests
         specs[1].Normalized.ToString().Should().Be("*.cs");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_EmptyInput_ReturnsEmptySegments()
     {
         StringSegment specs = new("");
@@ -512,7 +513,7 @@ public class MSBuildSpecificationTests
         splitSpecs.Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_SingleWildcardSpec_ReturnsWildcardSpec()
     {
         StringSegment specs = new("*.txt");
@@ -522,7 +523,7 @@ public class MSBuildSpecificationTests
         splitSpecs.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_SingleLiteralSpec_ReturnsLiteralSpec()
     {
         StringSegment specs = new("file.txt");
@@ -532,7 +533,7 @@ public class MSBuildSpecificationTests
         splitSpecs.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_MultipleWildcardSpecs_ReturnsFirstAndList()
     {
         StringSegment specs = new("*.txt;*.cs;*.md");
@@ -542,7 +543,7 @@ public class MSBuildSpecificationTests
         splitSpecs.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_MultipleLiteralSpecs_ReturnsFirstAndList()
     {
         StringSegment specs = new("file1.txt;file2.txt;file3.txt");
@@ -552,7 +553,7 @@ public class MSBuildSpecificationTests
         splitSpecs.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_MixedSpecs_SeparatesCorrectly()
     {
         StringSegment specs = new("file1.txt;*.cs;file2.txt;*.md");
@@ -562,7 +563,7 @@ public class MSBuildSpecificationTests
         splitSpecs.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_DuplicateSpecs_DeduplicatesSpecs()
     {
         StringSegment specs = new("file.txt;file.txt;*.cs;*.cs");
@@ -572,7 +573,7 @@ public class MSBuildSpecificationTests
         splitSpecs.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_CaseSensitiveDuplicates_WithIgnoreCaseFalse_KeepsBoth()
     {
         StringSegment specs = new("FILE.TXT;file.txt;*.CS;*.cs");
@@ -582,7 +583,7 @@ public class MSBuildSpecificationTests
         splitSpecs.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_CaseSensitiveDuplicates_WithIgnoreCaseTrue_DeduplicatesSpecs()
     {
         StringSegment specs = new("FILE.TXT;file.txt;*.CS;*.cs");
@@ -592,7 +593,7 @@ public class MSBuildSpecificationTests
         splitSpecs.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_DifferentSeparators_NormalizesSeparators()
     {
         StringSegment specs = new($"path/to/file.txt;path{Path.DirectorySeparatorChar}to{Path.DirectorySeparatorChar}other.txt");
@@ -607,7 +608,7 @@ public class MSBuildSpecificationTests
         splitSpecs.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_ConsecutiveSeparators_CollapsesToSingle()
     {
         StringSegment specs = new("path//to////file.txt");
@@ -617,7 +618,7 @@ public class MSBuildSpecificationTests
         splitSpecs.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_EmptySegments_SkipsEmptySegments()
     {
         StringSegment specs = new(";file.txt;;*.cs;");
@@ -627,7 +628,7 @@ public class MSBuildSpecificationTests
         splitSpecs.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_OnlySemicolons_ReturnsEmptySegments()
     {
         StringSegment specs = new(";;;;");
@@ -637,7 +638,7 @@ public class MSBuildSpecificationTests
         splitSpecs.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_MultipleWildcardTypes()
     {
         StringSegment specs = new("file?.txt;dir*/file.txt;**/*.cs");
@@ -686,8 +687,8 @@ public class MSBuildSpecificationTests
             });
     }
 
-    [Test]
-    [MethodDataSource(nameof(SplitData))]
+    [TestMethod]
+    [DynamicData(nameof(SplitData))]
     public void Split_ReturnsExpectedResults(string input, bool ignoreCase, string[] expected)
     {
         ListBase<MSBuildSpecification> specs = MSBuildSpecification.Split(input, ignoreCase: ignoreCase);
@@ -698,7 +699,7 @@ public class MSBuildSpecificationTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void SplitWithErrors_WhitespaceOnlySegment_ReturnsErrorResult()
     {
         // A whitespace-only segment normalizes to empty; the bare Split overload silently drops these
@@ -732,7 +733,7 @@ public class MSBuildSpecificationTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void SplitWithErrors_NoErrors_ReturnsParsedResults()
     {
         ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(
@@ -754,7 +755,7 @@ public class MSBuildSpecificationTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void SplitWithErrors_EmptyInput_ReturnsEmptyList()
     {
         ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors("", ignoreCase: false);
@@ -768,7 +769,7 @@ public class MSBuildSpecificationTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void Split_WhitespaceOnlySegment_SilentlyDropped()
     {
         // Documents back-compat: the original Split overload continues to silently drop empty-normalize
@@ -786,9 +787,9 @@ public class MSBuildSpecificationTests
         }
     }
 
-    [Test]
-    [Arguments("foo\0bar")]                 // embedded null character
-    [Arguments("foo\0/bar.cs")]
+    [TestMethod]
+    [DataRow("foo\0bar")]                 // embedded null character
+    [DataRow("foo\0/bar.cs")]
     public void SplitWithErrors_NullCharacter_ReturnsErrorResult(string spec)
     {
         ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(spec, ignoreCase: false);
@@ -804,10 +805,10 @@ public class MSBuildSpecificationTests
         }
     }
 
-    [Test]
-    [Arguments("foo.../bar.cs")]
-    [Arguments(".../bar.cs")]
-    [Arguments("foo/....cs")]
+    [TestMethod]
+    [DataRow("foo.../bar.cs")]
+    [DataRow(".../bar.cs")]
+    [DataRow("foo/....cs")]
     public void SplitWithErrors_TripleDotSequence_ReturnsErrorResult(string spec)
     {
         ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(spec, ignoreCase: false);
@@ -823,12 +824,12 @@ public class MSBuildSpecificationTests
         }
     }
 
-    [Test]
-    [Arguments("a**b")]                     // ** between non-separator chars
-    [Arguments("foo/a**b/baz")]             // ** between non-separator chars in a path segment
-    [Arguments("foo/**bar")]                // ** with no separator to the right
-    [Arguments("foo/bar**")]                // ** at end with no separator to the left
-    [Arguments("*.cs**")]                   // trailing ** glued to a filename
+    [TestMethod]
+    [DataRow("a**b")]                     // ** between non-separator chars
+    [DataRow("foo/a**b/baz")]             // ** between non-separator chars in a path segment
+    [DataRow("foo/**bar")]                // ** with no separator to the right
+    [DataRow("foo/bar**")]                // ** at end with no separator to the left
+    [DataRow("*.cs**")]                   // trailing ** glued to a filename
     public void SplitWithErrors_MisplacedDoubleStar_ReturnsErrorResult(string spec)
     {
         ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(spec, ignoreCase: false);
@@ -844,12 +845,12 @@ public class MSBuildSpecificationTests
         }
     }
 
-    [Test]
-    [Arguments("**")]                       // standalone
-    [Arguments("**/foo")]                   // recursive followed by separator
-    [Arguments("foo/**")]                   // recursive at end after separator
-    [Arguments("foo/**/bar")]               // recursive between separators
-    [Arguments("foo/**/")]                  // recursive followed by trailing separator
+    [TestMethod]
+    [DataRow("**")]                       // standalone
+    [DataRow("**/foo")]                   // recursive followed by separator
+    [DataRow("foo/**")]                   // recursive at end after separator
+    [DataRow("foo/**/bar")]               // recursive between separators
+    [DataRow("foo/**/")]                  // recursive followed by trailing separator
     public void SplitWithErrors_LegalDoubleStar_ReturnsParsedResult(string spec)
     {
         ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(spec, ignoreCase: false);
@@ -864,24 +865,24 @@ public class MSBuildSpecificationTests
         }
     }
 
-    [Test]
-    [Arguments("foo\0bar")]
-    [Arguments("foo.../bar.cs")]
-    [Arguments("a**b")]
-    [Arguments("   ")]                      // normalizes to empty
+    [TestMethod]
+    [DataRow("foo\0bar")]
+    [DataRow("foo.../bar.cs")]
+    [DataRow("a**b")]
+    [DataRow("   ")]                      // normalizes to empty
     public void NormalizeAndValidate_IllegalSpec_ReturnsErrorReason(string spec)
     {
         _ = MSBuildSpecification.NormalizeAndValidate(spec, out string? error);
         error.Should().NotBeNullOrEmpty();
     }
 
-    [Test]
-    [Arguments("file.txt")]
-    [Arguments("**")]
-    [Arguments("**/*.cs")]
-    [Arguments("foo/**/bar")]
-    [Arguments("./foo/bar")]
-    [Arguments("../foo/bar")]
+    [TestMethod]
+    [DataRow("file.txt")]
+    [DataRow("**")]
+    [DataRow("**/*.cs")]
+    [DataRow("foo/**/bar")]
+    [DataRow("./foo/bar")]
+    [DataRow("../foo/bar")]
     public void NormalizeAndValidate_LegalSpec_ReturnsNullReason(string spec)
     {
         StringSegment normalized = MSBuildSpecification.NormalizeAndValidate(spec, out string? error);
@@ -889,7 +890,7 @@ public class MSBuildSpecificationTests
         normalized.IsEmpty.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void UnescapeSegment_NoEscapeCharacters_ReturnsSameSegment()
     {
         string original = "HelloWorld";
@@ -899,7 +900,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().BeSameAs(original);
     }
 
-    [Test]
+    [TestMethod]
     public void UnescapeSegment_ValidEscapeSequences_Unescapes()
     {
         StringSegment segment = new("Hello%20World%2A%3F%25");
@@ -908,7 +909,7 @@ public class MSBuildSpecificationTests
         result.Should().Be("Hello World*?%");
     }
 
-    [Test]
+    [TestMethod]
     public void UnescapeSegment_InvalidEscapeSequences_LeftAsIs()
     {
         string original = "Hello%2World%G%";
@@ -918,7 +919,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().BeSameAs(original);
     }
 
-    [Test]
+    [TestMethod]
     public void UnescapeSegment_EmptyString_ReturnsEmptySegment()
     {
         StringSegment segment = new(string.Empty);
@@ -927,7 +928,7 @@ public class MSBuildSpecificationTests
         result.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void UnescapeSegment_IncompleteEscapeSequence_PreservesOriginal()
     {
         string original = "Hello%World";
@@ -937,7 +938,7 @@ public class MSBuildSpecificationTests
         result.ToString().Should().BeSameAs(original);
     }
 
-    [Test]
+    [TestMethod]
     public void UnescapeSegment_EscapeSequencesAtBoundaries_Unescapes()
     {
         StringSegment segment = new("%20Hello%20");
@@ -946,7 +947,7 @@ public class MSBuildSpecificationTests
         result.Should().Be(" Hello ");
     }
 
-    [Test]
+    [TestMethod]
     public void UnescapeSegment_EscapeSequenceWithControlCharacters_Unescapes()
     {
         StringSegment segment = new("Hello%0AWorld%09Tab");
@@ -955,7 +956,7 @@ public class MSBuildSpecificationTests
         result.Should().Be("Hello\nWorld\tTab");
     }
 
-    [Test]
+    [TestMethod]
     public void UnescapeSegment_LongSegmentWithEscapes_Unescapes()
     {
         // Create a segment longer than 256 chars with escapes to test buffer handling
@@ -967,7 +968,7 @@ public class MSBuildSpecificationTests
     }
 
 
-    [Test]
+    [TestMethod]
     public void Equals_SameOriginalString_ReturnsTrue()
     {
         MSBuildSpecification spec1 = new("file.txt");
@@ -978,7 +979,7 @@ public class MSBuildSpecificationTests
         spec1.Equals(new StringSegment("file.txt")).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_DifferentCase_ReturnsTrue()
     {
         MSBuildSpecification spec1 = new("file.txt");
@@ -988,7 +989,7 @@ public class MSBuildSpecificationTests
         spec1.Equals("FILE.TXT").Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_DifferentPaths_ReturnsFalse()
     {
         MSBuildSpecification spec1 = new("file.txt");
@@ -998,7 +999,7 @@ public class MSBuildSpecificationTests
         spec1.Equals("file.cs").Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void GetHashCode_SameOriginalString_ReturnsSameHashCode()
     {
         MSBuildSpecification spec1 = new("file.txt");
@@ -1007,7 +1008,7 @@ public class MSBuildSpecificationTests
         spec1.GetHashCode().Should().Be(spec2.GetHashCode());
     }
 
-    [Test]
+    [TestMethod]
     public void ImplicitConversions_WorkAsExpected()
     {
         MSBuildSpecification specFromString = "file.txt";
@@ -1025,51 +1026,51 @@ public class MSBuildSpecificationTests
 
     // ---- Equals branch coverage ----
 
-    [Test]
+    [TestMethod]
     public void Equals_Object_MSBuildSpecification_True()
     {
         object spec = new MSBuildSpecification("file.txt");
         new MSBuildSpecification("FILE.txt").Equals(spec).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_Object_String_True()
     {
         object str = "FILE.txt";
         new MSBuildSpecification("file.txt").Equals(str).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_Object_Null_False()
     {
         new MSBuildSpecification("file.txt").Equals((object?)null).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_Object_OtherType_False()
     {
         new MSBuildSpecification("file.txt").Equals(42).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_String_NullString_False()
     {
         new MSBuildSpecification("file.txt").Equals((string?)null).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_String_DifferentCase_True()
     {
         new MSBuildSpecification("file.txt").Equals("FILE.TXT").Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_MSBuildSpecification_Null_False()
     {
         new MSBuildSpecification("file.txt").Equals((MSBuildSpecification?)null).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Equals_MSBuildSpecification_DifferentCase_True()
     {
         new MSBuildSpecification("file.txt").Equals(new MSBuildSpecification("FILE.TXT")).Should().BeTrue();

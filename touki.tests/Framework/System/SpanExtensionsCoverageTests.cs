@@ -9,11 +9,12 @@ namespace Framework.System;
 ///  <c>SpanExtensions.Replace.cs</c> and <c>SpanExtensions.InRange.cs</c>,
 ///  plus a few small helpers that were previously uncovered.
 /// </summary>
+[TestClass]
 public class SpanExtensionsCoverageTests
 {
     // ---------- Replace<T>(this Span<T>, T, T) primitive specializations ----------
 
-    [Test]
+    [TestMethod]
     public void Replace_Byte_ReplacesAllOccurrences()
     {
         byte[] data = [1, 2, 3, 1, 2, 3, 1, 2, 3, 1];
@@ -22,7 +23,7 @@ public class SpanExtensionsCoverageTests
         span.ToArray().Should().Equal((byte)1, (byte)9, (byte)3, (byte)1, (byte)9, (byte)3, (byte)1, (byte)9, (byte)3, (byte)1);
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_Byte_AllSame_ReplacesEverything()
     {
         byte[] data = [5, 5, 5, 5, 5, 5, 5, 5];
@@ -31,7 +32,7 @@ public class SpanExtensionsCoverageTests
         span.ToArray().Should().AllSatisfy(b => b.Should().Be(0));
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_Byte_Empty_NoOp()
     {
         byte[] data = [];
@@ -40,7 +41,7 @@ public class SpanExtensionsCoverageTests
         span.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_SByte_ReplacesAllOccurrences()
     {
         sbyte[] data = [-1, 2, -1, 4, -1, 6, -1, 8, -1, 10];
@@ -52,7 +53,7 @@ public class SpanExtensionsCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_Short_ReplacesAllOccurrences()
     {
         short[] data = [-1000, 2, -1000, 4, -1000, 6, -1000, 8, -1000, 10];
@@ -64,7 +65,7 @@ public class SpanExtensionsCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_UShort_ReplacesAllOccurrences()
     {
         ushort[] data = [1000, 2, 1000, 4, 1000, 6, 1000, 8, 1000, 10];
@@ -73,7 +74,7 @@ public class SpanExtensionsCoverageTests
         span.ToArray().Should().Equal((ushort)0, (ushort)2, (ushort)0, (ushort)4, (ushort)0, (ushort)6, (ushort)0, (ushort)8, (ushort)0, (ushort)10);
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_Char_ReplacesAllOccurrencesIncludingTailRemainder()
     {
         // length not a multiple of 4 to exercise the tail loop
@@ -83,7 +84,7 @@ public class SpanExtensionsCoverageTests
         new string(data).Should().Be("a_a_a_a_a_a");
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_Byte_LongSpan_ExercisesUnrolledLoop()
     {
         byte[] data = new byte[33];
@@ -103,7 +104,7 @@ public class SpanExtensionsCoverageTests
 
     // ---------- Replace(ReadOnlySpan<T>, Span<T>, T, T) primitive specializations ----------
 
-    [Test]    public void Replace_ReadOnly_SByte_CopiesAndReplaces()
+    [TestMethod]    public void Replace_ReadOnly_SByte_CopiesAndReplaces()
     {
         sbyte[] sourceArray = [-1, 2, -1, 4, -1];
         ReadOnlySpan<sbyte> source = sourceArray;
@@ -115,7 +116,7 @@ public class SpanExtensionsCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_ReadOnly_Short_CopiesAndReplaces()
     {
         short[] sourceArray = [-1, 2, -1, 4, -1, 6, -1];
@@ -128,7 +129,7 @@ public class SpanExtensionsCoverageTests
         }
     }
 
-    [Test]    public void Replace_ReadOnly_Byte_CopiesAndReplaces()
+    [TestMethod]    public void Replace_ReadOnly_Byte_CopiesAndReplaces()
     {
         ReadOnlySpan<byte> source = [ 1, 2, 3, 1, 2, 3, 1, 2, 3, 1 ];
         Span<byte> dest = stackalloc byte[10];
@@ -136,7 +137,7 @@ public class SpanExtensionsCoverageTests
         dest.ToArray().Should().Equal((byte)1, (byte)9, (byte)3, (byte)1, (byte)9, (byte)3, (byte)1, (byte)9, (byte)3, (byte)1);
     }
 
-    [Test]
+    [TestMethod]
 
     public void Replace_ReadOnly_Char_CopiesAndReplaces()
     {
@@ -146,7 +147,7 @@ public class SpanExtensionsCoverageTests
         dest.ToString().Should().Be("a_b_c_d_e_f");
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_ReadOnly_Byte_LongSpan_ExercisesUnrolledLoop()
     {
         byte[] sourceArray = new byte[33];
@@ -165,7 +166,7 @@ public class SpanExtensionsCoverageTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_ReadOnly_DestinationTooShort_Throws()
     {
         byte[] data = [1, 2, 3, 4, 5];
@@ -181,7 +182,7 @@ public class SpanExtensionsCoverageTests
         action.Should().Throw<ArgumentException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_ReadOnly_OldEqualsNew_CopiesUnchanged()
     {
         ReadOnlySpan<byte> source = [ 1, 2, 3, 4, 5 ];
@@ -192,7 +193,7 @@ public class SpanExtensionsCoverageTests
 
     // ---------- IndexOfAnyInRange specializations (sbyte / short / ushort / int / uint / ulong) ----------
 
-    [Test]
+    [TestMethod]
     public void IndexOfAnyInRange_SByte_FindsFirst()
     {
         sbyte[] data = [-100, -50, 0, 50, 100];
@@ -200,7 +201,7 @@ public class SpanExtensionsCoverageTests
         ((ReadOnlySpan<sbyte>)data).IndexOfAnyInRange((sbyte)127, (sbyte)127).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOfAnyInRange_Short_FindsFirst()
     {
         short[] data = [-1000, -500, 0, 500, 1000];
@@ -208,7 +209,7 @@ public class SpanExtensionsCoverageTests
         ((ReadOnlySpan<short>)data).IndexOfAnyInRange((short)2000, (short)3000).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOfAnyInRange_UShort_FindsFirst()
     {
         ushort[] data = [1000, 2000, 3000, 4000];
@@ -216,7 +217,7 @@ public class SpanExtensionsCoverageTests
         ((ReadOnlySpan<ushort>)data).IndexOfAnyInRange((ushort)10000, (ushort)20000).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOfAnyInRange_Int_FindsFirst()
     {
         int[] data = [-1000, -500, 0, 500, 1000];
@@ -224,7 +225,7 @@ public class SpanExtensionsCoverageTests
         ((ReadOnlySpan<int>)data).IndexOfAnyInRange(2000, 3000).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOfAnyInRange_UInt_FindsFirst()
     {
         uint[] data = [1, 100, 200, 300, 400];
@@ -232,7 +233,7 @@ public class SpanExtensionsCoverageTests
         ((ReadOnlySpan<uint>)data).IndexOfAnyInRange((uint)1000, (uint)2000).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOfAnyInRange_ULong_FindsFirst()
     {
         ulong[] data = [1, 100, 200, 300, 400];
@@ -240,28 +241,28 @@ public class SpanExtensionsCoverageTests
         ((ReadOnlySpan<ulong>)data).IndexOfAnyInRange((ulong)1000, (ulong)2000).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOfAnyExceptInRange_SByte_FindsFirst()
     {
         sbyte[] data = [1, 2, 3, -50, 4, 5];
         ((ReadOnlySpan<sbyte>)data).IndexOfAnyExceptInRange((sbyte)1, (sbyte)10).Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOfAnyExceptInRange_UShort_FindsFirst()
     {
         ushort[] data = [10, 20, 30, 5000, 40];
         ((ReadOnlySpan<ushort>)data).IndexOfAnyExceptInRange((ushort)0, (ushort)100).Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOfAnyExceptInRange_Int_FindsFirst()
     {
         int[] data = [10, 20, 30, -5000, 40];
         ((ReadOnlySpan<int>)data).IndexOfAnyExceptInRange(0, 100).Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOfAnyExceptInRange_ULong_FindsFirst()
     {
         ulong[] data = [10, 20, 30, 50000, 40];
@@ -270,7 +271,7 @@ public class SpanExtensionsCoverageTests
 
     // ---------- LastIndexOfAnyInRange specializations ----------
 
-    [Test]
+    [TestMethod]
     public void LastIndexOfAnyInRange_Generic_FindsLast()
     {
         // string is IComparable<string> but not specialized → exercises the fallback.
@@ -279,7 +280,7 @@ public class SpanExtensionsCoverageTests
         ((ReadOnlySpan<string>)data).LastIndexOfAnyInRange("0", "9").Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void LastIndexOfAnyInRange_Int_FindsLast()
     {
         int[] data = [10, 20, 30, 40, 50];
@@ -287,21 +288,21 @@ public class SpanExtensionsCoverageTests
         ((ReadOnlySpan<int>)data).LastIndexOfAnyInRange(100, 200).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void LastIndexOfAnyExceptInRange_Int_FindsLast()
     {
         int[] data = [1, 2, 3, 999, 4, 5];
         ((ReadOnlySpan<int>)data).LastIndexOfAnyExceptInRange(0, 10).Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void LastIndexOfAnyInRange_Byte_NoMatch()
     {
         byte[] data = [1, 2, 3, 4];
         ((ReadOnlySpan<byte>)data).LastIndexOfAnyInRange((byte)100, (byte)200).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void LastIndexOfAnyInRange_Char_NoMatch()
     {
         // Exercises the no-match return in the char specialization.
@@ -309,7 +310,7 @@ public class SpanExtensionsCoverageTests
         ((ReadOnlySpan<char>)data).LastIndexOfAnyInRange('0', '9').Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOfAnyInRange_Long_NoMatch()
     {
         // Exercises the no-match return in the long specialization.
@@ -317,7 +318,7 @@ public class SpanExtensionsCoverageTests
         ((ReadOnlySpan<long>)data).IndexOfAnyInRange(100L, 200L).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void IndexOfAnyInRange_StringFallback_NoMatch_ReturnsMinusOne()
     {
         // Exercises the no-match return in the generic IComparable fallback.
@@ -327,7 +328,7 @@ public class SpanExtensionsCoverageTests
 
     // ---------- Span<T> overloads (just delegate to ReadOnlySpan) ----------
 
-    [Test]
+    [TestMethod]
     public void IndexOfAnyInRange_SpanOverload_Int()
     {
         Span<int> data = stackalloc int[] { -10, 0, 5, 10, 100 };
@@ -335,7 +336,7 @@ public class SpanExtensionsCoverageTests
         data.IndexOfAnyExceptInRange(-100, 100).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void LastIndexOfAnyInRange_SpanOverload_Int()
     {
         Span<int> data = stackalloc int[] { 1, 5, 10, 5, 1 };
@@ -343,7 +344,7 @@ public class SpanExtensionsCoverageTests
         data.LastIndexOfAnyExceptInRange(4, 6).Should().Be(4);
     }
 
-    [Test]
+    [TestMethod]
     public void ContainsAnyInRange_SpanOverload_Byte()
     {
         Span<byte> data = stackalloc byte[] { 1, 2, 3, 50, 4 };

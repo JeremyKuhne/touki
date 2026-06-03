@@ -8,22 +8,22 @@ public partial class GlobSpecificationTests
 {
     // --- FileSystemGlobbing dialect ---
 
-    [Test]
+    [TestMethod]
     // FileSystemGlobbing has implicit globstar (no opt-in needed), no character classes,
     // and no escape character (`\` is literal).
-    [Arguments("*.cs", "Foo.cs", true)]
-    [Arguments("**/*.cs", "Foo.cs", true)]
-    [Arguments("**/*.cs", "src/Foo.cs", true)]
-    [Arguments("**/*.cs", "a/b/c/Foo.cs", true)]
-    [Arguments("a/**/b", "a/b", true)]
-    [Arguments("a/**/b", "a/x/y/b", true)]
-    [Arguments("a/?/b", "a/x/b", true)]
-    [Arguments("a/?/b", "a//b", false)]
+    [DataRow("*.cs", "Foo.cs", true)]
+    [DataRow("**/*.cs", "Foo.cs", true)]
+    [DataRow("**/*.cs", "src/Foo.cs", true)]
+    [DataRow("**/*.cs", "a/b/c/Foo.cs", true)]
+    [DataRow("a/**/b", "a/b", true)]
+    [DataRow("a/**/b", "a/x/y/b", true)]
+    [DataRow("a/?/b", "a/x/b", true)]
+    [DataRow("a/?/b", "a//b", false)]
     public void IsMatch_FileSystemGlobbing_BasicCases(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing)
             .IsMatch(input).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     public void Compile_FileSystemGlobbing_BracketsAreLiteral()
     {
         // FileSystemGlobbing does not support character classes; '[' and ']' are literal
@@ -33,7 +33,7 @@ public partial class GlobSpecificationTests
         matcher.IsMatch("a.txt").Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Compile_FileSystemGlobbing_BackslashNormalizedToSeparator()
     {
         // FileSystemGlobbing has no escape character. At compile time the factory
@@ -46,7 +46,7 @@ public partial class GlobSpecificationTests
         matcher.IsMatch("\\foo").Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Compile_FileSystemGlobbing_SeparatorIsForwardSlash() =>
         GlobSpecification.Compile("*", GlobDialect.FileSystemGlobbing).Separator.Should().Be('/');
 }

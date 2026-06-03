@@ -7,6 +7,7 @@ namespace Touki.Text;
 /// <summary>
 /// Tests for ValueStringBuilder enum formatting with all integer backing types.
 /// </summary>
+[TestClass]
 public unsafe class ValueStringBuilderEnumTests
 {
     // Enum definitions for all integer backing types
@@ -155,7 +156,7 @@ public unsafe class ValueStringBuilderEnumTests
         All = Flag1 | Flag2 | Flag4
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumBackedByAllIntegerTypes()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
@@ -203,7 +204,7 @@ public unsafe class ValueStringBuilderEnumTests
         builder.ToString().Should().Be("ULong: Max");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_UndefinedEnumValues()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
@@ -233,7 +234,7 @@ public unsafe class ValueStringBuilderEnumTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_FlagsEnumAllBackingTypes()
     {
         using ValueStringBuilder builder = new(stackalloc char[300]);
@@ -265,7 +266,7 @@ public unsafe class ValueStringBuilderEnumTests
         builder.ToString().Should().Be("ZeroFlags: None, None, None");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumFormattingConsistency()
     {
         ValueStringBuilder builder = new(stackalloc char[100]);
@@ -315,7 +316,7 @@ public unsafe class ValueStringBuilderEnumTests
         builder.Clear();
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumFormatsAllBackingTypes()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
@@ -342,7 +343,7 @@ public unsafe class ValueStringBuilderEnumTests
         builder.ToString().Should().Be("General: Positive, Value");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumExtremeValues()
     {
         using ValueStringBuilder builder = new(stackalloc char[300]);

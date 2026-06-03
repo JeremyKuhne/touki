@@ -6,9 +6,10 @@ namespace Touki;
 
 #pragma warning disable CA5394 // Random is insecure - test only
 
+[TestClass]
 public class RandomExtensionsTests
 {
-    [Test]
+    [TestMethod]
     public void NextBytes_ExactRandomType_FillsBuffer()
     {
         Random r = new(42);
@@ -28,7 +29,7 @@ public class RandomExtensionsTests
         anyNonZero.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void NextBytes_ExactRandomType_DeterministicForSameSeed()
     {
         // Two Random instances with the same seed must fill spans identically.
@@ -43,7 +44,7 @@ public class RandomExtensionsTests
         a.SequenceEqual(b).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void NextBytes_EmptySpan_NoOp()
     {
         Random r = new(1);
@@ -51,7 +52,7 @@ public class RandomExtensionsTests
     }
 
 #if NETFRAMEWORK
-    [Test]
+    [TestMethod]
     public void NextBytes_NullRandom_Throws()
     {
         Random r = null!;
@@ -64,7 +65,7 @@ public class RandomExtensionsTests
         a.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void NextBytes_DerivedType_DispatchesToOverride()
     {
         // The polyfill forwards subclass calls through Random.NextBytes(byte[]) so any

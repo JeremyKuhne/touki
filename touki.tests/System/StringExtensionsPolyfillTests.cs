@@ -4,39 +4,40 @@
 
 namespace System;
 
+[TestClass]
 public class StringExtensionsPolyfillTests
 {
     // ---- Contains(char) / Contains(char, StringComparison) / Contains(string, StringComparison) ----
 
-    [Test]
-    [Arguments("Hello", 'H', true)]
-    [Arguments("Hello", 'l', true)]
-    [Arguments("Hello", 'z', false)]
-    [Arguments("", 'a', false)]
+    [TestMethod]
+    [DataRow("Hello", 'H', true)]
+    [DataRow("Hello", 'l', true)]
+    [DataRow("Hello", 'z', false)]
+    [DataRow("", 'a', false)]
     public void Contains_Char_ReturnsExpected(string source, char value, bool expected)
     {
         source.Contains(value).Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void Contains_Char_OrdinalIgnoreCase_AcceptsAnyCase()
     {
         "Hello".Contains('h', StringComparison.OrdinalIgnoreCase).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Contains_Char_Ordinal_RejectsDifferentCase()
     {
         "Hello".Contains('h', StringComparison.Ordinal).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Contains_String_OrdinalIgnoreCase_AcceptsAnyCase()
     {
         "Hello World".Contains("HELLO", StringComparison.OrdinalIgnoreCase).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Contains_String_NullValue_Throws()
     {
         Action action = () => "x".Contains(null!, StringComparison.Ordinal);
@@ -45,21 +46,21 @@ public class StringExtensionsPolyfillTests
 
     // ---- StartsWith / EndsWith char ----
 
-    [Test]
-    [Arguments("Hello", 'H', true)]
-    [Arguments("Hello", 'h', false)]
-    [Arguments("Hello", 'e', false)]
-    [Arguments("", 'a', false)]
+    [TestMethod]
+    [DataRow("Hello", 'H', true)]
+    [DataRow("Hello", 'h', false)]
+    [DataRow("Hello", 'e', false)]
+    [DataRow("", 'a', false)]
     public void StartsWith_Char_ReturnsExpected(string source, char value, bool expected)
     {
         source.StartsWith(value).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments("Hello", 'o', true)]
-    [Arguments("Hello", 'O', false)]
-    [Arguments("Hello", 'l', false)]
-    [Arguments("", 'a', false)]
+    [TestMethod]
+    [DataRow("Hello", 'o', true)]
+    [DataRow("Hello", 'O', false)]
+    [DataRow("Hello", 'l', false)]
+    [DataRow("", 'a', false)]
     public void EndsWith_Char_ReturnsExpected(string source, char value, bool expected)
     {
         source.EndsWith(value).Should().Be(expected);
@@ -67,7 +68,7 @@ public class StringExtensionsPolyfillTests
 
     // ---- TryCopyTo ----
 
-    [Test]
+    [TestMethod]
     public void TryCopyTo_DestinationLargeEnough_CopiesAndReturnsTrue()
     {
         Span<char> dest = new char[10];
@@ -78,7 +79,7 @@ public class StringExtensionsPolyfillTests
         dest[2].Should().Be('c');
     }
 
-    [Test]
+    [TestMethod]
     public void TryCopyTo_DestinationTooSmall_ReturnsFalse()
     {
         Span<char> dest = new char[2];
@@ -86,7 +87,7 @@ public class StringExtensionsPolyfillTests
         ok.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void TryCopyTo_EmptySource_AlwaysSucceeds()
     {
         Span<char> dest = [];
@@ -95,7 +96,7 @@ public class StringExtensionsPolyfillTests
 
     // ---- GetHashCode(StringComparison) ----
 
-    [Test]
+    [TestMethod]
     public void GetHashCode_StringComparison_OrdinalIgnoreCase_SameForCaseVariants()
     {
         int a = "Hello".GetHashCode(StringComparison.OrdinalIgnoreCase);
@@ -103,7 +104,7 @@ public class StringExtensionsPolyfillTests
         a.Should().Be(b);
     }
 
-    [Test]
+    [TestMethod]
     public void GetHashCode_StringComparison_Ordinal_DifferentForCaseVariants()
     {
         int a = "Hello".GetHashCode(StringComparison.Ordinal);
@@ -111,26 +112,26 @@ public class StringExtensionsPolyfillTests
         a.Should().NotBe(b);
     }
 
-    [Test]
-    [Arguments(StringComparison.CurrentCulture)]
-    [Arguments(StringComparison.CurrentCultureIgnoreCase)]
-    [Arguments(StringComparison.InvariantCulture)]
-    [Arguments(StringComparison.InvariantCultureIgnoreCase)]
-    [Arguments(StringComparison.Ordinal)]
-    [Arguments(StringComparison.OrdinalIgnoreCase)]
+    [TestMethod]
+    [DataRow(StringComparison.CurrentCulture)]
+    [DataRow(StringComparison.CurrentCultureIgnoreCase)]
+    [DataRow(StringComparison.InvariantCulture)]
+    [DataRow(StringComparison.InvariantCultureIgnoreCase)]
+    [DataRow(StringComparison.Ordinal)]
+    [DataRow(StringComparison.OrdinalIgnoreCase)]
     public void GetHashCode_StringComparison_AllSupportedComparisons_Returns(StringComparison comparison)
     {
         // Just exercises every branch of ComparerForComparison.
         "Hello".GetHashCode(comparison).Should().Be("Hello".GetHashCode(comparison));
     }
 
-    [Test]
-    [Arguments(StringComparison.CurrentCulture)]
-    [Arguments(StringComparison.CurrentCultureIgnoreCase)]
-    [Arguments(StringComparison.InvariantCulture)]
-    [Arguments(StringComparison.InvariantCultureIgnoreCase)]
-    [Arguments(StringComparison.Ordinal)]
-    [Arguments(StringComparison.OrdinalIgnoreCase)]
+    [TestMethod]
+    [DataRow(StringComparison.CurrentCulture)]
+    [DataRow(StringComparison.CurrentCultureIgnoreCase)]
+    [DataRow(StringComparison.InvariantCulture)]
+    [DataRow(StringComparison.InvariantCultureIgnoreCase)]
+    [DataRow(StringComparison.Ordinal)]
+    [DataRow(StringComparison.OrdinalIgnoreCase)]
     public void Contains_Char_AllSupportedComparisons_FindsMatch(StringComparison comparison)
     {
         // Exercises every branch of ComparisonToCompareInfo.
@@ -139,38 +140,38 @@ public class StringExtensionsPolyfillTests
 
     // ---- Replace(string, string?, StringComparison) ----
 
-    [Test]
+    [TestMethod]
     public void Replace_StringComparison_Ordinal_ExactMatch()
     {
         "abcabc".Replace("ab", "X", StringComparison.Ordinal).Should().Be("XcXc");
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_StringComparison_OrdinalIgnoreCase_AnyCase()
     {
         "abcAbC".Replace("AB", "X", StringComparison.OrdinalIgnoreCase).Should().Be("XcXC");
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_StringComparison_NullNewValue_TreatedAsEmpty()
     {
         "abcabc".Replace("ab", null, StringComparison.OrdinalIgnoreCase).Should().Be("cc");
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_StringComparison_NoMatch_ReturnsOriginal()
     {
         "abc".Replace("z", "X", StringComparison.Ordinal).Should().Be("abc");
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_StringComparison_NullOldValue_Throws()
     {
         Action action = () => "abc".Replace(null!, "x", StringComparison.Ordinal);
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_StringComparison_EmptyOldValue_Throws()
     {
         Action action = () => "abc".Replace("", "x", StringComparison.Ordinal);
@@ -179,34 +180,34 @@ public class StringExtensionsPolyfillTests
 
     // ---- ReplaceLineEndings ----
 
-    [Test]
-    [Arguments("a\nb", "a|b")]
-    [Arguments("a\rb", "a|b")]
-    [Arguments("a\r\nb", "a|b")]
-    [Arguments("a\u0085b", "a|b")]
-    [Arguments("a\u2028b", "a|b")]
-    [Arguments("a\u2029b", "a|b")]
-    [Arguments("a\fb", "a|b")]
-    [Arguments("no line endings", "no line endings")]
+    [TestMethod]
+    [DataRow("a\nb", "a|b")]
+    [DataRow("a\rb", "a|b")]
+    [DataRow("a\r\nb", "a|b")]
+    [DataRow("a\u0085b", "a|b")]
+    [DataRow("a\u2028b", "a|b")]
+    [DataRow("a\u2029b", "a|b")]
+    [DataRow("a\fb", "a|b")]
+    [DataRow("no line endings", "no line endings")]
     public void ReplaceLineEndings_Custom_ReplacesAllRecognizedEndings(string input, string expected)
     {
         input.ReplaceLineEndings("|").Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_CRLF_TreatedAsSingleEnding()
     {
         // \r\n should yield ONE replacement, not two.
         "a\r\nb\r\nc".ReplaceLineEndings("|").Should().Be("a|b|c");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_NoArgument_UsesEnvironmentNewLine()
     {
         "a\nb".ReplaceLineEndings().Should().Be("a" + Environment.NewLine + "b");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_NullReplacement_Throws()
     {
         Action action = () => "a\nb".ReplaceLineEndings(null!);
@@ -215,68 +216,68 @@ public class StringExtensionsPolyfillTests
 
     // ---- Split(char, ...) / Split(string, ...) ----
 
-    [Test]
+    [TestMethod]
     public void Split_Char_StringSplitOptions_RemoveEmpty()
     {
         "a,,b".Split(',', StringSplitOptions.RemoveEmptyEntries).Should().Equal("a", "b");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_Char_StringSplitOptions_None_KeepsEmpty()
     {
         "a,,b".Split(',', StringSplitOptions.None).Should().Equal("a", "", "b");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_Char_Count_LimitsSplits()
     {
         "a,b,c,d".Split(',', 2, StringSplitOptions.None).Should().Equal("a", "b,c,d");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_String_StringSplitOptions_RemoveEmpty()
     {
         "a::b".Split("::", StringSplitOptions.RemoveEmptyEntries).Should().Equal("a", "b");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_String_Count_LimitsSplits()
     {
         "a::b::c::d".Split("::", 2, StringSplitOptions.None).Should().Equal("a", "b::c::d");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_String_NullSeparator_ReturnsSingleSourceElement()
     {
         // BCL behavior for Split((string?)null, opts): treats as no separator, returns the source unchanged.
         "a b\tc".Split((string?)null, StringSplitOptions.None).Should().Equal("a b\tc");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_Char_EmptySource_ReturnsSingleEmpty()
     {
         "".Split(',', StringSplitOptions.None).Should().Equal("");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_Char_NoMatch_ReturnsSingle()
     {
         "abc".Split(',', StringSplitOptions.None).Should().Equal("abc");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_Char_CountZero_ReturnsEmpty()
     {
         "a,b,c".Split(',', 0, StringSplitOptions.None).Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void Split_Char_CountOne_ReturnsOriginal()
     {
         "a,b,c".Split(',', 1, StringSplitOptions.None).Should().Equal("a,b,c");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_Char_NegativeCount_Throws()
     {
         Action action = () => "a,b".Split(',', -1, StringSplitOptions.None);
@@ -285,27 +286,27 @@ public class StringExtensionsPolyfillTests
 
     // ---- Contains negative & boundary ----
 
-    [Test]
+    [TestMethod]
     public void Contains_Char_EmptyString_ReturnsFalse()
     {
         "".Contains('a').Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Contains_String_EmptyValue_ReturnsTrue()
     {
         // BCL contract: an empty needle is contained anywhere.
         "Hello".Contains("", StringComparison.Ordinal).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Contains_String_InvalidComparison_Throws()
     {
         Action action = () => "Hello".Contains("yz", (StringComparison)42);
         action.Should().Throw<ArgumentException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Contains_Char_InvalidComparison_Throws()
     {
         Action action = () => "x".Contains('y', (StringComparison)42);
@@ -314,7 +315,7 @@ public class StringExtensionsPolyfillTests
 
     // ---- GetHashCode negative ----
 
-    [Test]
+    [TestMethod]
     public void GetHashCode_StringComparison_Invalid_Throws()
     {
         Action action = () => "x".GetHashCode((StringComparison)42);
@@ -323,32 +324,32 @@ public class StringExtensionsPolyfillTests
 
     // ---- Replace negative & boundary ----
 
-    [Test]
+    [TestMethod]
     public void Replace_StringComparison_InvalidComparison_Throws()
     {
         Action action = () => "abc".Replace("a", "b", (StringComparison)42);
         action.Should().Throw<ArgumentException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_StringComparison_EmptySource_ReturnsEmpty()
     {
         "".Replace("a", "b", StringComparison.Ordinal).Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_StringComparison_OldValueLongerThanSource_ReturnsOriginal()
     {
         "ab".Replace("abcdef", "x", StringComparison.Ordinal).Should().Be("ab");
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_StringComparison_AdjacentMatches_AllReplaced()
     {
         "aaaa".Replace("aa", "X", StringComparison.Ordinal).Should().Be("XX");
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_StringComparison_OrdinalNullNewValue_TreatedAsEmpty()
     {
         "abc".Replace("b", null, StringComparison.Ordinal).Should().Be("ac");
@@ -356,51 +357,51 @@ public class StringExtensionsPolyfillTests
 
     // ---- ReplaceLineEndings negative & boundary ----
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_EmptySource_ReturnsEmpty()
     {
         "".ReplaceLineEndings("|").Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_OnlyLineEnding_ReturnsReplacement()
     {
         "\n".ReplaceLineEndings("|").Should().Be("|");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_LeadingAndTrailing_BothReplaced()
     {
         "\nabc\n".ReplaceLineEndings("|").Should().Be("|abc|");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_VerticalTab_NotTreatedAsLineEnding()
     {
         // \v (U+000B) is NOT a recognized line ending per the BCL spec.
         "a\vb".ReplaceLineEndings("|").Should().Be("a\vb");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_LoneCR_ReplacedAsSingleEnding()
     {
         "a\rb".ReplaceLineEndings("|").Should().Be("a|b");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_LoneLF_ReplacedAsSingleEnding()
     {
         "a\nb".ReplaceLineEndings("|").Should().Be("a|b");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_CRThenChar_NotMisinterpreted()
     {
         // \r followed by non-\n must not consume the next char.
         "a\rXb".ReplaceLineEndings("|").Should().Be("a|Xb");
     }
 
-    [Test]
+    [TestMethod]
     public void ReplaceLineEndings_LongInput_ExceedsStackBuffer()
     {
         // Force the ValueStringBuilder beyond the 256-char stack buffer.
@@ -411,14 +412,14 @@ public class StringExtensionsPolyfillTests
 
     // ---- TryCopyTo edge ----
 
-    [Test]
+    [TestMethod]
     public void TryCopyTo_EmptyDestinationNonEmptySource_ReturnsFalse()
     {
         Span<char> dest = [];
         "abc".TryCopyTo(dest).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void TryCopyTo_ExactFit_CopiesAndReturnsTrue()
     {
         Span<char> dest = new char[3];
@@ -429,7 +430,7 @@ public class StringExtensionsPolyfillTests
 
     // ---- CopyTo (throws on too-short destination) ----
 
-    [Test]
+    [TestMethod]
     public void CopyTo_DestinationLargeEnough_Copies()
     {
         Span<char> dest = new char[5];
@@ -437,7 +438,7 @@ public class StringExtensionsPolyfillTests
         dest[..3].ToString().Should().Be("abc");
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_ExactFit_Copies()
     {
         Span<char> dest = new char[3];
@@ -445,7 +446,7 @@ public class StringExtensionsPolyfillTests
         dest.ToString().Should().Be("abc");
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_DestinationTooShort_Throws()
     {
         Action act = static () =>
@@ -456,7 +457,7 @@ public class StringExtensionsPolyfillTests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_EmptySource_Succeeds()
     {
         Span<char> dest = [];
@@ -465,21 +466,21 @@ public class StringExtensionsPolyfillTests
 
     // ---- Split(string, string, int, StringSplitOptions) extra branches ----
 
-    [Test]
+    [TestMethod]
     public void Split_String_String_LimitOne_ReturnsWhole()
     {
         string[] parts = "a,b,c,d".Split(",", count: 1, StringSplitOptions.None);
         parts.Should().Equal("a,b,c,d");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_String_String_LimitTwo_ReturnsHeadAndTail()
     {
         string[] parts = "a,b,c,d".Split(",", count: 2, StringSplitOptions.None);
         parts.Should().Equal("a", "b,c,d");
     }
 
-    [Test]
+    [TestMethod]
     public void Split_String_String_RemoveEmpty_DropsEmptyParts()
     {
         string[] parts = "a,,b,".Split(",", count: int.MaxValue, StringSplitOptions.RemoveEmptyEntries);

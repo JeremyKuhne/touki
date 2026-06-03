@@ -6,18 +6,19 @@ using Touki.Text;
 
 namespace Touki;
 
+[TestClass]
 public class StoringStringSegment
 {
-    public static IEnumerable<StringSegment> StringSegmentData()
+    public static IEnumerable<object[]> StringSegmentData()
     {
-        yield return new StringSegment("Hello, World!");
-        yield return new StringSegment("Hello, World!", 7, 5);
-        yield return new StringSegment(string.Empty);
-        yield return default;
+        yield return [new StringSegment("Hello, World!")];
+        yield return [new StringSegment("Hello, World!", 7, 5)];
+        yield return [new StringSegment(string.Empty)];
+        yield return [(StringSegment)default];
     }
 
-    [Test]
-    [MethodDataSource(nameof(StringSegmentData))]
+    [TestMethod]
+    [DynamicData(nameof(StringSegmentData))]
     public void StringSegmentImplicit(StringSegment segment)
     {
         Value value = segment;
@@ -25,8 +26,8 @@ public class StoringStringSegment
         value.Type.Should().Be(typeof(StringSegment));
     }
 
-    [Test]
-    [MethodDataSource(nameof(StringSegmentData))]
+    [TestMethod]
+    [DynamicData(nameof(StringSegmentData))]
     public void StringSegmentCreate(StringSegment segment)
     {
         Value value;
@@ -39,8 +40,8 @@ public class StoringStringSegment
         value.Type.Should().Be(typeof(StringSegment));
     }
 
-    [Test]
-    [MethodDataSource(nameof(StringSegmentData))]
+    [TestMethod]
+    [DynamicData(nameof(StringSegmentData))]
     public void StringSegmentInOut(StringSegment segment)
     {
         Value value = segment;
@@ -52,7 +53,7 @@ public class StoringStringSegment
         ((StringSegment)value).Should().Be(segment);
     }
 
-    [Test]
+    [TestMethod]
     public void NestedSegments()
     {
         string text = "Hello, World! How are you?";
@@ -80,7 +81,7 @@ public class StoringStringSegment
         retrieved2.Value.Should().Be(text);
     }
 
-    [Test]
+    [TestMethod]
     public void DefaultStringSegment()
     {
         StringSegment defaultSegment = default;
@@ -93,7 +94,7 @@ public class StoringStringSegment
         value.As<StringSegment>()._length.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void OutAsObject()
     {
         StringSegment segment = new("Test Segment", 0, 4); // "Test"
@@ -105,7 +106,7 @@ public class StoringStringSegment
         ((StringSegment)o).ToString().Should().Be("Test");
     }
 
-    [Test]
+    [TestMethod]
     public void EmptyStringSegment()
     {
         StringSegment emptySegment = new(string.Empty);
@@ -116,7 +117,7 @@ public class StoringStringSegment
         value.As<StringSegment>().IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void StringSegmentRoundTrip()
     {
         string original = "This is a test of string segments";

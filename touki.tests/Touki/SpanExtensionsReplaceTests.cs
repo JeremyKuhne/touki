@@ -4,13 +4,14 @@
 
 namespace Touki;
 
+[TestClass]
 public class SpanExtensionsReplaceTests
 {
     // -----------------------------------------------------------------------
     //  Replace<T>(Span<T>, T, T)
     // -----------------------------------------------------------------------
 
-    [Test]
+    [TestMethod]
     public void Replace_Generic_NoMatches_LeavesUnchanged()
     {
         Span<int> span = [1, 2, 3];
@@ -18,7 +19,7 @@ public class SpanExtensionsReplaceTests
         span.ToArray().Should().Equal(1, 2, 3);
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_Generic_AllMatches_ReplacesAll()
     {
         Span<int> span = [7, 7, 7];
@@ -26,7 +27,7 @@ public class SpanExtensionsReplaceTests
         span.ToArray().Should().Equal(1, 1, 1);
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_Generic_Mixed_ReplacesMatches()
     {
         Span<int> span = [1, 7, 2, 7, 3];
@@ -34,7 +35,7 @@ public class SpanExtensionsReplaceTests
         span.ToArray().Should().Equal(1, 0, 2, 0, 3);
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_Generic_OldEqualsNew_NoOp()
     {
         Span<int> span = [1, 2, 3];
@@ -42,7 +43,7 @@ public class SpanExtensionsReplaceTests
         span.ToArray().Should().Equal(1, 2, 3);
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_Generic_Empty_NoOp()
     {
         Span<int> span = [];
@@ -50,7 +51,7 @@ public class SpanExtensionsReplaceTests
         span.Length.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_Generic_NullableReference_HandlesNull()
     {
         Span<string?> span = ["a", null, "b", null];
@@ -58,7 +59,7 @@ public class SpanExtensionsReplaceTests
         span.ToArray().Should().Equal("a", "x", "b", "x");
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_Char_StillSpecialized()
     {
         // Existing char-specialized overload should still work via the same call site.
@@ -71,7 +72,7 @@ public class SpanExtensionsReplaceTests
     //  Replace<T>(ReadOnlySpan<T>, Span<T>, T, T)
     // -----------------------------------------------------------------------
 
-    [Test]
+    [TestMethod]
     public void Replace_SourceDest_NoMatches_CopiesAsIs()
     {
         ReadOnlySpan<int> source = [1, 2, 3];
@@ -80,7 +81,7 @@ public class SpanExtensionsReplaceTests
         dest.ToArray().Should().Equal(1, 2, 3);
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_SourceDest_ReplacesMatches()
     {
         ReadOnlySpan<int> source = [1, 7, 2, 7, 3];
@@ -89,7 +90,7 @@ public class SpanExtensionsReplaceTests
         dest.ToArray().Should().Equal(1, 0, 2, 0, 3);
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_SourceDest_OldEqualsNew_CopiesSource()
     {
         ReadOnlySpan<int> source = [1, 2, 3];
@@ -98,7 +99,7 @@ public class SpanExtensionsReplaceTests
         dest.ToArray().Should().Equal(1, 2, 3);
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_SourceDest_DestinationLargerThanSource_OnlyWritesSourceLength()
     {
         ReadOnlySpan<int> source = [1, 2, 3];
@@ -108,7 +109,7 @@ public class SpanExtensionsReplaceTests
         dest[3..].ToArray().Should().Equal(9, 9);
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_SourceDest_DestinationTooShort_Throws()
     {
         ArgumentException? caught = null;
@@ -126,7 +127,7 @@ public class SpanExtensionsReplaceTests
         caught.Should().NotBeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_SourceDest_Empty_NoOp()
     {
         ReadOnlySpan<int> source = [];
@@ -139,7 +140,7 @@ public class SpanExtensionsReplaceTests
     //  SequenceEqual w/ comparer
     // -----------------------------------------------------------------------
 
-    [Test]
+    [TestMethod]
     public void SequenceEqual_WithComparer_DifferentLength_ReturnsFalse()
     {
         ReadOnlySpan<int> a = [1, 2];
@@ -147,7 +148,7 @@ public class SpanExtensionsReplaceTests
         a.SequenceEqual(b, EqualityComparer<int>.Default).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SequenceEqual_WithComparer_NullComparer_UsesDefault()
     {
         ReadOnlySpan<int> a = [1, 2, 3];
@@ -155,7 +156,7 @@ public class SpanExtensionsReplaceTests
         a.SequenceEqual(b, comparer: null).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void SequenceEqual_WithComparer_OrdinalIgnoreCase_True()
     {
         ReadOnlySpan<string> a = ["abc", "DEF"];
@@ -163,7 +164,7 @@ public class SpanExtensionsReplaceTests
         a.SequenceEqual(b, StringComparer.OrdinalIgnoreCase).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void SequenceEqual_WithComparer_OrdinalIgnoreCase_FalseWhenDifferent()
     {
         ReadOnlySpan<string> a = ["abc", "DEF"];
@@ -171,14 +172,14 @@ public class SpanExtensionsReplaceTests
         a.SequenceEqual(b, StringComparer.OrdinalIgnoreCase).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SequenceEqual_WithComparer_BothEmpty_ReturnsTrue()
     {
         ReadOnlySpan<int>.Empty.SequenceEqual([], EqualityComparer<int>.Default)
             .Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void SequenceEqual_WithComparer_SpanOverload_Works()
     {
         Span<int> a = [1, 2, 3];

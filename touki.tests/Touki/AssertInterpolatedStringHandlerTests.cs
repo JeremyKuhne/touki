@@ -10,12 +10,13 @@ using AssertInterpolatedStringHandler = System.Diagnostics.Debug.AssertInterpola
 
 namespace Touki;
 
+[TestClass]
 public class AssertInterpolatedStringHandlerTests
 {
     // The built-in handler in .NET 9 does not support calling the append
     // methods when the assertion succeeds, so limit these tests to .NET Framework.
 
-    [Test]
+    [TestMethod]
     public void Constructor_SetsShouldAppend_FalseWhenConditionTrue()
     {
         bool shouldAppend;
@@ -27,7 +28,7 @@ public class AssertInterpolatedStringHandlerTests
 #endif
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_SetsShouldAppend_TrueWhenConditionFalse()
     {
         bool shouldAppend;

@@ -6,9 +6,10 @@ using Touki.Text;
 
 namespace Touki.Docs;
 
+[TestClass]
 public class SampleTests
 {
-    [Test]
+    [TestMethod]
     public void StringSegment_Indexing()
     {
         string csv = "apple,banana,cherry";
@@ -30,7 +31,7 @@ public class SampleTests
         segments.Should().BeEquivalentTo(["apple", "banana", "cherry"]);
     }
 
-    [Test]
+    [TestMethod]
     public void Value_Demo()
     {
         Value[] args = [1, 2.5, "three"];
@@ -39,7 +40,7 @@ public class SampleTests
         result.Should().Be("1 - 2.5 - three");
     }
 
-    [Test]
+    [TestMethod]
     public void StreamExtension()
     {
         string name = "Name";

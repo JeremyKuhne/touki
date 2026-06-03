@@ -4,21 +4,22 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringFloat
 {
-    public static IEnumerable<float> FloatData()
+    public static IEnumerable<object[]> FloatData()
     {
-        yield return 0f;
-        yield return 42f;
-        yield return float.MaxValue;
-        yield return float.MinValue;
-        yield return float.NaN;
-        yield return float.NegativeInfinity;
-        yield return float.PositiveInfinity;
+        yield return [0f];
+        yield return [42f];
+        yield return [float.MaxValue];
+        yield return [float.MinValue];
+        yield return [float.NaN];
+        yield return [float.NegativeInfinity];
+        yield return [float.PositiveInfinity];
     }
 
-    [Test]
-    [MethodDataSource(nameof(FloatData))]
+    [TestMethod]
+    [DynamicData(nameof(FloatData))]
     public void FloatImplicit(float @float)
     {
         Value value = @float;
@@ -31,8 +32,8 @@ public class StoringFloat
         value.Type.Should().Be(typeof(float));
     }
 
-    [Test]
-    [MethodDataSource(nameof(FloatData))]
+    [TestMethod]
+    [DynamicData(nameof(FloatData))]
     public void FloatCreate(float @float)
     {
         Value value;
@@ -55,8 +56,8 @@ public class StoringFloat
         value.Type.Should().Be(typeof(float));
     }
 
-    [Test]
-    [MethodDataSource(nameof(FloatData))]
+    [TestMethod]
+    [DynamicData(nameof(FloatData))]
     public void FloatInOut(float @float)
     {
         Value value = @float;
@@ -68,8 +69,8 @@ public class StoringFloat
         ((float)value).Should().Be(@float);
     }
 
-    [Test]
-    [MethodDataSource(nameof(FloatData))]
+    [TestMethod]
+    [DynamicData(nameof(FloatData))]
     public void NullableFloatInFloatOut(float @float)
     {
         float? source = @float;
@@ -84,8 +85,8 @@ public class StoringFloat
         ((float)value).Should().Be(@float);
     }
 
-    [Test]
-    [MethodDataSource(nameof(FloatData))]
+    [TestMethod]
+    [DynamicData(nameof(FloatData))]
     public void FloatInNullableFloatOut(float @float)
     {
         float source = @float;
@@ -97,8 +98,8 @@ public class StoringFloat
         ((float?)value).Should().Be(@float);
     }
 
-    [Test]
-    [MethodDataSource(nameof(FloatData))]
+    [TestMethod]
+    [DynamicData(nameof(FloatData))]
     public void BoxedFloat(float @float)
     {
         float i = @float;
@@ -123,7 +124,7 @@ public class StoringFloat
         nullableResult!.Value.Should().Be(@float);
     }
 
-    [Test]
+    [TestMethod]
     public void NullFloat()
     {
         float? source = null;
@@ -133,8 +134,8 @@ public class StoringFloat
         value.As<float?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(FloatData))]
+    [TestMethod]
+    [DynamicData(nameof(FloatData))]
     public void OutAsObject(float @float)
     {
         Value value = @float;

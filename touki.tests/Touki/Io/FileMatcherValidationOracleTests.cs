@@ -11,6 +11,7 @@ namespace Touki.Io;
 ///  the corresponding oracle test will break and force us to revisit
 ///  <see cref="MSBuildEnumerator.CreateResult"/>'s error-surfacing behavior.
 /// </summary>
+[TestClass]
 public class FileMatcherValidationOracleTests
 {
     private static void CreateFixture(string root)
@@ -30,10 +31,10 @@ public class FileMatcherValidationOracleTests
     //    contents, so the wrapper assertions below only confirm what MSBuild does, not what we'd
     //    ideally want it to do.
 
-    [Test]
-    [Arguments("foo\0bar")]                 // embedded null character
-    [Arguments("foo.../bar.cs")]            // illegal '...' sequence
-    [Arguments("foo/....cs")]
+    [TestMethod]
+    [DataRow("foo\0bar")]                 // embedded null character
+    [DataRow("foo.../bar.cs")]            // illegal '...' sequence
+    [DataRow("foo/....cs")]
     public void GetFiles_NoWildcardIllegalSpec_ShortCircuitsToVerbatimReturn(string spec)
     {
         using TempFolder tempFolder = new();
@@ -50,9 +51,9 @@ public class FileMatcherValidationOracleTests
     //    verbatim as a literal item. This is the case where touki and MSBuild actually agree on
     //    the surfacing: both produce a ReturnFileSpec disposition.
 
-    [Test]
-    [Arguments("foo\0bar*")]                // embedded null character + wildcard
-    [Arguments("foo.../*.cs")]              // '...' sequence + wildcard
+    [TestMethod]
+    [DataRow("foo\0bar*")]                // embedded null character + wildcard
+    [DataRow("foo.../*.cs")]              // '...' sequence + wildcard
     public void GetFiles_WildcardIllegalSpec_ReturnsSpecVerbatimAsReturnFileSpec(string spec)
     {
         using TempFolder tempFolder = new();
@@ -67,12 +68,12 @@ public class FileMatcherValidationOracleTests
     // 3. Misplaced "**" (not surrounded by separators) is caught by IsLegalFileSpec AFTER
     //    SplitFileSpec runs. Result is the same SearchAction.ReturnFileSpec disposition.
 
-    [Test]
-    [Arguments("a**b")]                     // ** between non-separator chars
-    [Arguments("foo/a**b/baz")]
-    [Arguments("foo/**bar")]
-    [Arguments("foo/bar**")]
-    [Arguments("*.cs**")]
+    [TestMethod]
+    [DataRow("a**b")]                     // ** between non-separator chars
+    [DataRow("foo/a**b/baz")]
+    [DataRow("foo/**bar")]
+    [DataRow("foo/bar**")]
+    [DataRow("*.cs**")]
     public void GetFiles_MisplacedDoubleStar_ReturnsSpecVerbatimAsReturnFileSpec(string spec)
     {
         using TempFolder tempFolder = new();
@@ -87,10 +88,10 @@ public class FileMatcherValidationOracleTests
     // 4. Legal "**" specs (standalone, between separators, end-anchored to a separator) reach the
     //    full search path. RunSearch confirms MSBuild treats these as legal globs.
 
-    [Test]
-    [Arguments("**", new[] { "a.txt", "Foo/b.txt" })]
-    [Arguments("**/*.txt", new[] { "a.txt", "Foo/b.txt" })]
-    [Arguments("Foo/**", new[] { "Foo/b.txt" })]
+    [TestMethod]
+    [DataRow("**", new[] { "a.txt", "Foo/b.txt" })]
+    [DataRow("**/*.txt", new[] { "a.txt", "Foo/b.txt" })]
+    [DataRow("Foo/**", new[] { "Foo/b.txt" })]
     public void GetFiles_LegalDoubleStar_RunsSearch(string spec, string[] expected)
     {
         using TempFolder tempFolder = new();
@@ -114,11 +115,11 @@ public class FileMatcherValidationOracleTests
     //    ReturnFileSpec disposition. This is the key behavior we want pinned: changes to either
     //    side will break the parity assertion below.
 
-    [Test]
-    [Arguments("foo\0bar*")]
-    [Arguments("foo.../*.cs")]
-    [Arguments("a**b")]
-    [Arguments("*.cs**")]
+    [TestMethod]
+    [DataRow("foo\0bar*")]
+    [DataRow("foo.../*.cs")]
+    [DataRow("a**b")]
+    [DataRow("*.cs**")]
     public void CreateResult_WildcardIllegalSpec_ToukiAndMSBuildBothReturnFileSpec(string spec)
     {
         using TempFolder tempFolder = new();

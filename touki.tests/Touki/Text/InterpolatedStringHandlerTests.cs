@@ -4,9 +4,10 @@
 
 namespace Touki;
 
+[TestClass]
 public unsafe class InterpolatedStringHandlerTests
 {
-    [Test]
+    [TestMethod]
     public void MinimalInteropolateStringHandler_BasicFunctionality()
     {
         // Use C# interpolated strings with the FomatMinimalHandler method to test the minimal handler.

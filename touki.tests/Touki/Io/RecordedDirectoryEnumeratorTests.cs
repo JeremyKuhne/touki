@@ -11,6 +11,7 @@ namespace Touki.Io;
 ///  <see cref="RecordedDirectoryEnumerator"/>: recording a real tree to CSV and replaying it
 ///  through a matcher must produce the same result set as the corresponding real enumerator.
 /// </summary>
+[TestClass]
 public class RecordedDirectoryEnumeratorTests
 {
     private const string MSBuildExcludes = "bin/**;obj/**;**/*.user";
@@ -36,7 +37,7 @@ public class RecordedDirectoryEnumeratorTests
         return folder;
     }
 
-    [Test]
+    [TestMethod]
     public void Replay_MSBuildMatcher_MatchesRealEnumerator()
     {
         using TempFolder folder = CreateFixture();
@@ -73,7 +74,7 @@ public class RecordedDirectoryEnumeratorTests
         actual.Should().NotContain(Path.Combine("obj", "Debug", "obj.cs"));
     }
 
-    [Test]
+    [TestMethod]
     public void Replay_GlobMatcher_MatchesRealEnumerator()
     {
         using TempFolder folder = CreateFixture();
@@ -108,7 +109,7 @@ public class RecordedDirectoryEnumeratorTests
         actual.Should().BeEquivalentTo(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void Record_EmptyDirectory_IsCaptured()
     {
         using TempFolder folder = CreateFixture();
@@ -118,7 +119,7 @@ public class RecordedDirectoryEnumeratorTests
         fileSystem.DirectoryCount.Should().BeGreaterThan(1);
     }
 
-    [Test]
+    [TestMethod]
     public void CsvField_RoundTrips_ValuesNeedingQuoting()
     {
         AssertRoundTrip('D', "simple");

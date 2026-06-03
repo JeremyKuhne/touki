@@ -4,9 +4,10 @@
 
 namespace Touki;
 
+[TestClass]
 public class InterlockTests
 {
-    [Test]
+    [TestMethod]
     public void Increment_UInt32_ShouldIncrementValue()
     {
         uint value = 0;
@@ -14,7 +15,7 @@ public class InterlockTests
         value.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void Increment_UInt64_ShouldIncrementValue()
     {
         ulong value = 0;
@@ -22,7 +23,7 @@ public class InterlockTests
         value.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void Decrement_UInt32_ShouldDecrementValue()
     {
         uint value = 2;
@@ -30,7 +31,7 @@ public class InterlockTests
         value.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void Decrement_UInt64_ShouldDecrementValue()
     {
         ulong value = 2;
@@ -38,7 +39,7 @@ public class InterlockTests
         value.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void Exchange_UInt32_ShouldExchangeValues()
     {
         uint value = 1;
@@ -46,7 +47,7 @@ public class InterlockTests
         value.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void Exchange_UInt64_ShouldExchangeValues()
     {
         ulong value = 1;
@@ -54,7 +55,7 @@ public class InterlockTests
         value.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void CompareExchange_UInt32_WhenValuesMatch_ShouldExchange()
     {
         uint value = 1;
@@ -62,7 +63,7 @@ public class InterlockTests
         value.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void CompareExchange_UInt32_WhenValuesDontMatch_ShouldNotExchange()
     {
         uint value = 1;
@@ -70,7 +71,7 @@ public class InterlockTests
         value.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void CompareExchange_UInt64_WhenValuesMatch_ShouldExchange()
     {
         ulong value = 1;
@@ -78,7 +79,7 @@ public class InterlockTests
         value.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void CompareExchange_UInt64_WhenValuesDontMatch_ShouldNotExchange()
     {
         ulong value = 1;
@@ -86,7 +87,7 @@ public class InterlockTests
         value.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void Add_UInt32_ShouldAddValues()
     {
         uint value = 1;
@@ -94,7 +95,7 @@ public class InterlockTests
         value.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void Add_UInt64_ShouldAddValues()
     {
         ulong value = 1;
@@ -102,14 +103,14 @@ public class InterlockTests
         value.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void Read_UInt64_ShouldReturnValue()
     {
         ulong value = 42;
         Interlocked.Read(ref value).Should().Be(42);
     }
 
-    [Test]
+    [TestMethod]
     public void And_Int32_ShouldPerformBitwiseAnd()
     {
         int value = 0b1111;
@@ -117,7 +118,7 @@ public class InterlockTests
         value.Should().Be(0b1010);
     }
 
-    [Test]
+    [TestMethod]
     public void And_UInt32_ShouldPerformBitwiseAnd()
     {
         uint value = 0b1111u;
@@ -125,7 +126,7 @@ public class InterlockTests
         value.Should().Be(0b1010u);
     }
 
-    [Test]
+    [TestMethod]
     public void And_Int64_ShouldPerformBitwiseAnd()
     {
         long value = 0b1111L;
@@ -133,7 +134,7 @@ public class InterlockTests
         value.Should().Be(0b1010L);
     }
 
-    [Test]
+    [TestMethod]
     public void And_UInt64_ShouldPerformBitwiseAnd()
     {
         ulong value = 0b1111UL;
@@ -141,7 +142,7 @@ public class InterlockTests
         value.Should().Be(0b1010UL);
     }
 
-    [Test]
+    [TestMethod]
     public void Or_Int32_ShouldPerformBitwiseOr()
     {
         int value = 0b1010;
@@ -149,7 +150,7 @@ public class InterlockTests
         value.Should().Be(0b1111);
     }
 
-    [Test]
+    [TestMethod]
     public void Or_UInt32_ShouldPerformBitwiseOr()
     {
         uint value = 0b1010u;
@@ -157,7 +158,7 @@ public class InterlockTests
         value.Should().Be(0b1111u);
     }
 
-    [Test]
+    [TestMethod]
     public void Or_Int64_ShouldPerformBitwiseOr()
     {
         long value = 0b1010L;
@@ -165,7 +166,7 @@ public class InterlockTests
         value.Should().Be(0b1111L);
     }
 
-    [Test]
+    [TestMethod]
     public void Or_UInt64_ShouldPerformBitwiseOr()
     {
         ulong value = 0b1010UL;
@@ -173,7 +174,7 @@ public class InterlockTests
         value.Should().Be(0b1111UL);
     }
 
-    [Test]
+    [TestMethod]
     public async Task Increment_UInt32_IsAtomic_WhenCalledFromMultipleThreads()
     {
         uint value = 0;
@@ -197,7 +198,7 @@ public class InterlockTests
         value.Should().Be((uint)(iterations * taskCount));
     }
 
-    [Test]
+    [TestMethod]
     public async Task Add_UInt64_IsAtomic_WhenCalledFromMultipleThreads()
     {
         ulong value = 0;
@@ -221,7 +222,7 @@ public class InterlockTests
         value.Should().Be((ulong)(iterations * taskCount));
     }
 
-    [Test]
+    [TestMethod]
     public async Task CompareExchange_UInt32_IsAtomic_WhenCalledFromMultipleThreads()
     {
         uint value = 0;
@@ -249,7 +250,7 @@ public class InterlockTests
         value.Should().Be((uint)(iterations * taskCount));
     }
 
-    [Test]
+    [TestMethod]
     public async Task And_Or_Operations_AreAtomic_WhenCalledFromMultipleThreads()
     {
         const int iterations = 100;

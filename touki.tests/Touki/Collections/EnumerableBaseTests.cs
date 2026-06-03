@@ -6,6 +6,7 @@ using System.Collections;
 
 namespace Touki.Collections;
 
+[TestClass]
 public class EnumerableBaseTests
 {
     // Test implementation of Enumerable<T>
@@ -55,7 +56,7 @@ public class EnumerableBaseTests
         protected override void Dispose(bool disposing) { }
     }
 
-    [Test]
+    [TestMethod]
     public void EnumeratorAndEnumerableAreTheSameInstance()
     {
         TestEnumerable enumerable = new(1, 2, 3);
@@ -64,7 +65,7 @@ public class EnumerableBaseTests
         enumerator.Should().BeSameAs(enumerable);
     }
 
-    [Test]
+    [TestMethod]
     public void NonGenericGetEnumerator_ReturnsThisInstance()
     {
         TestEnumerable enumerable = new(1, 2, 3);
@@ -74,7 +75,7 @@ public class EnumerableBaseTests
         enumerator.Should().BeSameAs(enumerable);
     }
 
-    [Test]
+    [TestMethod]
     public void MoveNext_ReturnsTrue_AndUpdatesCurrent_WhenThereAreMoreItems()
     {
         TestEnumerable enumerable = new(42, 84);
@@ -88,7 +89,7 @@ public class EnumerableBaseTests
         enumerable.Current.Should().Be(84);
     }
 
-    [Test]
+    [TestMethod]
     public void MoveNext_ReturnsFalse_WhenNoMoreItemsAvailable()
     {
         TestEnumerable enumerable = new(42);
@@ -100,7 +101,7 @@ public class EnumerableBaseTests
         hasSecond.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void MoveNext_ReturnsFalse_WhenEnumerableIsEmpty()
     {
         TestEnumerable enumerable = new();
@@ -110,7 +111,7 @@ public class EnumerableBaseTests
         hasItem.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Current_AfterCreation_ReturnsDefault()
     {
         TestEnumerable enumerable = new(42);
@@ -119,7 +120,7 @@ public class EnumerableBaseTests
         enumerable.Current.Should().Be(default);
     }
 
-    [Test]
+    [TestMethod]
     public void Enumerable_WorksWithForeach()
     {
         TestEnumerable enumerable = new(1, 2, 3);
@@ -133,7 +134,7 @@ public class EnumerableBaseTests
         items.Should().Equal([1, 2, 3]);
     }
 
-    [Test]
+    [TestMethod]
     public void Enumerable_WithNoItems_ProducesEmptyCollection()
     {
         TestEnumerable enumerable = new();
@@ -147,7 +148,7 @@ public class EnumerableBaseTests
         items.Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void NonGenericCurrent_ReturnsSameAsGenericCurrent()
     {
         TestEnumerable enumerable = new(42);
@@ -159,7 +160,7 @@ public class EnumerableBaseTests
         nonGenericCurrent.Should().Be(enumerable.Current);
     }
 
-    [Test]
+    [TestMethod]
     public void Reset_SetsCurrentToDefault_AndRestartsEnumeration()
     {
         TestEnumerable enumerable = new(1, 2, 3);
@@ -178,7 +179,7 @@ public class EnumerableBaseTests
         enumerable.Current.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void Reset_ThrowsNotSupported_WhenUsingBaseImplementation()
     {
         ThrowingEnumerable enumerable = new();
@@ -188,7 +189,7 @@ public class EnumerableBaseTests
         reset.Should().Throw<NotSupportedException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_Properly_DisposesTheEnumerator()
     {
         TestEnumerable enumerable = new(1, 2, 3);
@@ -198,7 +199,7 @@ public class EnumerableBaseTests
         enumerable.IsDisposed.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Enumerable_CanBeUsedMultipleTimes()
     {
         TestEnumerable enumerable = new(1, 2, 3);

@@ -4,14 +4,15 @@
 
 namespace Touki.Io;
 
+[TestClass]
 public class MatchAnyTests
 {
-    [Test]
-    [Arguments("temp", "temp", MatchType.Simple, MatchCasing.CaseSensitive, true)]
-    [Arguments("temp", "TEMP", MatchType.Simple, MatchCasing.CaseSensitive, false)]
-    [Arguments("temp", "TEMP", MatchType.Simple, MatchCasing.CaseInsensitive, true)]
-    [Arguments("temp*", "tempdir", MatchType.Simple, MatchCasing.CaseSensitive, true)]
-    [Arguments("temp*", "other", MatchType.Simple, MatchCasing.CaseSensitive, false)]
+    [TestMethod]
+    [DataRow("temp", "temp", MatchType.Simple, MatchCasing.CaseSensitive, true)]
+    [DataRow("temp", "TEMP", MatchType.Simple, MatchCasing.CaseSensitive, false)]
+    [DataRow("temp", "TEMP", MatchType.Simple, MatchCasing.CaseInsensitive, true)]
+    [DataRow("temp*", "tempdir", MatchType.Simple, MatchCasing.CaseSensitive, true)]
+    [DataRow("temp*", "other", MatchType.Simple, MatchCasing.CaseSensitive, false)]
     public void MatchAnyDirectory_MatchesDirectory_ReturnsExpectedResult(
         string pattern,
         string directoryName,
@@ -30,7 +31,7 @@ public class MatchAnyTests
         matcher.MatchesDirectory("".AsSpan(), directoryName.AsSpan(), true).Should().Be(expectedResult);
     }
 
-    [Test]
+    [TestMethod]
     public void MatchAnyDirectory_WithMultipleSpecs_MatchesAny()
     {
         MatchAnyDirectory matcher = new(
@@ -58,7 +59,7 @@ public class MatchAnyTests
         iMatcher.MatchesDirectory("".AsSpan(), "SRC".AsSpan(), true).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void MatchAnyDirectory_AddSpec_HandlesDuplicates()
     {
         MatchAnyDirectory matcher = new(
@@ -84,7 +85,7 @@ public class MatchAnyTests
         iMatcher.MatchesDirectory("".AsSpan(), "build".AsSpan(), true).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void MatchAnyDirectory_MatchesFile_AlwaysReturnsFalse()
     {
         IEnumerationMatcher matcher = new MatchAnyDirectory(
@@ -97,12 +98,12 @@ public class MatchAnyTests
         result.Should().BeFalse();
     }
 
-    [Test]
-    [Arguments("file.txt", "file.txt", MatchType.Simple, MatchCasing.CaseSensitive, true)]
-    [Arguments("file.txt", "FILE.TXT", MatchType.Simple, MatchCasing.CaseSensitive, false)]
-    [Arguments("file.txt", "FILE.TXT", MatchType.Simple, MatchCasing.CaseInsensitive, true)]
-    [Arguments("*.txt", "file.txt", MatchType.Simple, MatchCasing.CaseSensitive, true)]
-    [Arguments("*.txt", "file.doc", MatchType.Simple, MatchCasing.CaseSensitive, false)]
+    [TestMethod]
+    [DataRow("file.txt", "file.txt", MatchType.Simple, MatchCasing.CaseSensitive, true)]
+    [DataRow("file.txt", "FILE.TXT", MatchType.Simple, MatchCasing.CaseSensitive, false)]
+    [DataRow("file.txt", "FILE.TXT", MatchType.Simple, MatchCasing.CaseInsensitive, true)]
+    [DataRow("*.txt", "file.txt", MatchType.Simple, MatchCasing.CaseSensitive, true)]
+    [DataRow("*.txt", "file.doc", MatchType.Simple, MatchCasing.CaseSensitive, false)]
     public void MatchAnyFile_MatchesFile_ReturnsExpectedResult(
         string pattern,
         string fileName,
@@ -119,7 +120,7 @@ public class MatchAnyTests
         matcher.MatchesFile("".AsSpan(), fileName.AsSpan()).Should().Be(expectedResult);
     }
 
-    [Test]
+    [TestMethod]
     public void MatchAnyFile_WithMultipleSpecs_MatchesAny()
     {
         MatchAnyFile matcher = new(
@@ -138,7 +139,7 @@ public class MatchAnyTests
         iMatcher.MatchesFile("".AsSpan(), "other.dat".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void MatchAnyFile_AddSpec_HandlesDuplicates()
     {
         MatchAnyFile matcher = new(
@@ -158,7 +159,7 @@ public class MatchAnyTests
         iMatcher.MatchesFile("".AsSpan(), "file.csv".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void MatchAnyFile_MatchesDirectory_ReturnsTrueWhenIncludingAndFalseWhenExcluding()
     {
         IEnumerationMatcher matcher = new MatchAnyFile(
@@ -172,12 +173,12 @@ public class MatchAnyTests
         matcher.MatchesDirectory("".AsSpan(), "dir".AsSpan(), true).Should().BeFalse();
     }
 
-    [Test]
-    [Arguments("/root", "file.txt", "/root", "file.txt", MatchType.Simple, MatchCasing.CaseSensitive, true)]
-    [Arguments("/root", "file.txt", "/root/subdir", "file.txt", MatchType.Simple, MatchCasing.CaseSensitive, true)]
-    [Arguments("/root", "file.txt", "/other", "file.txt", MatchType.Simple, MatchCasing.CaseSensitive, false)]
-    [Arguments("/root", "*.txt", "/root", "file.txt", MatchType.Simple, MatchCasing.CaseSensitive, true)]
-    [Arguments("/root", "*.txt", "/root", "file.doc", MatchType.Simple, MatchCasing.CaseSensitive, false)]
+    [TestMethod]
+    [DataRow("/root", "file.txt", "/root", "file.txt", MatchType.Simple, MatchCasing.CaseSensitive, true)]
+    [DataRow("/root", "file.txt", "/root/subdir", "file.txt", MatchType.Simple, MatchCasing.CaseSensitive, true)]
+    [DataRow("/root", "file.txt", "/other", "file.txt", MatchType.Simple, MatchCasing.CaseSensitive, false)]
+    [DataRow("/root", "*.txt", "/root", "file.txt", MatchType.Simple, MatchCasing.CaseSensitive, true)]
+    [DataRow("/root", "*.txt", "/root", "file.doc", MatchType.Simple, MatchCasing.CaseSensitive, false)]
     public void MatchAnyFileAfter_MatchesFile_ReturnsExpectedResult(
         string rootPath,
         string pattern,
@@ -199,7 +200,7 @@ public class MatchAnyTests
         matcher.MatchesFile(currentDir.AsSpan(), fileName.AsSpan()).Should().Be(expectedResult);
     }
 
-    [Test]
+    [TestMethod]
     public void MatchAnyFile_MatchesDirectory_ReturnsExpectedResult()
     {
         string root = Paths.ChangeAlternateDirectorySeparators("/root");
@@ -230,12 +231,12 @@ public class MatchAnyTests
     }
 
 
-    [Test]
-    [Arguments("/root", "subdir", "/root", "subdir", MatchType.Simple, MatchCasing.CaseSensitive, true)]
-    [Arguments("/root", "subdir", "/root/parent", "subdir", MatchType.Simple, MatchCasing.CaseSensitive, true)]
-    [Arguments("/root", "subdir", "/other", "subdir", MatchType.Simple, MatchCasing.CaseSensitive, false)]
-    [Arguments("/root", "sub*", "/root", "subdir", MatchType.Simple, MatchCasing.CaseSensitive, true)]
-    [Arguments("/root", "sub*", "/root", "other", MatchType.Simple, MatchCasing.CaseSensitive, false)]
+    [TestMethod]
+    [DataRow("/root", "subdir", "/root", "subdir", MatchType.Simple, MatchCasing.CaseSensitive, true)]
+    [DataRow("/root", "subdir", "/root/parent", "subdir", MatchType.Simple, MatchCasing.CaseSensitive, true)]
+    [DataRow("/root", "subdir", "/other", "subdir", MatchType.Simple, MatchCasing.CaseSensitive, false)]
+    [DataRow("/root", "sub*", "/root", "subdir", MatchType.Simple, MatchCasing.CaseSensitive, true)]
+    [DataRow("/root", "sub*", "/root", "other", MatchType.Simple, MatchCasing.CaseSensitive, false)]
     public void MatchAnyDirectory_MatchesDirectory_WithRoot_ReturnsExpectedResult(
         string rootPath,
         string pattern,
@@ -260,7 +261,7 @@ public class MatchAnyTests
         matcher.MatchesDirectory(currentDir.AsSpan(), dirName.AsSpan(), true).Should().Be(expectedResult);
     }
 
-    [Test]
+    [TestMethod]
     public void MatchAnyDirectoryAfter_MatchesFile_AlwaysReturnsFalse()
     {
         IEnumerationMatcher matcher = new MatchAnyDirectory(
@@ -272,7 +273,7 @@ public class MatchAnyTests
         matcher.MatchesFile("/root".AsSpan(), "file.txt".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void MatchAnyFile_Dispose_ReleasesResources()
     {
         MatchAnyFile matcher = new("*.txt", MatchType.Simple, MatchCasing.CaseSensitive);
@@ -282,7 +283,7 @@ public class MatchAnyTests
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void MatchAnyFile_Dispose_CalledTwice_DoesNotThrow()
     {
         MatchAnyFile matcher = new("*.txt", MatchType.Simple, MatchCasing.CaseSensitive);
@@ -292,7 +293,7 @@ public class MatchAnyTests
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void MatchAnyDirectory_Dispose_ReleasesResources()
     {
         MatchAnyDirectory matcher = new("docs", MatchType.Simple, MatchCasing.CaseSensitive);
@@ -302,7 +303,7 @@ public class MatchAnyTests
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void MatchAnyDirectory_Dispose_CalledTwice_DoesNotThrow()
     {
         MatchAnyDirectory matcher = new("docs", MatchType.Simple, MatchCasing.CaseSensitive);

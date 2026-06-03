@@ -12,12 +12,13 @@ namespace Touki.Io.Globbing;
 ///  <c>****</c>, ...), by comparing each verdict against
 ///  <see cref="MSBuildGlob"/>.
 /// </summary>
+[TestClass]
 public class MultipleAsteriskMSBuildOracleTests
 {
     public static IEnumerable<(string, string)> Rows() => MultipleAsteriskRows.Rows();
 
-    [Test]
-    [MethodDataSource(nameof(Rows))]
+    [TestMethod]
+    [DynamicData(nameof(Rows))]
     public void IsMatch_MSBuildDialect_MultipleAsterisks_AgreesWithMSBuildGlob(string pattern, string input)
     {
         bool oracle = MSBuildGlob.Parse(Directory.GetCurrentDirectory(), pattern).IsMatch(input);

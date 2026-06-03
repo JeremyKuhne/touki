@@ -4,16 +4,17 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringDecimal
 {
-    public static IEnumerable<decimal> DecimalData()
+    public static IEnumerable<object[]> DecimalData()
     {
-        yield return 42;
-        yield return decimal.MaxValue;
-        yield return decimal.MinValue;
+        yield return [(decimal)42];
+        yield return [decimal.MaxValue];
+        yield return [decimal.MinValue];
     }
 
-    [Test]
+    [TestMethod]
     public void DecimalImplicit()
     {
         Value value = (decimal)42.0;
@@ -26,8 +27,8 @@ public class StoringDecimal
         value.Type.Should().Be(typeof(decimal));
     }
 
-    [Test]
-    [MethodDataSource(nameof(DecimalData))]
+    [TestMethod]
+    [DynamicData(nameof(DecimalData))]
     public void DecimalInOut(decimal @decimal)
     {
         Value value = @decimal;
@@ -39,8 +40,8 @@ public class StoringDecimal
         ((decimal)value).Should().Be(@decimal);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DecimalData))]
+    [TestMethod]
+    [DynamicData(nameof(DecimalData))]
     public void NullableDecimalInDecimalOut(decimal @decimal)
     {
         decimal? source = @decimal;
@@ -55,8 +56,8 @@ public class StoringDecimal
         ((decimal)value).Should().Be(@decimal);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DecimalData))]
+    [TestMethod]
+    [DynamicData(nameof(DecimalData))]
     public void DecimalInNullableDecimalOut(decimal @decimal)
     {
         decimal source = @decimal;
@@ -68,7 +69,7 @@ public class StoringDecimal
         ((decimal?)value).Should().Be(@decimal);
     }
 
-    [Test]
+    [TestMethod]
     public void NullDecimal()
     {
         decimal? source = null;
@@ -78,8 +79,8 @@ public class StoringDecimal
         value.As<decimal?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(DecimalData))]
+    [TestMethod]
+    [DynamicData(nameof(DecimalData))]
     public void OutAsObject(decimal @decimal)
     {
         Value value = Value.Create(@decimal);
