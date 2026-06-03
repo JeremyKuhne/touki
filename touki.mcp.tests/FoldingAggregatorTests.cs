@@ -348,10 +348,13 @@ public class FoldingAggregatorTests
     [Arguments("Engine.cs:")]
     [Arguments("Engine.cs:abc")]
     [Arguments(":10")]
+    [Arguments("Engine.cs:0")]
+    [Arguments("Engine.cs:-1")]
     public void SourceHeatmap_MalformedLeafLocation_IsExcluded(string location)
     {
-        // A location with no colon, a trailing colon, a non-numeric line, or no file
-        // name cannot be split into file:line and must not contribute to any file.
+        // A location with no colon, a trailing colon, a non-numeric line, no file
+        // name, or a non-positive (non 1-based) line cannot be split into file:line
+        // and must not contribute to any file.
         List<SampleStack> samples =
         [
             new(["app!Run"], 5.0, "1", [location])

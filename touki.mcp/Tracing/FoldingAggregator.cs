@@ -397,6 +397,13 @@ internal sealed class FoldingAggregator
             return false;
         }
 
+        // Line numbers are 1-based; reject zero and negative values that cannot map onto source.
+        if (line < 1)
+        {
+            line = 0;
+            return false;
+        }
+
         file = location[..colon];
         return true;
     }

@@ -121,8 +121,9 @@ public class SourceAnnotatorTests
         output.Should().Contain("line100");
         output.Should().Contain("line400");
 
-        // A line in neither window is omitted.
-        output.Should().NotContain("line250\n");
+        // A line in neither window is omitted. Match the rendered gutter so the
+        // check is newline-agnostic (AppendLine emits \r\n on Windows).
+        output.Should().NotContain("|  250  line250");
 
         // A gap marker separates the two windows.
         output.Should().Contain("...");
