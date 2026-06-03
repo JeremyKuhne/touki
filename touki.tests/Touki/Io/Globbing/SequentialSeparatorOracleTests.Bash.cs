@@ -11,39 +11,40 @@ namespace Touki.Io.Globbing;
 ///  multiple sequential <c>/</c> characters inside the pattern, by shelling out to
 ///  <c>bash</c> via <see cref="BashInterop"/>.
 /// </summary>
+[TestClass]
 public class SequentialSeparatorBashOracleTests
 {
-    [Test]
-    [Arguments("a//b", "a/b")]
-    [Arguments("a//b", "a//b")]
-    [Arguments("a//b", "a///b")]
-    [Arguments("a//b", "ab")]
-    [Arguments("a//b", "a/x/b")]
-    [Arguments("a///b", "a/b")]
-    [Arguments("a///b", "a//b")]
-    [Arguments("a////b", "a/b")]
-    [Arguments("//a", "/a")]
-    [Arguments("//a", "//a")]
-    [Arguments("//a", "a")]
-    [Arguments("a//", "a/")]
-    [Arguments("a//", "a//")]
-    [Arguments("a//", "a")]
-    [Arguments("a//*", "a/b")]
-    [Arguments("a//*", "a//b")]
-    [Arguments("*//b", "a/b")]
-    [Arguments("*//b", "a//b")]
-    [Arguments("**//*.cs", "Foo.cs")]
-    [Arguments("**//*.cs", "src/Foo.cs")]
-    [Arguments("**//*.cs", "src/sub/Foo.cs")]
-    [Arguments("a//**//b", "a/b")]
-    [Arguments("a//**//b", "a/x/b")]
-    [Arguments("a//**//b", "a/x/y/b")]
+    [TestMethod]
+    [DataRow("a//b", "a/b")]
+    [DataRow("a//b", "a//b")]
+    [DataRow("a//b", "a///b")]
+    [DataRow("a//b", "ab")]
+    [DataRow("a//b", "a/x/b")]
+    [DataRow("a///b", "a/b")]
+    [DataRow("a///b", "a//b")]
+    [DataRow("a////b", "a/b")]
+    [DataRow("//a", "/a")]
+    [DataRow("//a", "//a")]
+    [DataRow("//a", "a")]
+    [DataRow("a//", "a/")]
+    [DataRow("a//", "a//")]
+    [DataRow("a//", "a")]
+    [DataRow("a//*", "a/b")]
+    [DataRow("a//*", "a//b")]
+    [DataRow("*//b", "a/b")]
+    [DataRow("*//b", "a//b")]
+    [DataRow("**//*.cs", "Foo.cs")]
+    [DataRow("**//*.cs", "src/Foo.cs")]
+    [DataRow("**//*.cs", "src/sub/Foo.cs")]
+    [DataRow("a//**//b", "a/b")]
+    [DataRow("a//**//b", "a/x/b")]
+    [DataRow("a//**//b", "a/x/y/b")]
     public void IsMatch_BashDialect_SequentialSeparators_AgreesWithBash(string pattern, string input)
     {
         string? bashPath = BashInterop.ResolveBashPath();
         if (bashPath is null)
         {
-            Skip.Test("bash oracle requires bash on PATH (or Git for Windows installed).");
+            Assert.Inconclusive("bash oracle requires bash on PATH (or Git for Windows installed).");
             return;
         }
 

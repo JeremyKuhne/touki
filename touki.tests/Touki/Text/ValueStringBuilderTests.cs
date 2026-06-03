@@ -8,9 +8,10 @@ using Touki.Text;
 
 namespace Touki;
 
+[TestClass]
 public unsafe class ValueStringBuilderTests
 {
-    [Test]
+    [TestMethod]
     public void Constructor_WithStackAlloc()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
@@ -18,7 +19,7 @@ public unsafe class ValueStringBuilderTests
         builder.Capacity.Should().Be(10);
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_WithInitialCapacity()
     {
         using ValueStringBuilder builder = new(20);
@@ -26,7 +27,7 @@ public unsafe class ValueStringBuilderTests
         builder.Capacity.Should().BeGreaterThanOrEqualTo(20);
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_WithInterpolatedStringParameters()
     {
         using ValueStringBuilder builder = new(5, 2);
@@ -34,7 +35,7 @@ public unsafe class ValueStringBuilderTests
         builder.Capacity.Should().BeGreaterThanOrEqualTo(5 + (2 * 11)); // literalLength + (formattedCount * GuessedLengthPerHole)
     }
 
-    [Test]
+    [TestMethod]
     public void Append_SingleChar()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
@@ -48,7 +49,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Hi");
     }
 
-    [Test]
+    [TestMethod]
     public void Append_CharCount()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
@@ -62,7 +63,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("XXXYY");
     }
 
-    [Test]
+    [TestMethod]
     public void Append_ReadOnlySpan()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -76,7 +77,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Hello World");
     }
 
-    [Test]
+    [TestMethod]
     public void Append_CharPointer()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
@@ -91,7 +92,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Test");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendLiteral_String()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -105,7 +106,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Hello World");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendLiteral_NullString()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
@@ -115,7 +116,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendLiteral_SingleChar()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
@@ -125,7 +126,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("A");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_String()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -139,7 +140,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Hello");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_Object()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -151,7 +152,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("42");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_ISpanFormattable()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -163,7 +164,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("12345.67");
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_CharCount()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -176,7 +177,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("YHelloXX World");
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_String()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -189,7 +190,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Oh Hello Beautiful World");
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_NullString()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -200,7 +201,7 @@ public unsafe class ValueStringBuilderTests
         builder.Length.Should().Be(5);
     }
 
-    [Test]
+    [TestMethod]
     public void Length_Property()
     {
         ValueStringBuilder builder = new(stackalloc char[10]);
@@ -221,14 +222,14 @@ public unsafe class ValueStringBuilderTests
         builder.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void Capacity_Property()
     {
         using ValueStringBuilder builder = new(stackalloc char[15]);
         builder.Capacity.Should().Be(15);
     }
 
-    [Test]
+    [TestMethod]
     public void Indexer_GetSet()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
@@ -241,7 +242,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Hallo");
     }
 
-    [Test]
+    [TestMethod]
     public void EnsureCapacity_AlreadySufficient()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
@@ -251,7 +252,7 @@ public unsafe class ValueStringBuilderTests
         builder.Capacity.Should().Be(originalCapacity);
     }
 
-    [Test]
+    [TestMethod]
     public void EnsureCapacity_NeedsGrowth()
     {
         using ValueStringBuilder builder = new(stackalloc char[5]);
@@ -260,14 +261,14 @@ public unsafe class ValueStringBuilderTests
         builder.Capacity.Should().BeGreaterThanOrEqualTo(10);
     }
 
-    [Test]
+    [TestMethod]
     public void ToString_EmptyBuilder()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
         builder.ToString().Should().Be("");
     }
 
-    [Test]
+    [TestMethod]
     public void ToString_WithContent()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -275,7 +276,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Hello World");
     }
 
-    [Test]
+    [TestMethod]
     public void ToStringAndClear_WithContent()
     {
         ValueStringBuilder builder = new(stackalloc char[20]);
@@ -287,7 +288,7 @@ public unsafe class ValueStringBuilderTests
         // Builder should be disposed and unusable after ToStringAndClear
     }
 
-    [Test]
+    [TestMethod]
     public void AsSpan_Basic()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -298,7 +299,7 @@ public unsafe class ValueStringBuilderTests
         span.Length.Should().Be(5);
     }
 
-    [Test]
+    [TestMethod]
     public void AsSpan_WithStart()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -309,7 +310,7 @@ public unsafe class ValueStringBuilderTests
         span.Length.Should().Be(5);
     }
 
-    [Test]
+    [TestMethod]
     public void AsSpan_WithStartAndLength()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -320,7 +321,7 @@ public unsafe class ValueStringBuilderTests
         span.Length.Should().Be(5);
     }
 
-    [Test]
+    [TestMethod]
     public unsafe void AsSpan_WithTerminate()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -336,7 +337,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void TryCopyTo_Success()
     {
         ValueStringBuilder builder = new(stackalloc char[20]);
@@ -352,7 +353,7 @@ public unsafe class ValueStringBuilderTests
         // Builder should be disposed after TryCopyTo
     }
 
-    [Test]
+    [TestMethod]
     public void TryCopyTo_InsufficientSpace()
     {
         ValueStringBuilder builder = new(stackalloc char[20]);
@@ -367,7 +368,7 @@ public unsafe class ValueStringBuilderTests
         // Builder should be disposed after TryCopyTo even on failure
     }
 
-    [Test]
+    [TestMethod]
     public void GetPinnableReference_Basic()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
@@ -379,7 +380,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public unsafe void GetPinnableReference_WithTerminate()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -392,7 +393,7 @@ public unsafe class ValueStringBuilderTests
         Unsafe.Add(ref reference, 4).Should().Be('\0');
     }
 
-    [Test]
+    [TestMethod]
     public void GrowthBehavior_ExceedsInitialCapacity()
     {
         using ValueStringBuilder builder = new(stackalloc char[5]);
@@ -406,7 +407,7 @@ public unsafe class ValueStringBuilderTests
         builder.Capacity.Should().BeGreaterThan(5);
     }
 
-    [Test]
+    [TestMethod]
     public void GrowthBehavior_MultipleGrowths()
     {
         using ValueStringBuilder builder = new(stackalloc char[2]);
@@ -420,7 +421,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(new string('X', 100));
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_MultipleCallsSafe()
     {
         ValueStringBuilder builder = new(10);
@@ -430,7 +431,7 @@ public unsafe class ValueStringBuilderTests
         builder.Dispose(); // Should not throw
     }
 
-    [Test]
+    [TestMethod]
     public void EdgeCases_EmptyOperations()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
@@ -445,7 +446,7 @@ public unsafe class ValueStringBuilderTests
         builder.Length.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void EdgeCases_LargeContent()
     {
         using ValueStringBuilder builder = new(10);
@@ -457,7 +458,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(largeString);
     }
 
-    [Test]
+    [TestMethod]
     public void ComplexScenario_MixedOperations()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
@@ -472,12 +473,12 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Begin Start Middle End!");
     }
 
-    [Test]
-    [Arguments(0)]
-    [Arguments(1)]
-    [Arguments(10)]
-    [Arguments(100)]
-    [Arguments(1000)]
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(1)]
+    [DataRow(10)]
+    [DataRow(100)]
+    [DataRow(1000)]
     public void Constructor_VariousCapacities(int capacity)
     {
         using ValueStringBuilder builder = new(capacity);
@@ -485,11 +486,11 @@ public unsafe class ValueStringBuilderTests
         builder.Length.Should().Be(0);
     }
 
-    [Test]
-    [Arguments("")]
-    [Arguments("A")]
-    [Arguments("Hello")]
-    [Arguments("This is a longer string to test")]
+    [TestMethod]
+    [DataRow("")]
+    [DataRow("A")]
+    [DataRow("Hello")]
+    [DataRow("This is a longer string to test")]
     public void RoundTrip_StringOperations(string input)
     {
         using ValueStringBuilder builder = new(input.Length + 10);
@@ -499,7 +500,7 @@ public unsafe class ValueStringBuilderTests
         builder.Length.Should().Be(input.Length);
     }
 
-    [Test]
+    [TestMethod]
     public void InterpolatedStringHandler_BasicUsage()
     {
         // Test the interpolated string handler constructor
@@ -513,25 +514,25 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Value: 42, Text: Hello");
     }
 
-    [Test]
-    [Arguments(10)]
-    [Arguments(100)]
+    [TestMethod]
+    [DataRow(10)]
+    [DataRow(100)]
     public void AsHandler_Int(int value)
     {
         string result = TestFormat($"Hello, {value}!");
         result.Should().Be($"Hello, {value}!");
     }
 
-    [Test]
-    [Arguments(DayOfWeek.Monday)]
-    [Arguments(DayOfWeek.Friday)]
+    [TestMethod]
+    [DataRow(DayOfWeek.Monday)]
+    [DataRow(DayOfWeek.Friday)]
     public void AsHandler_Enum(DayOfWeek value)
     {
         string result = TestFormat($"Hello, it's {value}!");
         result.Should().Be($"Hello, it's {value}!");
     }
 
-    [Test]
+    [TestMethod]
     public void StringBuilderBehavior()
     {
         StringBuilder builder = new();
@@ -546,7 +547,7 @@ public unsafe class ValueStringBuilderTests
 
     private static string TestFormat(ref ValueStringBuilder builder) => builder.ToStringAndDispose();
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_Int()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -554,7 +555,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Value: 42");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_String()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -562,7 +563,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Hello World!");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_Byte()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -570,7 +571,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Byte: 255");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_SByte()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -578,7 +579,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("SByte: -128");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_Bool()
     {
         using ValueStringBuilder builder = new(stackalloc char[30]);
@@ -586,7 +587,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("True: True, False: False");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_Char()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -594,7 +595,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Char: A");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_Short()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -602,7 +603,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Short: -32768");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_UShort()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -610,7 +611,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("UShort: 65535");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_UInt()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -618,7 +619,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("UInt: 4294967295");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_Long()
     {
         using ValueStringBuilder builder = new(stackalloc char[30]);
@@ -626,7 +627,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Long: -9223372036854775808");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_ULong()
     {
         using ValueStringBuilder builder = new(stackalloc char[30]);
@@ -634,7 +635,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("ULong: 18446744073709551615");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_Float()
     {
         using ValueStringBuilder builder = new(stackalloc char[30]);
@@ -642,7 +643,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Float: 3.14159");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_Double()
     {
         using ValueStringBuilder builder = new(stackalloc char[30]);
@@ -650,7 +651,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(string.Format("Double: {0}", 3.141592653589793));
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_Decimal()
     {
         using ValueStringBuilder builder = new(stackalloc char[30]);
@@ -658,7 +659,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Decimal: 123.456");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_DateTime()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -668,7 +669,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_DateTimeOffset()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -678,7 +679,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_NullableTypes()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -690,7 +691,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Nullable: 42, Null: ");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleArg_Object()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -699,7 +700,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Object: Hello World");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_TwoArgs()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -707,7 +708,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Name: John, Age: 25");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_TwoArgs_ReversedOrder()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -715,7 +716,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Age: 30, Name: Alice");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_ThreeArgs()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -723,7 +724,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Name: Bob, Age: 35, City: Seattle");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_FourArgs()
     {
         using ValueStringBuilder builder = new(stackalloc char[150]);
@@ -731,7 +732,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Name: Charlie, Age: 40, City: London, Country: UK");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_WithFormatSpecifiers()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -745,7 +746,7 @@ public unsafe class ValueStringBuilderTests
         result.Should().Contain("123.45");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_WithAlignment()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -753,7 +754,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Left: 'Hello     ' Right: '     World'");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_WithAlignmentAndFormat()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -761,7 +762,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Padded hex: '000000FF'");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_ReadOnlySpanArgs()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -771,7 +772,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Int: 42, String: Hello, Double: 3.14, Bool: True");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EmptyFormatString()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
@@ -779,7 +780,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_NoPlaceholders()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -787,7 +788,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("No placeholders");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_MultipleSameArgument()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -795,7 +796,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("5 + 5 = 10");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -803,7 +804,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{0} = 42");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_ArraySegmentByte()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -816,7 +817,7 @@ public unsafe class ValueStringBuilderTests
         // ArraySegment<byte> format may vary, but should contain the type information
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_ArraySegmentChar()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -829,7 +830,7 @@ public unsafe class ValueStringBuilderTests
         // ArraySegment<char> format may vary, but should contain the type information
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_StringFormatBehavior_NumberFormats()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
@@ -842,7 +843,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_StringFormatBehavior_DateTimeFormats()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
@@ -854,7 +855,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_StringFormatBehavior_CustomFormats()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -866,14 +867,14 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
-    [Arguments("G")]
-    [Arguments("N")]
-    [Arguments("F")]
-    [Arguments("E")]
-    [Arguments("e")]
-    [Arguments("C")]
-    [Arguments("P")]
+    [TestMethod]
+    [DataRow("G")]
+    [DataRow("N")]
+    [DataRow("F")]
+    [DataRow("E")]
+    [DataRow("e")]
+    [DataRow("C")]
+    [DataRow("P")]
     public void AppendFormat_StandardNumericFormats(string format)
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -886,11 +887,11 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(0)]
-    [Arguments(1)]
-    [Arguments(2)]
-    [Arguments(3)]
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(1)]
+    [DataRow(2)]
+    [DataRow(3)]
     public void AppendFormat_ArgumentIndexBoundaries(int argIndex)
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -902,7 +903,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Value: " + args[argIndex].As<object>().ToString());
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_LargeFormatString()
     {
         using ValueStringBuilder builder = new(stackalloc char[500]);
@@ -916,7 +917,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_MixedTypesPrecisionTest()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
@@ -937,7 +938,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_ArgumentIndexOutOfRange_ThrowsFormatException()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -955,7 +956,7 @@ public unsafe class ValueStringBuilderTests
         threwException.Should().BeTrue("Out of range argument index should throw FormatException");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_NegativeArgumentIndex_ThrowsFormatException()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -973,7 +974,7 @@ public unsafe class ValueStringBuilderTests
         threwException.Should().BeTrue("Negative argument index should throw FormatException");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_VeryLargeAlignment_ThrowsFormatException()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -991,7 +992,7 @@ public unsafe class ValueStringBuilderTests
         threwException.Should().BeTrue("Very large alignment should throw FormatException");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_ComplexFormatSpecifiers()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
@@ -1009,7 +1010,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_CustomFormatsWithPadding()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1022,7 +1023,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_StringWithSpecialCharacters()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1032,7 +1033,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be($"Special: '{specialString}'");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_NullValue()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1042,7 +1043,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Null value: ''");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_VeryLongString()
     {
         using ValueStringBuilder builder = new(stackalloc char[1000]);
@@ -1054,7 +1055,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_MultipleFormatsSequentially()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
@@ -1067,7 +1068,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("First: 1, Second: 2, Third: three");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_PerformanceWithManyArguments()
     {
         using ValueStringBuilder builder = new(2000);
@@ -1082,7 +1083,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_AtBeginning()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1090,7 +1091,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{Start} value");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_AtEnd()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1098,7 +1099,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("value {End}");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_OnlyEscaped()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1106,7 +1107,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{No} {Arguments}");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_Multiple()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1114,7 +1115,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{First} arg1 {Second} arg2 {Third}");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_Consecutive()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1122,7 +1123,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{{42}}");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_Mixed()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1130,7 +1131,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Value is {0: 42} and {1: test}");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_WithFormatSpecifiers()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1138,7 +1139,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{Format: 000000FF}");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_WithAlignment()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1146,7 +1147,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{Padded:       test}");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_WithAlignmentAndFormat()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1154,7 +1155,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{Hex: 000000FF}");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_ComplexPattern()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
@@ -1162,7 +1163,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{obj: { name: \"test\", value: 42 }}");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_ArgumentIndexReuse()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1170,7 +1171,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{arg0} = 42, {arg0} = 42");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_EmptyBetween()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1178,7 +1179,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{}middle{}");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_QuadrupleOpening()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1186,7 +1187,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{{42");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_QuadrupleClosing()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1194,7 +1195,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("42}}");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_NestedPattern()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1202,7 +1203,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{outer {inner value} outer}");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EscapedBraces_AllTypesOfEscaping()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);
@@ -1236,7 +1237,7 @@ public unsafe class ValueStringBuilderTests
         All = Flag1 | Flag2 | Flag3
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleEnumArg()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1248,7 +1249,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Value: Wednesday");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_MultipleEnumArgs()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1263,7 +1264,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Values: First, Second, Third");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumWithZeroValue()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1271,7 +1272,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Value: Zero");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_UndefinedEnumValue()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1286,7 +1287,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SingleFlagsEnum()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1306,7 +1307,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Flags: All");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_FlagsEnumNone()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1314,7 +1315,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Flags: None");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_UndefinedFlagsEnum()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1329,7 +1330,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_CombinedDefinedAndUndefinedFlags()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1345,7 +1346,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SystemFlagsEnum()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1358,10 +1359,10 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(ConsoleColor.Red)]
-    [Arguments(ConsoleColor.Blue)]
-    [Arguments(ConsoleColor.Yellow)]
+    [TestMethod]
+    [DataRow(ConsoleColor.Red)]
+    [DataRow(ConsoleColor.Blue)]
+    [DataRow(ConsoleColor.Yellow)]
     public void AppendFormat_EnumTheory(ConsoleColor color)
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1373,7 +1374,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumWithFormat()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1393,7 +1394,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Value: Second");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumWithFormatAndAlignment()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -1409,7 +1410,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Value: 2         ");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumArraySegment()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1569,7 +1570,7 @@ public unsafe class ValueStringBuilderTests
         ULongFlag4 = 4, ULongAll = ULongFlag1 | ULongFlag2 | ULongFlag4
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_ByteEnums()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1594,7 +1595,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_ByteFlagsEnums()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1619,7 +1620,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_SByteEnums()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1653,7 +1654,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_ShortEnums()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);        // Test extreme values
@@ -1671,7 +1672,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_UShortEnums()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1690,7 +1691,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_IntEnums()
     {
         using ValueStringBuilder builder = new(stackalloc char[150]);        // Test extreme values
@@ -1708,7 +1709,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_UIntEnums()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1727,7 +1728,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_LongEnums()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);        // Test extreme values
@@ -1745,7 +1746,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_ULongEnums()
     {
         using ValueStringBuilder builder = new(stackalloc char[150]);
@@ -1764,7 +1765,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_AllFlagsEnumsWithCombinations()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);        // Test combinations across different backing types
@@ -1787,7 +1788,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumFormatsWithAllBackingTypes()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);        // Test decimal format on different backing types
@@ -1810,7 +1811,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("General Long: LongSecond, General ULong: ULongSecond");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumZeroValuesAllTypes()
     {
         using ValueStringBuilder builder = new(stackalloc char[300]);        // Test zero values across all backing types - split into multiple calls due to parameter limit
@@ -1827,7 +1828,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Zeros: SByteZero, ShortZero, IntZero, LongZero, ByteNone, UShortNone, UIntNone, ULongNone");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumAllBackingTypes_Byte()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1845,7 +1846,7 @@ public unsafe class ValueStringBuilderTests
 
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumAllBackingTypes_SByte()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1863,7 +1864,7 @@ public unsafe class ValueStringBuilderTests
         directResult.Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumAllBackingTypes_Short()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1881,7 +1882,7 @@ public unsafe class ValueStringBuilderTests
         directResult.Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumAllBackingTypes_UShort()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1899,7 +1900,7 @@ public unsafe class ValueStringBuilderTests
         directResult.Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumAllBackingTypes_Int()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1917,7 +1918,7 @@ public unsafe class ValueStringBuilderTests
         directResult.Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumAllBackingTypes_UInt()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1935,7 +1936,7 @@ public unsafe class ValueStringBuilderTests
         directResult.Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumAllBackingTypes_Long()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1953,7 +1954,7 @@ public unsafe class ValueStringBuilderTests
         directResult.Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_EnumAllBackingTypes_ULong()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -1980,7 +1981,7 @@ public unsafe class ValueStringBuilderTests
     [Flags] private enum Int16FlagsEnum : short { None = 0, Flag1 = 1, Flag2 = 2 }
     [Flags] private enum UInt64FlagsEnum : ulong { None = 0, Flag1 = 1, Flag2 = 2 }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_AdditionalIntegerBackedEnums()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);        // Test short-backed enums
@@ -2003,7 +2004,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Undefined: 999, 999999999999");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_FlagsEnumsAdditionalTypes()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -2022,7 +2023,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be(expected);
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_InvalidFormatString_MissingClosingBrace()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -2040,7 +2041,7 @@ public unsafe class ValueStringBuilderTests
         threwException.Should().BeTrue("Format string with unclosed brace should throw FormatException");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_InvalidFormatString_InvalidAlignment()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -2058,7 +2059,7 @@ public unsafe class ValueStringBuilderTests
         threwException.Should().BeTrue("Format string with invalid alignment should throw FormatException");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_InvalidFormatString_CloseBraceWithoutOpen()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -2076,7 +2077,7 @@ public unsafe class ValueStringBuilderTests
         threwException.Should().BeTrue("Format string with unexpected closing brace should throw FormatException");
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_AccessAfterDispose()
     {
         ValueStringBuilder builder = new(stackalloc char[20]);
@@ -2093,7 +2094,7 @@ public unsafe class ValueStringBuilderTests
         builder.Capacity.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void EnsureCapacity_NegativeCapacity()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
@@ -2110,7 +2111,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_ComplexNestedBraces()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -2121,7 +2122,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{{Nested}} 42 {Escaped} 00123");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_ManyConsecutiveEscapedBraces()
     {
         using ValueStringBuilder builder = new(stackalloc char[50]);
@@ -2132,7 +2133,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("{{{42}}}");
     }
 
-    [Test]
+    [TestMethod]
     public void Append_AfterLengthManipulation()
     {
         ValueStringBuilder builder = new(stackalloc char[20]);
@@ -2144,7 +2145,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Hello");
     }
 
-    [Test]
+    [TestMethod]
     public void Length_InvalidValues()
     {
         ValueStringBuilder builder = new(stackalloc char[10]);
@@ -2175,7 +2176,7 @@ public unsafe class ValueStringBuilderTests
         builder.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_MaximumArgumentIndex()
     {
         using ValueStringBuilder builder = new(stackalloc char[100]);
@@ -2201,7 +2202,7 @@ public unsafe class ValueStringBuilderTests
         threwException.Should().BeTrue("Index beyond array bounds should throw FormatException");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormat_WithExtremelyLargeInput()
     {
         // Test with very large input to ensure memory management works properly
@@ -2221,7 +2222,7 @@ public unsafe class ValueStringBuilderTests
 
     // ---- Branch-coverage tests ----
 
-    [Test]
+    [TestMethod]
     public void Insert_CharCount_TriggersGrow()
     {
         using ValueStringBuilder builder = new(stackalloc char[8]);
@@ -2233,7 +2234,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().EndWith("XXXXbc");
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_NegativeIndex_Throws()
     {
         ValueStringBuilder builder = new(stackalloc char[8]);
@@ -2257,7 +2258,7 @@ public unsafe class ValueStringBuilderTests
         threw.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_IndexBeyondLength_Throws()
     {
         ValueStringBuilder builder = new(stackalloc char[8]);
@@ -2282,7 +2283,7 @@ public unsafe class ValueStringBuilderTests
         threw.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_NegativeCount_Throws()
     {
         ValueStringBuilder builder = new(stackalloc char[8]);
@@ -2306,7 +2307,7 @@ public unsafe class ValueStringBuilderTests
         threw.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Insert_String_TriggersGrow()
     {
         using ValueStringBuilder builder = new(stackalloc char[8]);
@@ -2316,7 +2317,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("aabcdefghijb");
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_OldEqualsNew_NoOp()
     {
         using ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2325,7 +2326,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Hello");
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_EmptyBuilder_NoOp()
     {
         using ValueStringBuilder builder = new(stackalloc char[8]);
@@ -2333,7 +2334,7 @@ public unsafe class ValueStringBuilderTests
         builder.Length.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Replace_ReplacesAllOccurrences()
     {
         using ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2342,7 +2343,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("HeXXo");
     }
 
-    [Test]
+    [TestMethod]
     public void Append_Char_Count_TriggersGrow()
     {
         using ValueStringBuilder builder = new(stackalloc char[4]);
@@ -2352,7 +2353,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().StartWith("abXXXXX");
     }
 
-    [Test]
+    [TestMethod]
     public unsafe void Append_CharPointer_TriggersGrow()
     {
         using ValueStringBuilder builder = new(stackalloc char[4]);
@@ -2366,7 +2367,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("ab0123456789ABCDEF");
     }
 
-    [Test]
+    [TestMethod]
     public void EnsureCapacity_NegativeCapacity_Throws()
     {
         ValueStringBuilder builder = new(stackalloc char[8]);
@@ -2390,7 +2391,7 @@ public unsafe class ValueStringBuilderTests
         threw.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void EnsureCapacity_AlreadySufficient_NoGrow()
     {
         using ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2399,7 +2400,7 @@ public unsafe class ValueStringBuilderTests
         builder.Capacity.Should().Be(originalCapacity);
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_Stream_EmptyBuilder_NoOp()
     {
         using MemoryStream stream = new();
@@ -2408,7 +2409,7 @@ public unsafe class ValueStringBuilderTests
         stream.Length.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_TextWriter_EmptyBuilder_NoOp()
     {
         System.IO.StringWriter writer = new();
@@ -2417,7 +2418,7 @@ public unsafe class ValueStringBuilderTests
         writer.ToString().Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void CopyTo_TextWriter_NullWriter_Throws()
     {
         ValueStringBuilder builder = new(stackalloc char[8]);
@@ -2442,7 +2443,7 @@ public unsafe class ValueStringBuilderTests
         threw.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_LiteralLengthFormattedCount_AllocatesPooledBuffer()
     {
         using ValueStringBuilder builder = new(literalLength: 8, formattedCount: 2);
@@ -2450,7 +2451,7 @@ public unsafe class ValueStringBuilderTests
         builder.Capacity.Should().BeGreaterThan(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_LiteralLengthFormattedCount_Provider_AllocatesPooledBuffer()
     {
         using ValueStringBuilder builder = new(literalLength: 4, formattedCount: 1, provider: CultureInfo.InvariantCulture);
@@ -2458,7 +2459,7 @@ public unsafe class ValueStringBuilderTests
         builder.Capacity.Should().BeGreaterThan(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_LiteralLengthFormattedCount_InitialBuffer_UsesProvidedBuffer()
     {
         using ValueStringBuilder builder = new(
@@ -2470,7 +2471,7 @@ public unsafe class ValueStringBuilderTests
         builder.Capacity.Should().Be(16);
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_Span_WithFormatProvider_Works()
     {
         ValueStringBuilder builder = new(stackalloc char[8], CultureInfo.InvariantCulture);
@@ -2485,7 +2486,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_InitialCapacity_WithFormatProvider_Works()
     {
         using ValueStringBuilder builder = new(initialCapacity: 32, provider: CultureInfo.InvariantCulture);
@@ -2493,7 +2494,7 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("ok");
     }
 
-    [Test]
+    [TestMethod]
     public void AppendSpan_RequestedLength_ReturnsWritableRegionAndAdvancesLength()
     {
         ValueStringBuilder builder = new(stackalloc char[8]);
@@ -2514,7 +2515,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendSpan_GrowsBufferWhenExceedingCapacity()
     {
         ValueStringBuilder builder = new(stackalloc char[2]);
@@ -2532,7 +2533,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendSpan_NegativeLength_Throws()
     {
         ValueStringBuilder builder = new(stackalloc char[4]);
@@ -2556,7 +2557,7 @@ public unsafe class ValueStringBuilderTests
         threw.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void RangeIndexer_ReturnsRequestedSubsection()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2573,7 +2574,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_ReadOnlySpan_AppendsContent()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2588,7 +2589,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_StringWithAlignmentAndFormat_RightAlignsValue()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2603,7 +2604,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_StringWithNegativeAlignment_LeftAlignsValue()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2618,7 +2619,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_ValueWithStringFormat_AppliesFormat()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2633,7 +2634,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_GenericValueWithAlignment_RightAlignsValue()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2648,7 +2649,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_GenericValueWithAlignmentZero_DoesNotPad()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2663,7 +2664,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_ReadOnlySpanWithAlignment_RightAlignsValue()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2678,7 +2679,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_ReadOnlySpanWithNegativeAlignment_LeftAlignsValue()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2693,7 +2694,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_ReadOnlySpanWithAlignmentSmallerThanValue_AppendsUnchanged()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2708,7 +2709,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_Object_NullValue_AppendsNothing()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2723,7 +2724,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_GenericWithStringFormat_AppliesFormat()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2738,7 +2739,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_NullStringValue_AppendsNothing()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -2753,7 +2754,7 @@ public unsafe class ValueStringBuilderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void AppendFormatted_CustomFormatter_InterceptsValue()
     {
         UpperCaseFormatProvider provider = new();

@@ -4,18 +4,19 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringSByte
 {
-    public static IEnumerable<sbyte> SByteData()
+    public static IEnumerable<object[]> SByteData()
     {
-        yield return 0;
-        yield return 42;
-        yield return sbyte.MaxValue;
-        yield return sbyte.MinValue;
+        yield return [(sbyte)0];
+        yield return [(sbyte)42];
+        yield return [sbyte.MaxValue];
+        yield return [sbyte.MinValue];
     }
 
-    [Test]
-    [MethodDataSource(nameof(SByteData))]
+    [TestMethod]
+    [DynamicData(nameof(SByteData))]
     public void SByteImplicit(sbyte @sbyte)
     {
         Value value = @sbyte;
@@ -28,8 +29,8 @@ public class StoringSByte
         value.Type.Should().Be(typeof(sbyte));
     }
 
-    [Test]
-    [MethodDataSource(nameof(SByteData))]
+    [TestMethod]
+    [DynamicData(nameof(SByteData))]
     public void SByteCreate(sbyte @sbyte)
     {
         Value value;
@@ -52,8 +53,8 @@ public class StoringSByte
         value.Type.Should().Be(typeof(sbyte));
     }
 
-    [Test]
-    [MethodDataSource(nameof(SByteData))]
+    [TestMethod]
+    [DynamicData(nameof(SByteData))]
     public void SByteInOut(sbyte @sbyte)
     {
         Value value = @sbyte;
@@ -65,8 +66,8 @@ public class StoringSByte
         ((sbyte)value).Should().Be(@sbyte);
     }
 
-    [Test]
-    [MethodDataSource(nameof(SByteData))]
+    [TestMethod]
+    [DynamicData(nameof(SByteData))]
     public void NullableSByteInSByteOut(sbyte @sbyte)
     {
         sbyte? source = @sbyte;
@@ -81,8 +82,8 @@ public class StoringSByte
         ((sbyte)value).Should().Be(@sbyte);
     }
 
-    [Test]
-    [MethodDataSource(nameof(SByteData))]
+    [TestMethod]
+    [DynamicData(nameof(SByteData))]
     public void SByteInNullableSByteOut(sbyte @sbyte)
     {
         sbyte source = @sbyte;
@@ -94,7 +95,7 @@ public class StoringSByte
         ((sbyte?)value).Should().Be(@sbyte);
     }
 
-    [Test]
+    [TestMethod]
     public void NullSByte()
     {
         sbyte? source = null;
@@ -104,8 +105,8 @@ public class StoringSByte
         value.As<sbyte?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(SByteData))]
+    [TestMethod]
+    [DynamicData(nameof(SByteData))]
     public void OutAsObject(sbyte @sbyte)
     {
         Value value = @sbyte;

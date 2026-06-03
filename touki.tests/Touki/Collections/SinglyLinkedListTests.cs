@@ -9,9 +9,10 @@
 
 namespace Touki.Collections;
 
+[TestClass]
 public class SinglyLinkedListTests
 {
-    [Test]
+    [TestMethod]
     public void AddFirst()
     {
         SinglyLinkedList<int> list = new();
@@ -39,7 +40,7 @@ public class SinglyLinkedListTests
         list.Last.Value.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void AddLast()
     {
         SinglyLinkedList<int> list = new();
@@ -67,7 +68,7 @@ public class SinglyLinkedListTests
         list.Last.Value.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void MoveToFront()
     {
         SinglyLinkedList<int> list = new();
@@ -106,7 +107,7 @@ public class SinglyLinkedListTests
         list.EnumerateToList().Should().Equal(5, 2, 1, 3, 4);
     }
 
-    [Test]
+    [TestMethod]
     public void MoveToFront_InvalidOperations()
     {
         SinglyLinkedList<int> list = new();
@@ -119,7 +120,7 @@ public class SinglyLinkedListTests
         Assert.Throws<InvalidOperationException>(enumerator.MoveCurrentToFront);
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveCurrent()
     {
         SinglyLinkedList<int> list = new();
@@ -153,7 +154,7 @@ public class SinglyLinkedListTests
         list.EnumerateToList().Should().Equal(2, 4);
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveCurrent_InvalidOperations()
     {
         SinglyLinkedList<int> list = new();
@@ -167,7 +168,7 @@ public class SinglyLinkedListTests
         Assert.Throws<InvalidOperationException>(enumerator.RemoveCurrent);
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_CreatesEmptyList()
     {
         SinglyLinkedList<string> list = new();
@@ -177,7 +178,7 @@ public class SinglyLinkedListTests
         list.Last.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void AddFirst_ReturnsNode()
     {
         SinglyLinkedList<int> list = new();
@@ -189,7 +190,7 @@ public class SinglyLinkedListTests
         node.Should().BeSameAs(list.First);
     }
 
-    [Test]
+    [TestMethod]
     public void AddLast_ReturnsNode()
     {
         SinglyLinkedList<int> list = new();
@@ -201,7 +202,7 @@ public class SinglyLinkedListTests
         node.Should().BeSameAs(list.Last);
     }
 
-    [Test]
+    [TestMethod]
     public void Node_ImplicitConversion_ReturnsValue()
     {
         SinglyLinkedList<string> list = new();
@@ -212,7 +213,7 @@ public class SinglyLinkedListTests
         value.Should().Be("test");
     }
 
-    [Test]
+    [TestMethod]
     public void Node_ImplicitConversion_NullNode_ReturnsDefault()
     {
         SinglyLinkedList<string>.Node? nullNode = null;
@@ -222,7 +223,7 @@ public class SinglyLinkedListTests
         value.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void Node_ValueProperty_CanBeSet()
     {
         SinglyLinkedList<int> list = new();
@@ -234,7 +235,7 @@ public class SinglyLinkedListTests
         ((int)node).Should().Be(20);
     }
 
-    [Test]
+    [TestMethod]
     public void Node_NextProperty_CanBeSet()
     {
         SinglyLinkedList<int> list = new();
@@ -249,7 +250,7 @@ public class SinglyLinkedListTests
         node1.Next.Should().BeSameAs(newNode);
     }
 
-    [Test]
+    [TestMethod]
     public void GetEnumerator_EmptyList_MoveNextReturnsFalse()
     {
         SinglyLinkedList<int> list = new();
@@ -259,7 +260,7 @@ public class SinglyLinkedListTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void GetEnumerator_SingleItem_EnumeratesCorrectly()
     {
         SinglyLinkedList<int> list = new();
@@ -272,7 +273,7 @@ public class SinglyLinkedListTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void GetEnumerator_MultipleItems_EnumeratesInOrder()
     {
         SinglyLinkedList<int> list = new();
@@ -291,7 +292,7 @@ public class SinglyLinkedListTests
         values.Should().Equal(1, 2, 3);
     }
 
-    [Test]
+    [TestMethod]
     public void Enumerator_Reset_ResetsToStart()
     {
         SinglyLinkedList<int> list = new();
@@ -307,7 +308,7 @@ public class SinglyLinkedListTests
         enumerator.Current.Value.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void Enumerator_Current_NotMovedReturnsDefault()
     {
         SinglyLinkedList<int> list = new();
@@ -318,7 +319,7 @@ public class SinglyLinkedListTests
         enumerator.Current.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void Enumerator_Current_EndReturnsDefault()
     {
         SinglyLinkedList<int> list = new();
@@ -331,7 +332,7 @@ public class SinglyLinkedListTests
         enumerator.Current.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveCurrent_FirstNode_UpdatesFirstAndLast()
     {
         SinglyLinkedList<int> list = new();
@@ -346,7 +347,7 @@ public class SinglyLinkedListTests
         list.Last.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveCurrent_MiddleNode_ConnectsPreviousToNext()
     {
         SinglyLinkedList<int> list = new();
@@ -365,7 +366,7 @@ public class SinglyLinkedListTests
         firstNode!.Next.Should().BeSameAs(lastNode);
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveCurrent_LastNode_UpdatesLast()
     {
         SinglyLinkedList<int> list = new();
@@ -383,7 +384,7 @@ public class SinglyLinkedListTests
         firstNode!.Next.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void MoveCurrentToFront_FirstNode_ResetsPosition()
     {
         SinglyLinkedList<int> list = new();
@@ -397,7 +398,7 @@ public class SinglyLinkedListTests
         enumerator.Current.Value.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void MoveCurrentToFront_MiddleNode_MovesToFront()
     {
         SinglyLinkedList<int> list = new();
@@ -414,7 +415,7 @@ public class SinglyLinkedListTests
         list.First.Next!.Value.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void MoveCurrentToFront_LastNode_MovesToFrontAndUpdatesLast()
     {
         SinglyLinkedList<int> list = new();
@@ -433,7 +434,7 @@ public class SinglyLinkedListTests
         list.Last!.Next.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void Enumerator_AfterRemoveOrMove_CurrentUpdated()
     {
         SinglyLinkedList<int> list = new();
@@ -449,7 +450,7 @@ public class SinglyLinkedListTests
         enumerator.Current.Should().BeSameAs(previousNode);
     }
 
-    [Test]
+    [TestMethod]
     public void List_WithNullValues_HandlesCorrectly()
     {
         SinglyLinkedList<string?> list = new();
@@ -470,7 +471,7 @@ public class SinglyLinkedListTests
         enumerator.Current.Value.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void Enumerator_Reset_AfterRemoveOrMove_ResetsCorrectly()
     {
         SinglyLinkedList<int> list = new();
@@ -486,7 +487,7 @@ public class SinglyLinkedListTests
         enumerator.Current.Value.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void Enumerator_MoveNext_AfterReset_StartsFromBeginning()
     {
         SinglyLinkedList<int> list = new();
@@ -503,7 +504,7 @@ public class SinglyLinkedListTests
         enumerator.Current.Value.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveCurrent_OnlyNode_LeavesEmptyList()
     {
         SinglyLinkedList<int> list = new();
@@ -520,7 +521,7 @@ public class SinglyLinkedListTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void MoveCurrentToFront_OnlyNode_ResetsEnumeratorPosition()
     {
         SinglyLinkedList<int> list = new();
@@ -537,7 +538,7 @@ public class SinglyLinkedListTests
         enumerator.Current.Value.Should().Be(42);
     }
 
-    [Test]
+    [TestMethod]
     public void Enumerator_RemoveCurrent_ThenMoveNext_ContinuesFromCorrectPosition()
     {
         SinglyLinkedList<int> list = new();
@@ -555,7 +556,7 @@ public class SinglyLinkedListTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Enumerator_MoveCurrentToFront_ThenMoveNext_ContinuesFromCorrectPosition()
     {
         SinglyLinkedList<int> list = new();
@@ -573,7 +574,7 @@ public class SinglyLinkedListTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveCurrent_ConsecutiveRemoves_ThrowsInvalidOperation()
     {
         SinglyLinkedList<int> list = new();
@@ -587,7 +588,7 @@ public class SinglyLinkedListTests
             .Should().Throw<InvalidOperationException>();
     }
 
-    [Test]
+    [TestMethod]
     public void MoveCurrentToFront_ConsecutiveMoves_ThrowsInvalidOperation()
     {
         SinglyLinkedList<int> list = new();
@@ -601,7 +602,7 @@ public class SinglyLinkedListTests
             .Should().Throw<InvalidOperationException>();
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveCurrent_AfterMoveToFront_ThrowsInvalidOperation()
     {
         SinglyLinkedList<int> list = new();
@@ -615,7 +616,7 @@ public class SinglyLinkedListTests
             .Should().Throw<InvalidOperationException>();
     }
 
-    [Test]
+    [TestMethod]
     public void MoveCurrentToFront_AfterRemoveCurrent_ThrowsInvalidOperation()
     {
         SinglyLinkedList<int> list = new();
@@ -629,7 +630,7 @@ public class SinglyLinkedListTests
             .Should().Throw<InvalidOperationException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Enumerator_MultipleEnumerators_IndependentOperation()
     {
         SinglyLinkedList<int> list = new();
@@ -652,7 +653,7 @@ public class SinglyLinkedListTests
         enumerator2.Current.Value.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void AddFirst_MultipleValues_MaintainsOrder()
     {
         SinglyLinkedList<int> list = new();
@@ -667,7 +668,7 @@ public class SinglyLinkedListTests
         list.Last!.Value.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void AddLast_MultipleValues_MaintainsOrder()
     {
         SinglyLinkedList<int> list = new();
@@ -682,7 +683,7 @@ public class SinglyLinkedListTests
         list.Last!.Value.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void Node_Constructor_SetsValueCorrectly()
     {
         SinglyLinkedList<string>.Node node = new("test");
@@ -691,7 +692,7 @@ public class SinglyLinkedListTests
         node.Next.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void List_MixedAddOperations_MaintainsCorrectStructure()
     {
         SinglyLinkedList<int> list = new();
@@ -707,7 +708,7 @@ public class SinglyLinkedListTests
         list.Last!.Value.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void Enumerator_FinishedState_MoveNextReturnsFalse()
     {
         SinglyLinkedList<int> list = new();
@@ -720,7 +721,7 @@ public class SinglyLinkedListTests
         enumerator.MoveNext().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void WalkToList_EmptyList_ReturnsEmptyList()
     {
         SinglyLinkedList<int> list = new();
@@ -730,7 +731,7 @@ public class SinglyLinkedListTests
         result.Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateToList_EmptyList_ReturnsEmptyList()
     {
         SinglyLinkedList<int> list = new();
@@ -740,7 +741,7 @@ public class SinglyLinkedListTests
         result.Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void Node_ImplicitConversion_WithValueTypes_ReturnsCorrectDefault()
     {
         SinglyLinkedList<int>.Node? nullNode = null;
@@ -750,7 +751,7 @@ public class SinglyLinkedListTests
         value.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void List_LargeNumberOfItems_MaintainsPerformance()
     {
         SinglyLinkedList<int> list = new();

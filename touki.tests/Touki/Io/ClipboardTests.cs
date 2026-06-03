@@ -10,7 +10,7 @@ namespace Touki.Io;
 /// <remarks>
 ///  <para>
 ///   Clipboard access is global process state and races other tests that touch the
-///   clipboard, so the entire class is serialized via <see cref="NotInParallelAttribute"/>.
+///   clipboard, so the entire class is serialized via <see cref="DoNotParallelizeAttribute"/>.
 ///   Tests are gated on <see cref="Clipboard.IsAvailable"/>; on a headless Linux host
 ///   with no clipboard helper installed they skip rather than fail.
 ///  </para>
@@ -24,10 +24,24 @@ namespace Touki.Io;
 ///   clipboard surface.
 ///  </para>
 /// </remarks>
-[NotInParallel("Sequential")]
+[DoNotParallelize]
+[TestClass]
 public class ClipboardTests
 {
-    [Test, Retry(4), SkipUnlessClipboardAvailable]
+    /// <summary>
+    ///  Skips every test in the class when the platform clipboard is unavailable
+    ///  (for example a headless Linux host with no clipboard helper installed).
+    /// </summary>
+    [TestInitialize]
+    public void SkipWhenClipboardUnavailable()
+    {
+        if (!Clipboard.IsAvailable)
+        {
+            Assert.Inconclusive("Clipboard is not available on this host.");
+        }
+    }
+
+    [TestMethod, Retry(4)]
     public void TrySetText_ThenTryGetText_RoundTrips()
     {
         string original = SnapshotText();
@@ -44,7 +58,7 @@ public class ClipboardTests
         }
     }
 
-    [Test, Retry(4), SkipUnlessClipboardAvailable]
+    [TestMethod, Retry(4)]
     public void TrySetText_Empty_RoundTripsAsEmpty()
     {
         string original = SnapshotText();
@@ -60,7 +74,7 @@ public class ClipboardTests
         }
     }
 
-    [Test, Retry(4), SkipUnlessClipboardAvailable]
+    [TestMethod, Retry(4)]
     public void TrySetText_TextWithUnicode_RoundTrips()
     {
         string original = SnapshotText();
@@ -78,7 +92,7 @@ public class ClipboardTests
         }
     }
 
-    [Test, Retry(4), SkipUnlessClipboardAvailable]
+    [TestMethod, Retry(4)]
     public void HasText_AfterTrySetText_IsTrue()
     {
         string original = SnapshotText();
@@ -93,7 +107,7 @@ public class ClipboardTests
         }
     }
 
-    [Test, Retry(4), SkipUnlessClipboardAvailable]
+    [TestMethod, Retry(4)]
     public void TryClear_AfterTrySetText_ClearsClipboard()
     {
         string original = SnapshotText();

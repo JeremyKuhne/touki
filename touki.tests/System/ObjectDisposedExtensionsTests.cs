@@ -4,17 +4,18 @@
 
 namespace Touki;
 
+[TestClass]
 public class ObjectDisposedExtensionsTests
 {
     private sealed class Sample { }
 
-    [Test]
+    [TestMethod]
     public void ThrowIf_FalseWithInstance_DoesNotThrow()
     {
         ObjectDisposedException.ThrowIf(false, new Sample());
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIf_TrueWithInstance_ThrowsWithTypeName()
     {
         Action action = () => ObjectDisposedException.ThrowIf(true, new Sample());
@@ -22,13 +23,13 @@ public class ObjectDisposedExtensionsTests
             .Which.ObjectName.Should().Be(typeof(Sample).FullName);
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIf_FalseWithType_DoesNotThrow()
     {
         ObjectDisposedException.ThrowIf(false, typeof(Sample));
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIf_TrueWithType_ThrowsWithTypeName()
     {
         Action action = () => ObjectDisposedException.ThrowIf(true, typeof(Sample));

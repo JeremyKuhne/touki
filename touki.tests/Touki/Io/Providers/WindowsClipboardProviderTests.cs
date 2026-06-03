@@ -19,22 +19,23 @@ namespace Touki.Io.Providers;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   The class shares <see cref="ClipboardTests"/>' sequential <c>NotInParallel</c> group
-///   so the clipboard is not touched by parallel tests. Tests skip at runtime on
-///   non-Windows hosts because the .NET 10 build also runs on Linux and macOS.
+///   The class is serialized via <see cref="DoNotParallelizeAttribute"/> like
+///   <see cref="ClipboardTests"/> so the clipboard is not touched by parallel tests. Tests
+///   skip at runtime on non-Windows hosts because the .NET 10 build also runs on Linux and macOS.
 ///  </para>
 /// </remarks>
-[NotInParallel("Sequential")]
+[DoNotParallelize]
 [SupportedOSPlatform("windows5.1.2600")]
+[TestClass]
 public unsafe class WindowsClipboardProviderTests
 {
-    [Test, Retry(4), SkipUnlessClipboardAvailable]
+    [TestMethod, Retry(4)]
     public void TryGetText_WhenClipboardHasZeroByteUnicodeTextHandle_ExercisesDefensivePath()
     {
 #if NET
         if (!OperatingSystem.IsWindows())
         {
-            Skip.Test("Exercises Win32 PInvoke surface; Windows-only test.");
+            Assert.Inconclusive("Exercises Win32 PInvoke surface; Windows-only test.");
         }
 #endif
         string original = SnapshotText();
@@ -61,7 +62,7 @@ public unsafe class WindowsClipboardProviderTests
                     // Free the orphan handle, then skip with a clear reason instead of
                     // silently returning success or hard-failing.
                     PInvoke.GlobalFree(hGlobal);
-                    Skip.Test("Host rejected SetClipboardData(CF_UNICODETEXT) with a zero-byte HGLOBAL; "
+                    Assert.Inconclusive("Host rejected SetClipboardData(CF_UNICODETEXT) with a zero-byte HGLOBAL; "
                         + "cannot exercise the zero-byte defensive path on this configuration.");
                 }
             }

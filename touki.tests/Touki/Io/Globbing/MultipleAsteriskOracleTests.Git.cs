@@ -10,18 +10,22 @@ namespace Touki.Io.Globbing;
 ///  each verdict against <c>LibGit2Sharp</c>'s gitignore evaluator. Shares the
 ///  one-shot scratch repository fixture with the sequential-separator suite.
 /// </summary>
-[ClassDataSource<SequentialSeparatorGitOracleTests.RepoFixture>(Shared = SharedType.PerClass)]
-[NotInParallel(nameof(MultipleAsteriskGitOracleTests))]
+[DoNotParallelize]
+[TestClass]
 public sealed class MultipleAsteriskGitOracleTests
 {
-    private readonly SequentialSeparatorGitOracleTests.RepoFixture _fixture;
+    private static SequentialSeparatorGitOracleTests.RepoFixture s_fixture = null!;
 
-    public MultipleAsteriskGitOracleTests(SequentialSeparatorGitOracleTests.RepoFixture fixture) => _fixture = fixture;
+    [ClassInitialize]
+    public static void ClassInit(TestContext context) => s_fixture = new SequentialSeparatorGitOracleTests.RepoFixture();
+
+    [ClassCleanup]
+    public static void ClassTeardown() => s_fixture?.Dispose();
 
     public static IEnumerable<(string, string)> Rows() => MultipleAsteriskRows.Rows();
 
-    [Test]
-    [MethodDataSource(nameof(Rows))]
+    [TestMethod]
+    [DynamicData(nameof(Rows))]
     public void IsMatch_GitDialect_MultipleAsterisks_AgreesWithLibGit2(string pattern, string input)
     {
         // Documented Git dialect divergence. After `***`+ &rarr; `**` normalization
@@ -31,11 +35,11 @@ public sealed class MultipleAsteriskGitOracleTests
         // docs/globbing-feature-plan.md "Multiple-asterisk-run behavior" findings.
         if ((pattern, input) == ("a/***", "a/"))
         {
-            Skip.Test("Documented Git trailing-globstar must-consume-one-segment divergence.");
+            Assert.Inconclusive("Documented Git trailing-globstar must-consume-one-segment divergence.");
             return;
         }
 
-        bool oracle = _fixture.IsIgnored(pattern, input);
+        bool oracle = s_fixture.IsIgnored(pattern, input);
         bool actual = GlobSpecification.Compile(pattern, GlobDialect.Git).IsMatch(input);
         actual.Should().Be(
             oracle,

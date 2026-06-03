@@ -22,6 +22,7 @@ namespace Touki.Io.Globbing;
 ///   .NET Framework. Run on net10 only.
 ///  </para>
 /// </remarks>
+[TestClass]
 public class SequentialSeparatorSimpleOracleTests
 {
     private static bool OracleMatches(string pattern, string input) =>
@@ -30,32 +31,32 @@ public class SequentialSeparatorSimpleOracleTests
     private static bool ToukiMatches(string pattern, string input) =>
         GlobSpecification.Compile(pattern, GlobDialect.Simple).IsMatch(input);
 
-    [Test]
+    [TestMethod]
     // --- Doubled separator: must NOT be coalesced (Simple is path-unaware) ---
-    [Arguments("a//b", "a/b")]
-    [Arguments("a//b", "a//b")]
-    [Arguments("a//b", "a///b")]
-    [Arguments("a//b", "ab")]
+    [DataRow("a//b", "a/b")]
+    [DataRow("a//b", "a//b")]
+    [DataRow("a//b", "a///b")]
+    [DataRow("a//b", "ab")]
     // --- Tripled / quadrupled separator runs ---
-    [Arguments("a///b", "a/b")]
-    [Arguments("a///b", "a//b")]
-    [Arguments("a///b", "a///b")]
-    [Arguments("a////b", "a///b")]
-    [Arguments("a////b", "a////b")]
+    [DataRow("a///b", "a/b")]
+    [DataRow("a///b", "a//b")]
+    [DataRow("a///b", "a///b")]
+    [DataRow("a////b", "a///b")]
+    [DataRow("a////b", "a////b")]
     // --- Leading separator runs ---
-    [Arguments("//a", "/a")]
-    [Arguments("//a", "//a")]
-    [Arguments("//a", "a")]
+    [DataRow("//a", "/a")]
+    [DataRow("//a", "//a")]
+    [DataRow("//a", "a")]
     // --- Trailing separator runs ---
-    [Arguments("a//", "a/")]
-    [Arguments("a//", "a//")]
-    [Arguments("a//", "a")]
+    [DataRow("a//", "a/")]
+    [DataRow("a//", "a//")]
+    [DataRow("a//", "a")]
     // --- Doubled separator surrounding a wildcard ---
-    [Arguments("a//*", "a/b")]
-    [Arguments("a//*", "a//b")]
-    [Arguments("*//b", "a/b")]
-    [Arguments("*//b", "a//b")]
-    [Arguments("*//b", "//b")]
+    [DataRow("a//*", "a/b")]
+    [DataRow("a//*", "a//b")]
+    [DataRow("*//b", "a/b")]
+    [DataRow("*//b", "a//b")]
+    [DataRow("*//b", "//b")]
     public void IsMatch_SimpleDialect_SequentialSeparators_AgreesWithBcl(string pattern, string input)
     {
         bool oracle = OracleMatches(pattern, input);

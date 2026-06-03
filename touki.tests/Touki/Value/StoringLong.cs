@@ -4,18 +4,19 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringLong
 {
-    public static IEnumerable<long> LongData()
+    public static IEnumerable<object[]> LongData()
     {
-        yield return 0;
-        yield return 42;
-        yield return long.MaxValue;
-        yield return long.MinValue;
+        yield return [0L];
+        yield return [42L];
+        yield return [long.MaxValue];
+        yield return [long.MinValue];
     }
 
-    [Test]
-    [MethodDataSource(nameof(LongData))]
+    [TestMethod]
+    [DynamicData(nameof(LongData))]
     public void LongImplicit(long @long)
     {
         Value value = @long;
@@ -28,8 +29,8 @@ public class StoringLong
         value.Type.Should().Be(typeof(long));
     }
 
-    [Test]
-    [MethodDataSource(nameof(LongData))]
+    [TestMethod]
+    [DynamicData(nameof(LongData))]
     public void LongCreate(long @long)
     {
         Value value;
@@ -52,8 +53,8 @@ public class StoringLong
         value.Type.Should().Be(typeof(long));
     }
 
-    [Test]
-    [MethodDataSource(nameof(LongData))]
+    [TestMethod]
+    [DynamicData(nameof(LongData))]
     public void LongInOut(long @long)
     {
         Value value = @long;
@@ -65,8 +66,8 @@ public class StoringLong
         ((long)value).Should().Be(@long);
     }
 
-    [Test]
-    [MethodDataSource(nameof(LongData))]
+    [TestMethod]
+    [DynamicData(nameof(LongData))]
     public void NullableLongInLongOut(long @long)
     {
         long? source = @long;
@@ -81,8 +82,8 @@ public class StoringLong
         ((long)value).Should().Be(@long);
     }
 
-    [Test]
-    [MethodDataSource(nameof(LongData))]
+    [TestMethod]
+    [DynamicData(nameof(LongData))]
     public void LongInNullableLongOut(long @long)
     {
         long source = @long;
@@ -94,8 +95,8 @@ public class StoringLong
         ((long?)value).Should().Be(@long);
     }
 
-    [Test]
-    [MethodDataSource(nameof(LongData))]
+    [TestMethod]
+    [DynamicData(nameof(LongData))]
     public void BoxedLong(long @long)
     {
         long i = @long;
@@ -120,7 +121,7 @@ public class StoringLong
         nullableResult!.Value.Should().Be(@long);
     }
 
-    [Test]
+    [TestMethod]
     public void NullLong()
     {
         long? source = null;
@@ -130,8 +131,8 @@ public class StoringLong
         value.As<long?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(LongData))]
+    [TestMethod]
+    [DynamicData(nameof(LongData))]
     public void OutAsObject(long @long)
     {
         Value value = @long;

@@ -20,6 +20,7 @@ namespace Touki.Io.Globbing;
 ///   with the MSBuild dialect (which coalesces).
 ///  </para>
 /// </remarks>
+[TestClass]
 public class SequentialSeparatorPosixPathOracleTests
 {
     private static bool OracleMatches(string pattern, string input) =>
@@ -28,32 +29,32 @@ public class SequentialSeparatorPosixPathOracleTests
     private static bool ToukiMatches(string pattern, string input) =>
         GlobSpecification.Compile(pattern, GlobDialect.PosixPath).IsMatch(input);
 
-    [Test]
-    [Arguments("a//b", "a/b")]
-    [Arguments("a//b", "a//b")]
-    [Arguments("a//b", "a///b")]
-    [Arguments("a//b", "ab")]
-    [Arguments("a//b", "a/x/b")]
-    [Arguments("a///b", "a/b")]
-    [Arguments("a///b", "a//b")]
-    [Arguments("a///b", "a///b")]
-    [Arguments("a////b", "a///b")]
-    [Arguments("//a", "/a")]
-    [Arguments("//a", "//a")]
-    [Arguments("//a", "a")]
-    [Arguments("a//", "a/")]
-    [Arguments("a//", "a//")]
-    [Arguments("a//", "a")]
-    [Arguments("a//*", "a/b")]
-    [Arguments("a//*", "a//b")]
-    [Arguments("*//b", "a/b")]
-    [Arguments("*//b", "a//b")]
-    [Arguments("*//b", "//b")]
+    [TestMethod]
+    [DataRow("a//b", "a/b")]
+    [DataRow("a//b", "a//b")]
+    [DataRow("a//b", "a///b")]
+    [DataRow("a//b", "ab")]
+    [DataRow("a//b", "a/x/b")]
+    [DataRow("a///b", "a/b")]
+    [DataRow("a///b", "a//b")]
+    [DataRow("a///b", "a///b")]
+    [DataRow("a////b", "a///b")]
+    [DataRow("//a", "/a")]
+    [DataRow("//a", "//a")]
+    [DataRow("//a", "a")]
+    [DataRow("a//", "a/")]
+    [DataRow("a//", "a//")]
+    [DataRow("a//", "a")]
+    [DataRow("a//*", "a/b")]
+    [DataRow("a//*", "a//b")]
+    [DataRow("*//b", "a/b")]
+    [DataRow("*//b", "a//b")]
+    [DataRow("*//b", "//b")]
     public void IsMatch_PosixPathDialect_SequentialSeparators_AgreesWithFnmatchPathname(string pattern, string input)
     {
         if (!FnmatchInterop.IsSupported)
         {
-            Skip.Test("fnmatch(3) oracle requires Linux or macOS.");
+            Assert.Inconclusive("fnmatch(3) oracle requires Linux or macOS.");
             return;
         }
 

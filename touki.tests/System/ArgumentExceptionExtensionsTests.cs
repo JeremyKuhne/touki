@@ -4,9 +4,10 @@
 
 namespace Touki;
 
+[TestClass]
 public class ArgumentExceptionExtensionsTests
 {
-    [Test]
+    [TestMethod]
     public void ThrowIfNullOrEmpty_Null_ThrowsArgumentNull()
     {
         string? value = null;
@@ -14,7 +15,7 @@ public class ArgumentExceptionExtensionsTests
         action.Should().Throw<ArgumentNullException>().WithParameterName(nameof(value));
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNullOrEmpty_Empty_ThrowsArgument()
     {
         string value = string.Empty;
@@ -23,19 +24,19 @@ public class ArgumentExceptionExtensionsTests
             .Which.ParamName.Should().Be(nameof(value));
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNullOrEmpty_WhiteSpace_DoesNotThrow()
     {
         ArgumentException.ThrowIfNullOrEmpty("  ");
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNullOrEmpty_NonEmpty_DoesNotThrow()
     {
         ArgumentException.ThrowIfNullOrEmpty("x");
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNullOrWhiteSpace_Null_ThrowsArgumentNull()
     {
         string? value = null;
@@ -43,7 +44,7 @@ public class ArgumentExceptionExtensionsTests
         action.Should().Throw<ArgumentNullException>().WithParameterName(nameof(value));
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNullOrWhiteSpace_Empty_ThrowsArgument()
     {
         string value = string.Empty;
@@ -52,7 +53,7 @@ public class ArgumentExceptionExtensionsTests
             .Which.ParamName.Should().Be(nameof(value));
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNullOrWhiteSpace_WhiteSpaceOnly_ThrowsArgument()
     {
         string value = " \t\r\n";
@@ -61,7 +62,7 @@ public class ArgumentExceptionExtensionsTests
             .Which.ParamName.Should().Be(nameof(value));
     }
 
-    [Test]
+    [TestMethod]
     public void ThrowIfNullOrWhiteSpace_NonWhiteSpace_DoesNotThrow()
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(" x ");

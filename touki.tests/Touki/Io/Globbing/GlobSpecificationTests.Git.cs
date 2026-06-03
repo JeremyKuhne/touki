@@ -8,41 +8,41 @@ public partial class GlobSpecificationTests
 {
     // --- Git dialect ---
 
-    [Test]
+    [TestMethod]
     // Git has implicit globstar, '/' separator, '\' escape, supports classes, and
     // strips gitignore-style leading '!' / leading '/' / trailing '/' markers.
     // Non-anchored patterns without an internal '/' match at any path depth (the
     // factory prepends `**/` at compile time per the gitignore "match anywhere" rule).
-    [Arguments("*.cs", "Foo.cs", true)]
-    [Arguments("*.cs", "src/Foo.cs", true)]                   // match-anywhere
-    [Arguments("*.cs", "a/b/c/Foo.cs", true)]                 // match-anywhere
-    [Arguments("**/*.cs", "src/Foo.cs", true)]
-    [Arguments("[abc].txt", "a.txt", true)]
+    [DataRow("*.cs", "Foo.cs", true)]
+    [DataRow("*.cs", "src/Foo.cs", true)]                   // match-anywhere
+    [DataRow("*.cs", "a/b/c/Foo.cs", true)]                 // match-anywhere
+    [DataRow("**/*.cs", "src/Foo.cs", true)]
+    [DataRow("[abc].txt", "a.txt", true)]
     // Patterns with an internal '/' are treated as anchored to the gitignore root.
-    [Arguments("src/*.cs", "src/Foo.cs", true)]
-    [Arguments("src/*.cs", "lib/src/Foo.cs", false)]          // anchored: nested doesn't match
+    [DataRow("src/*.cs", "src/Foo.cs", true)]
+    [DataRow("src/*.cs", "lib/src/Foo.cs", false)]          // anchored: nested doesn't match
     public void IsMatch_Git_BasicCases(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Git)
             .IsMatch(input).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     // Leading '/' anchors the pattern to the gitignore root; the leading '/' is
     // stripped but the pattern is no longer subject to the "match anywhere" rule.
-    [Arguments("/bin", "bin", true)]
-    [Arguments("/bin", "src/bin", false)]
+    [DataRow("/bin", "bin", true)]
+    [DataRow("/bin", "src/bin", false)]
     public void IsMatch_Git_RootAnchored(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Git)
             .IsMatch(input).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     // Leading '!' negates the match.
-    [Arguments("!*.log", "Foo.log", false)]
-    [Arguments("!*.log", "Foo.txt", true)]
+    [DataRow("!*.log", "Foo.log", false)]
+    [DataRow("!*.log", "Foo.txt", true)]
     public void IsMatch_Git_Negation(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(pattern, GlobDialect.Git)
             .IsMatch(input).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     public void Compile_Git_LeadingBang_SetsNegated()
     {
         GlobSpecification matcher = GlobSpecification.Compile("!*.log", GlobDialect.Git);
@@ -51,7 +51,7 @@ public partial class GlobSpecificationTests
         matcher.DirectoryOnly.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Compile_Git_LeadingSlash_SetsRootAnchored()
     {
         GlobSpecification matcher = GlobSpecification.Compile("/bin", GlobDialect.Git);
@@ -61,7 +61,7 @@ public partial class GlobSpecificationTests
         matcher.IsMatch("bin").Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Compile_Git_TrailingSlash_SetsDirectoryOnly()
     {
         GlobSpecification matcher = GlobSpecification.Compile("logs/", GlobDialect.Git);
@@ -71,7 +71,7 @@ public partial class GlobSpecificationTests
         matcher.IsMatch("logs").Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Compile_Git_AllThreeMarkers_StrippedAndExposed()
     {
         // !/bin/  ->  Negated, RootAnchored, DirectoryOnly all set; matcher matches "bin".
@@ -85,18 +85,18 @@ public partial class GlobSpecificationTests
         matcher.IsMatch("logs").Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Compile_Git_SeparatorIsForwardSlash() =>
         GlobSpecification.Compile("*", GlobDialect.Git).Separator.Should().Be('/');
 
     // --- Negation property (default false on non-Git dialects) ---
 
-    [Test]
-    [Arguments(GlobDialect.Posix, "!*.cs")]
-    [Arguments(GlobDialect.PosixPath, "!*.cs")]
-    [Arguments(GlobDialect.MSBuild, "!*.cs")]
-    [Arguments(GlobDialect.Bash, "!*.cs")]
-    [Arguments(GlobDialect.FileSystemGlobbing, "!*.cs")]
+    [TestMethod]
+    [DataRow(GlobDialect.Posix, "!*.cs")]
+    [DataRow(GlobDialect.PosixPath, "!*.cs")]
+    [DataRow(GlobDialect.MSBuild, "!*.cs")]
+    [DataRow(GlobDialect.Bash, "!*.cs")]
+    [DataRow(GlobDialect.FileSystemGlobbing, "!*.cs")]
     public void Compile_NonGit_LeadingBang_IsLiteral(GlobDialect dialect, string pattern)
     {
         GlobSpecification matcher = GlobSpecification.Compile(pattern, dialect);
@@ -112,10 +112,10 @@ public partial class GlobSpecificationTests
     //   "!"   -> strip '!' -> empty, then pattern[0] == '/' threw.
     //   "/"   -> strip '/' -> empty, then pattern[^1] == '/' threw.
     //   "!/"  -> strip '!' -> "/", strip '/' -> empty, then pattern[^1] threw.
-    [Test]
-    [Arguments("!", true, false, false)]
-    [Arguments("/", false, true, false)]
-    [Arguments("!/", true, true, false)]
+    [TestMethod]
+    [DataRow("!", true, false, false)]
+    [DataRow("/", false, true, false)]
+    [DataRow("!/", true, true, false)]
     public void Compile_Git_PathologicalShortPatterns_DoesNotThrow(
         string pattern,
         bool expectedNegated,

@@ -35,32 +35,33 @@ namespace Touki.Io.Globbing;
 ///   macOS, whose system bash is 3.2) - see <see cref="BashInterop.ResolveBashPath"/>.
 ///  </para>
 /// </remarks>
+[TestClass]
 public class NegationPruningBashOracleTests
 {
-    public static IEnumerable<string> NegationPatterns() =>
+    public static IEnumerable<object[]> NegationPatterns() =>
     [
         // First-segment anchored negation.
-        "!(bin|obj)/**/*.cs",
-        "!(bin)/*.cs",
+        ["!(bin|obj)/**/*.cs"],
+        ["!(bin)/*.cs"],
         // Floating negation behind a globstar (the must-not-prune-root-bin case).
-        "**/!(bin)/*.cs",
+        ["**/!(bin)/*.cs"],
         // Negation anchored under a literal prefix.
-        "src/!(bin)/**/*.cs",
-        "src/**/!(obj)/*.cs",
+        ["src/!(bin)/**/*.cs"],
+        ["src/**/!(obj)/*.cs"],
         // Two anchored negations.
-        "!(bin|obj)/!(test)/*.cs",
+        ["!(bin|obj)/!(test)/*.cs"],
         // No negation - pruning inactive, must still agree with the oracle.
-        "**/*.cs",
+        ["**/*.cs"],
     ];
 
-    [Test]
-    [MethodDataSource(nameof(NegationPatterns))]
+    [TestMethod]
+    [DynamicData(nameof(NegationPatterns))]
     public void Enumerate_DirectoryPruning_AgreesWithBash(string pattern)
     {
         string? bashPath = BashInterop.ResolveBashPath();
         if (bashPath is null)
         {
-            Skip.Test("bash oracle requires bash 4+ on PATH (or Git for Windows installed).");
+            Assert.Inconclusive("bash oracle requires bash 4+ on PATH (or Git for Windows installed).");
             return;
         }
 

@@ -4,15 +4,16 @@
 
 namespace Touki.Io.Globbing;
 
+[TestClass]
 public class ExtGlobExcludeProbeTests
 {
-    [Test]
-    [Arguments("bin/**", "src/bin/foo.cs", false)]    // 'bin/**' is root-anchored under MSBuild; shouldn't match nested.
-    [Arguments("bin/**", "bin/foo.cs", true)]
-    [Arguments("@(bin|obj)/**", "src/bin/foo.cs", false)]
-    [Arguments("@(bin|obj)/**", "bin/foo.cs", true)]
-    [Arguments("@(bin|obj)/**", "obj/foo.cs", true)]
-    [Arguments("@(bin|obj)/**", "src/foo.cs", false)]
+    [TestMethod]
+    [DataRow("bin/**", "src/bin/foo.cs", false)]    // 'bin/**' is root-anchored under MSBuild; shouldn't match nested.
+    [DataRow("bin/**", "bin/foo.cs", true)]
+    [DataRow("@(bin|obj)/**", "src/bin/foo.cs", false)]
+    [DataRow("@(bin|obj)/**", "bin/foo.cs", true)]
+    [DataRow("@(bin|obj)/**", "obj/foo.cs", true)]
+    [DataRow("@(bin|obj)/**", "src/foo.cs", false)]
     public void MsBuildDialect_RootAnchored(string pattern, string input, bool expected)
     {
         bool actual = GlobSpecification

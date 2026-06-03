@@ -12,6 +12,7 @@ namespace Touki.Io;
 ///  comparative notes in <see cref="MSBuildSpecification.Normalize"/> /
 ///  <see cref="MSBuildSpecificationTrailingSeparatorTests"/>.
 /// </summary>
+[TestClass]
 public class FileMatcherTrailingSeparatorOracleTests
 {
     private static void CreateFixture(string root)
@@ -42,14 +43,14 @@ public class FileMatcherTrailingSeparatorOracleTests
     //    This is the layer where touki and MSBuild visibly disagree: touki's MSBuildEnumerator
     //    actually walks the filesystem and returns an empty result for these specs.
 
-    [Test]
-    [Arguments("a.txt")]                  // file exists
-    [Arguments("Foo")]                    // directory exists (NOT a file)
-    [Arguments("Foo/")]                   // trailing slash on existing directory
-    [Arguments("Foo/b.txt")]              // file exists
-    [Arguments("Foo/b.txt/")]             // trailing slash on existing FILE (nonsensical, still verbatim)
-    [Arguments("Missing/file.txt")]       // path that does not exist
-    [Arguments("Missing/")]               // trailing slash on missing directory
+    [TestMethod]
+    [DataRow("a.txt")]                  // file exists
+    [DataRow("Foo")]                    // directory exists (NOT a file)
+    [DataRow("Foo/")]                   // trailing slash on existing directory
+    [DataRow("Foo/b.txt")]              // file exists
+    [DataRow("Foo/b.txt/")]             // trailing slash on existing FILE (nonsensical, still verbatim)
+    [DataRow("Missing/file.txt")]       // path that does not exist
+    [DataRow("Missing/")]               // trailing slash on missing directory
     public void GetFiles_NoWildcardSpec_ReturnsSpecVerbatimRegardlessOfDisk(string spec)
     {
         using TempFolder tempFolder = new();
@@ -72,13 +73,13 @@ public class FileMatcherTrailingSeparatorOracleTests
     //    "**" to the wildcardDirectoryPart, which is why "Foo/**" matches every file under Foo
     //    (including Foo/Bar/c.txt) and not just "*.*" files in Foo itself.
 
-    [Test]
-    [Arguments("Foo/**", new[] { "Foo/b.txt", "Foo/Bar/c.txt" })]
-    [Arguments("Foo/**/", new[] { "Foo/b.txt", "Foo/Bar/c.txt" })]
-    [Arguments("Foo/**/*.txt", new[] { "Foo/b.txt", "Foo/Bar/c.txt" })]
-    [Arguments("**", new[] { "a.txt", "Foo/b.txt", "Foo/Bar/c.txt" })]
-    [Arguments("**/", new[] { "a.txt", "Foo/b.txt", "Foo/Bar/c.txt" })]
-    [Arguments("**/*.txt", new[] { "a.txt", "Foo/b.txt", "Foo/Bar/c.txt" })]
+    [TestMethod]
+    [DataRow("Foo/**", new[] { "Foo/b.txt", "Foo/Bar/c.txt" })]
+    [DataRow("Foo/**/", new[] { "Foo/b.txt", "Foo/Bar/c.txt" })]
+    [DataRow("Foo/**/*.txt", new[] { "Foo/b.txt", "Foo/Bar/c.txt" })]
+    [DataRow("**", new[] { "a.txt", "Foo/b.txt", "Foo/Bar/c.txt" })]
+    [DataRow("**/", new[] { "a.txt", "Foo/b.txt", "Foo/Bar/c.txt" })]
+    [DataRow("**/*.txt", new[] { "a.txt", "Foo/b.txt", "Foo/Bar/c.txt" })]
     public void GetFiles_WildcardTrailingSeparator_EnumeratesMatchingFiles(string spec, string[] expected)
     {
         using TempFolder tempFolder = new();
@@ -93,10 +94,10 @@ public class FileMatcherTrailingSeparatorOracleTests
     //    empty list (the SearchAction.ReturnEmptyList branch in GetFileSearchData). This is the
     //    behavior MatchEnumerator now mirrors for both wildcard and non-wildcard cases.
 
-    [Test]
-    [Arguments("Missing/**")]
-    [Arguments("Missing/*.txt")]
-    [Arguments("Missing/**/*.cs")]
+    [TestMethod]
+    [DataRow("Missing/**")]
+    [DataRow("Missing/*.txt")]
+    [DataRow("Missing/**/*.cs")]
     public void GetFiles_WildcardSpecWithMissingFixedDirectory_ReturnsEmpty(string spec)
     {
         using TempFolder tempFolder = new();

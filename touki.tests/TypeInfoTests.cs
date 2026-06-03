@@ -4,9 +4,10 @@
 
 namespace Touki;
 
+[TestClass]
 public class TypeInfoTests
 {
-    [Test]
+    [TestMethod]
     public void IsReferenceOrContainsReferences_ReferenceTypes_ReturnsTrue()
     {
         // Reference types should return true
@@ -15,7 +16,7 @@ public class TypeInfoTests
         TypeInfo<TypeInfoTests>.IsReferenceOrContainsReferences().Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void IsReferenceOrContainsReferences_ValueTypesWithoutReferences_ReturnsFalse()
     {
         // Value types without references should return false
@@ -26,7 +27,7 @@ public class TypeInfoTests
         TypeInfo<SimpleStruct>.IsReferenceOrContainsReferences().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IsReferenceOrContainsReferences_ValueTypesWithReferences_ReturnsTrue()
     {
         // Value types containing references should return true
@@ -34,7 +35,7 @@ public class TypeInfoTests
         TypeInfo<StructWithString>.IsReferenceOrContainsReferences().Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void IsReferenceOrContainsReferences_ResultIsCached()
     {
         // First call should compute the result

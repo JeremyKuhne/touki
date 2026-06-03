@@ -18,12 +18,13 @@ namespace Touki.Io.Globbing;
 ///   not exist on .NET Framework. Skipped on net481.
 ///  </para>
 /// </remarks>
+[TestClass]
 public class MultipleAsteriskSimpleOracleTests
 {
     public static IEnumerable<(string, string)> Rows() => MultipleAsteriskRows.Rows();
 
-    [Test]
-    [MethodDataSource(nameof(Rows))]
+    [TestMethod]
+    [DynamicData(nameof(Rows))]
     public void IsMatch_SimpleDialect_MultipleAsterisks_AgreesWithBcl(string pattern, string input)
     {
         bool oracle = FileSystemName.MatchesSimpleExpression(pattern.AsSpan(), input.AsSpan(), ignoreCase: false);

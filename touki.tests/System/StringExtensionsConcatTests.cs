@@ -4,45 +4,46 @@
 
 namespace Touki;
 
+[TestClass]
 public class StringExtensionsConcatTests
 {
-    [Test]
+    [TestMethod]
     public void Concat_TwoSpans_Concatenates()
     {
         string.Concat("hello".AsSpan(), " world".AsSpan()).Should().Be("hello world");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_TwoSpans_BothEmpty_ReturnsEmpty()
     {
         string.Concat(default, default(ReadOnlySpan<char>)).Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_TwoSpans_FirstEmpty_ReturnsSecond()
     {
         string.Concat(default, "abc".AsSpan()).Should().Be("abc");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_TwoSpans_SecondEmpty_ReturnsFirst()
     {
         string.Concat("abc".AsSpan(), default).Should().Be("abc");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_ThreeSpans_Concatenates()
     {
         string.Concat("a".AsSpan(), "b".AsSpan(), "c".AsSpan()).Should().Be("abc");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_FourSpans_Concatenates()
     {
         string.Concat("a".AsSpan(), "b".AsSpan(), "c".AsSpan(), "d".AsSpan()).Should().Be("abcd");
     }
 
-    [Test]
+    [TestMethod]
     public unsafe void Concat_TwoSpans_OverflowingLengths_Throws()
     {
         // The checked length sum must reject this before allocating. We construct
@@ -65,7 +66,7 @@ public class StringExtensionsConcatTests
         threw.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public unsafe void Concat_ThreeSpans_OverflowingLengths_Throws()
     {
         char dummy;
@@ -86,7 +87,7 @@ public class StringExtensionsConcatTests
         threw.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public unsafe void Concat_FourSpans_OverflowingLengths_Throws()
     {
         char dummy;

@@ -6,6 +6,7 @@ using System.ComponentModel;
 
 namespace Touki;
 
+[TestClass]
 public class ComponentBaseTests
 {
     private class TestContainer : Container
@@ -32,7 +33,7 @@ public class ComponentBaseTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_RaisesDisposedEvent()
     {
         ComponentBase component = new();
@@ -45,7 +46,7 @@ public class ComponentBaseTests
         tracker.Sender.Should().BeSameAs(component);
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_MultipleCallsOnlyRaisesEventOnce()
     {
         ComponentBase component = new();
@@ -60,7 +61,7 @@ public class ComponentBaseTests
         callCount.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_RemovesComponentFromContainer()
     {
         TestContainer container = new();
@@ -76,7 +77,7 @@ public class ComponentBaseTests
         container.Components.OfType<ComponentBase>().Should().NotContain(component);
     }
 
-    [Test]
+    [TestMethod]
     public void DisposedEvent_CanBeAddedAndRemoved()
     {
         ComponentBase component = new();
@@ -93,7 +94,7 @@ public class ComponentBaseTests
         tracker.DisposedCalled.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_WithNullSite_DoesNotThrow()
     {
         ComponentBase component = new();
@@ -101,7 +102,7 @@ public class ComponentBaseTests
         action.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_NullDisposedHandler_DoesNotThrow()
     {
         ComponentBase component = new();

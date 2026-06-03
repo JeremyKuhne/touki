@@ -4,17 +4,18 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringByte
 {
-    public static IEnumerable<byte> ByteData()
+    public static IEnumerable<object[]> ByteData()
     {
-        yield return 42;
-        yield return byte.MaxValue;
-        yield return byte.MinValue;
+        yield return [(byte)42];
+        yield return [byte.MaxValue];
+        yield return [byte.MinValue];
     }
 
-    [Test]
-    [MethodDataSource(nameof(ByteData))]
+    [TestMethod]
+    [DynamicData(nameof(ByteData))]
     public void ByteImplicit(byte @byte)
     {
         Value value = @byte;
@@ -27,8 +28,8 @@ public class StoringByte
         value.Type.Should().Be(typeof(byte));
     }
 
-    [Test]
-    [MethodDataSource(nameof(ByteData))]
+    [TestMethod]
+    [DynamicData(nameof(ByteData))]
     public void ByteCreate(byte @byte)
     {
         Value value;
@@ -51,8 +52,8 @@ public class StoringByte
         value.Type.Should().Be(typeof(byte));
     }
 
-    [Test]
-    [MethodDataSource(nameof(ByteData))]
+    [TestMethod]
+    [DynamicData(nameof(ByteData))]
     public void ByteInOut(byte @byte)
     {
         Value value = @byte;
@@ -64,8 +65,8 @@ public class StoringByte
         ((byte)value).Should().Be(@byte);
     }
 
-    [Test]
-    [MethodDataSource(nameof(ByteData))]
+    [TestMethod]
+    [DynamicData(nameof(ByteData))]
     public void NullableByteInByteOut(byte @byte)
     {
         byte? source = @byte;
@@ -80,8 +81,8 @@ public class StoringByte
         ((byte)value).Should().Be(@byte);
     }
 
-    [Test]
-    [MethodDataSource(nameof(ByteData))]
+    [TestMethod]
+    [DynamicData(nameof(ByteData))]
     public void ByteInNullableByteOut(byte @byte)
     {
         byte source = @byte;
@@ -93,8 +94,8 @@ public class StoringByte
         ((byte?)value).Should().Be(@byte);
     }
 
-    [Test]
-    [MethodDataSource(nameof(ByteData))]
+    [TestMethod]
+    [DynamicData(nameof(ByteData))]
     public void BoxedByte(byte @byte)
     {
         byte i = @byte;
@@ -119,7 +120,7 @@ public class StoringByte
         nullableResult!.Value.Should().Be(@byte);
     }
 
-    [Test]
+    [TestMethod]
     public void NullByte()
     {
         byte? source = null;
@@ -129,8 +130,8 @@ public class StoringByte
         value.As<byte?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(ByteData))]
+    [TestMethod]
+    [DynamicData(nameof(ByteData))]
     public void OutAsObject(byte @byte)
     {
         Value value = @byte;

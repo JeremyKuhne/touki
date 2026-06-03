@@ -18,6 +18,7 @@ namespace Touki.Io.Globbing;
 ///   documented oracle deltas in step 5 when the bash oracle goes live.
 ///  </para>
 /// </remarks>
+[TestClass]
 public class ExtGlobNegationMatchTests
 {
     private static bool Match(string pattern, string input, GlobDialect dialect = GlobDialect.Bash) =>
@@ -28,66 +29,66 @@ public class ExtGlobNegationMatchTests
 
     // -- !(literal) ------------------------------------------------------------------
 
-    [Test]
-    [Arguments("!(foo)", "bar", true)]
-    [Arguments("!(foo)", "foo", false)]
-    [Arguments("!(foo)", "", true)]              // empty isn't "foo"
-    [Arguments("!(foo)", "foobar", true)]        // foobar isn't "foo"
-    [Arguments("!(a)", "b", true)]
-    [Arguments("!(a)", "a", false)]
-    [Arguments("!(a)", "", true)]
+    [TestMethod]
+    [DataRow("!(foo)", "bar", true)]
+    [DataRow("!(foo)", "foo", false)]
+    [DataRow("!(foo)", "", true)]              // empty isn't "foo"
+    [DataRow("!(foo)", "foobar", true)]        // foobar isn't "foo"
+    [DataRow("!(a)", "b", true)]
+    [DataRow("!(a)", "a", false)]
+    [DataRow("!(a)", "", true)]
     public void Match_NegationOfLiteral(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- !(alt1|alt2|...) -----------------------------------------------------------
 
-    [Test]
-    [Arguments("!(foo|bar)", "baz", true)]
-    [Arguments("!(foo|bar)", "foo", false)]
-    [Arguments("!(foo|bar)", "bar", false)]
-    [Arguments("!(a|b|c)", "x", true)]
-    [Arguments("!(a|b|c)", "a", false)]
-    [Arguments("!(a|b|c)", "b", false)]
-    [Arguments("!(a|b|c)", "c", false)]
+    [TestMethod]
+    [DataRow("!(foo|bar)", "baz", true)]
+    [DataRow("!(foo|bar)", "foo", false)]
+    [DataRow("!(foo|bar)", "bar", false)]
+    [DataRow("!(a|b|c)", "x", true)]
+    [DataRow("!(a|b|c)", "a", false)]
+    [DataRow("!(a|b|c)", "b", false)]
+    [DataRow("!(a|b|c)", "c", false)]
     public void Match_NegationMultipleAlternatives(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- !(...) with surrounding literals --------------------------------------------
 
-    [Test]
-    [Arguments("!(foo)bar", "xbar", true)]
-    [Arguments("!(foo)bar", "foobar", false)]    // "" doesn't match foo, but rest "bar" needs "foobar" → no
-    [Arguments("!(foo)bar", "bar", true)]        // L=0: empty isn't foo; rest "bar" matches "bar"
-    [Arguments("!(foo)bar", "xyzbar", true)]
-    [Arguments("foo!(x|y)bar", "foobar", true)]  // L=0: empty isn't x or y; rest "bar" matches
-    [Arguments("foo!(x|y)bar", "fooxbar", false)] // L=1: "x" matches x → rejected. L=0,2,3,4 all fail rest match
-    [Arguments("foo!(x|y)bar", "foozbar", true)]  // L=1: "z" isn't x or y; rest "bar" matches "bar"
+    [TestMethod]
+    [DataRow("!(foo)bar", "xbar", true)]
+    [DataRow("!(foo)bar", "foobar", false)]    // "" doesn't match foo, but rest "bar" needs "foobar" → no
+    [DataRow("!(foo)bar", "bar", true)]        // L=0: empty isn't foo; rest "bar" matches "bar"
+    [DataRow("!(foo)bar", "xyzbar", true)]
+    [DataRow("foo!(x|y)bar", "foobar", true)]  // L=0: empty isn't x or y; rest "bar" matches
+    [DataRow("foo!(x|y)bar", "fooxbar", false)] // L=1: "x" matches x → rejected. L=0,2,3,4 all fail rest match
+    [DataRow("foo!(x|y)bar", "foozbar", true)]  // L=1: "z" isn't x or y; rest "bar" matches "bar"
     public void Match_NegationWithSurroundingLiterals(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- !(...) with inner wildcards -------------------------------------------------
 
-    [Test]
-    [Arguments("!(a*)", "b", true)]
-    [Arguments("!(a*)", "abc", false)]           // "abc" matches "a*"
-    [Arguments("!(*.cs)", "foo.txt", true)]
-    [Arguments("!(*.cs)", "foo.cs", false)]
-    [Arguments("!(?)", "abc", true)]             // "abc" isn't a single char
-    [Arguments("!(?)", "a", false)]              // "a" matches "?"
+    [TestMethod]
+    [DataRow("!(a*)", "b", true)]
+    [DataRow("!(a*)", "abc", false)]           // "abc" matches "a*"
+    [DataRow("!(*.cs)", "foo.txt", true)]
+    [DataRow("!(*.cs)", "foo.cs", false)]
+    [DataRow("!(?)", "abc", true)]             // "abc" isn't a single char
+    [DataRow("!(?)", "a", false)]              // "a" matches "?"
     public void Match_NegationWithInnerWildcards(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- Nested negation --------------------------------------------------------------
 
-    [Test]
-    [Arguments("!(!(foo))", "foo", true)]        // double negation
-    [Arguments("!(!(foo))", "bar", false)]
-    [Arguments("@(!(foo))", "bar", true)]
-    [Arguments("@(!(foo))", "foo", false)]
+    [TestMethod]
+    [DataRow("!(!(foo))", "foo", true)]        // double negation
+    [DataRow("!(!(foo))", "bar", false)]
+    [DataRow("@(!(foo))", "bar", true)]
+    [DataRow("@(!(foo))", "foo", false)]
     public void Match_NegationNested(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     public void Match_MaxDepthNegationNesting_DoesNotTripRecursionGuard()
     {
         // The encoder accepts up to GlobSpecification.MaxExtGlobDepth nested
@@ -114,7 +115,7 @@ public class ExtGlobNegationMatchTests
         Match(pattern, "abcd").Should().Be(!matchesLiteral);
     }
 
-    [Test]
+    [TestMethod]
     public void MatchCore_OverBudgetNegationNesting_TripsRecursionGuard()
     {
         // Companion to Match_MaxDepthNegationNesting_DoesNotTripRecursionGuard:
@@ -174,23 +175,23 @@ public class ExtGlobNegationMatchTests
 
     // -- Path-aware: negation can't cross the separator ------------------------------
 
-    [Test]
+    [TestMethod]
     // Bash dialect is path-aware. `!(foo)` operates within a single segment; the
     // construct's consumed slice can't cross '/'. An input containing a separator
     // doesn't match a separator-less pattern.
-    [Arguments("!(foo)", "foo/bar", false)]
-    [Arguments("!(foo)", "bar/baz", false)]
-    [Arguments("dir/!(foo)", "dir/bar", true)]
-    [Arguments("dir/!(foo)", "dir/foo", false)]
+    [DataRow("!(foo)", "foo/bar", false)]
+    [DataRow("!(foo)", "bar/baz", false)]
+    [DataRow("dir/!(foo)", "dir/bar", true)]
+    [DataRow("dir/!(foo)", "dir/foo", false)]
     public void Match_NegationPathAware(string pattern, string input, bool expected) =>
         Match(pattern, input).Should().Be(expected);
 
     // -- IgnoreCase ------------------------------------------------------------------
 
-    [Test]
-    [Arguments("!(FOO)", "foo", false)]          // case-insensitive: foo matches FOO → reject
-    [Arguments("!(FOO)", "bar", true)]
-    [Arguments("!(FOO|BAR)", "baz", true)]
+    [TestMethod]
+    [DataRow("!(FOO)", "foo", false)]          // case-insensitive: foo matches FOO → reject
+    [DataRow("!(FOO)", "bar", true)]
+    [DataRow("!(FOO|BAR)", "baz", true)]
     public void Match_NegationIgnoreCase(string pattern, string input, bool expected) =>
         GlobSpecification.Compile(
             pattern,

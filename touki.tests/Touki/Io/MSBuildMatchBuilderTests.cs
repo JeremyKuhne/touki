@@ -6,9 +6,10 @@ using Touki.Text;
 
 namespace Touki.Io;
 
+[TestClass]
 public class MSBuildMatchBuilderTests
 {
-    [Test]
+    [TestMethod]
     public void FromSpecification_StringStringOverload_NoExcludes_MatchesIncludeFiles()
     {
         using TempFolder folder = new();
@@ -28,7 +29,7 @@ public class MSBuildMatchBuilderTests
         matcher.MatchesFile(folder.TempPath.AsSpan(), "b.cs".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void FromSpecification_StringStringOverload_WithExcludes_FiltersExcluded()
     {
         using TempFolder folder = new();
@@ -46,7 +47,7 @@ public class MSBuildMatchBuilderTests
         matcher.MatchesFile(folder.TempPath.AsSpan(), "skip.cs".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void FromSpecification_StringStringOverload_NullRoot_UsesCurrentDirectory()
     {
         using IEnumerationMatcher matcher = MSBuildMatchBuilder.FromSpecification(

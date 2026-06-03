@@ -4,9 +4,10 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringObject
 {
-    [Test]
+    [TestMethod]
     public void BasicStorage()
     {
         A a = new();
@@ -19,7 +20,7 @@ public class StoringObject
         result.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void DerivedRetrieval()
     {
         B b = new();
@@ -39,7 +40,7 @@ public class StoringObject
         value.Type.Should().Be(typeof(B));
     }
 
-    [Test]
+    [TestMethod]
     public void AsInterface()
     {
         I a = new A();
@@ -59,7 +60,7 @@ public class StoringObject
         string? ToString();
     }
 
-    [Test]
+    [TestMethod]
     public void Box_StoresObject()
     {
         A a = new();
@@ -67,7 +68,7 @@ public class StoringObject
         value.As<A>().Should().BeSameAs(a);
     }
 
-    [Test]
+    [TestMethod]
     public void Box_NullObject_HasNoStoredValue()
     {
         // Per Value docs, a Type of null means "no value is stored".

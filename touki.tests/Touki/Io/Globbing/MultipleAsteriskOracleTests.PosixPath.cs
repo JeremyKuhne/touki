@@ -12,17 +12,18 @@ namespace Touki.Io.Globbing;
 ///  comparing each verdict against <c>fnmatch(3)</c> with <c>FNM_PATHNAME</c>.
 ///  Linux/macOS only.
 /// </summary>
+[TestClass]
 public class MultipleAsteriskPosixPathOracleTests
 {
     public static IEnumerable<(string, string)> Rows() => MultipleAsteriskRows.Rows();
 
-    [Test]
-    [MethodDataSource(nameof(Rows))]
+    [TestMethod]
+    [DynamicData(nameof(Rows))]
     public void IsMatch_PosixPathDialect_MultipleAsterisks_AgreesWithFnmatchPathname(string pattern, string input)
     {
         if (!FnmatchInterop.IsSupported)
         {
-            Skip.Test("fnmatch(3) oracle requires Linux or macOS.");
+            Assert.Inconclusive("fnmatch(3) oracle requires Linux or macOS.");
             return;
         }
 

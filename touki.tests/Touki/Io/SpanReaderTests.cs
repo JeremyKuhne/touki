@@ -6,9 +6,10 @@ using System.Drawing;
 
 namespace Touki.Io;
 
+[TestClass]
 public class SpanReaderTests
 {
-    [Test]
+    [TestMethod]
     public void SpanReader_TryReadTo_SkipDelimiter()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -23,7 +24,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(5);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryReadTo_DoNotSkipDelimiter()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -42,7 +43,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(4);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryReadTo_DelimiterAtStart_SkipDelimiter()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -58,7 +59,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryReadTo_DelimiterAtStart_DoNotSkipDelimiter()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -74,7 +75,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryReadTo_DelimiterNotFound()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -85,7 +86,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0); // Position should not change when delimiter not found
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryReadTo_EmptySpan()
     {
         ReadOnlySpan<byte> span = [];
@@ -96,7 +97,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Advance()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -122,7 +123,7 @@ public class SpanReaderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Advance_Zero()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -132,7 +133,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Advance_Negative_ThrowsException()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -149,7 +150,7 @@ public class SpanReaderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Rewind()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -175,7 +176,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Rewind_Zero()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -186,7 +187,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Rewind_Negative_ThrowsException()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -203,7 +204,7 @@ public class SpanReaderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Position_Setter_Valid()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -221,7 +222,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(5);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Position_Setter_Negative_ThrowsException()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -238,7 +239,7 @@ public class SpanReaderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Position_Setter_OutOfBounds_ThrowsException()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -255,7 +256,7 @@ public class SpanReaderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Reset()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -268,7 +269,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_SingleValue()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -291,7 +292,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_SingleValue_EmptySpan()
     {
         ReadOnlySpan<byte> span = [];
@@ -302,7 +303,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_ReadPoints()
     {
         ReadOnlySpan<uint> span = [1, 2, 3, 4, 5];
@@ -319,7 +320,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(4);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_ReadPointCounts()
     {
         ReadOnlySpan<uint> span = [1, 2, 3, 4, 5];
@@ -335,11 +336,11 @@ public class SpanReaderTests
         value.ToArray().Should().BeEmpty();
     }
 
-    [Test]
-    [Arguments(0, 1)]
-    [Arguments(1, 1)]
-    [Arguments(2, 2)]
-    [Arguments(3, 2)]
+    [TestMethod]
+    [DataRow(0, 1)]
+    [DataRow(1, 1)]
+    [DataRow(2, 2)]
+    [DataRow(3, 2)]
     public void SpanReader_TryRead_ReadPointFCounts_NotEnoughBuffer(int bufferSize, int readCount)
     {
         ReadOnlySpan<float> span = new float[bufferSize];
@@ -348,7 +349,7 @@ public class SpanReaderTests
         reader.TryRead<PointF>(readCount, out _).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_Count()
     {
         ReadOnlySpan<uint> span = [1, 2, 3, 4, 5];
@@ -366,7 +367,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(4);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_Count_Zero()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -377,7 +378,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_Count_Negative_ThrowsException()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -394,7 +395,7 @@ public class SpanReaderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_Struct_ValidSizes()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4];
@@ -407,7 +408,7 @@ public class SpanReaderTests
         reader.TryRead<uint>(out _).Should().BeTrue(); // uint is 4 bytes, should work
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_Struct_Count_InvalidSize_ThrowsException()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4];
@@ -417,7 +418,7 @@ public class SpanReaderTests
         reader.TryRead<ushort>(2, out _).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_AdvancePast_SingleValue()
     {
         ReadOnlySpan<byte> span = [1, 1, 1, 2, 3];
@@ -433,7 +434,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_AdvancePast_AllSameValue()
     {
         ReadOnlySpan<byte> span = [1, 1, 1, 1];
@@ -444,7 +445,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(4);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_AdvancePast_NoMatch()
     {
         ReadOnlySpan<byte> span = [2, 3, 4];
@@ -455,7 +456,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_AdvancePast_EmptySpan()
     {
         ReadOnlySpan<byte> span = [];
@@ -466,7 +467,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryAdvancePast_Success()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -481,7 +482,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(4);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryAdvancePast_Failure()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -496,7 +497,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryAdvancePast_EmptyPattern()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -507,7 +508,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0); // Should not advance for empty pattern
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryAdvancePast_PatternLargerThanRemaining()
     {
         ReadOnlySpan<byte> span = [1, 2];
@@ -518,7 +519,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Length_Property()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -530,7 +531,7 @@ public class SpanReaderTests
         reader.Length.Should().Be(5); // Length should not change with position
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Span_Property()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -542,7 +543,7 @@ public class SpanReaderTests
         reader.Span.ToArray().Should().BeEquivalentTo([1, 2, 3, 4, 5]); // Span should not change with position
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_ComplexScenario()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 2, 4, 5, 2, 6];
@@ -576,7 +577,7 @@ public class SpanReaderTests
         reader.TryRead(out _).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryReadTo_BoundaryConditions()
     {
         // Test when delimiter is at the very end
@@ -593,7 +594,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_Struct_InvalidSize_ThrowsException()
     {
         ReadOnlySpan<ushort> span = [1, 2]; // 4 bytes total
@@ -611,7 +612,7 @@ public class SpanReaderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_Struct_Count_InvalidSize_ThrowsException_New()
     {
         ReadOnlySpan<ushort> span = [1, 2]; // 4 bytes total
@@ -629,7 +630,7 @@ public class SpanReaderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Position_Setter_EdgeCases()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -645,7 +646,7 @@ public class SpanReaderTests
         reader.TryRead(out byte _).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Rewind_EdgeCases()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -671,7 +672,7 @@ public class SpanReaderTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_Count_ExactMatch()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -687,7 +688,7 @@ public class SpanReaderTests
         read.ToArray().Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryReadTo_ConsecutiveDelimiters()
     {
         ReadOnlySpan<byte> span = [1, 2, 2, 3];
@@ -708,7 +709,7 @@ public class SpanReaderTests
         value.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_AdvancePast_PartialMatch()
     {
         ReadOnlySpan<byte> span = [1, 1, 2, 1, 1, 1];
@@ -733,7 +734,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(6);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryAdvancePast_ExactMatch()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -748,7 +749,7 @@ public class SpanReaderTests
         reader.TryRead(out byte _).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Mixed_Operations()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -777,7 +778,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(8);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplit_EmptySpan()
     {
         ReadOnlySpan<byte> span = [];
@@ -788,7 +789,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplit_NoDelimiterFound()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -799,7 +800,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(5); // Should be at end
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplit_DelimiterFound()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -810,7 +811,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(3); // Should be past the delimiter
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplit_DelimiterAtStart()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -821,7 +822,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(1); // Should be past the delimiter
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplit_DelimiterAtEnd()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -832,7 +833,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(5); // Should be at end
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplit_MultipleDelimiters()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 2, 4, 5, 2, 6];
@@ -863,7 +864,7 @@ public class SpanReaderTests
         segment.ToArray().Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplit_SingleElement()
     {
         ReadOnlySpan<byte> span = [42];
@@ -879,7 +880,7 @@ public class SpanReaderTests
         segment.ToArray().Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplit_SingleElementAsDelimiter()
     {
         ReadOnlySpan<byte> span = [42];
@@ -895,7 +896,7 @@ public class SpanReaderTests
         segment.ToArray().Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplit_AfterOtherOperations()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -916,7 +917,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(8);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplit_ConsecutiveDelimiters()
     {
         ReadOnlySpan<byte> span = [1, 2, 2, 2, 3];
@@ -943,7 +944,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(5);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplit_CsvLikeUsage()
     {
         // Simulate CSV parsing: "field1,field2,,field4"
@@ -964,7 +965,7 @@ public class SpanReaderTests
         fields[3].Should().Be("field4");
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplitAny_EmptySpan()
     {
         ReadOnlySpan<byte> span = [];
@@ -976,7 +977,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplitAny_NoDelimiterFound()
     {
         ReadOnlySpan<byte> span = [3, 4, 5];
@@ -988,7 +989,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplitAny_DelimiterFound()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -1000,7 +1001,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TrySplitAny_MultipleDelimiters()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5, 6];
@@ -1024,7 +1025,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(6);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryReadToAny_Success()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -1036,7 +1037,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryReadToAny_NoAdvancePast()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -1048,7 +1049,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryReadToAny_NotFound()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -1060,7 +1061,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryReadToAny_EmptySpan()
     {
         ReadOnlySpan<byte> span = [];
@@ -1072,7 +1073,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryReadToAny_DelimiterAtStart()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -1084,7 +1085,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryReadToAny_TwoDelimitersOptimization()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -1097,7 +1098,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(3);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryPeek_Success()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -1113,7 +1114,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryPeek_EmptySpan()
     {
         ReadOnlySpan<byte> span = [];
@@ -1124,7 +1125,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryPeek_AtEnd()
     {
         ReadOnlySpan<byte> span = [1];
@@ -1136,7 +1137,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Unread_Property()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
@@ -1151,7 +1152,7 @@ public class SpanReaderTests
         reader.Unread.ToArray().Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_End_Property()
     {
         ReadOnlySpan<byte> span = [1, 2, 3];
@@ -1166,7 +1167,7 @@ public class SpanReaderTests
         reader.End.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_End_Property_EmptySpan()
     {
         ReadOnlySpan<byte> span = [];
@@ -1175,7 +1176,7 @@ public class SpanReaderTests
         reader.End.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Constructor_EmptySpan()
     {
         ReadOnlySpan<byte> span = [];
@@ -1188,7 +1189,7 @@ public class SpanReaderTests
         reader.Unread.ToArray().Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_Large_Span()
     {
         byte[] data = new byte[10000];
@@ -1211,7 +1212,7 @@ public class SpanReaderTests
         reader.End.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_Struct_LargerThanElementSize()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -1226,7 +1227,7 @@ public class SpanReaderTests
         value.Should().NotBe(0); // Should have some value from the bytes
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_Struct_Count_ZeroCount()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4];
@@ -1237,7 +1238,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_Struct_Count_InsufficientData()
     {
         ReadOnlySpan<byte> span = [1, 2, 3]; // 3 bytes
@@ -1249,7 +1250,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void SpanReader_TryRead_Struct_ExactFit()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4]; // 4 bytes

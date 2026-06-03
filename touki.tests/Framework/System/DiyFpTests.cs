@@ -6,11 +6,12 @@ using DiyFp = System.Number.DiyFp;
 
 namespace Framework.System;
 
+[TestClass]
 public class DiyFpTests
 {
     #region Constructor Tests
 
-    [Test]
+    [TestMethod]
     public void DiyFp_ConstructorWithULongAndInt_ShouldSetFieldsCorrectly()
     {
         const ulong expectedF = 0x123456789ABCDEFul;
@@ -22,12 +23,12 @@ public class DiyFpTests
         diyFp.e.Should().Be(expectedE);
     }
 
-    [Test]
-    [Arguments(2.0)] // Simple power of 2
-    [Arguments(0.5)] // Negative exponent
-    [Arguments(1.5)] // Fractional part
-    [Arguments(double.MaxValue)] // Extreme value
-    [Arguments(double.Epsilon)] // Smallest positive value
+    [TestMethod]
+    [DataRow(2.0)] // Simple power of 2
+    [DataRow(0.5)] // Negative exponent
+    [DataRow(1.5)] // Fractional part
+    [DataRow(double.MaxValue)] // Extreme value
+    [DataRow(double.Epsilon)] // Smallest positive value
     public void DiyFp_ConstructorWithDouble_ShouldHandleVariousValues(double value)
     {
         DiyFp diyFp = new(value);
@@ -39,12 +40,12 @@ public class DiyFpTests
         diyFp.e.Should().BeLessThanOrEqualTo(971); // Max exponent for double
     }
 
-    [Test]
-    [Arguments(2.0f)] // Simple power of 2
-    [Arguments(0.5f)] // Negative exponent
-    [Arguments(1.5f)] // Fractional part
-    [Arguments(float.MaxValue)] // Extreme value
-    [Arguments(float.Epsilon)] // Smallest positive value
+    [TestMethod]
+    [DataRow(2.0f)] // Simple power of 2
+    [DataRow(0.5f)] // Negative exponent
+    [DataRow(1.5f)] // Fractional part
+    [DataRow(float.MaxValue)] // Extreme value
+    [DataRow(float.Epsilon)] // Smallest positive value
     public void DiyFp_ConstructorWithFloat_ShouldHandleVariousValues(float value)
     {
         DiyFp diyFp = new(value);
@@ -60,7 +61,7 @@ public class DiyFpTests
 
     #region Constants Tests
 
-    [Test]
+    [TestMethod]
     public void DiyFp_Constants_ShouldHaveCorrectValues()
     {
         DiyFp.DoubleImplicitBitIndex.Should().Be(52);
@@ -73,7 +74,7 @@ public class DiyFpTests
 
     #region Multiply Tests
 
-    [Test]
+    [TestMethod]
     public void Multiply_SimpleCase_ShouldMultiplyCorrectly()
     {
         DiyFp a = new(1UL << 32, 0); // Large enough to test multiplication
@@ -87,7 +88,7 @@ public class DiyFpTests
         result.e.Should().Be(64);
     }
 
-    [Test]
+    [TestMethod]
     public void Multiply_ZeroSignificand_ShouldGiveZero()
     {
         DiyFp a = new(0, 10);
@@ -99,7 +100,7 @@ public class DiyFpTests
         result.e.Should().Be(10 + 20 + 64);
     }
 
-    [Test]
+    [TestMethod]
     public void Multiply_MaxValues_ShouldHandleOverflow()
     {
         DiyFp a = new(ulong.MaxValue, 0);
@@ -112,7 +113,7 @@ public class DiyFpTests
         result.e.Should().Be(64);
     }
 
-    [Test]
+    [TestMethod]
     public void Multiply_ExponentAddition_ShouldBeCorrect()
     {
         DiyFp a = new(1UL << 63, 100);
@@ -123,10 +124,10 @@ public class DiyFpTests
         result.e.Should().Be(100 + 200 + 64);
     }
 
-    [Test]
-    [Arguments(1UL << 32, 1UL << 32)]
-    [Arguments(1UL << 20, 1UL << 40)]
-    [Arguments(0x123456789ABCDEFul, 0xFEDCBA9876543210ul)]
+    [TestMethod]
+    [DataRow(1UL << 32, 1UL << 32)]
+    [DataRow(1UL << 20, 1UL << 40)]
+    [DataRow(0x123456789ABCDEFul, 0xFEDCBA9876543210ul)]
     public void Multiply_VariousValues_ShouldNotCrash(ulong f1, ulong f2)
     {
         DiyFp a = new(f1, 0);
@@ -142,7 +143,7 @@ public class DiyFpTests
 
     #region Normalize Tests
 
-    [Test]
+    [TestMethod]
     public void Normalize_AlreadyNormalized_ShouldNotChange()
     {
         DiyFp diyFp = new(1UL << 63, 100); // MSB already set
@@ -153,7 +154,7 @@ public class DiyFpTests
         result.e.Should().Be(100);
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_NeedsShifting_ShouldShiftCorrectly()
     {
         DiyFp diyFp = new(1UL << 32, 100); // MSB not set, needs 31-bit shift
@@ -164,7 +165,7 @@ public class DiyFpTests
         result.e.Should().Be(100 - 31); // Exponent adjusted by shift amount
     }
 
-    [Test]
+    [TestMethod]
     public void Normalize_SingleBit_ShouldShiftToMSB()
     {
         DiyFp diyFp = new(1, 100); // Single bit at LSB
@@ -175,10 +176,10 @@ public class DiyFpTests
         result.e.Should().Be(100 - 63); // Exponent adjusted by 63-bit shift
     }
 
-    [Test]
-    [Arguments(1UL << 62, 1)] // One bit shift needed
-    [Arguments(1UL << 32, 31)] // 31-bit shift needed
-    [Arguments(1UL << 1, 62)] // 62-bit shift needed
+    [TestMethod]
+    [DataRow(1UL << 62, 1)] // One bit shift needed
+    [DataRow(1UL << 32, 31)] // 31-bit shift needed
+    [DataRow(1UL << 1, 62)] // 62-bit shift needed
     public void Normalize_VariousShifts_ShouldAdjustExponentCorrectly(ulong f, int expectedShift)
     {
         const int originalExponent = 100;
@@ -193,7 +194,7 @@ public class DiyFpTests
     #endregion
 
     #region Subtract Tests
-    [Test]
+    [TestMethod]
     public void Subtract_SameExponents_ShouldSubtractSignificands()
     {
         DiyFp a = new(1000, 50);
@@ -205,7 +206,7 @@ public class DiyFpTests
         result.e.Should().Be(50);
     }
 
-    [Test]
+    [TestMethod]
     public void Subtract_EqualValues_ShouldGiveZero()
     {
         DiyFp a = new(0x123456789ABCDEFul, 42);
@@ -217,7 +218,7 @@ public class DiyFpTests
         result.e.Should().Be(42);
     }
 
-    [Test]
+    [TestMethod]
     public void Subtract_MaxMinusOne_ShouldGiveCorrectResult()
     {
         DiyFp a = new(ulong.MaxValue, 0);
@@ -232,7 +233,7 @@ public class DiyFpTests
     #endregion
 
     #region CreateAndGetBoundaries Tests
-    [Test]
+    [TestMethod]
     public void CreateAndGetBoundaries_Double_ShouldReturnBoundaries()
     {
         double value = 1.0;
@@ -254,7 +255,7 @@ public class DiyFpTests
         mPlus.f.Should().BeGreaterThan(mMinus.f);
     }
 
-    [Test]
+    [TestMethod]
     public void CreateAndGetBoundaries_Float_ShouldReturnBoundaries()
     {
         float value = 1.0f;
@@ -276,7 +277,7 @@ public class DiyFpTests
         mPlus.f.Should().BeGreaterThan(mMinus.f);
     }
 
-    [Test]
+    [TestMethod]
     public void CreateAndGetBoundaries_PowerOfTwo_ShouldHaveCloserLowerBoundary()
     {
         double value = 2.0; // Power of 2
@@ -292,7 +293,7 @@ public class DiyFpTests
         distanceToMinus.Should().BeLessThan(distanceToPlus);
     }
 
-    [Test]
+    [TestMethod]
     public void CreateAndGetBoundaries_NonPowerOfTwo_ShouldHaveSymmetricBoundaries()
     {
         double value = 1.5; // Not a power of 2
@@ -307,16 +308,16 @@ public class DiyFpTests
         distanceToMinus.Should().Be(distanceToPlus);
     }
 
-    [Test]
-    [Arguments(1.0)]
-    [Arguments(2.0)]
-    [Arguments(0.5)]
-    [Arguments(1.5)]
-    [Arguments(10.0)]
-    [Arguments(100.0)]
-    [Arguments(0.1)]
-    [Arguments(double.MaxValue)]
-    [Arguments(double.Epsilon)]
+    [TestMethod]
+    [DataRow(1.0)]
+    [DataRow(2.0)]
+    [DataRow(0.5)]
+    [DataRow(1.5)]
+    [DataRow(10.0)]
+    [DataRow(100.0)]
+    [DataRow(0.1)]
+    [DataRow(double.MaxValue)]
+    [DataRow(double.Epsilon)]
     public void CreateAndGetBoundaries_Double_VariousValues_ShouldNotCrash(double value)
     {
         var result = DiyFp.CreateAndGetBoundaries(value, out DiyFp mMinus, out DiyFp mPlus);
@@ -329,16 +330,16 @@ public class DiyFpTests
         mPlus.f.Should().BeGreaterThanOrEqualTo(mMinus.f);
     }
 
-    [Test]
-    [Arguments(1.0f)]
-    [Arguments(2.0f)]
-    [Arguments(0.5f)]
-    [Arguments(1.5f)]
-    [Arguments(10.0f)]
-    [Arguments(100.0f)]
-    [Arguments(0.1f)]
-    [Arguments(float.MaxValue)]
-    [Arguments(float.Epsilon)]
+    [TestMethod]
+    [DataRow(1.0f)]
+    [DataRow(2.0f)]
+    [DataRow(0.5f)]
+    [DataRow(1.5f)]
+    [DataRow(10.0f)]
+    [DataRow(100.0f)]
+    [DataRow(0.1f)]
+    [DataRow(float.MaxValue)]
+    [DataRow(float.Epsilon)]
     public void CreateAndGetBoundaries_Float_VariousValues_ShouldNotCrash(float value)
     {
         var result = DiyFp.CreateAndGetBoundaries(value, out DiyFp mMinus, out DiyFp mPlus);
@@ -355,7 +356,7 @@ public class DiyFpTests
 
     #region Edge Cases and Boundary Tests
 
-    [Test]
+    [TestMethod]
     public void DiyFp_LargestSubnormalDouble_ShouldHandleCorrectly()
     {
         // This tests the denormalized number handling
@@ -369,7 +370,7 @@ public class DiyFpTests
         diyFp.e.Should().Be(-1074);
     }
 
-    [Test]
+    [TestMethod]
     public void Multiply_RoundingBehavior_ShouldRoundCorrectly()
     {
         // Test the rounding behavior in multiplication
@@ -384,7 +385,7 @@ public class DiyFpTests
         result.e.Should().Be(64);
     }
 
-    [Test]
+    [TestMethod]
     public void GetBoundaries_PowerOfTwoDetection_ShouldWorkCorrectly()
     {
         // Test the special case detection for powers of 2
@@ -396,7 +397,7 @@ public class DiyFpTests
         originalDiyFp.f.Should().Be(1UL << 52);
     }
 
-    [Test]
+    [TestMethod]
     public void Multiply_OverflowInTmp_ShouldHandleCorrectly()
     {
         // Test case where tmp calculation might overflow
@@ -414,7 +415,7 @@ public class DiyFpTests
 
     #region Integration Tests
 
-    [Test]
+    [TestMethod]
     public void DiyFp_DoubleRoundTrip_ShouldPreserveOrder()
     {
         // Test that the ordering of DiyFp values matches the ordering of the original doubles
@@ -438,7 +439,7 @@ public class DiyFpTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void DiyFp_FloatRoundTrip_ShouldPreserveOrder()
     {
         // Test that the ordering of DiyFp values matches the ordering of the original floats
@@ -462,7 +463,7 @@ public class DiyFpTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void DiyFp_MultiplicationAssociativity_ShouldBeClose()
     {
         // Test that (a * b) * c ≈ a * (b * c) within rounding error

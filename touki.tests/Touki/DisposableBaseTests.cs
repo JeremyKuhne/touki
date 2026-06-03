@@ -4,6 +4,7 @@
 
 namespace Touki;
 
+[TestClass]
 public class DisposableBaseTests
 {
     // Test implementation of DisposableBase
@@ -41,7 +42,7 @@ public class DisposableBaseTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void Disposed_ReturnsFalse_WhenNotDisposed()
     {
         TestDisposable disposable = new();
@@ -49,7 +50,7 @@ public class DisposableBaseTests
         disposable.IsDisposed.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Disposed_ReturnsTrue_AfterDisposal()
     {
         TestDisposable disposable = new();
@@ -57,7 +58,7 @@ public class DisposableBaseTests
         disposable.IsDisposed.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_CallsDisposeMethod_WithTrueParameter()
     {
         TestDisposable disposable = new();
@@ -68,7 +69,7 @@ public class DisposableBaseTests
         disposable.LastDisposeParameter.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_DoesNotCallDisposeMethodTwice_WhenCalledMultipleTimes()
     {
         TestDisposable disposable = new();
@@ -80,7 +81,7 @@ public class DisposableBaseTests
         disposable.DisposeCallCount.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_StillMarksAsDisposed_WhenDisposeThrowsException()
     {
         TestDisposable disposable = new() { ThrowOnDispose = true };
@@ -89,7 +90,7 @@ public class DisposableBaseTests
         disposable.IsDisposed.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Finalize_MarksAsDisposed()
     {
         TestFinalizableDisposable disposable = new();
@@ -99,7 +100,7 @@ public class DisposableBaseTests
         disposable.LastDisposeParameter.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_AfterFinalization_DoesNothing()
     {
         TestFinalizableDisposable disposable = new();

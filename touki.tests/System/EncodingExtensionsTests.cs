@@ -6,22 +6,23 @@ using System.Text;
 
 namespace Touki;
 
+[TestClass]
 public class EncodingExtensionsTests
 {
-    [Test]
+    [TestMethod]
     public void GetByteCount_Span_MatchesString()
     {
         string s = "héllo \u4e2d\u6587";
         Encoding.UTF8.GetByteCount(s.AsSpan()).Should().Be(Encoding.UTF8.GetByteCount(s));
     }
 
-    [Test]
+    [TestMethod]
     public void GetByteCount_EmptySpan_ReturnsZero()
     {
         Encoding.UTF8.GetByteCount([]).Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void GetBytes_Span_WritesCorrect()
     {
         string s = "abc\u4e2d";
@@ -32,21 +33,21 @@ public class EncodingExtensionsTests
         dst.SequenceEqual(expected).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void GetBytes_EmptySource_ReturnsZero()
     {
         Span<byte> dst = stackalloc byte[4];
         Encoding.UTF8.GetBytes([], dst).Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void GetCharCount_Span_MatchesArray()
     {
         byte[] bytes = Encoding.UTF8.GetBytes("hello \u4e2d");
         Encoding.UTF8.GetCharCount(bytes.AsSpan()).Should().Be(Encoding.UTF8.GetCharCount(bytes));
     }
 
-    [Test]
+    [TestMethod]
     public void GetChars_Span_WritesCorrect()
     {
         string original = "abc\u4e2d";
@@ -57,7 +58,7 @@ public class EncodingExtensionsTests
         dst.ToString().Should().Be(original);
     }
 
-    [Test]
+    [TestMethod]
     public void GetString_Span_RoundTrips()
     {
         string original = "héllo \u4e2d\u6587";
@@ -65,19 +66,19 @@ public class EncodingExtensionsTests
         Encoding.UTF8.GetString(bytes.AsSpan()).Should().Be(original);
     }
 
-    [Test]
+    [TestMethod]
     public void GetString_EmptySpan_ReturnsEmpty()
     {
         Encoding.UTF8.GetString([]).Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void GetCharCount_EmptyBytes_ReturnsZero()
     {
         Encoding.UTF8.GetCharCount([]).Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void GetChars_EmptyBytes_ReturnsZero()
     {
         Span<char> dst = stackalloc char[4];

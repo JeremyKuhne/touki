@@ -4,18 +4,19 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringDateTimeOffset
 {
-    public static IEnumerable<DateTimeOffset> DateTimeOffsetData()
+    public static IEnumerable<object[]> DateTimeOffsetData()
     {
-        yield return DateTimeOffset.Now;
-        yield return DateTimeOffset.UtcNow;
-        yield return DateTimeOffset.MaxValue;
-        yield return DateTimeOffset.MinValue;
+        yield return [DateTimeOffset.Now];
+        yield return [DateTimeOffset.UtcNow];
+        yield return [DateTimeOffset.MaxValue];
+        yield return [DateTimeOffset.MinValue];
     }
 
-    [Test]
-    [MethodDataSource(nameof(DateTimeOffsetData))]
+    [TestMethod]
+    [DynamicData(nameof(DateTimeOffsetData))]
     public void DateTimeOffsetImplicit(DateTimeOffset dateTimeOffset)
     {
         Value value = dateTimeOffset;
@@ -28,8 +29,8 @@ public class StoringDateTimeOffset
         value.Type.Should().Be(typeof(DateTimeOffset));
     }
 
-    [Test]
-    [MethodDataSource(nameof(DateTimeOffsetData))]
+    [TestMethod]
+    [DynamicData(nameof(DateTimeOffsetData))]
     public void DateTimeOffsetInOut(DateTimeOffset dateTimeOffset)
     {
         Value value = dateTimeOffset;
@@ -41,8 +42,8 @@ public class StoringDateTimeOffset
         ((DateTimeOffset)value).Should().Be(dateTimeOffset);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DateTimeOffsetData))]
+    [TestMethod]
+    [DynamicData(nameof(DateTimeOffsetData))]
     public void NullableDateTimeOffsetInDateTimeOffsetOut(DateTimeOffset dateTimeOffset)
     {
         DateTimeOffset? source = dateTimeOffset;
@@ -57,8 +58,8 @@ public class StoringDateTimeOffset
         ((DateTimeOffset)value).Should().Be(dateTimeOffset);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DateTimeOffsetData))]
+    [TestMethod]
+    [DynamicData(nameof(DateTimeOffsetData))]
     public void DateTimeOffsetInNullableDateTimeOffsetOut(DateTimeOffset dateTimeOffset)
     {
         DateTimeOffset source = dateTimeOffset;
@@ -70,7 +71,7 @@ public class StoringDateTimeOffset
         ((DateTimeOffset?)value).Should().Be(dateTimeOffset);
     }
 
-    [Test]
+    [TestMethod]
     public void NullDateTimeOffset()
     {
         DateTimeOffset? source = null;
@@ -80,8 +81,8 @@ public class StoringDateTimeOffset
         value.As<DateTimeOffset?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(DateTimeOffsetData))]
+    [TestMethod]
+    [DynamicData(nameof(DateTimeOffsetData))]
     public void OutAsObject(DateTimeOffset dateTimeOffset)
     {
         Value value = dateTimeOffset;

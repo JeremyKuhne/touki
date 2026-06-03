@@ -21,6 +21,7 @@ namespace Touki.Io.Globbing;
 ///   <see cref="MultiSuffixGlobStrategy"/>.
 ///  </para>
 /// </remarks>
+[TestClass]
 public class MultiSuffixGlobStrategyTests
 {
     private static bool MatchCore(string pattern, string prefix, string fileName) =>
@@ -28,40 +29,40 @@ public class MultiSuffixGlobStrategyTests
             .Compile(pattern, GlobDialect.Bash, GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob)
             .MatchCore(prefix.AsSpan(), fileName.AsSpan());
 
-    [Test]
+    [TestMethod]
     // Two-suffix alternation matches either end. Mirrors the canonical
     // `**/@(*.cs|*.md)` benchmark shape.
-    [Arguments("**/@(*.cs|*.md)", "src/", "foo.cs", true)]
-    [Arguments("**/@(*.cs|*.md)", "src/", "foo.md", true)]
-    [Arguments("**/@(*.cs|*.md)", "src/", "foo.txt", false)]
-    [Arguments("**/@(*.cs|*.md)", "", "foo.cs", true)]
-    [Arguments("**/@(*.cs|*.md)", "a/b/c/", "foo.md", true)]
+    [DataRow("**/@(*.cs|*.md)", "src/", "foo.cs", true)]
+    [DataRow("**/@(*.cs|*.md)", "src/", "foo.md", true)]
+    [DataRow("**/@(*.cs|*.md)", "src/", "foo.txt", false)]
+    [DataRow("**/@(*.cs|*.md)", "", "foo.cs", true)]
+    [DataRow("**/@(*.cs|*.md)", "a/b/c/", "foo.md", true)]
     public void MatchCore_TwoSuffixes(string pattern, string prefix, string fileName, bool expected) =>
         MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     // Eight-suffix alternation (PatternCount=8 benchmark shape). Reproduces a
     // realistic mix of common source extensions.
-    [Arguments("**/@(*.cs|*.md|*.json|*.txt|*.xml|*.yml|*.props|*.targets)", "p/", "build.props", true)]
-    [Arguments("**/@(*.cs|*.md|*.json|*.txt|*.xml|*.yml|*.props|*.targets)", "p/", "build.targets", true)]
-    [Arguments("**/@(*.cs|*.md|*.json|*.txt|*.xml|*.yml|*.props|*.targets)", "p/", "build.user", false)]
-    [Arguments("**/@(*.cs|*.md|*.json|*.txt|*.xml|*.yml|*.props|*.targets)", "p/", "Program.cs", true)]
+    [DataRow("**/@(*.cs|*.md|*.json|*.txt|*.xml|*.yml|*.props|*.targets)", "p/", "build.props", true)]
+    [DataRow("**/@(*.cs|*.md|*.json|*.txt|*.xml|*.yml|*.props|*.targets)", "p/", "build.targets", true)]
+    [DataRow("**/@(*.cs|*.md|*.json|*.txt|*.xml|*.yml|*.props|*.targets)", "p/", "build.user", false)]
+    [DataRow("**/@(*.cs|*.md|*.json|*.txt|*.xml|*.yml|*.props|*.targets)", "p/", "Program.cs", true)]
     public void MatchCore_EightSuffixes(string pattern, string prefix, string fileName, bool expected) =>
         MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     // Leading-dot rule cross-check against the matching N-include MatchSet
     // (`**/*.cs` ∪ `**/*.md`). The specialization must agree with the
     // baseline shape on every input. Encoded as oracle pairs so that any
     // future change to the leading-dot semantics flips both sides together.
-    [Arguments("", "foo.cs")]
-    [Arguments("", "foo.md")]
-    [Arguments("", "foo.txt")]
-    [Arguments("", ".cs")]
-    [Arguments("", ".md")]
-    [Arguments("", ".hidden.cs")]
-    [Arguments("src/", ".cs")]
-    [Arguments("src/", ".gitignore")]
+    [DataRow("", "foo.cs")]
+    [DataRow("", "foo.md")]
+    [DataRow("", "foo.txt")]
+    [DataRow("", ".cs")]
+    [DataRow("", ".md")]
+    [DataRow("", ".hidden.cs")]
+    [DataRow("src/", ".cs")]
+    [DataRow("src/", ".gitignore")]
     public void MatchCore_LeadingDotRule_MatchesMatchSetBaseline(string prefix, string fileName)
     {
         bool extGlob = GlobSpecification
@@ -78,15 +79,15 @@ public class MultiSuffixGlobStrategyTests
             $"prefix='{prefix}' fileName='{fileName}'");
     }
 
-    [Test]
+    [TestMethod]
     // Suffix-set with a single alternative behaves like SuffixGlobStrategy for
     // the segment; verifies the N=1 path of the specialization.
-    [Arguments("**/@(*.cs)", "src/Io/", "Glob.cs", true)]
-    [Arguments("**/@(*.cs)", "src/Io/", "Glob.md", false)]
+    [DataRow("**/@(*.cs)", "src/Io/", "Glob.cs", true)]
+    [DataRow("**/@(*.cs)", "src/Io/", "Glob.md", false)]
     public void MatchCore_SingleSuffix(string pattern, string prefix, string fileName, bool expected) =>
         MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     // Shapes the specialization intentionally rejects fall through to the
     // bytecode interpreter, which must still answer correctly. These tests
     // pin the safety net.
@@ -95,64 +96,64 @@ public class MultiSuffixGlobStrategyTests
     //   `*(...)`  - wrong extglob kind
     //   `!(...)`  - wrong extglob kind
     //   mixed-shape body (literal alt next to `*lit` alt)
-    [Arguments("**/?(*.cs)", "src/", "foo.cs", true)]
-    [Arguments("**/?(*.cs)", "src/", "foo.md", false)]
-    [Arguments("**/+(*.cs)", "src/", "foo.cs", true)]
-    [Arguments("**/+(*.cs)", "src/", "foo.md", false)]
-    [Arguments("**/*(*.cs)", "src/", "foo.cs", true)]
-    [Arguments("**/!(skip)", "src/", "keep", true)]
-    [Arguments("**/!(skip)", "src/", "skip", false)]
-    [Arguments("**/@(*.cs|README)", "src/", "README", true)]
-    [Arguments("**/@(*.cs|README)", "src/", "foo.cs", true)]
+    [DataRow("**/?(*.cs)", "src/", "foo.cs", true)]
+    [DataRow("**/?(*.cs)", "src/", "foo.md", false)]
+    [DataRow("**/+(*.cs)", "src/", "foo.cs", true)]
+    [DataRow("**/+(*.cs)", "src/", "foo.md", false)]
+    [DataRow("**/*(*.cs)", "src/", "foo.cs", true)]
+    [DataRow("**/!(skip)", "src/", "keep", true)]
+    [DataRow("**/!(skip)", "src/", "skip", false)]
+    [DataRow("**/@(*.cs|README)", "src/", "README", true)]
+    [DataRow("**/@(*.cs|README)", "src/", "foo.cs", true)]
     public void MatchCore_RejectedShapesStillMatchCorrectly(
         string pattern, string prefix, string fileName, bool expected) =>
         MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     // Path-unaware dialects do not see the GlobStarFileNameStrategy
     // specialization; suffix-set extglobs there flow through the bytecode
     // interpreter. Confirm the semantics match.
-    [Arguments("@(*.cs|*.md)", "foo.cs", true)]
-    [Arguments("@(*.cs|*.md)", "foo.md", true)]
-    [Arguments("@(*.cs|*.md)", "foo.txt", false)]
+    [DataRow("@(*.cs|*.md)", "foo.cs", true)]
+    [DataRow("@(*.cs|*.md)", "foo.md", true)]
+    [DataRow("@(*.cs|*.md)", "foo.txt", false)]
     public void IsMatch_PathUnaware_StillCorrect(string pattern, string input, bool expected) =>
         GlobSpecification
             .Compile(pattern, GlobDialect.Posix, GlobOptions.AllowExtGlob)
             .IsMatch(input).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     // IgnoreCase fold paths through MultiSuffixGlobStrategy. The strategy
     // dispatches to the ASCII or Unicode endswith fold based on the dialect
     // semantics; both must agree with the generic bytecode answer.
-    [Arguments("**/@(*.CS|*.MD)", "src/", "foo.cs", true)]
-    [Arguments("**/@(*.CS|*.MD)", "src/", "foo.MD", true)]
-    [Arguments("**/@(*.CS|*.MD)", "src/", "foo.txt", false)]
+    [DataRow("**/@(*.CS|*.MD)", "src/", "foo.cs", true)]
+    [DataRow("**/@(*.CS|*.MD)", "src/", "foo.MD", true)]
+    [DataRow("**/@(*.CS|*.MD)", "src/", "foo.txt", false)]
     public void MatchCore_IgnoreCase(string pattern, string prefix, string fileName, bool expected) =>
         GlobSpecification
             .Compile(pattern, GlobDialect.Bash, GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob | GlobOptions.IgnoreCase)
             .MatchCore(prefix.AsSpan(), fileName.AsSpan()).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     // Unicode ignore-case path: the MSBuild dialect routes
     // `MultiSuffixGlobStrategy` through the `IgnoreCaseKind.Unicode`
     // arm of the endswith / equality switch. Uses a Latin-1 accented
     // character so the ordinal fold actually differs from the ASCII fold.
-    [Arguments("**/@(*.\u00C9|*.MD)", "src/", "foo.\u00E9", true)]
-    [Arguments("**/@(*.\u00C9|*.MD)", "src/", "foo.MD", true)]
-    [Arguments("**/@(*.\u00C9|*.MD)", "src/", "foo.txt", false)]
+    [DataRow("**/@(*.\u00C9|*.MD)", "src/", "foo.\u00E9", true)]
+    [DataRow("**/@(*.\u00C9|*.MD)", "src/", "foo.MD", true)]
+    [DataRow("**/@(*.\u00C9|*.MD)", "src/", "foo.txt", false)]
     // Leading-dot input on the Unicode-fold path: forces the EqualsOrdinalIgnoreCase
     // equality branch inside the leading-dot block. Both arms begin with a
     // literal `.` so the precheck allows the dot input through; the equality
     // check then matches under the case-insensitive fold.
-    [Arguments("**/@(.\u00C9|.MD)", "src/", ".\u00E9", true)]
-    [Arguments("**/@(.\u00C9|.MD)", "src/", ".md", true)]
-    [Arguments("**/@(.\u00C9|.MD)", "src/", ".other", false)]
+    [DataRow("**/@(.\u00C9|.MD)", "src/", ".\u00E9", true)]
+    [DataRow("**/@(.\u00C9|.MD)", "src/", ".md", true)]
+    [DataRow("**/@(.\u00C9|.MD)", "src/", ".other", false)]
     public void MatchCore_IgnoreCase_Unicode(string pattern, string prefix, string fileName, bool expected) =>
         GlobSpecification
             .Compile(pattern, GlobDialect.MSBuild, GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob)
             .MatchCore(prefix.AsSpan(), fileName.AsSpan()).Should().Be(expected);
 
-    [Test]
+    [TestMethod]
     // Shapes that fall outside `TryCreateMultiSuffixSegmentMatcher`'s selection
     // criteria must still compile and match correctly through the recursive
     // walker. Pins the rejection arms so the factory paths stay covered.
@@ -162,15 +163,15 @@ public class MultiSuffixGlobStrategyTests
     //   - `*?` - `?` inside the suffix (any-char wildcard).
     //   - `foo` - alt missing the leading `*`.
     //   - `*foo|@(bar)` - alt that opens a nested extglob in the suffix.
-    [Arguments("**/@(*)", "src/", "anything", true)]
-    [Arguments("**/@(*[ab])", "src/", "fooa", true)]
-    [Arguments("**/@(*[ab])", "src/", "fooc", false)]
-    [Arguments("**/@(*?)", "src/", "ab", true)]
-    [Arguments("**/@(foo)", "src/", "foo", true)]
-    [Arguments("**/@(foo)", "src/", "bar", false)]
-    [Arguments("**/@(*foo|@(bar))", "src/", "xfoo", true)]
-    [Arguments("**/@(*foo|@(bar))", "src/", "bar", true)]
-    [Arguments("**/@(*foo|@(bar))", "src/", "baz", false)]
+    [DataRow("**/@(*)", "src/", "anything", true)]
+    [DataRow("**/@(*[ab])", "src/", "fooa", true)]
+    [DataRow("**/@(*[ab])", "src/", "fooc", false)]
+    [DataRow("**/@(*?)", "src/", "ab", true)]
+    [DataRow("**/@(foo)", "src/", "foo", true)]
+    [DataRow("**/@(foo)", "src/", "bar", false)]
+    [DataRow("**/@(*foo|@(bar))", "src/", "xfoo", true)]
+    [DataRow("**/@(*foo|@(bar))", "src/", "bar", true)]
+    [DataRow("**/@(*foo|@(bar))", "src/", "baz", false)]
     public void MatchCore_NonSpecializedShapesStillMatch(
         string pattern, string prefix, string fileName, bool expected) =>
         MatchCore(pattern, prefix, fileName).Should().Be(expected);

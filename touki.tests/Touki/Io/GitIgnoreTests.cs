@@ -9,18 +9,19 @@ namespace Touki.Io;
 ///  <c>.gitignore</c> content into an <see cref="OrderedMatchSet"/> and verifying
 ///  the composed evaluation matches gitignore semantics.
 /// </summary>
+[TestClass]
 public class GitIgnoreTests
 {
     private static string Root => Path.Combine(Path.GetTempPath(), "gitignore-root");
 
-    [Test]
+    [TestMethod]
     public void Parse_EmptyContent_ProducesEmptySet()
     {
         using OrderedMatchSet set = GitIgnore.Parse("", Root);
         set.Count.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_BlankAndCommentLines_AreSkipped()
     {
         const string content = """
@@ -35,7 +36,7 @@ public class GitIgnoreTests
         set.Count.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_SingleExcludeRule_ExcludesMatchingFiles()
     {
         using OrderedMatchSet set = GitIgnore.Parse("*.log", Root);
@@ -48,7 +49,7 @@ public class GitIgnoreTests
         matcher.MatchesFile(Root, "trace.txt".AsSpan()).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_IncludeAfterExclude_RescuesMatchingFile()
     {
         // Models the canonical .gitignore "exclude all, but rescue one":
@@ -66,7 +67,7 @@ public class GitIgnoreTests
         matcher.MatchesFile(Root, "trace.log".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_DirectoryOnlyRule_ClaimsSubtree()
     {
         using OrderedMatchSet set = GitIgnore.Parse("bin/", Root);
@@ -77,7 +78,7 @@ public class GitIgnoreTests
         matcher.MatchesDirectory(Root, "src".AsSpan(), matchForExclusion: true).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_LeadingBackslashEscapesHash()
     {
         // `\#literal` matches a file literally named `#literal`.
@@ -87,7 +88,7 @@ public class GitIgnoreTests
         matcher.MatchesFile(Root, "#literal".AsSpan()).Should().BeFalse();  // excluded
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_LeadingBackslashEscapesBang()
     {
         // `\!important.txt` matches a file literally named `!important.txt`.
@@ -97,7 +98,7 @@ public class GitIgnoreTests
         matcher.MatchesFile(Root, "!important.txt".AsSpan()).Should().BeFalse();  // excluded
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_RootAnchoredRule_OnlyMatchesAtRoot()
     {
         // `/build` (leading `/`) is root-anchored.
@@ -112,7 +113,7 @@ public class GitIgnoreTests
         matcher.MatchesFile(Path.Combine(Root, "src"), "build".AsSpan()).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_NonAnchoredRule_MatchesAtAnyDepth()
     {
         // `*.log` (no `/`) matches at any depth per gitignore.
@@ -124,7 +125,7 @@ public class GitIgnoreTests
         matcher.MatchesFile(Path.Combine(Root, "deep", "nested", "dir"), "a.log".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_TrailingWhitespace_IsStripped()
     {
         // Lines with trailing whitespace should be parsed as if the whitespace wasn't
@@ -143,7 +144,7 @@ public class GitIgnoreTests
         matcher.MatchesFile(Root, "a.cs".AsSpan()).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_CrlfLineEndings_AreHandled()
     {
         const string content = "*.log\r\n*.tmp\r\n";
@@ -151,7 +152,7 @@ public class GitIgnoreTests
         set.Count.Should().Be(2);
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_RealisticGitignore_EvaluatesCorrectly()
     {
         // A realistic .gitignore subset combining excludes, re-includes, root anchors,
@@ -195,7 +196,7 @@ public class GitIgnoreTests
         matcher.MatchesFile(Root, "node_modules".AsSpan()).Should().BeFalse();  // matched → excluded
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_OnlyExcludes_ClaimsSubtrees()
     {
         // When there are no include rules after a DirectoryOnly exclude, the set
@@ -214,7 +215,7 @@ public class GitIgnoreTests
         matcher.MatchesDirectory(Root, "src".AsSpan(), matchForExclusion: true).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void AddRules_AppendsToExistingSet()
     {
         // Stacking parent and child .gitignore: child rules go after parent so they
@@ -230,21 +231,21 @@ public class GitIgnoreTests
         matcher.MatchesFile(Root, "trace.log".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_NullContent_Throws()
     {
         Action act = () => GitIgnore.Parse(null!, Root);
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_NullRoot_Throws()
     {
         Action act = () => GitIgnore.Parse("*.log", null!);
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_ReturnsIncludeByDefaultSet()
     {
         // Gitignore semantics: by default files are included; ignore rules
@@ -253,7 +254,7 @@ public class GitIgnoreTests
         set.IncludeByDefault.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Parse_NonMatchingFile_IsIncluded()
     {
         // `*.log` excludes log files; `trace.txt` matches no rule so it must

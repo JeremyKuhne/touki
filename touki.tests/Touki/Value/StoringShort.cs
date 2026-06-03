@@ -4,18 +4,19 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringShort
 {
-    public static IEnumerable<short> ShortData()
+    public static IEnumerable<object[]> ShortData()
     {
-        yield return 0;
-        yield return 42;
-        yield return short.MaxValue;
-        yield return short.MinValue;
+        yield return [(short)0];
+        yield return [(short)42];
+        yield return [short.MaxValue];
+        yield return [short.MinValue];
     }
 
-    [Test]
-    [MethodDataSource(nameof(ShortData))]
+    [TestMethod]
+    [DynamicData(nameof(ShortData))]
     public void ShortImplicit(short @short)
     {
         Value value = @short;
@@ -28,8 +29,8 @@ public class StoringShort
         value.Type.Should().Be(typeof(short));
     }
 
-    [Test]
-    [MethodDataSource(nameof(ShortData))]
+    [TestMethod]
+    [DynamicData(nameof(ShortData))]
     public void ShortCreate(short @short)
     {
         Value value;
@@ -52,8 +53,8 @@ public class StoringShort
         value.Type.Should().Be(typeof(short));
     }
 
-    [Test]
-    [MethodDataSource(nameof(ShortData))]
+    [TestMethod]
+    [DynamicData(nameof(ShortData))]
     public void ShortInOut(short @short)
     {
         Value value = @short;
@@ -65,8 +66,8 @@ public class StoringShort
         ((short)value).Should().Be(@short);
     }
 
-    [Test]
-    [MethodDataSource(nameof(ShortData))]
+    [TestMethod]
+    [DynamicData(nameof(ShortData))]
     public void NullableShortInShortOut(short @short)
     {
         short? source = @short;
@@ -81,8 +82,8 @@ public class StoringShort
         ((short)value).Should().Be(@short);
     }
 
-    [Test]
-    [MethodDataSource(nameof(ShortData))]
+    [TestMethod]
+    [DynamicData(nameof(ShortData))]
     public void ShortInNullableShortOut(short @short)
     {
         short source = @short;
@@ -94,8 +95,8 @@ public class StoringShort
         ((short?)value).Should().Be(@short);
     }
 
-    [Test]
-    [MethodDataSource(nameof(ShortData))]
+    [TestMethod]
+    [DynamicData(nameof(ShortData))]
     public void BoxedShort(short @short)
     {
         short i = @short;
@@ -120,7 +121,7 @@ public class StoringShort
         nullableResult!.Value.Should().Be(@short);
     }
 
-    [Test]
+    [TestMethod]
     public void NullShort()
     {
         short? source = null;
@@ -130,8 +131,8 @@ public class StoringShort
         value.As<short?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(ShortData))]
+    [TestMethod]
+    [DynamicData(nameof(ShortData))]
     public void OutAsObject(short @short)
     {
         Value value = @short;

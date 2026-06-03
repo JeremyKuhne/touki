@@ -6,6 +6,7 @@ using System.Collections;
 
 namespace Touki.Collections;
 
+[TestClass]
 public class ListBaseTests
 {
     // Concrete implementation of ListBase for testing
@@ -43,7 +44,7 @@ public class ListBaseTests
         }
     }
 
-    [Test]
+    [TestMethod]
     public void Can_Add_And_Retrieve_Items()
     {
         TestList<string> list = new()
@@ -57,7 +58,7 @@ public class ListBaseTests
         list[1].Should().Be("Item2");
     }
 
-    [Test]
+    [TestMethod]
     public void Can_Insert_Items()
     {
         TestList<string> list = new()
@@ -74,7 +75,7 @@ public class ListBaseTests
         list[2].Should().Be("Item3");
     }
 
-    [Test]
+    [TestMethod]
     public void Can_Remove_Items()
     {
         TestList<string> list = new()
@@ -92,7 +93,7 @@ public class ListBaseTests
         list[1].Should().Be("Item3");
     }
 
-    [Test]
+    [TestMethod]
     public void Remove_Returns_False_When_Item_Not_Found()
     {
         TestList<string> list = new()
@@ -106,7 +107,7 @@ public class ListBaseTests
         list.Count.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void Can_RemoveAt_Index()
     {
         TestList<string> list = new()
@@ -123,7 +124,7 @@ public class ListBaseTests
         list[1].Should().Be("Item3");
     }
 
-    [Test]
+    [TestMethod]
     public void RemoveAt_Out_Of_Range_Throws()
     {
         TestList<string> list = new()
@@ -135,7 +136,7 @@ public class ListBaseTests
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Can_Clear_List()
     {
         TestList<string> list = new()
@@ -148,7 +149,7 @@ public class ListBaseTests
         list.Count.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Can_Check_Contains()
     {
         TestList<string> list = new()
@@ -161,7 +162,7 @@ public class ListBaseTests
         list.Contains("Item3").Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Can_Find_IndexOf_Item()
     {
         TestList<string> list = new()
@@ -175,7 +176,7 @@ public class ListBaseTests
         list.IndexOf("Item4").Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void Can_CopyTo_Array()
     {
         TestList<string> list = new()
@@ -192,7 +193,7 @@ public class ListBaseTests
         array[2].Should().Be("Item2");
     }
 
-    [Test]
+    [TestMethod]
     public void Access_Out_Of_Range_Index_Throws()
     {
         TestList<string> list = new()
@@ -205,7 +206,7 @@ public class ListBaseTests
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Set_Out_Of_Range_Index_Throws()
     {
         TestList<string> list = new()
@@ -217,7 +218,7 @@ public class ListBaseTests
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Non_Generic_Interface_Works_Correctly()
     {
         IList list = new TestList<string>();
@@ -234,7 +235,7 @@ public class ListBaseTests
         list.IndexOf("NonExistent").Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void Non_Generic_Remove_Ignores_Wrong_Type()
     {
         IList list = new TestList<string>
@@ -247,7 +248,7 @@ public class ListBaseTests
         list.Count.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void Setting_Via_NonGeneric_Interface_Validates_Type()
     {
         IList list = new TestList<string>
@@ -261,7 +262,7 @@ public class ListBaseTests
             .WithMessage("*Invalid item type*");
     }
 
-    [Test]
+    [TestMethod]
     public void Adding_Via_NonGeneric_Interface_Validates_Type()
     {
         IList list = new TestList<string>();
@@ -272,7 +273,7 @@ public class ListBaseTests
             .WithMessage("*Invalid item type*");
     }
 
-    [Test]
+    [TestMethod]
     public void Inserting_Via_NonGeneric_Interface_Validates_Type()
     {
         IList list = new TestList<string>();
@@ -283,7 +284,7 @@ public class ListBaseTests
             .WithMessage("*Invalid item type*");
     }
 
-    [Test]
+    [TestMethod]
     public void Adding_Null_Via_NonGeneric_Interface_Throws()
     {
         IList list = new TestList<string>();
@@ -293,7 +294,7 @@ public class ListBaseTests
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Inserting_Null_Via_NonGeneric_Interface_Throws()
     {
         IList list = new TestList<string>();
@@ -303,7 +304,7 @@ public class ListBaseTests
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void IsSynchronized_Returns_False()
     {
         ICollection list = new TestList<string>();
@@ -311,7 +312,7 @@ public class ListBaseTests
         ((ICollection)list).IsSynchronized.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void SyncRoot_Returns_This()
     {
         TestList<string> testList = new();
@@ -320,7 +321,7 @@ public class ListBaseTests
         list.SyncRoot.Should().BeSameAs(testList);
     }
 
-    [Test]
+    [TestMethod]
     public void IsFixedSize_Returns_False()
     {
         IList list = new TestList<string>();
@@ -328,7 +329,7 @@ public class ListBaseTests
         list.IsFixedSize.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IsReadOnly_Returns_False_By_Default()
     {
         TestList<string> list = new();
@@ -336,7 +337,7 @@ public class ListBaseTests
         list.IsReadOnly.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Can_Enumerate_Items()
     {
         TestList<string> list = new()
@@ -352,7 +353,7 @@ public class ListBaseTests
         enumerated[1].Should().Be("Item2");
     }
 
-    [Test]
+    [TestMethod]
     public void Can_Enumerate_Via_NonGeneric_Interface()
     {
         IEnumerable list = new TestList<string>();
@@ -366,7 +367,7 @@ public class ListBaseTests
         enumerated[1].Should().Be("Item2");
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_Can_Be_Called_Multiple_Times()
     {
         TestList<string> list = new();
@@ -375,7 +376,7 @@ public class ListBaseTests
         list.Dispose(); // Second dispose should be no-op
     }
 
-    [Test]
+    [TestMethod]
     public void IList_Indexer_Setter_AssignsItem()
     {
         TestList<string> list = new();
@@ -387,7 +388,7 @@ public class ListBaseTests
         list[0].Should().Be("b");
     }
 
-    [Test]
+    [TestMethod]
     public void IList_Indexer_Setter_WrongType_Throws()
     {
         TestList<string> list = new();
@@ -398,7 +399,7 @@ public class ListBaseTests
         action.Should().Throw<ArgumentException>();
     }
 
-    [Test]
+    [TestMethod]
     public void IList_Remove_ExistingItem_RemovesIt()
     {
         TestList<string> list = new();
@@ -412,7 +413,7 @@ public class ListBaseTests
         list[0].Should().Be("b");
     }
 
-    [Test]
+    [TestMethod]
     public void IList_Remove_WrongType_IsNoOp()
     {
         TestList<string> list = new();
@@ -424,7 +425,7 @@ public class ListBaseTests
         list.Count.Should().Be(1);
     }
 
-    [Test]
+    [TestMethod]
     public void IList_IndexOf_WrongType_ReturnsNegativeOne()
     {
         TestList<string> list = new();
@@ -434,7 +435,7 @@ public class ListBaseTests
         iList.IndexOf(42).Should().Be(-1);
     }
 
-    [Test]
+    [TestMethod]
     public void IList_Contains_WrongType_ReturnsFalse()
     {
         TestList<string> list = new();

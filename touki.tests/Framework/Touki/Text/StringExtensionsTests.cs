@@ -7,19 +7,20 @@ using TStringExtensions = global::Touki.Text.StringExtensions;
 
 namespace Framework.Touki.Text;
 
+[TestClass]
 public class StringExtensionsTests
 {
-    [Test]
-    [Arguments("")]
-    [Arguments("a")]
-    [Arguments("ab")]
-    [Arguments("abc")]
-    [Arguments("abcd")]
-    [Arguments("abcde")]
-    [Arguments("abcdef")]
-    [Arguments("abcdefg")]
-    [Arguments("hello world")]
-    [Arguments("0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF")]
+    [TestMethod]
+    [DataRow("")]
+    [DataRow("a")]
+    [DataRow("ab")]
+    [DataRow("abc")]
+    [DataRow("abcd")]
+    [DataRow("abcde")]
+    [DataRow("abcdef")]
+    [DataRow("abcdefg")]
+    [DataRow("hello world")]
+    [DataRow("0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF")]
     public void GetHashCode_Span_MatchesString(string value)
     {
         int spanHash = string.GetHashCode(value.AsSpan());
@@ -27,13 +28,13 @@ public class StringExtensionsTests
         spanHash.Should().Be(stringHash);
     }
 
-    [Test]
+    [TestMethod]
     public void GetHashCode_Span_EmptyMatchesEmptyString()
     {
         string.GetHashCode(ReadOnlySpan<char>.Empty).Should().Be(string.Empty.GetHashCode());
     }
 
-    [Test]
+    [TestMethod]
     public void Create_WithState_PopulatesString()
     {
         string created = string.Create(5, 'X', static (span, state) =>
@@ -47,28 +48,28 @@ public class StringExtensionsTests
         created.Should().Be("XXXXX");
     }
 
-    [Test]
+    [TestMethod]
     public void Create_WithState_ZeroLength_ReturnsEmpty()
     {
         string created = string.Create(0, 0, static (_, _) => { });
         created.Should().BeSameAs(string.Empty);
     }
 
-    [Test]
+    [TestMethod]
     public void Create_NullAction_Throws()
     {
         Action action = () => string.Create<int>(5, 0, null!);
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Create_NegativeLength_Throws()
     {
         Action action = () => string.Create(-1, 0, static (_, _) => { });
         action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
-    [Test]
+    [TestMethod]
     public void Create_InterpolatedHandler_FormatsString()
     {
         int value = 42;
@@ -76,7 +77,7 @@ public class StringExtensionsTests
         created.Should().Be("value=42");
     }
 
-    [Test]
+    [TestMethod]
     public void Create_InterpolatedHandlerWithBuffer_FormatsString()
     {
         char[] buffer = new char[64];
@@ -85,38 +86,38 @@ public class StringExtensionsTests
         created.Should().Be("v=7");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_TwoSpans_Concatenates()
     {
         TStringExtensions.Concat("foo".AsSpan(), "bar".AsSpan()).Should().Be("foobar");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_TwoSpans_BothEmpty_ReturnsEmpty()
     {
         TStringExtensions.Concat(ReadOnlySpan<char>.Empty, ReadOnlySpan<char>.Empty).Should().BeSameAs(string.Empty);
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_ThreeSpans_Concatenates()
     {
         TStringExtensions.Concat("a".AsSpan(), "b".AsSpan(), "c".AsSpan()).Should().Be("abc");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_ThreeSpans_AllEmpty_ReturnsEmpty()
     {
         TStringExtensions.Concat(ReadOnlySpan<char>.Empty, ReadOnlySpan<char>.Empty, ReadOnlySpan<char>.Empty)
             .Should().BeSameAs(string.Empty);
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_FourSpans_Concatenates()
     {
         TStringExtensions.Concat("a".AsSpan(), "b".AsSpan(), "c".AsSpan(), "d".AsSpan()).Should().Be("abcd");
     }
 
-    [Test]
+    [TestMethod]
     public void Concat_FourSpans_AllEmpty_ReturnsEmpty()
     {
         TStringExtensions.Concat(

@@ -6,9 +6,10 @@ using System.Collections;
 
 namespace Touki.Collections;
 
+[TestClass]
 public class ArraySegmentEnumeratorTests
 {
-    [Test]
+    [TestMethod]
     public void Constructor_WithValidArraySegment_InitializesCorrectly()
     {
         int[] array = [1, 2, 3, 4, 5];
@@ -18,7 +19,7 @@ public class ArraySegmentEnumeratorTests
         enumerator.Current.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_WithNullArray_ThrowsArgumentNullException()
     {
         ArraySegment<int> segment = default;
@@ -26,7 +27,7 @@ public class ArraySegmentEnumeratorTests
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void MoveNext_WithEmptySegment_ReturnsFalse()
     {
         int[] array = [1, 2, 3];
@@ -39,7 +40,7 @@ public class ArraySegmentEnumeratorTests
         enumerator.Current.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void MoveNext_WithValidSegment_EnumeratesCorrectly()
     {
         int[] array = [10, 20, 30, 40, 50];
@@ -63,7 +64,7 @@ public class ArraySegmentEnumeratorTests
         enumerator.Current.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void MoveNext_CalledAfterEnd_ConsistentlyReturnsFalse()
     {
         int[] array = [1, 2];
@@ -76,7 +77,7 @@ public class ArraySegmentEnumeratorTests
         enumerator.Current.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Reset_ResetsEnumeratorToInitialState()
     {
         int[] array = [100, 200, 300];
@@ -93,7 +94,7 @@ public class ArraySegmentEnumeratorTests
         enumerator.Current.Should().Be(100);
     }
 
-    [Test]
+    [TestMethod]
     public void Current_NonGeneric_ReturnsCurrentElement()
     {
         int[] array = [42, 84, 126];
@@ -107,7 +108,7 @@ public class ArraySegmentEnumeratorTests
         current.Should().Be(84);
     }
 
-    [Test]
+    [TestMethod]
     public void Current_NonGeneric_BeforeMoveNext_ReturnsDefault()
     {
         int[] array = [1, 2, 3];
@@ -120,7 +121,7 @@ public class ArraySegmentEnumeratorTests
         current.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Dispose_DoesNotThrow()
     {
         int[] array = [1, 2, 3];
@@ -131,7 +132,7 @@ public class ArraySegmentEnumeratorTests
         act.Should().NotThrow();
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateReferenceTypes_WorksCorrectly()
     {
         string[] array = ["zero", "one", "two", "three", "four"];
@@ -147,7 +148,7 @@ public class ArraySegmentEnumeratorTests
         results.Should().Equal(["two", "three"]);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateWithOffsetAndCount_WorksCorrectly()
     {
         char[] array = ['a', 'b', 'c', 'd', 'e', 'f'];
@@ -163,7 +164,7 @@ public class ArraySegmentEnumeratorTests
         results.Should().Equal(['c', 'd', 'e']);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumerateSingleElement_WorksCorrectly()
     {
         double[] array = [1.1, 2.2, 3.3];

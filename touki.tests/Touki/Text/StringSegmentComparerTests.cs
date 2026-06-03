@@ -4,9 +4,10 @@
 
 namespace Touki.Text;
 
+[TestClass]
 public class StringSegmentComparerTests
 {
-    [Test]
+    [TestMethod]
     public void Ordinal_Compare_Equal_Segments_Returns_Zero()
     {
         StringSegment first = new("test", 0, 4);
@@ -15,7 +16,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.Ordinal.Compare(first, second).Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Ordinal_Compare_Different_Segments_Returns_NonZero()
     {
         StringSegment first = new("test", 0, 4);
@@ -24,7 +25,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.Ordinal.Compare(first, second).Should().NotBe(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Ordinal_Compare_Is_CaseSensitive()
     {
         StringSegment first = new("Test", 0, 4);
@@ -33,7 +34,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.Ordinal.Compare(first, second).Should().NotBe(0);
     }
 
-    [Test]
+    [TestMethod]
     public void Ordinal_Equals_Same_Segments_Returns_True()
     {
         StringSegment first = new("test", 0, 4);
@@ -42,7 +43,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.Ordinal.Equals(first, second).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Ordinal_Equals_Different_Segments_Returns_False()
     {
         StringSegment first = new("test", 0, 4);
@@ -51,7 +52,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.Ordinal.Equals(first, second).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Ordinal_Equals_Is_CaseSensitive()
     {
         StringSegment first = new("Test", 0, 4);
@@ -60,7 +61,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.Ordinal.Equals(first, second).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Ordinal_GetHashCode_Same_Segments_Same_Hash()
     {
         StringSegment first = new("test", 0, 4);
@@ -70,7 +71,7 @@ public class StringSegmentComparerTests
             StringSegmentComparer.Ordinal.GetHashCode(second));
     }
 
-    [Test]
+    [TestMethod]
     public void OrdinalIgnoreCase_Compare_Equal_Segments_Returns_Zero()
     {
         StringSegment first = new("test", 0, 4);
@@ -79,7 +80,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.OrdinalIgnoreCase.Compare(first, second).Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void OrdinalIgnoreCase_Compare_Equal_Segments_DifferentCase_Returns_Zero()
     {
         StringSegment first = new("Test", 0, 4);
@@ -88,7 +89,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.OrdinalIgnoreCase.Compare(first, second).Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void OrdinalIgnoreCase_Compare_Different_Segments_Returns_NonZero()
     {
         StringSegment first = new("test", 0, 4);
@@ -97,7 +98,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.OrdinalIgnoreCase.Compare(first, second).Should().NotBe(0);
     }
 
-    [Test]
+    [TestMethod]
     public void OrdinalIgnoreCase_Equals_Same_Segments_Returns_True()
     {
         StringSegment first = new("test", 0, 4);
@@ -106,7 +107,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.OrdinalIgnoreCase.Equals(first, second).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void OrdinalIgnoreCase_Equals_Same_Segments_DifferentCase_Returns_True()
     {
         StringSegment first = new("Test", 0, 4);
@@ -115,7 +116,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.OrdinalIgnoreCase.Equals(first, second).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void OrdinalIgnoreCase_Equals_Different_Segments_Returns_False()
     {
         StringSegment first = new("test", 0, 4);
@@ -124,7 +125,7 @@ public class StringSegmentComparerTests
         StringSegmentComparer.OrdinalIgnoreCase.Equals(first, second).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void OrdinalIgnoreCase_GetHashCode_Same_Segments_Same_Hash()
     {
         StringSegment first = new("test", 0, 4);

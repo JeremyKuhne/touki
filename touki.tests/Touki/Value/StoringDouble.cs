@@ -4,21 +4,22 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringDouble
 {
-    public static IEnumerable<double> DoubleData()
+    public static IEnumerable<object[]> DoubleData()
     {
-        yield return 0d;
-        yield return 42d;
-        yield return double.MaxValue;
-        yield return double.MinValue;
-        yield return double.NaN;
-        yield return double.NegativeInfinity;
-        yield return double.PositiveInfinity;
+        yield return [0d];
+        yield return [42d];
+        yield return [double.MaxValue];
+        yield return [double.MinValue];
+        yield return [double.NaN];
+        yield return [double.NegativeInfinity];
+        yield return [double.PositiveInfinity];
     }
 
-    [Test]
-    [MethodDataSource(nameof(DoubleData))]
+    [TestMethod]
+    [DynamicData(nameof(DoubleData))]
     public void DoubleImplicit(double @double)
     {
         Value value = @double;
@@ -31,8 +32,8 @@ public class StoringDouble
         value.Type.Should().Be(typeof(double));
     }
 
-    [Test]
-    [MethodDataSource(nameof(DoubleData))]
+    [TestMethod]
+    [DynamicData(nameof(DoubleData))]
     public void DoubleCreate(double @double)
     {
         Value value;
@@ -55,8 +56,8 @@ public class StoringDouble
         value.Type.Should().Be(typeof(double));
     }
 
-    [Test]
-    [MethodDataSource(nameof(DoubleData))]
+    [TestMethod]
+    [DynamicData(nameof(DoubleData))]
     public void DoubleInOut(double @double)
     {
         Value value = @double;
@@ -68,8 +69,8 @@ public class StoringDouble
         ((double)value).Should().Be(@double);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DoubleData))]
+    [TestMethod]
+    [DynamicData(nameof(DoubleData))]
     public void NullableDoubleInDoubleOut(double @double)
     {
         double? source = @double;
@@ -84,8 +85,8 @@ public class StoringDouble
         ((double)value).Should().Be(@double);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DoubleData))]
+    [TestMethod]
+    [DynamicData(nameof(DoubleData))]
     public void DoubleInNullableDoubleOut(double @double)
     {
         double source = @double;
@@ -97,8 +98,8 @@ public class StoringDouble
         ((double)value).Should().Be(@double);
     }
 
-    [Test]
-    [MethodDataSource(nameof(DoubleData))]
+    [TestMethod]
+    [DynamicData(nameof(DoubleData))]
     public void BoxedDouble(double @double)
     {
         double i = @double;
@@ -123,7 +124,7 @@ public class StoringDouble
         nullableResult!.Value.Should().Be(@double);
     }
 
-    [Test]
+    [TestMethod]
     public void NullDouble()
     {
         double? source = null;
@@ -133,8 +134,8 @@ public class StoringDouble
         value.As<double?>().HasValue.Should().BeFalse();
     }
 
-    [Test]
-    [MethodDataSource(nameof(DoubleData))]
+    [TestMethod]
+    [DynamicData(nameof(DoubleData))]
     public void OutAsObject(double @double)
     {
         Value value = @double;

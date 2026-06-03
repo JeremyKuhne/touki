@@ -4,6 +4,7 @@
 
 namespace System;
 
+[TestClass]
 public class ConvertBase64PolyfillTests
 {
     private static readonly byte[] s_sample = [0xFE, 0xED, 0xFA, 0xCE];
@@ -11,19 +12,19 @@ public class ConvertBase64PolyfillTests
 
     // ---- ToBase64String(ReadOnlySpan<byte>) ----
 
-    [Test]
+    [TestMethod]
     public void ToBase64String_Empty_ReturnsEmpty()
     {
         Convert.ToBase64String([]).Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void ToBase64String_Sample_ReturnsExpected()
     {
         Convert.ToBase64String((ReadOnlySpan<byte>)s_sample).Should().Be(SampleBase64);
     }
 
-    [Test]
+    [TestMethod]
     public void ToBase64String_LargeBuffer_RoundTrips()
     {
         byte[] buffer = new byte[1024];
@@ -39,7 +40,7 @@ public class ConvertBase64PolyfillTests
 
     // ---- TryToBase64Chars ----
 
-    [Test]
+    [TestMethod]
     public void TryToBase64Chars_DestinationLargeEnough_WritesAndReturnsTrue()
     {
         Span<char> dest = new char[16];
@@ -49,7 +50,7 @@ public class ConvertBase64PolyfillTests
         dest[..written].ToString().Should().Be(SampleBase64);
     }
 
-    [Test]
+    [TestMethod]
     public void TryToBase64Chars_DestinationTooSmall_ReturnsFalse()
     {
         Span<char> dest = new char[4];
@@ -58,7 +59,7 @@ public class ConvertBase64PolyfillTests
         written.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void TryToBase64Chars_Empty_ReturnsTrueWithZeroWritten()
     {
         Span<char> dest = [];
@@ -68,7 +69,7 @@ public class ConvertBase64PolyfillTests
 
     // ---- TryFromBase64Chars / TryFromBase64String ----
 
-    [Test]
+    [TestMethod]
     public void TryFromBase64Chars_ValidInput_DecodesCorrectly()
     {
         Span<byte> dest = new byte[8];
@@ -78,7 +79,7 @@ public class ConvertBase64PolyfillTests
         dest[..written].ToArray().Should().Equal(s_sample);
     }
 
-    [Test]
+    [TestMethod]
     public void TryFromBase64Chars_DestinationTooSmall_ReturnsFalse()
     {
         Span<byte> dest = new byte[2];
@@ -87,7 +88,7 @@ public class ConvertBase64PolyfillTests
         written.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void TryFromBase64Chars_InvalidInput_ReturnsFalse()
     {
         Span<byte> dest = new byte[8];
@@ -96,7 +97,7 @@ public class ConvertBase64PolyfillTests
         written.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void TryFromBase64Chars_EmptyInput_ReturnsTrue()
     {
         Span<byte> dest = [];
@@ -104,7 +105,7 @@ public class ConvertBase64PolyfillTests
         written.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void TryFromBase64String_ValidInput_DecodesCorrectly()
     {
         Span<byte> dest = new byte[8];
@@ -112,7 +113,7 @@ public class ConvertBase64PolyfillTests
         written.Should().Be(s_sample.Length);
     }
 
-    [Test]
+    [TestMethod]
     public void TryFromBase64String_NullString_Throws()
     {
         byte[] destArray = new byte[8];
@@ -120,7 +121,7 @@ public class ConvertBase64PolyfillTests
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Test]
+    [TestMethod]
     public void ToBase64String_InsertLineBreaks_AddsLineBreaksEvery76Chars()
     {
         // 60 bytes encodes to 80 base64 chars; with line breaks the BCL inserts CRLF after 76 chars.
@@ -129,7 +130,7 @@ public class ConvertBase64PolyfillTests
         encoded.IndexOf("\r\n", StringComparison.Ordinal).Should().BeGreaterThan(0);
     }
 
-    [Test]
+    [TestMethod]
     public void TryToBase64Chars_ExactFitDestination_Succeeds()
     {
         // s_sample is 4 bytes -> 8 base64 chars.
@@ -139,7 +140,7 @@ public class ConvertBase64PolyfillTests
         dest.ToString().Should().Be(SampleBase64);
     }
 
-    [Test]
+    [TestMethod]
     public void TryFromBase64Chars_NonBase64Char_ReturnsFalse()
     {
         Span<byte> dest = new byte[8];
@@ -148,7 +149,7 @@ public class ConvertBase64PolyfillTests
         written.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void TryFromBase64Chars_BadPadding_ReturnsFalse()
     {
         Span<byte> dest = new byte[8];
@@ -157,7 +158,7 @@ public class ConvertBase64PolyfillTests
         written.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void RoundTrip_SpanEncodeMatchesBclByteArrayEncode()
     {
         // The span polyfill must produce byte-identical output to the BCL byte[] overload.
@@ -172,21 +173,21 @@ public class ConvertBase64PolyfillTests
         viaSpan.Should().Be(viaArray);
     }
 
-    [Test]
+    [TestMethod]
     public void ToBase64String_OneByte_TwoPaddingChars()
     {
         byte[] one = [0xFF];
         Convert.ToBase64String((ReadOnlySpan<byte>)one).Should().Be("/w==");
     }
 
-    [Test]
+    [TestMethod]
     public void ToBase64String_TwoBytes_OnePaddingChar()
     {
         byte[] two = [0xFF, 0xEE];
         Convert.ToBase64String((ReadOnlySpan<byte>)two).Should().Be("/+4=");
     }
 
-    [Test]
+    [TestMethod]
     public void ToBase64String_ThreeBytes_NoPaddingChars()
     {
         byte[] three = [0xFF, 0xEE, 0xDD];

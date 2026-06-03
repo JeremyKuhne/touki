@@ -4,50 +4,51 @@
 
 namespace Touki;
 
+[TestClass]
 public class EnumExtensionsTests
 {
     #region AreFlagsSet Tests
 
-    [Test]
-    [Arguments(ByteFlags.One, ByteFlags.One, true)]
-    [Arguments(ByteFlags.One | ByteFlags.Two, ByteFlags.One, true)]
-    [Arguments(ByteFlags.One | ByteFlags.Two, ByteFlags.One | ByteFlags.Two, true)]
-    [Arguments(ByteFlags.One, ByteFlags.Two, false)]
-    [Arguments(default(ByteFlags), ByteFlags.One, false)]
-    [Arguments(ByteFlags.One, default(ByteFlags), true)] // HasFlag behavior: any value has flag 0
+    [TestMethod]
+    [DataRow(ByteFlags.One, ByteFlags.One, true)]
+    [DataRow(ByteFlags.One | ByteFlags.Two, ByteFlags.One, true)]
+    [DataRow(ByteFlags.One | ByteFlags.Two, ByteFlags.One | ByteFlags.Two, true)]
+    [DataRow(ByteFlags.One, ByteFlags.Two, false)]
+    [DataRow(default(ByteFlags), ByteFlags.One, false)]
+    [DataRow(ByteFlags.One, default(ByteFlags), true)] // HasFlag behavior: any value has flag 0
     public void EnumExtensions_AreFlagsSet_ByteFlags(ByteFlags value, ByteFlags flags, bool expected)
     {
         value.AreFlagsSet(flags).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(ShortFlags.One, ShortFlags.One, true)]
-    [Arguments(ShortFlags.One | ShortFlags.Two, ShortFlags.One, true)]
-    [Arguments(ShortFlags.One | ShortFlags.Two, ShortFlags.One | ShortFlags.Two, true)]
-    [Arguments(ShortFlags.One, ShortFlags.Two, false)]
-    [Arguments(default(ShortFlags), ShortFlags.One, false)]
+    [TestMethod]
+    [DataRow(ShortFlags.One, ShortFlags.One, true)]
+    [DataRow(ShortFlags.One | ShortFlags.Two, ShortFlags.One, true)]
+    [DataRow(ShortFlags.One | ShortFlags.Two, ShortFlags.One | ShortFlags.Two, true)]
+    [DataRow(ShortFlags.One, ShortFlags.Two, false)]
+    [DataRow(default(ShortFlags), ShortFlags.One, false)]
     public void EnumExtensions_AreFlagsSet_ShortFlags(ShortFlags value, ShortFlags flags, bool expected)
     {
         value.AreFlagsSet(flags).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(IntFlags.One, IntFlags.One, true)]
-    [Arguments(IntFlags.One | IntFlags.Two, IntFlags.One, true)]
-    [Arguments(IntFlags.One | IntFlags.Two, IntFlags.One | IntFlags.Two, true)]
-    [Arguments(IntFlags.One, IntFlags.Two, false)]
-    [Arguments(default(IntFlags), IntFlags.One, false)]
+    [TestMethod]
+    [DataRow(IntFlags.One, IntFlags.One, true)]
+    [DataRow(IntFlags.One | IntFlags.Two, IntFlags.One, true)]
+    [DataRow(IntFlags.One | IntFlags.Two, IntFlags.One | IntFlags.Two, true)]
+    [DataRow(IntFlags.One, IntFlags.Two, false)]
+    [DataRow(default(IntFlags), IntFlags.One, false)]
     public void EnumExtensions_AreFlagsSet_IntFlags(IntFlags value, IntFlags flags, bool expected)
     {
         value.AreFlagsSet(flags).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(LongFlags.One, LongFlags.One, true)]
-    [Arguments(LongFlags.One | LongFlags.Two, LongFlags.One, true)]
-    [Arguments(LongFlags.One | LongFlags.Two, LongFlags.One | LongFlags.Two, true)]
-    [Arguments(LongFlags.One, LongFlags.Two, false)]
-    [Arguments(default(LongFlags), LongFlags.One, false)]
+    [TestMethod]
+    [DataRow(LongFlags.One, LongFlags.One, true)]
+    [DataRow(LongFlags.One | LongFlags.Two, LongFlags.One, true)]
+    [DataRow(LongFlags.One | LongFlags.Two, LongFlags.One | LongFlags.Two, true)]
+    [DataRow(LongFlags.One, LongFlags.Two, false)]
+    [DataRow(default(LongFlags), LongFlags.One, false)]
     public void EnumExtensions_AreFlagsSet_LongFlags(LongFlags value, LongFlags flags, bool expected)
     {
         value.AreFlagsSet(flags).Should().Be(expected);
@@ -57,57 +58,57 @@ public class EnumExtensionsTests
 
     #region IsOnlyOneFlagSet Tests
 
-    [Test]
-    [Arguments(ByteFlags.One, ByteFlags.One, true)]
-    [Arguments(default(ByteFlags), ByteFlags.One, false)]
-    [Arguments(default(ByteFlags), default(ByteFlags), false)]
-    [Arguments(ByteFlags.One, default(ByteFlags), false)]
-    [Arguments(ByteFlags.One, (ByteFlags)0xFF, true)]
-    [Arguments((ByteFlags)0xFF, (ByteFlags)0xFF, false)]
-    [Arguments((ByteFlags)0xFF, (ByteFlags)0x00, false)]
-    [Arguments((ByteFlags)0x00, (ByteFlags)0xFF, false)]
-    [Arguments((ByteFlags)0xFF, (ByteFlags)0b1000_0000, true)]
-    [Arguments((ByteFlags)0xFF, (ByteFlags)0b0000_0001, true)]
-    [Arguments((ByteFlags)0xFF, (ByteFlags)0b1000_0001, false)]
+    [TestMethod]
+    [DataRow(ByteFlags.One, ByteFlags.One, true)]
+    [DataRow(default(ByteFlags), ByteFlags.One, false)]
+    [DataRow(default(ByteFlags), default(ByteFlags), false)]
+    [DataRow(ByteFlags.One, default(ByteFlags), false)]
+    [DataRow(ByteFlags.One, (ByteFlags)0xFF, true)]
+    [DataRow((ByteFlags)0xFF, (ByteFlags)0xFF, false)]
+    [DataRow((ByteFlags)0xFF, (ByteFlags)0x00, false)]
+    [DataRow((ByteFlags)0x00, (ByteFlags)0xFF, false)]
+    [DataRow((ByteFlags)0xFF, (ByteFlags)0b1000_0000, true)]
+    [DataRow((ByteFlags)0xFF, (ByteFlags)0b0000_0001, true)]
+    [DataRow((ByteFlags)0xFF, (ByteFlags)0b1000_0001, false)]
     public void EnumExtensions_IsOnlyOneFlagSet_ByteFlags(ByteFlags value, ByteFlags flag, bool expected)
     {
         value.IsOnlyOneFlagSet(flag).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(ShortFlags.One, ShortFlags.One, true)]
-    [Arguments(default(ShortFlags), ShortFlags.One, false)]
-    [Arguments(default(ShortFlags), default(ShortFlags), false)]
-    [Arguments(ShortFlags.One, default(ShortFlags), false)]
-    [Arguments(ShortFlags.One | ShortFlags.Two, ShortFlags.One | ShortFlags.Two, false)]
-    [Arguments(ShortFlags.One | ShortFlags.Two, ShortFlags.One, true)]
-    [Arguments(ShortFlags.One | ShortFlags.Two, ShortFlags.Two, true)]
+    [TestMethod]
+    [DataRow(ShortFlags.One, ShortFlags.One, true)]
+    [DataRow(default(ShortFlags), ShortFlags.One, false)]
+    [DataRow(default(ShortFlags), default(ShortFlags), false)]
+    [DataRow(ShortFlags.One, default(ShortFlags), false)]
+    [DataRow(ShortFlags.One | ShortFlags.Two, ShortFlags.One | ShortFlags.Two, false)]
+    [DataRow(ShortFlags.One | ShortFlags.Two, ShortFlags.One, true)]
+    [DataRow(ShortFlags.One | ShortFlags.Two, ShortFlags.Two, true)]
     public void EnumExtensions_IsOnlyOneFlagSet_ShortFlags(ShortFlags value, ShortFlags flag, bool expected)
     {
         value.IsOnlyOneFlagSet(flag).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(IntFlags.One, IntFlags.One, true)]
-    [Arguments(default(IntFlags), IntFlags.One, false)]
-    [Arguments(default(IntFlags), default(IntFlags), false)]
-    [Arguments(IntFlags.One, default(IntFlags), false)]
-    [Arguments(IntFlags.One | IntFlags.Two, IntFlags.One | IntFlags.Two, false)]
-    [Arguments(IntFlags.One | IntFlags.Two, IntFlags.One, true)]
-    [Arguments(IntFlags.One | IntFlags.Two, IntFlags.Two, true)]
+    [TestMethod]
+    [DataRow(IntFlags.One, IntFlags.One, true)]
+    [DataRow(default(IntFlags), IntFlags.One, false)]
+    [DataRow(default(IntFlags), default(IntFlags), false)]
+    [DataRow(IntFlags.One, default(IntFlags), false)]
+    [DataRow(IntFlags.One | IntFlags.Two, IntFlags.One | IntFlags.Two, false)]
+    [DataRow(IntFlags.One | IntFlags.Two, IntFlags.One, true)]
+    [DataRow(IntFlags.One | IntFlags.Two, IntFlags.Two, true)]
     public void EnumExtensions_IsOnlyOneFlagSet_IntFlags(IntFlags value, IntFlags flag, bool expected)
     {
         value.IsOnlyOneFlagSet(flag).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(LongFlags.One, LongFlags.One, true)]
-    [Arguments(default(LongFlags), LongFlags.One, false)]
-    [Arguments(default(LongFlags), default(LongFlags), false)]
-    [Arguments(LongFlags.One, default(LongFlags), false)]
-    [Arguments(LongFlags.One | LongFlags.Two, LongFlags.One | LongFlags.Two, false)]
-    [Arguments(LongFlags.One | LongFlags.Two, LongFlags.One, true)]
-    [Arguments(LongFlags.One | LongFlags.Two, LongFlags.Two, true)]
+    [TestMethod]
+    [DataRow(LongFlags.One, LongFlags.One, true)]
+    [DataRow(default(LongFlags), LongFlags.One, false)]
+    [DataRow(default(LongFlags), default(LongFlags), false)]
+    [DataRow(LongFlags.One, default(LongFlags), false)]
+    [DataRow(LongFlags.One | LongFlags.Two, LongFlags.One | LongFlags.Two, false)]
+    [DataRow(LongFlags.One | LongFlags.Two, LongFlags.One, true)]
+    [DataRow(LongFlags.One | LongFlags.Two, LongFlags.Two, true)]
     public void EnumExtensions_IsOnlyOneFlagSet_LongFlags(LongFlags value, LongFlags flag, bool expected)
     {
         value.IsOnlyOneFlagSet(flag).Should().Be(expected);
@@ -117,53 +118,53 @@ public class EnumExtensionsTests
 
     #region AreAnyFlagsSet Tests
 
-    [Test]
-    [Arguments(ByteFlags.One, ByteFlags.One, true)]
-    [Arguments(ByteFlags.One | ByteFlags.Two, ByteFlags.One, true)]
-    [Arguments(ByteFlags.One | ByteFlags.Two, ByteFlags.Two, true)]
-    [Arguments(ByteFlags.One | ByteFlags.Two, ByteFlags.Four, false)]
-    [Arguments(ByteFlags.One, ByteFlags.Two, false)]
-    [Arguments(default(ByteFlags), ByteFlags.One, false)]
-    [Arguments(ByteFlags.One, default(ByteFlags), false)]
+    [TestMethod]
+    [DataRow(ByteFlags.One, ByteFlags.One, true)]
+    [DataRow(ByteFlags.One | ByteFlags.Two, ByteFlags.One, true)]
+    [DataRow(ByteFlags.One | ByteFlags.Two, ByteFlags.Two, true)]
+    [DataRow(ByteFlags.One | ByteFlags.Two, ByteFlags.Four, false)]
+    [DataRow(ByteFlags.One, ByteFlags.Two, false)]
+    [DataRow(default(ByteFlags), ByteFlags.One, false)]
+    [DataRow(ByteFlags.One, default(ByteFlags), false)]
     public void EnumExtensions_AreAnyFlagsSet_ByteFlags(ByteFlags value, ByteFlags flags, bool expected)
     {
         value.AreAnyFlagsSet(flags).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(ShortFlags.One, ShortFlags.One, true)]
-    [Arguments(ShortFlags.One | ShortFlags.Two, ShortFlags.One, true)]
-    [Arguments(ShortFlags.One | ShortFlags.Two, ShortFlags.Two, true)]
-    [Arguments(ShortFlags.One | ShortFlags.Two, ShortFlags.Four, false)]
-    [Arguments(ShortFlags.One, ShortFlags.Two, false)]
-    [Arguments(default(ShortFlags), ShortFlags.One, false)]
-    [Arguments(ShortFlags.One, default(ShortFlags), false)]
+    [TestMethod]
+    [DataRow(ShortFlags.One, ShortFlags.One, true)]
+    [DataRow(ShortFlags.One | ShortFlags.Two, ShortFlags.One, true)]
+    [DataRow(ShortFlags.One | ShortFlags.Two, ShortFlags.Two, true)]
+    [DataRow(ShortFlags.One | ShortFlags.Two, ShortFlags.Four, false)]
+    [DataRow(ShortFlags.One, ShortFlags.Two, false)]
+    [DataRow(default(ShortFlags), ShortFlags.One, false)]
+    [DataRow(ShortFlags.One, default(ShortFlags), false)]
     public void EnumExtensions_AreAnyFlagsSet_ShortFlags(ShortFlags value, ShortFlags flags, bool expected)
     {
         value.AreAnyFlagsSet(flags).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(IntFlags.One, IntFlags.One, true)]
-    [Arguments(IntFlags.One | IntFlags.Two, IntFlags.One, true)]
-    [Arguments(IntFlags.One | IntFlags.Two, IntFlags.Two, true)]
-    [Arguments(IntFlags.One | IntFlags.Two, IntFlags.Four, false)]
-    [Arguments(IntFlags.One, IntFlags.Two, false)]
-    [Arguments(default(IntFlags), IntFlags.One, false)]
-    [Arguments(IntFlags.One, default(IntFlags), false)]
+    [TestMethod]
+    [DataRow(IntFlags.One, IntFlags.One, true)]
+    [DataRow(IntFlags.One | IntFlags.Two, IntFlags.One, true)]
+    [DataRow(IntFlags.One | IntFlags.Two, IntFlags.Two, true)]
+    [DataRow(IntFlags.One | IntFlags.Two, IntFlags.Four, false)]
+    [DataRow(IntFlags.One, IntFlags.Two, false)]
+    [DataRow(default(IntFlags), IntFlags.One, false)]
+    [DataRow(IntFlags.One, default(IntFlags), false)]
     public void EnumExtensions_AreAnyFlagsSet_IntFlags(IntFlags value, IntFlags flags, bool expected)
     {
         value.AreAnyFlagsSet(flags).Should().Be(expected);
     }
 
-    [Test]
-    [Arguments(LongFlags.One, LongFlags.One, true)]
-    [Arguments(LongFlags.One | LongFlags.Two, LongFlags.One, true)]
-    [Arguments(LongFlags.One | LongFlags.Two, LongFlags.Two, true)]
-    [Arguments(LongFlags.One | LongFlags.Two, LongFlags.Four, false)]
-    [Arguments(LongFlags.One, LongFlags.Two, false)]
-    [Arguments(default(LongFlags), LongFlags.One, false)]
-    [Arguments(LongFlags.One, default(LongFlags), false)]
+    [TestMethod]
+    [DataRow(LongFlags.One, LongFlags.One, true)]
+    [DataRow(LongFlags.One | LongFlags.Two, LongFlags.One, true)]
+    [DataRow(LongFlags.One | LongFlags.Two, LongFlags.Two, true)]
+    [DataRow(LongFlags.One | LongFlags.Two, LongFlags.Four, false)]
+    [DataRow(LongFlags.One, LongFlags.Two, false)]
+    [DataRow(default(LongFlags), LongFlags.One, false)]
+    [DataRow(LongFlags.One, default(LongFlags), false)]
     public void EnumExtensions_AreAnyFlagsSet_LongFlags(LongFlags value, LongFlags flags, bool expected)
     {
         value.AreAnyFlagsSet(flags).Should().Be(expected);
@@ -173,7 +174,7 @@ public class EnumExtensionsTests
 
     #region SetFlags Tests
 
-    [Test]
+    [TestMethod]
     public void EnumExtensions_SetFlags_ByteFlags()
     {
         ByteFlags value = ByteFlags.One;
@@ -193,7 +194,7 @@ public class EnumExtensionsTests
         value.Should().Be(ByteFlags.One | ByteFlags.Two | ByteFlags.Four);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumExtensions_SetFlags_ShortFlags()
     {
         ShortFlags value = ShortFlags.One;
@@ -213,7 +214,7 @@ public class EnumExtensionsTests
         value.Should().Be(ShortFlags.One | ShortFlags.Two | ShortFlags.Four);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumExtensions_SetFlags_IntFlags()
     {
         IntFlags value = IntFlags.One;
@@ -233,7 +234,7 @@ public class EnumExtensionsTests
         value.Should().Be(IntFlags.One | IntFlags.Two | IntFlags.Four);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumExtensions_SetFlags_LongFlags()
     {
         LongFlags value = LongFlags.One;
@@ -257,7 +258,7 @@ public class EnumExtensionsTests
 
     #region ClearFlags Tests
 
-    [Test]
+    [TestMethod]
     public void EnumExtensions_ClearFlags_ByteFlags()
     {
         ByteFlags value = ByteFlags.One | ByteFlags.Two;
@@ -277,7 +278,7 @@ public class EnumExtensionsTests
         value.Should().Be(default);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumExtensions_ClearFlags_ShortFlags()
     {
         ShortFlags value = ShortFlags.One | ShortFlags.Two;
@@ -297,7 +298,7 @@ public class EnumExtensionsTests
         value.Should().Be(default);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumExtensions_ClearFlags_IntFlags()
     {
         IntFlags value = IntFlags.One | IntFlags.Two;
@@ -317,7 +318,7 @@ public class EnumExtensionsTests
         value.Should().Be(default);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumExtensions_ClearFlags_LongFlags()
     {
         LongFlags value = LongFlags.One | LongFlags.Two;
@@ -375,7 +376,7 @@ public class EnumExtensionsTests
         AllBits = unchecked((short)0xFFFF), // -1: every bit set
     }
 
-    [Test]
+    [TestMethod]
     public void EnumExtensions_AreFlagsSet_NegativeValues_AreCorrect()
     {
         // sbyte "all bits set" contains every flag
@@ -395,7 +396,7 @@ public class EnumExtensionsTests
         SShortFlags.High.AreFlagsSet(SShortFlags.AllBits).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void EnumExtensions_AreAnyFlagsSet_NegativeValues_AreCorrect()
     {
         SByteFlags.High.AreAnyFlagsSet(SByteFlags.High).Should().BeTrue();
@@ -411,7 +412,7 @@ public class EnumExtensionsTests
         SShortFlags.None.AreAnyFlagsSet(SShortFlags.AllBits).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void EnumExtensions_IsOnlyOneFlagSet_NegativeValues_AreCorrect()
     {
         // sbyte: 0x80 ("High") is a single bit
@@ -432,7 +433,7 @@ public class EnumExtensionsTests
         SShortFlags.AllBits.IsOnlyOneFlagSet(SShortFlags.Low).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void EnumExtensions_SetFlags_NegativeValues_AreCorrect()
     {
         SByteFlags value = SByteFlags.Low;
@@ -452,7 +453,7 @@ public class EnumExtensionsTests
         shortValue.Should().Be(SShortFlags.AllBits);
     }
 
-    [Test]
+    [TestMethod]
     public void EnumExtensions_ClearFlags_NegativeValues_AreCorrect()
     {
         SByteFlags value = SByteFlags.AllBits;

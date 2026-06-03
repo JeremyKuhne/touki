@@ -4,6 +4,7 @@
 
 namespace Touki.Io;
 
+[TestClass]
 public class MSBuildEnumerationResultTests
 {
     private static string CurrentDriveRoot
@@ -18,14 +19,14 @@ public class MSBuildEnumerationResultTests
 
     private static string DriveRootRecursiveSpec => $"{CurrentDriveRoot}**{Path.DirectorySeparatorChar}*.touki-no-such-file";
 
-    [Test]
+    [TestMethod]
     public void IsDriveRootRecursion_DriveRootDoubleStar_ReturnsTrue()
     {
         MSBuildSpecification spec = new MSBuildSpecification($"{CurrentDriveRoot}**").FullyQualify(Environment.CurrentDirectory);
         spec.IsDriveRootRecursion.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void IsDriveRootRecursion_DriveRootWithSuffix_ReturnsTrue()
     {
         MSBuildSpecification spec = new MSBuildSpecification($"{CurrentDriveRoot}**{Path.DirectorySeparatorChar}*.cs")
@@ -33,21 +34,21 @@ public class MSBuildEnumerationResultTests
         spec.IsDriveRootRecursion.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void IsDriveRootRecursion_NormalRecursiveSpec_ReturnsFalse()
     {
         MSBuildSpecification spec = new MSBuildSpecification("**/*.cs").FullyQualify(Environment.CurrentDirectory);
         spec.IsDriveRootRecursion.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IsDriveRootRecursion_NonRecursiveSpec_ReturnsFalse()
     {
         MSBuildSpecification spec = new MSBuildSpecification($"{CurrentDriveRoot}*.cs").FullyQualify(Environment.CurrentDirectory);
         spec.IsDriveRootRecursion.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IsDriveRootRecursion_NotFullyQualified_ReturnsFalse()
     {
         // Not fully qualified - the gate only fires post-qualification because that's the only point at
@@ -56,7 +57,7 @@ public class MSBuildEnumerationResultTests
         spec.IsDriveRootRecursion.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IsDriveRootRecursion_FullyQualifiedNoWildcards_ReturnsFalse()
     {
         // Fully qualified literal path at the drive root, no wildcards: still safe.
@@ -65,7 +66,7 @@ public class MSBuildEnumerationResultTests
         spec.IsDriveRootRecursion.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IsDriveRootRecursion_DriveRootStarStarSegment_ReturnsTrue()
     {
         // Drive-rooted, wildcard path begins with "**\" but is not a simple recursive match
@@ -78,7 +79,7 @@ public class MSBuildEnumerationResultTests
         spec.IsDriveRootRecursion.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void IsDriveRootRecursion_UncRoot_ReturnsTrue()
     {
         // UNC paths are Windows-only and we don't need the share to exist; we're just exercising
@@ -87,7 +88,7 @@ public class MSBuildEnumerationResultTests
         // root with or without a trailing separator depending on input / runtime.
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
         {
-            Skip.Test("UNC paths are Windows-only.");
+            Assert.Inconclusive("UNC paths are Windows-only.");
         }
 
         MSBuildSpecification spec = new MSBuildSpecification(@"\\nonexistent-server\share\**\*.cs")
@@ -100,39 +101,39 @@ public class MSBuildEnumerationResultTests
     // Extra root-recursion edge cases. These all exercise specs that Normalize / FullyQualify
     // need to massage before IsDriveRootRecursion can give a meaningful answer.
 
-    [Test]
-    [Arguments(@"C:\**")]                       // canonical
-    [Arguments(@"c:\**")]                       // lowercase drive letter
-    [Arguments(@"C:\\**")]                      // double separator after drive
-    [Arguments(@"C:\\\\**")]                    // four separators
-    [Arguments(@"C:/**")]                       // alt separator
-    [Arguments(@"  C:\**  ")]                   // leading + trailing whitespace
-    [Arguments(@"C:\**\")]                      // trailing separator on the recursive segment
-    [Arguments(@"C:\**\**")]                    // duplicate ** (Normalize dedupes)
-    [Arguments(@"C:\.\**")]                     // current-directory segment
-    [Arguments(@"C:\foo\..\**")]                // parent segment that cancels back to root
-    [Arguments(@"\**")]                         // root-relative - Path.GetFullPath resolves to current drive root, so the gate fires
+    [TestMethod]
+    [DataRow(@"C:\**")]                       // canonical
+    [DataRow(@"c:\**")]                       // lowercase drive letter
+    [DataRow(@"C:\\**")]                      // double separator after drive
+    [DataRow(@"C:\\\\**")]                    // four separators
+    [DataRow(@"C:/**")]                       // alt separator
+    [DataRow(@"  C:\**  ")]                   // leading + trailing whitespace
+    [DataRow(@"C:\**\")]                      // trailing separator on the recursive segment
+    [DataRow(@"C:\**\**")]                    // duplicate ** (Normalize dedupes)
+    [DataRow(@"C:\.\**")]                     // current-directory segment
+    [DataRow(@"C:\foo\..\**")]                // parent segment that cancels back to root
+    [DataRow(@"\**")]                         // root-relative - Path.GetFullPath resolves to current drive root, so the gate fires
     public void IsDriveRootRecursion_WindowsDriveRootVariants_ReturnTrue(string spec)
     {
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
         {
-            Skip.Test("Drive-letter roots are Windows-only.");
+            Assert.Inconclusive("Drive-letter roots are Windows-only.");
         }
 
         MSBuildSpecification parsed = new MSBuildSpecification(spec).FullyQualify(Environment.CurrentDirectory);
         parsed.IsDriveRootRecursion.Should().BeTrue();
     }
 
-    [Test]
-    [Arguments(@"C:**")]                        // drive-relative (no separator) - not fully qualified
-    [Arguments(@"C:relative\**")]               // drive-relative path
-    [Arguments(@"..\**")]                       // parent-relative
-    [Arguments(@".\**")]                        // current-relative
+    [TestMethod]
+    [DataRow(@"C:**")]                        // drive-relative (no separator) - not fully qualified
+    [DataRow(@"C:relative\**")]               // drive-relative path
+    [DataRow(@"..\**")]                       // parent-relative
+    [DataRow(@".\**")]                        // current-relative
     public void IsDriveRootRecursion_WindowsRelativeWildcardSpecs_ReturnFalse(string spec)
     {
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
         {
-            Skip.Test("Drive-letter roots are Windows-only.");
+            Assert.Inconclusive("Drive-letter roots are Windows-only.");
         }
 
         // Anchor against a synthetic deep base so the assertion isn't affected by what the test
@@ -144,15 +145,15 @@ public class MSBuildEnumerationResultTests
         parsed.IsDriveRootRecursion.Should().BeFalse();
     }
 
-    [Test]
-    [Arguments(@"C:\foo\**")]                   // drive-rooted but not at root
-    [Arguments(@"C:\Users\**")]
-    [Arguments(@"C:\foo\bar\**\*.cs")]
+    [TestMethod]
+    [DataRow(@"C:\foo\**")]                   // drive-rooted but not at root
+    [DataRow(@"C:\Users\**")]
+    [DataRow(@"C:\foo\bar\**\*.cs")]
     public void IsDriveRootRecursion_WindowsDriveSubdirectoryRecursion_ReturnFalse(string spec)
     {
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
         {
-            Skip.Test("Drive-letter roots are Windows-only.");
+            Assert.Inconclusive("Drive-letter roots are Windows-only.");
         }
 
         // Drive-rooted recursive specs that don't sit AT the drive root are safe; only specs whose
@@ -161,68 +162,68 @@ public class MSBuildEnumerationResultTests
         parsed.IsDriveRootRecursion.Should().BeFalse();
     }
 
-    [Test]
-    [Arguments(@"\\server\share\**")]
-    [Arguments(@"\\server\share\**\*.cs")]
-    [Arguments(@"\\server\share\\**")]          // double separator
-    [Arguments(@"//server/share/**")]           // alt separators throughout
-    [Arguments(@"  \\server\share\**  ")]       // whitespace
+    [TestMethod]
+    [DataRow(@"\\server\share\**")]
+    [DataRow(@"\\server\share\**\*.cs")]
+    [DataRow(@"\\server\share\\**")]          // double separator
+    [DataRow(@"//server/share/**")]           // alt separators throughout
+    [DataRow(@"  \\server\share\**  ")]       // whitespace
     public void IsDriveRootRecursion_UncRootVariants_ReturnTrue(string spec)
     {
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
         {
-            Skip.Test("UNC paths are Windows-only.");
+            Assert.Inconclusive("UNC paths are Windows-only.");
         }
 
         MSBuildSpecification parsed = new MSBuildSpecification(spec).FullyQualify(Environment.CurrentDirectory);
         parsed.IsDriveRootRecursion.Should().BeTrue();
     }
 
-    [Test]
-    [Arguments(@"\\server\share\foo\**")]
-    [Arguments(@"\\server\share\foo\bar\**\*.cs")]
+    [TestMethod]
+    [DataRow(@"\\server\share\foo\**")]
+    [DataRow(@"\\server\share\foo\bar\**\*.cs")]
     public void IsDriveRootRecursion_UncSubdirectoryRecursion_ReturnFalse(string spec)
     {
         if (Environment.OSVersion.Platform != PlatformID.Win32NT)
         {
-            Skip.Test("UNC paths are Windows-only.");
+            Assert.Inconclusive("UNC paths are Windows-only.");
         }
 
         MSBuildSpecification parsed = new MSBuildSpecification(spec).FullyQualify(Environment.CurrentDirectory);
         parsed.IsDriveRootRecursion.Should().BeFalse();
     }
 
-    [Test]
-    [Arguments(@"/**")]
-    [Arguments(@"/**/*.cs")]
-    [Arguments(@"//**")]                        // double leading separator (Normalize collapses)
-    [Arguments(@"/.\**")]
+    [TestMethod]
+    [DataRow(@"/**")]
+    [DataRow(@"/**/*.cs")]
+    [DataRow(@"//**")]                        // double leading separator (Normalize collapses)
+    [DataRow(@"/.\**")]
     public void IsDriveRootRecursion_UnixRootRecursion_ReturnTrue(string spec)
     {
         if (Environment.OSVersion.Platform == PlatformID.Win32NT)
         {
-            Skip.Test("Unix-style absolute roots are not the canonical root on Windows.");
+            Assert.Inconclusive("Unix-style absolute roots are not the canonical root on Windows.");
         }
 
         MSBuildSpecification parsed = new MSBuildSpecification(spec).FullyQualify(Environment.CurrentDirectory);
         parsed.IsDriveRootRecursion.Should().BeTrue();
     }
 
-    [Test]
-    [Arguments(@"/foo/**")]
-    [Arguments(@"/usr/local/**/*.h")]
+    [TestMethod]
+    [DataRow(@"/foo/**")]
+    [DataRow(@"/usr/local/**/*.h")]
     public void IsDriveRootRecursion_UnixSubdirectoryRecursion_ReturnFalse(string spec)
     {
         if (Environment.OSVersion.Platform == PlatformID.Win32NT)
         {
-            Skip.Test("Unix-style absolute roots are not the canonical root on Windows.");
+            Assert.Inconclusive("Unix-style absolute roots are not the canonical root on Windows.");
         }
 
         MSBuildSpecification parsed = new MSBuildSpecification(spec).FullyQualify(Environment.CurrentDirectory);
         parsed.IsDriveRootRecursion.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void CreateResult_DriveRootRecursionDefault_StopsSearching()
     {
         MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(DriveRootRecursiveSpec);
@@ -231,7 +232,7 @@ public class MSBuildEnumerationResultTests
         result.Enumerator.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void CreateResult_DriveRootRecursionOptIn_RunsSearch()
     {
         MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(
@@ -245,7 +246,7 @@ public class MSBuildEnumerationResultTests
         result.Enumerator!.Dispose();
     }
 
-    [Test]
+    [TestMethod]
     public void CreateResult_NormalInclude_RunsSearch()
     {
         using TempFolder tempFolder = new();
@@ -270,7 +271,7 @@ public class MSBuildEnumerationResultTests
         files.Should().BeEquivalentTo("a.txt", "b.txt");
     }
 
-    [Test]
+    [TestMethod]
     public void CreateResult_WithExcludes_RunsSearchExcludingFiltered()
     {
         using TempFolder tempFolder = new();
@@ -294,7 +295,7 @@ public class MSBuildEnumerationResultTests
         files.Should().BeEquivalentTo("keep.txt");
     }
 
-    [Test, Skip("This test is expensive to run, should be checked manually")]
+    [TestMethod, Ignore("This test is expensive to run, should be checked manually")]
     public void CreateResult_DriveRootRecursion_MatchesFileMatcherOracle()
     {
         // Parity check against MSBuild's FileMatcher. MSBuild's default behavior depends on
@@ -316,11 +317,11 @@ public class MSBuildEnumerationResultTests
         result.Action.Should().Be(MSBuildSearchAction.FailBecauseDriveEnumerationIsForbidden);
     }
 
-    [Test]
-    [Arguments("foo\0bar")]                 // embedded null character
-    [Arguments("foo.../bar.cs")]            // triple-dot sequence
-    [Arguments("a**b")]                     // misplaced ** between non-separator chars
-    [Arguments("*.cs**")]                   // misplaced ** glued to filename
+    [TestMethod]
+    [DataRow("foo\0bar")]                 // embedded null character
+    [DataRow("foo.../bar.cs")]            // triple-dot sequence
+    [DataRow("a**b")]                     // misplaced ** between non-separator chars
+    [DataRow("*.cs**")]                   // misplaced ** glued to filename
     public void CreateResult_IllegalIncludeSpec_ReturnsFileSpecAction(string spec)
     {
         MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(spec);
@@ -331,7 +332,7 @@ public class MSBuildEnumerationResultTests
         result.FailedExcludeSpec.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void CreateResult_WhitespaceOnlyIncludeSpec_ReturnsFileSpecAction()
     {
         // A whitespace-only include normalizes to empty. CreateResult treats that as a

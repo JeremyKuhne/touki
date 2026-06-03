@@ -7,9 +7,10 @@ using Touki.Text;
 
 namespace Touki.Io;
 
+[TestClass]
 public class TextWriterExtensionsTests
 {
-    [Test]
+    [TestMethod]
     public void Write_ReadOnlySpan_AppendsToStringWriter()
     {
         System.IO.StringWriter writer = new();
@@ -20,7 +21,7 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().Be("Hello");
     }
 
-    [Test]
+    [TestMethod]
     public void Write_ReadOnlySpan_Empty_DoesNothing()
     {
         System.IO.StringWriter writer = new();
@@ -30,7 +31,7 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void WriteLine_ReadOnlySpan_AppendsAndAddsNewLine()
     {
         System.IO.StringWriter writer = new();
@@ -41,7 +42,7 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().Be($"Hello{Environment.NewLine}");
     }
 
-    [Test]
+    [TestMethod]
     public void WriteLine_ReadOnlySpan_Empty_WritesOnlyNewLine()
     {
         System.IO.StringWriter writer = new();
@@ -51,7 +52,7 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().Be(Environment.NewLine);
     }
 
-    [Test]
+    [TestMethod]
     public void Write_StringSegment_WritesSegmentContent()
     {
         System.IO.StringWriter writer = new();
@@ -62,7 +63,7 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().Be("World");
     }
 
-    [Test]
+    [TestMethod]
     public void WriteLine_StringSegment_WritesSegmentContentAndNewLine()
     {
         System.IO.StringWriter writer = new();
@@ -73,7 +74,7 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().Be($"Hello{Environment.NewLine}");
     }
 
-    [Test]
+    [TestMethod]
     public void WriteFormatted_InterpolatedString_AppendsToStreamWriter()
     {
         using MemoryStream stream = new();
@@ -92,7 +93,7 @@ public class TextWriterExtensionsTests
         result.Should().Be("Library: Touki, Version: 42");
     }
 
-    [Test]
+    [TestMethod]
     public void WriteFormatted_EmptyBuilder_WritesNothing()
     {
         using MemoryStream stream = new();
@@ -108,7 +109,7 @@ public class TextWriterExtensionsTests
     }
 
 #if NET
-    [Test]
+    [TestMethod]
     public void WriteFormatted_StringOverload_WritesLiteralWithoutBuilder()
     {
         System.IO.StringWriter writer = new();
@@ -119,7 +120,7 @@ public class TextWriterExtensionsTests
     }
 #endif
 
-    [Test]
+    [TestMethod]
     public void Write_StringSegmentOverload_WritesSegmentContent()
     {
         System.IO.StringWriter writer = new();
@@ -130,7 +131,7 @@ public class TextWriterExtensionsTests
         writer.ToString().Should().Be("World");
     }
 
-    [Test]
+    [TestMethod]
     public void WriteLine_StringSegmentOverload_WritesSegmentContentAndNewLine()
     {
         System.IO.StringWriter writer = new();

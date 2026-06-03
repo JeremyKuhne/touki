@@ -10,9 +10,10 @@ using System.IO;
 
 namespace Touki;
 
+[TestClass]
 public class StreamExtensionsTests
 {
-    [Test]
+    [TestMethod]
     public void Read_Write_ArraySegment()
     {
         using MemoryStream memory = new();
@@ -28,7 +29,7 @@ public class StreamExtensionsTests
         readBuffer.Should().BeEquivalentTo([2, 3, 4]);
     }
 
-    [Test]
+    [TestMethod]
     public async Task ReadAsync_WriteAsync_ArraySegment()
     {
         using MemoryStream memory = new();
@@ -44,7 +45,7 @@ public class StreamExtensionsTests
         readBuffer.Should().BeEquivalentTo([8, 9]);
     }
 
-    [Test]
+    [TestMethod]
     public void DefaultSegment_IsIgnored()
     {
         using MemoryStream memory = new();
@@ -62,7 +63,7 @@ public class StreamExtensionsTests
         memory.Position.Should().Be(initial);
     }
 
-    [Test]
+    [TestMethod]
     public async Task DefaultSegmentAsync_IsIgnored()
     {
         using MemoryStream memory = new();
@@ -81,7 +82,7 @@ public class StreamExtensionsTests
         memory.Position.Should().Be(initial);
     }
 
-    [Test]
+    [TestMethod]
     public void WriteFormatted_SimpleString_WritesToMemoryStream()
     {
         using MemoryStream stream = new();
@@ -94,7 +95,7 @@ public class StreamExtensionsTests
     }
 
 #if NET
-    [Test]
+    [TestMethod]
     public void WriteFormatted_StringOverload_WritesUtf16Bytes()
     {
         using MemoryStream stream = new();
@@ -105,7 +106,7 @@ public class StreamExtensionsTests
     }
 #endif
 
-    [Test]
+    [TestMethod]
     public void WriteFormatted_EmptyBuilder_WritesNothing()
     {
         using MemoryStream stream = new();
@@ -115,7 +116,7 @@ public class StreamExtensionsTests
         stream.Length.Should().Be(0);
     }
 
-    [Test]
+    [TestMethod]
     public void WriteFormatted_InterpolatedString_WritesToMemoryStream()
     {
         using MemoryStream stream = new();
@@ -130,7 +131,7 @@ public class StreamExtensionsTests
         result.Should().Be("Library: Touki, Version: 42");
     }
 
-    [Test]
+    [TestMethod]
     public void WriteFormatted_MultipleWrites_AppendToStream()
     {
         using MemoryStream stream = new();
@@ -144,7 +145,7 @@ public class StreamExtensionsTests
         result.Should().Be("First part. Second part.");
     }
 
-    [Test]
+    [TestMethod]
     public void Write_ReadOnlySpan_WritesToTextWriter()
     {
         StringWriter writer = new();
@@ -156,7 +157,7 @@ public class StreamExtensionsTests
         result.Should().Be("Hello Span World");
     }
 
-    [Test]
+    [TestMethod]
     public void Write_EmptyReadOnlySpan_WritesNothing()
     {
         StringWriter writer = new();
@@ -168,7 +169,7 @@ public class StreamExtensionsTests
         result.Should().BeEmpty();
     }
 
-    [Test]
+    [TestMethod]
     public void WriteLine_ReadOnlySpan_WritesToTextWriterWithNewLine()
     {
         StringWriter writer = new();
@@ -180,7 +181,7 @@ public class StreamExtensionsTests
         result.Should().Be($"Hello Span Line{Environment.NewLine}");
     }
 
-    [Test]
+    [TestMethod]
     public void WriteLine_EmptyReadOnlySpan_WritesOnlyNewLine()
     {
         StringWriter writer = new();

@@ -4,51 +4,52 @@
 
 namespace Touki.Text;
 
+[TestClass]
 public class StringSpanTests
 {
-    [Test]
+    [TestMethod]
     public void Default_IsEmpty_True()
     {
         StringSpan span = default;
         span.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_NullString_IsEmpty()
     {
         StringSpan span = new((string?)null);
         span.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_EmptyString_IsEmpty()
     {
         StringSpan span = new(string.Empty);
         span.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_NonEmptyString_IsNotEmpty()
     {
         StringSpan span = new("hello");
         span.IsEmpty.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_EmptySpan_IsEmpty()
     {
         StringSpan span = new([]);
         span.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void Constructor_NonEmptySpan_IsNotEmpty()
     {
         StringSpan span = new("abc".AsSpan());
         span.IsEmpty.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void ImplicitConversion_FromString_RoundTripsContent()
     {
         StringSpan span = "hello";
@@ -56,14 +57,14 @@ public class StringSpanTests
         result.SequenceEqual("hello".AsSpan()).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void ImplicitConversion_FromNullString_IsEmpty()
     {
         StringSpan span = (string?)null;
         span.IsEmpty.Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void ImplicitConversion_FromReadOnlySpan_RoundTripsContent()
     {
         ReadOnlySpan<char> source = "world".AsSpan();
@@ -72,7 +73,7 @@ public class StringSpanTests
         result.SequenceEqual(source).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void ImplicitConversion_FromMutableSpan_RoundTripsContent()
     {
         Span<char> buffer = stackalloc char[5];
@@ -82,7 +83,7 @@ public class StringSpanTests
         result.SequenceEqual(buffer).Should().BeTrue();
     }
 
-    [Test]
+    [TestMethod]
     public void ToString_FromString_ReturnsSameInstance()
     {
         string original = "shared";
@@ -90,28 +91,28 @@ public class StringSpanTests
         span.ToString().Should().BeSameAs(original);
     }
 
-    [Test]
+    [TestMethod]
     public void ToString_FromEmptySpan_ReturnsEmptyString()
     {
         StringSpan span = new([]);
         span.ToString().Should().BeSameAs(string.Empty);
     }
 
-    [Test]
+    [TestMethod]
     public void ToString_FromSpan_ReturnsContent()
     {
         StringSpan span = new("hi".AsSpan());
         span.ToString().Should().Be("hi");
     }
 
-    [Test]
+    [TestMethod]
     public void ToString_FromNullString_ReturnsEmptyString()
     {
         StringSpan span = new((string?)null);
         span.ToString().Should().BeSameAs(string.Empty);
     }
 
-    [Test]
+    [TestMethod]
     public void ToStringOrNull_FromString_ReturnsSameInstance()
     {
         string original = "shared";
@@ -119,28 +120,28 @@ public class StringSpanTests
         span.ToStringOrNull().Should().BeSameAs(original);
     }
 
-    [Test]
+    [TestMethod]
     public void ToStringOrNull_FromEmptyString_ReturnsEmptyInstance()
     {
         StringSpan span = new(string.Empty);
         span.ToStringOrNull().Should().BeSameAs(string.Empty);
     }
 
-    [Test]
+    [TestMethod]
     public void ToStringOrNull_FromNullString_ReturnsNull()
     {
         StringSpan span = new((string?)null);
         span.ToStringOrNull().Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void ToStringOrNull_FromEmptySpan_ReturnsNull()
     {
         StringSpan span = new([]);
         span.ToStringOrNull().Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void ToStringOrNull_FromNonEmptySpan_ReturnsContent()
     {
         StringSpan span = new("abc".AsSpan());

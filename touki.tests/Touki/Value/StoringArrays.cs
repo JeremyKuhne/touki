@@ -4,9 +4,10 @@
 
 namespace Touki;
 
+[TestClass]
 public class StoringArrays
 {
-    [Test]
+    [TestMethod]
     public void ByteArray()
     {
         byte[] b = new byte[10];
@@ -20,7 +21,7 @@ public class StoringArrays
         Assert.Throws<InvalidCastException>(() => value.As<ArraySegment<byte>>());
     }
 
-    [Test]
+    [TestMethod]
     public void CharArray()
     {
         char[] b = new char[10];
@@ -34,7 +35,7 @@ public class StoringArrays
         Assert.Throws<InvalidCastException>(() => value.As<ArraySegment<char>>());
     }
 
-    [Test]
+    [TestMethod]
     public void ByteSegment()
     {
         byte[] b = new byte[10];
@@ -62,7 +63,7 @@ public class StoringArrays
         Assert.Throws<InvalidCastException>(() => value.As<byte[]>());
     }
 
-    [Test]
+    [TestMethod]
     public void CharSegment()
     {
         char[] b = new char[10];
@@ -90,14 +91,14 @@ public class StoringArrays
         Assert.Throws<InvalidCastException>(() => value.As<char[]>());
     }
 
-    [Test]
+    [TestMethod]
     public void ArraySegment_NullByteArray_Throws()
     {
         ArraySegment<byte> segment = default;
         Assert.Throws<ArgumentNullException>(() => Value.Create(segment));
     }
 
-    [Test]
+    [TestMethod]
     public void ArraySegment_NullCharArray_Throws()
     {
         ArraySegment<char> segment = default;

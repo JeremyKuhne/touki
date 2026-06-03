@@ -24,8 +24,8 @@ namespace Touki.Io.Globbing;
 ///   LibGit2Sharp.
 ///  </para>
 /// </remarks>
-[ClassDataSource<SequentialSeparatorGitOracleTests.RepoFixture>(Shared = SharedType.PerClass)]
-[NotInParallel(nameof(SequentialSeparatorGitOracleTests))]
+[DoNotParallelize]
+[TestClass]
 public sealed class SequentialSeparatorGitOracleTests
 {
     public sealed class RepoFixture : IDisposable
@@ -76,44 +76,48 @@ public sealed class SequentialSeparatorGitOracleTests
         }
     }
 
-    private readonly RepoFixture _fixture;
+    private static RepoFixture s_fixture = null!;
 
-    public SequentialSeparatorGitOracleTests(RepoFixture fixture) => _fixture = fixture;
+    [ClassInitialize]
+    public static void ClassInit(TestContext context) => s_fixture = new RepoFixture();
+
+    [ClassCleanup]
+    public static void ClassTeardown() => s_fixture?.Dispose();
 
     private static bool ToukiMatches(string pattern, string input) =>
         GlobSpecification.Compile(pattern, GlobDialect.Git).IsMatch(input);
 
-    [Test]
+    [TestMethod]
     // --- Doubled separator between literal segments ---
-    [Arguments("a//b", "a/b")]
-    [Arguments("a//b", "a//b")]
-    [Arguments("a//b", "a///b")]
-    [Arguments("a//b", "ab")]
-    [Arguments("a//b", "a/x/b")]
+    [DataRow("a//b", "a/b")]
+    [DataRow("a//b", "a//b")]
+    [DataRow("a//b", "a///b")]
+    [DataRow("a//b", "ab")]
+    [DataRow("a//b", "a/x/b")]
     // --- Tripled / quadrupled separator runs ---
-    [Arguments("a///b", "a/b")]
-    [Arguments("a///b", "a//b")]
-    [Arguments("a////b", "a/b")]
+    [DataRow("a///b", "a/b")]
+    [DataRow("a///b", "a//b")]
+    [DataRow("a////b", "a/b")]
     // --- Leading separator runs (anchored vs unanchored) ---
-    [Arguments("//a", "a")]
-    [Arguments("//a", "x/a")]
+    [DataRow("//a", "a")]
+    [DataRow("//a", "x/a")]
     // --- Trailing separator runs (directory marker semantics) ---
-    [Arguments("a//", "a/b")]
-    [Arguments("a//", "a")]
+    [DataRow("a//", "a/b")]
+    [DataRow("a//", "a")]
     // --- Doubled separator surrounding a wildcard ---
-    [Arguments("a//*", "a/b")]
-    [Arguments("a//*", "a//b")]
-    [Arguments("*//b", "a/b")]
+    [DataRow("a//*", "a/b")]
+    [DataRow("a//*", "a//b")]
+    [DataRow("*//b", "a/b")]
     // --- Doubled separator adjacent to globstar ---
-    [Arguments("**//*.cs", "Foo.cs")]
-    [Arguments("**//*.cs", "src/Foo.cs")]
-    [Arguments("**//*.cs", "src/sub/Foo.cs")]
-    [Arguments("a//**//b", "a/b")]
-    [Arguments("a//**//b", "a/x/b")]
-    [Arguments("a//**//b", "a/x/y/b")]
+    [DataRow("**//*.cs", "Foo.cs")]
+    [DataRow("**//*.cs", "src/Foo.cs")]
+    [DataRow("**//*.cs", "src/sub/Foo.cs")]
+    [DataRow("a//**//b", "a/b")]
+    [DataRow("a//**//b", "a/x/b")]
+    [DataRow("a//**//b", "a/x/y/b")]
     public void IsMatch_GitDialect_SequentialSeparators_AgreesWithLibGit2(string pattern, string input)
     {
-        bool oracle = _fixture.IsIgnored(pattern, input);
+        bool oracle = s_fixture.IsIgnored(pattern, input);
         bool actual = ToukiMatches(pattern, input);
         actual.Should().Be(
             oracle,

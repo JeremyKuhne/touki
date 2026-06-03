@@ -4,40 +4,41 @@
 
 namespace Touki.Io.Providers;
 
+[TestClass]
 public class NullClipboardProviderTests
 {
-    [Test]
+    [TestMethod]
     public void HasText_Always_ReturnsFalse()
     {
         NullClipboardProvider.Instance.HasText.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void TryGetText_Always_ReturnsFalseWithNullOut()
     {
         NullClipboardProvider.Instance.TryGetText(out string? text).Should().BeFalse();
         text.Should().BeNull();
     }
 
-    [Test]
+    [TestMethod]
     public void TrySetText_Always_ReturnsFalse()
     {
         NullClipboardProvider.Instance.TrySetText("anything".AsSpan()).Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void TryClear_Always_ReturnsFalse()
     {
         NullClipboardProvider.Instance.TryClear().Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void IsAvailable_Always_ReturnsFalse()
     {
         NullClipboardProvider.Instance.IsAvailable.Should().BeFalse();
     }
 
-    [Test]
+    [TestMethod]
     public void Instance_IsSingleton()
     {
         NullClipboardProvider first = NullClipboardProvider.Instance;

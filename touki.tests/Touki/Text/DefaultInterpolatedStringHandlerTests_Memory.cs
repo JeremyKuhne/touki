@@ -6,7 +6,8 @@ using System.Text;
 
 namespace Touki;
 
-[NotInParallel("Sequential")]
+[DoNotParallelize]
+[TestClass]
 public unsafe class DefaultInterpolatedStringHandlerTests_Memory
 {
     // On .NET Framework this is our implementation. On .NET we're getting built-in.
@@ -17,9 +18,9 @@ public unsafe class DefaultInterpolatedStringHandlerTests_Memory
     // string formatting (which will give different memory usage results occasionally).
 
 #pragma warning disable xUnit1004 // Test methods should not be skipped
-    [Test, Skip("No way to make this completely consistent, run manually.")]
+    [TestMethod, Ignore("No way to make this completely consistent, run manually.")]
 #pragma warning restore xUnit1004
-    [Arguments(DayOfWeek.Monday)]
+    [DataRow(DayOfWeek.Monday)]
     public void ValidateAllocations(DayOfWeek value)
     {
         StringBuilder builder = new(256);
