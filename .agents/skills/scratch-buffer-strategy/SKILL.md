@@ -1,6 +1,8 @@
 ---
 name: scratch-buffer-strategy
 description: Choose how a hot path gets a short-lived scratch buffer - zeroed `stackalloc`, `[SkipLocalsInit]` + `stackalloc`, `BufferScope<T>` (stack with pool fallback), or an `ArrayPool<T>.Shared` rental - and apply the net481/net10 size crossovers. Use when designing or reviewing a performance-sensitive path that needs a temporary buffer, when deciding "should I rent or stackalloc?", when weighing `[SkipLocalsInit]`, or when evaluating buffer/allocation cost. Defers the backing measurements and full reasoning to `docs/arraypool-performance.md`.
+metadata:
+  portability: semi-portable
 ---
 
 # Scratch buffer strategy (net481 + net10)

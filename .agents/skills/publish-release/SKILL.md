@@ -1,6 +1,8 @@
 ---
 name: publish-release
 description: Publish a new version of `KlutzyNinja.Touki` or `KlutzyNinja.Touki.TestSupport` to NuGet by cutting a release tag. Use when asked to "publish a new version", "release alpha.N", "ship a beta", "cut a release", "promote alpha to beta", or "tag and publish". Walks the user through choosing the right `Major.Minor.Patch` bump, deciding whether to stay in `alpha` / `beta` / `rc` / stable, picking the correct tag stream (`v*` vs `ts-v*`), pushing the tag, and creating the matching GitHub release. Vets when an `AssemblyVersion`-changing bump is required (binary breaking changes vs additive/bugfix work).
+metadata:
+  portability: repo-specific
 ---
 
 # Publish a release
@@ -25,8 +27,20 @@ typo) before any pack/push runs.
 
 **Approval scope.** "Publish a release" authorizes preparing the tag and
 release notes. It does **not** authorize the tag push. The
-**Approval checkpoint** in step 6 is the gate. See AGENTS.md
+**Approval checkpoint** below is the gate. See AGENTS.md
 § "Working with the user on changes" for the canonical rule.
+
+## Steps overview
+
+1. **Inspect repo state and confirm the package** (below).
+2. Establish the prior version on the stream - see [versioning.md](versioning.md).
+3. Decide the prerelease channel (alpha / beta / rc / stable) - [versioning.md](versioning.md).
+4. Decide `Major.Minor.Patch` and check the `AssemblyVersion` gotcha - [versioning.md](versioning.md).
+5. Compose and validate the tag against the workflow regex - [versioning.md](versioning.md).
+6. **Approval checkpoint** (below) - stop and wait for an explicit publish verb.
+7. Create and push the tag, then watch the workflow - see [release-steps.md](release-steps.md).
+8. Create the GitHub release from the notes template - [release-steps.md](release-steps.md).
+9. Aftercare (sample version bump, TestSupport lockstep) - [release-steps.md](release-steps.md).
 
 ## 1. Inspect repo state and confirm the package
 
@@ -51,149 +65,10 @@ Ask the user **which package** if not already obvious from the request:
 Use `vscode_askQuestions` only if ambiguous; if the user said "publish
 TestSupport" or similar, skip the prompt.
 
-## 2. Establish the prior version on this stream
+Then work through steps 2-5 in [versioning.md](versioning.md) to land on a
+validated tag.
 
-Different streams have different prior tags. List the most recent five tags
-on the relevant prefix:
-
-```pwsh
-# Main package
-git tag --list 'v*' --sort=-creatordate | Select-Object -First 5
-
-# TestSupport
-git tag --list 'ts-v*' --sort=-creatordate | Select-Object -First 5
-```
-
-Cross-check against nuget.org so you don't accidentally re-publish a version
-that's already live (publishing is idempotent thanks to `--skip-duplicate`,
-but choosing a duplicate is almost always a mistake):
-
-- <https://www.nuget.org/packages/KlutzyNinja.Touki>
-- <https://www.nuget.org/packages/KlutzyNinja.Touki.TestSupport>
-
-Record the prior version (e.g. `0.1.0-alpha.12` for the main package).
-
-If TestSupport has **no** `ts-v*` tags yet, the next published version becomes
-the bootstrap of that stream. The previously-published version on nuget.org
-under the old scheme was `0.1.0-alpha.8.11`; pick a `ts-v` tag that sorts
-strictly higher (e.g. `ts-v0.1.0-alpha.9` or higher).
-
-## 3. Decide the prerelease channel (alpha / beta / rc / stable)
-
-Before picking numbers, decide what *kind* of release this is. **Always
-prompt** the user with the current state explicit:
-
-> "The last release was an **alpha** (`v0.1.0-alpha.12`). Should this also
-> be an alpha release, or are you promoting to beta / rc / stable?"
-
-Use `vscode_askQuestions` with these options (mark the matching-prior option
-as `recommended: true`):
-
-- `Stay in alpha` - bug fixes / additive work during early development.
-- `Promote to beta` - feature-complete for the upcoming Minor; only
-  stabilization work expected.
-- `Promote to rc` - release candidate; only blocker bug fixes.
-- `Promote to stable` - drop the prerelease label entirely.
-- `Use a different label` - free-form.
-
-Channel rules of thumb:
-
-- Don't *skip* channels casually. `alpha → beta → rc → stable` is the
-  normal path. Going `alpha → stable` is allowed but should be deliberate.
-- Once you ship a stable `Major.Minor.Patch`, the next prerelease must
-  bump *something* (`0.1.0` → `0.1.1-alpha.1` or `0.2.0-alpha.1`); you
-  cannot ship `0.1.0-alpha.2` after `0.1.0` stable.
-- Do **not** mix channels backwards (no going from `beta` back to `alpha`
-  for the same Major.Minor.Patch). If a beta turned out to need more
-  churn, bump the underlying version: `0.2.0-beta.3` → `0.3.0-alpha.1`.
-
-## 4. Decide `Major.Minor.Patch`
-
-Apply [SemVer 2.0.0](https://semver.org) rules. The package is currently
-pre-1.0, so the rules below describe the **target stable** semantics; while
-the prior tag is itself a prerelease, the same bump table applies to the
-underlying `Major.Minor.Patch` portion.
-
-| Change shipped since the last tag | Bump |
-| --- | --- |
-| Binary breaking change to public API of `touki.dll` (removed/renamed type or member, signature change, return-type change, base-type change, broken inheritance, removed `[Obsolete]`'d API) | **Major** |
-| Behavioral break that compiles but changes observable runtime contract (different exception type, different default, different ordering, different threading guarantee) | **Major** unless the user explicitly accepts shipping it as Minor with a release-note callout |
-| Net-new public API, new overload, new optional parameter, new public type, new TFM | **Minor** |
-| Bug fix only, no new public surface, no observable contract change for non-buggy callers | **Patch** |
-| Internal-only refactor, perf, doc, comment, build, CI | **Patch** (or no release at all) |
-
-For pre-1.0, the user may treat **Major** and **Minor** as both "Minor"
-during alpha/beta. That is fine; just confirm the call out loud:
-
-> "This change adds a public type but you're still in 0.1.x alpha - bump
-> to 0.2.0-alpha.1 (treating it as Minor) or stay at 0.1.0-alpha.13?"
-
-### When `AssemblyVersion` changes - and why it matters
-
-MinVer's defaults (used as-is in this repo, no overrides) produce:
-
-- `Version` / `PackageVersion` / `InformationalVersion` = full SemVer
-  (e.g. `0.1.0-alpha.13`).
-- `FileVersion` = `Major.Minor.Patch.0` (e.g. `0.1.0.0`).
-- **`AssemblyVersion` = `Major.0.0.0`** (e.g. `0.0.0.0` for any `0.x.y`).
-
-Only a **Major** bump changes `AssemblyVersion`. That has real consequences:
-
-- A change in `AssemblyVersion` forces every consumer that has the assembly
-  in their build graph to either rebuild against the new identity or use
-  binding redirects (on .NET Framework). Strong-named assemblies make this
-  stricter, and `touki.dll` is strong-named.
-- A change in `Version`/`FileVersion` *without* `AssemblyVersion` changing
-  is binary-compatible - consumers can drop the new DLL into an existing
-  bin folder and it just works.
-
-**Therefore:** any binary breaking change *must* bump `Major`, even during
-0.x. Refusing to bump `Major` on a binary break - to "stay at 0.1.x" -
-silently keeps `AssemblyVersion = 0.0.0.0` across an incompatible
-boundary, which is a real foot-gun for downstream binders.
-
-When `Major` does bump, also note in the release that `AssemblyVersion`
-moved (`0.0.0.0` → `1.0.0.0`).
-
-## 5. Compose the tag
-
-Format (enforced by the regex guard in each workflow):
-
-```text
-v<Major>.<Minor>.<Patch>[-<prerelease>]          # main package
-ts-v<Major>.<Minor>.<Patch>[-<prerelease>]       # TestSupport
-```
-
-Prerelease segment uses dot-separated identifiers, e.g. `alpha.13`,
-`beta.2`, `rc.1`. Numeric identifiers are SemVer-sorted as numbers, so
-`alpha.10` correctly sorts above `alpha.9` (no leading zeros).
-
-Examples (good):
-
-- `v0.1.0-alpha.13`
-- `v0.2.0-beta.1`
-- `v0.2.0-rc.1`
-- `v0.2.0`
-- `v1.0.0-rc.1`
-- `ts-v0.1.0-alpha.9`
-
-Examples (rejected by guard):
-
-- `v.0.1.0-alpha.11` - stray `.` after `v`. The historical 9/10/11 tags
-  hit this; do not recreate it.
-- `0.1.0-alpha.13` - missing `v` prefix.
-- `v0.1.0.alpha.13` - `.` instead of `-` before prerelease.
-- `v0.1` - missing patch component.
-- `v01.02.03` - leading zeros in numeric identifiers.
-
-The regex used by the workflow guards (must match):
-
-```text
-^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$
-^ts-v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$
-```
-
-## 6. Approval checkpoint
+## Approval checkpoint
 
 **Stop here.** Show the user:
 
@@ -209,120 +84,17 @@ Wait for an explicit publishing verb (`tag`, `push the tag`, `ship it`,
 `publish`). Do **not** infer approval from the original "publish a release"
 request - that authorized the *preparation*, not the push. See AGENTS.md.
 
-## 7. Create and push the tag
+After approval, follow [release-steps.md](release-steps.md) to push the tag,
+watch the workflow, and create the GitHub release.
 
-Use an annotated tag with a short message:
+## Sub-pages
 
-```pwsh
-git tag -a v0.1.0-alpha.13 -m "v0.1.0-alpha.13"
-git push origin v0.1.0-alpha.13
-```
-
-Do **not** use lightweight tags - annotated tags carry the tagger and date
-that show up in GitHub releases.
-
-Pushing the tag triggers the publish workflow. Watch the run:
-
-- <https://github.com/JeremyKuhne/touki/actions/workflows/publish.yml>
-- <https://github.com/JeremyKuhne/touki/actions/workflows/publishtestsupport.yml>
-
-The workflow validates the tag format, packs, OIDC-logs into NuGet, and
-pushes with `--skip-duplicate`. The main publish workflow filters out
-`KlutzyNinja.Touki.TestSupport.*` from its glob, and TestSupport's workflow
-fires only on `ts-v*` - they will not stomp each other.
-
-If the workflow fails, treat it like any CI failure: do **not** delete and
-re-push the tag without explicit user approval - that's destructive and the
-nuget.org publish is irreversible. Fix forward with the next tag in the
-stream.
-
-### Re-running the publish for an existing tag (`workflow_dispatch`)
-
-If a transient failure (NuGet outage, OIDC blip) leaves a tag pushed but
-not published, both workflows accept a `workflow_dispatch` with a
-required `tag` input. Provide the **exact existing tag name** (e.g.
-`v0.1.0-alpha.13` or `ts-v0.1.0-alpha.9`); the workflow checks out that
-ref, runs the same tag-format guard, and publishes. Do **not** dispatch
-without a tag input - the workflow will fail validation rather than
-publish a `0.0.0-alpha.0.<height>` MinVer fallback.
-
-## 8. Create the GitHub release
-
-Once the workflow has succeeded and the package is visible on nuget.org,
-create the matching GitHub release. This is what users actually read.
-
-Use `mcp_io_github_git_get_latest_release` first to find the prior release
-on the same stream, so the new release notes can reference it. Then create
-via the GitHub UI or `gh release create` (preferred when available):
-
-```pwsh
-gh release create v0.1.0-alpha.13 `
-  --title "v0.1.0-alpha.13" `
-  --notes-file release-notes.md `
-  --prerelease   # omit for a stable release
-```
-
-If `gh` is not available, use the GitHub web UI (Releases → Draft a new
-release → choose the existing tag).
-
-### Release notes template
-
-````markdown
-## Changes
-
-<!-- One-sentence headline of the most important change. -->
-
-### Added
-- ...
-
-### Changed
-- ...
-
-### Fixed
-- ...
-
-### Breaking changes
-<!-- Only present on Major bumps. AssemblyVersion changed from
-     0.0.0.0 → 1.0.0.0; consumers must rebuild. -->
-- ...
-
-## Compatibility
-
-- Targets: `net10.0`, `net472`.
-- AssemblyVersion: `<old>` → `<new>` (note **changed** or **unchanged**).
-
-## Install
-
-```bash
-dotnet add package KlutzyNinja.Touki --version 0.1.0-alpha.13
-```
-
-**Full changelog:** <https://github.com/JeremyKuhne/touki/compare/v0.1.0-alpha.12...v0.1.0-alpha.13>
-````
-
-Notes on the template:
-
-- Use the **same** `--prerelease` flag iff the SemVer has a prerelease label.
-  GitHub displays prereleases differently (latest indicator stays on the
-  most recent stable). Skipping `--prerelease` on an alpha is a real bug.
-- `compare/<prior>...<new>` works across both streams (just substitute
-  `ts-v...` for TestSupport).
-- For TestSupport releases, also call out the Touki version this build was
-  produced against (look at the resolved `<dependency>` in the published
-  `.nuspec`); that's what consumers will transitively pull.
-
-## 9. Aftercare
-
-- If you bumped `KlutzyNinja.Touki`, consider whether the sample's pinned
-  version in [Directory.Packages.props](../../../Directory.Packages.props)
-  should advance. The sample dog-foods the released package; leaving it
-  stale defeats the purpose. (Open as a follow-up PR - not part of the
-  release commit/tag.)
-- If you bumped `Major` (binary break), also bump `Major` of TestSupport
-  on its next release. They don't have to march in lockstep but TestSupport
-  cannot consume an incompatible Touki.
-- Update [touki.testsupport/README.md](../../../touki.testsupport/README.md)
-  if the supported targets or AOT story changed.
+- [versioning.md](versioning.md) - establishing the prior version, the
+  prerelease channel decision, the `Major.Minor.Patch` bump table, the
+  `AssemblyVersion` gotcha, and the exact tag format with its regex guard.
+- [release-steps.md](release-steps.md) - creating and pushing the annotated
+  tag, `workflow_dispatch` recovery, the GitHub release notes template, and
+  aftercare.
 
 ## Cross-references
 
@@ -331,7 +103,7 @@ Notes on the template:
 - [`address-pr-feedback`](../address-pr-feedback/SKILL.md) - used to land
   the changes that this skill then ships.
 - AGENTS.md § "Working with the user on changes" - publish-boundary rule
-  governing the approval checkpoint in step 6.
+  governing the approval checkpoint.
 - [Directory.Build.targets](../../../Directory.Build.targets) - central
   MinVer wiring.
 - [.github/workflows/publish.yml](../../../.github/workflows/publish.yml),

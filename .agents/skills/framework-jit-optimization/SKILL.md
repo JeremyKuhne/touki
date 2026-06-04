@@ -1,6 +1,8 @@
 ---
 name: framework-jit-optimization
 description: Optimize hot-path code for the `net481` target in `touki/Framework/`. Use when writing or reviewing performance-sensitive loops, deciding whether to specialize a generic method for primitive types, choosing between scalar/unrolled/BCL-delegating implementations, or diagnosing why a net481 micro-benchmark regresses on the older RyuJIT. For BenchmarkDotNet harness mechanics (authoring/running benchmarks, evaluating allocations) see the `performance-testing` skill.
+metadata:
+  portability: semi-portable
 ---
 
 # .NET Framework 4.8.1 JIT optimization
@@ -14,9 +16,9 @@ This skill captures decisions distilled from real benchmarks under
 [performance-testing](../performance-testing/SKILL.md) skill workflow before
 committing a change. Run the
 [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) checklist before
-opening a PR - in particular &sect;5 (allocation-free over raw speed)
-and &sect;7 (perf claims must name the JIT and be measured) apply directly
-to changes guided by this skill.
+opening a PR - in particular its polyfill / framework-correctness items
+(allocation-free over raw speed; perf claims must name the JIT and be
+measured) apply directly to changes guided by this skill.
 
 For the broader "how do I polyfill API X for net472?" question (which
 packages to prefer, when to hand-roll), see the

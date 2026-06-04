@@ -1,6 +1,8 @@
 ---
 name: create-pr
 description: Create a pull request for the current changes. Use when asked to "make a PR", "open a pull request", "push and PR", or otherwise publish in-progress work for review. Ensures changes are on a non-`main` branch, commits are made and pushed, and the PR targets `upstream/main` when an `upstream` remote exists, otherwise `origin/main`.
+metadata:
+  portability: semi-portable
 ---
 
 # Create a pull request

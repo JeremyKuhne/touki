@@ -261,18 +261,13 @@ catch a mistake.
   `IsOnlyOneFlagSet`, `SetFlags`, `ClearFlags` inline to the same
   instructions as `&`/`|`/`==` on both TFMs and avoid the `Enum.HasFlag`
   boxing penalty on net472/net481 (~20&times; faster, zero alloc).
-- **When optimizing span-walking helpers, read
-  [docs/framework-span-performance.md](../docs/framework-span-performance.md)
-  first.** On net472/net481 the `ReadOnlySpan<T>` indexer costs ~8 µops
-  per element (slow-span layout) versus ~1 µop on net10. Hoist
-  `ref T = MemoryMarshal.GetReference(span)` outside the loop and walk
-  with `Unsafe.Add<T>(ref, i)` for a 19-44% Framework win at no
-  `unsafe`-keyword cost. Prefer a single simple implementation when it
-  measures within ~5% of any Framework-tuned variant on net10 so the
-  simple source keeps accruing future RyuJIT improvements; split with
-  `#if NET` / `#else` only when net10 regresses measurably, and prefer
-  `fixed` over `Unsafe.AsPointer` tricks when the Framework path needs
-  raw pointers.
+- **When optimizing span-walking helpers**, read
+  [docs/framework-span-performance.md](../docs/framework-span-performance.md) and the
+  [`framework-jit-optimization`](../.agents/skills/framework-jit-optimization/SKILL.md)
+  skill first. The headline rule: on net472/net481 hoist
+  `ref T = MemoryMarshal.GetReference(span)` out of the loop and walk with
+  `Unsafe.Add<T>(ref, i)` for a 19-44% Framework win at no `unsafe`-keyword cost,
+  and prefer one simple implementation unless net10 regresses measurably.
 - **Prefer Touki utility types over their BCL counterparts** when building
   strings, buffers, or collections in production library code. They are
   designed to avoid managed allocation on the hot path:
@@ -292,27 +287,19 @@ catch a mistake.
     `SingleOptimizedList`, `EmptyList`) instead of `List<T>` /
     `Dictionary<,>` when the lifetime is bounded.
 - **When choosing how a hot path gets a short-lived scratch buffer** (zeroed
-  `stackalloc` vs `[SkipLocalsInit]` + `stackalloc` vs `BufferScope<T>` vs an
+  `stackalloc` vs `[SkipLocalsInit]` vs `BufferScope<T>` vs an
   `ArrayPool<T>.Shared` rental), follow the
   [`scratch-buffer-strategy`](../.agents/skills/scratch-buffer-strategy/SKILL.md)
-  skill for the decision tree and the net481/net10 size crossovers, and
-  [docs/arraypool-performance.md](../docs/arraypool-performance.md) for the backing
-  measurements. Key facts: net481 *does* honor `[SkipLocalsInit]`; a warm
-  `ArrayPool` still has a per-call floor warmup cannot remove; and below the
-  crossover (roughly 190 B net10 / 1.3 KB net481 vs a warm rental) a zeroed
-  `stackalloc` beats renting.
+  skill for the decision tree and the net481/net10 size crossovers, backed by
+  [docs/arraypool-performance.md](../docs/arraypool-performance.md).
 - When adding a polyfill for a modern .NET API on .NET Framework, follow the
   [`polyfill-dotnet-api`](../.agents/skills/polyfill-dotnet-api/SKILL.md) skill:
-  prefer Microsoft-shipped packages (`System.Memory`, `Microsoft.Bcl.*`,
-  `Microsoft.IO.Redist`), then PolySharp source-gen for compiler attributes,
-  and only hand-roll under `touki/Framework/Polyfills/<BclNamespace>/` as a
-  last resort. Hand-rolled polyfills declare the BCL namespace they're
-  polyfilling (`Polyfills/System/Foo.cs` &rarr; `namespace System;`,
-  `Polyfills/System.Text/Foo.cs` &rarr; `namespace System.Text;`).
-  Touki-specific code that does not polyfill a modern .NET API stays under
-  `touki/Framework/Touki/...` with `Touki.*` namespaces. See
-  [docs/polyfill-layout.md](../docs/polyfill-layout.md) for the user-facing
-  description and the `extern alias` recipe for type-name conflicts.
+  prefer Microsoft-shipped packages, then PolySharp source-gen for compiler
+  attributes, and only hand-roll under
+  `touki/Framework/Polyfills/<BclNamespace>/` as a last resort. See
+  [docs/polyfill-layout.md](../docs/polyfill-layout.md) for the layout rules
+  (namespace = BCL namespace; Touki-specific code stays under
+  `touki/Framework/Touki/...`) and the `extern alias` recipe.
 
 ## Path-specific instructions
 

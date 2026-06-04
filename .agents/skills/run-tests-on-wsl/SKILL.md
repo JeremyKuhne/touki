@@ -1,6 +1,8 @@
 ---
 name: run-tests-on-wsl
 description: Run touki tests - especially the Unix-only oracle suites under `touki.tests/Touki/Io/Globbing/` - inside WSL Ubuntu on Windows. Use when the user asks to "run tests on Linux", "run the Posix/PosixPath/Bash oracles", or "iterate Unix tests locally", and for any fix that needs Linux verification before pushing.
+metadata:
+  portability: repo-specific
 ---
 
 # Running tests inside WSL Ubuntu
