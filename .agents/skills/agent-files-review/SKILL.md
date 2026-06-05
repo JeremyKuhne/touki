@@ -1,6 +1,8 @@
 ---
 name: agent-files-review
 description: Review changes to AI-agent customization files in this repo (AGENTS.md, .github/copilot-instructions.md, *.instructions.md, *.prompt.md, *.agent.md, SKILL.md, validator, CI workflow). Use when asked to review or validate agent-file changes, fix CI failures from agent-files.yml, or audit a draft of any of these files.
+metadata:
+  portability: semi-portable
 ---
 
 # Agent customization files - review checklist

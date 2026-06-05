@@ -32,6 +32,32 @@ relative Markdown links, e.g. `[template](./template.cs)`.
 Optional frontmatter fields: `argument-hint`, `user-invocable`,
 `disable-model-invocation`, `context` (`inline` or `fork`).
 
+This repo also uses two optional fields:
+
+- `compatibility` - free-text environment requirements (the Agent Skills spec
+  field). Used to declare an MCP-server dependency, e.g. "Uses the
+  microsoft-learn MCP server when available; falls back to web docs otherwise".
+- `metadata.portability` - one of `portable`, `semi-portable`, or
+  `repo-specific`, mirrored in the [README.md](./README.md) inventory. Records
+  how much a skill's content would need to change to be reused in another repo.
+  This is documentation only: `tools/Validate-AgentFiles.ps1` validates just
+  `name` and `description`, and its hand-rolled frontmatter parser does not
+  read nested `metadata` keys at all (an indented `portability:` line is
+  skipped, not parsed), so the field is neither read nor machine-validated.
+  Keep it in sync with the README by hand.
+
+## Thin core plus sibling files
+
+Keep each `SKILL.md` body small (the whole body loads on every trigger; sibling
+files load only when referenced). When a skill grows past roughly 150 lines,
+split the deep detail into sibling `*.md` files in the same directory and leave
+the core as an overview that links to them. See
+[framework-jit-optimization](./framework-jit-optimization/SKILL.md),
+[performance-testing](./performance-testing/SKILL.md), and
+[security-review](./security-review/SKILL.md) for the pattern. Sibling links are
+plain relative Markdown (`[authoring.md](authoring.md)`); the directory depth is
+unchanged, so links to repo files keep the same `../../../` prefix as the core.
+
 ## Discovery
 
 Vendor-neutral location for [Agent Skills](https://agentskills.io/). Discovered

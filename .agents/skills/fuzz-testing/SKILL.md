@@ -1,6 +1,8 @@
 ---
 name: fuzz-testing
 description: Author and run SharpFuzz coverage-guided fuzz targets in the `touki.fuzz` project. Use when adding a new fuzz target, running the fuzzer locally on net10 or net481, installing the fuzzing prerequisites, or promoting a crashing input into a `touki.tests` regression. Covers the cross-TFM harness, the libFuzzer driver workflow, and the crash-to-regression loop.
+metadata:
+  portability: semi-portable
 ---
 
 # Fuzz testing in `touki.fuzz`

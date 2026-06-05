@@ -1,6 +1,8 @@
 ---
 name: address-pr-feedback
 description: Address feedback on an existing pull request - review comments, requested changes, CI failures, or any post-PR follow-up work. Use when the user says "address the review", "fix the comments", "address Copilot's feedback", "fix the CI failure", or any similar phrasing. Distinct from `create-pr`, which covers opening the *initial* PR.
+metadata:
+  portability: repo-specific
 ---
 
 # Address PR feedback
