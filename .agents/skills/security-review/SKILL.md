@@ -1,22 +1,19 @@
 ---
-name: security-review
 description: Security-focused review of pending changes. Audit any change that could affect safety or correctness under abusive input or unchecked preconditions - oversized values, malformed structures, integer/length overflow, catastrophic backtracking, allocation pressure, other denial-of-service shapes, and any use of `unsafe` code or the `Unsafe` / `MemoryMarshal` / `Marshal` static helpers (which trade compiler safety guarantees for speed and need extra scrutiny). Add regression tests that pin safe behavior even when the current implementation already handles the input correctly. Use when asked to "assess for security vulnerabilities", "do a security review", "check for ReDoS / DoS", "audit untrusted input handling", or before publishing any change that adds or modifies code that parses, decodes, encodes, compiles, marshals, or reinterprets memory.
+license: MIT
 metadata:
-  portability: semi-portable
+    github-path: skills/security-review
+    github-pinned: v0.1.0
+    github-ref: refs/tags/v0.1.0
+    github-repo: https://github.com/JeremyKuhne/agent-skills
+    github-tree-sha: 8fd344f655d5748c64eed725c97e7d42904593e6
+    portability: portable
+name: security-review
 ---
-
 # Security review
 
 Surface and pin behavior under **malformed input** and **caller-validated
 APIs** (everything the C# compiler doesn't check for you).
-
-**Related skills:**
-
-- [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - broader
-  self-review; run this skill alongside it before any publish.
-- [`performance-testing`](../performance-testing/SKILL.md) - use
-  when you need to *measure* a worst-case input rather than just bound
-  it with a `Stopwatch`.
 
 ## When to run
 
@@ -54,8 +51,8 @@ principles and the High/Medium/Low rubric are in [principles.md](principles.md).
 4. **Add safe-property tests now; report findings that need a production
    change before patching.** See [reporting.md](reporting.md) for the
    options-report format and the don'ts.
-5. **Run tests on every TFM** - timing bounds and allocation behavior
-   differ across BCL versions.
+5. **Run tests on every target framework** - timing bounds and allocation
+   behavior differ across BCL versions.
 
 When attention is limited, allocate it by tier (detail in
 [checklist.md](checklist.md)):
@@ -66,6 +63,13 @@ When attention is limited, allocate it by tier (detail in
   argument validation.
 - **Conditional (when the shape matches):** allocation DoS, in-band
   sentinels, path traversal.
+
+## Related skills
+
+Run alongside a broader pre-PR self-review before any publish. When you need
+to *measure* a worst-case input rather than just bound it with a `Stopwatch`,
+use the repository's performance-testing skill. (A consuming repository wires
+the concrete cross-references in its overlay.)
 
 ## Sub-pages
 

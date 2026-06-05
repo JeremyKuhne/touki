@@ -17,7 +17,7 @@ The "Disambiguation" section below records every known overlap.
 | [performance-testing](./performance-testing/SKILL.md) | authoring/running BenchmarkDotNet benchmarks in `touki.perf`, comparing implementations, evaluating allocations | semi-portable | `framework-jit-optimization`, `scratch-buffer-strategy` |
 | [scratch-buffer-strategy](./scratch-buffer-strategy/SKILL.md) | choosing a scratch-buffer strategy (zeroed `stackalloc` vs `[SkipLocalsInit]` vs `BufferScope<T>` vs `ArrayPool` rental), "should I rent or stackalloc?", net481/net10 size crossovers, weighing `[SkipLocalsInit]` | semi-portable | `performance-testing`, `framework-jit-optimization` |
 | [pre-pr-self-review](./pre-pr-self-review/SKILL.md) | self-review checklist before opening or pushing a PR; missing tests, unchecked length sums, empty-span foot-guns, TFM phrasing | semi-portable | `create-pr`, `polyfill-dotnet-api` |
-| [security-review](./security-review/SKILL.md) | "assess for security vulnerabilities", "do a security review", "check for ReDoS / DoS", "audit untrusted input handling"; any member accepting caller-supplied data, any use of `unsafe` / `Unsafe.*` / `MemoryMarshal.*` / `Marshal.*`, or any BCL API whose name or doc says "unsafe" / "caller must" - abusive-input handling, length / integer overflow, allocation and algorithmic DoS, caller-validated preconditions, argument validation | semi-portable | `pre-pr-self-review`, `performance-testing` |
+| [security-review](./security-review/SKILL.md) | "assess for security vulnerabilities", "do a security review", "check for ReDoS / DoS", "audit untrusted input handling"; any member accepting caller-supplied data, any use of `unsafe` / `Unsafe.*` / `MemoryMarshal.*` / `Marshal.*`, or any BCL API whose name or doc says "unsafe" / "caller must" - abusive-input handling, length / integer overflow, allocation and algorithmic DoS, caller-validated preconditions, argument validation | vendored (portable core) + overlay | `pre-pr-self-review`, `performance-testing` (via [overlay](./security-review/overlay.md)) |
 | [create-pr](./create-pr/SKILL.md) | "make a PR", "open a pull request", "push and PR", "publish for review" - **initial** publish | semi-portable | `pre-pr-self-review` |
 | [address-pr-feedback](./address-pr-feedback/SKILL.md) | "address the review", "fix the comments", "address Copilot's feedback", "fix the CI failure" - **post-PR** review-cycle work | repo-specific | `pre-pr-self-review` |
 | [agent-files-review](./agent-files-review/SKILL.md) | reviewing/validating agent-customization files (`AGENTS.md`, `*.instructions.md`, `*.prompt.md`, `*.agent.md`, `SKILL.md`, validator, CI workflow); fixing `agent-files.yml` failures | semi-portable | - |
@@ -29,7 +29,13 @@ The "Disambiguation" section below records every known overlap.
 **Portability** (mirrored from each skill's `metadata.portability`) marks how much
 a skill would need to change to be reused in another repo: `portable` (generic),
 `semi-portable` (general pattern with touki paths / conventions to edit out), or
-`repo-specific` (tied to touki's structure). See the sharing roadmap in
+`repo-specific` (tied to touki's structure). A skill shown as
+`vendored (portable core) + overlay` is a pinned copy of a portable core from the
+[agent-skills commons](https://github.com/JeremyKuhne/agent-skills) (see the
+`metadata.github-*` provenance in its `SKILL.md`) paired with a local `overlay.md`
+that carries the touki-specific cross-references and example links. Do not
+hand-edit a vendored core; `gh skill update` tracks it against upstream. See the
+sharing roadmap in
 [docs/skills-improvement-plan.md](../../docs/skills-improvement-plan.md).
 
 ## Disambiguation
