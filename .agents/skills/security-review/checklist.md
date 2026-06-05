@@ -24,8 +24,9 @@ When attention is limited, allocate it by tier:
 - For composed inputs (list of strings, stream of records), is the
   **total** size bounded, not just per-element?
 - Is the default safe for untrusted callers, with an opt-out for
-  trusted ones? See `DefaultMaxPatternLength` / `maxPatternLength`
-  in [touki/Touki/Io/Globbing/GlobSpecification.Factory.cs](../../../touki/Touki/Io/Globbing/GlobSpecification.Factory.cs).
+  trusted ones? The standard shape is a `DefaultMaxLength` constant
+  plus a `maxLength` parameter where a sentinel (e.g. `-1`) disables
+  the check.
 
 **Tests:** at-limit success, over-limit failure with documented
 error, opt-out (e.g. `-1`) disables the check.
