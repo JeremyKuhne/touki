@@ -50,10 +50,11 @@ on the same stream, so the new release notes can reference it. Then create
 via the GitHub UI or `gh release create` (preferred when available):
 
 ```pwsh
+# Drop the --prerelease flag for a stable release.
 gh release create v0.1.0-alpha.13 `
   --title "v0.1.0-alpha.13" `
   --notes-file release-notes.md `
-  --prerelease   # omit for a stable release
+  --prerelease
 ```
 
 If `gh` is not available, use the GitHub web UI (Releases → Draft a new

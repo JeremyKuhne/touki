@@ -1,6 +1,8 @@
 # Skills improvement plan
 
-Status: draft roadmap (no skill files changed yet). Authored 2026-06-04.
+Status: roadmap. Phase 0 (the in-repo refactor described below) is implemented
+in the same change that adds this document; later phases are not started.
+Authored 2026-06-04.
 
 This plan answers three questions about the agent skills under
 [.agents/skills/](../.agents/skills/):

@@ -286,7 +286,7 @@ catch a mistake.
     `SingleOptimizedList`, `EmptyList`) instead of `List<T>` /
     `Dictionary<,>` when the lifetime is bounded.
 - **When choosing how a hot path gets a short-lived scratch buffer** (zeroed
-  `stackalloc` vs `[SkipLocalsInit]` vs `BufferScope<T>` vs an
+  `stackalloc` vs `[SkipLocalsInit]` + `stackalloc` vs `BufferScope<T>` vs an
   `ArrayPool<T>.Shared` rental), follow the
   [`scratch-buffer-strategy`](.agents/skills/scratch-buffer-strategy/SKILL.md)
   skill for the decision tree and the net481/net10 size crossovers, backed by
