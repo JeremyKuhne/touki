@@ -3,8 +3,11 @@
 Status: roadmap. **Phase 0 (the in-repo refactor) is complete** - merged in
 [PR #174](https://github.com/JeremyKuhne/touki/pull/174). **Phase 1 (the
 `manage-skills` meta-skill) is implemented** in
-[PR #175](https://github.com/JeremyKuhne/touki/pull/175). Phases 2-8 are not
-started. Section 7 vets the whole sharing design end to end against the two real
+[PR #175](https://github.com/JeremyKuhne/touki/pull/175). **Phase 2 (the commons
+skeleton)** and **Phase 3 (the `security-review` vendoring pilot)** are done - the
+commons is [JeremyKuhne/agent-skills](https://github.com/JeremyKuhne/agent-skills)
+and the pilot vendor-back is in this branch's PR. Phases 4-8 are not started.
+Section 7 vets the whole sharing design end to end against the two real
 consumers, [`JeremyKuhne/madowaku`](https://github.com/JeremyKuhne/madowaku)
 (a merge) and [`JeremyKuhne/thirtytwo`](https://github.com/JeremyKuhne/thirtytwo)
 (greenfield). Authored 2026-06-04; last updated 2026-06-05.
@@ -708,21 +711,29 @@ it migrates cleanly to the commons later (born-shared, built locally first).
       tiers await `gh auth login` and the Phase 2 commons repo, per the skill's
       "Current status" note.
 
-### Phase 2 - stand up the commons skeleton
+### Phase 2 - stand up the commons skeleton (DONE)
 
 Infrastructure only - no skill content yet, so nothing here can break a consumer.
 
-- [ ] Create `JeremyKuhne/agent-skills` (confirm the name first) with a `LICENSE`
-      (MIT) and a short adoption README.
-- [ ] Add the distribution scaffolding: `plugin.json`, `marketplace.json`, and
-      `.mcp.json` (`microsoft-learn`, NuGet MCP), plus portable agent personas
-      (the generic reviewer) as empty/placeholder entries.
-- [ ] Stand up the commons' own CI (the validator, the link check, and
-      `skills-ref validate`) so every later skill addition is gated from day one.
-- Validation: the empty plugin installs into a scratch checkout and the MCP
-      servers start.
+Outcome: created the private repo
+[JeremyKuhne/agent-skills](https://github.com/JeremyKuhne/agent-skills) with the
+MIT `LICENSE`, an adoption `README`, `FORMAT.md`, `plugin.json` +
+`.github/plugin/marketplace.json` + `.mcp.json` (`microsoft-learn` http + NuGet
+`dnx NuGet.Mcp.Server@1.4.3`), a placeholder `agents/` personas dir, and a CI
+workflow (markdownlint + lychee + a guarded `skills-ref validate` that stays inert
+until the first skill lands).
 
-### Phase 3 - pilot one skill end-to-end (`security-review`)
+- [x] Create `JeremyKuhne/agent-skills` (private) with a `LICENSE` (MIT) and a
+      short adoption README.
+- [x] Add the distribution scaffolding: `plugin.json`, `marketplace.json`, and
+      `.mcp.json` (`microsoft-learn`, NuGet MCP), plus a placeholder personas dir.
+- [x] Stand up the commons' own CI (markdownlint, link check, guarded
+      `skills-ref validate`).
+- Validation: `gh` reaches the repo; `gh skill preview` returns a graceful
+      "no skills found" against the empty repo; `dnx` (the NuGet MCP runtime) is
+      present.
+
+### Phase 3 - pilot one skill end-to-end (`security-review`) (DONE)
 
 The de-risking vertical slice: take a **single** skill all the way through the
 pipeline before touching the others. `security-review` is the ideal pilot - it is
@@ -730,14 +741,32 @@ universal, has no project gating, no source-example links, no backing `docs/`, a
 no overlay siblings, so it isolates the *mechanism* (extract, vendor, pin, drift,
 link-check) from the content complications the other skills add.
 
-- [ ] Extract `security-review`'s core into the commons; tag the commons `v0.1.0`.
-- [ ] Vendor it back into touki via `manage-skills` (`gh skill install --pin`),
-      writing provenance frontmatter; confirm touki's `Validate-AgentFiles.ps1`
-      and `Test-AgentFileLinks.ps1` still pass.
-- [ ] Exercise both `update` directions: a `pull` drift diff, and the golden-rule
-      `push` path (make a common edit, promote it upstream, re-pin).
-- Validation: the full loop works on one skill with zero dangling links. Any
-      friction here is cheap to fix now and expensive to fix across 13 skills later.
+Outcome: extracted the portable `security-review` core into the commons (tag
+`v0.1.0`), vendored it back into touki with `gh skill install --pin v0.1.0`, and
+added a touki `overlay.md` for the dropped cross-references and example links. The
+full loop works. Two findings the pilot surfaced, both folded back in:
+
+1. **The commons publisher layout must be top-level `skills/`, not `.agents/skills/`.**
+   `gh skill publish` only discovers `skills/*/SKILL.md` (and a few variants). The
+   skeleton's `.agents/skills/` was wrong for a *publisher*; the commons now uses
+   `skills/`. Consumers still vendor into their own `.agents/skills/` (where
+   `gh skill install` places the copy). This is the clean split: publisher =
+   `skills/`, consumer = `.agents/skills/`.
+2. **Skill `description` frontmatter must be strict-YAML-safe for vendoring.**
+   `gh skill`'s parser is stricter than touki's lenient flat parser: a bare
+   colon-space inside an unquoted `description` (e.g. "...this repo's polyfill
+   work: missing tests...") fails its YAML load. `security-review` happened to
+   avoid it; `pre-pr-self-review` does not. Before Phase 4 bulk-extracts the rest,
+   quote (or rephrase) any `description` containing a bare colon-space.
+
+- [x] Extract `security-review`'s core into the commons; tag the commons `v0.1.0`.
+- [x] Vendor it back into touki via `gh skill install --pin`, writing provenance
+      frontmatter; touki's `Validate-AgentFiles.ps1` and `Test-AgentFileLinks.ps1`
+      pass.
+- [x] Exercise the drift check: `gh skill update --all` recognizes the provenance
+      and skips the pinned skill; the `push` golden-rule flow is documented in the
+      overlay and `manage-skills`.
+- Validation: the full loop works on one skill with zero dangling links.
 
 ### Phase 4 - extract the remaining universal cores (the bulk)
 
