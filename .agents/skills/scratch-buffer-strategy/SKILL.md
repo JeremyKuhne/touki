@@ -1,22 +1,27 @@
 ---
-name: scratch-buffer-strategy
-description: Choose how a hot path gets a short-lived scratch buffer - zeroed `stackalloc`, `[SkipLocalsInit]` + `stackalloc`, `BufferScope<T>` (stack with pool fallback), or an `ArrayPool<T>.Shared` rental - and apply the net481/net10 size crossovers. Use when designing or reviewing a performance-sensitive path that needs a temporary buffer, when deciding "should I rent or stackalloc?", when weighing `[SkipLocalsInit]`, or when evaluating buffer/allocation cost. Defers the backing measurements and full reasoning to `docs/arraypool-performance.md`.
+description: Choose how a hot path gets a short-lived scratch buffer - zeroed `stackalloc`, `[SkipLocalsInit]` + `stackalloc`, `BufferScope<T>` (stack with pool fallback), or an `ArrayPool<T>.Shared` rental - and apply the net481/net10 size crossovers. Use when designing or reviewing a performance-sensitive path that needs a temporary buffer, when deciding "should I rent or stackalloc?", when weighing `[SkipLocalsInit]`, or when evaluating buffer/allocation cost. Defers the backing measurements and full reasoning to the bundled references/arraypool-performance.md.
+license: MIT
 metadata:
-  portability: semi-portable
+    github-path: skills/scratch-buffer-strategy
+    github-pinned: v0.2.0
+    github-ref: refs/tags/v0.2.0
+    github-repo: https://github.com/JeremyKuhne/agent-skills
+    github-tree-sha: ae13c55e430ac3dcbf4a2698130abc7cd78762b1
+    portability: semi-portable
+name: scratch-buffer-strategy
 ---
-
 # Scratch buffer strategy (net481 + net10)
 
 Pick the cheapest correct way to get a short-lived scratch buffer on a hot path.
 This skill is the compact decision aid; the measured numbers, the per-call
-ArrayPool autopsy, the inlining traps, and the references live in
-[docs/arraypool-performance.md](../../../docs/arraypool-performance.md). Read
+ArrayPool autopsy, the inlining traps, and the references live in the bundled
+[references/arraypool-performance.md](references/arraypool-performance.md). Read
 that doc before quoting a number or making a non-obvious call.
 
-The library multi-targets **net481** (older RyuJIT: unvectorized `memset`, no
-tiered JIT/PGO, weaker inliner) and **net10**. Buffer costs differ enough
+A multi-targeted library runs on **net481** (older RyuJIT: unvectorized `memset`,
+no tiered JIT/PGO, weaker inliner) and **net10**. Buffer costs differ enough
 between them that every decision must hold on both. Name the JIT in any writeup
-(repo JIT-naming rule).
+(the JIT-naming rule).
 
 ## Four options, ranked for the common case
 
@@ -31,6 +36,7 @@ between them that every decision must hold on both. Name the JIT in any writeup
    size that is usually small. Stays on the stack for the common case, rents
    from `ArrayPool` only on overflow. Wrapper overhead ~1 ns net481 / ~0.3 ns
    net10. Forwards the caller's `[SkipLocalsInit]` to the stack buffer.
+   (`BufferScope<T>` is a stack-with-pool-fallback wrapper; Touki ships one.)
 4. **`ArrayPool<T>.Shared` Rent/Return** - large, unbounded, recursive, or must
    escape the frame. Has a fixed per-call floor that warmup never removes
    (~10 ns/op net481, ~4 ns/op net10). Rent **once** and reuse across the loop.
@@ -60,7 +66,7 @@ below these sizes; above them the rental's flat floor wins (only if you can use
 the memory uninitialized):
 
 | Rental kind | net481 | net10 |
-|---|--:|--:|
+| --- | --: | --: |
 | Warm TLS hit (first rental) | ~1.3 KB | ~190 B |
 | Locked (second same-bucket rental) | ~3 KB | ~1.8 KB |
 
@@ -92,7 +98,7 @@ just stack-allocate.
   only `[SkipLocalsInit]` (or `[module: SkipLocalsInit]`) removes. A "fixed
   buffer left uninitialized with `Unsafe.SkipInit`" but *without*
   `[SkipLocalsInit]` pays full zeroing. See
-  [docs/arraypool-performance.md](../../../docs/arraypool-performance.md)
+  [references/arraypool-performance.md](references/arraypool-performance.md)
   section 8.
 
 ## Stack-safety guardrail
@@ -105,15 +111,11 @@ reuse instead.
 
 ## Related
 
-- [docs/arraypool-performance.md](../../../docs/arraypool-performance.md) - the
-  full measured tables, the ArrayPool per-call autopsy, the `BufferScope`
+- [references/arraypool-performance.md](references/arraypool-performance.md) -
+  the full measured tables, the ArrayPool per-call autopsy, the `BufferScope`
   overhead numbers, the inlining trap, and references. **This is the backing
   data; cite it.**
-- [`performance-testing`](../performance-testing/SKILL.md) - author/run the
-  BenchmarkDotNet benchmarks (`StackZeroInitPerf`, `ArrayPoolSeedRentPerf`,
-  `ArrayPoolCrossoverPerf`, `BufferScopeOverheadPerf`) that produced these
-  numbers.
-- [`framework-jit-optimization`](../framework-jit-optimization/SKILL.md) -
-  net481 loop tuning once a buffer choice is made.
-- [docs/performance-investigation.md](../../../docs/performance-investigation.md)
-  - how to confirm zeroing/pool overhead is actually the hot cost before acting.
+- The repository's performance-testing and framework-JIT-optimization skills
+  (author/run the BenchmarkDotNet benchmarks that produced these numbers, and
+  net481 loop tuning once a buffer choice is made) - a consuming repository
+  wires the concrete cross-references in its overlay.
