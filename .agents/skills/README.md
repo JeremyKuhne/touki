@@ -24,6 +24,7 @@ The "Disambiguation" section below records every known overlap.
 | [run-tests-on-wsl](./run-tests-on-wsl/SKILL.md) | "run tests on Linux", "run the Posix/PosixPath/Bash oracles", "iterate Unix tests locally"; WSL Ubuntu bootstrap, the `~/repos/touki` Linux-native mirror that sidesteps the `/mnt/` DrvFs NuGet trap, the `DOTNET_ROOT` apphost requirement, and the `iconv` UTF-16 log trick | repo-specific | `performance-testing`, `pre-pr-self-review` |
 | [fuzz-testing](./fuzz-testing/SKILL.md) | "add a fuzz target", "run the fuzzer", "install fuzzing prereqs", "fuzz SpanReader/SpanWriter", coverage-guided SharpFuzz runs on net10/net481, promoting a crash into a regression | semi-portable | `security-review`, `pre-pr-self-review`, `run-tests-on-wsl` |
 | [publish-release](./publish-release/SKILL.md) | "publish a new version", "release alpha.N", "ship a beta", "cut a release", "promote alpha to beta", "tag and publish" - choosing the right `Major.Minor.Patch`, alpha/beta/rc/stable channel, tag stream (`v*` vs `ts-v*`), and GitHub release notes | repo-specific | `pre-pr-self-review` |
+| [manage-skills](./manage-skills/SKILL.md) | "find a skill", "build a skill" / "create a skill" (checks for an existing one first), "update the skill", sync a local change upstream vs into an overlay; the find-first build path, tiered search, pull/push update flow | semi-portable | `agent-files-review` |
 
 **Portability** (mirrored from each skill's `metadata.portability`) marks how much
 a skill would need to change to be reused in another repo: `portable` (generic),
@@ -35,6 +36,18 @@ a skill would need to change to be reused in another repo: `portable` (generic),
 
 These pairs are known to compete for auto-invocation. When both descriptions
 match the user's request, follow the rule below.
+
+### `manage-skills` vs `agent-files-review`
+
+Both touch skill files. They are mutually exclusive by **scope**:
+
+- **The catalog lifecycle** - discovering a skill, adding one, vendoring from the
+  commons, syncing a local change up or down &rarr; `manage-skills`.
+- **Validating one agent file** - frontmatter, mirror sync, whitespace, the
+  `agent-files.yml` gate &rarr; `agent-files-review`.
+
+The normal order is to run `manage-skills` to bring a skill in or push one out,
+then `agent-files-review` to validate the file you ended up with.
 
 ### `create-pr` vs `address-pr-feedback`
 

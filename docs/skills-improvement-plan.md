@@ -1,11 +1,13 @@
 # Skills improvement plan
 
 Status: roadmap. **Phase 0 (the in-repo refactor) is complete** - merged in
-[PR #174](https://github.com/JeremyKuhne/touki/pull/174). Phases 1-5 are not
-started. Section 7 vets the whole sharing design end to end against the two real
-consumers, [`JeremyKuhne/madowaku`](https://github.com/JeremyKuhne/madowaku)
-(a merge) and [`JeremyKuhne/thirtytwo`](https://github.com/JeremyKuhne/thirtytwo)
-(greenfield). Authored 2026-06-04; last updated 2026-06-04.
+[PR #174](https://github.com/JeremyKuhne/touki/pull/174). **Phase 1 (the
+`manage-skills` meta-skill) is authored in-repo** (validated, commit pending).
+Phases 2-8 are not started. Section 7 vets the whole sharing design end to end
+against the two real consumers,
+[`JeremyKuhne/madowaku`](https://github.com/JeremyKuhne/madowaku) (a merge) and
+[`JeremyKuhne/thirtytwo`](https://github.com/JeremyKuhne/thirtytwo) (greenfield).
+Authored 2026-06-04; last updated 2026-06-04.
 
 This plan answers three questions about the agent skills under
 [.agents/skills/](../.agents/skills/):
@@ -531,15 +533,17 @@ Everything above describes the *architecture*; this is the *operating manual*
 that puts it in an agent's hands. The lifecycle - discover a skill, add one,
 update one, flow improvements back - should itself be a skill, so that "find a
 skill for X", "build a skill for X", and "update the skill" produce output aligned
-with this plan instead of ad-hoc results. Working name `manage-skills` (naming is
-an open decision). It is **universal tier** (every consuming repo needs it) and it
-dogfoods the very pattern the plan prescribes: a thin core that dispatches to three
-sub-pages, `find.md`, `build.md`, `update.md`.
+with this plan instead of ad-hoc results. Built under the name `manage-skills` in
+Phase 1 (the name remains an open decision, section 5). It is **universal tier**
+(every consuming repo needs it) and it dogfoods the very pattern the plan
+prescribes: a thin core that dispatches to three sub-pages, `find.md`, `build.md`,
+`update.md`.
 
 It is also the bootstrap tool. There is a mild chicken-and-egg - you need a way to
 vendor skills before you have vendored any - resolved by building `manage-skills`
-first in the commons and vendoring it manually as the first install; thereafter it
-drives every other `find` / `build` / `update`.
+first **in touki** (Phase 1), where it works in degraded mode before any commons
+exists, then migrating it to the commons and vendoring it back as the first
+install; thereafter it drives every other `find` / `build` / `update`.
 
 #### Find
 
@@ -597,23 +601,32 @@ down.
   against upstream and surfaces drift as a normal diff. Review it like a dependency
   bump; re-pin when satisfied.
 - **Push** - when you *improve* a vendored skill locally, classify the change
-  before saving it:
+  before saving it. Classification does not trigger any action by itself:
   - **Common** (generic, benefits every consumer - a clearer phrasing of a
-    portable rule, a new universally-applicable check): it belongs **upstream**.
-    Open a PR to the commons; once merged, re-vendor at the new pin. Until then the
-    local copy is deliberately ahead of upstream, and that is recorded, not hidden.
+    portable rule, a new universally-applicable check): it *should* go
+    **upstream**, but upstreaming is **never automatic**. It is not always
+    plausible - the commons may be unreachable, the change may be sensitive or
+    need discussion, or you may lack the time or rights. So **ask** before
+    attempting it; never open a commons PR unprompted (it is a publish action,
+    gated like any push). If upstreamed, re-vendor at the new pin; if not yet,
+    keep it in the local core as a *tracked pending-upstream divergence* -
+    recorded, not hidden - and re-attempt later.
   - **Local deviation** (touki-specific - a `touki.mcp` note, a touki path, a
     touki-only example): it belongs in the **overlay**, never in the vendored core.
 
 The **golden rule** that makes the bidirectional commons stable: *never let a
 vendored core diverge silently.* A vendored core is a mirror of upstream; an edit
-to it is a deliberate fork that must be resolved exactly one of two ways - promoted
-upstream, or moved into the overlay with the core restored. The provenance SHA plus
-the `gh skill update` drift check is what makes that enforceable: unexplained drift
-is the signal that an improvement was written into the wrong layer. This is the
-mechanism behind the bidirectional commons (the "Sharing architecture" subsection's
-"portable cores from every repo, fed back to all of them"): common improvements
-flow upstream, local deviations live in the overlay.
+to it is a deliberate fork that must end in one of three **recorded** states -
+never an unexplained one: promoted upstream and re-pinned; moved to the overlay
+with the core restored; or kept as a tracked pending-upstream divergence (a common
+change that could not be upstreamed yet). The point is *visibility*, not speed: a
+recorded divergence is fine, an unexplained one is the alarm. The provenance SHA
+plus the `gh skill update` drift check is what makes that enforceable - unexplained
+drift with no upstream PR in flight is the signal that an improvement was written
+into the wrong layer. This is the mechanism behind the bidirectional commons (the
+"Sharing architecture" subsection's "portable cores from every repo, fed back to
+all of them"): common improvements flow upstream *when plausible*, local deviations
+live in the overlay.
 
 #### Disambiguation
 
@@ -666,7 +679,7 @@ residual is the load-bearing, append-only "Working with the user on changes"
 approval section; trimming further means cutting safety content, so it is left as
 a separate decision (section 5).
 
-### Phase 1 - build the `manage-skills` meta-skill in touki
+### Phase 1 - build the `manage-skills` meta-skill in touki (DONE in-repo, commit pending)
 
 The lifecycle skill (section 3) is the bootstrap tool, so it comes first - and it
 can be built and used **in touki alone**, before any commons exists. Its `find` /
@@ -674,13 +687,26 @@ can be built and used **in touki alone**, before any commons exists. Its `find` 
 local + public sources, and the commons tier lights up once Phase 2 lands. This
 delivers value immediately and is the lowest-risk possible start.
 
-- [ ] Author `manage-skills` under touki's `.agents/skills/` following FORMAT.md
+Outcome: authored [.agents/skills/manage-skills/](../.agents/skills/manage-skills/)
+as a thin 5.3 KB core plus `find.md` / `build.md` / `update.md` siblings, each well
+under budget. `build` enforces find-first; `find` is the tiered local -> commons
+-> public search with the applicability check; `update` carries the pull (drift)
+and push (common vs overlay) flows with the **ask-before-upstreaming** query and
+the three-state golden rule (upstream / overlay / tracked pending-upstream
+divergence). Added the catalog row and a `manage-skills` vs `agent-files-review`
+disambiguation entry. The core is deliberately free of `docs/` and source links so
+it migrates cleanly to the commons later (born-shared, built locally first).
+
+- [x] Author `manage-skills` under touki's `.agents/skills/` following FORMAT.md
       (thin core + `find.md` / `build.md` / `update.md` siblings).
-- [ ] Implement find-first `build`, the tiered `find`, and the `update`
+- [x] Implement find-first `build`, the tiered `find`, and the `update`
       pull/push + golden-rule classification (section 3).
-- [ ] Add its catalog row + disambiguation entry (vs `agent-files-review`).
-- Validation: `Validate-AgentFiles.ps1` + `Test-AgentFileLinks.ps1`; exercise
-      "find a skill for X" against local + a public catalog.
+- [x] Add its catalog row + disambiguation entry (vs `agent-files-review`).
+- Validation: `Validate-AgentFiles.ps1` and `Test-AgentFileLinks.ps1` pass (47
+      files). The live local-`find` tier was smoke-tested (a "benchmarking" query
+      resolves to `performance-testing` via the catalog). The commons and public
+      tiers await `gh auth login` and the Phase 2 commons repo, per the skill's
+      "Current status" note.
 
 ### Phase 2 - stand up the commons skeleton
 
@@ -855,7 +881,7 @@ applies. thirtytwo answers assume its scaffolding is stood up first (Phase 8).
 | `create-pr` | semi-portable | universal | yes | yes | yes |
 | `address-pr-feedback` | repo-specific | universal | yes | yes | yes |
 | `agent-files-review` | semi-portable | universal | yes | yes | yes |
-| `manage-skills` (new, section 3) | semi-portable | universal | yes | yes | yes |
+| `manage-skills` (section 3) | semi-portable | universal | yes (built) | yes | yes |
 | `performance-testing` | semi-portable | universal, project-gated (`<root>.perf`) | overlay | overlay | bootstrap |
 | `scratch-buffer-strategy` | semi-portable | dotnet-perf | yes | yes | yes |
 | `framework-jit-optimization` | semi-portable | dotnet-framework | yes | yes | marginal |
