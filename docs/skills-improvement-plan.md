@@ -2,12 +2,12 @@
 
 Status: roadmap. **Phase 0 (the in-repo refactor) is complete** - merged in
 [PR #174](https://github.com/JeremyKuhne/touki/pull/174). **Phase 1 (the
-`manage-skills` meta-skill) is authored in-repo** (validated, commit pending).
-Phases 2-8 are not started. Section 7 vets the whole sharing design end to end
-against the two real consumers,
-[`JeremyKuhne/madowaku`](https://github.com/JeremyKuhne/madowaku) (a merge) and
-[`JeremyKuhne/thirtytwo`](https://github.com/JeremyKuhne/thirtytwo) (greenfield).
-Authored 2026-06-04; last updated 2026-06-04.
+`manage-skills` meta-skill) is implemented** in
+[PR #175](https://github.com/JeremyKuhne/touki/pull/175). Phases 2-8 are not
+started. Section 7 vets the whole sharing design end to end against the two real
+consumers, [`JeremyKuhne/madowaku`](https://github.com/JeremyKuhne/madowaku)
+(a merge) and [`JeremyKuhne/thirtytwo`](https://github.com/JeremyKuhne/thirtytwo)
+(greenfield). Authored 2026-06-04; last updated 2026-06-05.
 
 This plan answers three questions about the agent skills under
 [.agents/skills/](../.agents/skills/):
@@ -679,7 +679,7 @@ residual is the load-bearing, append-only "Working with the user on changes"
 approval section; trimming further means cutting safety content, so it is left as
 a separate decision (section 5).
 
-### Phase 1 - build the `manage-skills` meta-skill in touki (DONE in-repo, commit pending)
+### Phase 1 - build the `manage-skills` meta-skill in touki (DONE, PR #175)
 
 The lifecycle skill (section 3) is the bootstrap tool, so it comes first - and it
 can be built and used **in touki alone**, before any commons exists. Its `find` /

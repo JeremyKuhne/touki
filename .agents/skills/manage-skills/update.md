@@ -9,8 +9,10 @@ directions. The second - pushing a local improvement - is where the
 When a vendored skill has moved upstream in the commons, pull the change:
 
 ```pwsh
-gh skill update <skill>      # one skill
-gh skill update --all        # every unpinned vendored skill
+# one skill
+gh skill update <skill>
+# every unpinned vendored skill
+gh skill update --all
 ```
 
 `gh skill update` compares the local copy's provenance tree SHA against upstream

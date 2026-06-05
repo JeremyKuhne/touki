@@ -60,7 +60,7 @@ edit, then place it - and **nothing about upstreaming is automatic**:
 
 So a vendored-core edit ends in one of three **recorded** states - upstreamed,
 moved to the overlay, or a tracked pending-upstream divergence - never an
-unexplained one. The provenance frontmatter (source repo + ref + tree SHA) plus
+unexplained one. The provenance frontmatter (source repo, ref, and tree SHA) plus
 the `update` drift check is what enforces this: unexplained drift is the signal
 that an improvement was written into the wrong layer. See [update.md](update.md).
 

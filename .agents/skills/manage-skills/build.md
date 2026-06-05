@@ -20,8 +20,8 @@ catalog - is the failure mode this path exists to prevent. Always run
    ```
 
    `--pin` records the exact version so later `update --all` runs skip it until
-   you deliberately re-pin. The install writes provenance frontmatter (source repo
-   + ref + tree SHA); commit it.
+   you deliberately re-pin. The install writes provenance frontmatter (source
+   repo, ref, and tree SHA); commit it.
 4. **In a public catalog** -> do not build from scratch. Apply the security gate
    below. If it is good, vendor it; if it is close but imperfect, fork it into the
    commons and vendor that. A mediocre public skill is usually worth adapting over
