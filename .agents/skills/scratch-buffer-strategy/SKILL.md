@@ -3,10 +3,10 @@ description: Choose how a hot path gets a short-lived scratch buffer - zeroed `s
 license: MIT
 metadata:
     github-path: skills/scratch-buffer-strategy
-    github-pinned: v0.2.0
-    github-ref: refs/tags/v0.2.0
+    github-pinned: v0.2.1
+    github-ref: refs/tags/v0.2.1
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: ae13c55e430ac3dcbf4a2698130abc7cd78762b1
+    github-tree-sha: 3b63a67f854011c50fc3beee69c6e4ea21778a9b
     portability: semi-portable
 name: scratch-buffer-strategy
 ---
@@ -36,7 +36,9 @@ between them that every decision must hold on both. Name the JIT in any writeup
    size that is usually small. Stays on the stack for the common case, rents
    from `ArrayPool` only on overflow. Wrapper overhead ~1 ns net481 / ~0.3 ns
    net10. Forwards the caller's `[SkipLocalsInit]` to the stack buffer.
-   (`BufferScope<T>` is a stack-with-pool-fallback wrapper; Touki ships one.)
+   (`BufferScope<T>` ships as `Touki.Buffers.BufferScope<T>` in the
+   [`KlutzyNinja.Touki`](https://www.nuget.org/packages/KlutzyNinja.Touki) NuGet
+   package - consume that rather than rolling or supplying your own.)
 4. **`ArrayPool<T>.Shared` Rent/Return** - large, unbounded, recursive, or must
    escape the frame. Has a fixed per-call floor that warmup never removes
    (~10 ns/op net481, ~4 ns/op net10). Rent **once** and reuse across the loop.

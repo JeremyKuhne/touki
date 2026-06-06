@@ -29,13 +29,16 @@ unbounded, or must escape the stack frame.
 
 The single most important and most counter-intuitive fact:
 
-> **.NET Framework 4.8.1 RyuJIT honors `[SkipLocalsInit]`.** Suppressing the
-> `localsinit` flag removes the stack zeroing on net481 just as it does on
+> **.NET Framework 4.8.1 RyuJIT honors `[SkipLocalsInit]`** for the locals it
+> governs. Suppressing the `localsinit` flag on a method removes the zeroing of
+> that method's `stackalloc` / local stack storage on net481 just as it does on
 > modern .NET. A 4 KB stack buffer drops from ~53 ns to ~1.7 ns on net481.
 
 This corrects the common assumption that Framework "always zeroes stackalloc".
 It does zero by default, but the absence of the `localsinit` flag is respected by
-the desktop runtime, so the zeroing is fully suppressible.
+the desktop runtime, so the zeroing of the attributed method's locals is fully
+suppressible. (The attribute governs only the methods it is applied to; it is not
+a claim that *no* prologue zeroing ever occurs anywhere.)
 
 ---
 
@@ -89,7 +92,7 @@ zero faster - reduce the byte count or suppress the zeroing instead.
 zeroing tax. But Rent/Return are not free, and - this is the key gotcha - the
 overhead is **per-call bookkeeping that warmup cannot eliminate**.
 
-`ArrayPoolSeedRentPerf` measures the exact shape the extglob engine uses: five
+`ArrayPoolSeedRentPerf` measures a representative multi-buffer rental shape: five
 buffers (a 28-byte frame struct x32, a 16-byte range struct x128, that range
 struct x18 twice, and an `int[57]`), rented and returned together, ~3.7 KB
 aggregate, with the pool pre-warmed 64x in `[GlobalSetup]`.
@@ -255,9 +258,9 @@ bookkeeping, allocation-free.
 The size sweep in section 3.2 assumes you know the size up front. Often you do
 not: the common size is small and stack-friendly, but a rare large input must
 still be handled without overflowing the stack. A stack-with-pool-fallback
-wrapper - such as Touki's `BufferScope<T>` - is built for exactly this:
-**start on a `stackalloc` buffer, transparently fall back to an `ArrayPool<T>`
-rental only when the requested capacity exceeds it**:
+wrapper - `Touki.Buffers.BufferScope<T>` from the `KlutzyNinja.Touki` package -
+is built for exactly this: **start on a `stackalloc` buffer, transparently fall
+back to an `ArrayPool<T>` rental only when the requested capacity exceeds it**:
 
 ```csharp
 [SkipLocalsInit]
@@ -374,7 +377,8 @@ example uses 1024 bytes) and **never `stackalloc` inside a loop** (analyzer
 So the working rule is **keep a single frame's `stackalloc` to a few KB and
 never put a `stackalloc` on a recursive or unbounded-loop path.**
 
-Apply this to the extglob engine seed (`RunEngine`):
+Apply this to a multi-buffer rental seed. A concrete example - the per-run seed
+of a small bytecode matching engine that rents five buffers in a single frame:
 
 | Buffer | Element size | Count | Bytes |
 |---|--:|--:|--:|
@@ -388,12 +392,12 @@ Apply this to the extglob engine seed (`RunEngine`):
 This is safe to keep on the stack because:
 
 - **It is a single frame, ~3.7 KB.** Well under any reasonable per-call budget.
-- **It is not on a recursive path.** `RunEngine` allocates the seed once.
-  The negation handler's bounded re-entry goes through `RunEngineCore`, which
-  reuses caller-supplied probe buffers and does **not** `stackalloc` again, so
+- **It is not on a recursive path.** The seed is allocated once per run.
+  Any bounded re-entry goes through a separate core routine that reuses
+  caller-supplied probe buffers and does **not** `stackalloc` again, so
   the 3.7 KB never multiplies with recursion depth.
 - **Every slot is written before it is read** (the work/rest/key buffers are
-  seeded by `CopyTo` and the per-production builders; frames/arena are written
+  seeded by `CopyTo` and the per-element builders; frames/arena are written
   before use and spill to `ArrayPool` only when an adversarial input outgrows
   the seed). So it does not depend on zero-init and is a correct candidate for
   `[SkipLocalsInit]`.
