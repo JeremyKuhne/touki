@@ -5,8 +5,8 @@
 namespace TraceQ.Tracing;
 
 /// <summary>
-///  A fully loaded trace: its metadata, the normalized samples, and the
-///  aggregator that ranks them.
+///  A fully loaded trace: its metadata, the CPU provider's stack-sample source,
+///  and the aggregator that ranks it.
 /// </summary>
 internal sealed class LoadedTrace
 {
@@ -16,8 +16,8 @@ internal sealed class LoadedTrace
     public LoadedTrace(TraceInfo info, IReadOnlyList<SampleStack> samples)
     {
         Info = info;
-        Samples = samples;
-        Aggregator = new FoldingAggregator(samples);
+        Source = new StackSampleSource(MetricInfo.Cpu, samples);
+        Aggregator = new FoldingAggregator(Source);
     }
 
     /// <summary>
@@ -26,12 +26,13 @@ internal sealed class LoadedTrace
     public TraceInfo Info { get; }
 
     /// <summary>
-    ///  The normalized weighted samples.
+    ///  The CPU provider's stack-sample source: the sampled stacks paired with the
+    ///  CPU metric.
     /// </summary>
-    public IReadOnlyList<SampleStack> Samples { get; }
+    public StackSampleSource Source { get; }
 
     /// <summary>
-    ///  The folding aggregator over <see cref="Samples"/>.
+    ///  The folding aggregator over <see cref="Source"/>.
     /// </summary>
     public FoldingAggregator Aggregator { get; }
 }

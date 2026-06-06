@@ -13,6 +13,9 @@ public sealed class FoldingAggregatorTests
     private static LoadedTrace LoadFolding() =>
         new TraceLoader().Load(FixturePath("folding.speedscope.json"));
 
+    private static FoldingAggregator Engine(IReadOnlyList<SampleStack> samples) =>
+        new(new StackSampleSource(MetricInfo.Cpu, samples));
+
     private static Dictionary<string, double> ByFrame(RankingResult result)
     {
         Dictionary<string, double> map = new(StringComparer.Ordinal);
@@ -32,6 +35,15 @@ public sealed class FoldingAggregatorTests
         trace.Info.SampleCount.Should().Be(4);
         trace.Info.DurationMs.Should().Be(25.0);
         trace.Info.SymbolResolutionRate.Should().Be(1.0);
+    }
+
+    [TestMethod]
+    public void Source_LoadedTrace_CarriesTheCpuMetric()
+    {
+        LoadedTrace trace = LoadFolding();
+        trace.Source.Metric.Should().Be(MetricInfo.Cpu);
+        trace.Aggregator.Metric.Name.Should().Be("CPU");
+        trace.Aggregator.Metric.Unit.Should().Be("ms");
     }
 
     [TestMethod]
@@ -56,6 +68,23 @@ public sealed class FoldingAggregatorTests
         RankingResult result = LoadFolding().Aggregator.SelfTime("", FrameNames.DefaultFoldPatterns, 25);
         result.Rows[0].Frame.Should().Be("MyApp.Inner");
         result.Rows[0].PercentOfScope.Should().Be(64.0);
+    }
+
+    [TestMethod]
+    public void SelfTime_TiedWeights_OrderedByFrameNameForDeterminism()
+    {
+        // Two leaves with identical weight must rank in a stable order; the contract
+        // breaks the tie by ordinal frame name so output is deterministic across runs.
+        List<SampleStack> samples =
+        [
+            new(["app!Zzz"], 5.0, "1"),
+            new(["app!Aaa"], 5.0, "1")
+        ];
+
+        RankingResult result = Engine(samples).SelfTime("", FrameNames.DefaultFoldPatterns, 25);
+
+        result.Rows[0].Frame.Should().Be("Aaa");
+        result.Rows[1].Frame.Should().Be("Zzz");
     }
 
     [TestMethod]
@@ -98,7 +127,7 @@ public sealed class FoldingAggregatorTests
             new(["Aaa", "Target"], 3.0, "1")
         ];
 
-        CallersResult result = new FoldingAggregator(samples).CallersOf("Target", "", top: 2);
+        CallersResult result = Engine(samples).CallersOf("Target", "", top: 2);
 
         result.Callers.Should().HaveCount(2);
         result.Callers[0].Milliseconds.Should().Be(3.0);
@@ -156,7 +185,7 @@ public sealed class FoldingAggregatorTests
             new(["app!Run", "app!WriteBarrier"], 4.0, "1", ["Engine.cs:10", "Helpers.cs:99"])
         ];
 
-        LineRankingResult result = new FoldingAggregator(samples).HotLines("Run", FrameNames.DefaultFoldPatterns, 25);
+        LineRankingResult result = Engine(samples).HotLines("Run", FrameNames.DefaultFoldPatterns, 25);
 
         result.ScopeMilliseconds.Should().Be(12.0);
         result.MethodFilter.Should().Be("Run");
@@ -181,7 +210,7 @@ public sealed class FoldingAggregatorTests
             new(["app!Other"], 7.0, "1", ["Other.cs:42"])
         ];
 
-        LineRankingResult result = new FoldingAggregator(samples).HotLines("Run", FrameNames.DefaultFoldPatterns, 25);
+        LineRankingResult result = Engine(samples).HotLines("Run", FrameNames.DefaultFoldPatterns, 25);
 
         result.ScopeMilliseconds.Should().Be(5.0);
         result.Rows.Should().ContainSingle();
@@ -197,7 +226,7 @@ public sealed class FoldingAggregatorTests
             new(["app!Run"], 9.0, "1")
         ];
 
-        LineRankingResult result = new FoldingAggregator(samples).HotLines("", FrameNames.DefaultFoldPatterns, 25);
+        LineRankingResult result = Engine(samples).HotLines("", FrameNames.DefaultFoldPatterns, 25);
 
         result.ScopeMilliseconds.Should().Be(5.0);
         result.Rows.Should().ContainSingle();
@@ -212,7 +241,7 @@ public sealed class FoldingAggregatorTests
             new(["app!Run"], 5.0, "1", [""])
         ];
 
-        LineRankingResult result = new FoldingAggregator(samples).HotLines("Run", FrameNames.DefaultFoldPatterns, 25);
+        LineRankingResult result = Engine(samples).HotLines("Run", FrameNames.DefaultFoldPatterns, 25);
 
         result.Rows.Should().ContainSingle();
         result.Rows[0].Location.Should().Be("<no source>");
@@ -228,7 +257,7 @@ public sealed class FoldingAggregatorTests
             new(["app!Run"], 3.0, "1", ["Engine.cs:20"])
         ];
 
-        LineRankingResult result = new FoldingAggregator(samples).HotLines("Run", FrameNames.DefaultFoldPatterns, 1);
+        LineRankingResult result = Engine(samples).HotLines("Run", FrameNames.DefaultFoldPatterns, 1);
 
         result.Rows.Should().ContainSingle();
         result.Rows[0].Location.Should().Be("Engine.cs:10");
@@ -256,7 +285,7 @@ public sealed class FoldingAggregatorTests
             new(["app!Other"], 8.0, "1", ["Other.cs:1"])
         ];
 
-        SourceHeatmapResult result = new FoldingAggregator(samples).SourceHeatmap("Engine.cs", FrameNames.DefaultFoldPatterns);
+        SourceHeatmapResult result = Engine(samples).SourceHeatmap("Engine.cs", FrameNames.DefaultFoldPatterns);
 
         // Percent is over the whole trace (20 ms), file total is the 12 ms in Engine.cs.
         result.ScopeMilliseconds.Should().Be(20.0);
@@ -282,7 +311,7 @@ public sealed class FoldingAggregatorTests
             new(["app!Run"], 5.0, "1", ["Engine.cs:10"])
         ];
 
-        SourceHeatmapResult result = new FoldingAggregator(samples).SourceHeatmap("ENGINE.CS", FrameNames.DefaultFoldPatterns);
+        SourceHeatmapResult result = Engine(samples).SourceHeatmap("ENGINE.CS", FrameNames.DefaultFoldPatterns);
 
         result.Lines.Should().ContainSingle();
         // The file name keeps the casing recorded in the trace.
@@ -300,7 +329,7 @@ public sealed class FoldingAggregatorTests
             new(["app!Run"], 2.0, "1", ["Other.cs:3"])
         ];
 
-        SourceHeatmapResult result = new FoldingAggregator(samples).SourceHeatmap("Engine.cs", FrameNames.DefaultFoldPatterns);
+        SourceHeatmapResult result = Engine(samples).SourceHeatmap("Engine.cs", FrameNames.DefaultFoldPatterns);
 
         // Whole-trace total still counts every sample; only Engine.cs contributes lines.
         result.ScopeMilliseconds.Should().Be(20.0);
@@ -317,7 +346,7 @@ public sealed class FoldingAggregatorTests
             new(["app!Run"], 5.0, "1", ["Engine.cs:10"])
         ];
 
-        SourceHeatmapResult result = new FoldingAggregator(samples).SourceHeatmap("Missing.cs", FrameNames.DefaultFoldPatterns);
+        SourceHeatmapResult result = Engine(samples).SourceHeatmap("Missing.cs", FrameNames.DefaultFoldPatterns);
 
         result.Lines.Should().BeEmpty();
         result.FileMilliseconds.Should().Be(0.0);
@@ -334,7 +363,7 @@ public sealed class FoldingAggregatorTests
             new(["app!Helper"], 7.0, "1", ["Engine.cs:10"])
         ];
 
-        SourceHeatmapResult result = new FoldingAggregator(samples).SourceHeatmap("Engine.cs", FrameNames.DefaultFoldPatterns);
+        SourceHeatmapResult result = Engine(samples).SourceHeatmap("Engine.cs", FrameNames.DefaultFoldPatterns);
 
         result.Lines.Should().ContainSingle();
         result.Lines[0].Line.Should().Be(10);
@@ -361,7 +390,7 @@ public sealed class FoldingAggregatorTests
             new(["app!Run"], 5.0, "1", [location])
         ];
 
-        SourceHeatmapResult result = new FoldingAggregator(samples).SourceHeatmap("Engine.cs", FrameNames.DefaultFoldPatterns);
+        SourceHeatmapResult result = Engine(samples).SourceHeatmap("Engine.cs", FrameNames.DefaultFoldPatterns);
 
         result.Lines.Should().BeEmpty();
         result.FileMilliseconds.Should().Be(0.0);

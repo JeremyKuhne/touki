@@ -35,6 +35,7 @@ namespace TraceQ.Tracing;
 /// </remarks>
 internal sealed class FoldingAggregator
 {
+    private readonly StackSampleSource _source;
     private readonly IReadOnlyList<SampleStack> _samples;
 
     // A single FoldingAggregator is cached on LoadedTrace and can be queried
@@ -43,13 +44,19 @@ internal sealed class FoldingAggregator
     private readonly ConcurrentDictionary<string, string> _shortCache = new(StringComparer.Ordinal);
 
     /// <summary>
-    ///  Initializes a new <see cref="FoldingAggregator"/> over the given samples.
+    ///  Initializes a new <see cref="FoldingAggregator"/> over the given source.
     /// </summary>
-    /// <param name="samples">The normalized weighted samples.</param>
-    public FoldingAggregator(IReadOnlyList<SampleStack> samples)
+    /// <param name="source">The stack-sample source to rank.</param>
+    public FoldingAggregator(StackSampleSource source)
     {
-        _samples = samples;
+        _source = source;
+        _samples = source.Samples;
     }
+
+    /// <summary>
+    ///  The metric the ranked sample weights are measured in.
+    /// </summary>
+    public MetricInfo Metric => _source.Metric;
 
     private string ShortOf(string name) => _shortCache.GetOrAdd(name, static n => FrameNames.Short(n));
 
@@ -212,7 +219,12 @@ internal sealed class FoldingAggregator
             rows.Add(new CallerRow(pair.Key, pair.Value, pct));
         }
 
-        rows.Sort(static (a, b) => b.Milliseconds.CompareTo(a.Milliseconds));
+        // Break ties by caller name so the ordering is deterministic across runs and machines.
+        rows.Sort(static (a, b) =>
+        {
+            int byMs = b.Milliseconds.CompareTo(a.Milliseconds);
+            return byMs != 0 ? byMs : string.CompareOrdinal(a.Caller, b.Caller);
+        });
         if (rows.Count > top)
         {
             rows.RemoveRange(top, rows.Count - top);
@@ -284,7 +296,12 @@ internal sealed class FoldingAggregator
             rows.Add(new LineRow(pair.Value.Method, pair.Value.Location, pair.Value.Ms, pct));
         }
 
-        rows.Sort(static (a, b) => b.Milliseconds.CompareTo(a.Milliseconds));
+        // Break ties by source location so the ordering is deterministic across runs and machines.
+        rows.Sort(static (a, b) =>
+        {
+            int byMs = b.Milliseconds.CompareTo(a.Milliseconds);
+            return byMs != 0 ? byMs : string.CompareOrdinal(a.Location, b.Location);
+        });
         if (rows.Count > top)
         {
             rows.RemoveRange(top, rows.Count - top);
@@ -417,7 +434,12 @@ internal sealed class FoldingAggregator
             rows.Add(new RankRow(pair.Key, pair.Value, pct));
         }
 
-        rows.Sort(static (a, b) => b.Milliseconds.CompareTo(a.Milliseconds));
+        // Break ties by frame name so the ordering is deterministic across runs and machines.
+        rows.Sort(static (a, b) =>
+        {
+            int byMs = b.Milliseconds.CompareTo(a.Milliseconds);
+            return byMs != 0 ? byMs : string.CompareOrdinal(a.Frame, b.Frame);
+        });
         if (rows.Count > top)
         {
             rows.RemoveRange(top, rows.Count - top);
