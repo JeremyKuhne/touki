@@ -30,10 +30,15 @@ internal sealed class TraceLoader
     ///  rankings. Ignored for speedscope inputs.
     /// </param>
     /// <returns>The loaded trace.</returns>
+    /// <exception cref="ArgumentException">
+    ///  <paramref name="path"/> is <see langword="null"/>, empty, or not a valid file path.
+    /// </exception>
     /// <exception cref="FileNotFoundException">The file does not exist.</exception>
     /// <exception cref="NotSupportedException">No reader recognizes the file extension.</exception>
     public LoadedTrace Load(string path, string? symbolsDirectory = null)
     {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+
         string fullPath = Path.GetFullPath(path);
         if (!File.Exists(fullPath))
         {

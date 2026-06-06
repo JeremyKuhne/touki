@@ -35,10 +35,16 @@ public sealed class TraceStore
     internal LoadedTrace Get(string path, string? symbolsDirectory = null)
     {
         string fullPath = Path.GetFullPath(path);
-        string symbolsKey = string.IsNullOrEmpty(symbolsDirectory)
-            ? ""
+        string? fullSymbols = string.IsNullOrEmpty(symbolsDirectory)
+            ? null
             : Path.GetFullPath(symbolsDirectory);
-        string key = $"{fullPath}|{symbolsKey}";
-        return _cache.GetOrAdd(key, _ => _loader.Load(fullPath, symbolsDirectory));
+
+        // Length-prefix the first path so the two components cannot be confused for a
+        // different pair: '|' - like every other ASCII separator - is a legal POSIX
+        // file-name character, so a plain "a|b" delimiter could collide ("a|b" + "c"
+        // versus "a" + "b|c"). Loading uses the normalized symbols path so a relative
+        // symbolsDirectory resolves exactly the way it was keyed.
+        string key = $"{fullPath.Length}|{fullPath}{fullSymbols}";
+        return _cache.GetOrAdd(key, _ => _loader.Load(fullPath, fullSymbols));
     }
 }

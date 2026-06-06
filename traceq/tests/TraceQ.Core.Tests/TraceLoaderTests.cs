@@ -34,4 +34,16 @@ public sealed class TraceLoaderTests
             File.Delete(temp);
         }
     }
+
+    [TestMethod]
+    [DataRow("")]
+    [DataRow(null)]
+    public void Load_NullOrEmptyPath_ThrowsArgument(string? path)
+    {
+        TraceLoader loader = new();
+
+        Action act = () => loader.Load(path!);
+
+        act.Should().Throw<ArgumentException>();
+    }
 }

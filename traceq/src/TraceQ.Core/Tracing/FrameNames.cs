@@ -58,14 +58,28 @@ internal static partial class FrameNames
     /// </summary>
     /// <param name="patterns">The fold patterns.</param>
     /// <returns>The compiled matchers.</returns>
+    /// <exception cref="ArgumentException">A pattern is not a valid regular expression.</exception>
     public static Regex[] CompileFoldPatterns(IReadOnlyList<string> patterns)
     {
         Regex[] compiled = new Regex[patterns.Count];
         for (int i = 0; i < patterns.Count; i++)
         {
-            // The fold patterns are user-influenced (the MCP `fold` parameter), so a
-            // match timeout guards against a pathological pattern hanging the server.
-            compiled[i] = new Regex(patterns[i], RegexOptions.CultureInvariant, s_foldPatternTimeout);
+            try
+            {
+                // The fold patterns are user-influenced (the MCP `fold` parameter), so a
+                // match timeout guards against a pathological pattern hanging the server.
+                compiled[i] = new Regex(patterns[i], RegexOptions.CultureInvariant, s_foldPatternTimeout);
+            }
+            catch (ArgumentException ex)
+            {
+                // A malformed pattern surfaces here as a RegexParseException (itself an
+                // ArgumentException); rethrow with the offending entry so the caller can
+                // report which fold pattern is bad instead of a context-free message.
+                throw new ArgumentException(
+                    $"Invalid fold pattern '{patterns[i]}' at index {i}: {ex.Message}",
+                    nameof(patterns),
+                    ex);
+            }
         }
 
         return compiled;
@@ -81,9 +95,18 @@ internal static partial class FrameNames
     {
         foreach (Regex pattern in foldPatterns)
         {
-            if (pattern.IsMatch(shortName))
+            try
             {
-                return true;
+                if (pattern.IsMatch(shortName))
+                {
+                    return true;
+                }
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                // A pathological pattern/input pair that hits the match timeout is
+                // treated as a non-match: folding is a display nicety and must never
+                // fail a ranking query.
             }
         }
 

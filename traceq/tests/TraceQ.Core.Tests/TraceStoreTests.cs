@@ -29,11 +29,17 @@ public sealed class TraceStoreTests
     {
         TraceStore store = new();
         string absolute = FixturePath("folding.speedscope.json");
+        string relative = Path.GetRelativePath(Directory.GetCurrentDirectory(), absolute);
+
+        // Guard against a degenerate run where the two spellings come out identical:
+        // the point is that a genuinely relative path and its absolute form collapse
+        // onto a single cache entry.
+        relative.Should().NotBe(absolute);
 
         LoadedTrace viaAbsolute = store.Get(absolute);
-        LoadedTrace viaFullPath = store.Get(Path.GetFullPath(absolute));
+        LoadedTrace viaRelative = store.Get(relative);
 
-        viaFullPath.Should().BeSameAs(viaAbsolute);
+        viaRelative.Should().BeSameAs(viaAbsolute);
     }
 
     [TestMethod]

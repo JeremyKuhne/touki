@@ -40,12 +40,16 @@ internal static class SourceAnnotator
             lines = File.ReadAllLines(file);
             return true;
         }
-        catch (IOException)
+        catch (Exception ex) when (
+            ex is IOException
+                or UnauthorizedAccessException
+                or ArgumentException
+                or NotSupportedException
+                or System.Security.SecurityException)
         {
-            return false;
-        }
-        catch (UnauthorizedAccessException)
-        {
+            // Honor the Try* contract for user-supplied paths: a malformed, too-long,
+            // unsupported, or access-denied path yields "not read" rather than throwing.
+            // PathTooLongException and FileNotFoundException derive from IOException.
             return false;
         }
     }

@@ -106,7 +106,7 @@ internal static class EmbeddedPdbExtractor
 
     private static string CreateTempDirectory()
     {
-        string path = Path.Combine(Path.GetTempPath(), "touki-mcp-pdb-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(Path.GetTempPath(), "traceq-pdb-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(path);
         return path;
     }

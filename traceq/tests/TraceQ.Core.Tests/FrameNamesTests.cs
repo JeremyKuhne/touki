@@ -43,4 +43,13 @@ public sealed class FrameNamesTests
         Regex[] fold = FrameNames.CompileFoldPatterns(FrameNames.DefaultFoldPatterns);
         FrameNames.IsFolded("Touki.Io.Globbing.CompiledGlobStrategy.RunEngine", fold).Should().BeFalse();
     }
+
+    [TestMethod]
+    public void CompileFoldPatterns_InvalidPattern_ThrowsArgumentNamingTheEntry()
+    {
+        // An unclosed group is not a valid regular expression.
+        Action act = () => FrameNames.CompileFoldPatterns(["valid", "(unclosed"]);
+
+        act.Should().Throw<ArgumentException>().WithMessage("*(unclosed*");
+    }
 }
