@@ -64,8 +64,9 @@ denormalized flags). Don't fold them in.
 
 For methods constrained to `where T : IComparable<T>` (e.g. `IndexOfAnyInRange`),
 keep the primitives as their signed/unsigned variants because comparison
-operators differ. See [SpanExtensions.InRange.cs](../../../touki/Framework/Polyfills/System/SpanExtensions.InRange.cs)
-for the full byte/sbyte/char/short/ushort/int/uint/long/ulong specialization.
+operators differ. See your repo's `IndexOfAnyInRange`-style polyfill in the
+Framework-only tree for the full
+byte/sbyte/char/short/ushort/int/uint/long/ulong specialization.
 
 ## `[MethodImpl(MethodImplOptions.AggressiveInlining)]`
 
@@ -117,8 +118,8 @@ The cast alone (`(byte)Unsafe.As<...>`) does not fix it; RyuJIT's constant
 tracker doesn't model the IL `conv.u1` as truncating. The explicit `& 0xFF`
 mask forces the high bits to zero in the propagated constant, so the compare
 immediate becomes the correct byte even when the JIT carries the int forward.
-Confirmed by disassembly in
-[ReplaceUnsafeAsPerf](../../../touki.perf/ReplaceUnsafeAsPerf.cs).
+Confirmed by disassembly (a dedicated `Unsafe.As`-narrowing replace benchmark in
+the repo's perf project).
 
 Symmetric tests using only `byte` or `char` will not catch this (their
 int-promoted form already has zero upper bits). Always include `sbyte` and

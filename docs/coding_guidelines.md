@@ -120,7 +120,7 @@ internal bool SingleVerticalBorderAdded
 
 ### Span-walking hot paths
 
-1. Read [Span Performance on .NET Framework](framework-span-performance.md) before optimizing any helper that walks `ReadOnlySpan<T>` / `Span<T>` per element. On `net472`/`net481` the span indexer is ~8 µops per element (slow-span layout) versus ~1 µop on net10; the hoist-`ref T`-with-`MemoryMarshal.GetReference`-and-`Unsafe.Add` pattern recovers 19-44% on Framework while staying safe (no `unsafe` keyword).
+1. Read [Span Performance on .NET Framework](../.agents/skills/framework-jit-optimization/references/framework-span-performance.md) before optimizing any helper that walks `ReadOnlySpan<T>` / `Span<T>` per element. On `net472`/`net481` the span indexer is ~8 µops per element (slow-span layout) versus ~1 µop on net10; the hoist-`ref T`-with-`MemoryMarshal.GetReference`-and-`Unsafe.Add` pattern recovers 19-44% on Framework while staying safe (no `unsafe` keyword).
 1. Prefer a single simple implementation when its measurements are within ~5% of any Framework-tuned variant on net10 - the simpler source keeps accruing future RyuJIT vectorization/PGO wins. Split via `#if NET` / `#else` only when the simple shape regresses net10 measurably; pin with `fixed` (not `Unsafe.AsPointer` tricks) when the Framework path needs raw pointers.
 
 ### Fields

@@ -773,14 +773,31 @@ full loop works. Two findings the pilot surfaced, both folded back in:
 With the pipeline proven, do the rest of the universal tier - this is where the
 heavy content work lives.
 
+**Progress.** `scratch-buffer-strategy` is the first completed Phase 4 increment
+(commons `v0.2.1`, merged in PR #177): its core + bundled
+`references/arraypool-performance.md` are vendored into touki with an overlay. PR
+#177 deferred deleting the touki `docs/arraypool-performance.md` copy; this PR
+collapses it - the `docs/` original is removed and README, AGENTS.md, and the
+sibling perf docs now point at the single vendored reference.
+`framework-jit-optimization` is the second (commons `v0.3.0`): its core + four
+siblings + the bundled `references/framework-span-performance.md` (the portable
+field manual split out of the class-C doc) are vendored with an overlay; the touki
+`docs/framework-span-performance.md` is thinned to the `OrdinalIgnoreCase` worked
+example plus a pointer up to the vendored field manual, and the live-guidance
+links (README, AGENTS.md, coding_guidelines) are repointed. The remaining
+universal cores are still to do.
+
 - [ ] Extract the remaining universal cores (`pre-pr-self-review`, `create-pr`,
       `address-pr-feedback`, `agent-files-review`, `performance-testing`,
       `scratch-buffer-strategy`, `framework-jit-optimization`) into the commons,
       each host-neutral.
 - [ ] Move each shared core's generic backing doc into `<skill>/references/`:
       `arraypool-performance.md` -> `scratch-buffer-strategy/references/` (whole,
-      class A); the portable span field-manual -> `framework-jit-optimization/references/`
-      (split out of the class-C `framework-span-performance.md`). Leave
+      class A) **[vendored in PR #177; touki `docs/` copy collapsed and references
+      repointed in this PR]**;
+      the portable span field-manual -> `framework-jit-optimization/references/`
+      (split out of the class-C `framework-span-performance.md`) **[done, commons
+      v0.3.0 - touki `docs/` copy thinned to the worked-example appendix]**. Leave
       touki-specific docs behind for the overlay.
 - [ ] Tag each sibling **portable** or **overlay**; move overlay siblings (most
       importantly `pre-pr-self-review/polyfill-correctness.md` and the
@@ -874,8 +891,11 @@ your control (section 3, "Governance").
 - **Portable agent personas** - worth publishing given uneven agent-host support,
   or keep agents touki-local for now and share only skills + MCP.
 - **Referenced-doc move vs split** - the content audit settled most of this:
-  `arraypool-performance.md` (28 KB, class A) moves whole into
-  `scratch-buffer-strategy/references/`; the class-C docs
+  `arraypool-performance.md` (28 KB, class A) moved whole into
+  `scratch-buffer-strategy/references/` (vendored in PR #177; the touki `docs/`
+  copy was deleted and all references repointed to the vendored reference in this
+  PR); the
+  class-C docs
   (`framework-span-performance.md` ~17/4, `polyfill-layout.md` ~2.5/2.5,
   `performance-investigation.md` ~16/23) split, with the portable field-manual in
   `references/` and the touki appendix left in `docs/`. The remaining judgement

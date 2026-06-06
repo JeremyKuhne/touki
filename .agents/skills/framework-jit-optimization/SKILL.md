@@ -1,35 +1,44 @@
 ---
-name: framework-jit-optimization
-description: Optimize hot-path code for the `net481` target in `touki/Framework/`. Use when writing or reviewing performance-sensitive loops, deciding whether to specialize a generic method for primitive types, choosing between scalar/unrolled/BCL-delegating implementations, or diagnosing why a net481 micro-benchmark regresses on the older RyuJIT. For BenchmarkDotNet harness mechanics (authoring/running benchmarks, evaluating allocations) see the `performance-testing` skill.
+description: Optimize hot-path code for the `net481` (.NET Framework) target in a multi-targeted library's Framework-only sources. Use when writing or reviewing performance-sensitive loops, deciding whether to specialize a generic method for primitive types, choosing between scalar/unrolled/BCL-delegating implementations, or diagnosing why a net481 micro-benchmark regresses on the older RyuJIT. For BenchmarkDotNet harness mechanics (authoring/running benchmarks, evaluating allocations) see the `performance-testing` skill.
+license: MIT
 metadata:
-  portability: semi-portable
+    github-path: skills/framework-jit-optimization
+    github-pinned: v0.3.0
+    github-ref: refs/tags/v0.3.0
+    github-repo: https://github.com/JeremyKuhne/agent-skills
+    github-tree-sha: 428c10165d3481855b1a0477c715f7bace02e89d
+    portability: semi-portable
+name: framework-jit-optimization
 ---
-
 # .NET Framework 4.8.1 JIT optimization
 
-The library targets `net481` in addition to modern .NET. Code under `touki/Framework/`
-is excluded from the modern build, so it only ever runs on the older RyuJIT. Treat
-`net481` as a separate optimization target with its own rules.
+A multi-targeted library targets `net481` in addition to modern .NET. Code in the
+Framework-only source tree (the `Framework/` subtree by convention, excluded from
+the modern build) only ever runs on the older RyuJIT. Treat `net481` as a separate
+optimization target with its own rules.
 
-This skill captures decisions distilled from real benchmarks under
-[touki.perf/](../../../touki.perf/). Always validate with the
-[performance-testing](../performance-testing/SKILL.md) skill workflow before
-committing a change. Run the
-[`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) checklist before
-opening a PR - in particular its polyfill / framework-correctness items
-(allocation-free over raw speed; perf claims must name the JIT and be
-measured) apply directly to changes guided by this skill.
+This skill captures decisions distilled from real BenchmarkDotNet experiments in
+the repo's perf project (`<root>.perf` by convention). The deep span-walking
+field manual is bundled alongside this skill in
+[references/framework-span-performance.md](references/framework-span-performance.md).
 
-For the broader "how do I polyfill API X for net472?" question (which
-packages to prefer, when to hand-roll), see the
-[`polyfill-dotnet-api`](../polyfill-dotnet-api/SKILL.md) skill. This
-skill picks up after that decision is already made and the polyfill
-lives in `touki/Framework/`.
+Always validate with the `performance-testing` skill workflow before committing a
+change, and run the `pre-pr-self-review` checklist before opening a PR - in
+particular its framework-correctness items (allocation-free over raw speed; perf
+claims must name the JIT and be measured) apply directly to changes guided by this
+skill.
 
-For choosing how a hot path gets its scratch buffer (zeroed `stackalloc`
-vs `[SkipLocalsInit]` vs `BufferScope<T>` vs an `ArrayPool` rental, and the
-net481/net10 size crossovers), see the
-[`scratch-buffer-strategy`](../scratch-buffer-strategy/SKILL.md) skill.
+For the broader "how do I polyfill API X for net472?" question (which packages to
+prefer, when to hand-roll), see the `polyfill-dotnet-api` skill. This skill picks
+up after that decision is already made and the polyfill lives in the Framework-only
+tree.
+
+For choosing how a hot path gets its scratch buffer (zeroed `stackalloc` vs
+`[SkipLocalsInit]` vs a stack-with-pool-fallback buffer vs an `ArrayPool` rental,
+and the net481/net10 size crossovers), see the `scratch-buffer-strategy` skill.
+
+A consuming repository wires the concrete cross-skill links and source-tree paths
+in its overlay.
 
 ## What is and isn't available on `net481`
 
@@ -59,8 +68,8 @@ is fine." On `net481` a hand-written specialized loop frequently beats the BCL b
 1. Start with the simplest possible scalar loop and measure it as the baseline.
    Capture the baseline on **both** `net10.0` and `net481` before editing, and
    keep the full BenchmarkDotNet rows (`Mean`/`Error`/`StdDev`/`Allocated`), not
-   a one-line summary - see the before/after discipline in
-   [performance-testing](../performance-testing/SKILL.md). EventPipe line
+   a one-line summary - see the before/after discipline in the
+   `performance-testing` skill. EventPipe line
    profiling is net10-only, but every change still has to be re-measured on
    net481 overall.
 2. Decide whether to specialize. See [specialization.md](specialization.md) for the
@@ -87,7 +96,7 @@ is fine." On `net481` a hand-written specialized loop frequently beats the BCL b
 
 ## Quick reference: ratios from real benchmarks
 
-All numbers are from the smoke benchmarks in `touki.perf/`. Treat as
+All numbers are from the smoke benchmarks in the repo's perf project. Treat as
 order-of-magnitude, not exact - rerun before claiming a specific number in
 a PR.
 

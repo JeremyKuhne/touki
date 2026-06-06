@@ -261,10 +261,11 @@ catch a mistake.
   `IsOnlyOneFlagSet`, `SetFlags`, `ClearFlags` inline to the same
   instructions as `&`/`|`/`==` on both TFMs and avoid the `Enum.HasFlag`
   boxing penalty on net472/net481 (~20&times; faster, zero alloc).
-- **When optimizing span-walking helpers**, read
-  [docs/framework-span-performance.md](../docs/framework-span-performance.md) and the
+- **When optimizing span-walking helpers**, read the
   [`framework-jit-optimization`](../.agents/skills/framework-jit-optimization/SKILL.md)
-  skill first. The headline rule: on net472/net481 hoist
+  skill and its bundled
+  [references/framework-span-performance.md](../.agents/skills/framework-jit-optimization/references/framework-span-performance.md)
+  first. The headline rule: on net472/net481 hoist
   `ref T = MemoryMarshal.GetReference(span)` out of the loop and walk with
   `Unsafe.Add<T>(ref, i)` for a 19-44% Framework win at no `unsafe`-keyword cost,
   and prefer one simple implementation unless net10 regresses measurably.
@@ -291,7 +292,8 @@ catch a mistake.
   `ArrayPool<T>.Shared` rental), follow the
   [`scratch-buffer-strategy`](../.agents/skills/scratch-buffer-strategy/SKILL.md)
   skill for the decision tree and the net481/net10 size crossovers, backed by
-  [docs/arraypool-performance.md](../docs/arraypool-performance.md).
+  its bundled
+  [references/arraypool-performance.md](../.agents/skills/scratch-buffer-strategy/references/arraypool-performance.md).
 - When adding a polyfill for a modern .NET API on .NET Framework, follow the
   [`polyfill-dotnet-api`](../.agents/skills/polyfill-dotnet-api/SKILL.md) skill:
   prefer Microsoft-shipped packages, then PolySharp source-gen for compiler
