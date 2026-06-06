@@ -127,7 +127,12 @@ jobs:
       uses: codecov/codecov-action@v5
       with:
         files: artifacts/coverage/Cobertura.xml
-        fail_ci_if_error: true
+        # Coverage upload is informational and must not gate the build. The
+        # Codecov uploader has an intermittent sha256/GPG signature race on the
+        # CDN that hard-fails otherwise unrelated PRs (Codecov-side bug, "no
+        # security issue" per the maintainers):
+        # https://github.com/codecov/codecov-action/issues/1940
+        fail_ci_if_error: false
         disable_search: true
         token: ${{ secrets.CODECOV_TOKEN }}
     - name: Upload raw logs
