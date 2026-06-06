@@ -3,10 +3,10 @@ description: Review changes to AI-agent customization files (AGENTS.md, .github/
 license: MIT
 metadata:
     github-path: skills/agent-files-review
-    github-pinned: v0.5.0
-    github-ref: refs/tags/v0.5.0
+    github-pinned: v0.5.1
+    github-ref: refs/tags/v0.5.1
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 24e6905b671e90dad22592371365a1f8f4475496
+    github-tree-sha: 06f4a82d587ae2ab8bbf055339473728d081f9fd
     portability: semi-portable
 name: agent-files-review
 ---
@@ -137,7 +137,9 @@ on the canonical repo's `main` but not in your branch will fail.
 - No whitespace-only lines (a "blank" line must be truly empty).
 - Tabs are forbidden in Markdown bodies.
 - **Files must end with a single newline character** (markdownlint MD047).
-  The validator flags this; markdownlint enforces it in CI. New files
+  The validator flags a *missing* trailing newline (it checks the file ends
+  with `\n`, not that there is exactly one); markdownlint enforces the full
+  single-newline rule in CI. New files
   created via the standard editor tooling get this for free, but
   hand-edited or copy-pasted content sometimes loses the final `\n`.
 - These rules are enforced both by the validator and by markdownlint.

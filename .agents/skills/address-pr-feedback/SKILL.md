@@ -3,10 +3,10 @@ description: Address feedback on an existing pull request - review comments, req
 license: MIT
 metadata:
     github-path: skills/address-pr-feedback
-    github-pinned: v0.5.0
-    github-ref: refs/tags/v0.5.0
+    github-pinned: v0.5.1
+    github-ref: refs/tags/v0.5.1
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: ca7e22e8fbf08581099ae31c44e14421adbf1ef2
+    github-tree-sha: bdbdca48b1ebc651d9b4b1c63d2684383f2a7c83
     portability: semi-portable
 name: address-pr-feedback
 ---
@@ -86,7 +86,7 @@ force-push, or leave the commit in place.
 ## Related
 
 - Your repo's agent guidance (`AGENTS.md`) - the rule itself.
-- The `create-pr` skill - opening the initial PR (different approval
-  semantics).
+- The `create-pr` skill - opening the initial PR (same publish gate,
+  different edit scope).
 - The `pre-pr-self-review` skill - the validation checklist that applies
   to both initial and follow-up rounds.

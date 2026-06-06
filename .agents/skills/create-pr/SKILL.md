@@ -3,10 +3,10 @@ description: Create a pull request for the current changes. Use when asked to "m
 license: MIT
 metadata:
     github-path: skills/create-pr
-    github-pinned: v0.5.0
-    github-ref: refs/tags/v0.5.0
+    github-pinned: v0.5.1
+    github-ref: refs/tags/v0.5.1
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 7a3628b69012f16c717b27ae9610b3213c30637d
+    github-tree-sha: be419cb9de66ddb7ba97afcf761d7d41c83639a5
     portability: semi-portable
 name: create-pr
 ---
@@ -175,8 +175,8 @@ Tell the user:
 
 Once the PR exists, this skill is done. Subsequent rounds of edits in
 response to review comments, requested changes, or CI failures go through
-the `address-pr-feedback` skill, which has different commit/push approval
-semantics.
+the `address-pr-feedback` skill, which covers a different edit scope under
+the same commit/push publish gate.
 
 ## Guardrails
 
