@@ -40,6 +40,19 @@ public sealed class SymbolGateTests
     }
 
     [TestMethod]
+    public void TryGetWarning_JustBelowThreshold_PercentageDoesNotContradictThreshold()
+    {
+        // 0.799 fires the gate; the percentage must not round up to 80% and read
+        // "Only 80% ... (< 80%)". Truncation keeps it at 79%.
+        bool fired = SymbolGate.TryGetWarning(0.799, sampleCount: 100, out string? warning);
+
+        fired.Should().BeTrue();
+        warning.Should().NotBeNull();
+        warning.Should().Contain("79%");
+        warning.Should().NotContain("Only 80%");
+    }
+
+    [TestMethod]
     public void TryGetWarning_AtOrAboveThreshold_NoWarning()
     {
         bool fired = SymbolGate.TryGetWarning(0.95, sampleCount: 100, out string? warning);

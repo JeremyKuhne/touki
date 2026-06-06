@@ -296,11 +296,18 @@ internal sealed class FoldingAggregator
             rows.Add(new LineRow(pair.Value.Method, pair.Value.Location, pair.Value.Ms, pct));
         }
 
-        // Break ties by source location so the ordering is deterministic across runs and machines.
+        // Break ties by source location, then method, so the ordering is fully
+        // deterministic even when two methods map to the same file:line with equal time.
         rows.Sort(static (a, b) =>
         {
             int byMs = b.Milliseconds.CompareTo(a.Milliseconds);
-            return byMs != 0 ? byMs : string.CompareOrdinal(a.Location, b.Location);
+            if (byMs != 0)
+            {
+                return byMs;
+            }
+
+            int byLocation = string.CompareOrdinal(a.Location, b.Location);
+            return byLocation != 0 ? byLocation : string.CompareOrdinal(a.Method, b.Method);
         });
         if (rows.Count > top)
         {

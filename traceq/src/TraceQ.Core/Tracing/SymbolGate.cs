@@ -57,10 +57,13 @@ internal static class SymbolGate
             return false;
         }
 
-        // Format whole-number percentages so the warning text is deterministic and
-        // free of the locale-dependent space the "P" format inserts before "%".
-        int resolvedPct = (int)Math.Round(resolutionRate * 100, MidpointRounding.AwayFromZero);
-        int thresholdPct = (int)Math.Round(MinimumResolutionRate * 100, MidpointRounding.AwayFromZero);
+        // Truncate (not round) the percentages toward zero so the text can never
+        // contradict the gate: whenever resolution is below 0.8 the truncated value
+        // is at most 79, so "Only 79% ... (< 80%)" stays consistent (rounding 0.799
+        // up to 80% would read "Only 80% ... (< 80%)"). Integer formatting also avoids
+        // the locale-dependent space the "P" format inserts before "%".
+        int resolvedPct = (int)(resolutionRate * 100);
+        int thresholdPct = (int)(MinimumResolutionRate * 100);
         warning =
             $"Only {resolvedPct}% of frames resolved to a method name (< {thresholdPct}%); native frames may be unresolved. "
             + "Managed frames resolve from CLR rundown, so managed-method rankings remain usable. "

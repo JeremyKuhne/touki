@@ -264,6 +264,25 @@ public sealed class FoldingAggregatorTests
     }
 
     [TestMethod]
+    public void HotLines_TiedAtSameLocation_OrderedByMethodForDeterminism()
+    {
+        // Two different methods map to the same file:line with equal time; the
+        // location tie-break alone leaves them equal, so method breaks the final tie
+        // and the ordering stays deterministic regardless of enumeration order.
+        List<SampleStack> samples =
+        [
+            new(["app!Zzz"], 5.0, "1", ["Engine.cs:10"]),
+            new(["app!Aaa"], 5.0, "1", ["Engine.cs:10"])
+        ];
+
+        LineRankingResult result = Engine(samples).HotLines("", FrameNames.DefaultFoldPatterns, 25);
+
+        result.Rows.Should().HaveCount(2);
+        result.Rows[0].Method.Should().Be("Aaa");
+        result.Rows[1].Method.Should().Be("Zzz");
+    }
+
+    [TestMethod]
     public void CallersOf_FocusAtStackRoot_CreditsRootCaller()
     {
         // Program.Main is the outermost frame, so its only caller is the synthetic <root>.

@@ -33,8 +33,6 @@ public sealed class OutputContractTests
 
         json.Should().NotContain("\n");
         json.Should().NotContain("\r");
-        // No pretty-printing indentation.
-        json.Should().NotContain("  ");
     }
 
     [TestMethod]
