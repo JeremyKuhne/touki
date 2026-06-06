@@ -1,10 +1,15 @@
 ---
-name: create-pr
 description: Create a pull request for the current changes. Use when asked to "make a PR", "open a pull request", "push and PR", or otherwise publish in-progress work for review. Ensures changes are on a non-`main` branch, commits are made and pushed, and the PR targets `upstream/main` when an `upstream` remote exists, otherwise `origin/main`.
+license: MIT
 metadata:
-  portability: semi-portable
+    github-path: skills/create-pr
+    github-pinned: v0.5.1
+    github-ref: refs/tags/v0.5.1
+    github-repo: https://github.com/JeremyKuhne/agent-skills
+    github-tree-sha: be419cb9de66ddb7ba97afcf761d7d41c83639a5
+    portability: semi-portable
+name: create-pr
 ---
-
 # Create a pull request
 
 Follow these steps in order. Stop and ask the user if any check is ambiguous;
@@ -16,16 +21,15 @@ confirmation.
 The **Approval checkpoint** inside step 3 (Commit changes) is the gate:
 staging happens before it, `git commit` and everything after happen only
 once the user supplies an explicit publishing verb - `commit`, `push`,
-`ship it`, or equivalent. See AGENTS.md § "Working with the user on
-changes" for the canonical rule and the recurring not-approval phrasings.
+`ship it`, or equivalent. See your repo's agent guidance (the "Working with
+the user on changes" rules in `AGENTS.md`) for the canonical rule and the
+recurring not-approval phrasings.
 
-Before running this workflow, walk through the
-[`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) checklist - it
-catches the test, allocation, overflow-arithmetic, and TFM-phrasing mistakes
-that have repeatedly cost a review round-trip on this repo. If the change
-polyfills a .NET API for .NET Framework, the
-[`polyfill-dotnet-api`](../polyfill-dotnet-api/SKILL.md) skill defines the
-design rules the self-review then validates against.
+Before running this workflow, walk through the `pre-pr-self-review` checklist -
+it catches the test, allocation, overflow-arithmetic, and TFM-phrasing mistakes
+that repeatedly cost a review round-trip. If the change polyfills a .NET API for
+.NET Framework, a `polyfill-dotnet-api` skill (where the repo provides one)
+defines the design rules the self-review then validates against.
 
 ## 1. Inspect repository state
 
@@ -73,11 +77,11 @@ Decide the PR base:
 
 **Stop here.** Show the user the staged diff (or summarize it) and the
 proposed commit message. Wait for the user to explicitly say `commit`,
-`push`, or `ship it` (or one of the other verbs listed in AGENTS.md
-§ "Working with the user on changes") before running `git commit`. If
-the user already used one of those verbs in the message that triggered
-this skill, proceed without asking again. Do not infer approval from the
-original "open a PR" request.
+`push`, or `ship it` (or one of the other verbs listed in your repo's
+agent guidance "Working with the user on changes" rules) before running
+`git commit`. If the user already used one of those verbs in the message
+that triggered this skill, proceed without asking again. Do not infer
+approval from the original "open a PR" request.
 
 ## 4. Push the branch
 
@@ -97,8 +101,8 @@ so conflicts surface locally instead of on the PR:
 
 - **Clean:** prefer rebasing onto `<base>` so the PR diff is current.
 - **Conflicts:** rebase (`git rebase <base>`, `$env:GIT_EDITOR='true'`), resolve,
-  `git add` by path, `git rebase --continue`, then re-run `dotnet build` and
-  `dotnet test -c Release` (base may have moved/renamed code you depend on).
+  `git add` by path, `git rebase --continue`, then re-run the build and the
+  test suite in Release (base may have moved/renamed code you depend on).
 - A rebase rewrites commits, so the next push needs `--force-with-lease` - a
   force-push that **requires explicit user approval** per the publish-boundary rule.
 
@@ -149,7 +153,7 @@ Call `github-pull-request_create_pull_request` with:
 
 - Title: same style as the commit subject; reference the area touched.
 - Body: brief summary of what changed and why, bullet list of notable
-  changes, and any test/validation notes (e.g. "ran `dotnet test`"). Link
+  changes, and any test/validation notes (e.g. "ran the test suite"). Link
   related issues with `Fixes #N` when appropriate.
 - If the user has not supplied a title/body, propose one and confirm before
   creating.
@@ -171,8 +175,8 @@ Tell the user:
 
 Once the PR exists, this skill is done. Subsequent rounds of edits in
 response to review comments, requested changes, or CI failures go through
-the [`address-pr-feedback`](../address-pr-feedback/SKILL.md) skill, which
-has different commit/push approval semantics.
+the `address-pr-feedback` skill, which covers a different edit scope under
+the same commit/push publish gate.
 
 ## Guardrails
 
