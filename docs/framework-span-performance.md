@@ -106,24 +106,45 @@ Framework** the way it is on modern .NET. If you're writing a helper
 specifically for Framework speed, you usually need to write the loop
 yourself.
 
-### 1.3 Aggressive `rep stosd` zero-init
+### 1.3 Prologue `rep stosd` zero-init (the GC-frame carve-out)
 
-Framework RyuJIT **does not honor `[SkipLocalsInit]`**. Every method
-prologue zero-inits the entire local frame with `rep stosd`, regardless
-of the IL `.localsinit false` flag. Verified empirically:
+Framework RyuJIT **honors `[SkipLocalsInit]`** - but only for the locals
+it is allowed to leave dirty. The desktop CLR still force-zeros every
+**GC-tracked** frame slot regardless of the `localsinit` flag, so the
+garbage collector can safely report it. A managed reference, an
+`object`-containing struct, a `Span<T>` / `ReadOnlySpan<T>` (it carries a
+managed byref), and a pinned `fixed` pointer's slot are all GC-tracked.
+
+A span-walking helper that takes spans and pins them has a GC-tracked
+frame, so it is zeroed in the prologue **even with `[SkipLocalsInit]`
+applied** - this is the GC carve-out, not the attribute being ignored:
 
 ```asm
-; Touki.SpanExtensions.CompareOrdinalIgnoreCaseAsciiFold(...)   ; [SkipLocalsInit] applied
+; A pinning span helper, net481 RyuJIT, [SkipLocalsInit] applied
     sub       rsp, 58
     ...
     mov       ecx, 0C              ; 12 dwords = 48 bytes
     xor       eax, eax
-    rep stosd                      ; still emitted
+    rep stosd                      ; still emitted: GC slots, not the flag
 ```
 
-A typical span-walking helper has an 88-byte stack frame and a 48-byte
-zero-init in the prologue. That's ~3 ns of pure overhead per method
-call on Framework. Modern .NET honors the attribute and skips this.
+Proven by A/B disassembly on both TFMs
+([`touki.perf/SkipLocalsInitProbePerf.cs`](../touki.perf/SkipLocalsInitProbePerf.cs)):
+
+| 48-byte frame / 4 KB `stackalloc` | net481 default | net481 `[SkipLocalsInit]` |
+|---|---:|---:|
+| `stackalloc byte[4096]` (no GC refs) | 52.99 ns | **1.78 ns** - loop gone |
+| 48-byte non-GC struct | 5.84 ns | **1.28 ns** - `rep stosd` gone |
+| 48-byte `object`-containing struct | 8.58 ns | 8.66 ns - `rep stosd` stays |
+
+So on net481 the attribute removes zeroing for non-GC locals and
+`stackalloc` (a 4 KB clear drops ~30x) and is a no-op only for GC-tracked
+frames. The cost a span helper still pays - an ~88-byte frame with a
+48-byte GC-slot zero-init, ~3 ns/call - is real, but it is the GC
+carve-out and `[SkipLocalsInit]` cannot remove it. Modern .NET applies
+the same carve-out. For the buffer-zeroing decisions that follow from
+this, see [arraypool-performance.md](arraypool-performance.md) and the
+`scratch-buffer-strategy` skill.
 
 ### 1.4 Conservative inliner, no cross-assembly generic inlining
 
@@ -379,7 +400,7 @@ quickly estimate how much a given strategy might save:
 
 | Cost | Approx ns | Notes |
 |---|---:|---|
-| Function-call frame (88 B stack + 48 B `rep stosd` + epilogue) | ~5-6 | Per call, irreducible. `[SkipLocalsInit]` is ignored. |
+| Function-call frame (88 B stack + 48 B `rep stosd` + epilogue) | ~5-6 | Per call. The 48 B zero is the GC-tracked slots; `[SkipLocalsInit]` can't remove those (see 1.3). |
 | Non-inlined `MemoryMarshal.GetReference<T>(span)` | ~2 | Per call. Doubled if you walk two spans. |
 | Slow-span indexer `span[i]` | ~1.5 µops × ~2.5 cycles | Per character. Compare to ~0.3 cycles on net10. |
 | `vzeroupper` in prologue | ~1 µop | Emitted whenever the JIT sees AVX state needs clearing. |
@@ -501,10 +522,12 @@ keeps the per-call overhead bounded.
   Framework, you may be preventing future RyuJIT auto-vectorization
   from kicking in. Measure on net10 with a simpler shape; if it's
   competitive, prefer the split.
-- **`[SkipLocalsInit]` as a "perf attribute".** No-op on net481.
-  Below-noise on net10 unless the function has multi-hundred-byte
-  local frames. Keep applied for code-style consistency, do not credit
-  it as a mitigation.
+- **`[SkipLocalsInit]` as a fix for span-helper frames.** It does *not*
+  help there: a span / `fixed` helper's frame is GC-tracked, and the GC
+  carve-out zeroes those slots regardless of the flag (see 1.3). It
+  *does* suppress zeroing for non-GC locals and `stackalloc` (a 4 KB
+  clear drops ~30x on net481), so credit it there - just not as a
+  mitigation for the span-walking helpers this doc is about.
 - **`Unsafe.AsPointer(ref MemoryMarshal.GetReference(span))` instead of
   `fixed`.** Same machine semantics, harder for a reviewer to spot the
   pinning requirement (there isn't one - the pointer is bare, and a
