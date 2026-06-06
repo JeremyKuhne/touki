@@ -3,7 +3,7 @@
 **Status:** Active — Q1–Q3 resolved (§6)
 **Date:** 2026-06-04
 **Basis:** *Agentic access to TraceEvent — design document* (2026-06-04). Section references (§) and decisions (D#) below point at that document.
-**Resolved path:** incubate in Touki under a self-contained `traceq/` subtree and **promote at the M3 gate** · **private GitHub Packages feed until v1.0** (public NuGet + MCP registry at 1.0) · **retire `touki.mcp` at parity**, Touki references `TraceQ.Core`.
+**Resolved path:** incubate in Touki under a self-contained `traceq/` subtree and **promote at the M3½ gate** · **private GitHub Packages feed until v1.0** (public NuGet + MCP registry at 1.0) · **retire `touki.mcp` at parity**, Touki references `TraceQ.Core`.
 
 **Revision 2026-06-06 (this copy):** relocated into `touki/docs/` (version-controlled with the repo it incubates in). Two changes fold in: (1) **the `touki.mcp` git history is not worth preserving** - the move is a plain file copy, not a `git mv`/`filter-repo` history carry, which simplifies M1 and M3-and-a-half; (2) a **thorough surface-area pass** informed by the PerfView field guide and its automation companion ([documentation/perfview-trace-analysis-guide.md](https://github.com/microsoft/perfview), [documentation/perfview-automation-guide.md](https://github.com/microsoft/perfview)), widening the plan from the CPU-stack slice `touki.mcp` ships today to the full TraceEvent analysis surface, the scenario-trimming workflows the user asked for, and the export/visualization bridges. New material: the surface-area section below, expanded M1/M2 verb sets, and Addenda A-B.
 
@@ -253,7 +253,7 @@ The extraction's safety net is a fixed corpus of traces with known-good answers:
 
 | # | Question | Decision | Consequences baked into this plan |
 |---|---|---|---|
-| Q1 | Where does this live? | **Incubate in Touki; promote at the M3 gate** | Self-contained `traceq/` subtree with its own build props (M0); extraction-rehearsal CI check enforcing zero coupling; promotion is an explicit milestone (M3½) with the naming gate attached; discovery/identity deliberately deferred until the facade proves itself |
+| Q1 | Where does this live? | **Incubate in Touki; promote at the M3½ gate** | Self-contained `traceq/` subtree with its own build props (M0); extraction-rehearsal CI check enforcing zero coupling; promotion is an explicit milestone (M3½) with the naming gate attached; discovery/identity deliberately deferred until the facade proves itself |
 | Q2 | Publishing cadence | **Private GitHub Packages feed until v1.0** | First publish at M4 (post-promotion) with final IDs; feed-auth documentation including the cloud-agent secret snippet is an M4 deliverable; public NuGet + MCP registry + badges land at v1.0 (M6); Trusted Publishing wired dormant at promotion |
 | Q3 | `touki.mcp` at parity | **Retire it; Touki references `TraceQ.Core`** | M6 deletes the project; fold-list/BDN specifics survive as thin config + skill; the `Get-TraceHotspots.ps1` fallback decision is recorded at M6 |
 
