@@ -173,7 +173,7 @@ boundary, so the refactor and the extraction are one piece of work.
 | `create-pr` | core extractable | git/PR open workflow + approval gate | branch naming, `dotnet test -c Release`, fork/upstream |
 | `agent-files-review` | core extractable | reviewing agent-customization files generally | `Validate-AgentFiles.ps1`, the mirror generator, `agent-files.yml` |
 | `polyfill-dotnet-api` | repo-specific (small core) | the "MS package -> PolySharp -> hand-roll" decision tree | `touki/Framework/` layout, namespace rules, extension-block coexistence |
-| `address-pr-feedback` | repo-specific | thin approval-gate restatement | touki approval phrasing bank |
+| `address-pr-feedback` | core extractable | the post-PR approval-gate + feedback workflow (shared with `create-pr`) | touki approval phrasing bank, `AGENTS.md` anchor |
 | `publish-release` | repo-specific | none meaningful | MinVer dual tag streams, package names |
 | `run-tests-on-wsl` | repo-specific | the WSL DrvFs / NuGet trap workaround | oracle suite names, `touki.tests` paths |
 

@@ -1,28 +1,40 @@
 ---
-name: agent-files-review
-description: Review changes to AI-agent customization files in this repo (AGENTS.md, .github/copilot-instructions.md, *.instructions.md, *.prompt.md, *.agent.md, SKILL.md, validator, CI workflow). Use when asked to review or validate agent-file changes, fix CI failures from agent-files.yml, or audit a draft of any of these files.
+description: Review changes to AI-agent customization files (AGENTS.md, .github/copilot-instructions.md, *.instructions.md, *.prompt.md, *.agent.md, SKILL.md, the validator, the CI workflow). Use when asked to review or validate agent-file changes, fix CI failures from the agent-files workflow, or audit a draft of any of these files.
+license: MIT
 metadata:
-  portability: semi-portable
+    github-path: skills/agent-files-review
+    github-pinned: v0.5.0
+    github-ref: refs/tags/v0.5.0
+    github-repo: https://github.com/JeremyKuhne/agent-skills
+    github-tree-sha: 24e6905b671e90dad22592371365a1f8f4475496
+    portability: semi-portable
+name: agent-files-review
 ---
-
 # Agent customization files - review checklist
 
 Run through every applicable item below before approving a change to an agent
-customization file. The PR review history showed each of these caught a real bug.
+customization file. Each item below caught a real bug in PR review history.
+
+This skill assumes the repository has adopted the agent-file scaffold: an
+`AGENTS.md` single-source with a generated `.github/copilot-instructions.md`
+mirror, a validator script (conventionally `tools/Validate-AgentFiles.ps1`), a
+relative-link checker (conventionally `tools/Test-AgentFileLinks.ps1`), and a CI
+workflow (conventionally `.github/workflows/agent-files.yml`) running markdownlint
+plus an offline lychee link check. A consuming repo wires the exact paths in its
+overlay.
 
 ## 1. AGENTS.md / `.github/copilot-instructions.md`
 
 - The mirror is generated. **Never edit `.github/copilot-instructions.md` by hand.**
-  Edits go in [AGENTS.md](../../../AGENTS.md), then run
-  `pwsh tools/Validate-AgentFiles.ps1 -Fix` to regenerate.
-- Run `pwsh tools/Validate-AgentFiles.ps1` after any AGENTS.md edit. The
-  workflow at [.github/workflows/agent-files.yml](../../../.github/workflows/agent-files.yml)
+  Edits go in `AGENTS.md`, then regenerate the mirror with the validator's
+  fix mode (`Validate-AgentFiles.ps1 -Fix`).
+- Run the validator after any `AGENTS.md` edit. The agent-files CI workflow
   enforces this; out-of-sync mirrors fail CI.
-- **Relative Markdown links must work in both AGENTS.md and the mirror.** The
+- **Relative Markdown links must work in both `AGENTS.md` and the mirror.** The
   generator rewrites them automatically (`.github/x` → `x`, other paths get
   `../` prepended). Don't pre-rewrite links by hand. Don't add absolute
   filesystem paths or `./` prefixes that would defeat the regex.
-- Don't use end-of-line comments in AGENTS.md examples or anywhere else; the
+- Don't use end-of-line comments in `AGENTS.md` examples or anywhere else; the
   file itself bans the pattern. Same applies to YAML examples in the README
   files for `.github/agents/`, `.github/prompts/`, etc. - put `# comment`
   lines above the field, not after it.
@@ -75,21 +87,20 @@ customization file. The PR review history showed each of these caught a real bug
 
 ## 6. Validator and workflow
 
-- The frontmatter parser in [tools/Validate-AgentFiles.ps1](../../../tools/Validate-AgentFiles.ps1)
-  is hand-rolled. It supports flat scalars, inline lists, and block lists.
-  It does **not** handle nested mappings, multi-line strings, anchors, or
-  flow mappings. If a contributor needs those, switch to the
-  `powershell-yaml` module rather than extending the regex.
-- The mirror generator preserves AGENTS.md's on-disk line endings (LF or
+- The frontmatter parser in the validator script is typically hand-rolled. A
+  hand-rolled parser supports flat scalars, inline lists, and block lists, but
+  **not** nested mappings, multi-line strings, anchors, or flow mappings. If a
+  contributor needs those, switch to a real YAML module (e.g.
+  `powershell-yaml`) rather than extending the regex.
+- The mirror generator preserves `AGENTS.md`'s on-disk line endings (LF or
   CRLF) so `core.autocrlf=true` doesn't cause spurious diffs on Windows
   checkouts.
-- [.markdownlint.jsonc](../../../.markdownlint.jsonc) intentionally disables
-  MD013 (line-length), MD022/MD032 (blanks-around), MD033 (inline HTML),
-  MD041 (first-line heading). It keeps MD040 (fenced-code-language),
-  no-trailing-spaces, no-hard-tabs. Don't disable MD040 - adding a `text`
-  language tag is trivial and prevents drift.
-- The CI job runs on `ubuntu-latest`. PowerShell is preinstalled; no `pip`
-  step is needed.
+- The markdownlint config typically disables MD013 (line-length), MD022/MD032
+  (blanks-around), MD033 (inline HTML), MD041 (first-line heading), and keeps
+  MD040 (fenced-code-language), no-trailing-spaces, no-hard-tabs. Don't disable
+  MD040 - adding a `text` language tag is trivial and prevents drift.
+- The CI job typically runs on `ubuntu-latest`. PowerShell is preinstalled
+  there; no `pip` step is needed.
 
 ## 7. Relative Markdown links must resolve in this branch
 
@@ -97,39 +108,21 @@ The CI link check is **offline lychee** - it only follows links that
 resolve to files in the current working tree. A link to a file that exists
 on the canonical repo's `main` but not in your branch will fail.
 
-- **Before opening a PR with agent-file changes, run
-  [`tools/Test-AgentFileLinks.ps1`](../../../tools/Test-AgentFileLinks.ps1).**
+- **Before opening a PR with agent-file changes, run the link checker.**
   Without arguments, it scans every Markdown file in CI's lychee scope and
-  reports any relative link whose target doesn't exist on disk:
-
-  ```pwsh
-  pwsh tools/Test-AgentFileLinks.ps1
-  ```
-
-  The script auto-detects the PR base ref when used with `-ChangedOnly`:
-  it picks `upstream/main` if a remote literally named `upstream` exists
-  (the fork-PR workflow, where `origin` is your fork and `upstream` is the
-  canonical repo) and `origin/main` otherwise (working directly on a clone
-  of the canonical repo). Override with `-Base <ref>` if needed:
-
-  ```pwsh
-  # Audit only files changed on this branch vs the auto-detected base.
-  pwsh tools/Test-AgentFileLinks.ps1 -ChangedOnly
-
-  # Override the base explicitly.
-  pwsh tools/Test-AgentFileLinks.ps1 -Base origin/feature
-  ```
-
+  reports any relative link whose target doesn't exist on disk. It typically
+  auto-detects the PR base ref: `upstream/main` if a remote literally named
+  `upstream` exists (the fork-PR workflow, where `origin` is your fork and
+  `upstream` is the canonical repo), `origin/main` otherwise (working directly
+  on a clone of the canonical repo). A changed-only mode and an explicit
+  base-ref override are the usual options.
 - **If you cite files added by a different in-flight or just-merged PR,
   rebase your branch on the canonical `main`** (`upstream/main` from a
   fork, or `origin/main` from a direct clone) so those files exist
-  locally. PR #110's review feedback was triggered by exactly this
-  scenario: the branch predated PR #109 (which added the polyfill files),
-  so every cross-reference to `ConvertExtensions.cs`, `RandomExtensions.cs`,
-  `StringExtensions.cs`, `EncodingExtensions.cs`, `HashCodeExtensions.cs`,
-  `CryptographicOperations.cs`, `SpanExtensions.StartsEndsWith.cs`,
-  `StartsWithPerf.cs`, and `StringExtensionsConcatTests.cs` failed lychee
-  even though those files existed on the canonical `main`.
+  locally. A recurring review-round loss comes from exactly this scenario:
+  the branch predated a sister PR that added the referenced source files,
+  so every cross-reference to them failed lychee even though those files
+  existed on the canonical `main`.
 - The lychee check runs against the merged tree on `main` only after a
   push, so a stale branch can still ship broken links into your PR. Treat
   rebase-then-link-audit as a single step before pushing any agent-file
@@ -144,7 +137,7 @@ on the canonical repo's `main` but not in your branch will fail.
 - No whitespace-only lines (a "blank" line must be truly empty).
 - Tabs are forbidden in Markdown bodies.
 - **Files must end with a single newline character** (markdownlint MD047).
-  The validator now flags this; markdownlint enforces it in CI. New files
+  The validator flags this; markdownlint enforces it in CI. New files
   created via the standard editor tooling get this for free, but
   hand-edited or copy-pasted content sometimes loses the final `\n`.
 - These rules are enforced both by the validator and by markdownlint.
@@ -153,17 +146,9 @@ on the canonical repo's `main` but not in your branch will fail.
 
 **Always run the validator before declaring a review complete or pushing
 agent-file changes.** It catches mirror drift, missing/invalid frontmatter,
-SKILL.md naming mistakes, missing trailing newlines, and trailing/empty-line
-whitespace - the same rules CI enforces.
-
-```pwsh
-# Validate everything (frontmatter, mirror sync, dir-name match, whitespace,
-# trailing newline).
-pwsh tools/Validate-AgentFiles.ps1
-
-# Regenerate the mirror after editing AGENTS.md.
-pwsh tools/Validate-AgentFiles.ps1 -Fix
-```
+`SKILL.md` naming mistakes, missing trailing newlines, and trailing/empty-line
+whitespace - the same rules CI enforces. Run it in plain mode to validate, and
+in fix mode (`-Fix`) to regenerate the mirror after editing `AGENTS.md`.
 
 The validator does **not** reproduce markdownlint's full rule set. After it
 passes, sanity-check that your Markdown:
@@ -176,4 +161,4 @@ passes, sanity-check that your Markdown:
 If CI fails after a local validator pass, the failure is almost always
 markdownlint (open the failing job's annotations) or the lychee link check
 (broken relative link - remember the mirror rewrites links, so test
-the form in AGENTS.md, not the rewritten copy).
+the form in `AGENTS.md`, not the rewritten copy).
