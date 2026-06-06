@@ -778,7 +778,13 @@ heavy content work lives.
 `references/arraypool-performance.md` are vendored into touki with an overlay, and
 the duplicate `docs/arraypool-performance.md` has been collapsed away - README,
 AGENTS.md, and the sibling perf docs now point at the single vendored reference.
-The remaining universal cores are still to do.
+`framework-jit-optimization` is the second (commons `v0.3.0`): its core + four
+siblings + the bundled `references/framework-span-performance.md` (the portable
+field manual split out of the class-C doc) are vendored with an overlay; the touki
+`docs/framework-span-performance.md` is thinned to the `OrdinalIgnoreCase` worked
+example plus a pointer up to the vendored field manual, and the live-guidance
+links (README, AGENTS.md, coding_guidelines) are repointed. The remaining
+universal cores are still to do.
 
 - [ ] Extract the remaining universal cores (`pre-pr-self-review`, `create-pr`,
       `address-pr-feedback`, `agent-files-review`, `performance-testing`,
@@ -788,7 +794,8 @@ The remaining universal cores are still to do.
       `arraypool-performance.md` -> `scratch-buffer-strategy/references/` (whole,
       class A) **[done, PR #177 - `docs/` copy collapsed, references repointed]**;
       the portable span field-manual -> `framework-jit-optimization/references/`
-      (split out of the class-C `framework-span-performance.md`). Leave
+      (split out of the class-C `framework-span-performance.md`) **[done, commons
+      v0.3.0 - touki `docs/` copy thinned to the worked-example appendix]**. Leave
       touki-specific docs behind for the overlay.
 - [ ] Tag each sibling **portable** or **overlay**; move overlay siblings (most
       importantly `pre-pr-self-review/polyfill-correctness.md` and the

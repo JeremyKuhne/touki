@@ -26,8 +26,8 @@ slightly less aggressive unrolling lose to a hand-written `ushort*` /
 | `Span<T>.Replace(T, T)` | mutate every match in place | 2.18-3.08&times; faster than `IndexOf`-walking |
 | `IndexOfAnyExcept(T)` | typically scans most of the buffer (e.g. trim, parse) | 0.34&times; vs scalar = 3&times; faster |
 
-These are the methods that already have `typeof(T)` specialization in
-`touki/Framework/`.
+These are the methods that already have `typeof(T)` specialization in the
+Framework-only tree.
 
 ## Cases where deferring to the BCL wins (skip-run / log-probe workloads)
 
@@ -114,7 +114,8 @@ either-or; we have no benchmark showing a hybrid wins.
 ## Reference benchmarks
 
 The numbers above were measured with local BenchmarkDotNet harnesses that are not
-check-in artifacts; reproduce them in `touki.perf/` when revisiting a decision:
+check-in artifacts; reproduce them in the repo's perf project when revisiting a
+decision:
 
 - A `Count` / `CommonPrefixLength` benchmark over `MatchEvery = 1, 7, 64` and
   `Diverge = 0, 8, full` - the skip-run / log-probe workloads where deferring

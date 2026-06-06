@@ -260,10 +260,11 @@ catch a mistake.
   `IsOnlyOneFlagSet`, `SetFlags`, `ClearFlags` inline to the same
   instructions as `&`/`|`/`==` on both TFMs and avoid the `Enum.HasFlag`
   boxing penalty on net472/net481 (~20&times; faster, zero alloc).
-- **When optimizing span-walking helpers**, read
-  [docs/framework-span-performance.md](docs/framework-span-performance.md) and the
+- **When optimizing span-walking helpers**, read the
   [`framework-jit-optimization`](.agents/skills/framework-jit-optimization/SKILL.md)
-  skill first. The headline rule: on net472/net481 hoist
+  skill and its bundled
+  [references/framework-span-performance.md](.agents/skills/framework-jit-optimization/references/framework-span-performance.md)
+  first. The headline rule: on net472/net481 hoist
   `ref T = MemoryMarshal.GetReference(span)` out of the loop and walk with
   `Unsafe.Add<T>(ref, i)` for a 19-44% Framework win at no `unsafe`-keyword cost,
   and prefer one simple implementation unless net10 regresses measurably.
