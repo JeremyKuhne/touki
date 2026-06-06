@@ -20,7 +20,7 @@ a tool; drop into them for the mechanics:
   [framework-span-performance.md](framework-span-performance.md) - the catalog
   of measured BCL behaviors. **Check these before measuring** - the answer may
   already be recorded.
-- [arraypool-performance.md](arraypool-performance.md) and the
+- [arraypool-performance.md](../.agents/skills/scratch-buffer-strategy/references/arraypool-performance.md) and the
   [`scratch-buffer-strategy`](../.agents/skills/scratch-buffer-strategy/SKILL.md)
   skill - choosing a scratch buffer (zeroed `stackalloc` vs `[SkipLocalsInit]`
   vs `BufferScope<T>` vs an `ArrayPool` rental) and the net481/net10 size

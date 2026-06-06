@@ -290,7 +290,8 @@ catch a mistake.
   `ArrayPool<T>.Shared` rental), follow the
   [`scratch-buffer-strategy`](.agents/skills/scratch-buffer-strategy/SKILL.md)
   skill for the decision tree and the net481/net10 size crossovers, backed by
-  [docs/arraypool-performance.md](docs/arraypool-performance.md).
+  its bundled
+  [references/arraypool-performance.md](.agents/skills/scratch-buffer-strategy/references/arraypool-performance.md).
 - When adding a polyfill for a modern .NET API on .NET Framework, follow the
   [`polyfill-dotnet-api`](.agents/skills/polyfill-dotnet-api/SKILL.md) skill:
   prefer Microsoft-shipped packages, then PolySharp source-gen for compiler

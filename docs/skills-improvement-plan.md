@@ -773,13 +773,21 @@ full loop works. Two findings the pilot surfaced, both folded back in:
 With the pipeline proven, do the rest of the universal tier - this is where the
 heavy content work lives.
 
+**Progress.** `scratch-buffer-strategy` is the first completed Phase 4 increment
+(commons `v0.2.1`, merged in PR #177): its core + bundled
+`references/arraypool-performance.md` are vendored into touki with an overlay, and
+the duplicate `docs/arraypool-performance.md` has been collapsed away - README,
+AGENTS.md, and the sibling perf docs now point at the single vendored reference.
+The remaining universal cores are still to do.
+
 - [ ] Extract the remaining universal cores (`pre-pr-self-review`, `create-pr`,
       `address-pr-feedback`, `agent-files-review`, `performance-testing`,
       `scratch-buffer-strategy`, `framework-jit-optimization`) into the commons,
       each host-neutral.
 - [ ] Move each shared core's generic backing doc into `<skill>/references/`:
       `arraypool-performance.md` -> `scratch-buffer-strategy/references/` (whole,
-      class A); the portable span field-manual -> `framework-jit-optimization/references/`
+      class A) **[done, PR #177 - `docs/` copy collapsed, references repointed]**;
+      the portable span field-manual -> `framework-jit-optimization/references/`
       (split out of the class-C `framework-span-performance.md`). Leave
       touki-specific docs behind for the overlay.
 - [ ] Tag each sibling **portable** or **overlay**; move overlay siblings (most
@@ -874,8 +882,10 @@ your control (section 3, "Governance").
 - **Portable agent personas** - worth publishing given uneven agent-host support,
   or keep agents touki-local for now and share only skills + MCP.
 - **Referenced-doc move vs split** - the content audit settled most of this:
-  `arraypool-performance.md` (28 KB, class A) moves whole into
-  `scratch-buffer-strategy/references/`; the class-C docs
+  `arraypool-performance.md` (28 KB, class A) moved whole into
+  `scratch-buffer-strategy/references/` (done in PR #177; the touki `docs/` copy
+  was deleted and all references repointed to the vendored reference); the
+  class-C docs
   (`framework-span-performance.md` ~17/4, `polyfill-layout.md` ~2.5/2.5,
   `performance-investigation.md` ~16/23) split, with the portable field-manual in
   `references/` and the touki appendix left in `docs/`. The remaining judgement

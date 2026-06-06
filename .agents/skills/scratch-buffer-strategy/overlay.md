@@ -27,17 +27,11 @@ touki-specific lives here instead.
   `BufferScopeOverheadPerf.cs`).
 - To confirm zeroing / pool overhead is actually the hot cost before acting, see
   [docs/performance-investigation.md](../../../docs/performance-investigation.md).
-
-## Note: the touki copy of the reference data
-
-touki also keeps
-[docs/arraypool-performance.md](../../../docs/arraypool-performance.md) - the
-original, touki-flavored version of the bundled reference, linked from the repo
-[README](../../../README.md) and `docs/performance-investigation.md`. The vendored
-`references/` copy is the generic (portable) version that travels to other repos;
-the `docs/` copy is the touki-facing one. They are near-identical (the doc is
-~95 % portable); whether to collapse them into a single canonical copy is a
-tracked follow-up, not done in the vendoring change.
+- The bundled [references/arraypool-performance.md](references/arraypool-performance.md)
+  is the single canonical copy of this data. touki no longer keeps a separate
+  `docs/` copy; the repo README, AGENTS.md, and the sibling perf docs all point
+  at the vendored reference. Do not re-add a `docs/` duplicate - extend this
+  overlay (or push changes upstream to the commons core) instead.
 
 ## Updating
 

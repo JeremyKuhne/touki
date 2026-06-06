@@ -143,8 +143,9 @@ frames. The cost a span helper still pays - an ~88-byte frame with a
 48-byte GC-slot zero-init, ~3 ns/call - is real, but it is the GC
 carve-out and `[SkipLocalsInit]` cannot remove it. Modern .NET applies
 the same carve-out. For the buffer-zeroing decisions that follow from
-this, see [arraypool-performance.md](arraypool-performance.md) and the
-`scratch-buffer-strategy` skill.
+this, see the [`scratch-buffer-strategy`](../.agents/skills/scratch-buffer-strategy/SKILL.md)
+skill and its bundled
+[arraypool-performance.md](../.agents/skills/scratch-buffer-strategy/references/arraypool-performance.md).
 
 ### 1.4 Conservative inliner, no cross-assembly generic inlining
 

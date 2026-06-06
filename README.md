@@ -43,7 +43,7 @@ Some of the design goals include:
 - [IO Helpers (globs, paths, temp folders, stream formatting)](docs/io.md)
 - [.NET Framework Polyfill Layout & Disambiguation](docs/polyfill-layout.md)
 - [Span Performance on .NET Framework (net472+)](docs/framework-span-performance.md)
-- [ArrayPool vs Stack Scratch Buffers (net481/net10)](docs/arraypool-performance.md)
+- [ArrayPool vs Stack Scratch Buffers (net481/net10)](.agents/skills/scratch-buffer-strategy/references/arraypool-performance.md)
 
 ## Package Installation
 
