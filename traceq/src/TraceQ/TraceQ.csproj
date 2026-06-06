@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>TraceQ.Cli</RootNamespace>
+    <!-- The tool command is `traceq` (<= 7 chars per the naming criteria). -->
+    <AssemblyName>traceq</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TraceQ.Core\TraceQ.Core.csproj" />
+  </ItemGroup>
+
+</Project>

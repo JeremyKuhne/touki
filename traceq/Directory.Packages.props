@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  traceq's own central package versions. Deliberately NOT inherited from Touki's
+  Directory.Packages.props - the nearest file wins, keeping the dependency set
+  self-contained so promotion to a standalone repo needs no edits here.
+-->
+<Project>
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Trace parsing and analysis core. -->
+    <PackageVersion Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.2.3" />
+
+    <!-- MCP facade host. -->
+    <PackageVersion Include="ModelContextProtocol" Version="1.3.0" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
+
+    <!-- Test stack: Microsoft.Testing.Platform + MSTest, matching Touki's migrated runner. -->
+    <PackageVersion Include="MSTest.TestFramework" Version="4.2.3" />
+    <PackageVersion Include="MSTest.TestAdapter" Version="4.2.3" />
+    <PackageVersion Include="AwesomeAssertions" Version="9.4.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.7.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.2.3" />
+  </ItemGroup>
+
+</Project>

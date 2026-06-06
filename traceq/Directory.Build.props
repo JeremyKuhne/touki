@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  traceq is a self-contained incubation subtree (see docs/traceq-implementation-plan.md).
+
+  This file intentionally does NOT import Touki's root Directory.Build.props (no
+  GetPathOfFileAbove): by being the nearest Directory.Build.props on the way up
+  from each project, it severs all of Touki's multi-targeting and style
+  machinery. The sibling Directory.Build.targets severs the targets side
+  (MinVer), and Directory.Packages.props holds traceq's own package versions.
+  Promotion to a standalone repo is therefore a plain file copy.
+-->
+<Project>
+
+  <PropertyGroup>
+    <!-- net10-only: traceq reads traces produced by both TFMs but runs only on modern .NET. -->
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+
+    <!-- Not packaged during incubation; flipped on at promotion (M3.5). -->
+    <IsPackable>false</IsPackable>
+
+    <!-- Not a test container unless a project opts in. -->
+    <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
+  </PropertyGroup>
+
+</Project>

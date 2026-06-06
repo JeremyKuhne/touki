@@ -1,0 +1,17 @@
+# traceq incubation subtree - self-contained style root.
+# root = true stops editor and analyzer config from inheriting Touki's .editorconfig,
+# so the subtree's style travels intact when it is promoted to a standalone repo.
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.{csproj,props,targets,slnx}]
+indent_size = 2

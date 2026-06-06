@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/TraceQ.Core/TraceQ.Core.csproj" />
+    <Project Path="src/TraceQ/TraceQ.csproj" />
+    <Project Path="src/TraceQ.Mcp/TraceQ.Mcp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TraceQ.Core.Tests/TraceQ.Core.Tests.csproj" />
+    <Project Path="tests/TraceQ.Parity.Tests/TraceQ.Parity.Tests.csproj" />
+  </Folder>
+</Solution>
