@@ -5,12 +5,17 @@ Status: roadmap. **Phase 0 (the in-repo refactor) is complete** - merged in
 `manage-skills` meta-skill) is implemented** in
 [PR #175](https://github.com/JeremyKuhne/touki/pull/175). **Phase 2 (the commons
 skeleton)** and **Phase 3 (the `security-review` vendoring pilot)** are done - the
-commons is [JeremyKuhne/agent-skills](https://github.com/JeremyKuhne/agent-skills)
-and the pilot vendor-back is in this branch's PR. Phases 4-8 are not started.
+commons is [JeremyKuhne/agent-skills](https://github.com/JeremyKuhne/agent-skills).
+**Phase 4 is in progress**: `scratch-buffer-strategy` (commons `v0.2.1`,
+[PR #177](https://github.com/JeremyKuhne/touki/pull/177)) and
+`framework-jit-optimization` (commons `v0.3.0`,
+[PR #178](https://github.com/JeremyKuhne/touki/pull/178)) are extracted and
+vendored; the four `traceq`-independent cores are next, then the plan **pauses at
+the `traceq` seam** (see Phase 4) before `performance-testing` and Phase 5.
 Section 7 vets the whole sharing design end to end against the two real
 consumers, [`JeremyKuhne/madowaku`](https://github.com/JeremyKuhne/madowaku)
 (a merge) and [`JeremyKuhne/thirtytwo`](https://github.com/JeremyKuhne/thirtytwo)
-(greenfield). Authored 2026-06-04; last updated 2026-06-05.
+(greenfield). Authored 2026-06-04; last updated 2026-06-06.
 
 This plan answers three questions about the agent skills under
 [.agents/skills/](../.agents/skills/):
@@ -775,8 +780,8 @@ heavy content work lives.
 
 **Progress.** `scratch-buffer-strategy` is the first completed Phase 4 increment
 (commons `v0.2.1`, merged in PR #177): its core + bundled
-`references/arraypool-performance.md` are vendored into touki with an overlay. PR
-#177 deferred deleting the touki `docs/arraypool-performance.md` copy; this PR
+`references/arraypool-performance.md` are vendored into touki with an overlay.
+PR #177 deferred deleting the touki `docs/arraypool-performance.md` copy; this PR
 collapses it - the `docs/` original is removed and README, AGENTS.md, and the
 sibling perf docs now point at the single vendored reference.
 `framework-jit-optimization` is the second (commons `v0.3.0`): its core + four
@@ -787,10 +792,39 @@ example plus a pointer up to the vendored field manual, and the live-guidance
 links (README, AGENTS.md, coding_guidelines) are repointed. The remaining
 universal cores are still to do.
 
-- [ ] Extract the remaining universal cores (`pre-pr-self-review`, `create-pr`,
-      `address-pr-feedback`, `agent-files-review`, `performance-testing`,
-      `scratch-buffer-strategy`, `framework-jit-optimization`) into the commons,
-      each host-neutral.
+**Remaining sequence and the `traceq` pause (revised 2026-06-06).** A separate
+effort will productize the EventPipe trace tooling that currently lives in
+`touki.mcp` as a standalone, installable analyzer (`traceq`; see its
+implementation plan). That changes the order of the rest of Phase 4, because
+exactly one remaining skill - `performance-testing` - is entangled with that
+tooling, while the others are not. The revised order:
+
+1. **`pre-pr-self-review`** - next, and a prerequisite for everything downstream.
+   It clears the known YAML blocker (its `description` has a bare colon-space that
+   breaks `gh skill`'s parser - see Phase 3 finding 2) and codifies the
+   "every perf claim carries a benchmark or an explicit 'not measured'" convention
+   that the `traceq` effort builds on. Split `polyfill-correctness.md` out as an
+   **overlay** sibling (it drags ~10 touki source links; it must not ship in the
+   shared payload).
+2. **`create-pr`, `address-pr-feedback`, `agent-files-review`** - the workflow
+   trio. All `traceq`-independent, all small (core + overlay, no large backing-doc
+   splits). `agent-files-review` and the PR skills harden the exact files and flow
+   the `traceq` effort's agent-built milestones run on.
+3. **PAUSE the skills plan here** (see "The `traceq` seam" below) and stand up the
+   `traceq` repository.
+4. **Resume after `traceq`:** extract `performance-testing` **whole, in final
+   form**, then proceed to Phase 5.
+
+- [ ] Extract the `traceq`-independent universal cores in order:
+      `pre-pr-self-review` (+ the `polyfill-correctness.md` overlay split and the
+      `description` YAML fix), then `create-pr`, `address-pr-feedback`,
+      `agent-files-review` - each host-neutral.
+- [ ] **Defer `performance-testing`** until after `traceq` lands (see "The
+      `traceq` seam"). Its BenchmarkDotNet core is portable, but its `profiling.md`
+      sibling and its backing `docs/performance-investigation.md` are written
+      around the `touki.mcp` analyzer that `traceq` replaces. Extracting it now
+      means handling the skill twice (BDN core now, profiling rewrite at `traceq`
+      M6); deferring means one clean extraction in final form.
 - [ ] Move each shared core's generic backing doc into `<skill>/references/`:
       `arraypool-performance.md` -> `scratch-buffer-strategy/references/` (whole,
       class A) **[vendored in PR #177; touki `docs/` copy collapsed and references
@@ -799,6 +833,13 @@ universal cores are still to do.
       (split out of the class-C `framework-span-performance.md`) **[done, commons
       v0.3.0 - touki `docs/` copy thinned to the worked-example appendix]**. Leave
       touki-specific docs behind for the overlay.
+- [ ] **Do not split `docs/performance-investigation.md`** (the old plan said to).
+      It is ~40 KB and ~22 `touki.mcp` references - the `traceq` effort rewrites
+      and single-sources it at M4/M6, so a split now is thrown-away work, and its
+      genuinely-portable part (BDN run commands, result columns, regression
+      thresholds) already duplicates the `performance-testing` siblings. It stays a
+      touki doc, linked from the `performance-testing` overlay, until the `traceq`
+      rewrite.
 - [ ] Tag each sibling **portable** or **overlay**; move overlay siblings (most
       importantly `pre-pr-self-review/polyfill-correctness.md` and the
       example-heavy parts of `polyfill-dotnet-api`) out of the shared payload, and
@@ -813,6 +854,49 @@ universal cores are still to do.
       spot-check that each vendored core plus its overlay reads as one coherent
       skill.
 
+### The `traceq` seam - pause the skills plan, stand up `traceq`
+
+After the four `traceq`-independent cores above (`pre-pr-self-review`, `create-pr`,
+`address-pr-feedback`, `agent-files-review`) are extracted and vendored, **pause
+the skills rollout and begin the `traceq` effort.** This is the cleanest seam in
+the roadmap:
+
+- It leaves **every `traceq`-independent universal core extracted** - Phase 4 is
+  complete except the one skill that is deliberately parked.
+- `performance-testing` is **deferred intact, not left half-finished.** Its final
+  shape depends on `traceq` (the profiling sibling and `performance-investigation.md`
+  are `traceq`'s M6 rewrite targets). Touching it before then means handling the
+  skill twice; deferring means one clean extraction in final form - stable BDN
+  mechanics and `traceq`-based profiling together.
+- It sits just before Phase 5 (the first *external* consumer), which is already the
+  roadmap's biggest commitment boundary.
+
+Why begin `traceq` *at* this seam and not earlier:
+
+- `traceq`'s M0 scaffold seeds its `AGENTS.md` / `copilot-instructions` **from
+  touki's**; the better-factored that surface is, the lighter the seed. The four
+  workflow cores harden exactly that surface, and `agent-files-review` is the skill
+  that governs it.
+- `traceq`'s pre-PR convention ("every surface-text change carries an eval delta or
+  an explicit 'not measured'") is the `pre-pr-self-review` convention; have it solid
+  first.
+- The `traceq` plan flags **solo-maintainer stall mid-extraction** as a top risk.
+  Two large tracks competing for focus is the real cost - reach this documented
+  clean seam, then commit to `traceq` rather than interleaving.
+
+What resumes **after** `traceq` reaches parity (its M6):
+
+- Extract `performance-testing` whole: the portable BDN core
+  (`authoring` / `running` / `interpreting-results`) plus a profiling page now
+  written against `traceq` (`dnx TraceQ.Mcp` / the `traceq` CLI) instead of
+  `touki.mcp`, promoted into the commons core. `docs/performance-investigation.md`
+  is rewritten through `traceq`'s single-source knowledge pipeline at the same time.
+- Hand-off note for `traceq` M4: the commons `performance-testing` core and
+  `traceq`'s own knowledge layer (its SKILL / AGENTS snippet) must single-source
+  against each other, or the profiling prose becomes a third copy that drifts.
+- Then Phase 5 (madowaku), which now *also* validates `traceq` consumption from a
+  second repo - folding two acid tests into one.
+
 ### Phase 5 - first external consumer: madowaku (the full vet)
 
 `madowaku` is the designated first consumer and the end-to-end vet; section 7
@@ -821,8 +905,9 @@ walks it in detail. Crucially, the `performance-testing` reconciliation here
 extracted cleanly, madowaku's fork drops onto it with only an overlay.
 
 - [ ] Reconcile the two `performance-testing` skills: confirm touki's extracted
-      core also subsumes madowaku's hand-forked copy; if not, the core still
-      carried touki specifics - fix the core, not the consumer.
+      core (extracted **after** `traceq`, per the `traceq` seam) also subsumes
+      madowaku's hand-forked copy; if not, the core still carried touki specifics -
+      fix the core, not the consumer.
 - [ ] Contribute madowaku's `cswin32-interop` / `cswin32-com` portable cores into
       the commons (skills flow both ways).
 - [ ] Vendor the applicable shared cores into madowaku (section 6 table), each
