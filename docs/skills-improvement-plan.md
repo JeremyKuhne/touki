@@ -775,9 +775,10 @@ heavy content work lives.
 
 **Progress.** `scratch-buffer-strategy` is the first completed Phase 4 increment
 (commons `v0.2.1`, merged in PR #177): its core + bundled
-`references/arraypool-performance.md` are vendored into touki with an overlay, and
-the duplicate `docs/arraypool-performance.md` has been collapsed away - README,
-AGENTS.md, and the sibling perf docs now point at the single vendored reference.
+`references/arraypool-performance.md` are vendored into touki with an overlay. PR
+#177 deferred deleting the touki `docs/arraypool-performance.md` copy; this PR
+collapses it - the `docs/` original is removed and README, AGENTS.md, and the
+sibling perf docs now point at the single vendored reference.
 `framework-jit-optimization` is the second (commons `v0.3.0`): its core + four
 siblings + the bundled `references/framework-span-performance.md` (the portable
 field manual split out of the class-C doc) are vendored with an overlay; the touki
@@ -792,7 +793,8 @@ universal cores are still to do.
       each host-neutral.
 - [ ] Move each shared core's generic backing doc into `<skill>/references/`:
       `arraypool-performance.md` -> `scratch-buffer-strategy/references/` (whole,
-      class A) **[done, PR #177 - `docs/` copy collapsed, references repointed]**;
+      class A) **[vendored in PR #177; touki `docs/` copy collapsed and references
+      repointed in this PR]**;
       the portable span field-manual -> `framework-jit-optimization/references/`
       (split out of the class-C `framework-span-performance.md`) **[done, commons
       v0.3.0 - touki `docs/` copy thinned to the worked-example appendix]**. Leave
@@ -890,8 +892,9 @@ your control (section 3, "Governance").
   or keep agents touki-local for now and share only skills + MCP.
 - **Referenced-doc move vs split** - the content audit settled most of this:
   `arraypool-performance.md` (28 KB, class A) moved whole into
-  `scratch-buffer-strategy/references/` (done in PR #177; the touki `docs/` copy
-  was deleted and all references repointed to the vendored reference); the
+  `scratch-buffer-strategy/references/` (vendored in PR #177; the touki `docs/`
+  copy was deleted and all references repointed to the vendored reference in this
+  PR); the
   class-C docs
   (`framework-span-performance.md` ~17/4, `polyfill-layout.md` ~2.5/2.5,
   `performance-investigation.md` ~16/23) split, with the portable field-manual in
