@@ -21,5 +21,5 @@ public static class TraceQCore
     /// <summary>
     ///  The implementation-plan milestone this assembly currently corresponds to.
     /// </summary>
-    public static string Milestone => "M0";
+    public static string Milestone => "M1";
 }

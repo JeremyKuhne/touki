@@ -17,6 +17,6 @@ public sealed class ScaffoldTests
     [TestMethod]
     public void TraceQCore_Milestone_IsReferenceable()
     {
-        TraceQCore.Milestone.Should().Be("M0");
+        TraceQCore.Milestone.Should().Be("M1");
     }
 }
