@@ -178,11 +178,9 @@ internal abstract class TraceLogReader : ITraceReader
             warnings.Add("No sampled-profile (CPU) events were found. Was the trace captured with a CPU sampler?");
         }
 
-        if (totalFrames > 0 && resolutionRate < 0.8)
+        if (SymbolGate.TryGetWarning(resolutionRate, samples.Count, out string? symbolWarning))
         {
-            warnings.Add(
-                $"Only {resolutionRate:P0} of frames resolved to a method name; native frames may be unresolved. "
-                + "Managed touki frames resolve from CLR rundown, so self/inclusive rankings of managed methods are still usable.");
+            warnings.Add(symbolWarning);
         }
 
         warnings.Add("Sample weight is approximate (1 ms per sample); relative percentages are exact.");
