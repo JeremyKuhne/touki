@@ -1,0 +1,115 @@
+// Copyright (c) 2025 Jeremy W Kuhne
+// SPDX-License-Identifier: MIT
+// See LICENSE file in the project root for full license information
+
+using System.Text.RegularExpressions;
+
+namespace TraceQ.Tracing;
+
+/// <summary>
+///  Frame-name shortening and fold matching shared by every reader and the
+///  aggregator. Ports the <c>Short</c> and <c>IsFolded</c> helpers from
+///  <c>tools/Get-TraceHotspots.ps1</c> so the folding semantics stay identical
+///  across input formats.
+/// </summary>
+internal static partial class FrameNames
+{
+    // Cap any single fold-pattern match so a pathological user pattern cannot hang the server.
+    private static readonly TimeSpan s_foldPatternTimeout = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    ///  The default set of leaf-frame fold patterns. A leaf frame whose shortened
+    ///  name matches any of these is folded into its caller. Covers the synthetic
+    ///  BenchmarkDotNet sample markers and the common JIT-helper thunks the
+    ///  managed-only stack walker mis-attributes time to.
+    /// </summary>
+    public static IReadOnlyList<string> DefaultFoldPatterns { get; } =
+    [
+        "CPU_TIME",
+        "UNMANAGED_CODE_TIME",
+        "BulkMoveWithWriteBarrier",
+        "PollGC",
+        "Memmove",
+        "WriteBarrier",
+        "JIT_"
+    ];
+
+    [GeneratedRegex(@"!([^(]+)")]
+    private static partial Regex AfterModuleRegex();
+
+    /// <summary>
+    ///  Trims a verbose CLR frame signature to a method identifier for ranking
+    ///  and display: keeps the text after the <c>module!</c> prefix and before
+    ///  the argument list, and strips <c>value class</c> / <c>class</c> noise.
+    /// </summary>
+    /// <param name="name">The full frame name.</param>
+    /// <returns>The shortened identifier.</returns>
+    public static string Short(string name)
+    {
+        Match match = AfterModuleRegex().Match(name);
+        string result = match.Success ? match.Groups[1].Value : name;
+        result = result.Replace("value class ", "").Replace("class ", "");
+        return result;
+    }
+
+    /// <summary>
+    ///  Compiles a list of fold patterns into regular expressions once so the
+    ///  per-sample hot loop avoids repeated pattern parsing.
+    /// </summary>
+    /// <param name="patterns">The fold patterns.</param>
+    /// <returns>The compiled matchers.</returns>
+    /// <exception cref="ArgumentException">A pattern is not a valid regular expression.</exception>
+    public static Regex[] CompileFoldPatterns(IReadOnlyList<string> patterns)
+    {
+        Regex[] compiled = new Regex[patterns.Count];
+        for (int i = 0; i < patterns.Count; i++)
+        {
+            try
+            {
+                // The fold patterns are user-influenced (the MCP `fold` parameter), so a
+                // match timeout guards against a pathological pattern hanging the server.
+                compiled[i] = new Regex(patterns[i], RegexOptions.CultureInvariant, s_foldPatternTimeout);
+            }
+            catch (ArgumentException ex)
+            {
+                // A malformed pattern surfaces here as a RegexParseException (itself an
+                // ArgumentException); rethrow with the offending entry so the caller can
+                // report which fold pattern is bad instead of a context-free message.
+                throw new ArgumentException(
+                    $"Invalid fold pattern '{patterns[i]}' at index {i}: {ex.Message}",
+                    nameof(patterns),
+                    ex);
+            }
+        }
+
+        return compiled;
+    }
+
+    /// <summary>
+    ///  Determines whether a shortened frame name matches any compiled fold pattern.
+    /// </summary>
+    /// <param name="shortName">The shortened frame name.</param>
+    /// <param name="foldPatterns">The compiled fold patterns.</param>
+    /// <returns><see langword="true"/> if the frame should be folded into its caller.</returns>
+    public static bool IsFolded(string shortName, Regex[] foldPatterns)
+    {
+        foreach (Regex pattern in foldPatterns)
+        {
+            try
+            {
+                if (pattern.IsMatch(shortName))
+                {
+                    return true;
+                }
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                // A pathological pattern/input pair that hits the match timeout is
+                // treated as a non-match: folding is a display nicety and must never
+                // fail a ranking query.
+            }
+        }
+
+        return false;
+    }
+}

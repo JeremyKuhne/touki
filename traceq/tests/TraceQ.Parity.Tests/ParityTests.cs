@@ -21,10 +21,10 @@ public sealed class ParityTests
     [TestMethod]
     public void Harness_IsWired_AgainstCore()
     {
-        // M0 smoke: the parity project compiles and references the core. Replaced
-        // by the real corpus comparison in M1 (this keeps the project running at
-        // least one test so the runner does not report "zero tests ran").
-        TraceQCore.Milestone.Should().Be("M0");
+        // Smoke: the parity project compiles and references the core. Replaced
+        // by the real corpus comparison later in M1 (this keeps the project running
+        // at least one test so the runner does not report "zero tests ran").
+        TraceQCore.Milestone.Should().Be("M1");
     }
 
     [TestMethod]
