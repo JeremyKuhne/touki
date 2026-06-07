@@ -67,6 +67,10 @@ public sealed class ParityTests
         // Compare the meaningful managed frames at the top of the ranking: same
         // frames, same order, milliseconds within tolerance of the oracle.
         int compared = Math.Min(5, golden.SelfTime.Count);
+        result.Rows.Count.Should().BeGreaterThanOrEqualTo(
+            compared,
+            "the ranking should have at least the rows being compared so a parity failure reports cleanly");
+
         for (int i = 0; i < compared; i++)
         {
             OracleRow expected = golden.SelfTime[i];

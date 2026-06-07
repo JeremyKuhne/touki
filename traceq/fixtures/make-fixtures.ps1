@@ -93,8 +93,20 @@ Write-Host 'Freezing the legacy oracle rankings...'
 # The oracle writes its section headers with Write-Host (the Information stream)
 # and its rows to the success stream; merge stream 6 so the parser sees both, and
 # split embedded newlines (Write-Host prefixes some headers with a newline).
-$oracleOutput = & $oracle -Path $fixtureSpeedscope -Top 15 6>&1 |
-    ForEach-Object { $_.ToString() -split "`r?`n" }
+# Run it under InvariantCulture so the oracle's N1 formatting always emits the
+# '1234.5' decimal point (and ',' group separators) the parser expects, rather
+# than a culture-specific decimal comma that would break regeneration.
+$originalCulture = [System.Threading.Thread]::CurrentThread.CurrentCulture
+[System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::InvariantCulture
+try
+{
+    $oracleOutput = & $oracle -Path $fixtureSpeedscope -Top 15 6>&1 |
+        ForEach-Object { $_.ToString() -split "`r?`n" }
+}
+finally
+{
+    [System.Threading.Thread]::CurrentThread.CurrentCulture = $originalCulture
+}
 
 $golden = [ordered]@{
     source    = 'tools/Get-TraceHotspots.ps1 (frozen; see traceq/fixtures/oracles)'
