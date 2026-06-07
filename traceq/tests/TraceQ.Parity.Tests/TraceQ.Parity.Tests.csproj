@@ -23,4 +23,10 @@
     <ProjectReference Include="..\..\src\TraceQ.Core\TraceQ.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Fixtures\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

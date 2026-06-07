@@ -14,6 +14,9 @@
     <!-- Trace parsing and analysis core. -->
     <PackageVersion Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.2.3" />
 
+    <!-- Fixture generation: captures the EventPipe corpus (traceq/fixtures). -->
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
+
     <!-- MCP facade host. -->
     <PackageVersion Include="ModelContextProtocol" Version="1.3.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
