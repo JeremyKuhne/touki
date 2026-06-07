@@ -10,8 +10,10 @@
     the .NET 10 SDK when the benchmark, TraceEvent, or BenchmarkDotNet version
     moves; it is not part of the build/test loop.
 
-    The net481 ETW (.etl) half of the corpus is deferred (it needs an elevated
-    session) and is added here when captured.
+    The net481 ETW (.etl) half of the corpus is captured separately by the
+    sibling capture-etw.ps1, which needs an elevated session (ETW kernel tracing
+    requires administrator rights) and, unlike this script, does not re-freeze
+    the parity oracle.
 
 .NOTES
     The committed speedscope is the in-repo smoke fixture. The full .nettrace is
@@ -38,7 +40,7 @@ if (Test-Path $artifacts)
 Push-Location $benchProject
 try
 {
-    dotnet run -c Release -- --filter '*HotLoop*' | Out-Host
+    dotnet run -c Release -f net10.0 -- --filter '*HotLoop*' | Out-Host
     if ($LASTEXITCODE -ne 0)
     {
         throw "Benchmark capture failed with exit code $LASTEXITCODE."
@@ -128,7 +130,7 @@ Write-Host 'Capturing the allocation smoke trace (GC-verbose)...'
 Push-Location $benchProject
 try
 {
-    dotnet run -c Release -- --filter '*AllocLoop*' | Out-Host
+    dotnet run -c Release -f net10.0 -- --filter '*AllocLoop*' | Out-Host
     if ($LASTEXITCODE -ne 0)
     {
         throw "Allocation capture failed with exit code $LASTEXITCODE."
@@ -158,7 +160,7 @@ Write-Host 'Capturing the JIT smoke trace...'
 Push-Location $benchProject
 try
 {
-    dotnet run -c Release -- --filter '*JitLoop*' | Out-Host
+    dotnet run -c Release -f net10.0 -- --filter '*JitLoop*' | Out-Host
     if ($LASTEXITCODE -ne 0)
     {
         throw "JIT capture failed with exit code $LASTEXITCODE."
@@ -181,4 +183,7 @@ $fixtureJit = Join-Path $coreFixtures 'jit.nettrace'
 Copy-Item $jitTrace.FullName $fixtureJit -Force
 Write-Host "JIT fixture -> $fixtureJit ($([math]::Round($jitTrace.Length / 1KB)) KB)"
 
+# The net481 ETW (.etl) half is captured separately by capture-etw.ps1: it needs
+# an elevated session, and unlike this script it does not re-freeze the parity
+# oracle, so the two halves regenerate on independent cadences.
 Write-Host 'Done.'

@@ -27,6 +27,14 @@ internal sealed record MetricInfo(string Name, string Unit)
     public static MetricInfo Cpu { get; } = new("CPU", "ms");
 
     /// <summary>
+    ///  The thread-time metric: wall-clock milliseconds per stack, including the
+    ///  time a thread spent blocked (not running). This is the metric of the
+    ///  thread-time provider, which - unlike CPU sampling - accounts for off-CPU
+    ///  time, so a stack's weight reflects elapsed time rather than busy time.
+    /// </summary>
+    public static MetricInfo ThreadTime { get; } = new("ThreadTime", "ms");
+
+    /// <summary>
     ///  The allocation metric: bytes allocated per <c>GCAllocationTick</c> call
     ///  stack. This is the metric of the allocation provider.
     /// </summary>

@@ -31,16 +31,22 @@ internal sealed class SampleStack
     ///  when the frame did not resolve to a source line. Pass
     ///  <see langword="null"/> when the source format carries no line data.
     /// </param>
+    /// <param name="process">
+    ///  A label identifying the process the sample came from, for traces that span
+    ///  more than one. Empty for single-process trace formats.
+    /// </param>
     public SampleStack(
         IReadOnlyList<string> frames,
         double weight,
         string thread = "",
-        IReadOnlyList<string>? frameLocations = null)
+        IReadOnlyList<string>? frameLocations = null,
+        string process = "")
     {
         Frames = frames;
         Weight = weight;
         Thread = thread;
         FrameLocations = frameLocations;
+        Process = process;
     }
 
     /// <summary>
@@ -66,4 +72,10 @@ internal sealed class SampleStack
     ///  A label identifying the thread the sample came from.
     /// </summary>
     public string Thread { get; }
+
+    /// <summary>
+    ///  A label identifying the process the sample came from, for traces that span
+    ///  more than one. Empty for single-process trace formats.
+    /// </summary>
+    public string Process { get; }
 }

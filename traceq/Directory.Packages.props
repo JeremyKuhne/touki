@@ -16,6 +16,8 @@
 
     <!-- Fixture generation: captures the EventPipe corpus (traceq/fixtures). -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
+    <!-- The ETW (.etl) profiler for the net481 fixture half; Windows-only, capture needs elevation. -->
+    <PackageVersion Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.15.8" />
 
     <!-- MCP facade host. -->
     <PackageVersion Include="ModelContextProtocol" Version="1.3.0" />

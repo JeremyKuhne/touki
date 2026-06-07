@@ -29,13 +29,18 @@ internal sealed class TraceLoader
     ///  extracted to resolve managed frames to <c>file:line</c> for line-level
     ///  rankings. Ignored for speedscope inputs.
     /// </param>
+    /// <param name="processScope">
+    ///  Optional process-tree scope. When set, only samples belonging to the matched
+    ///  workload process tree are loaded, narrowing a machine-wide capture to one
+    ///  scenario losslessly. Ignored for single-process inputs (speedscope).
+    /// </param>
     /// <returns>The loaded trace.</returns>
     /// <exception cref="ArgumentException">
     ///  <paramref name="path"/> is <see langword="null"/>, empty, or not a valid file path.
     /// </exception>
     /// <exception cref="FileNotFoundException">The file does not exist.</exception>
     /// <exception cref="NotSupportedException">No reader recognizes the file extension.</exception>
-    public LoadedTrace Load(string path, string? symbolsDirectory = null)
+    public LoadedTrace Load(string path, string? symbolsDirectory = null, ProcessScope? processScope = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
 
@@ -49,7 +54,7 @@ internal sealed class TraceLoader
             ?? throw new NotSupportedException(
                 $"Unrecognized trace format for '{fullPath}'. Supported: .speedscope.json, .nettrace, .etl");
 
-        TraceReadResult result = reader.Read(fullPath, symbolsDirectory);
+        TraceReadResult result = reader.Read(fullPath, symbolsDirectory, processScope);
 
         double durationMs = 0.0;
         Dictionary<string, int> threadCounts = new(StringComparer.Ordinal);
