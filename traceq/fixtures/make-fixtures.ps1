@@ -183,6 +183,37 @@ $fixtureJit = Join-Path $coreFixtures 'jit.nettrace'
 Copy-Item $jitTrace.FullName $fixtureJit -Force
 Write-Host "JIT fixture -> $fixtureJit ($([math]::Round($jitTrace.Length / 1KB)) KB)"
 
+# Capture the exceptions smoke trace for the exceptions provider. ExceptionLoop
+# throws and catches at two named sites under the CPU-sampling profile (whose
+# runtime keyword set includes the exception keyword), so the trace carries the
+# Exception/Start events with throw-site stacks.
+Write-Host 'Capturing the exceptions smoke trace...'
+Push-Location $benchProject
+try
+{
+    dotnet run -c Release -f net10.0 -- --filter '*ExceptionLoop*' | Out-Host
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw "Exceptions capture failed with exit code $LASTEXITCODE."
+    }
+}
+finally
+{
+    Pop-Location
+}
+
+$exceptionsTrace = Get-ChildItem -Recurse $artifacts -Filter '*ExceptionLoop*.nettrace' |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
+if ($null -eq $exceptionsTrace)
+{
+    throw "No exceptions .nettrace was produced under $artifacts."
+}
+
+$fixtureExceptions = Join-Path $coreFixtures 'exceptions.nettrace'
+Copy-Item $exceptionsTrace.FullName $fixtureExceptions -Force
+Write-Host "Exceptions fixture -> $fixtureExceptions ($([math]::Round($exceptionsTrace.Length / 1KB)) KB)"
+
 # The net481 ETW (.etl) half is captured separately by capture-etw.ps1: it needs
 # an elevated session, and unlike this script it does not re-freeze the parity
 # oracle, so the two halves regenerate on independent cadences.

@@ -128,7 +128,11 @@ candidate approaches, roughly in order of promise:
    `.etl` / `.etlx` writer that carries JIT symbol info.
 2. **Trim to `.etlx`, not `.etl`.** The cross-machine hand-off format is `.etlx`,
    which already contains the resolved symbol indices. Trimming or sub-setting at
-   the `.etlx` layer may sidestep the relogger's managed-map gap entirely.
+   the `.etlx` layer may sidestep the relogger's managed-map gap entirely. The O1
+   spike (2026-06-07) confirmed the premise: a Windows-converted `.etlx` resolves
+   the JITted managed frames byte-identically when re-opened (even on Linux), so
+   the managed-method map that the raw `.etl` relog drops *is* present and intact
+   in the `.etlx`. A trimmer that operates on the `.etlx` would inherit it.
 3. **Capture smaller at the source.** A standalone, long-lived capturer that runs
    its own short ETW session around just the target process tree (rather than a
    machine-wide BenchmarkDotNet `[EtwProfiler]` session) yields a small file with
