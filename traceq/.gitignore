@@ -1,0 +1,6 @@
+# Generated TraceEvent ETLX cache, written next to a .nettrace/.etl whenever a
+# TraceLog opens it. Always regenerated on read, never committed.
+*.etlx
+
+# BenchmarkDotNet capture output (fixture regeneration; see fixtures/README.md).
+BenchmarkDotNet.Artifacts/

@@ -5,10 +5,10 @@
 namespace TraceQ.Tracing;
 
 /// <summary>
-///  A single weighted CPU sample: the full call stack captured at a point in
-///  time, ordered outermost-first (<c>Frames[0]</c> is the process/thread root,
-///  <c>Frames[^1]</c> is the leaf), together with the wall-clock weight in
-///  milliseconds attributed to it.
+///  A single weighted sample: the full call stack captured at a point in time,
+///  ordered outermost-first (<c>Frames[0]</c> is the process/thread root,
+///  <c>Frames[^1]</c> is the leaf), together with the weight attributed to it in
+///  the source metric's unit (milliseconds for CPU time, bytes for allocations).
 /// </summary>
 /// <remarks>
 ///  <para>
@@ -23,7 +23,7 @@ internal sealed class SampleStack
     ///  Initializes a new <see cref="SampleStack"/>.
     /// </summary>
     /// <param name="frames">Frames ordered outermost-first.</param>
-    /// <param name="weightMs">Wall-clock weight attributed to the sample, in milliseconds.</param>
+    /// <param name="weight">Weight attributed to the sample, in the source metric's unit (milliseconds for CPU, bytes for allocations).</param>
     /// <param name="thread">A label identifying the thread the sample came from.</param>
     /// <param name="frameLocations">
     ///  Optional per-frame source locations (<c>file:line</c>), parallel to
@@ -33,12 +33,12 @@ internal sealed class SampleStack
     /// </param>
     public SampleStack(
         IReadOnlyList<string> frames,
-        double weightMs,
+        double weight,
         string thread = "",
         IReadOnlyList<string>? frameLocations = null)
     {
         Frames = frames;
-        WeightMs = weightMs;
+        Weight = weight;
         Thread = thread;
         FrameLocations = frameLocations;
     }
@@ -57,9 +57,10 @@ internal sealed class SampleStack
     public IReadOnlyList<string>? FrameLocations { get; }
 
     /// <summary>
-    ///  Wall-clock weight attributed to this sample, in milliseconds.
+    ///  Weight attributed to this sample, in the source metric's unit
+    ///  (milliseconds for CPU time, bytes for allocations).
     /// </summary>
-    public double WeightMs { get; }
+    public double Weight { get; }
 
     /// <summary>
     ///  A label identifying the thread the sample came from.

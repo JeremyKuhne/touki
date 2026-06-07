@@ -109,7 +109,7 @@ internal sealed class FoldingAggregator
                 continue;
             }
 
-            total += sample.WeightMs;
+            total += sample.Weight;
 
             int leafIdx = frames.Count - 1;
             while (leafIdx > startIdx && FrameNames.IsFolded(ShortOf(frames[leafIdx]), fold))
@@ -119,7 +119,7 @@ internal sealed class FoldingAggregator
 
             string leaf = ShortOf(frames[leafIdx]);
             selfTime.TryGetValue(leaf, out double current);
-            selfTime[leaf] = current + sample.WeightMs;
+            selfTime[leaf] = current + sample.Weight;
         }
 
         return new RankingResult(total, rootFrame, RankRows(selfTime, total, top));
@@ -149,7 +149,7 @@ internal sealed class FoldingAggregator
                 continue;
             }
 
-            total += sample.WeightMs;
+            total += sample.Weight;
             seen.Clear();
 
             for (int fi = startIdx; fi < frames.Count; fi++)
@@ -163,7 +163,7 @@ internal sealed class FoldingAggregator
                 if (seen.Add(name))
                 {
                     inclTime.TryGetValue(name, out double current);
-                    inclTime[name] = current + sample.WeightMs;
+                    inclTime[name] = current + sample.Weight;
                 }
             }
         }
@@ -194,7 +194,7 @@ internal sealed class FoldingAggregator
                 continue;
             }
 
-            total += sample.WeightMs;
+            total += sample.Weight;
 
             for (int si = frames.Count - 1; si >= startIdx; si--)
             {
@@ -204,10 +204,10 @@ internal sealed class FoldingAggregator
                     continue;
                 }
 
-                targetTotal += sample.WeightMs;
+                targetTotal += sample.Weight;
                 string caller = si > startIdx ? ShortOf(frames[si - 1]) : "<root>";
                 callerTime.TryGetValue(caller, out double current);
-                callerTime[caller] = current + sample.WeightMs;
+                callerTime[caller] = current + sample.Weight;
                 break;
             }
         }
@@ -222,8 +222,8 @@ internal sealed class FoldingAggregator
         // Break ties by caller name so the ordering is deterministic across runs and machines.
         rows.Sort(static (a, b) =>
         {
-            int byMs = b.Milliseconds.CompareTo(a.Milliseconds);
-            return byMs != 0 ? byMs : string.CompareOrdinal(a.Caller, b.Caller);
+            int byWeight = b.Weight.CompareTo(a.Weight);
+            return byWeight != 0 ? byWeight : string.CompareOrdinal(a.Caller, b.Caller);
         });
         if (rows.Count > top)
         {
@@ -278,7 +278,7 @@ internal sealed class FoldingAggregator
                 continue;
             }
 
-            total += sample.WeightMs;
+            total += sample.Weight;
 
             string location = leafIdx < locations.Count && locations[leafIdx].Length > 0
                 ? locations[leafIdx]
@@ -286,7 +286,7 @@ internal sealed class FoldingAggregator
 
             string key = $"{method}\u0000{location}";
             lineTime.TryGetValue(key, out (double Ms, string Method, string Location) current);
-            lineTime[key] = (current.Ms + sample.WeightMs, method, location);
+            lineTime[key] = (current.Ms + sample.Weight, method, location);
         }
 
         List<LineRow> rows = [];
@@ -300,10 +300,10 @@ internal sealed class FoldingAggregator
         // deterministic even when two methods map to the same file:line with equal time.
         rows.Sort(static (a, b) =>
         {
-            int byMs = b.Milliseconds.CompareTo(a.Milliseconds);
-            if (byMs != 0)
+            int byWeight = b.Weight.CompareTo(a.Weight);
+            if (byWeight != 0)
             {
-                return byMs;
+                return byWeight;
             }
 
             int byLocation = string.CompareOrdinal(a.Location, b.Location);
@@ -350,7 +350,7 @@ internal sealed class FoldingAggregator
                 continue;
             }
 
-            traceTotal += sample.WeightMs;
+            traceTotal += sample.Weight;
 
             IReadOnlyList<string>? locations = sample.FrameLocations;
             if (locations is null)
@@ -373,7 +373,7 @@ internal sealed class FoldingAggregator
 
             // Preserve the file name's casing as recorded in the trace.
             matchedFile = leafFile;
-            fileTotal += sample.WeightMs;
+            fileTotal += sample.Weight;
 
             if (!lines.TryGetValue(line, out LineAccumulator? accumulator))
             {
@@ -381,15 +381,15 @@ internal sealed class FoldingAggregator
                 lines[line] = accumulator;
             }
 
-            accumulator.Add(sample.WeightMs, ShortOf(frames[leafIdx]));
+            accumulator.Add(sample.Weight, ShortOf(frames[leafIdx]));
         }
 
         List<HeatLine> rows = new(lines.Count);
         foreach (KeyValuePair<int, LineAccumulator> pair in lines)
         {
             LineAccumulator accumulator = pair.Value;
-            double pct = traceTotal > 0 ? 100.0 * accumulator.Milliseconds / traceTotal : 0.0;
-            rows.Add(new HeatLine(pair.Key, accumulator.Milliseconds, pct, accumulator.SampleCount, accumulator.DominantMethod));
+            double pct = traceTotal > 0 ? 100.0 * accumulator.Weight / traceTotal : 0.0;
+            rows.Add(new HeatLine(pair.Key, accumulator.Weight, pct, accumulator.SampleCount, accumulator.DominantMethod));
         }
 
         rows.Sort(static (a, b) => a.Line.CompareTo(b.Line));
@@ -444,8 +444,8 @@ internal sealed class FoldingAggregator
         // Break ties by frame name so the ordering is deterministic across runs and machines.
         rows.Sort(static (a, b) =>
         {
-            int byMs = b.Milliseconds.CompareTo(a.Milliseconds);
-            return byMs != 0 ? byMs : string.CompareOrdinal(a.Frame, b.Frame);
+            int byWeight = b.Weight.CompareTo(a.Weight);
+            return byWeight != 0 ? byWeight : string.CompareOrdinal(a.Frame, b.Frame);
         });
         if (rows.Count > top)
         {
@@ -456,23 +456,23 @@ internal sealed class FoldingAggregator
     }
 
     /// <summary>
-    ///  Accumulates the self-time and sample count attributed to one source line,
-    ///  tracking which method dominates the line's time.
+    ///  Accumulates the self-weight and sample count attributed to one source line,
+    ///  tracking which method dominates the line's weight.
     /// </summary>
     private sealed class LineAccumulator
     {
         private readonly Dictionary<string, double> _methods = new(StringComparer.Ordinal);
 
-        public double Milliseconds { get; private set; }
+        public double Weight { get; private set; }
 
         public int SampleCount { get; private set; }
 
-        public void Add(double milliseconds, string method)
+        public void Add(double weight, string method)
         {
-            Milliseconds += milliseconds;
+            Weight += weight;
             SampleCount++;
             _methods.TryGetValue(method, out double current);
-            _methods[method] = current + milliseconds;
+            _methods[method] = current + weight;
         }
 
         public string DominantMethod

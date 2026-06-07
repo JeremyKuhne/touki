@@ -26,6 +26,7 @@ $fixturesRoot = $PSScriptRoot
 $benchProject = Join-Path $fixturesRoot 'HotLoopBench'
 $oracle = Join-Path $fixturesRoot 'oracles/Get-TraceHotspots.ps1'
 $parityFixtures = Join-Path $fixturesRoot '../tests/TraceQ.Parity.Tests/Fixtures'
+$coreFixtures = Join-Path $fixturesRoot '../tests/TraceQ.Core.Tests/Fixtures'
 $artifacts = Join-Path $benchProject 'BenchmarkDotNet.Artifacts'
 
 Write-Host 'Capturing the EventPipe CPU profile (BenchmarkDotNet)...'
@@ -117,4 +118,37 @@ $golden = [ordered]@{
 $goldenPath = Join-Path $parityFixtures 'hotloop.oracle.json'
 $golden | ConvertTo-Json -Depth 5 | Set-Content -Path $goldenPath -Encoding utf8
 Write-Host "Oracle golden -> $goldenPath (self=$($golden.selfTime.Count) rows, inclusive=$($golden.inclusive.Count) rows)"
+
+# Capture the allocation smoke trace (GC-verbose) for the allocation provider.
+# AllocLoop runs a single bounded invocation, so its GCAllocationTick-bearing
+# .nettrace stays small enough (well under 1 MB) to commit as the smoke fixture.
+# The larger, richer captures used for performance work are regenerated on demand
+# and attached to a release rather than committed.
+Write-Host 'Capturing the allocation smoke trace (GC-verbose)...'
+Push-Location $benchProject
+try
+{
+    dotnet run -c Release -- --filter '*AllocLoop*' | Out-Host
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw "Allocation capture failed with exit code $LASTEXITCODE."
+    }
+}
+finally
+{
+    Pop-Location
+}
+
+$allocTrace = Get-ChildItem -Recurse $artifacts -Filter '*AllocLoop*.nettrace' |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
+if ($null -eq $allocTrace)
+{
+    throw "No allocation .nettrace was produced under $artifacts."
+}
+
+$fixtureAlloc = Join-Path $coreFixtures 'alloc.nettrace'
+Copy-Item $allocTrace.FullName $fixtureAlloc -Force
+Write-Host "Allocation fixture -> $fixtureAlloc ($([math]::Round($allocTrace.Length / 1KB)) KB)"
+
 Write-Host 'Done.'

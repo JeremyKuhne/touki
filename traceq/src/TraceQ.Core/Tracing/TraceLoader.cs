@@ -55,7 +55,7 @@ internal sealed class TraceLoader
         Dictionary<string, int> threadCounts = new(StringComparer.Ordinal);
         foreach (SampleStack sample in result.Samples)
         {
-            durationMs += sample.WeightMs;
+            durationMs += sample.Weight;
             threadCounts.TryGetValue(sample.Thread, out int count);
             threadCounts[sample.Thread] = count + 1;
         }

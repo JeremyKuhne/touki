@@ -8,39 +8,39 @@ namespace TraceQ.Tracing;
 ///  A single ranked frame in a self-time or inclusive-time report.
 /// </summary>
 /// <param name="Frame">The shortened frame name.</param>
-/// <param name="Milliseconds">Time attributed to the frame, in milliseconds.</param>
+/// <param name="Weight">Weight attributed to the frame, in the metric's unit (milliseconds for CPU, bytes for allocations).</param>
 /// <param name="PercentOfScope">Share of the scoped total, in percent.</param>
-internal sealed record RankRow(string Frame, double Milliseconds, double PercentOfScope);
+internal sealed record RankRow(string Frame, double Weight, double PercentOfScope);
 
 /// <summary>
 ///  A self-time or inclusive-time ranking over a scoped trace.
 /// </summary>
-/// <param name="ScopeMilliseconds">Total scoped wall-clock time, in milliseconds.</param>
+/// <param name="ScopeWeight">Total scoped weight, in the metric's unit (milliseconds for CPU, bytes for allocations).</param>
 /// <param name="RootFrame">The root frame the ranking was scoped to, or empty for the whole trace.</param>
 /// <param name="Rows">The ranked frames, highest first.</param>
-internal sealed record RankingResult(double ScopeMilliseconds, string RootFrame, IReadOnlyList<RankRow> Rows);
+internal sealed record RankingResult(double ScopeWeight, string RootFrame, IReadOnlyList<RankRow> Rows);
 
 /// <summary>
 ///  A single immediate caller of a focus frame.
 /// </summary>
 /// <param name="Caller">The shortened caller frame name, or <c>&lt;root&gt;</c>.</param>
-/// <param name="Milliseconds">Time this caller contributes to the focus frame, in milliseconds.</param>
+/// <param name="Weight">Weight this caller contributes to the focus frame, in the metric's unit.</param>
 /// <param name="PercentOfTarget">Share of the focus frame's total, in percent.</param>
-internal sealed record CallerRow(string Caller, double Milliseconds, double PercentOfTarget);
+internal sealed record CallerRow(string Caller, double Weight, double PercentOfTarget);
 
 /// <summary>
-///  The immediate callers of a focus frame, with the time each contributes.
+///  The immediate callers of a focus frame, with the weight each contributes.
 /// </summary>
 /// <param name="Focus">The substring the focus frame was matched on.</param>
-/// <param name="TargetMilliseconds">Total inclusive time spent in the focus frame, in milliseconds.</param>
+/// <param name="TargetWeight">Total inclusive weight spent in the focus frame, in the metric's unit.</param>
 /// <param name="PercentOfScope">The focus frame's share of the scoped total, in percent.</param>
-/// <param name="ScopeMilliseconds">Total scoped wall-clock time, in milliseconds.</param>
+/// <param name="ScopeWeight">Total scoped weight, in the metric's unit.</param>
 /// <param name="Callers">The immediate callers, highest first.</param>
 internal sealed record CallersResult(
     string Focus,
-    double TargetMilliseconds,
+    double TargetWeight,
     double PercentOfScope,
-    double ScopeMilliseconds,
+    double ScopeWeight,
     IReadOnlyList<CallerRow> Callers);
 
 /// <summary>
@@ -48,28 +48,28 @@ internal sealed record CallersResult(
 /// </summary>
 /// <param name="Method">The shortened method the line belongs to.</param>
 /// <param name="Location">The source location (<c>file:line</c>), or <c>&lt;no source&gt;</c> when unresolved.</param>
-/// <param name="Milliseconds">Time attributed to the line, in milliseconds.</param>
+/// <param name="Weight">Weight attributed to the line, in the metric's unit.</param>
 /// <param name="PercentOfScope">Share of the scoped total, in percent.</param>
-internal sealed record LineRow(string Method, string Location, double Milliseconds, double PercentOfScope);
+internal sealed record LineRow(string Method, string Location, double Weight, double PercentOfScope);
 
 /// <summary>
 ///  A line-level self-time ranking: leaf samples attributed to the source line
 ///  executing when each was taken, scoped to the methods matching a filter.
 /// </summary>
-/// <param name="ScopeMilliseconds">Total scoped wall-clock time, in milliseconds.</param>
+/// <param name="ScopeWeight">Total scoped weight, in the metric's unit.</param>
 /// <param name="MethodFilter">The substring the methods were matched on, or empty for every method.</param>
 /// <param name="Rows">The ranked source lines, highest first.</param>
-internal sealed record LineRankingResult(double ScopeMilliseconds, string MethodFilter, IReadOnlyList<LineRow> Rows);
+internal sealed record LineRankingResult(double ScopeWeight, string MethodFilter, IReadOnlyList<LineRow> Rows);
 
 /// <summary>
 ///  Self-time attributed to a single source line of a file in a heat map.
 /// </summary>
 /// <param name="Line">The 1-based source line number.</param>
-/// <param name="Milliseconds">Self-time attributed to the line, in milliseconds.</param>
-/// <param name="PercentOfScope">Share of the whole-trace self-time, in percent.</param>
+/// <param name="Weight">Self-weight attributed to the line, in the metric's unit.</param>
+/// <param name="PercentOfScope">Share of the whole-trace self-weight, in percent.</param>
 /// <param name="SampleCount">Number of leaf samples attributed to the line.</param>
-/// <param name="Method">The shortened method that dominates the line's self-time.</param>
-internal sealed record HeatLine(int Line, double Milliseconds, double PercentOfScope, int SampleCount, string Method);
+/// <param name="Method">The shortened method that dominates the line's self-weight.</param>
+internal sealed record HeatLine(int Line, double Weight, double PercentOfScope, int SampleCount, string Method);
 
 /// <summary>
 ///  A per-line self-time heat map for a single source file: each leaf sample
@@ -83,12 +83,12 @@ internal sealed record HeatLine(int Line, double Milliseconds, double PercentOfS
 ///   <c>.etl</c> traces read with local PDBs present.
 ///  </para>
 /// </remarks>
-/// <param name="ScopeMilliseconds">Total whole-trace time, in milliseconds (the percent denominator).</param>
+/// <param name="ScopeWeight">Total whole-trace weight, in the metric's unit (the percent denominator).</param>
 /// <param name="File">The source file name the lines belong to (no directory).</param>
-/// <param name="FileMilliseconds">Self-time attributed to the file across all its lines, in milliseconds.</param>
+/// <param name="FileWeight">Self-weight attributed to the file across all its lines, in the metric's unit.</param>
 /// <param name="Lines">The hot lines of the file, ordered by line number.</param>
 internal sealed record SourceHeatmapResult(
-    double ScopeMilliseconds,
+    double ScopeWeight,
     string File,
-    double FileMilliseconds,
+    double FileWeight,
     IReadOnlyList<HeatLine> Lines);

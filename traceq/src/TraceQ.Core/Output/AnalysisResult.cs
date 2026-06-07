@@ -31,7 +31,14 @@ internal sealed class AnalysisResult<T>
     ///  The current output-contract schema version. Bumped when the serialized
     ///  shape changes in a way a consumer must notice.
     /// </summary>
-    public const int CurrentSchemaVersion = 1;
+    /// <remarks>
+    ///  <para>
+    ///   Version 2 renamed the ranking weight fields from <c>*Milliseconds</c> to
+    ///   the metric-neutral <c>*Weight</c> (so allocation rankings no longer report
+    ///   bytes under a millisecond name).
+    ///  </para>
+    /// </remarks>
+    public const int CurrentSchemaVersion = 2;
 
     /// <summary>
     ///  Initializes a new <see cref="AnalysisResult{T}"/>.

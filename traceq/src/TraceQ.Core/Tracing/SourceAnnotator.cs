@@ -69,14 +69,14 @@ internal static class SourceAnnotator
         foreach (HeatLine line in heat)
         {
             byLine[line.Line] = line;
-            if (line.Milliseconds > maxMs)
+            if (line.Weight > maxMs)
             {
-                maxMs = line.Milliseconds;
+                maxMs = line.Weight;
             }
         }
 
         StringBuilder builder = new();
-        builder.AppendLine("       ms   %file  heat      | line  source");
+        builder.AppendLine("   weight   %file  heat      | line  source");
         builder.AppendLine("  -------  ------  --------  | ----  ------");
 
         if (sourceLines.Length <= FullRenderLineCap)
@@ -130,10 +130,10 @@ internal static class SourceAnnotator
     {
         if (byLine.TryGetValue(lineNumber, out HeatLine? line))
         {
-            double percentOfFile = fileMilliseconds > 0 ? 100.0 * line.Milliseconds / fileMilliseconds : 0.0;
-            int bars = maxMilliseconds > 0 ? (int)Math.Round(8.0 * line.Milliseconds / maxMilliseconds) : 0;
+            double percentOfFile = fileMilliseconds > 0 ? 100.0 * line.Weight / fileMilliseconds : 0.0;
+            int bars = maxMilliseconds > 0 ? (int)Math.Round(8.0 * line.Weight / maxMilliseconds) : 0;
             string heat = new string('#', bars);
-            builder.AppendLine($"  {line.Milliseconds,7:F1}  {percentOfFile,5:F1}  {heat,-8}  | {lineNumber,4}  {text}");
+            builder.AppendLine($"  {line.Weight,7:F1}  {percentOfFile,5:F1}  {heat,-8}  | {lineNumber,4}  {text}");
         }
         else
         {
