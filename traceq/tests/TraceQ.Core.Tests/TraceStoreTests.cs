@@ -64,4 +64,21 @@ public sealed class TraceStoreTests
         trace.Info.Format.Should().Be(TraceFormat.Speedscope);
         trace.Info.SampleCount.Should().Be(4);
     }
+
+    [TestMethod]
+    public void Get_BeyondCapacity_EvictsLeastRecentlyUsedTrace()
+    {
+        // A capacity-1 store can hold one trace; loading a second distinct cache
+        // entry evicts the first, so re-loading it produces a fresh instance.
+        TraceStore store = new(capacity: 1);
+        string path = FixturePath("folding.speedscope.json");
+
+        LoadedTrace first = store.Get(path, AppContext.BaseDirectory);
+        // A different symbols key is a separate cache entry; loading it evicts the first.
+        store.Get(path, Path.GetTempPath());
+
+        LoadedTrace reloaded = store.Get(path, AppContext.BaseDirectory);
+
+        reloaded.Should().NotBeSameAs(first);
+    }
 }

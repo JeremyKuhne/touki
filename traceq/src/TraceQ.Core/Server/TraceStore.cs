@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using System.Collections.Concurrent;
+using TraceQ.Caching;
 using TraceQ.Tracing;
 
 namespace TraceQ.Server;
@@ -11,15 +11,46 @@ namespace TraceQ.Server;
 ///  Loads traces on demand and caches the parsed model per absolute path, so
 ///  repeated queries against the same trace avoid re-parsing.
 /// </summary>
+/// <remarks>
+///  <para>
+///   The cache is a bounded least-recently-used cache: a long agent session can
+///   touch many traces, and each parsed model is potentially large, so the store
+///   retains only the most recently used traces rather than growing without limit.
+///  </para>
+/// </remarks>
 public sealed class TraceStore
 {
+    /// <summary>
+    ///  The maximum number of parsed traces retained before the least-recently-used
+    ///  one is evicted.
+    /// </summary>
+    public const int DefaultCapacity = 16;
+
     private readonly TraceLoader _loader = new();
 
     // Match the cache's path comparison to the host file system: Windows and macOS
     // are case-insensitive, Linux is case-sensitive, so distinct-by-case paths must
     // not be conflated there.
-    private readonly ConcurrentDictionary<string, LoadedTrace> _cache = new(
-        OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+    private readonly LruCache<string, LoadedTrace> _cache;
+
+    /// <summary>
+    ///  Initializes a new <see cref="TraceStore"/> retaining at most
+    ///  <see cref="DefaultCapacity"/> traces.
+    /// </summary>
+    public TraceStore()
+        : this(DefaultCapacity)
+    {
+    }
+
+    /// <summary>
+    ///  Initializes a new <see cref="TraceStore"/> retaining at most
+    ///  <paramref name="capacity"/> traces.
+    /// </summary>
+    /// <param name="capacity">The maximum number of parsed traces to retain. Must be positive.</param>
+    internal TraceStore(int capacity) =>
+        _cache = new LruCache<string, LoadedTrace>(
+            capacity,
+            OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     ///  Returns the loaded trace for <paramref name="path"/>, loading and caching
