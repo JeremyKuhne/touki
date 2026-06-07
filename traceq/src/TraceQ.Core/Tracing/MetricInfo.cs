@@ -39,4 +39,11 @@ internal sealed record MetricInfo(string Name, string Unit)
     ///  stack. This is the metric of the allocation provider.
     /// </summary>
     public static MetricInfo Allocations { get; } = new("Allocations", "bytes");
+
+    /// <summary>
+    ///  The exceptions metric: one count per exception throw. This is the metric of
+    ///  the exceptions provider, which weights each throw-site stack by a single
+    ///  count so the engine ranks where exceptions are thrown.
+    /// </summary>
+    public static MetricInfo Exceptions { get; } = new("Exceptions", "count");
 }

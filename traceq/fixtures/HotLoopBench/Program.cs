@@ -120,6 +120,77 @@ public class AllocLoop
 }
 
 /// <summary>
+///  A loop that throws and catches exceptions at two distinctly named sites,
+///  captured under the CPU-sampling EventPipe profile (whose runtime keyword set
+///  includes the exception keyword), so its trace carries the
+///  <c>Exception/Start</c> events the exceptions provider ranks by throw site.
+/// </summary>
+/// <remarks>
+///  <para>
+///   Two throw sites are exercised in a fixed ratio (<see cref="ThrowInvalidOperation"/>
+///   roughly twice as often as <see cref="ThrowArgument"/>), so the exception
+///   ranking by count has a clear, reproducible order. The throwing methods are
+///   named and non-inlined so their throw-site stacks are easy to recognise.
+///   Captured with <see cref="RunStrategy.Monitoring"/> and a single invocation
+///   so the committed smoke trace stays small.
+///  </para>
+/// </remarks>
+[EventPipeProfiler(EventPipeProfile.CpuSampling)]
+[SimpleJob(RunStrategy.Monitoring, launchCount: 1, warmupCount: 0, iterationCount: 1, invocationCount: 1)]
+public class ExceptionLoop
+{
+    /// <summary>
+    ///  The benchmarked entry point: throws and catches many exceptions.
+    /// </summary>
+    /// <returns>The number of exceptions caught, returned so the work is not elided.</returns>
+    [Benchmark]
+    public int Throw() => CountThrows(2_000);
+
+    private static int CountThrows(int count)
+    {
+        int caught = 0;
+        for (int i = 0; i < count; i++)
+        {
+            caught += i % 3 == 0 ? ThrowAndCatchRare(i) : ThrowAndCatchCommon(i);
+        }
+
+        return caught;
+    }
+
+    private static int ThrowAndCatchCommon(int seed)
+    {
+        try
+        {
+            return ThrowInvalidOperation(seed);
+        }
+        catch (InvalidOperationException)
+        {
+            return 1;
+        }
+    }
+
+    private static int ThrowAndCatchRare(int seed)
+    {
+        try
+        {
+            return ThrowArgument(seed);
+        }
+        catch (ArgumentException)
+        {
+            return 2;
+        }
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static int ThrowInvalidOperation(int seed) =>
+        throw new InvalidOperationException($"common-{seed}");
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static int ThrowArgument(int seed) =>
+        throw new ArgumentException($"rare-{seed}");
+}
+
+/// <summary>
 ///  A loop whose body calls a spread of distinctly named methods, captured under
 ///  the JIT EventPipe profile so its trace carries the <c>MethodJittingStarted</c>
 ///  / <c>MethodLoadVerbose</c> events the JIT-stats provider reads.
@@ -573,6 +644,8 @@ internal static class Program
         Dictionary<string, int> byType = new(StringComparer.Ordinal);
         int allocTicks = 0;
         int allocTicksWithStack = 0;
+        int exceptions = 0;
+        int exceptionsWithStack = 0;
         int cpuSamples = 0;
         int cpuSamplesWithStack = 0;
         int cpuSamplesWithResolvedFrame = 0;
@@ -593,6 +666,17 @@ internal static class Program
                 if (data.CallStack() is not null)
                 {
                     allocTicksWithStack++;
+                }
+            }
+
+            // Exception-throw events carry the throw-site stack the exceptions provider
+            // ranks; count how many resolve a stack to confirm the fixture is usable.
+            if (data is ExceptionTraceData)
+            {
+                exceptions++;
+                if (data.CallStack() is not null)
+                {
+                    exceptionsWithStack++;
                 }
             }
 
@@ -637,6 +721,7 @@ internal static class Program
 
         Console.WriteLine($"Events: {traceLog.EventCount:N0} across {byType.Count} types");
         Console.WriteLine($"AllocationTick: {allocTicks:N0} total, {allocTicksWithStack:N0} with a call stack");
+        Console.WriteLine($"Exception/Start: {exceptions:N0} total, {exceptionsWithStack:N0} with a call stack");
         Console.WriteLine($"CpuSample: {cpuSamples:N0} total, {cpuSamplesWithStack:N0} with a call stack, {cpuSamplesWithResolvedFrame:N0} with a resolved frame");
         Console.WriteLine($"Benchmark JIT methods in rundown: {benchmarkJitMethods:N0}");
         foreach (KeyValuePair<string, int> pair in byType.OrderByDescending(static p => p.Value))
