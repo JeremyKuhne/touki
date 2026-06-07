@@ -44,6 +44,10 @@ internal interface ITraceReader
     ///  extracted to resolve managed frames to <c>file:line</c>. Ignored by formats
     ///  that carry no native frames (speedscope).
     /// </param>
+    /// <param name="processScope">
+    ///  Optional process-tree scope: when set, only samples belonging to the matched
+    ///  process tree are returned. Ignored by single-process formats (speedscope).
+    /// </param>
     /// <returns>The normalized samples and quality signals.</returns>
-    TraceReadResult Read(string path, string? symbolsDirectory = null);
+    TraceReadResult Read(string path, string? symbolsDirectory = null, ProcessScope? processScope = null);
 }

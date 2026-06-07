@@ -47,7 +47,7 @@ internal abstract class TraceLogReader : ITraceReader
     protected abstract TraceLog OpenTraceLog(string path);
 
     /// <inheritdoc/>
-    public TraceReadResult Read(string path, string? symbolsDirectory = null)
+    public TraceReadResult Read(string path, string? symbolsDirectory = null, ProcessScope? processScope = null)
     {
         using TraceLog traceLog = OpenTraceLog(path);
 
@@ -78,7 +78,13 @@ internal abstract class TraceLogReader : ITraceReader
                 symbolReader.SymbolPath = symbolsDirectory;
             }
 
-            return ReadCore(traceLog, symbolReader);
+            // Resolve the scenario's process tree (the matched processes plus, by
+            // default, their descendants) to the set of process IDs to keep. A null set
+            // means no scoping - every process is read. This is lossless: the trace is
+            // fully symbol-resolved by TraceLog before any sample is dropped.
+            HashSet<int>? scopePids = processScope is null ? null : ProcessTree.ResolvePids(traceLog, processScope);
+
+            return ReadCore(traceLog, symbolReader, scopePids);
         }
         finally
         {
@@ -97,7 +103,7 @@ internal abstract class TraceLogReader : ITraceReader
         }
     }
 
-    private static TraceReadResult ReadCore(TraceLog traceLog, SymbolReader symbolReader)
+    private static TraceReadResult ReadCore(TraceLog traceLog, SymbolReader symbolReader, HashSet<int>? scopePids)
     {
         Dictionary<int, string> locationCache = [];
 
@@ -119,6 +125,13 @@ internal abstract class TraceLogReader : ITraceReader
                 }
             }
             else if (data is not SampledProfileTraceData)
+            {
+                continue;
+            }
+
+            // When scoped to a process tree, drop samples from any process outside it.
+            // The trace is already fully resolved, so this is a lossless narrowing.
+            if (scopePids is not null && !scopePids.Contains(data.ProcessID))
             {
                 continue;
             }
@@ -167,7 +180,14 @@ internal abstract class TraceLogReader : ITraceReader
                 locations[i] = leafToRootLocations[count - 1 - i];
             }
 
-            samples.Add(new SampleStack(frames, 1.0, data.ThreadID.ToString(), locations));
+            // Tag the sample with its owning process so a multi-process trace can be
+            // reasoned about per process; empty resolves to just the numeric id.
+            string processName = data.ProcessName;
+            string process = string.IsNullOrEmpty(processName)
+                ? data.ProcessID.ToString()
+                : $"{processName}({data.ProcessID})";
+
+            samples.Add(new SampleStack(frames, 1.0, data.ThreadID.ToString(), locations, process));
         }
 
         double resolutionRate = totalFrames > 0 ? (double)resolvedFrames / totalFrames : 0.0;
