@@ -1,7 +1,7 @@
 # `traceq` implementation plan
 
 **Status:** Active — Q1–Q3 resolved (§6)
-**Progress (2026-06-06):** M0 complete (PR #182). M1 in progress — core relocation merged (PR #183); provider/engine seam laid (`StackSampleSource` + `MetricInfo`; the formal provider interface is deferred to step 5, when a second family pins its shape); output-contract envelope landed (`AnalysisResult<T>` + compact, rounded, deterministic JSON with golden tests); symbol gate landed (`SymbolGate` centralizes the 0.8 threshold + remediation warning; `--strict`/exit-3 deferred to M2); tier-2 LRU landed (`LruCache` bounds the trace store); token budget landed (`OutputBudget` estimates cost against a 25k ceiling; row-dropping truncation + the text renderer deferred to M2). Remaining M1: steering-hint taxonomy + text renderer, tier-1 ETLX disk cache, new providers/verbs, `trim`, O1 spike.
+**Progress (2026-06-06):** M0 complete (PR #182). M1 in progress — core relocation merged (PR #183); provider/engine seam laid (`StackSampleSource` + `MetricInfo`; the formal provider interface is deferred to step 5, when a second family pins its shape); output-contract envelope landed (`AnalysisResult<T>` + compact, rounded, deterministic JSON with golden tests); symbol gate landed (`SymbolGate` centralizes the 0.8 threshold + remediation warning; `--strict`/exit-3 deferred to M2); tier-2 LRU landed (`LruCache` bounds the trace store); token budget landed (`OutputBudget` estimates cost against a 25k ceiling; row-dropping truncation + the text renderer deferred to M2); fixture corpus + parity harness landed for the net10 EventPipe half (`HotLoopBench` capture + `make-fixtures` + frozen oracle golden; the `.etl`/`.etlx` half needs an elevated capture and is deferred). Remaining M1: steering-hint taxonomy + text renderer, tier-1 ETLX disk cache, new providers/verbs, `trim`, O1 spike, the ETW corpus half.
 **Date:** 2026-06-04
 **Basis:** *Agentic access to TraceEvent — design document* (2026-06-04). Section references (§) and decisions (D#) below point at that document.
 **Resolved path:** incubate in Touki under a self-contained `traceq/` subtree and **promote at the M3½ gate** · **private GitHub Packages feed until v1.0** (public NuGet + MCP registry at 1.0) · **retire `touki.mcp` at parity**, Touki references `TraceQ.Core`.
@@ -151,7 +151,7 @@ MIT license (inherited). Trusted Publishing: nothing wired during incubation —
 
 ### M1 — Core extraction and the output contract
 
-**Status: in progress.** Step 1 (relocation + provider/engine seam), the output-contract envelope, the symbol gate, the tier-2 LRU cache, and the output token budget have landed; the steering-hint taxonomy and text renderer, the tier-1 ETLX disk cache, new providers/verbs, `trim`, and the O1 spike remain.
+**Status: in progress.** Step 1 (relocation + provider/engine seam), the output-contract envelope, the symbol gate, the tier-2 LRU cache, and the output token budget have landed, and the parity harness is green for the net10 EventPipe corpus half (§3); the steering-hint taxonomy and text renderer, the tier-1 ETLX disk cache, new providers/verbs, `trim`, the O1 spike, and the net481 ETW corpus half remain.
 
 The move itself, then the two things touki.mcp doesn't yet have: the contract and breadth.
 
@@ -217,6 +217,8 @@ Build the §10 harness: headless Claude Code + Copilot CLI runners, the four arm
 ---
 
 ## 3. Fixtures and the numeric parity harness
+
+> **Progress:** the net10 EventPipe half has landed - `traceq/fixtures/HotLoopBench` (a dedicated hot string-building loop) captured via BenchmarkDotNet's `[EventPipeProfiler]`, `traceq/fixtures/make-fixtures.ps1` copies the speedscope export into the parity fixtures and freezes the oracle's rankings, and `TraceQ.Parity.Tests` asserts `traceq`'s self-time matches the frozen `Get-TraceHotspots.ps1` golden within tolerance and identical top-N order (green). The net481 `[EtwProfiler]` `.etl`/`.etlx` half (also the O1 fixture) is deferred - it needs an elevated capture.
 
 The extraction's safety net is a fixed corpus of traces with known-good answers:
 

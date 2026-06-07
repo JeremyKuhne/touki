@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Fixture-generation benchmark (see traceq/fixtures/README.md). Deliberately
+    excluded from traceq.slnx so the subtree CI and the extraction rehearsal stay
+    light: it is a manual regeneration tool run by make-fixtures.ps1, not part of
+    the build/test loop.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>TraceQ.Fixtures.HotLoopBench</RootNamespace>
+    <AssemblyName>HotLoopBench</AssemblyName>
+    <!-- Release is mandatory for EventPipe profiling to reflect optimized code. -->
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+</Project>
