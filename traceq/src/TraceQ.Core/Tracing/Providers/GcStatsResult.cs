@@ -13,7 +13,7 @@ namespace TraceQ.Tracing.Providers;
 /// <param name="Reason">Why the collection was triggered.</param>
 /// <param name="PauseMs">How long the managed threads were paused, in milliseconds.</param>
 /// <param name="HeapSizeAfterMB">The managed heap size after the collection, in megabytes.</param>
-/// <param name="PromotedMB">Bytes promoted to an older generation by the collection, in megabytes.</param>
+/// <param name="PromotedMB">Memory promoted to an older generation by the collection, in megabytes.</param>
 internal sealed record GcRecord(
     int Number,
     int Generation,

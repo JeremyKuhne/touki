@@ -42,7 +42,7 @@ public sealed class SourceAnnotatorTests
         string output = SourceAnnotator.Render(source, heat, fileMilliseconds: 12.0);
 
         // Header is always present.
-        output.Should().Contain("ms");
+        output.Should().Contain("weight");
         output.Should().Contain("%file");
         output.Should().Contain("heat");
 

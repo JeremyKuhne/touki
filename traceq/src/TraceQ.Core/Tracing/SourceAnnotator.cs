@@ -76,7 +76,7 @@ internal static class SourceAnnotator
         }
 
         StringBuilder builder = new();
-        builder.AppendLine("       ms   %file  heat      | line  source");
+        builder.AppendLine("   weight   %file  heat      | line  source");
         builder.AppendLine("  -------  ------  --------  | ----  ------");
 
         if (sourceLines.Length <= FullRenderLineCap)
