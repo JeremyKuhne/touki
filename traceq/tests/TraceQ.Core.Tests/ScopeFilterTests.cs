@@ -81,7 +81,8 @@ public sealed class ScopeFilterTests
     public void Apply_Regex_MatchesFrameNames()
     {
         StackSampleSource source = ThreeStacks();
-        // Anchored alternation: keep stacks touching the app module's Engine or Program.
+        // An anchored prefix regex: keep only stacks whose frame starts with the
+        // app module's Engine namespace.
         ScopeFilter filter = new(["^app!Engine\\."], []);
 
         StackSampleSource result = filter.Apply(source);
@@ -97,7 +98,19 @@ public sealed class ScopeFilterTests
 
         Action act = () => filter.Apply(source);
 
-        act.Should().Throw<ArgumentException>();
+        // The message names the include context, not the shared helper's "fold pattern".
+        act.Should().Throw<ArgumentException>().WithMessage("*include*");
+    }
+
+    [TestMethod]
+    public void Apply_InvalidExcludePattern_NamesTheExcludeContext()
+    {
+        StackSampleSource source = ThreeStacks();
+        ScopeFilter filter = new([], ["(unclosed"]);
+
+        Action act = () => filter.Apply(source);
+
+        act.Should().Throw<ArgumentException>().WithMessage("*exclude*");
     }
 
     [TestMethod]

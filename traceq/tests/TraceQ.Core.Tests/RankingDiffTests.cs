@@ -105,6 +105,16 @@ public sealed class RankingDiffTests
     }
 
     [TestMethod]
+    public void Diff_NegativeTop_ThrowsArgumentOutOfRange()
+    {
+        RankingResult ranking = Ranking(100.0, ("A", 60.0), ("B", 40.0));
+
+        Action act = () => RankingDiff.Diff(ranking, ranking, -1);
+
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [TestMethod]
     public void Diff_TiedMagnitude_BreaksByFrameNameForDeterminism()
     {
         RankingResult before = Ranking(0.0, ("Zzz", 0.0), ("Aaa", 0.0));

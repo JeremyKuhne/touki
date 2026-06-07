@@ -84,8 +84,8 @@ internal sealed class ScopeFilter
             return source;
         }
 
-        Regex[] include = FrameNames.CompileFoldPatterns(Include);
-        Regex[] exclude = FrameNames.CompileFoldPatterns(Exclude);
+        Regex[] include = Compile(Include, nameof(Include));
+        Regex[] exclude = Compile(Exclude, nameof(Exclude));
 
         List<SampleStack> kept = [];
         foreach (SampleStack sample in source.Samples)
@@ -106,6 +106,21 @@ internal sealed class ScopeFilter
         }
 
         return new StackSampleSource(source.Metric, kept);
+    }
+
+    // Compiles a set of filter patterns, recasting the shared helper's "fold
+    // pattern" wording into the include / exclude context the caller passed so a
+    // bad regex reports against the right parameter.
+    private static Regex[] Compile(IReadOnlyList<string> patterns, string which)
+    {
+        try
+        {
+            return FrameNames.CompileFoldPatterns(patterns);
+        }
+        catch (ArgumentException ex)
+        {
+            throw new ArgumentException($"Invalid {which} filter pattern: {ex.Message}", which.ToLowerInvariant(), ex);
+        }
     }
 
     private static bool AnyFrameMatches(SampleStack sample, Regex[] patterns)

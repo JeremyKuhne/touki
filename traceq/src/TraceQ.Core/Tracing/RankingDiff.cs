@@ -57,6 +57,7 @@ internal static class RankingDiff
     {
         ArgumentNullException.ThrowIfNull(before);
         ArgumentNullException.ThrowIfNull(after);
+        ArgumentOutOfRangeException.ThrowIfNegative(top);
 
         Dictionary<string, (double Before, double After)> byFrame = new(StringComparer.Ordinal);
 
