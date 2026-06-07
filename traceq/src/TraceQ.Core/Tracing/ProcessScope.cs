@@ -35,7 +35,7 @@ namespace TraceQ.Tracing;
 ///  Whether to also include every descendant of a matched process. Defaults to
 ///  <see langword="true"/>.
 /// </param>
-internal sealed record ProcessScope(string NameSubstring, bool IncludeChildren = true)
+public sealed record ProcessScope(string NameSubstring, bool IncludeChildren = true)
 {
     /// <summary>
     ///  A case-insensitive substring matched against process names to find the tree

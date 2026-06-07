@@ -25,7 +25,7 @@ namespace TraceQ.Output;
 ///  </para>
 /// </remarks>
 /// <typeparam name="T">The payload type the service produces.</typeparam>
-internal sealed class AnalysisResult<T>
+public sealed class AnalysisResult<T>
 {
     /// <summary>
     ///  The current output-contract schema version. Bumped when the serialized

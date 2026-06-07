@@ -11,7 +11,7 @@ namespace TraceQ.Tracing;
 ///  <see cref="LoadedTrace"/>, computing the format-agnostic metadata (duration,
 ///  sample count, per-thread breakdown) from the normalized samples.
 /// </summary>
-internal sealed class TraceLoader
+public sealed class TraceLoader
 {
     private readonly IReadOnlyList<ITraceReader> _readers =
     [

@@ -30,7 +30,7 @@ namespace TraceQ.Output;
 ///   same trace exports byte-identically.
 ///  </para>
 /// </remarks>
-internal static class SpeedscopeExporter
+public static class SpeedscopeExporter
 {
     private const string SchemaUrl = "https://www.speedscope.app/file-format-schema.json";
 

@@ -15,7 +15,7 @@ namespace TraceQ.Tracing.Providers;
 /// <param name="EventName">The event name.</param>
 /// <param name="ThreadId">The OS thread the event was emitted on.</param>
 /// <param name="Payload">The event's named fields rendered compactly, truncated to the query's payload cap.</param>
-internal sealed record EventRecord(
+public sealed record EventRecord(
     double TimestampMs,
     string Provider,
     string EventName,
@@ -29,7 +29,7 @@ internal sealed record EventRecord(
 /// <param name="TotalMatched">The total number of events matching the query across the whole trace.</param>
 /// <param name="Skipped">The number of matches skipped before this page.</param>
 /// <param name="Events">The events on this page, in trace (time) order.</param>
-internal sealed record EventQueryResult(
+public sealed record EventQueryResult(
     int TotalMatched,
     int Skipped,
     IReadOnlyList<EventRecord> Events);
@@ -47,7 +47,7 @@ internal sealed record EventQueryResult(
 ///   when a query matches hundreds of thousands of events.
 ///  </para>
 /// </remarks>
-internal sealed class EventQueryProvider
+public sealed class EventQueryProvider
 {
     /// <summary>
     ///  The default maximum number of characters of an event's rendered payload.

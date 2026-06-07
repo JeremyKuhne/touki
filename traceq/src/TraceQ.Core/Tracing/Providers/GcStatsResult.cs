@@ -14,7 +14,7 @@ namespace TraceQ.Tracing.Providers;
 /// <param name="PauseMs">How long the managed threads were paused, in milliseconds.</param>
 /// <param name="HeapSizeAfterMB">The managed heap size after the collection, in megabytes.</param>
 /// <param name="PromotedMB">Memory promoted to an older generation by the collection, in megabytes.</param>
-internal sealed record GcRecord(
+public sealed record GcRecord(
     int Number,
     int Generation,
     string Kind,
@@ -45,7 +45,7 @@ internal sealed record GcRecord(
 /// <param name="PeakHeapSizeMB">The largest post-collection heap size observed, in megabytes.</param>
 /// <param name="TotalPromotedMB">The summed promoted bytes across all collections, in megabytes.</param>
 /// <param name="Gcs">The per-collection records, in trace order.</param>
-internal sealed record GcStatsResult(
+public sealed record GcStatsResult(
     int GcCount,
     int Gen0Count,
     int Gen1Count,

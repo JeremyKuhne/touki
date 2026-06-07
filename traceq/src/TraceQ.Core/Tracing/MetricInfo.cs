@@ -18,7 +18,7 @@ namespace TraceQ.Tracing;
 /// </remarks>
 /// <param name="Name">The metric's display name (for example <c>CPU</c>).</param>
 /// <param name="Unit">The unit the sample weights are measured in (for example <c>ms</c>).</param>
-internal sealed record MetricInfo(string Name, string Unit)
+public sealed record MetricInfo(string Name, string Unit)
 {
     /// <summary>
     ///  The CPU-time metric: wall-clock milliseconds per sampled call stack. This

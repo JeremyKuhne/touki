@@ -30,7 +30,7 @@ namespace TraceQ.Tracing.Providers;
 ///   <c>ITraceReader</c> (which dispatches by file extension).
 ///  </para>
 /// </remarks>
-internal sealed class ExceptionsProvider
+public sealed class ExceptionsProvider
 {
     /// <summary>
     ///  Reads the exceptions stack-sample source from the EventPipe trace at

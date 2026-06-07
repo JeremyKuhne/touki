@@ -8,7 +8,7 @@ namespace TraceQ.Tracing;
 ///  A fully loaded trace: its metadata, the CPU provider's stack-sample source,
 ///  and the aggregator that ranks it.
 /// </summary>
-internal sealed class LoadedTrace
+public sealed class LoadedTrace
 {
     /// <summary>
     ///  Initializes a new <see cref="LoadedTrace"/>.

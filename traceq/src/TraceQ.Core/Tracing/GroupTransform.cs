@@ -28,7 +28,7 @@ namespace TraceQ.Tracing;
 ///   transform also removes consecutive duplicate frames.
 ///  </para>
 /// </remarks>
-internal sealed class GroupTransform
+public sealed class GroupTransform
 {
     /// <summary>
     ///  The identity transform: leaves every frame unchanged.

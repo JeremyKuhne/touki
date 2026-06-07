@@ -30,7 +30,7 @@ namespace TraceQ.Tracing;
 ///   filtered source.
 ///  </para>
 /// </remarks>
-internal sealed class ScopeFilter
+public sealed class ScopeFilter
 {
     /// <summary>
     ///  The identity filter: keeps every sample.

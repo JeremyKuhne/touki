@@ -8,7 +8,7 @@ namespace TraceQ.Tracing;
 ///  Metadata and quality signals describing a loaded trace, returned up front so
 ///  a caller can pick its next query from real signals rather than empty results.
 /// </summary>
-internal sealed class TraceInfo
+public sealed class TraceInfo
 {
     /// <summary>
     ///  Initializes a new <see cref="TraceInfo"/>.
@@ -76,7 +76,7 @@ internal sealed class TraceInfo
 /// <summary>
 ///  Per-thread sample count within a loaded trace.
 /// </summary>
-internal sealed class ThreadSampleInfo
+public sealed class ThreadSampleInfo
 {
     /// <summary>
     ///  Initializes a new <see cref="ThreadSampleInfo"/>.

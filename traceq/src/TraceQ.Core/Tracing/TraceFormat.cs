@@ -7,7 +7,7 @@ namespace TraceQ.Tracing;
 /// <summary>
 ///  The on-disk format a trace was loaded from.
 /// </summary>
-internal enum TraceFormat
+public enum TraceFormat
 {
     /// <summary>
     ///  BenchmarkDotNet EventPipe speedscope export (<c>.speedscope.json</c>).

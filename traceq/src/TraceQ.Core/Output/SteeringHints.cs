@@ -27,7 +27,7 @@ namespace TraceQ.Output;
 ///   instead of drilling, because there is nothing to drill into.
 ///  </para>
 /// </remarks>
-internal static class SteeringHints
+public static class SteeringHints
 {
     /// <summary>
     ///  The root pseudo-frame, whose presence as the dominant caller means the

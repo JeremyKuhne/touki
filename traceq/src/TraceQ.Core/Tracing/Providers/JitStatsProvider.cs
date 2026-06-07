@@ -24,7 +24,7 @@ namespace TraceQ.Tracing.Providers;
 ///   than a <see cref="StackSampleSource"/>.
 ///  </para>
 /// </remarks>
-internal sealed class JitStatsProvider
+public sealed class JitStatsProvider
 {
     /// <summary>
     ///  Reads the JIT-stats report from the EventPipe trace at <paramref name="path"/>.

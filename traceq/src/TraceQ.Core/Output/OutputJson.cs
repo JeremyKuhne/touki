@@ -22,7 +22,7 @@ namespace TraceQ.Output;
 ///   stable and free of floating-point noise.
 ///  </para>
 /// </remarks>
-internal static class OutputJson
+public static class OutputJson
 {
     /// <summary>
     ///  The number of decimal places doubles are rounded to in the serialized output.
@@ -37,8 +37,12 @@ internal static class OutputJson
     /// <typeparam name="T">The payload type.</typeparam>
     /// <param name="result">The envelope to serialize.</param>
     /// <returns>The compact JSON representation.</returns>
-    public static string Serialize<T>(AnalysisResult<T> result) =>
-        JsonSerializer.Serialize(result, s_options);
+    /// <exception cref="ArgumentNullException"><paramref name="result"/> is <see langword="null"/>.</exception>
+    public static string Serialize<T>(AnalysisResult<T> result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        return JsonSerializer.Serialize(result, s_options);
+    }
 
     private static JsonSerializerOptions CreateOptions()
     {

@@ -33,7 +33,7 @@ namespace TraceQ.Tracing;
 ///   produces with <c>/FoldPats</c>.
 ///  </para>
 /// </remarks>
-internal sealed class FoldingAggregator
+public sealed class FoldingAggregator
 {
     private readonly StackSampleSource _source;
     private readonly IReadOnlyList<SampleStack> _samples;

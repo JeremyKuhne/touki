@@ -12,7 +12,7 @@ namespace TraceQ.Tracing;
 ///  gutter. Shared by the <c>source_heatmap</c> MCP tool and the console
 ///  analyzer's <c>--heatmap</c> command.
 /// </summary>
-internal static class SourceAnnotator
+public static class SourceAnnotator
 {
     // Files larger than this render only windows around hot lines; smaller files
     // render in full so the heat map reads top to bottom.

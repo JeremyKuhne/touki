@@ -24,7 +24,7 @@ namespace TraceQ.Tracing.Providers;
 ///   <see cref="StackSampleSource"/>.
 ///  </para>
 /// </remarks>
-internal sealed class GcStatsProvider
+public sealed class GcStatsProvider
 {
     /// <summary>
     ///  Reads the GC-stats report from the EventPipe trace at <paramref name="path"/>.
