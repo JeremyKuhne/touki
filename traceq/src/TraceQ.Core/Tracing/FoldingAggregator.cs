@@ -222,8 +222,8 @@ internal sealed class FoldingAggregator
         // Break ties by caller name so the ordering is deterministic across runs and machines.
         rows.Sort(static (a, b) =>
         {
-            int byMs = b.Milliseconds.CompareTo(a.Milliseconds);
-            return byMs != 0 ? byMs : string.CompareOrdinal(a.Caller, b.Caller);
+            int byWeight = b.Weight.CompareTo(a.Weight);
+            return byWeight != 0 ? byWeight : string.CompareOrdinal(a.Caller, b.Caller);
         });
         if (rows.Count > top)
         {
@@ -300,10 +300,10 @@ internal sealed class FoldingAggregator
         // deterministic even when two methods map to the same file:line with equal time.
         rows.Sort(static (a, b) =>
         {
-            int byMs = b.Milliseconds.CompareTo(a.Milliseconds);
-            if (byMs != 0)
+            int byWeight = b.Weight.CompareTo(a.Weight);
+            if (byWeight != 0)
             {
-                return byMs;
+                return byWeight;
             }
 
             int byLocation = string.CompareOrdinal(a.Location, b.Location);
@@ -388,8 +388,8 @@ internal sealed class FoldingAggregator
         foreach (KeyValuePair<int, LineAccumulator> pair in lines)
         {
             LineAccumulator accumulator = pair.Value;
-            double pct = traceTotal > 0 ? 100.0 * accumulator.Milliseconds / traceTotal : 0.0;
-            rows.Add(new HeatLine(pair.Key, accumulator.Milliseconds, pct, accumulator.SampleCount, accumulator.DominantMethod));
+            double pct = traceTotal > 0 ? 100.0 * accumulator.Weight / traceTotal : 0.0;
+            rows.Add(new HeatLine(pair.Key, accumulator.Weight, pct, accumulator.SampleCount, accumulator.DominantMethod));
         }
 
         rows.Sort(static (a, b) => a.Line.CompareTo(b.Line));
@@ -444,8 +444,8 @@ internal sealed class FoldingAggregator
         // Break ties by frame name so the ordering is deterministic across runs and machines.
         rows.Sort(static (a, b) =>
         {
-            int byMs = b.Milliseconds.CompareTo(a.Milliseconds);
-            return byMs != 0 ? byMs : string.CompareOrdinal(a.Frame, b.Frame);
+            int byWeight = b.Weight.CompareTo(a.Weight);
+            return byWeight != 0 ? byWeight : string.CompareOrdinal(a.Frame, b.Frame);
         });
         if (rows.Count > top)
         {
@@ -456,23 +456,23 @@ internal sealed class FoldingAggregator
     }
 
     /// <summary>
-    ///  Accumulates the self-time and sample count attributed to one source line,
-    ///  tracking which method dominates the line's time.
+    ///  Accumulates the self-weight and sample count attributed to one source line,
+    ///  tracking which method dominates the line's weight.
     /// </summary>
     private sealed class LineAccumulator
     {
         private readonly Dictionary<string, double> _methods = new(StringComparer.Ordinal);
 
-        public double Milliseconds { get; private set; }
+        public double Weight { get; private set; }
 
         public int SampleCount { get; private set; }
 
-        public void Add(double milliseconds, string method)
+        public void Add(double weight, string method)
         {
-            Milliseconds += milliseconds;
+            Weight += weight;
             SampleCount++;
             _methods.TryGetValue(method, out double current);
-            _methods[method] = current + milliseconds;
+            _methods[method] = current + weight;
         }
 
         public string DominantMethod

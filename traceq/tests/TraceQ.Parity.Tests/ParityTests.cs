@@ -81,7 +81,7 @@ public sealed class ParityTests
                 $"self-time rank {i} should name the same frame as the oracle");
 
             double tolerance = Math.Max(AbsoluteToleranceMs, expected.Milliseconds * RelativeTolerance);
-            actual.Milliseconds.Should().BeApproximately(
+            actual.Weight.Should().BeApproximately(
                 expected.Milliseconds,
                 tolerance,
                 $"self-time for '{expected.Frame}' should match the oracle within tolerance");

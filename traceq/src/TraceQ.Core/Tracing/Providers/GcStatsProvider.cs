@@ -52,7 +52,7 @@ internal sealed class GcStatsProvider
 
         // The GC analysis layer reconstructs per-collection records from the raw GC
         // events as the source is processed; request it before draining the events.
-        TraceLogEventSource source = traceLog.Events.GetSource();
+        using TraceLogEventSource source = traceLog.Events.GetSource();
         source.NeedLoadedDotNetRuntimes();
         source.Process();
 

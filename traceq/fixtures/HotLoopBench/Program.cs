@@ -6,9 +6,11 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Jobs;
+using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 
 namespace TraceQ.Fixtures.HotLoopBench;
 
@@ -127,8 +129,12 @@ internal static class Program
             return Inspect(args[1]);
         }
 
-        BenchmarkSwitcher.FromAssembly(typeof(HotLoop).Assembly).Run(args);
-        return 0;
+        IEnumerable<Summary> summaries = BenchmarkSwitcher.FromAssembly(typeof(HotLoop).Assembly).Run(args);
+
+        // Propagate a non-zero exit code when any benchmark failed to build/run or was
+        // invalid, so make-fixtures' $LASTEXITCODE check fails fast on a bad capture.
+        bool anyFailure = summaries.Any(s => s.HasCriticalValidationErrors || s.Reports.Any(r => !r.Success));
+        return anyFailure ? 1 : 0;
     }
 
     private static int Inspect(string tracePath)
@@ -155,7 +161,9 @@ internal static class Program
             byType.TryGetValue(name, out int count);
             byType[name] = count + 1;
 
-            if (data.EventName == "GC/AllocationTick")
+            // Use the strongly-typed event so the count is robust to any event-name
+            // formatting differences across parsers.
+            if (data is GCAllocationTickTraceData)
             {
                 allocTicks++;
                 if (data.CallStack() is not null)

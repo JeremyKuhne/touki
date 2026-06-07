@@ -44,7 +44,7 @@ public sealed class AllocationProviderTests
 
         RankingResult result = aggregator.InclusiveTime("", FrameNames.DefaultFoldPatterns, 50);
 
-        result.ScopeMilliseconds.Should().BeGreaterThan(0, "the scope total is the bytes allocated");
+        result.ScopeWeight.Should().BeGreaterThan(0, "the scope total is the bytes allocated");
 
         // The benchmark's allocation loop is on every allocation stack, so it must
         // be credited with allocation bytes in the inclusive ranking.
@@ -61,11 +61,11 @@ public sealed class AllocationProviderTests
         RankingResult result = aggregator.SelfTime("", FrameNames.DefaultFoldPatterns, 25);
 
         result.Rows.Should().NotBeEmpty();
-        // The ranking is ordered by bytes, highest first.
-        result.Rows[0].Milliseconds.Should().BeGreaterThan(0);
+        // The ranking is ordered by bytes (the allocation metric), highest first.
+        result.Rows[0].Weight.Should().BeGreaterThan(0);
         for (int i = 1; i < result.Rows.Count; i++)
         {
-            result.Rows[i].Milliseconds.Should().BeLessThanOrEqualTo(result.Rows[i - 1].Milliseconds);
+            result.Rows[i].Weight.Should().BeLessThanOrEqualTo(result.Rows[i - 1].Weight);
         }
     }
 }

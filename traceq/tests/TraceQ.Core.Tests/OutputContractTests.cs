@@ -73,7 +73,7 @@ public sealed class OutputContractTests
 
         string json = OutputJson.Serialize(envelope);
 
-        json.Should().Contain("\"milliseconds\":63.86");
+        json.Should().Contain("\"weight\":63.86");
         json.Should().Contain("\"percentOfScope\":33.33");
     }
 
