@@ -11,7 +11,7 @@ namespace TraceQ.Tracing;
 /// <param name="BeforeWeight">The frame's weight in the baseline ranking, in the metric's unit (0 if absent).</param>
 /// <param name="AfterWeight">The frame's weight in the current ranking, in the metric's unit (0 if absent).</param>
 /// <param name="Delta">The change in weight (<c>AfterWeight - BeforeWeight</c>); positive is a regression.</param>
-internal sealed record DiffRow(string Frame, double BeforeWeight, double AfterWeight, double Delta);
+public sealed record DiffRow(string Frame, double BeforeWeight, double AfterWeight, double Delta);
 
 /// <summary>
 ///  The change between two rankings of the same metric: the per-frame deltas
@@ -32,7 +32,7 @@ internal sealed record DiffRow(string Frame, double BeforeWeight, double AfterWe
 /// <param name="AfterScopeWeight">The current ranking's scoped total, in the metric's unit.</param>
 /// <param name="ScopeDelta">The change in scoped total (<c>AfterScopeWeight - BeforeScopeWeight</c>).</param>
 /// <param name="Rows">The per-frame changes, largest absolute change first.</param>
-internal sealed record RankingDiffResult(
+public sealed record RankingDiffResult(
     double BeforeScopeWeight,
     double AfterScopeWeight,
     double ScopeDelta,
@@ -43,7 +43,7 @@ internal sealed record RankingDiffResult(
 ///  can see what got slower or faster (or allocated more or less) between two
 ///  runs.
 /// </summary>
-internal static class RankingDiff
+public static class RankingDiff
 {
     /// <summary>
     ///  Diffs <paramref name="before"/> against <paramref name="after"/>, matching

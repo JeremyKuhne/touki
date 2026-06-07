@@ -22,7 +22,7 @@ namespace TraceQ.Tracing;
 ///   is deferred until a real second provider can pin its shape.
 ///  </para>
 /// </remarks>
-internal sealed class StackSampleSource
+public sealed class StackSampleSource
 {
     /// <summary>
     ///  Initializes a new <see cref="StackSampleSource"/>.

@@ -22,7 +22,7 @@ namespace TraceQ.Output;
 ///   stable and free of floating-point noise.
 ///  </para>
 /// </remarks>
-internal static class OutputJson
+public static class OutputJson
 {
     /// <summary>
     ///  The number of decimal places doubles are rounded to in the serialized output.

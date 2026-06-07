@@ -13,7 +13,7 @@ namespace TraceQ.Tracing.Providers;
 /// <param name="NativeSize">The size of the jitted native code, in bytes.</param>
 /// <param name="CompileMs">How long the method took to compile, in milliseconds.</param>
 /// <param name="OptimizationTier">The optimization tier the method was compiled at.</param>
-internal sealed record JitMethodRecord(
+public sealed record JitMethodRecord(
     string MethodName,
     string ModuleILPath,
     int ILSize,
@@ -40,7 +40,7 @@ internal sealed record JitMethodRecord(
 /// <param name="TotalILSize">The summed IL size across all methods, in bytes.</param>
 /// <param name="TotalNativeSize">The summed native-code size across all methods, in bytes.</param>
 /// <param name="Methods">The per-method records, in trace order.</param>
-internal sealed record JitStatsResult(
+public sealed record JitStatsResult(
     int MethodCount,
     double TotalCompileMs,
     double MaxCompileMs,

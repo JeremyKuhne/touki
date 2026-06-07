@@ -26,7 +26,7 @@ namespace TraceQ.Output;
 ///   block it consumes, mirroring how <c>SymbolGate</c> exposes its predicate.
 ///  </para>
 /// </remarks>
-internal static class OutputBudget
+public static class OutputBudget
 {
     /// <summary>
     ///  The default ceiling, in estimated tokens, above which a result is considered

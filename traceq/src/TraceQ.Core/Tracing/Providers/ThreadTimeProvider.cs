@@ -38,7 +38,7 @@ namespace TraceQ.Tracing.Providers;
 ///   workload tree.
 ///  </para>
 /// </remarks>
-internal sealed class ThreadTimeProvider
+public sealed class ThreadTimeProvider
 {
     // The thread-time computer roots each stack at a process pseudo-frame formatted
     // "Process<bits> <name> (<pid>) Args: <args>" and a thread pseudo-frame

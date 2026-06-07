@@ -17,7 +17,7 @@ namespace TraceQ.Tracing;
 ///   on demand so root-frame scoping can still match against the full text.
 ///  </para>
 /// </remarks>
-internal sealed class SampleStack
+public sealed class SampleStack
 {
     /// <summary>
     ///  Initializes a new <see cref="SampleStack"/>.

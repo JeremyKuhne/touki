@@ -63,7 +63,7 @@ public sealed class TraceStore
     ///  so the same trace loaded with and without symbols is cached separately.
     /// </param>
     /// <returns>The cached loaded trace.</returns>
-    internal LoadedTrace Get(string path, string? symbolsDirectory = null)
+    public LoadedTrace Get(string path, string? symbolsDirectory = null)
     {
         string fullPath = Path.GetFullPath(path);
         string? fullSymbols = string.IsNullOrEmpty(symbolsDirectory)

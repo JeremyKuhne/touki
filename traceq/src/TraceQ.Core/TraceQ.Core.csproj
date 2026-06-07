@@ -12,13 +12,13 @@
   </ItemGroup>
 
   <!--
-    The core analysis types are internal; the CLI head, the MCP facade, and the
-    test projects consume them directly. traceq assemblies are not strong-named,
-    so no PublicKey is required.
+    The analysis object model is public: the CLI head (TraceQ) and the MCP facade
+    (TraceQ.Mcp) consume it through the public surface, not via InternalsVisibleTo.
+    The test projects still see internals (the format readers behind TraceLoader,
+    the LRU cache, and a few test-only members) for white-box testing. traceq
+    assemblies are not strong-named, so no PublicKey is required.
   -->
   <ItemGroup>
-    <InternalsVisibleTo Include="TraceQ" />
-    <InternalsVisibleTo Include="TraceQ.Mcp" />
     <InternalsVisibleTo Include="TraceQ.Core.Tests" />
     <InternalsVisibleTo Include="TraceQ.Parity.Tests" />
   </ItemGroup>

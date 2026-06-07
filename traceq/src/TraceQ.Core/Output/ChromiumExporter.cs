@@ -31,7 +31,7 @@ namespace TraceQ.Output;
 ///   the engine's cross-thread rankings.
 ///  </para>
 /// </remarks>
-internal static class ChromiumExporter
+public static class ChromiumExporter
 {
     // The format's timestamps are microseconds; scale a CPU millisecond weight up
     // so the rendered durations read naturally. Other metrics (bytes) are used as-is.

@@ -20,7 +20,7 @@ namespace TraceQ.Tracing;
 ///   <see cref="IsBelowThreshold"/>.
 ///  </para>
 /// </remarks>
-internal static class SymbolGate
+public static class SymbolGate
 {
     /// <summary>
     ///  The minimum fraction of frames, in <c>[0, 1]</c>, that must resolve to a

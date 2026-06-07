@@ -28,7 +28,7 @@ namespace TraceQ.Tracing.Providers;
 ///   <c>ITraceReader</c> (which dispatches by file extension).
 ///  </para>
 /// </remarks>
-internal sealed class AllocationProvider
+public sealed class AllocationProvider
 {
     /// <summary>
     ///  Reads the allocation stack-sample source from the EventPipe trace at

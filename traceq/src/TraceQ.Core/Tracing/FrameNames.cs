@@ -12,7 +12,7 @@ namespace TraceQ.Tracing;
 ///  <c>tools/Get-TraceHotspots.ps1</c> so the folding semantics stay identical
 ///  across input formats.
 /// </summary>
-internal static partial class FrameNames
+public static partial class FrameNames
 {
     // Cap any single fold-pattern match so a pathological user pattern cannot hang the server.
     private static readonly TimeSpan s_foldPatternTimeout = TimeSpan.FromSeconds(1);
