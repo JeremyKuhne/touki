@@ -115,6 +115,58 @@ public class AllocLoop
 }
 
 /// <summary>
+///  A loop whose body calls a spread of distinctly named methods, captured under
+///  the JIT EventPipe profile so its trace carries the <c>MethodJittingStarted</c>
+///  / <c>MethodLoadVerbose</c> events the JIT-stats provider reads.
+/// </summary>
+/// <remarks>
+///  <para>
+///   Each method is jitted exactly once - on its first call - regardless of how
+///   many times the loop runs, so a single <see cref="RunStrategy.Monitoring"/>
+///   invocation captures the complete JIT picture while keeping the committed
+///   trace tiny. The methods are named <c>JitMethodNN</c> so the per-method
+///   compile rows are easy to recognise in the fixture.
+///  </para>
+/// </remarks>
+[EventPipeProfiler(EventPipeProfile.Jit)]
+[SimpleJob(RunStrategy.Monitoring, launchCount: 1, warmupCount: 0, iterationCount: 1, invocationCount: 1)]
+public class JitLoop
+{
+    /// <summary>
+    ///  The benchmarked entry point: calls a spread of distinct methods so each is
+    ///  jitted once.
+    /// </summary>
+    /// <returns>An accumulated value, returned so the work is not elided.</returns>
+    [Benchmark]
+    public long Compile() => JitMethod00(1) + JitMethod01(2) + JitMethod02(3) + JitMethod03(4)
+        + JitMethod04(5) + JitMethod05(6) + JitMethod06(7) + JitMethod07(8);
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static long JitMethod00(int seed) => (long)Math.Sqrt(seed) + seed;
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static long JitMethod01(int seed) => (long)Math.Sqrt(seed) * 3 + seed;
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static long JitMethod02(int seed) => (seed * seed) + JitMethod00(seed);
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static long JitMethod03(int seed) => (seed << 2) - JitMethod01(seed);
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static long JitMethod04(int seed) => (long)Math.Log(seed + 1) + JitMethod02(seed);
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static long JitMethod05(int seed) => (seed % 5) + JitMethod03(seed);
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static long JitMethod06(int seed) => (seed * 7) + JitMethod04(seed);
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static long JitMethod07(int seed) => (seed ^ 0x5A) + JitMethod05(seed) + JitMethod06(seed);
+}
+
+/// <summary>
 ///  Runs the fixture benchmarks under the EventPipe profiler, or inspects a
 ///  captured trace's event types.
 /// </summary>

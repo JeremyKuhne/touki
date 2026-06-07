@@ -23,7 +23,7 @@ public sealed class OutputContractTests
         return new AnalysisResult<RankingResult>(
             payload,
             warnings: ["symbol resolution 50% (< 80%); pass --symbols <dir>"],
-            hints: ["drill into the hot frame with: callers MyApp.Inner"]);
+            hints: SteeringHints.ForRanking(payload));
     }
 
     [TestMethod]

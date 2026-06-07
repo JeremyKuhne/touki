@@ -151,4 +151,34 @@ $fixtureAlloc = Join-Path $coreFixtures 'alloc.nettrace'
 Copy-Item $allocTrace.FullName $fixtureAlloc -Force
 Write-Host "Allocation fixture -> $fixtureAlloc ($([math]::Round($allocTrace.Length / 1KB)) KB)"
 
+# Capture the JIT smoke trace for the JIT-stats provider. JitLoop calls each of
+# its methods once, so a single Monitoring invocation captures the complete JIT
+# picture (every method is jitted on first call) while keeping the trace tiny.
+Write-Host 'Capturing the JIT smoke trace...'
+Push-Location $benchProject
+try
+{
+    dotnet run -c Release -- --filter '*JitLoop*' | Out-Host
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw "JIT capture failed with exit code $LASTEXITCODE."
+    }
+}
+finally
+{
+    Pop-Location
+}
+
+$jitTrace = Get-ChildItem -Recurse $artifacts -Filter '*JitLoop*.nettrace' |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
+if ($null -eq $jitTrace)
+{
+    throw "No JIT .nettrace was produced under $artifacts."
+}
+
+$fixtureJit = Join-Path $coreFixtures 'jit.nettrace'
+Copy-Item $jitTrace.FullName $fixtureJit -Force
+Write-Host "JIT fixture -> $fixtureJit ($([math]::Round($jitTrace.Length / 1KB)) KB)"
+
 Write-Host 'Done.'
