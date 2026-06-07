@@ -17,6 +17,8 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" />
+    <!-- Used by the `inspect` verb to confirm a capture carries the expected event types. -->
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" />
   </ItemGroup>
 
 </Project>

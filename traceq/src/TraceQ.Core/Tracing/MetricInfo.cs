@@ -22,7 +22,13 @@ internal sealed record MetricInfo(string Name, string Unit)
 {
     /// <summary>
     ///  The CPU-time metric: wall-clock milliseconds per sampled call stack. This
-    ///  is the metric of the CPU provider, the only family shipping today.
+    ///  is the metric of the CPU provider.
     /// </summary>
     public static MetricInfo Cpu { get; } = new("CPU", "ms");
+
+    /// <summary>
+    ///  The allocation metric: bytes allocated per <c>GCAllocationTick</c> call
+    ///  stack. This is the metric of the allocation provider.
+    /// </summary>
+    public static MetricInfo Allocations { get; } = new("Allocations", "bytes");
 }

@@ -4,10 +4,17 @@ The trace corpus the tests read, and the tooling that regenerates it.
 
 ## Layout
 
-- `HotLoopBench/` - a small, dedicated BenchmarkDotNet benchmark (a deliberately
-  hot string-building loop) whose EventPipe CPU profile seeds the corpus. It is
-  **not** part of `traceq.slnx`, so the subtree CI and the extraction rehearsal
-  stay light; it is a manual regeneration tool.
+- `HotLoopBench/` - a small, dedicated BenchmarkDotNet project that seeds the
+  corpus. It is **not** part of `traceq.slnx`, so the subtree CI and the
+  extraction rehearsal stay light; it is a manual regeneration tool. It carries
+  two benchmarks and an `inspect` verb:
+  - `HotLoop` - a hot string-building loop captured under `[EventPipeProfiler]`
+    CPU sampling; its speedscope export seeds the CPU parity fixture.
+  - `AllocLoop` - an allocation-heavy loop captured under the GC-verbose profile
+    so its `.nettrace` carries the `GCAllocationTick` events the allocation
+    provider reads. A single bounded invocation keeps the trace small.
+  - `inspect <trace>` - prints a captured trace's event-type counts (and how many
+    allocation ticks carry a call stack), used to confirm a capture is usable.
 - `oracles/Get-TraceHotspots.ps1` - a frozen copy of the repo's parity oracle, so
   the fixture pipeline stays self-contained through promotion. Treated as a
   process whose output is compared, never referenced as code.
@@ -31,10 +38,13 @@ TraceEvent, or BenchmarkDotNet version moves.
 
 ## What is committed vs regenerated
 
-The committed in-repo fixture is the speedscope export (a few hundred KB). The
-full `.nettrace` is left under `HotLoopBench/BenchmarkDotNet.Artifacts/`
-(gitignored) - it is too large for the repo and is regenerated on demand; the
-full corpus is destined for a release asset.
+The committed in-repo fixtures are the CPU speedscope export and its oracle
+golden (a few hundred KB), and the allocation smoke `.nettrace` (well under
+1 MB - a single bounded `AllocLoop` invocation). The full `.nettrace` for the CPU
+benchmark, and any larger/richer captures, are left under
+`HotLoopBench/BenchmarkDotNet.Artifacts/` (gitignored) - they are too large for
+the repo, are regenerated on demand, and the full corpus is destined for a
+release asset.
 
 ## Deferred: the net481 ETW half
 
