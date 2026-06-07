@@ -4,6 +4,31 @@
 
 namespace TraceQ.Tracing;
 
+// The ProcessScope constructor validation is platform-agnostic (no trace read), so
+// it runs everywhere - unlike the ETL-backed scoping tests below.
+[TestClass]
+public sealed class ProcessScopeValidationTests
+{
+    [TestMethod]
+    [DataRow("")]
+    [DataRow(null)]
+    public void Ctor_NullOrEmptyNameSubstring_ThrowsArgument(string? name)
+    {
+        Action act = () => _ = new ProcessScope(name!);
+
+        act.Should().Throw<ArgumentException>().WithParameterName("NameSubstring");
+    }
+
+    [TestMethod]
+    public void Ctor_NonEmptyNameSubstring_Succeeds()
+    {
+        ProcessScope scope = new("HotLoopBench");
+
+        scope.NameSubstring.Should().Be("HotLoopBench");
+        scope.IncludeChildren.Should().BeTrue("children are followed by default");
+    }
+}
+
 // Reading an ETW (.etl) trace uses the Windows-only ETW conversion, so these
 // tests are restricted to Windows; on other platforms they are skipped. The
 // process-tree scoping logic they cover is platform-agnostic - only the .etl

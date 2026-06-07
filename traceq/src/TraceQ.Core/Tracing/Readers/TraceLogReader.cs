@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.Globalization;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.EventPipe;
@@ -181,13 +182,18 @@ internal abstract class TraceLogReader : ITraceReader
             }
 
             // Tag the sample with its owning process so a multi-process trace can be
-            // reasoned about per process; empty resolves to just the numeric id.
+            // reasoned about per process; empty resolves to just the numeric id. IDs are
+            // formatted invariantly so the labels stay ASCII-stable across locales.
             string processName = data.ProcessName;
-            string process = string.IsNullOrEmpty(processName)
-                ? data.ProcessID.ToString()
-                : $"{processName}({data.ProcessID})";
+            string pid = data.ProcessID.ToString(CultureInfo.InvariantCulture);
+            string process = string.IsNullOrEmpty(processName) ? pid : $"{processName}({pid})";
 
-            samples.Add(new SampleStack(frames, 1.0, data.ThreadID.ToString(), locations, process));
+            samples.Add(new SampleStack(
+                frames,
+                1.0,
+                data.ThreadID.ToString(CultureInfo.InvariantCulture),
+                locations,
+                process));
         }
 
         double resolutionRate = totalFrames > 0 ? (double)resolvedFrames / totalFrames : 0.0;

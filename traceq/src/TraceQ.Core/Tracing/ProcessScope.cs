@@ -35,4 +35,20 @@ namespace TraceQ.Tracing;
 ///  Whether to also include every descendant of a matched process. Defaults to
 ///  <see langword="true"/>.
 /// </param>
-internal sealed record ProcessScope(string NameSubstring, bool IncludeChildren = true);
+internal sealed record ProcessScope(string NameSubstring, bool IncludeChildren = true)
+{
+    /// <summary>
+    ///  A case-insensitive substring matched against process names to find the tree
+    ///  roots.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Validated at construction: an empty substring would match every process and
+    ///   silently disable scoping, and a <see langword="null"/> one would throw a less
+    ///   clear exception later, so a malformed scope fails fast and predictably here.
+    ///  </para>
+    /// </remarks>
+    public string NameSubstring { get; } = string.IsNullOrEmpty(NameSubstring)
+        ? throw new ArgumentException("The process-scope name substring must be non-empty.", nameof(NameSubstring))
+        : NameSubstring;
+}

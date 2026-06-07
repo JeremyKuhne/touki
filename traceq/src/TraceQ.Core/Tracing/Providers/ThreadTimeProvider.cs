@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
@@ -158,16 +159,18 @@ internal sealed class ThreadTimeProvider
     }
 
     // Turns "Process64 <name> (<pid>) Args: ..." into "<name> (<pid>)" and yields the
-    // pid; returns the original frame with pid -1 when it does not match the shape.
+    // pid; returns the original frame with pid -1 when it does not match the shape. The
+    // pid is parsed and reformatted invariantly so the label stays ASCII-stable.
     private static string NormalizeProcessFrame(string frame, out int pid)
     {
         Match match = s_processFrame.Match(frame);
-        if (!match.Success || !int.TryParse(match.Groups["pid"].Value, out pid))
+        if (!match.Success
+            || !int.TryParse(match.Groups["pid"].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out pid))
         {
             pid = -1;
             return frame;
         }
 
-        return $"{match.Groups["name"].Value} ({pid})";
+        return $"{match.Groups["name"].Value} ({pid.ToString(CultureInfo.InvariantCulture)})";
     }
 }
