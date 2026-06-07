@@ -36,6 +36,14 @@ public sealed class OutputContractTests
     }
 
     [TestMethod]
+    public void Serialize_NullEnvelope_ThrowsArgumentNull()
+    {
+        Action act = () => OutputJson.Serialize<RankingResult>(null!);
+
+        act.Should().Throw<ArgumentNullException>().WithParameterName("result");
+    }
+
+    [TestMethod]
     public void Serialize_Envelope_CarriesSchemaVersionWarningsAndHints()
     {
         string json = OutputJson.Serialize(SampleEnvelope());

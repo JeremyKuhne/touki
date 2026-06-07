@@ -37,8 +37,12 @@ public static class OutputJson
     /// <typeparam name="T">The payload type.</typeparam>
     /// <param name="result">The envelope to serialize.</param>
     /// <returns>The compact JSON representation.</returns>
-    public static string Serialize<T>(AnalysisResult<T> result) =>
-        JsonSerializer.Serialize(result, s_options);
+    /// <exception cref="ArgumentNullException"><paramref name="result"/> is <see langword="null"/>.</exception>
+    public static string Serialize<T>(AnalysisResult<T> result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        return JsonSerializer.Serialize(result, s_options);
+    }
 
     private static JsonSerializerOptions CreateOptions()
     {
