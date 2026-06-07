@@ -71,8 +71,11 @@ internal sealed class LruCache<TKey, TValue>
     /// <param name="key">The cache key.</param>
     /// <param name="factory">Produces the value on a miss.</param>
     /// <returns>The cached or newly produced value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="factory"/> is <see langword="null"/>.</exception>
     public TValue GetOrAdd(TKey key, Func<TKey, TValue> factory)
     {
+        ArgumentNullException.ThrowIfNull(factory);
+
         lock (_gate)
         {
             if (_map.TryGetValue(key, out LinkedListNode<KeyValuePair<TKey, TValue>>? hit))

@@ -24,6 +24,36 @@ public sealed class LruCacheTests
     }
 
     [TestMethod]
+    public void GetOrAdd_ConcurrentSameKeyMisses_ShareOneStoredInstance()
+    {
+        LruCache<string, object> cache = new(capacity: 4);
+        using ManualResetEventSlim bothInside = new();
+        int started = 0;
+
+        // Both tasks must enter the factory before either returns, guaranteeing both
+        // miss the cache; the LruCache then has to converge them on one stored object.
+        object Factory(string _)
+        {
+            if (Interlocked.Increment(ref started) == 2)
+            {
+                bothInside.Set();
+            }
+
+            bothInside.Wait(TimeSpan.FromSeconds(5)).Should().BeTrue();
+            return new object();
+        }
+
+        Task<object> a = Task.Run(() => cache.GetOrAdd("k", Factory));
+        Task<object> b = Task.Run(() => cache.GetOrAdd("k", Factory));
+        Task.WaitAll(a, b);
+
+        // Both factories ran, but both callers observe the single instance the cache kept.
+        started.Should().Be(2);
+        a.Result.Should().BeSameAs(b.Result);
+        cache.Count.Should().Be(1);
+    }
+
+    [TestMethod]
     public void GetOrAdd_OverCapacity_EvictsLeastRecentlyUsed()
     {
         LruCache<string, int> cache = new(capacity: 2);
