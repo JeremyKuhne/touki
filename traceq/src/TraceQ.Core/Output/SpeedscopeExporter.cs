@@ -135,7 +135,12 @@ internal static class SpeedscopeExporter
             writer.WriteEndObject();
         }
 
-        return System.Text.Encoding.UTF8.GetString(stream.ToArray());
+        // Decode straight from the stream's backing buffer rather than ToArray(),
+        // which would copy the whole payload first; the stream is ours, so the
+        // buffer is always exposable.
+        return stream.TryGetBuffer(out ArraySegment<byte> buffer)
+            ? System.Text.Encoding.UTF8.GetString(buffer.Array!, buffer.Offset, buffer.Count)
+            : System.Text.Encoding.UTF8.GetString(stream.ToArray());
     }
 
     // Maps a MetricInfo unit onto a speedscope value-unit. Speedscope understands a
