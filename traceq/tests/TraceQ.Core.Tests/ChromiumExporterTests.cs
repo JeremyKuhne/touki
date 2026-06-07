@@ -138,4 +138,27 @@ public sealed class ChromiumExporterTests
         begins.Should().Be(ends);
         begins.Should().BeGreaterThan(0);
     }
+
+    [TestMethod]
+    public void Export_CpuMetric_LabelsTheAxisInMilliseconds()
+    {
+        using JsonDocument doc = JsonDocument.Parse(ChromiumExporter.Export(SyntheticCpu()));
+
+        doc.RootElement.TryGetProperty("displayTimeUnit", out JsonElement unit).Should().BeTrue();
+        unit.GetString().Should().Be("ms");
+    }
+
+    [TestMethod]
+    public void Export_AllocationMetric_OmitsTheTimeUnitLabel()
+    {
+        StackSampleSource source = new(
+            MetricInfo.Allocations,
+            [new SampleStack(["A", "B"], 2048.0, "1")]);
+
+        using JsonDocument doc = JsonDocument.Parse(ChromiumExporter.Export(source));
+
+        // The ts field carries bytes for allocation, so the millisecond axis label is
+        // omitted rather than mislabeling the axis.
+        doc.RootElement.TryGetProperty("displayTimeUnit", out _).Should().BeFalse();
+    }
 }

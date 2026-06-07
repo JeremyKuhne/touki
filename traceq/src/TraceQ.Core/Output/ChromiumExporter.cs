@@ -53,13 +53,22 @@ internal static class ChromiumExporter
     {
         ArgumentNullException.ThrowIfNull(source);
 
-        double scale = source.Metric.Unit == "ms" ? MillisecondsToMicroseconds : 1.0;
+        bool isMilliseconds = source.Metric.Unit == "ms";
+        double scale = isMilliseconds ? MillisecondsToMicroseconds : 1.0;
 
         using MemoryStream stream = new();
         using (Utf8JsonWriter writer = new(stream, s_writerOptions))
         {
             writer.WriteStartObject();
-            writer.WriteString("displayTimeUnit", "ms");
+
+            // The format's time axis is milliseconds; only label it as such when the
+            // metric really is time. For other metrics (allocation bytes) the ts field
+            // carries the metric magnitude, so a "ms" label would mislabel the axis.
+            if (isMilliseconds)
+            {
+                writer.WriteString("displayTimeUnit", "ms");
+            }
+
             writer.WriteStartArray("traceEvents");
 
             // Name the single aggregate thread via a metadata event.
@@ -102,7 +111,7 @@ internal static class ChromiumExporter
             writer.WriteEndObject();
         }
 
-        return System.Text.Encoding.UTF8.GetString(stream.GetBuffer(), 0, (int)stream.Length);
+        return System.Text.Encoding.UTF8.GetString(stream.GetBuffer(), 0, checked((int)stream.Length));
     }
 
     private static int CommonPrefix(List<string> open, IReadOnlyList<string> frames)

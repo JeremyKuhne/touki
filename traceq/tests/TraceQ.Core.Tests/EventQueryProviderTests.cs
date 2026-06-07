@@ -99,4 +99,38 @@ public sealed class EventQueryProviderTests
 
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
+
+    [TestMethod]
+    public void Query_SkipBeyondTotal_ReportsTheActualSkipped()
+    {
+        EventQueryResult result = new EventQueryProvider().Query(AllocTrace, "AllocationTick", skip: 1_000_000);
+
+        // Nothing is returned, and Skipped reflects the matches actually passed over
+        // (the total), not the larger requested skip.
+        result.Events.Should().BeEmpty();
+        result.Skipped.Should().Be(result.TotalMatched);
+    }
+
+    [TestMethod]
+    public void AppendCapped_OversizedValue_NeverGrowsPastTheCap()
+    {
+        System.Text.StringBuilder builder = new();
+        string huge = new('x', 100_000);
+
+        EventQueryProvider.AppendCapped(builder, huge, 64);
+
+        // A single degenerately large value must not grow the builder past the cap.
+        builder.Length.Should().Be(64);
+    }
+
+    [TestMethod]
+    public void AppendCapped_AtCapacity_AppendsNothing()
+    {
+        System.Text.StringBuilder builder = new();
+        builder.Append(new string('a', 10));
+
+        EventQueryProvider.AppendCapped(builder, "more", 10);
+
+        builder.Length.Should().Be(10);
+    }
 }
