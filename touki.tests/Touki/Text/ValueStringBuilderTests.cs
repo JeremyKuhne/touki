@@ -78,6 +78,96 @@ public unsafe class ValueStringBuilderTests
     }
 
     [TestMethod]
+    public void Append_InterpolatedString_AppendsFormattedValue()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[20]);
+        builder.Append("Before ");
+
+        builder.Append($"Value {42:X2}");
+
+        builder.ToString().Should().Be("Before Value 2A");
+    }
+
+    [TestMethod]
+    public void Append_InterpolatedStringLongerThanInitialCapacity_GrowsSafely()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[4]);
+        builder.Append("A");
+
+        builder.Append($"{1234567890}-{1234567890}-{1234567890}");
+
+        builder.ToString().Should().Be("A1234567890-1234567890-1234567890");
+    }
+
+    [TestMethod]
+    public void Append_InterpolatedStringWithProvider_UsesProvider()
+    {
+        CultureInfo originalCulture = Thread.CurrentThread.CurrentCulture;
+        try
+        {
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo culture = CultureInfo.GetCultureInfo("fr-FR");
+            using ValueStringBuilder builder = new(stackalloc char[32], culture);
+
+            builder.Append($"{1234.5:N1}");
+
+            builder.ToString().Should().Be(1234.5.ToString("N1", culture));
+        }
+        finally
+        {
+            Thread.CurrentThread.CurrentCulture = originalCulture;
+        }
+    }
+
+    [TestMethod]
+    public void AppendLine_InterpolatedString_AppendsFormattedValueAndNewLine()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[32]);
+
+        builder.AppendLine($"Value {42:X2}");
+
+        builder.ToString().Should().Be($"Value 2A{Environment.NewLine}");
+    }
+
+#if !DEBUG
+    [TestMethod]
+    public void Append_InterpolatedStringWithLargeContent_DoesNotAllocateIntermediateString()
+    {
+        string large = new('x', 8192);
+        {
+            using ValueStringBuilder warmup = new(stackalloc char[32]);
+            warmup.Append($"<{large}>");
+        }
+
+        using ValueStringBuilder builder = new(stackalloc char[32]);
+        using (MemoryWatch.Create)
+        {
+            builder.Append($"<{large}>");
+        }
+
+        builder.ToString().Should().Be("<" + large + ">");
+    }
+
+    [TestMethod]
+    public void AppendLine_InterpolatedStringWithLargeContent_DoesNotAllocateIntermediateString()
+    {
+        string large = new('x', 8192);
+        {
+            using ValueStringBuilder warmup = new(stackalloc char[32]);
+            warmup.AppendLine($"<{large}>");
+        }
+
+        using ValueStringBuilder builder = new(stackalloc char[32]);
+        using (MemoryWatch.Create)
+        {
+            builder.AppendLine($"<{large}>");
+        }
+
+        builder.ToString().Should().Be("<" + large + ">" + Environment.NewLine);
+    }
+#endif
+
+    [TestMethod]
     public void Append_CharPointer()
     {
         using ValueStringBuilder builder = new(stackalloc char[10]);
@@ -2769,6 +2859,285 @@ public unsafe class ValueStringBuilderTests
         {
             builder.Dispose();
         }
+    }
+
+    [TestMethod]
+    public void Append_InterpolatedString_AppendsToExistingContent()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[64]);
+        builder.Append("Start: ");
+
+        int value = 42;
+        builder.Append($"value={value}");
+
+        builder.ToString().Should().Be("Start: value=42");
+    }
+
+    [TestMethod]
+    public void Append_InterpolatedString_OnlyLiteral_AppendsLiteral()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[32]);
+
+        builder.Append($"just literal text");
+
+        builder.ToString().Should().Be("just literal text");
+    }
+
+    [TestMethod]
+    public void Append_InterpolatedString_MultipleHoles_FormatsEach()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[64]);
+        int a = 1;
+        string b = "two";
+        int c = 3;
+
+        builder.Append($"{a}-{b}-{c}");
+
+        builder.ToString().Should().Be("1-two-3");
+    }
+
+    [TestMethod]
+    public void Append_InterpolatedString_WithFormatSpecifier_AppliesFormat()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[32]);
+        int value = 255;
+
+        builder.Append($"hex={value:X4}");
+
+        builder.ToString().Should().Be("hex=00FF");
+    }
+
+    [TestMethod]
+    public void Append_InterpolatedString_GrowsBeyondInitialBuffer()
+    {
+        // Start with a tiny stack buffer so the interpolated content forces a pool rental.
+        using ValueStringBuilder builder = new(stackalloc char[4]);
+        builder.Append("AB");
+
+        string large = new('x', 500);
+        builder.Append($"{large}");
+
+        builder.Length.Should().Be(502);
+        builder.ToString().Should().Be("AB" + large);
+    }
+
+    [TestMethod]
+    public void Append_InterpolatedString_MultipleCalls_Accumulate()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[64]);
+        int x = 1;
+        int y = 2;
+
+        builder.Append($"a={x}");
+        builder.Append($";b={y}");
+
+        builder.ToString().Should().Be("a=1;b=2");
+    }
+
+    [TestMethod]
+    public void Append_InterpolatedString_MatchesStringBuilder()
+    {
+        int id = 7;
+        string name = "widget";
+
+        using ValueStringBuilder builder = new(stackalloc char[64]);
+        builder.Append($"id={id}, name={name}");
+
+        StringBuilder expected = new();
+        expected.Append($"id={id}, name={name}");
+
+        builder.ToString().Should().Be(expected.ToString());
+    }
+
+    [TestMethod]
+    public void Append_InterpolatedString_EmptyContent_AppendsNothing()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[16]);
+        builder.Append("kept");
+
+        builder.Append($"");
+
+        builder.ToString().Should().Be("kept");
+        builder.Length.Should().Be(4);
+    }
+
+    [TestMethod]
+    public void Append_InterpolatedStringWithCustomProvider_UsesProvider()
+    {
+        UpperCaseFormatProvider provider = new();
+        ValueStringBuilder builder = new(literalLength: 0, formattedCount: 0, provider: provider, initialBuffer: stackalloc char[64]);
+        try
+        {
+            string text = "hi";
+            builder.Append($"x{text}");
+
+            builder.ToString().Should().Be("x[HI]");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [TestMethod]
+    public void Append_InterpolatedStringHoleMutatesBuilder_AppendsAfterMutation()
+    {
+        ValueStringBuilder builder = new(stackalloc char[64]);
+        try
+        {
+            builder.Append("a");
+
+            builder.Append($"b{AppendAndReturn(ref builder, "c", "d")}");
+
+            builder.ToString().Should().Be("acbd");
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [TestMethod]
+    public void Append_InterpolatedStringReferencingSelf_AppendsSnapshotOfReceiver()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[64]);
+        builder.Append("A");
+
+        // The hole reads the receiver through its implicit ReadOnlySpan<char> conversion. The
+        // interpolation is built in an independent buffer, so the hole sees a snapshot of the
+        // receiver ("A") taken when the hole is evaluated, not the in-progress interpolation.
+        builder.Append($"pre{builder}post");
+
+        builder.ToString().Should().Be("ApreApost");
+    }
+
+    [TestMethod]
+    public void AppendLine_InterpolatedString_AppendsContentAndNewLine()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[64]);
+        int value = 42;
+
+        builder.AppendLine($"value={value}");
+
+        builder.ToString().Should().Be("value=42" + Environment.NewLine);
+    }
+
+    [TestMethod]
+    public void AppendLine_InterpolatedString_AppendsToExistingContent()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[64]);
+        builder.Append("header");
+
+        builder.AppendLine($" {1}");
+
+        builder.ToString().Should().Be("header 1" + Environment.NewLine);
+    }
+
+    [TestMethod]
+    public void AppendLine_InterpolatedString_MultipleLines_ProduceMultipleNewLines()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[64]);
+
+        builder.AppendLine($"line {1}");
+        builder.AppendLine($"line {2}");
+
+        builder.ToString().Should().Be(
+            "line 1" + Environment.NewLine + "line 2" + Environment.NewLine);
+    }
+
+    [TestMethod]
+    public void AppendLine_InterpolatedString_EmptyContent_AppendsOnlyNewLine()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[16]);
+
+        builder.AppendLine($"");
+
+        builder.ToString().Should().Be(Environment.NewLine);
+    }
+
+    [TestMethod]
+    public void AppendLine_InterpolatedString_GrowsBeyondInitialBuffer()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[4]);
+
+        string large = new('y', 300);
+        builder.AppendLine($"{large}");
+
+        builder.ToString().Should().Be(large + Environment.NewLine);
+    }
+
+    [TestMethod]
+    public void Append_ChainedWithInterpolatedAppendLine_AccumulatesWithNewLine()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[128]);
+        int count = 3;
+
+        builder.Append($"count={count}");
+        builder.AppendLine($" done");
+        builder.Append($"next");
+
+        builder.ToString().Should().Be("count=3 done" + Environment.NewLine + "next");
+    }
+
+    [TestMethod]
+    public void AppendLine_NoArgs_AppendsNewLine()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[16]);
+        builder.Append("text");
+
+        builder.AppendLine();
+
+        builder.ToString().Should().Be("text" + Environment.NewLine);
+    }
+
+    [TestMethod]
+    public void AppendLine_NoArgs_OnEmpty_AppendsOnlyNewLine()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[16]);
+
+        builder.AppendLine();
+
+        builder.ToString().Should().Be(Environment.NewLine);
+    }
+
+    [TestMethod]
+    public void AppendLine_NoArgs_MultipleCalls_AppendMultipleNewLines()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[16]);
+
+        builder.AppendLine();
+        builder.AppendLine();
+
+        builder.ToString().Should().Be(Environment.NewLine + Environment.NewLine);
+    }
+
+    [TestMethod]
+    public void AppendLine_String_AppendsValueAndNewLine()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[32]);
+        builder.Append("start ");
+        string value = "hello";
+
+        builder.AppendLine(value);
+
+        builder.ToString().Should().Be("start hello" + Environment.NewLine);
+    }
+
+    [TestMethod]
+    public void AppendLine_StringSegment_AppendsSegmentAndNewLine()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[32]);
+        StringSegment segment = new("Hello World", 0, 5);
+
+        builder.AppendLine(segment);
+
+        builder.ToString().Should().Be("Hello" + Environment.NewLine);
+    }
+
+    private static string AppendAndReturn(ref ValueStringBuilder builder, string text, string result)
+    {
+        builder.Append(text);
+        return result;
     }
 
     private sealed class UpperCaseFormatProvider : IFormatProvider, ICustomFormatter

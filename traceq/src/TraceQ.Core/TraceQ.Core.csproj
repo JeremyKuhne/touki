@@ -9,6 +9,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" />
+    <!--
+      Touki's shared utilities. Referenced from the core so they flow transitively
+      to the CLI head, the MCP facade, and the tests, which lets every TraceQ
+      project consume Touki without each declaring the dependency.
+    -->
+    <PackageReference Include="KlutzyNinja.Touki" />
   </ItemGroup>
 
   <!--
