@@ -3067,7 +3067,7 @@ public unsafe class ValueStringBuilderTests
     }
 
     [TestMethod]
-    public void Append_And_AppendLine_Interpolated_Chained()
+    public void Append_ChainedWithInterpolatedAppendLine_AccumulatesWithNewLine()
     {
         using ValueStringBuilder builder = new(stackalloc char[128]);
         int count = 3;
