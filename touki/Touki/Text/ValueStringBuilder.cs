@@ -496,6 +496,57 @@ public ref partial struct ValueStringBuilder
     public void Append(StringSegment value) => Append(value.AsSpan());
 
     /// <summary>
+    ///  Appends the interpolated string represented by <paramref name="handler"/> to this builder.
+    /// </summary>
+    /// <param name="handler">The handler that contains the interpolated string to append.</param>
+    public void Append([InterpolatedStringHandlerArgument("")] ref InterpolatedStringHandler handler)
+    {
+        try
+        {
+            Append(handler.AsSpan());
+        }
+        finally
+        {
+            handler.Dispose();
+        }
+    }
+
+    /// <summary>
+    ///  Appends the <paramref name="value"/> followed by <see cref="Environment.NewLine"/> to this builder.
+    /// </summary>
+    public void AppendLine(string value)
+    {
+        AppendLiteral(value);
+        Append(Environment.NewLine);
+    }
+
+    /// <inheritdoc cref="AppendLine(string)"/>
+    public void AppendLine([InterpolatedStringHandlerArgument("")] ref InterpolatedStringHandler handler)
+    {
+        try
+        {
+            Append(handler.AsSpan());
+            AppendLine();
+        }
+        finally
+        {
+            handler.Dispose();
+        }
+    }
+
+    /// <inheritdoc cref="AppendLine(string)"/>
+    public void AppendLine(StringSegment value)
+    {
+        Append(value.AsSpan());
+        AppendLine();
+    }
+
+    /// <summary>
+    ///  Appends <see cref="Environment.NewLine"/> to this builder.
+    /// </summary>
+    public void AppendLine() => Append(Environment.NewLine);
+
+    /// <summary>
     ///  Replace all occurrences of a character in the segment with another character.
     /// </summary>
     /// <returns>
@@ -593,12 +644,14 @@ public ref partial struct ValueStringBuilder
     /// </summary>
     public static implicit operator ReadOnlySpan<char>(ValueStringBuilder builder) => builder._chars[..builder._length];
 
-#pragma warning disable IDE0251 // Member can be made readonly
-
     /// <summary>
     ///  Writes the string to the specified stream.
     /// </summary>
-    public void CopyTo(Stream stream)
+    public
+#if NET
+    readonly
+#endif
+    void CopyTo(Stream stream)
     {
         if (_chars[.._length].IsEmpty)
         {
@@ -628,7 +681,11 @@ public ref partial struct ValueStringBuilder
     ///   This attempts to make use of optimized paths for known <see cref="TextWriter"/> types.
     ///  </para>
     /// </remarks>
-    public void CopyTo(TextWriter writer)
+    public
+#if NET
+    readonly
+#endif
+    void CopyTo(TextWriter writer)
     {
         ArgumentNullException.ThrowIfNull(writer);
 
@@ -679,6 +736,4 @@ public ref partial struct ValueStringBuilder
         writer.Write(chars, 0, _length);
 #endif
     }
-
-#pragma warning restore IDE0251
 }

@@ -389,6 +389,31 @@ public unsafe class DefaultInterpolatedStringHandlerTests
         interpolatedResult.Should().Be(formatResult);
     }
 
+    [TestMethod]
+    public void Text_ReturnsAppendedCharacters()
+    {
+        DefaultInterpolatedStringHandler handler = new(literalLength: 0, formattedCount: 0);
+        handler.AppendLiteral("Hello");
+        handler.AppendFormatted(42);
+
+        handler.Text.ToString().Should().Be("Hello42");
+
+        handler.Clear();
+    }
+
+    [TestMethod]
+    public void Clear_ReleasesGrownBuffer()
+    {
+        DefaultInterpolatedStringHandler handler = new(literalLength: 0, formattedCount: 0);
+
+        // Append enough to force the handler past its initial buffer and rent from the pool.
+        handler.AppendFormatted(new string('x', 1000));
+        handler.Text.Length.Should().Be(1000);
+
+        // Clear releases the rented buffer; it must be the last operation on the handler.
+        handler.Clear();
+    }
+
     public static IEnumerable<object[]> IntegerData() =>
     [
         [42],

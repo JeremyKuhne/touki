@@ -14,6 +14,14 @@
     <!-- Trace parsing and analysis core. -->
     <PackageVersion Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.2.3" />
 
+    <!--
+      Touki's shared utilities (ValueStringBuilder, StringSegment, the allocation-
+      aware collections, ...). Consumed as the published NuGet package, not a project
+      reference, so the subtree stays self-contained and promotion remains a plain
+      file copy: a standalone traceq repo references the same package unchanged.
+    -->
+    <PackageVersion Include="KlutzyNinja.Touki" Version="0.3.0-alpha.1" />
+
     <!-- Fixture generation: captures the EventPipe corpus (traceq/fixtures). -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <!-- The ETW (.etl) profiler for the net481 fixture half; Windows-only, capture needs elevation. -->
