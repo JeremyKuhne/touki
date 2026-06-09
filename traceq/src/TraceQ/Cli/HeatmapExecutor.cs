@@ -8,28 +8,28 @@ using TraceQ.Tracing;
 namespace TraceQ.Cli;
 
 /// <summary>
-///  Runs a ranking request against the analysis core: load the trace, compute the
-///  self- or inclusive-time ranking, wrap it in the output contract, and render it
-///  as text or JSON.
+///  Runs a source heat-map request against the analysis core: load the trace, build
+///  the per-line heat map for a source file, wrap the result in the output contract,
+///  and render it as text (optionally overlaid on the source) or JSON.
 /// </summary>
 /// <remarks>
 ///  <para>
 ///   The execution is independent of the command-line parser; it takes its inputs
-///   as a <see cref="RankRequest"/> and writes to the supplied writers, so it can be
-///   driven directly in tests as well as from the verb handlers in
+///   as a <see cref="HeatmapRequest"/> and writes to the supplied writers, so it can
+///   be driven directly in tests as well as from the verb handler in
 ///   <see cref="TraceCommands"/>.
 ///  </para>
 /// </remarks>
-internal static class RankingExecutor
+internal static class HeatmapExecutor
 {
     /// <summary>
-    ///  Executes the ranking request.
+    ///  Executes the source heat-map request.
     /// </summary>
-    /// <param name="request">The validated ranking inputs.</param>
+    /// <param name="request">The validated heat-map inputs.</param>
     /// <param name="output">The writer the result is rendered to.</param>
     /// <param name="error">The writer load errors are reported to.</param>
     /// <returns>A process exit code (see <see cref="ExitCodes"/>).</returns>
-    public static int Run(RankRequest request, TextWriter output, TextWriter error)
+    public static int Run(HeatmapRequest request, TextWriter output, TextWriter error)
     {
         if (!TraceExecution.TryValidateFold(request.Fold, error))
         {
@@ -42,14 +42,13 @@ internal static class RankingExecutor
         }
 
         TraceInfo info = trace.Info;
-        RankingResult ranking = request.Measure == Measure.Inclusive
-            ? trace.Aggregator.InclusiveTime(request.Root, request.Fold, request.Top)
-            : trace.Aggregator.SelfTime(request.Root, request.Fold, request.Top);
 
-        AnalysisResult<RankingResult> envelope = new(
-            ranking,
-            TraceExecution.SymbolWarnings(info),
-            SteeringHints.ForRanking(ranking));
+        // The trace records the build-time file name, not its full path, so match on
+        // the file name; the original path is kept for the source overlay in text mode.
+        string fileName = System.IO.Path.GetFileName(request.File);
+        SourceHeatmapResult heatmap = trace.Aggregator.SourceHeatmap(fileName, request.Fold);
+
+        AnalysisResult<SourceHeatmapResult> envelope = new(heatmap, TraceExecution.SymbolWarnings(info));
 
         if (request.Format == OutputFormat.Json)
         {
@@ -57,7 +56,7 @@ internal static class RankingExecutor
         }
         else
         {
-            RankingTextRenderer.Render(envelope, info, trace.Aggregator.Metric, request.Measure, output);
+            HeatmapTextRenderer.Render(envelope, info, trace.Aggregator.Metric, request.File, output);
         }
 
         return TraceExecution.StrictExit(info, request.Strict);
