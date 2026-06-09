@@ -50,6 +50,9 @@ public sealed class CliAppTests
         output.Should().Contain("Commands:");
         output.Should().Contain("rank");
         output.Should().Contain("cpu");
+        output.Should().Contain("callers");
+        output.Should().Contain("lines");
+        output.Should().Contain("heatmap");
     }
 
     [TestMethod]
@@ -178,5 +181,52 @@ public sealed class CliAppTests
 
         exit.Should().Be(ExitCodes.UsageError);
         error.Should().Contain("fold");
+    }
+
+    [TestMethod]
+    public void Run_Callers_WritesCallers()
+    {
+        (int exit, string output, _) = Run("callers", Speedscope, "MyApp.Inner");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("callers of 'MyApp.Inner'");
+    }
+
+    [TestMethod]
+    public void Run_CallersMissingFrameArgument_ReturnsUsageError()
+    {
+        // 'frame' is a required positional, so a callers run without it fails to parse.
+        (int exit, _, string error) = Run("callers", Speedscope, "--strict");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("frame");
+    }
+
+    [TestMethod]
+    public void Run_Lines_RunsAndRendersJson()
+    {
+        (int exit, string output, _) = Run("lines", Speedscope, "--format", "json");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Trim().Should().Contain("\"schemaVersion\"");
+    }
+
+    [TestMethod]
+    public void Run_Heatmap_RunsForKnownFile()
+    {
+        (int exit, string output, _) = Run("heatmap", Speedscope, "Program.cs");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("source heatmap 'Program.cs'");
+    }
+
+    [TestMethod]
+    public void Run_CallersHelp_ShowsPositionalArguments()
+    {
+        (int exit, string output, _) = Run("callers", "--help");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("Arguments:");
+        output.Should().Contain("--strict");
     }
 }

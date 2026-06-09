@@ -8,48 +8,41 @@ using TraceQ.Tracing;
 namespace TraceQ.Cli;
 
 /// <summary>
-///  Runs a ranking request against the analysis core: load the trace, compute the
-///  self- or inclusive-time ranking, wrap it in the output contract, and render it
-///  as text or JSON.
+///  Runs a callers request against the analysis core: load the trace, report the
+///  immediate callers of the focus frame, wrap the result in the output contract,
+///  and render it as text or JSON.
 /// </summary>
 /// <remarks>
 ///  <para>
 ///   The execution is independent of the command-line parser; it takes its inputs
-///   as a <see cref="RankRequest"/> and writes to the supplied writers, so it can be
-///   driven directly in tests as well as from the verb handlers in
+///   as a <see cref="CallersRequest"/> and writes to the supplied writers, so it can
+///   be driven directly in tests as well as from the verb handler in
 ///   <see cref="TraceCommands"/>.
 ///  </para>
 /// </remarks>
-internal static class RankingExecutor
+internal static class CallersExecutor
 {
     /// <summary>
-    ///  Executes the ranking request.
+    ///  Executes the callers request.
     /// </summary>
-    /// <param name="request">The validated ranking inputs.</param>
+    /// <param name="request">The validated callers inputs.</param>
     /// <param name="output">The writer the result is rendered to.</param>
     /// <param name="error">The writer load errors are reported to.</param>
     /// <returns>A process exit code (see <see cref="ExitCodes"/>).</returns>
-    public static int Run(RankRequest request, TextWriter output, TextWriter error)
+    public static int Run(CallersRequest request, TextWriter output, TextWriter error)
     {
-        if (!TraceExecution.TryValidateFold(request.Fold, error))
-        {
-            return ExitCodes.UsageError;
-        }
-
         if (!TraceExecution.TryLoad(request.Path, request.Symbols, error, out LoadedTrace? trace))
         {
             return ExitCodes.InputError;
         }
 
         TraceInfo info = trace.Info;
-        RankingResult ranking = request.Measure == Measure.Inclusive
-            ? trace.Aggregator.InclusiveTime(request.Root, request.Fold, request.Top)
-            : trace.Aggregator.SelfTime(request.Root, request.Fold, request.Top);
+        CallersResult callers = trace.Aggregator.CallersOf(request.Frame, request.Root, request.Top);
 
-        AnalysisResult<RankingResult> envelope = new(
-            ranking,
+        AnalysisResult<CallersResult> envelope = new(
+            callers,
             TraceExecution.SymbolWarnings(info),
-            SteeringHints.ForRanking(ranking));
+            SteeringHints.ForCallers(callers));
 
         if (request.Format == OutputFormat.Json)
         {
@@ -57,7 +50,7 @@ internal static class RankingExecutor
         }
         else
         {
-            RankingTextRenderer.Render(envelope, info, trace.Aggregator.Metric, request.Measure, output);
+            CallersTextRenderer.Render(envelope, info, trace.Aggregator.Metric, output);
         }
 
         return TraceExecution.StrictExit(info, request.Strict);

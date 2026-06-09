@@ -18,21 +18,46 @@ public static class SourceAnnotator
     // render in full so the heat map reads top to bottom.
     private const int FullRenderLineCap = 600;
 
+    // A source file larger than this is not read into memory for annotation; the
+    // caller falls back to the compact per-line list instead. Source files are small
+    // in practice, so this only trips on a pathological or mistaken path and bounds
+    // the otherwise-unbounded File.ReadAllLines allocation.
+    private const long MaxSourceFileBytes = 8 * 1024 * 1024;
+
     // Lines of unchanged context shown around each hot line in windowed mode.
     private const int HeatContextLines = 4;
 
     /// <summary>
-    ///  Reads the source file at <paramref name="file"/> if it exists on disk.
+    ///  Reads the source file at <paramref name="file"/> if it exists on disk and is
+    ///  small enough to annotate.
     /// </summary>
     /// <param name="file">The on-disk path to read.</param>
     /// <param name="lines">The file's lines on success, otherwise empty.</param>
     /// <returns><see langword="true"/> when the file was read.</returns>
-    public static bool TryReadSourceLines(string file, out string[] lines)
+    public static bool TryReadSourceLines(string file, out string[] lines) =>
+        TryReadSourceLines(file, MaxSourceFileBytes, out lines);
+
+    /// <summary>
+    ///  Reads the source file at <paramref name="file"/> when it exists and does not
+    ///  exceed <paramref name="maxBytes"/>.
+    /// </summary>
+    /// <param name="file">The on-disk path to read.</param>
+    /// <param name="maxBytes">The largest file, in bytes, that will be read into memory.</param>
+    /// <param name="lines">The file's lines on success, otherwise empty.</param>
+    /// <returns><see langword="true"/> when the file was read.</returns>
+    internal static bool TryReadSourceLines(string file, long maxBytes, out string[] lines)
     {
         lines = [];
         try
         {
             if (!File.Exists(file))
+            {
+                return false;
+            }
+
+            // Bound the whole-file read: a pathologically large or mistaken path falls
+            // back to the compact per-line list rather than exhausting memory.
+            if (new FileInfo(file).Length > maxBytes)
             {
                 return false;
             }
