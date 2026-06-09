@@ -1,0 +1,182 @@
+// Copyright (c) 2025 Jeremy W Kuhne
+// SPDX-License-Identifier: MIT
+// See LICENSE file in the project root for full license information
+
+namespace TraceQ.Cli;
+
+/// <summary>
+///  End-to-end tests that drive the real ConsoleAppFramework parser through
+///  <see cref="CliApp.Run"/>, exercising option binding, enum parsing, validation
+///  and exit codes. Console is redirected for the duration of each run, so the
+///  class opts out of parallelism.
+/// </summary>
+[TestClass]
+[DoNotParallelize]
+public sealed class CliAppTests
+{
+    private static string FixturePath(string name) =>
+        Path.Combine(AppContext.BaseDirectory, "Fixtures", name);
+
+    private static string Speedscope => FixturePath("folding.speedscope.json");
+
+    private static (int Exit, string Out, string Error) Run(params string[] args)
+    {
+        TextWriter originalOut = Console.Out;
+        TextWriter originalError = Console.Error;
+        StringWriter output = new();
+        StringWriter error = new();
+        Environment.ExitCode = 0;
+        try
+        {
+            Console.SetOut(output);
+            Console.SetError(error);
+            int exit = CliApp.Run(args);
+            return (exit, output.ToString(), error.ToString());
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+            Console.SetError(originalError);
+            Environment.ExitCode = 0;
+        }
+    }
+
+    [TestMethod]
+    public void Run_NoArgs_ShowsVerbList()
+    {
+        (int exit, string output, _) = Run();
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("Commands:");
+        output.Should().Contain("rank");
+        output.Should().Contain("cpu");
+    }
+
+    [TestMethod]
+    public void Run_HelpFlag_ShowsVerbList()
+    {
+        (int exit, string output, _) = Run("--help");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("rank");
+        output.Should().Contain("cpu");
+    }
+
+    [TestMethod]
+    public void Run_RankHelp_ShowsOptionsAndAliases()
+    {
+        (int exit, string output, _) = Run("rank", "--help");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("--measure");
+        output.Should().Contain("--top");
+        output.Should().Contain("--strict");
+    }
+
+    [TestMethod]
+    public void Run_Rank_WritesRanking()
+    {
+        (int exit, string output, _) = Run("rank", Speedscope);
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("CPU self-time");
+    }
+
+    [TestMethod]
+    public void Run_MeasureInclusive_IsParsed()
+    {
+        (int exit, string output, _) = Run("rank", Speedscope, "--measure", "inclusive");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("CPU inclusive-time");
+    }
+
+    [TestMethod]
+    public void Run_JsonFormat_IsParsedAndSingleLine()
+    {
+        (int exit, string output, _) = Run("rank", Speedscope, "--format", "json");
+
+        exit.Should().Be(ExitCodes.Success);
+        string json = output.Trim();
+        json.Should().NotContain("\n");
+        json.Should().Contain("\"schemaVersion\"");
+    }
+
+    [TestMethod]
+    public void Run_TopAlias_LimitsRows()
+    {
+        (int exit, string output, _) = Run("cpu", Speedscope, "-n", "1", "--format", "json");
+
+        exit.Should().Be(ExitCodes.Success);
+        Regex.Matches(output, "\"frame\":").Count.Should().Be(1);
+    }
+
+    [TestMethod]
+    public void Run_CpuShortcut_MatchesRankDefault()
+    {
+        (int rankExit, string rankOut, _) = Run("rank", Speedscope);
+        (int cpuExit, string cpuOut, _) = Run("cpu", Speedscope);
+
+        cpuExit.Should().Be(rankExit);
+        cpuOut.Should().Be(rankOut);
+    }
+
+    [TestMethod]
+    public void Run_BadMetric_ReturnsUsageError()
+    {
+        (int exit, _, string error) = Run("rank", Speedscope, "--metric", "alloc");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("alloc");
+    }
+
+    [TestMethod]
+    public void Run_TopBelowOne_ReturnsUsageError()
+    {
+        // ConsoleAppFramework's [Range] validation fails before the verb body runs.
+        (int exit, _, _) = Run("rank", Speedscope, "--top", "0");
+
+        exit.Should().Be(ExitCodes.UsageError);
+    }
+
+    [TestMethod]
+    public void Run_BareVerb_ShowsVerbHelp()
+    {
+        // A verb with no further arguments shows its own help rather than erroring.
+        (int exit, string output, _) = Run("rank");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("Path to a .speedscope.json");
+    }
+
+    [TestMethod]
+    public void Run_MissingTraceArgument_ReturnsUsageError()
+    {
+        // With an option present but the required trace argument absent, the parser
+        // fails rather than falling back to help.
+        (int exit, _, string error) = Run("rank", "--measure", "inclusive");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("trace");
+    }
+
+    [TestMethod]
+    public void Run_MissingFile_ReturnsInputError()
+    {
+        (int exit, _, string error) = Run("rank", FixturePath("does-not-exist.nettrace"));
+
+        exit.Should().Be(ExitCodes.InputError);
+        error.Should().NotBeEmpty();
+    }
+
+    [TestMethod]
+    public void Run_InvalidFoldPattern_ReturnsUsageError()
+    {
+        // '(' parses as a single fold element (it is not the JSON-array prefix '['), so it
+        // reaches the executor's regex validation and surfaces as a usage error there.
+        (int exit, _, string error) = Run("rank", Speedscope, "--fold", "(");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("fold");
+    }
+}
