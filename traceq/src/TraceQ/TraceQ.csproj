@@ -12,4 +12,13 @@
     <ProjectReference Include="..\TraceQ.Core\TraceQ.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Source generator; contributes no runtime assembly, so reference it as an analyzer. -->
+    <PackageReference Include="ConsoleAppFramework" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="TraceQ.Cli.Tests" />
+  </ItemGroup>
+
 </Project>

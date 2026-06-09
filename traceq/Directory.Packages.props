@@ -31,6 +31,9 @@
     <PackageVersion Include="ModelContextProtocol" Version="1.3.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
 
+    <!-- CLI head: source-generated, zero-runtime-dependency command parser. -->
+    <PackageVersion Include="ConsoleAppFramework" Version="5.7.13" />
+
     <!-- Test stack: Microsoft.Testing.Platform + MSTest, matching Touki's migrated runner. -->
     <PackageVersion Include="MSTest.TestFramework" Version="4.2.3" />
     <PackageVersion Include="MSTest.TestAdapter" Version="4.2.3" />

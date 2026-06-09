@@ -1,0 +1,81 @@
+// Copyright (c) 2025 Jeremy W Kuhne
+// SPDX-License-Identifier: MIT
+// See LICENSE file in the project root for full license information
+
+using System.ComponentModel.DataAnnotations;
+using ConsoleAppFramework;
+using TraceQ.Tracing;
+
+namespace TraceQ.Cli;
+
+/// <summary>
+///  The command surface ConsoleAppFramework binds the verbs to: each public method
+///  is a verb, its parameters are the options, and its XML doc comments supply the
+///  generated help. The bodies validate the provider selector and delegate the work
+///  to <see cref="RankingExecutor"/>.
+/// </summary>
+internal sealed class TraceCommands
+{
+    /// <summary>
+    ///  Rank the hottest frames in a trace by self- or inclusive-time.
+    /// </summary>
+    /// <param name="trace">Path to a .speedscope.json, .nettrace, or .etl file.</param>
+    /// <param name="metric">Provider metric to rank; only 'cpu' is supported in this build.</param>
+    /// <param name="measure">-m, Which measure to report: self (leaf time, helpers folded) or inclusive.</param>
+    /// <param name="root">Substring scoping the ranking to the subtree under a frame.</param>
+    /// <param name="top">-n, Maximum number of rows to return.</param>
+    /// <param name="fold">Extra leaf-frame fold regexes (comma-separated); omit to use the built-in defaults.</param>
+    /// <param name="symbols">-s, Build-output directory whose embedded PDBs resolve managed frames.</param>
+    /// <param name="format">Render format: text or json.</param>
+    /// <param name="strict">Exit 3 when symbol resolution is below the trusted threshold.</param>
+    /// <returns>A process exit code.</returns>
+    [Command("rank")]
+    public int Rank(
+        [Argument] string trace,
+        string metric = RankRequestFactory.CpuMetric,
+        Measure measure = Measure.Self,
+        string root = "",
+        [Range(1, int.MaxValue)] int top = RankRequestFactory.DefaultTop,
+        string[]? fold = null,
+        string? symbols = null,
+        OutputFormat format = OutputFormat.Text,
+        bool strict = false)
+    {
+        if (!RankRequestFactory.IsCpuMetric(metric))
+        {
+            Console.Error.WriteLine(
+                $"Metric '{metric}' is not available yet; only 'cpu' is supported in this build.");
+            return ExitCodes.UsageError;
+        }
+
+        RankRequest request = RankRequestFactory.Create(trace, measure, root, top, fold, symbols, format, strict);
+        return RankingExecutor.Run(request, Console.Out, Console.Error);
+    }
+
+    /// <summary>
+    ///  Rank CPU-time hotspots; the shortcut for 'rank --metric cpu'.
+    /// </summary>
+    /// <param name="trace">Path to a .speedscope.json, .nettrace, or .etl file.</param>
+    /// <param name="measure">-m, Which measure to report: self (leaf time, helpers folded) or inclusive.</param>
+    /// <param name="root">Substring scoping the ranking to the subtree under a frame.</param>
+    /// <param name="top">-n, Maximum number of rows to return.</param>
+    /// <param name="fold">Extra leaf-frame fold regexes (comma-separated); omit to use the built-in defaults.</param>
+    /// <param name="symbols">-s, Build-output directory whose embedded PDBs resolve managed frames.</param>
+    /// <param name="format">Render format: text or json.</param>
+    /// <param name="strict">Exit 3 when symbol resolution is below the trusted threshold.</param>
+    /// <returns>A process exit code.</returns>
+    [Command("cpu")]
+    public int Cpu(
+        [Argument] string trace,
+        Measure measure = Measure.Self,
+        string root = "",
+        [Range(1, int.MaxValue)] int top = RankRequestFactory.DefaultTop,
+        string[]? fold = null,
+        string? symbols = null,
+        OutputFormat format = OutputFormat.Text,
+        bool strict = false)
+    {
+        RankRequest request = RankRequestFactory.Create(trace, measure, root, top, fold, symbols, format, strict);
+        return RankingExecutor.Run(request, Console.Out, Console.Error);
+    }
+}
