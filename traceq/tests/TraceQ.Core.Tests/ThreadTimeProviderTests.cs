@@ -15,8 +15,10 @@ public sealed class ThreadTimeProviderTests
 {
     private static string EtwFixture => Path.Combine(AppContext.BaseDirectory, "Fixtures", "etw.etl");
 
-    // A null scope reads every process (the provider only narrows when given a
-    // request); the scoped overloads pass an explicit ScopeRequest.
+    // The load path treats null as the automatic busiest-process default; the tests
+    // that want the whole capture pass ScopeRequest.AllProcesses explicitly. The
+    // single-result tests pass null (the default) since the fixture's busiest tree is
+    // the whole capture anyway.
     private static StackSampleSource Read(ScopeRequest? scope = null) =>
         new ThreadTimeProvider().Read(EtwFixture, scope, out _);
 
@@ -62,7 +64,7 @@ public sealed class ThreadTimeProviderTests
     [TestMethod]
     public void Read_ScopedToJobChild_NarrowsToThatProcess()
     {
-        StackSampleSource all = Read();
+        StackSampleSource all = Read(ScopeRequest.AllProcesses);
         StackSampleSource scoped = Read(ScopeRequest.ForProcess("HotLoopBench-Job", includeChildren: false));
 
         scoped.Samples.Should().NotBeEmpty();

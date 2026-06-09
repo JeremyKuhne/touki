@@ -273,6 +273,20 @@ public sealed class CliAppTests
     }
 
     [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Run_Cpu_ForwardsTheLoaderQualityWarnings()
+    {
+        // The executors forward the full TraceInfo.Warnings list, so the reader's
+        // low-symbol-resolution warning (this fixture resolves few frames) reaches the
+        // output rather than being dropped by a cherry-picking helper. Reading an .etl
+        // is Windows-only.
+        (int exit, string output, _) = Run("cpu", Etw, "--all-processes");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("frames resolved to a method name");
+    }
+
+    [TestMethod]
     public void Run_AllocMetricOnSpeedscope_ReturnsInputError()
     {
         // 'alloc' is a recognized selector, but a speedscope export carries no

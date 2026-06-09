@@ -85,8 +85,8 @@ public sealed class ProcessScopeTests
 {
     private static string EtwFixture => Path.Combine(AppContext.BaseDirectory, "Fixtures", "etw.etl");
 
-    // A null scope reads every process (the core loader only narrows when given a
-    // request); the scoped overloads pass an explicit ScopeRequest.
+    // The load path treats a null request as the automatic busiest-process default,
+    // so tests that want the whole capture pass ScopeRequest.AllProcesses explicitly.
     private static IReadOnlyList<SampleStack> Load(ScopeRequest? scope) =>
         new TraceLoader().Load(EtwFixture, scope: scope).Source.Samples;
 
@@ -96,7 +96,7 @@ public sealed class ProcessScopeTests
     [TestMethod]
     public void Read_EtlFixture_ProducesCpuSamples()
     {
-        IReadOnlyList<SampleStack> samples = Load(scope: null);
+        IReadOnlyList<SampleStack> samples = Load(ScopeRequest.AllProcesses);
 
         // The ETW fixture is a CPU-sampled capture, so the reader yields weighted
         // stacks; at least some carry a resolved "module!method" frame.
@@ -107,7 +107,7 @@ public sealed class ProcessScopeTests
     [TestMethod]
     public void Read_EtlFixture_SpansMultipleProcesses()
     {
-        IReadOnlyList<SampleStack> samples = Load(scope: null);
+        IReadOnlyList<SampleStack> samples = Load(ScopeRequest.AllProcesses);
 
         // The unscoped capture is the BenchmarkDotNet process tree: the host, the job
         // child, and its console host - more than one process.
@@ -118,7 +118,7 @@ public sealed class ProcessScopeTests
     [TestMethod]
     public void Read_ScopedToJobChild_KeepsOnlyThatProcessAndIsNarrower()
     {
-        IReadOnlyList<SampleStack> all = Load(scope: null);
+        IReadOnlyList<SampleStack> all = Load(ScopeRequest.AllProcesses);
         IReadOnlyList<SampleStack> scoped = Load(ScopeRequest.ForProcess("HotLoopBench-Job", includeChildren: false));
 
         // Scoping to the job process alone drops the host and console-host samples.
@@ -131,7 +131,7 @@ public sealed class ProcessScopeTests
     [TestMethod]
     public void Read_ScopedToTree_IsASubsetOfTheWholeCapture()
     {
-        IReadOnlyList<SampleStack> all = Load(scope: null);
+        IReadOnlyList<SampleStack> all = Load(ScopeRequest.AllProcesses);
         IReadOnlyList<SampleStack> jobOnly = Load(ScopeRequest.ForProcess("HotLoopBench-Job", includeChildren: false));
         IReadOnlyList<SampleStack> tree = Load(ScopeRequest.ForProcess("HotLoopBench"));
 
@@ -216,6 +216,19 @@ public sealed class ProcessScopeTests
         scoped.Info.Warnings.Should().Contain(w =>
             w.StartsWith("Scoped to the ", StringComparison.Ordinal)
             && w.Contains("--all-processes", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void Read_NullScope_MatchesAuto()
+    {
+        // A null request is unspecified, which the load path treats as the automatic
+        // busiest-process default - so it resolves to the same trace as an explicit
+        // ScopeRequest.Auto. This is what makes their shared cache key correct.
+        LoadedTrace nullScope = new TraceLoader().Load(EtwFixture, scope: null);
+        LoadedTrace auto = new TraceLoader().Load(EtwFixture, scope: ScopeRequest.Auto);
+
+        nullScope.Source.Samples.Count.Should().Be(auto.Source.Samples.Count);
+        nullScope.Info.Warnings.Should().BeEquivalentTo(auto.Info.Warnings);
     }
 
     [TestMethod]

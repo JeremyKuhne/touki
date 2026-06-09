@@ -112,10 +112,12 @@ public sealed class TraceStore
         return _cache.GetOrAdd(key, _ => _loader.Load(fullPath, metric, fullSymbols, scope));
     }
 
-    // A stable cache-key fragment for a scope request: 'a' for all-processes, 'auto'
-    // for the automatic default (including a null request), or the explicit process
-    // name. The name is length-prefixed so it cannot be confused with the sentinels or
-    // run into the following key segment.
+    // A stable cache-key fragment for a scope request: 'all' for all-processes, 'auto'
+    // for the automatic busiest-process default (a null request is unspecified, which is
+    // the same default), or the explicit process name. Because the load path treats a
+    // null request as the automatic default, null and ScopeRequest.Auto resolve to the
+    // same trace and so share the 'auto' fragment by design. The name is length-prefixed
+    // so it cannot be confused with the sentinels or run into the following key segment.
     private static string ScopeKey(ScopeRequest? scope)
     {
         if (scope is null || (scope.ProcessName is null && !scope.IncludeAll))

@@ -31,9 +31,11 @@ public sealed class TraceLoader
     ///  rankings. Ignored for speedscope inputs.
     /// </param>
     /// <param name="scope">
-    ///  Optional process scope. When set, the read is narrowed to the matched process
-    ///  tree - an explicit name, or the busiest process under the automatic default -
-    ///  losslessly. Ignored for single-process inputs (speedscope).
+    ///  Optional process scope. A <see langword="null"/> request is the automatic
+    ///  busiest-process default (the same as <see cref="ScopeRequest.Auto"/>): the read
+    ///  is narrowed to an explicit name, the busiest process automatically, or every
+    ///  process when opted out - losslessly. Ignored for single-process inputs
+    ///  (speedscope).
     /// </param>
     /// <returns>The loaded trace.</returns>
     /// <exception cref="ArgumentException">
@@ -59,10 +61,12 @@ public sealed class TraceLoader
     ///  frames resolve from the trace's own CLR rundown (allocation, exceptions).
     /// </param>
     /// <param name="scope">
-    ///  Optional process scope. When set, the read is narrowed to the matched process
-    ///  tree - an explicit name, or the busiest process under the automatic default -
-    ///  losslessly. Ignored for single-process inputs (speedscope) and for the
-    ///  single-process EventPipe metrics (allocation, exceptions).
+    ///  Optional process scope. A <see langword="null"/> request is the automatic
+    ///  busiest-process default (the same as <see cref="ScopeRequest.Auto"/>): the read
+    ///  is narrowed to an explicit name, the busiest process automatically, or every
+    ///  process when opted out - losslessly. Ignored for single-process inputs
+    ///  (speedscope) and for the single-process EventPipe metrics (allocation,
+    ///  exceptions).
     /// </param>
     /// <returns>The loaded trace.</returns>
     /// <exception cref="ArgumentException">

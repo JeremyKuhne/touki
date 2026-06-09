@@ -45,9 +45,10 @@ internal interface ITraceReader
     ///  that carry no native frames (speedscope).
     /// </param>
     /// <param name="scope">
-    ///  Optional process scope: when set, the read is narrowed to the matched process
-    ///  tree (an explicit name, or the busiest process under the automatic default).
-    ///  Ignored by single-process formats (speedscope).
+    ///  Optional process scope. A <see langword="null"/> request is the automatic
+    ///  busiest-process default (the same as <see cref="ScopeRequest.Auto"/>): the read
+    ///  is narrowed to an explicit name, the busiest process automatically, or every
+    ///  process when opted out. Ignored by single-process formats (speedscope).
     /// </param>
     /// <returns>The normalized samples and quality signals.</returns>
     TraceReadResult Read(string path, string? symbolsDirectory = null, ScopeRequest? scope = null);

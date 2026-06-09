@@ -49,7 +49,7 @@ internal static class RankingExecutor
 
         AnalysisResult<RankingResult> envelope = new(
             ranking,
-            TraceExecution.RankingWarnings(info),
+            TraceExecution.ResultWarnings(info),
             SteeringHints.ForRanking(ranking));
 
         if (request.Format == OutputFormat.Json)

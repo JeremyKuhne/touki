@@ -55,9 +55,11 @@ public sealed class ThreadTimeProvider
     /// </summary>
     /// <param name="path">The <c>.etl</c> file path.</param>
     /// <param name="scope">
-    ///  Optional process scope. When set, only the stacks of the matched workload tree
-    ///  are returned (an explicit name, or the busiest process under the automatic
-    ///  default), narrowing a machine-wide capture to one scenario.
+    ///  Optional process scope. A <see langword="null"/> request is the automatic
+    ///  busiest-process default (the same as <see cref="ScopeRequest.Auto"/>): only the
+    ///  stacks of the matched workload tree are returned - an explicit name, the busiest
+    ///  process automatically, or every process when opted out - narrowing a
+    ///  machine-wide capture to one scenario.
     /// </param>
     /// <param name="appliedProcessName">
     ///  The name of the process the scope resolved to, or <see langword="null"/> when
@@ -83,9 +85,11 @@ public sealed class ThreadTimeProvider
 
         using SymbolReader symbolReader = new(TextWriter.Null, "", null);
 
-        HashSet<int>? scopePids = scope is null
-            ? null
-            : ProcessTree.ResolveScope(traceLog, scope, out appliedProcessName);
+        // A null request is "unspecified", which is the automatic default (the same as
+        // ScopeRequest.Auto): a caller that passes nothing still gets scenario scope. A
+        // null pid set means no scoping (every process, the all-processes opt-out).
+        HashSet<int>? scopePids = ProcessTree.ResolveScope(
+            traceLog, scope ?? ScopeRequest.Auto, out appliedProcessName);
 
         MutableTraceEventStackSource stackSource = new(traceLog);
 

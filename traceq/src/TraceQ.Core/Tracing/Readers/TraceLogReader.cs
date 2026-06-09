@@ -85,12 +85,13 @@ internal abstract class TraceLogReader : ITraceReader
 
             // Resolve the scope intent (an explicit name, the busiest process under the
             // automatic default, or every process when opted out) to the set of process
-            // IDs to keep. A null set means no scoping - every process is read. This is
-            // lossless: the trace is fully symbol-resolved by TraceLog before any sample
-            // is dropped.
-            HashSet<int>? scopePids = scope is null
-                ? null
-                : ProcessTree.ResolveScope(traceLog, scope, out appliedScopeName);
+            // IDs to keep. A null request means "unspecified", which is the automatic
+            // default - the same as ScopeRequest.Auto - so a caller that passes nothing
+            // still gets scenario scope. A null pid set means no scoping (every process,
+            // the all-processes opt-out). This is lossless: the trace is fully
+            // symbol-resolved by TraceLog before any sample is dropped.
+            HashSet<int>? scopePids = ProcessTree.ResolveScope(
+                traceLog, scope ?? ScopeRequest.Auto, out appliedScopeName);
 
             return ReadCore(traceLog, symbolReader, scopePids, appliedScopeName);
         }
@@ -225,8 +226,6 @@ internal abstract class TraceLogReader : ITraceReader
         {
             warnings.Add(symbolWarning);
         }
-
-        warnings.Add("Sample weight is approximate (1 ms per sample); relative percentages are exact.");
 
         return new TraceReadResult(samples, resolutionRate, warnings);
     }

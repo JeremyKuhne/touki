@@ -21,7 +21,7 @@ internal sealed class TraceCommands
     ///  Rank the hottest frames in a trace by self- or inclusive-time.
     /// </summary>
     /// <param name="trace">Path to a .speedscope.json, .nettrace, or .etl file.</param>
-    /// <param name="metric">Provider metric to rank: cpu (default), alloc, exceptions, or threadtime.</param>
+    /// <param name="metric">Provider metric to rank: cpu (default), alloc, exceptions, or threadtime. The cpu metric weights each sample as 1 ms, so its weights are approximate; the relative percentages are exact.</param>
     /// <param name="measure">-m, Which measure to report: self (leaf time, helpers folded) or inclusive.</param>
     /// <param name="root">Substring scoping the ranking to the subtree under a frame.</param>
     /// <param name="top">-n, Maximum number of rows to return.</param>
@@ -68,7 +68,7 @@ internal sealed class TraceCommands
     ///  Rank CPU-time hotspots; the shortcut for 'rank --metric cpu'.
     /// </summary>
     /// <param name="trace">Path to a .speedscope.json, .nettrace, or .etl file.</param>
-    /// <param name="measure">-m, Which measure to report: self (leaf time, helpers folded) or inclusive.</param>
+    /// <param name="measure">-m, Which measure to report: self (leaf time, helpers folded) or inclusive. Each sample weighs 1 ms, so the weights are approximate; the relative percentages are exact.</param>
     /// <param name="root">Substring scoping the ranking to the subtree under a frame.</param>
     /// <param name="top">-n, Maximum number of rows to return.</param>
     /// <param name="fold">Extra leaf-frame fold regexes (comma-separated); omit to use the built-in defaults.</param>

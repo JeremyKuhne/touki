@@ -36,9 +36,9 @@ internal static class ExportExecutor
             return ExitCodes.InputError;
         }
 
-        // Symbol warnings go to the error writer so the flame-graph JSON on the output
+        // Quality warnings go to the error writer so the flame-graph JSON on the output
         // writer stays clean for redirection into a file the viewer reads.
-        foreach (string warning in TraceExecution.SymbolWarnings(trace.Info))
+        foreach (string warning in TraceExecution.ResultWarnings(trace.Info))
         {
             error.WriteLine($"! {warning}");
         }
