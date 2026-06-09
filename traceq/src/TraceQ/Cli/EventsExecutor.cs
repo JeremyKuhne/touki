@@ -59,10 +59,10 @@ internal static class EventsExecutor
         if (shownThrough < result.TotalMatched)
         {
             hints.Add(
-                $"{result.TotalMatched - shownThrough} more match; page with --skip {request.Skip + request.Take}.");
+                $"{result.TotalMatched - shownThrough} more match; page with --skip {shownThrough}.");
         }
 
-        AnalysisResult<EventQueryResult> envelope = new(result, warnings: null, hints);
+        AnalysisResult<EventQueryResult> envelope = new(result, hints: hints);
 
         if (request.Format == OutputFormat.Json)
         {
