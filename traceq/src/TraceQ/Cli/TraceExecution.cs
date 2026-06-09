@@ -78,6 +78,11 @@ internal static class TraceExecution
     /// <param name="symbols">Optional build-output directory for symbol resolution.</param>
     /// <param name="error">The writer a load-failure message is reported to.</param>
     /// <param name="trace">The loaded trace on success.</param>
+    /// <param name="scope">
+    ///  Optional process scope (an explicit name, the automatic busiest-process
+    ///  default when <see langword="null"/>, or every process). Consumed only by the
+    ///  CPU and thread-time metrics.
+    /// </param>
     /// <returns>
     ///  <see langword="true"/> on success; otherwise <see langword="false"/>, and the
     ///  caller should return <see cref="ExitCodes.InputError"/>.
@@ -87,11 +92,12 @@ internal static class TraceExecution
         TraceMetric metric,
         string? symbols,
         TextWriter error,
-        [NotNullWhen(true)] out LoadedTrace? trace)
+        [NotNullWhen(true)] out LoadedTrace? trace,
+        ScopeRequest? scope = null)
     {
         try
         {
-            trace = new TraceStore().Get(path, symbols, metric);
+            trace = new TraceStore().Get(path, symbols, metric, scope);
             return true;
         }
         catch (Exception ex) when (
@@ -192,6 +198,35 @@ internal static class TraceExecution
         SymbolGate.TryGetWarning(info.SymbolResolutionRate, info.SampleCount, out string? warning)
             ? [warning]
             : [];
+
+    /// <summary>
+    ///  Produces the warnings to attach to a stack-ranking result: the
+    ///  symbol-resolution warning plus the applied-scope notice the loader recorded
+    ///  when it narrowed a machine-wide capture to one process tree.
+    /// </summary>
+    /// <param name="info">The loaded trace's metadata.</param>
+    /// <returns>The warnings to attach to the result envelope.</returns>
+    /// <remarks>
+    ///  <para>
+    ///   The applied-scope notice is carried on <see cref="TraceInfo.Warnings"/> by the
+    ///   reader, since only the read knows which process it auto-scoped to. Surfacing it
+    ///   here lets an agent see that the ranking covers one process - and how to widen
+    ///   to all of them - rather than silently reading a narrowed view.
+    ///  </para>
+    /// </remarks>
+    public static IReadOnlyList<string> RankingWarnings(TraceInfo info)
+    {
+        List<string> warnings = [.. SymbolWarnings(info)];
+        foreach (string warning in info.Warnings)
+        {
+            if (warning.StartsWith("Scoped to the ", StringComparison.Ordinal))
+            {
+                warnings.Add(warning);
+            }
+        }
+
+        return warnings;
+    }
 
     /// <summary>
     ///  Decides the exit code for an otherwise successful run, applying the

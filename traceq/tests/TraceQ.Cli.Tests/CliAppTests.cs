@@ -216,6 +216,63 @@ public sealed class CliAppTests
     }
 
     [TestMethod]
+    public void Run_ProcessAndAllProcesses_ReturnsUsageError()
+    {
+        // The two scope options are mutually exclusive; the conflict is caught before
+        // any trace read, so it runs on every CI leg.
+        (int exit, _, string error) = Run("rank", Speedscope, "--process", "MyApp", "--all-processes");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("only one of --process and --all-processes");
+    }
+
+    [TestMethod]
+    public void Run_AllProcessesOnSpeedscope_Succeeds()
+    {
+        // Speedscope is single-process, so --all-processes is a harmless no-op there;
+        // the ranking still renders.
+        (int exit, string output, _) = Run("cpu", Speedscope, "--all-processes");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("CPU self-time");
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Run_ExplicitProcessScope_OnMachineWideCapture_WarnsAndNarrows()
+    {
+        // An explicit --process that drops part of an ETW capture surfaces the scope
+        // notice. Reading an .etl is Windows-only, so this is guarded.
+        (int exit, string output, _) = Run("cpu", Etw, "--process", "HotLoopBench-Job");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("Scoped to the");
+        output.Should().Contain("--all-processes");
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Run_AutoScope_OnMachineWideCapture_Succeeds()
+    {
+        // The default (no scope option) auto-scopes a multi-process ETW capture to the
+        // busiest process tree and still renders a ranking.
+        (int exit, string output, _) = Run("cpu", Etw);
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("CPU self-time");
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Run_AllProcesses_OnMachineWideCapture_DoesNotWarn()
+    {
+        (int exit, string output, _) = Run("cpu", Etw, "--all-processes");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().NotContain("Scoped to the");
+    }
+
+    [TestMethod]
     public void Run_AllocMetricOnSpeedscope_ReturnsInputError()
     {
         // 'alloc' is a recognized selector, but a speedscope export carries no

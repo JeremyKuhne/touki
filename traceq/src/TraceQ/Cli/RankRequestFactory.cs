@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.Diagnostics.CodeAnalysis;
 using TraceQ.Tracing;
 
 namespace TraceQ.Cli;
@@ -75,6 +76,7 @@ internal static class RankRequestFactory
     /// <param name="symbols">Optional build-output directory for symbol resolution.</param>
     /// <param name="format">The render format.</param>
     /// <param name="strict">Whether to trip the strict symbol-resolution exit gate.</param>
+    /// <param name="scope">The process scope, or <see langword="null"/> for the automatic default.</param>
     /// <returns>The assembled request.</returns>
     public static RankRequest Create(
         string trace,
@@ -85,9 +87,48 @@ internal static class RankRequestFactory
         IReadOnlyList<string>? fold,
         string? symbols,
         OutputFormat format,
-        bool strict)
+        bool strict,
+        ScopeRequest? scope = null)
     {
         IReadOnlyList<string> foldPatterns = fold is { Count: > 0 } ? fold : FrameNames.DefaultFoldPatterns;
-        return new RankRequest(trace, metric, root, top, foldPatterns, measure, format, symbols, strict);
+        return new RankRequest(trace, metric, root, top, foldPatterns, measure, format, symbols, strict, scope);
+    }
+
+    /// <summary>
+    ///  Builds the process-scope request from the two mutually exclusive verb options:
+    ///  an explicit <c>--process</c> name and the <c>--all-processes</c> opt-out.
+    /// </summary>
+    /// <param name="process">The <c>--process</c> name substring, or empty when not given.</param>
+    /// <param name="allProcesses">Whether <c>--all-processes</c> was set.</param>
+    /// <param name="scope">
+    ///  The resolved scope on success: an explicit process scope, the all-processes
+    ///  opt-out, or the automatic default when neither option was given.
+    /// </param>
+    /// <param name="errorMessage">The usage error when both options were given.</param>
+    /// <returns>
+    ///  <see langword="true"/> when the options are valid; otherwise <see langword="false"/>,
+    ///  and the caller should report <paramref name="errorMessage"/> as a usage error.
+    /// </returns>
+    public static bool TryResolveScope(
+        string process,
+        bool allProcesses,
+        out ScopeRequest scope,
+        [NotNullWhen(false)] out string? errorMessage)
+    {
+        bool hasProcess = !string.IsNullOrEmpty(process);
+        if (hasProcess && allProcesses)
+        {
+            scope = ScopeRequest.Auto;
+            errorMessage = "Specify only one of --process and --all-processes.";
+            return false;
+        }
+
+        scope = hasProcess
+            ? ScopeRequest.ForProcess(process)
+            : allProcesses
+                ? ScopeRequest.AllProcesses
+                : ScopeRequest.Auto;
+        errorMessage = null;
+        return true;
     }
 }

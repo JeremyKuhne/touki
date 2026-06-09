@@ -28,6 +28,7 @@ namespace TraceQ.Cli;
 /// <param name="Format">The render format.</param>
 /// <param name="Symbols">Optional build-output directory whose embedded PDBs resolve managed frames.</param>
 /// <param name="Strict">Whether to trip the strict symbol-resolution exit gate.</param>
+/// <param name="Scope">The process scope (explicit name, automatic default, or all processes).</param>
 internal sealed record RankRequest(
     string Path,
     TraceMetric Metric,
@@ -37,4 +38,5 @@ internal sealed record RankRequest(
     Measure Measure,
     OutputFormat Format,
     string? Symbols,
-    bool Strict);
+    bool Strict,
+    ScopeRequest? Scope = null);

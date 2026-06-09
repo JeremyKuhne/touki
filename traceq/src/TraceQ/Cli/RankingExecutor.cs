@@ -36,7 +36,8 @@ internal static class RankingExecutor
             return ExitCodes.UsageError;
         }
 
-        if (!TraceExecution.TryLoad(request.Path, request.Metric, request.Symbols, error, out LoadedTrace? trace))
+        if (!TraceExecution.TryLoad(
+            request.Path, request.Metric, request.Symbols, error, out LoadedTrace? trace, request.Scope))
         {
             return ExitCodes.InputError;
         }
@@ -48,7 +49,7 @@ internal static class RankingExecutor
 
         AnalysisResult<RankingResult> envelope = new(
             ranking,
-            TraceExecution.SymbolWarnings(info),
+            TraceExecution.RankingWarnings(info),
             SteeringHints.ForRanking(ranking));
 
         if (request.Format == OutputFormat.Json)

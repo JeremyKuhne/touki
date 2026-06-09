@@ -69,8 +69,19 @@ public sealed class TraceStore
     ///  allocation sites, and so on. The cache keys on it, so the same trace's CPU
     ///  and allocation views are cached separately.
     /// </param>
+    /// <param name="scope">
+    ///  Optional process scope (an explicit name, the automatic busiest-process
+    ///  default, or every process). Consumed only by the CPU and thread-time metrics;
+    ///  the other providers read a single-process EventPipe trace and ignore it. The
+    ///  cache keys on it for those metrics, so the same trace scoped two ways is cached
+    ///  separately.
+    /// </param>
     /// <returns>The cached loaded trace.</returns>
-    public LoadedTrace Get(string path, string? symbolsDirectory = null, TraceMetric metric = TraceMetric.Cpu)
+    public LoadedTrace Get(
+        string path,
+        string? symbolsDirectory = null,
+        TraceMetric metric = TraceMetric.Cpu,
+        ScopeRequest? scope = null)
     {
         string fullPath = Path.GetFullPath(path);
 
@@ -83,14 +94,41 @@ public sealed class TraceStore
             ? Path.GetFullPath(symbolsDirectory)
             : null;
 
+        // Only the CPU and thread-time metrics read a multi-process capture, so scope
+        // only distinguishes those; drop it for the single-process EventPipe metrics so
+        // their cache entries are not split by an ignored scope.
+        string scopeKey = metric is TraceMetric.Cpu or TraceMetric.ThreadTime
+            ? ScopeKey(scope)
+            : "-";
+
         // Length-prefix the first path so the two components cannot be confused for a
         // different pair: '|' - like every other ASCII separator - is a legal POSIX
         // file-name character, so a plain "a|b" delimiter could collide ("a|b" + "c"
-        // versus "a" + "b|c"). The metric prefix keeps a trace's distinct provider
-        // views (CPU versus allocation) from sharing one cache entry. Loading uses the
+        // versus "a" + "b|c"). The metric and scope prefixes keep a trace's distinct
+        // provider views and scopes from sharing one cache entry. Loading uses the
         // normalized symbols path so a relative symbolsDirectory resolves exactly the
         // way it was keyed.
-        string key = $"{(int)metric}:{fullPath.Length}|{fullPath}{fullSymbols}";
-        return _cache.GetOrAdd(key, _ => _loader.Load(fullPath, metric, fullSymbols));
+        string key = $"{(int)metric}:{scopeKey}:{fullPath.Length}|{fullPath}{fullSymbols}";
+        return _cache.GetOrAdd(key, _ => _loader.Load(fullPath, metric, fullSymbols, scope));
+    }
+
+    // A stable cache-key fragment for a scope request: 'a' for all-processes, 'auto'
+    // for the automatic default (including a null request), or the explicit process
+    // name. The name is length-prefixed so it cannot be confused with the sentinels or
+    // run into the following key segment.
+    private static string ScopeKey(ScopeRequest? scope)
+    {
+        if (scope is null || (scope.ProcessName is null && !scope.IncludeAll))
+        {
+            return "auto";
+        }
+
+        if (scope.IncludeAll)
+        {
+            return "all";
+        }
+
+        string name = scope.ProcessName!;
+        return $"p{(scope.IncludeChildren ? "+" : "-")}{name.Length}:{name}";
     }
 }

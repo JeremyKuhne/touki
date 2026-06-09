@@ -48,7 +48,7 @@ internal abstract class TraceLogReader : ITraceReader
     protected abstract TraceLog OpenTraceLog(string path);
 
     /// <inheritdoc/>
-    public TraceReadResult Read(string path, string? symbolsDirectory = null, ProcessScope? processScope = null)
+    public TraceReadResult Read(string path, string? symbolsDirectory = null, ScopeRequest? scope = null)
     {
         using TraceLog traceLog = OpenTraceLog(path);
 
@@ -68,6 +68,10 @@ internal abstract class TraceLogReader : ITraceReader
             ? null
             : EmbeddedPdbExtractor.Extract(symbolsDirectory);
 
+        // The name the scope resolved to (set by ResolveScope below), surfaced as a
+        // warning so the caller knows a machine-wide capture was narrowed automatically.
+        string? appliedScopeName = null;
+
         try
         {
             if (extractedPdbDirectory is not null)
@@ -79,13 +83,16 @@ internal abstract class TraceLogReader : ITraceReader
                 symbolReader.SymbolPath = symbolsDirectory;
             }
 
-            // Resolve the scenario's process tree (the matched processes plus, by
-            // default, their descendants) to the set of process IDs to keep. A null set
-            // means no scoping - every process is read. This is lossless: the trace is
-            // fully symbol-resolved by TraceLog before any sample is dropped.
-            HashSet<int>? scopePids = processScope is null ? null : ProcessTree.ResolvePids(traceLog, processScope);
+            // Resolve the scope intent (an explicit name, the busiest process under the
+            // automatic default, or every process when opted out) to the set of process
+            // IDs to keep. A null set means no scoping - every process is read. This is
+            // lossless: the trace is fully symbol-resolved by TraceLog before any sample
+            // is dropped.
+            HashSet<int>? scopePids = scope is null
+                ? null
+                : ProcessTree.ResolveScope(traceLog, scope, out appliedScopeName);
 
-            return ReadCore(traceLog, symbolReader, scopePids);
+            return ReadCore(traceLog, symbolReader, scopePids, appliedScopeName);
         }
         finally
         {
@@ -104,7 +111,11 @@ internal abstract class TraceLogReader : ITraceReader
         }
     }
 
-    private static TraceReadResult ReadCore(TraceLog traceLog, SymbolReader symbolReader, HashSet<int>? scopePids)
+    private static TraceReadResult ReadCore(
+        TraceLog traceLog,
+        SymbolReader symbolReader,
+        HashSet<int>? scopePids,
+        string? appliedScopeName)
     {
         Dictionary<int, string> locationCache = [];
 
@@ -202,6 +213,12 @@ internal abstract class TraceLogReader : ITraceReader
         if (samples.Count == 0)
         {
             warnings.Add("No sampled-profile (CPU) events were found. Was the trace captured with a CPU sampler?");
+        }
+
+        if (appliedScopeName is not null)
+        {
+            warnings.Add(
+                $"Scoped to the '{appliedScopeName}' process tree; pass --all-processes to read every process.");
         }
 
         if (SymbolGate.TryGetWarning(resolutionRate, samples.Count, out string? symbolWarning))
