@@ -12,6 +12,82 @@ traces - the productized successor to `touki.mcp`. Built on the
 > [docs/traceq-implementation-plan.md](../docs/traceq-implementation-plan.md)
 > (in the parent repo during incubation).
 
+## Using traceq
+
+Every verb takes a trace path and prints a dense text report (or compact JSON
+with `--format json`). The canonical investigation is **rank -> drill -> compare**:
+find the hot frames, drill into one, then diff against a baseline.
+
+```pwsh
+# Workflow: rank the hottest frames, drill into one, then diff two runs.
+traceq cpu app.nettrace                      # 1. what's hot (self-time)
+traceq callers app.nettrace MyApp.Parse      # 2. who calls the hot frame
+traceq lines app.nettrace --symbols bin/Release/net10.0   # 3. hot source lines
+traceq diff before.nettrace after.nettrace   # 4. what changed between runs
+```
+
+Install it as a local .NET tool from a `dotnet pack` output:
+
+```pwsh
+dotnet pack src/TraceQ/TraceQ.csproj -c Release
+dotnet tool install --global --add-source ./artifacts/packages TraceQ.Tool
+```
+
+### Verbs
+
+**Ranking** - rank stacks by a metric (`--metric` on `rank`, or a shortcut verb):
+
+| Verb | What it ranks | Example |
+|---|---|---|
+| `rank` | Any metric (`--metric cpu\|alloc\|exceptions\|threadtime`) | `traceq rank app.nettrace --metric alloc` |
+| `cpu` | CPU self-/inclusive-time | `traceq cpu app.nettrace --measure inclusive` |
+| `alloc` | Bytes allocated, by site | `traceq alloc app.nettrace --top 10` |
+| `exceptions` | Throw sites, by count | `traceq exceptions app.nettrace` |
+| `threadtime` | Wall-clock (running + blocked), Windows `.etl` | `traceq threadtime app.etl` |
+
+Ranking verbs accept `--root` (scope to a frame subtree), `--process` /
+`--all-processes` (scope a multi-process capture; the busiest is auto-scoped by
+default), and `--benchmark` (scope a BenchmarkDotNet capture to the measured
+workload, past the harness):
+
+```pwsh
+traceq cpu bdn.nettrace --benchmark          # just the [Benchmark] code
+traceq cpu machinewide.etl --process MyApp   # one process tree
+```
+
+**Drill-down** - follow a ranking into detail:
+
+| Verb | Purpose | Example |
+|---|---|---|
+| `callers` | Immediate callers of a frame | `traceq callers app.nettrace MyApp.Parse` |
+| `lines` | Hottest source lines of scoped methods | `traceq lines app.nettrace --symbols bin/Release/net10.0` |
+| `heatmap` | Per-line heat for one source file | `traceq heatmap app.nettrace Parser.cs` |
+| `tree` | Top-down call tree from the root | `traceq tree app.nettrace --max-depth 5` |
+
+**Compare and export:**
+
+| Verb | Purpose | Example |
+|---|---|---|
+| `diff` | What got slower/faster between two traces | `traceq diff before.nettrace after.nettrace` |
+| `export` | Write a flame graph (speedscope / chromium) | `traceq export app.nettrace --format speedscope -o app.json` |
+
+**Structured reports** (EventPipe `.nettrace`):
+
+| Verb | Purpose | Example |
+|---|---|---|
+| `gcstats` | GC counts, pauses, heap summary | `traceq gcstats app.nettrace` |
+| `jitstats` | JIT method count, compile time, sizes | `traceq jitstats app.nettrace` |
+| `events` | Query raw events by name, paged | `traceq events app.nettrace --name GC/AllocationTick` |
+
+**File ops** - manage the ETLX conversion cache TraceEvent keeps beside a trace:
+
+| Verb | Purpose | Example |
+|---|---|---|
+| `convert` | Build the ETLX cache up front | `traceq convert app.nettrace` |
+| `clean` | Remove the ETLX cache to force a rebuild | `traceq clean app.nettrace` |
+
+Run `traceq <verb> --help` for the full option set of any verb.
+
 ## Layout
 
 | Path | Purpose |

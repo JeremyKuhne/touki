@@ -72,6 +72,10 @@ jobs:
       - name: Test
         run: dotnet test traceq.slnx --configuration Release --no-build
 
+      - name: Help lint
+        shell: pwsh
+        run: ./tools/Test-CliHelp.ps1 -Configuration Release
+
   # Extraction rehearsal: prove zero coupling by building the subtree as a
   # standalone tree, outside the touki repository, on both OSes.
   rehearsal:
