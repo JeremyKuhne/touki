@@ -131,4 +131,39 @@ internal static class RankRequestFactory
         errorMessage = null;
         return true;
     }
+
+    /// <summary>
+    ///  Resolves the root-frame scope from the explicit <c>--root</c> option and the
+    ///  <c>--benchmark</c> preset, which scopes a BenchmarkDotNet capture to the
+    ///  measured workload subtree.
+    /// </summary>
+    /// <param name="root">The explicit <c>--root</c> substring, or empty when not given.</param>
+    /// <param name="benchmark">Whether <c>--benchmark</c> was set.</param>
+    /// <param name="resolvedRoot">
+    ///  The root scope to use: the BenchmarkDotNet workload frame when
+    ///  <paramref name="benchmark"/> is set, otherwise <paramref name="root"/>.
+    /// </param>
+    /// <param name="errorMessage">The usage error when both options were given.</param>
+    /// <returns>
+    ///  <see langword="true"/> when the options are valid; otherwise <see langword="false"/>,
+    ///  and the caller should report <paramref name="errorMessage"/> as a usage error.
+    /// </returns>
+    public static bool TryResolveRoot(
+        string root,
+        bool benchmark,
+        out string resolvedRoot,
+        [NotNullWhen(false)] out string? errorMessage)
+    {
+        if (benchmark && !string.IsNullOrEmpty(root))
+        {
+            // --benchmark is itself a root preset, so a second explicit root is ambiguous.
+            resolvedRoot = root;
+            errorMessage = "Specify only one of --root and --benchmark.";
+            return false;
+        }
+
+        resolvedRoot = benchmark ? FrameNames.BenchmarkWorkloadFrame : root;
+        errorMessage = null;
+        return true;
+    }
 }

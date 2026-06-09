@@ -229,6 +229,30 @@ public sealed class CliAppTests
     }
 
     [TestMethod]
+    public void Run_Benchmark_ScopesToTheMeasuredWorkload()
+    {
+        // The exceptions fixture is a BenchmarkDotNet EventPipe capture; --benchmark
+        // scopes the ranking to the WorkloadAction subtree, past the harness/bootstrap.
+        (int exit, string output, _) = Run("cpu", ExceptionsTrace, "--benchmark", "--measure", "inclusive");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("scoped to 'WorkloadAction'");
+        // The measured benchmark method surfaces once the harness is scoped out.
+        output.Should().Contain("ExceptionLoop");
+    }
+
+    [TestMethod]
+    public void Run_RootAndBenchmark_ReturnsUsageError()
+    {
+        // --benchmark is itself a root preset, so a second explicit --root conflicts;
+        // caught before any trace read.
+        (int exit, _, string error) = Run("cpu", ExceptionsTrace, "--root", "Foo", "--benchmark");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("only one of --root and --benchmark");
+    }
+
+    [TestMethod]
     public void Run_AllProcessesOnSpeedscope_Succeeds()
     {
         // Speedscope is single-process, so --all-processes is a harmless no-op there;

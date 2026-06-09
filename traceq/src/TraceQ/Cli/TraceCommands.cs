@@ -35,6 +35,7 @@ internal sealed class TraceCommands
     /// <param name="strict">Exit 3 when symbol resolution is below the trusted threshold.</param>
     /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
     /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest (multi-process captures).</param>
+    /// <param name="benchmark">Scope to the BenchmarkDotNet measured-workload subtree (preset root); for BDN captures.</param>
     /// <returns>A process exit code.</returns>
     [Command("rank")]
     public int Rank(
@@ -48,7 +49,8 @@ internal sealed class TraceCommands
         OutputFormat format = OutputFormat.Text,
         bool strict = false,
         string process = "",
-        bool allProcesses = false)
+        bool allProcesses = false,
+        bool benchmark = false)
     {
         if (!RankRequestFactory.TryResolveMetric(metric, out TraceMetric resolved))
         {
@@ -63,8 +65,14 @@ internal sealed class TraceCommands
             return ExitCodes.UsageError;
         }
 
+        if (!RankRequestFactory.TryResolveRoot(root, benchmark, out string resolvedRoot, out string? rootError))
+        {
+            Console.Error.WriteLine(rootError);
+            return ExitCodes.UsageError;
+        }
+
         RankRequest request = RankRequestFactory.Create(
-            trace, resolved, measure, root, top, fold, symbols, format, strict, scope);
+            trace, resolved, measure, resolvedRoot, top, fold, symbols, format, strict, scope);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -85,6 +93,7 @@ internal sealed class TraceCommands
     /// <param name="strict">Exit 3 when symbol resolution is below the trusted threshold.</param>
     /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
     /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest (multi-process captures).</param>
+    /// <param name="benchmark">Scope to the BenchmarkDotNet measured-workload subtree (preset root); for BDN captures.</param>
     /// <returns>A process exit code.</returns>
     [Command("cpu")]
     public int Cpu(
@@ -97,7 +106,8 @@ internal sealed class TraceCommands
         OutputFormat format = OutputFormat.Text,
         bool strict = false,
         string process = "",
-        bool allProcesses = false)
+        bool allProcesses = false,
+        bool benchmark = false)
     {
         if (!RankRequestFactory.TryResolveScope(process, allProcesses, out ScopeRequest scope, out string? scopeError))
         {
@@ -105,8 +115,14 @@ internal sealed class TraceCommands
             return ExitCodes.UsageError;
         }
 
+        if (!RankRequestFactory.TryResolveRoot(root, benchmark, out string resolvedRoot, out string? rootError))
+        {
+            Console.Error.WriteLine(rootError);
+            return ExitCodes.UsageError;
+        }
+
         RankRequest request = RankRequestFactory.Create(
-            trace, TraceMetric.Cpu, measure, root, top, fold, symbols, format, strict, scope);
+            trace, TraceMetric.Cpu, measure, resolvedRoot, top, fold, symbols, format, strict, scope);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -180,6 +196,7 @@ internal sealed class TraceCommands
     /// <param name="format">Render format: text or json.</param>
     /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
     /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest.</param>
+    /// <param name="benchmark">Scope to the BenchmarkDotNet measured-workload subtree (preset root); for BDN captures.</param>
     /// <returns>A process exit code.</returns>
     /// <remarks>
     ///  Unlike CPU sampling, thread time accounts for off-CPU (blocked) intervals, so
@@ -197,7 +214,8 @@ internal sealed class TraceCommands
         string[]? fold = null,
         OutputFormat format = OutputFormat.Text,
         string process = "",
-        bool allProcesses = false)
+        bool allProcesses = false,
+        bool benchmark = false)
     {
         if (!RankRequestFactory.TryResolveScope(process, allProcesses, out ScopeRequest scope, out string? scopeError))
         {
@@ -205,8 +223,14 @@ internal sealed class TraceCommands
             return ExitCodes.UsageError;
         }
 
+        if (!RankRequestFactory.TryResolveRoot(root, benchmark, out string resolvedRoot, out string? rootError))
+        {
+            Console.Error.WriteLine(rootError);
+            return ExitCodes.UsageError;
+        }
+
         RankRequest request = RankRequestFactory.Create(
-            trace, TraceMetric.ThreadTime, measure, root, top, fold, symbols: null, format, strict: false, scope);
+            trace, TraceMetric.ThreadTime, measure, resolvedRoot, top, fold, symbols: null, format, strict: false, scope);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
