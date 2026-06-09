@@ -95,10 +95,15 @@ public sealed class TraceLoader
 
         return metric switch
         {
+            TraceMetric.Cpu => LoadCpu(fullPath, reader, symbolsDirectory, processScope),
             TraceMetric.Allocations => LoadAllocations(fullPath, reader),
             TraceMetric.Exceptions => LoadExceptions(fullPath, reader),
             TraceMetric.ThreadTime => LoadThreadTime(fullPath, reader, processScope),
-            _ => LoadCpu(fullPath, reader, symbolsDirectory, processScope)
+            // Enums can be cast from any int, so reject an undefined value rather than
+            // silently falling back to a CPU load and masking a bad caller (or a future
+            // TraceMetric addition this switch was not updated for).
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(metric), metric, $"Unknown {nameof(TraceMetric)} value.")
         };
     }
 

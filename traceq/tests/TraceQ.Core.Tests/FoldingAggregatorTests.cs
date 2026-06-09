@@ -33,7 +33,7 @@ public sealed class FoldingAggregatorTests
         LoadedTrace trace = LoadFolding();
         trace.Info.Format.Should().Be(TraceFormat.Speedscope);
         trace.Info.SampleCount.Should().Be(4);
-        trace.Info.DurationMs.Should().Be(25.0);
+        trace.Info.TotalWeight.Should().Be(25.0);
         trace.Info.SymbolResolutionRate.Should().Be(1.0);
     }
 

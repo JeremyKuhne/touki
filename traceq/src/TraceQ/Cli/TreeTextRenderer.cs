@@ -35,7 +35,7 @@ internal static class TreeTextRenderer
         string scope = tree.RootFrame.Length > 0 ? $"scoped to '{tree.RootFrame}'" : "whole trace";
 
         output.WriteLine(
-            $"{info.Format}  {info.SampleCount} samples  {info.DurationMs:N1} ms  symbols {info.SymbolResolutionRate:P0}");
+            $"{info.Format}  {info.SampleCount} samples  {info.TotalWeight:N1} {unit}  symbols {info.SymbolResolutionRate:P0}");
         output.WriteLine();
         output.WriteLine($"{metric.Name} call tree  -  scope {tree.ScopeWeight:N2} {unit}  ({scope})");
         output.WriteLine($"  {"weight",WeightColumnWidth}  {"%",PercentColumnWidth}  frame");

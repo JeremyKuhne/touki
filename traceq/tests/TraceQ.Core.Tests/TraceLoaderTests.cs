@@ -63,9 +63,9 @@ public sealed class TraceLoaderTests
         trace.Aggregator.Metric.Should().Be(MetricInfo.Allocations);
         trace.Info.Format.Should().Be(TraceFormat.NetTrace);
         trace.Info.SampleCount.Should().BeGreaterThan(0);
-        // DurationMs carries the sum of the sample weights in the metric's unit, which
+        // TotalWeight carries the sum of the sample weights in the metric's unit, which
         // for allocation is total bytes - a large positive number, not a CPU duration.
-        trace.Info.DurationMs.Should().BeGreaterThan(0);
+        trace.Info.TotalWeight.Should().BeGreaterThan(0);
     }
 
     [TestMethod]
@@ -145,6 +145,18 @@ public sealed class TraceLoaderTests
 
         act.Should().Throw<NotSupportedException>().WithMessage("*thread-time metric requires*");
     }
+
+    [TestMethod]
+    public void Load_UndefinedMetric_ThrowsArgumentOutOfRange()
+    {
+        TraceLoader loader = new();
+
+        // Enums can be cast from any int, so an undefined value must fail fast rather
+        // than silently fall back to a CPU load and mask the bad input.
+        Action act = () => loader.Load(FixturePath("folding.speedscope.json"), (TraceMetric)999);
+
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
 }
 
 // Loading the thread-time view reads an .etl, whose ETW conversion is Windows-only,
@@ -169,6 +181,6 @@ public sealed class TraceLoaderThreadTimeTests
         trace.Aggregator.Metric.Should().Be(MetricInfo.ThreadTime);
         trace.Info.Format.Should().Be(TraceFormat.Etl);
         trace.Info.SampleCount.Should().BeGreaterThan(0);
-        trace.Info.DurationMs.Should().BeGreaterThan(0);
+        trace.Info.TotalWeight.Should().BeGreaterThan(0);
     }
 }

@@ -35,7 +35,7 @@ internal static class LinesTextRenderer
         string scope = lines.MethodFilter.Length > 0 ? $"method '{lines.MethodFilter}'" : "all methods";
 
         output.WriteLine(
-            $"{info.Format}  {info.SampleCount} samples  {info.DurationMs:N1} ms  symbols {info.SymbolResolutionRate:P0}");
+            $"{info.Format}  {info.SampleCount} samples  {info.TotalWeight:N1} {unit}  symbols {info.SymbolResolutionRate:P0}");
         output.WriteLine();
         output.WriteLine($"{metric.Name} hot lines  -  scope {lines.ScopeWeight:N2} {unit}  ({scope})");
 

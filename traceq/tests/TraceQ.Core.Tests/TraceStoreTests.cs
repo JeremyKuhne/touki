@@ -55,6 +55,35 @@ public sealed class TraceStoreTests
     }
 
     [TestMethod]
+    public void Get_DifferentMetricKey_CachesSeparately()
+    {
+        TraceStore store = new();
+        // A .nettrace can be read as either the CPU view or the allocation view, so the
+        // same path under two metrics must key to two distinct cache entries - each
+        // carrying its own provider source - rather than collapsing onto one.
+        string path = FixturePath("alloc.nettrace");
+
+        LoadedTrace cpu = store.Get(path, metric: TraceMetric.Cpu);
+        LoadedTrace allocations = store.Get(path, metric: TraceMetric.Allocations);
+
+        allocations.Should().NotBeSameAs(cpu);
+        cpu.Source.Metric.Should().Be(MetricInfo.Cpu);
+        allocations.Source.Metric.Should().Be(MetricInfo.Allocations);
+    }
+
+    [TestMethod]
+    public void Get_SameMetric_ReturnsCachedInstance()
+    {
+        TraceStore store = new();
+        string path = FixturePath("alloc.nettrace");
+
+        LoadedTrace first = store.Get(path, metric: TraceMetric.Allocations);
+        LoadedTrace second = store.Get(path, metric: TraceMetric.Allocations);
+
+        second.Should().BeSameAs(first);
+    }
+
+    [TestMethod]
     public void Get_LoadsTraceWithExpectedInfo()
     {
         TraceStore store = new();
