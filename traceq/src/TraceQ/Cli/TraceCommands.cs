@@ -153,4 +153,55 @@ internal sealed class TraceCommands
         HeatmapRequest request = new(trace, file, foldPatterns, symbols, format, strict);
         return HeatmapExecutor.Run(request, Console.Out, Console.Error);
     }
+
+    /// <summary>
+    ///  Compare two traces and report what got slower or faster between them.
+    /// </summary>
+    /// <param name="before">Path to the baseline .speedscope.json, .nettrace, or .etl file.</param>
+    /// <param name="after">Path to the current .speedscope.json, .nettrace, or .etl file.</param>
+    /// <param name="measure">-m, Which measure to compare: self (leaf time, helpers folded) or inclusive.</param>
+    /// <param name="root">Substring scoping both rankings to the subtree under a frame.</param>
+    /// <param name="top">-n, Maximum number of changed rows to return.</param>
+    /// <param name="fold">Extra leaf-frame fold regexes (comma-separated); omit to use the built-in defaults.</param>
+    /// <param name="symbols">-s, Build-output directory whose embedded PDBs resolve managed frames.</param>
+    /// <param name="format">Render format: text or json.</param>
+    /// <param name="strict">Exit 3 when either trace's symbol resolution is below the trusted threshold.</param>
+    /// <returns>A process exit code.</returns>
+    [Command("diff")]
+    public int Diff(
+        [Argument] string before,
+        [Argument] string after,
+        Measure measure = Measure.Self,
+        string root = "",
+        [Range(1, int.MaxValue)] int top = RankRequestFactory.DefaultTop,
+        string[]? fold = null,
+        string? symbols = null,
+        OutputFormat format = OutputFormat.Text,
+        bool strict = false)
+    {
+        IReadOnlyList<string> foldPatterns = fold is { Length: > 0 } ? fold : FrameNames.DefaultFoldPatterns;
+        DiffRequest request = new(before, after, root, top, foldPatterns, measure, format, symbols, strict);
+        return DiffExecutor.Run(request, Console.Out, Console.Error);
+    }
+
+    /// <summary>
+    ///  Export a trace to a flame-graph file for speedscope or chrome://tracing.
+    /// </summary>
+    /// <param name="trace">Path to a .speedscope.json, .nettrace, or .etl file.</param>
+    /// <param name="format">Flame-graph format: speedscope or chromium.</param>
+    /// <param name="output">-o, Output file path; omit to write to standard output.</param>
+    /// <param name="symbols">-s, Build-output directory whose embedded PDBs resolve managed frames.</param>
+    /// <param name="name">Profile name shown in the viewer.</param>
+    /// <returns>A process exit code.</returns>
+    [Command("export")]
+    public int Export(
+        [Argument] string trace,
+        ExportFormat format = ExportFormat.Speedscope,
+        string? output = null,
+        string? symbols = null,
+        string name = "traceq")
+    {
+        ExportRequest request = new(trace, format, output, symbols, name);
+        return ExportExecutor.Run(request, Console.Out, Console.Error);
+    }
 }
