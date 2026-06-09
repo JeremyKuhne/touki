@@ -11,16 +11,17 @@ namespace TraceQ.Cli;
 
 /// <summary>
 ///  The shared steps every engine-verb executor performs: validate the
-///  user-supplied fold patterns, load the trace while mapping its failure modes to
-///  defined exit codes, collect the symbol-resolution warning, and decide the
-///  <c>--strict</c> exit.
+///  user-supplied fold patterns (for the verbs that accept them), load the trace
+///  while mapping its failure modes to defined exit codes, collect the
+///  symbol-resolution warning, and decide the <c>--strict</c> exit.
 /// </summary>
 /// <remarks>
 ///  <para>
 ///   Centralizing these keeps one copy of the security-relevant input handling -
-///   a malformed fold regex is a usage error, and missing, unreadable, or malformed
-///   trace input terminates with a defined exit code rather than crashing - shared
-///   by every verb rather than duplicated per executor.
+///   for the verbs that take a fold list a malformed fold regex is a usage error,
+///   and for every verb missing, unreadable, or malformed trace input terminates
+///   with a defined exit code rather than crashing - rather than duplicating the
+///   handling per executor.
 ///  </para>
 /// </remarks>
 internal static class TraceExecution
@@ -76,10 +77,16 @@ internal static class TraceExecution
             or UnauthorizedAccessException
             or NotSupportedException
             or JsonException
+            or KeyNotFoundException
+            or InvalidOperationException
+            or FormatException
             or ArgumentException)
         {
             // Missing, unreadable, or malformed trace input terminates with a defined
-            // exit code rather than crashing the process.
+            // exit code rather than crashing the process. The KeyNotFoundException,
+            // InvalidOperationException, and FormatException arms cover well-formed JSON
+            // whose shape is wrong: a missing or wrong-typed field surfaces from the
+            // readers' JsonElement access (GetProperty / GetDouble / GetInt32).
             error.WriteLine(ex.Message);
             trace = null;
             return false;

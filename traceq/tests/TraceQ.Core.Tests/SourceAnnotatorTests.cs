@@ -34,6 +34,29 @@ public sealed class SourceAnnotatorTests
     }
 
     [TestMethod]
+    public void TryReadSourceLines_FileExceedingCap_ReturnsFalseWithoutReading()
+    {
+        // A file larger than the byte cap is not read into memory; the caller falls back
+        // to the per-line list rather than risking an unbounded allocation.
+        string temp = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(temp, new string('x', 4096));
+
+            SourceAnnotator.TryReadSourceLines(temp, maxBytes: 16, out string[] lines).Should().BeFalse();
+            lines.Should().BeEmpty();
+
+            // A generous cap reads the same file.
+            SourceAnnotator.TryReadSourceLines(temp, maxBytes: 1 << 20, out string[] read).Should().BeTrue();
+            read.Should().ContainSingle();
+        }
+        finally
+        {
+            File.Delete(temp);
+        }
+    }
+
+    [TestMethod]
     public void Render_SmallFile_RendersEveryLineWithHeaderAndGutter()
     {
         string[] source = ["alpha", "beta", "gamma"];

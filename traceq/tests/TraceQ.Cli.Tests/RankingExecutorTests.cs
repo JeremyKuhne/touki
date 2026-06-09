@@ -119,4 +119,25 @@ public sealed class RankingExecutorTests
             File.Delete(path);
         }
     }
+
+    [TestMethod]
+    public void Run_WellFormedButWrongShapeJson_ReturnsInputError()
+    {
+        // Valid JSON whose shape is wrong (an event is missing its required "at" field)
+        // surfaces as a KeyNotFoundException from the reader's JsonElement access; it must
+        // map to a defined exit code rather than crashing the process.
+        string path = Path.Combine(Path.GetTempPath(), $"traceq-wrongshape-{Guid.NewGuid():N}.speedscope.json");
+        File.WriteAllText(path, """{"profiles":[{"name":"t","events":[{"type":"O","frame":0}]}]}""");
+        try
+        {
+            (int exit, _, string error) = Run(Request(path));
+
+            exit.Should().Be(ExitCodes.InputError);
+            error.Should().NotBeEmpty();
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }
