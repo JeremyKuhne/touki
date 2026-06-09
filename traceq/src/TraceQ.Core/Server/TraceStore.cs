@@ -59,8 +59,10 @@ public sealed class TraceStore
     /// <param name="path">The trace file path.</param>
     /// <param name="symbolsDirectory">
     ///  Optional build-output directory whose assemblies' embedded portable PDBs are
-    ///  extracted to resolve managed frames to <c>file:line</c>. The cache keys on it,
-    ///  so the same trace loaded with and without symbols is cached separately.
+    ///  extracted to resolve managed frames to <c>file:line</c>. Consumed only by the
+    ///  CPU metric; the other providers resolve frames from the trace's own rundown
+    ///  and ignore it. The cache keys on it for the CPU metric, so the same trace
+    ///  loaded with and without symbols is cached separately.
     /// </param>
     /// <param name="metric">
     ///  Which provider's view to load: the CPU sampler's stacks (the default), the
@@ -71,9 +73,15 @@ public sealed class TraceStore
     public LoadedTrace Get(string path, string? symbolsDirectory = null, TraceMetric metric = TraceMetric.Cpu)
     {
         string fullPath = Path.GetFullPath(path);
-        string? fullSymbols = string.IsNullOrEmpty(symbolsDirectory)
-            ? null
-            : Path.GetFullPath(symbolsDirectory);
+
+        // Only the CPU loader consumes symbolsDirectory; the other providers resolve
+        // frames from the trace's own rundown and ignore it. Drop it for those metrics
+        // so two calls that differ only in an ignored symbols directory dedupe to one
+        // cache entry instead of forcing a redundant provider read - and, for thread
+        // time, a redundant ETLX conversion.
+        string? fullSymbols = metric == TraceMetric.Cpu && !string.IsNullOrEmpty(symbolsDirectory)
+            ? Path.GetFullPath(symbolsDirectory)
+            : null;
 
         // Length-prefix the first path so the two components cannot be confused for a
         // different pair: '|' - like every other ASCII separator - is a legal POSIX

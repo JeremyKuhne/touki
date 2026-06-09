@@ -84,6 +84,21 @@ public sealed class TraceStoreTests
     }
 
     [TestMethod]
+    public void Get_NonCpuMetric_IgnoresSymbolsDirectoryInCacheKey()
+    {
+        TraceStore store = new();
+        string path = FixturePath("alloc.nettrace");
+
+        // The allocation loader ignores symbolsDirectory (it resolves frames from the
+        // trace's own rundown), so two calls that differ only in an ignored symbols
+        // directory must dedupe to one cache entry rather than forcing a redundant read.
+        LoadedTrace withoutSymbols = store.Get(path, symbolsDirectory: null, metric: TraceMetric.Allocations);
+        LoadedTrace withSymbols = store.Get(path, AppContext.BaseDirectory, metric: TraceMetric.Allocations);
+
+        withSymbols.Should().BeSameAs(withoutSymbols);
+    }
+
+    [TestMethod]
     public void Get_LoadsTraceWithExpectedInfo()
     {
         TraceStore store = new();
