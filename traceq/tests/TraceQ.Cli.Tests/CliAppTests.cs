@@ -53,6 +53,8 @@ public sealed class CliAppTests
         output.Should().Contain("callers");
         output.Should().Contain("lines");
         output.Should().Contain("heatmap");
+        output.Should().Contain("diff");
+        output.Should().Contain("export");
     }
 
     [TestMethod]
@@ -228,5 +230,53 @@ public sealed class CliAppTests
         exit.Should().Be(ExitCodes.Success);
         output.Should().Contain("Arguments:");
         output.Should().Contain("--strict");
+    }
+
+    [TestMethod]
+    public void Run_Diff_SameTraceTwice_ReportsNoChanges()
+    {
+        (int exit, string output, _) = Run("diff", Speedscope, Speedscope);
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("diff");
+        output.Should().Contain("no changes in scope");
+    }
+
+    [TestMethod]
+    public void Run_DiffMissingAfterArgument_ReturnsUsageError()
+    {
+        // 'after' is a required positional, so a diff with only the baseline fails to parse.
+        (int exit, _, string error) = Run("diff", Speedscope, "--strict");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("after");
+    }
+
+    [TestMethod]
+    public void Run_Export_WritesSpeedscopeJsonToStdout()
+    {
+        (int exit, string output, _) = Run("export", Speedscope, "--format", "speedscope");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("speedscope.app/file-format-schema");
+    }
+
+    [TestMethod]
+    public void Run_ExportChromium_WritesTraceEvents()
+    {
+        (int exit, string output, _) = Run("export", Speedscope, "--format", "chromium");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("traceEvents");
+    }
+
+    [TestMethod]
+    public void Run_ExportHelp_ShowsFormatAndOutputOptions()
+    {
+        (int exit, string output, _) = Run("export", "--help");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("--format");
+        output.Should().Contain("--output");
     }
 }
