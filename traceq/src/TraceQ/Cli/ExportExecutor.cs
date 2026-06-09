@@ -49,7 +49,9 @@ internal static class ExportExecutor
 
         if (request.Output is null)
         {
-            output.WriteLine(exported);
+            // Write without a trailing newline so a stdout redirect produces a file
+            // byte-for-byte identical to the --output path below.
+            output.Write(exported);
             return ExitCodes.Success;
         }
 

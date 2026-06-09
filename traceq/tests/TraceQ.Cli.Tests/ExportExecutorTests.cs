@@ -66,13 +66,26 @@ public sealed class ExportExecutorTests
     }
 
     [TestMethod]
-    public void Run_OutputFileToStdout_IsNotMixedWithJson()
+    public void Run_ToStdout_MatchesFileOutputByteForByte()
     {
-        // Without --output the JSON is the only thing on the output writer.
-        (int exit, string output, _) = Run(Request(Speedscope));
+        // Exporting to stdout must produce exactly the bytes the --output file gets - no
+        // trailing newline - so a redirect (traceq export ... > out.json) yields a file a
+        // viewer reads identically.
+        string path = Path.Combine(Path.GetTempPath(), $"traceq-export-{Guid.NewGuid():N}.json");
+        try
+        {
+            (int fileExit, _, _) = Run(Request(Speedscope, output: path));
+            (int stdoutExit, string stdout, _) = Run(Request(Speedscope));
 
-        exit.Should().Be(ExitCodes.Success);
-        output.TrimStart().Should().StartWith("{");
+            fileExit.Should().Be(ExitCodes.Success);
+            stdoutExit.Should().Be(ExitCodes.Success);
+            stdout.Should().Be(File.ReadAllText(path));
+            stdout.Should().EndWith("}");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [TestMethod]
