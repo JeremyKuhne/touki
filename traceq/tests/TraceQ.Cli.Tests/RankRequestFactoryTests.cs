@@ -121,4 +121,37 @@ public sealed class RankRequestFactoryTests
             .Should().BeFalse();
         error.Should().Contain("only one of --process and --all-processes");
     }
+
+    [TestMethod]
+    public void TryResolveRoot_NoOptions_KeepsTheEmptyRoot()
+    {
+        RankRequestFactory.TryResolveRoot("", benchmark: false, out string root, out string? error)
+            .Should().BeTrue();
+        error.Should().BeNull();
+        root.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public void TryResolveRoot_ExplicitRoot_IsPassedThrough()
+    {
+        RankRequestFactory.TryResolveRoot("MyMethod", benchmark: false, out string root, out _)
+            .Should().BeTrue();
+        root.Should().Be("MyMethod");
+    }
+
+    [TestMethod]
+    public void TryResolveRoot_Benchmark_PresetsTheWorkloadFrame()
+    {
+        RankRequestFactory.TryResolveRoot("", benchmark: true, out string root, out _)
+            .Should().BeTrue();
+        root.Should().Be(FrameNames.BenchmarkWorkloadFrame);
+    }
+
+    [TestMethod]
+    public void TryResolveRoot_BothOptions_IsAUsageError()
+    {
+        RankRequestFactory.TryResolveRoot("MyMethod", benchmark: true, out _, out string? error)
+            .Should().BeFalse();
+        error.Should().Contain("only one of --root and --benchmark");
+    }
 }

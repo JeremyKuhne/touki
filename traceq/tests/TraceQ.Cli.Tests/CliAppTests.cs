@@ -70,6 +70,8 @@ public sealed class CliAppTests
         output.Should().Contain("gcstats");
         output.Should().Contain("jitstats");
         output.Should().Contain("events");
+        output.Should().Contain("convert");
+        output.Should().Contain("clean");
     }
 
     [TestMethod]
@@ -224,6 +226,52 @@ public sealed class CliAppTests
 
         exit.Should().Be(ExitCodes.UsageError);
         error.Should().Contain("only one of --process and --all-processes");
+    }
+
+    [TestMethod]
+    public void Run_Benchmark_ScopesToTheMeasuredWorkload()
+    {
+        // The exceptions fixture is a BenchmarkDotNet EventPipe capture; --benchmark
+        // scopes the ranking to the WorkloadAction subtree, past the harness/bootstrap.
+        (int exit, string output, _) = Run("cpu", ExceptionsTrace, "--benchmark", "--measure", "inclusive");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("scoped to 'WorkloadAction'");
+        // The measured benchmark method surfaces once the harness is scoped out.
+        output.Should().Contain("ExceptionLoop");
+    }
+
+    [TestMethod]
+    public void Run_RootAndBenchmark_ReturnsUsageError()
+    {
+        // --benchmark is itself a root preset, so a second explicit --root conflicts;
+        // caught before any trace read.
+        (int exit, _, string error) = Run("cpu", ExceptionsTrace, "--root", "Foo", "--benchmark");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("only one of --root and --benchmark");
+    }
+
+    [TestMethod]
+    public void Run_AllocBenchmark_ScopesToTheMeasuredWorkload()
+    {
+        // --benchmark is frame-based, so it applies to the allocation family too: the
+        // alloc BDN fixture scopes to the WorkloadAction subtree, past the harness.
+        (int exit, string output, _) = Run("alloc", Alloc, "--benchmark", "--measure", "inclusive");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("scoped to 'WorkloadAction'");
+        output.Should().Contain("AllocLoop");
+    }
+
+    [TestMethod]
+    public void Run_AllocProcessOption_IsRejected()
+    {
+        // alloc reads single-process .nettrace, so it deliberately exposes no
+        // --process option; the parser rejects the unknown option as a usage error.
+        (int exit, _, _) = Run("alloc", Alloc, "--process", "MyApp");
+
+        exit.Should().Be(ExitCodes.UsageError);
     }
 
     [TestMethod]

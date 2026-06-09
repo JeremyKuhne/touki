@@ -6,6 +6,20 @@
     <RootNamespace>TraceQ.Cli</RootNamespace>
     <!-- The tool command is `traceq` (<= 7 chars per the naming criteria). -->
     <AssemblyName>traceq</AssemblyName>
+
+    <!--
+      Package as a .NET global/local tool so `dotnet pack` + `dotnet tool install` round-trips
+      (an M2 exit criterion). This overrides the subtree's IsPackable=false default for this
+      project only - it makes a LOCAL install work; publishing to a feed stays deferred to
+      M3.5/M4 (no feed source is configured here, and the package is not pushed anywhere).
+    -->
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>traceq</ToolCommandName>
+    <PackageId>TraceQ.Tool</PackageId>
+    <Version>0.0.0-dev</Version>
+    <Description>Agent-shaped CLI for analyzing .NET CPU, allocation, thread-time, GC, JIT, and event traces.</Description>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\packages</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

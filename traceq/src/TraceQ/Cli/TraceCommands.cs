@@ -35,6 +35,7 @@ internal sealed class TraceCommands
     /// <param name="strict">Exit 3 when symbol resolution is below the trusted threshold.</param>
     /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
     /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest (multi-process captures).</param>
+    /// <param name="benchmark">Scope to the BenchmarkDotNet measured-workload subtree (preset root); for BDN captures.</param>
     /// <returns>A process exit code.</returns>
     [Command("rank")]
     public int Rank(
@@ -48,7 +49,8 @@ internal sealed class TraceCommands
         OutputFormat format = OutputFormat.Text,
         bool strict = false,
         string process = "",
-        bool allProcesses = false)
+        bool allProcesses = false,
+        bool benchmark = false)
     {
         if (!RankRequestFactory.TryResolveMetric(metric, out TraceMetric resolved))
         {
@@ -63,8 +65,14 @@ internal sealed class TraceCommands
             return ExitCodes.UsageError;
         }
 
+        if (!RankRequestFactory.TryResolveRoot(root, benchmark, out string resolvedRoot, out string? rootError))
+        {
+            Console.Error.WriteLine(rootError);
+            return ExitCodes.UsageError;
+        }
+
         RankRequest request = RankRequestFactory.Create(
-            trace, resolved, measure, root, top, fold, symbols, format, strict, scope);
+            trace, resolved, measure, resolvedRoot, top, fold, symbols, format, strict, scope);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -85,6 +93,7 @@ internal sealed class TraceCommands
     /// <param name="strict">Exit 3 when symbol resolution is below the trusted threshold.</param>
     /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
     /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest (multi-process captures).</param>
+    /// <param name="benchmark">Scope to the BenchmarkDotNet measured-workload subtree (preset root); for BDN captures.</param>
     /// <returns>A process exit code.</returns>
     [Command("cpu")]
     public int Cpu(
@@ -97,7 +106,8 @@ internal sealed class TraceCommands
         OutputFormat format = OutputFormat.Text,
         bool strict = false,
         string process = "",
-        bool allProcesses = false)
+        bool allProcesses = false,
+        bool benchmark = false)
     {
         if (!RankRequestFactory.TryResolveScope(process, allProcesses, out ScopeRequest scope, out string? scopeError))
         {
@@ -105,8 +115,14 @@ internal sealed class TraceCommands
             return ExitCodes.UsageError;
         }
 
+        if (!RankRequestFactory.TryResolveRoot(root, benchmark, out string resolvedRoot, out string? rootError))
+        {
+            Console.Error.WriteLine(rootError);
+            return ExitCodes.UsageError;
+        }
+
         RankRequest request = RankRequestFactory.Create(
-            trace, TraceMetric.Cpu, measure, root, top, fold, symbols, format, strict, scope);
+            trace, TraceMetric.Cpu, measure, resolvedRoot, top, fold, symbols, format, strict, scope);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -119,11 +135,14 @@ internal sealed class TraceCommands
     /// <param name="top">-n, Maximum number of rows to return.</param>
     /// <param name="fold">Extra leaf-frame fold regexes (comma-separated); omit to use the built-in defaults.</param>
     /// <param name="format">Render format: text or json.</param>
+    /// <param name="benchmark">Scope to the BenchmarkDotNet measured-workload subtree (preset root); for BDN captures.</param>
     /// <returns>A process exit code.</returns>
     /// <remarks>
     ///  Allocation frames resolve from the trace's own CLR rundown, so this verb has
     ///  no <c>--symbols</c> or <c>--strict</c> option: those resolve and gate native
-    ///  frames, which the allocation view does not depend on.
+    ///  frames, which the allocation view does not depend on. It also has no
+    ///  <c>--process</c> / <c>--all-processes</c> option: an EventPipe <c>.nettrace</c>
+    ///  is single-process, so there is nothing to scope across.
     /// </remarks>
     [Command("alloc")]
     public int Alloc(
@@ -132,10 +151,17 @@ internal sealed class TraceCommands
         string root = "",
         [Range(1, int.MaxValue)] int top = RankRequestFactory.DefaultTop,
         string[]? fold = null,
-        OutputFormat format = OutputFormat.Text)
+        OutputFormat format = OutputFormat.Text,
+        bool benchmark = false)
     {
+        if (!RankRequestFactory.TryResolveRoot(root, benchmark, out string resolvedRoot, out string? rootError))
+        {
+            Console.Error.WriteLine(rootError);
+            return ExitCodes.UsageError;
+        }
+
         RankRequest request = RankRequestFactory.Create(
-            trace, TraceMetric.Allocations, measure, root, top, fold, symbols: null, format, strict: false);
+            trace, TraceMetric.Allocations, measure, resolvedRoot, top, fold, symbols: null, format, strict: false);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -148,11 +174,14 @@ internal sealed class TraceCommands
     /// <param name="top">-n, Maximum number of rows to return.</param>
     /// <param name="fold">Extra leaf-frame fold regexes (comma-separated); omit to use the built-in defaults.</param>
     /// <param name="format">Render format: text or json.</param>
+    /// <param name="benchmark">Scope to the BenchmarkDotNet measured-workload subtree (preset root); for BDN captures.</param>
     /// <returns>A process exit code.</returns>
     /// <remarks>
     ///  Throw-site frames resolve from the trace's own CLR rundown, so this verb has
     ///  no <c>--symbols</c> or <c>--strict</c> option: those resolve and gate native
-    ///  frames, which the exception view does not depend on.
+    ///  frames, which the exception view does not depend on. It also has no
+    ///  <c>--process</c> / <c>--all-processes</c> option: an EventPipe <c>.nettrace</c>
+    ///  is single-process, so there is nothing to scope across.
     /// </remarks>
     [Command("exceptions")]
     public int Exceptions(
@@ -161,10 +190,17 @@ internal sealed class TraceCommands
         string root = "",
         [Range(1, int.MaxValue)] int top = RankRequestFactory.DefaultTop,
         string[]? fold = null,
-        OutputFormat format = OutputFormat.Text)
+        OutputFormat format = OutputFormat.Text,
+        bool benchmark = false)
     {
+        if (!RankRequestFactory.TryResolveRoot(root, benchmark, out string resolvedRoot, out string? rootError))
+        {
+            Console.Error.WriteLine(rootError);
+            return ExitCodes.UsageError;
+        }
+
         RankRequest request = RankRequestFactory.Create(
-            trace, TraceMetric.Exceptions, measure, root, top, fold, symbols: null, format, strict: false);
+            trace, TraceMetric.Exceptions, measure, resolvedRoot, top, fold, symbols: null, format, strict: false);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -180,6 +216,7 @@ internal sealed class TraceCommands
     /// <param name="format">Render format: text or json.</param>
     /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
     /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest.</param>
+    /// <param name="benchmark">Scope to the BenchmarkDotNet measured-workload subtree (preset root); for BDN captures.</param>
     /// <returns>A process exit code.</returns>
     /// <remarks>
     ///  Unlike CPU sampling, thread time accounts for off-CPU (blocked) intervals, so
@@ -197,7 +234,8 @@ internal sealed class TraceCommands
         string[]? fold = null,
         OutputFormat format = OutputFormat.Text,
         string process = "",
-        bool allProcesses = false)
+        bool allProcesses = false,
+        bool benchmark = false)
     {
         if (!RankRequestFactory.TryResolveScope(process, allProcesses, out ScopeRequest scope, out string? scopeError))
         {
@@ -205,8 +243,14 @@ internal sealed class TraceCommands
             return ExitCodes.UsageError;
         }
 
+        if (!RankRequestFactory.TryResolveRoot(root, benchmark, out string resolvedRoot, out string? rootError))
+        {
+            Console.Error.WriteLine(rootError);
+            return ExitCodes.UsageError;
+        }
+
         RankRequest request = RankRequestFactory.Create(
-            trace, TraceMetric.ThreadTime, measure, root, top, fold, symbols: null, format, strict: false, scope);
+            trace, TraceMetric.ThreadTime, measure, resolvedRoot, top, fold, symbols: null, format, strict: false, scope);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -432,4 +476,31 @@ internal sealed class TraceCommands
         EventsRequest request = new(trace, name, skip, take, maxPayload, format);
         return EventsExecutor.Run(request, Console.Out, Console.Error);
     }
+
+    /// <summary>
+    ///  Build the ETLX conversion cache up front so the first analysis query is fast.
+    /// </summary>
+    /// <param name="trace">Path to a .nettrace or .etl file (a speedscope export has no cache).</param>
+    /// <returns>A process exit code.</returns>
+    /// <remarks>
+    ///  Every analysis of a .nettrace or .etl first converts it to an indexed ETLX file
+    ///  beside the source; TraceEvent reuses that cache on later reads. Converting ahead
+    ///  of time moves that one-time cost out of the first real query.
+    /// </remarks>
+    [Command("convert")]
+    public int Convert([Argument] string trace) =>
+        FileOpsExecutor.Convert(trace, Console.Out, Console.Error);
+
+    /// <summary>
+    ///  Remove the ETLX conversion cache beside a trace to force a rebuild on next read.
+    /// </summary>
+    /// <param name="trace">Path to a .nettrace or .etl file whose ETLX cache to remove.</param>
+    /// <returns>A process exit code.</returns>
+    /// <remarks>
+    ///  Use this when a cache is suspected stale (for example after the source trace was
+    ///  replaced); the next analysis rebuilds it. A missing cache is reported, not an error.
+    /// </remarks>
+    [Command("clean")]
+    public int Clean([Argument] string trace) =>
+        FileOpsExecutor.Clean(trace, Console.Out, Console.Error);
 }
