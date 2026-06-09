@@ -70,6 +70,8 @@ public sealed class CliAppTests
         output.Should().Contain("gcstats");
         output.Should().Contain("jitstats");
         output.Should().Contain("events");
+        output.Should().Contain("convert");
+        output.Should().Contain("clean");
     }
 
     [TestMethod]

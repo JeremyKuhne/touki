@@ -432,4 +432,31 @@ internal sealed class TraceCommands
         EventsRequest request = new(trace, name, skip, take, maxPayload, format);
         return EventsExecutor.Run(request, Console.Out, Console.Error);
     }
+
+    /// <summary>
+    ///  Build the ETLX conversion cache up front so the first analysis query is fast.
+    /// </summary>
+    /// <param name="trace">Path to a .nettrace or .etl file (a speedscope export has no cache).</param>
+    /// <returns>A process exit code.</returns>
+    /// <remarks>
+    ///  Every analysis of a .nettrace or .etl first converts it to an indexed ETLX file
+    ///  beside the source; TraceEvent reuses that cache on later reads. Converting ahead
+    ///  of time moves that one-time cost out of the first real query.
+    /// </remarks>
+    [Command("convert")]
+    public int Convert([Argument] string trace) =>
+        FileOpsExecutor.Convert(trace, Console.Out, Console.Error);
+
+    /// <summary>
+    ///  Remove the ETLX conversion cache beside a trace to force a rebuild on next read.
+    /// </summary>
+    /// <param name="trace">Path to a .nettrace or .etl file whose ETLX cache to remove.</param>
+    /// <returns>A process exit code.</returns>
+    /// <remarks>
+    ///  Use this when a cache is suspected stale (for example after the source trace was
+    ///  replaced); the next analysis rebuilds it. A missing cache is reported, not an error.
+    /// </remarks>
+    [Command("clean")]
+    public int Clean([Argument] string trace) =>
+        FileOpsExecutor.Clean(trace, Console.Out, Console.Error);
 }
