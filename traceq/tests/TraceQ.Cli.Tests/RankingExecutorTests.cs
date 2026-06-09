@@ -20,8 +20,9 @@ public sealed class RankingExecutorTests
         string root = "",
         int top = RankRequestFactory.DefaultTop,
         OutputFormat format = OutputFormat.Text,
-        bool strict = false) =>
-        new(path, root, top, FrameNames.DefaultFoldPatterns, measure, format, Symbols: null, strict);
+        bool strict = false,
+        IReadOnlyList<string>? fold = null) =>
+        new(path, root, top, fold ?? FrameNames.DefaultFoldPatterns, measure, format, Symbols: null, strict);
 
     private static (int Exit, string Out, string Error) Run(RankRequest request)
     {
@@ -88,5 +89,34 @@ public sealed class RankingExecutorTests
         (int exit, _, _) = Run(Request(Speedscope, strict: true));
 
         exit.Should().Be(ExitCodes.Success);
+    }
+
+    [TestMethod]
+    public void Run_InvalidFoldPattern_ReturnsUsageError()
+    {
+        // A malformed fold regex is a usage error, reported before any trace work.
+        (int exit, _, string error) = Run(Request(Speedscope, fold: ["["]));
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().NotBeEmpty();
+    }
+
+    [TestMethod]
+    public void Run_MalformedSpeedscopeJson_ReturnsInputError()
+    {
+        // Malformed JSON must terminate with a defined exit code, not an unhandled crash.
+        string path = Path.Combine(Path.GetTempPath(), $"traceq-malformed-{Guid.NewGuid():N}.speedscope.json");
+        File.WriteAllText(path, "{ this is not valid json");
+        try
+        {
+            (int exit, _, string error) = Run(Request(path));
+
+            exit.Should().Be(ExitCodes.InputError);
+            error.Should().NotBeEmpty();
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 }

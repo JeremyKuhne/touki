@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.Text.Json;
 using TraceQ.Output;
 using TraceQ.Server;
 using TraceQ.Tracing;
@@ -32,14 +33,33 @@ internal static class RankingExecutor
     /// <returns>A process exit code (see <see cref="ExitCodes"/>).</returns>
     public static int Run(RankRequest request, TextWriter output, TextWriter error)
     {
+        // The fold patterns are user-supplied; validate them up front so a malformed
+        // regex is a defined usage error instead of an unhandled crash later in the rank.
+        try
+        {
+            _ = FrameNames.CompileFoldPatterns(request.Fold);
+        }
+        catch (ArgumentException ex)
+        {
+            error.WriteLine(ex.Message);
+            return ExitCodes.UsageError;
+        }
+
         TraceStore store = new();
         LoadedTrace trace;
         try
         {
             trace = store.Get(request.Path, request.Symbols);
         }
-        catch (Exception ex) when (ex is FileNotFoundException or NotSupportedException or ArgumentException)
+        catch (Exception ex) when (
+            ex is IOException
+            or UnauthorizedAccessException
+            or NotSupportedException
+            or JsonException
+            or ArgumentException)
         {
+            // Missing, unreadable, or malformed trace input terminates with a defined
+            // exit code rather than crashing the process.
             error.WriteLine(ex.Message);
             return ExitCodes.InputError;
         }

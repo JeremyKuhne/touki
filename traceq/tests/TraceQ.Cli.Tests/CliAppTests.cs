@@ -168,4 +168,15 @@ public sealed class CliAppTests
         exit.Should().Be(ExitCodes.InputError);
         error.Should().NotBeEmpty();
     }
+
+    [TestMethod]
+    public void Run_InvalidFoldPattern_ReturnsUsageError()
+    {
+        // '(' parses as a single fold element (it is not the JSON-array prefix '['), so it
+        // reaches the executor's regex validation and surfaces as a usage error there.
+        (int exit, _, string error) = Run("rank", Speedscope, "--fold", "(");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("fold");
+    }
 }

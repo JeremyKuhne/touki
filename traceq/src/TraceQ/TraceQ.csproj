@@ -13,8 +13,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Source generator; contributes no runtime assembly, so reference it as an analyzer. -->
-    <PackageReference Include="ConsoleAppFramework" PrivateAssets="all" />
+    <!--
+      ConsoleAppFramework is a source generator (analyzers only, no runtime assembly), so it
+      adds nothing to the output - verified: no ConsoleAppFramework.dll in bin and no entry in
+      traceq.deps.json. PrivateAssets plus the analyzer-only IncludeAssets pin it as a
+      build-time dependency that never flows to consumers, keeping the published tool free of
+      any ConsoleAppFramework runtime reference.
+    -->
+    <PackageReference Include="ConsoleAppFramework" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
   </ItemGroup>
 
   <ItemGroup>
