@@ -16,7 +16,7 @@ public sealed class TraceInfo
     public TraceInfo(
         string path,
         TraceFormat format,
-        double durationMs,
+        double totalWeight,
         int sampleCount,
         double symbolResolutionRate,
         IReadOnlyList<ThreadSampleInfo> threads,
@@ -24,7 +24,7 @@ public sealed class TraceInfo
     {
         Path = path;
         Format = format;
-        DurationMs = durationMs;
+        TotalWeight = totalWeight;
         SampleCount = sampleCount;
         SymbolResolutionRate = symbolResolutionRate;
         Threads = threads;
@@ -42,12 +42,13 @@ public sealed class TraceInfo
     public TraceFormat Format { get; }
 
     /// <summary>
-    ///  Sum of the per-sample weights across all samples, in milliseconds. This is
-    ///  CPU time, not wall-clock: because every thread's samples are included, the
-    ///  value can exceed the trace's wall-clock span when multiple threads ran
-    ///  concurrently.
+    ///  Sum of the per-sample weights across all samples, in the source metric's
+    ///  unit - milliseconds of CPU time for a CPU trace, bytes for an allocation
+    ///  trace, one count per event for the exceptions trace. For CPU this is busy
+    ///  time, not wall-clock: because every thread's samples are included, the value
+    ///  can exceed the trace's wall-clock span when multiple threads ran concurrently.
     /// </summary>
-    public double DurationMs { get; }
+    public double TotalWeight { get; }
 
     /// <summary>
     ///  Number of weighted samples in the normalized model.

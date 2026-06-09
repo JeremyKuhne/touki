@@ -19,6 +19,12 @@ public sealed class CliAppTests
 
     private static string Speedscope => FixturePath("folding.speedscope.json");
 
+    private static string Alloc => FixturePath("alloc.nettrace");
+
+    private static string ExceptionsTrace => FixturePath("exceptions.nettrace");
+
+    private static string Etw => FixturePath("etw.etl");
+
     private static (int Exit, string Out, string Error) Run(params string[] args)
     {
         TextWriter originalOut = Console.Out;
@@ -50,6 +56,9 @@ public sealed class CliAppTests
         output.Should().Contain("Commands:");
         output.Should().Contain("rank");
         output.Should().Contain("cpu");
+        output.Should().Contain("alloc");
+        output.Should().Contain("exceptions");
+        output.Should().Contain("threadtime");
         output.Should().Contain("callers");
         output.Should().Contain("lines");
         output.Should().Contain("heatmap");
@@ -128,12 +137,109 @@ public sealed class CliAppTests
     }
 
     [TestMethod]
-    public void Run_BadMetric_ReturnsUsageError()
+    public void Run_AllocShortcut_RanksAllocationBytes()
     {
-        (int exit, _, string error) = Run("rank", Speedscope, "--metric", "alloc");
+        (int exit, string output, _) = Run("alloc", Alloc);
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("Allocations self-time");
+        output.Should().Contain("bytes");
+    }
+
+    [TestMethod]
+    public void Run_RankMetricAlloc_MatchesAllocShortcut()
+    {
+        // 'rank --metric alloc' and the 'alloc' shortcut select the same provider, so
+        // they must produce identical output.
+        (int rankExit, string rankOut, _) = Run("rank", Alloc, "--metric", "alloc");
+        (int allocExit, string allocOut, _) = Run("alloc", Alloc);
+
+        allocExit.Should().Be(rankExit);
+        allocOut.Should().Be(rankOut);
+    }
+
+    [TestMethod]
+    public void Run_ExceptionsShortcut_RanksThrowCounts()
+    {
+        (int exit, string output, _) = Run("exceptions", ExceptionsTrace);
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("Exceptions self-time");
+        output.Should().Contain("count");
+    }
+
+    [TestMethod]
+    public void Run_RankMetricExceptions_MatchesExceptionsShortcut()
+    {
+        (int rankExit, string rankOut, _) = Run("rank", ExceptionsTrace, "--metric", "exceptions");
+        (int excExit, string excOut, _) = Run("exceptions", ExceptionsTrace);
+
+        excExit.Should().Be(rankExit);
+        excOut.Should().Be(rankOut);
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Run_ThreadTimeShortcut_RanksElapsedTime()
+    {
+        // Reading an .etl requires the Windows-only ETW conversion, so this runs on
+        // Windows and skips on the Linux CI leg.
+        (int exit, string output, _) = Run("threadtime", Etw);
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("ThreadTime self-time");
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Run_RankMetricThreadTime_MatchesThreadTimeShortcut()
+    {
+        (int rankExit, string rankOut, _) = Run("rank", Etw, "--metric", "threadtime");
+        (int ttExit, string ttOut, _) = Run("threadtime", Etw);
+
+        ttExit.Should().Be(rankExit);
+        ttOut.Should().Be(rankOut);
+    }
+
+    [TestMethod]
+    public void Run_UnknownMetric_ReturnsUsageError()
+    {
+        (int exit, _, string error) = Run("rank", Speedscope, "--metric", "bogus");
 
         exit.Should().Be(ExitCodes.UsageError);
-        error.Should().Contain("alloc");
+        error.Should().Contain("bogus");
+    }
+
+    [TestMethod]
+    public void Run_AllocMetricOnSpeedscope_ReturnsInputError()
+    {
+        // 'alloc' is a recognized selector, but a speedscope export carries no
+        // allocation events, so the format guardrail rejects it as an input error
+        // rather than a usage error.
+        (int exit, _, string error) = Run("rank", Speedscope, "--metric", "alloc");
+
+        exit.Should().Be(ExitCodes.InputError);
+        error.Should().Contain("allocation metric requires");
+    }
+
+    [TestMethod]
+    public void Run_ExceptionsMetricOnSpeedscope_ReturnsInputError()
+    {
+        (int exit, _, string error) = Run("rank", Speedscope, "--metric", "exceptions");
+
+        exit.Should().Be(ExitCodes.InputError);
+        error.Should().Contain("exceptions metric requires");
+    }
+
+    [TestMethod]
+    public void Run_ThreadTimeMetricOnNetTrace_ReturnsInputError()
+    {
+        // The thread-time guardrail fires on the format before any .etl read, so this
+        // runs on every CI leg, not just Windows.
+        (int exit, _, string error) = Run("rank", Alloc, "--metric", "threadtime");
+
+        exit.Should().Be(ExitCodes.InputError);
+        error.Should().Contain("thread-time metric requires");
     }
 
     [TestMethod]

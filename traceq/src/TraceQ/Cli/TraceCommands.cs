@@ -20,7 +20,7 @@ internal sealed class TraceCommands
     ///  Rank the hottest frames in a trace by self- or inclusive-time.
     /// </summary>
     /// <param name="trace">Path to a .speedscope.json, .nettrace, or .etl file.</param>
-    /// <param name="metric">Provider metric to rank; only 'cpu' is supported in this build.</param>
+    /// <param name="metric">Provider metric to rank: cpu (default), alloc, exceptions, or threadtime.</param>
     /// <param name="measure">-m, Which measure to report: self (leaf time, helpers folded) or inclusive.</param>
     /// <param name="root">Substring scoping the ranking to the subtree under a frame.</param>
     /// <param name="top">-n, Maximum number of rows to return.</param>
@@ -41,14 +41,15 @@ internal sealed class TraceCommands
         OutputFormat format = OutputFormat.Text,
         bool strict = false)
     {
-        if (!RankRequestFactory.IsCpuMetric(metric))
+        if (!RankRequestFactory.TryResolveMetric(metric, out TraceMetric resolved))
         {
             Console.Error.WriteLine(
-                $"Metric '{metric}' is not available yet; only 'cpu' is supported in this build.");
+                $"Unknown metric '{metric}'. Supported stack metrics: cpu, alloc, exceptions, threadtime.");
             return ExitCodes.UsageError;
         }
 
-        RankRequest request = RankRequestFactory.Create(trace, measure, root, top, fold, symbols, format, strict);
+        RankRequest request = RankRequestFactory.Create(
+            trace, resolved, measure, root, top, fold, symbols, format, strict);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -75,7 +76,98 @@ internal sealed class TraceCommands
         OutputFormat format = OutputFormat.Text,
         bool strict = false)
     {
-        RankRequest request = RankRequestFactory.Create(trace, measure, root, top, fold, symbols, format, strict);
+        RankRequest request = RankRequestFactory.Create(
+            trace, TraceMetric.Cpu, measure, root, top, fold, symbols, format, strict);
+        return RankingExecutor.Run(request, Console.Out, Console.Error);
+    }
+
+    /// <summary>
+    ///  Rank allocation hotspots by bytes; the shortcut for 'rank --metric alloc'.
+    /// </summary>
+    /// <param name="trace">Path to a .nettrace EventPipe file captured with allocation sampling.</param>
+    /// <param name="measure">-m, Which measure to report: self (the allocating site) or inclusive (its subtree).</param>
+    /// <param name="root">Substring scoping the ranking to the subtree under a frame.</param>
+    /// <param name="top">-n, Maximum number of rows to return.</param>
+    /// <param name="fold">Extra leaf-frame fold regexes (comma-separated); omit to use the built-in defaults.</param>
+    /// <param name="format">Render format: text or json.</param>
+    /// <returns>A process exit code.</returns>
+    /// <remarks>
+    ///  Allocation frames resolve from the trace's own CLR rundown, so this verb has
+    ///  no <c>--symbols</c> or <c>--strict</c> option: those resolve and gate native
+    ///  frames, which the allocation view does not depend on.
+    /// </remarks>
+    [Command("alloc")]
+    public int Alloc(
+        [Argument] string trace,
+        Measure measure = Measure.Self,
+        string root = "",
+        [Range(1, int.MaxValue)] int top = RankRequestFactory.DefaultTop,
+        string[]? fold = null,
+        OutputFormat format = OutputFormat.Text)
+    {
+        RankRequest request = RankRequestFactory.Create(
+            trace, TraceMetric.Allocations, measure, root, top, fold, symbols: null, format, strict: false);
+        return RankingExecutor.Run(request, Console.Out, Console.Error);
+    }
+
+    /// <summary>
+    ///  Rank exception throw sites by count; the shortcut for 'rank --metric exceptions'.
+    /// </summary>
+    /// <param name="trace">Path to a .nettrace EventPipe file carrying exception-throw events.</param>
+    /// <param name="measure">-m, Which measure to report: self (the throw site) or inclusive (its subtree).</param>
+    /// <param name="root">Substring scoping the ranking to the subtree under a frame.</param>
+    /// <param name="top">-n, Maximum number of rows to return.</param>
+    /// <param name="fold">Extra leaf-frame fold regexes (comma-separated); omit to use the built-in defaults.</param>
+    /// <param name="format">Render format: text or json.</param>
+    /// <returns>A process exit code.</returns>
+    /// <remarks>
+    ///  Throw-site frames resolve from the trace's own CLR rundown, so this verb has
+    ///  no <c>--symbols</c> or <c>--strict</c> option: those resolve and gate native
+    ///  frames, which the exception view does not depend on.
+    /// </remarks>
+    [Command("exceptions")]
+    public int Exceptions(
+        [Argument] string trace,
+        Measure measure = Measure.Self,
+        string root = "",
+        [Range(1, int.MaxValue)] int top = RankRequestFactory.DefaultTop,
+        string[]? fold = null,
+        OutputFormat format = OutputFormat.Text)
+    {
+        RankRequest request = RankRequestFactory.Create(
+            trace, TraceMetric.Exceptions, measure, root, top, fold, symbols: null, format, strict: false);
+        return RankingExecutor.Run(request, Console.Out, Console.Error);
+    }
+
+    /// <summary>
+    ///  Rank where wall-clock time went - running and blocked - by elapsed
+    ///  milliseconds; the shortcut for 'rank --metric threadtime'.
+    /// </summary>
+    /// <param name="trace">Path to an .etl ETW capture taken with the context-switch keywords.</param>
+    /// <param name="measure">-m, Which measure to report: self (the leaf state) or inclusive (its subtree).</param>
+    /// <param name="root">Substring scoping the ranking to the subtree under a frame.</param>
+    /// <param name="top">-n, Maximum number of rows to return.</param>
+    /// <param name="fold">Extra leaf-frame fold regexes (comma-separated); omit to use the built-in defaults.</param>
+    /// <param name="format">Render format: text or json.</param>
+    /// <returns>A process exit code.</returns>
+    /// <remarks>
+    ///  Unlike CPU sampling, thread time accounts for off-CPU (blocked) intervals, so
+    ///  a stack's weight is elapsed time rather than busy time. Reading an <c>.etl</c>
+    ///  requires the ETW conversion, which is available on Windows only. Frames
+    ///  resolve from the capture itself, so this verb has no <c>--symbols</c> or
+    ///  <c>--strict</c> option.
+    /// </remarks>
+    [Command("threadtime")]
+    public int ThreadTime(
+        [Argument] string trace,
+        Measure measure = Measure.Self,
+        string root = "",
+        [Range(1, int.MaxValue)] int top = RankRequestFactory.DefaultTop,
+        string[]? fold = null,
+        OutputFormat format = OutputFormat.Text)
+    {
+        RankRequest request = RankRequestFactory.Create(
+            trace, TraceMetric.ThreadTime, measure, root, top, fold, symbols: null, format, strict: false);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 

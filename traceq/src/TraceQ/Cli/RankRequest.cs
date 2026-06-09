@@ -20,6 +20,7 @@ namespace TraceQ.Cli;
 ///  </para>
 /// </remarks>
 /// <param name="Path">The trace file path.</param>
+/// <param name="Metric">Which provider view to rank (CPU, allocations, ...).</param>
 /// <param name="Root">Substring scoping the ranking to a subtree, or empty for the whole trace.</param>
 /// <param name="Top">Maximum number of ranked rows to return.</param>
 /// <param name="Fold">The leaf-frame fold patterns.</param>
@@ -29,6 +30,7 @@ namespace TraceQ.Cli;
 /// <param name="Strict">Whether to trip the strict symbol-resolution exit gate.</param>
 internal sealed record RankRequest(
     string Path,
+    TraceMetric Metric,
     string Root,
     int Top,
     IReadOnlyList<string> Fold,

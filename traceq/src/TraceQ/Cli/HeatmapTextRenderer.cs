@@ -40,7 +40,7 @@ internal static class HeatmapTextRenderer
         double percentOfTrace = heatmap.ScopeWeight > 0 ? 100.0 * heatmap.FileWeight / heatmap.ScopeWeight : 0.0;
 
         output.WriteLine(
-            $"{info.Format}  {info.SampleCount} samples  {info.DurationMs:N1} ms  symbols {info.SymbolResolutionRate:P0}");
+            $"{info.Format}  {info.SampleCount} samples  {info.TotalWeight:N1} {unit}  symbols {info.SymbolResolutionRate:P0}");
         output.WriteLine();
         output.WriteLine(
             $"{metric.Name} source heatmap '{heatmap.File}'  -  {heatmap.FileWeight:N2} {unit} "

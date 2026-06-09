@@ -36,7 +36,7 @@ internal static class RankingExecutor
             return ExitCodes.UsageError;
         }
 
-        if (!TraceExecution.TryLoad(request.Path, request.Symbols, error, out LoadedTrace? trace))
+        if (!TraceExecution.TryLoad(request.Path, request.Metric, request.Symbols, error, out LoadedTrace? trace))
         {
             return ExitCodes.InputError;
         }
