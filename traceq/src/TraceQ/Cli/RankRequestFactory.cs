@@ -12,16 +12,16 @@ namespace TraceQ.Cli;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   Only the CPU metric is wired today. <see cref="IsCpuMetric"/> is the policy the
-///   <c>rank</c> verb consumes to reject any other selector; the provider families
-///   (thread-time, allocation, ...) become selectable here as they are wired into the
-///   loader.
+///   <see cref="TryResolveMetric"/> maps the <c>--metric</c> selector string to the
+///   <see cref="TraceMetric"/> the loader builds; the <c>rank</c> verb consumes it to
+///   reject an unknown selector. The family shortcut verbs (<c>cpu</c>, <c>alloc</c>)
+///   bypass the string and pass their <see cref="TraceMetric"/> directly.
 ///  </para>
 /// </remarks>
 internal static class RankRequestFactory
 {
     /// <summary>
-    ///  The single metric the ranking verbs support today.
+    ///  The default <c>--metric</c> selector: the CPU provider.
     /// </summary>
     public const string CpuMetric = "cpu";
 
@@ -31,19 +31,43 @@ internal static class RankRequestFactory
     public const int DefaultTop = 25;
 
     /// <summary>
-    ///  Determines whether <paramref name="metric"/> selects the CPU provider, the
-    ///  only one available in this build.
+    ///  Resolves a <c>--metric</c> selector string to the provider view it names.
     /// </summary>
-    /// <param name="metric">The requested provider metric.</param>
-    /// <returns><see langword="true"/> when the CPU provider is selected.</returns>
-    public static bool IsCpuMetric(string metric) =>
-        string.Equals(metric, CpuMetric, StringComparison.OrdinalIgnoreCase);
+    /// <param name="metric">The requested provider metric (case-insensitive).</param>
+    /// <param name="resolved">The resolved provider view when recognized.</param>
+    /// <returns>
+    ///  <see langword="true"/> when <paramref name="metric"/> names a wired provider;
+    ///  otherwise <see langword="false"/>, and the caller should report a usage error.
+    /// </returns>
+    public static bool TryResolveMetric(string metric, out TraceMetric resolved)
+    {
+        switch (metric.ToLowerInvariant())
+        {
+            case CpuMetric:
+                resolved = TraceMetric.Cpu;
+                return true;
+            case "alloc":
+            case "allocations":
+                resolved = TraceMetric.Allocations;
+                return true;
+            case "exceptions":
+                resolved = TraceMetric.Exceptions;
+                return true;
+            case "threadtime":
+                resolved = TraceMetric.ThreadTime;
+                return true;
+            default:
+                resolved = TraceMetric.Cpu;
+                return false;
+        }
+    }
 
     /// <summary>
     ///  Builds a ranking request from the verb parameters, applying the built-in fold
     ///  defaults when none are supplied.
     /// </summary>
     /// <param name="trace">The trace file path.</param>
+    /// <param name="metric">The provider view to rank.</param>
     /// <param name="measure">Which measure to report.</param>
     /// <param name="root">Substring scoping the ranking, or empty for the whole trace.</param>
     /// <param name="top">Maximum number of ranked rows.</param>
@@ -54,6 +78,7 @@ internal static class RankRequestFactory
     /// <returns>The assembled request.</returns>
     public static RankRequest Create(
         string trace,
+        TraceMetric metric,
         Measure measure,
         string root,
         int top,
@@ -63,6 +88,6 @@ internal static class RankRequestFactory
         bool strict)
     {
         IReadOnlyList<string> foldPatterns = fold is { Count: > 0 } ? fold : FrameNames.DefaultFoldPatterns;
-        return new RankRequest(trace, root, top, foldPatterns, measure, format, symbols, strict);
+        return new RankRequest(trace, metric, root, top, foldPatterns, measure, format, symbols, strict);
     }
 }

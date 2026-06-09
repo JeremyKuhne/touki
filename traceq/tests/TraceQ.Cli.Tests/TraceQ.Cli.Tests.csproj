@@ -23,9 +23,18 @@
     <ProjectReference Include="..\..\src\TraceQ\TraceQ.csproj" />
   </ItemGroup>
 
-  <!-- Reuse the speedscope fixture committed under TraceQ.Core.Tests rather than duplicate it. -->
+  <!-- Reuse the fixtures committed under TraceQ.Core.Tests rather than duplicate them. -->
   <ItemGroup>
     <None Include="..\TraceQ.Core.Tests\Fixtures\folding.speedscope.json" Link="Fixtures\folding.speedscope.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\TraceQ.Core.Tests\Fixtures\alloc.nettrace" Link="Fixtures\alloc.nettrace">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\TraceQ.Core.Tests\Fixtures\exceptions.nettrace" Link="Fixtures\exceptions.nettrace">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\TraceQ.Core.Tests\Fixtures\etw.etl" Link="Fixtures\etw.etl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

@@ -50,8 +50,8 @@ internal static class TraceExecution
     }
 
     /// <summary>
-    ///  Loads the trace at <paramref name="path"/>, mapping the loader's failure
-    ///  modes to a clean error rather than an unhandled exception.
+    ///  Loads the CPU view of the trace at <paramref name="path"/>, mapping the
+    ///  loader's failure modes to a clean error rather than an unhandled exception.
     /// </summary>
     /// <param name="path">The trace file path.</param>
     /// <param name="symbols">Optional build-output directory for symbol resolution.</param>
@@ -65,11 +65,33 @@ internal static class TraceExecution
         string path,
         string? symbols,
         TextWriter error,
+        [NotNullWhen(true)] out LoadedTrace? trace) =>
+        TryLoad(path, TraceMetric.Cpu, symbols, error, out trace);
+
+    /// <summary>
+    ///  Loads the <paramref name="metric"/> view of the trace at <paramref name="path"/>,
+    ///  mapping the loader's failure modes to a clean error rather than an unhandled
+    ///  exception.
+    /// </summary>
+    /// <param name="path">The trace file path.</param>
+    /// <param name="metric">Which provider view to load (CPU, allocations, ...).</param>
+    /// <param name="symbols">Optional build-output directory for symbol resolution.</param>
+    /// <param name="error">The writer a load-failure message is reported to.</param>
+    /// <param name="trace">The loaded trace on success.</param>
+    /// <returns>
+    ///  <see langword="true"/> on success; otherwise <see langword="false"/>, and the
+    ///  caller should return <see cref="ExitCodes.InputError"/>.
+    /// </returns>
+    public static bool TryLoad(
+        string path,
+        TraceMetric metric,
+        string? symbols,
+        TextWriter error,
         [NotNullWhen(true)] out LoadedTrace? trace)
     {
         try
         {
-            trace = new TraceStore().Get(path, symbols);
+            trace = new TraceStore().Get(path, symbols, metric);
             return true;
         }
         catch (Exception ex) when (
@@ -82,11 +104,13 @@ internal static class TraceExecution
             or FormatException
             or ArgumentException)
         {
-            // Missing, unreadable, or malformed trace input terminates with a defined
-            // exit code rather than crashing the process. The KeyNotFoundException,
-            // InvalidOperationException, and FormatException arms cover well-formed JSON
-            // whose shape is wrong: a missing or wrong-typed field surfaces from the
-            // readers' JsonElement access (GetProperty / GetDouble / GetInt32).
+            // Missing, unreadable, or malformed trace input - including a format that
+            // does not carry the selected metric's data (NotSupportedException) -
+            // terminates with a defined exit code rather than crashing the process.
+            // The KeyNotFoundException, InvalidOperationException, and FormatException
+            // arms cover well-formed JSON whose shape is wrong: a missing or
+            // wrong-typed field surfaces from the readers' JsonElement access
+            // (GetProperty / GetDouble / GetInt32).
             error.WriteLine(ex.Message);
             trace = null;
             return false;

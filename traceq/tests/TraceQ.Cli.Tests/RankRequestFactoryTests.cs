@@ -10,28 +10,38 @@ namespace TraceQ.Cli;
 public sealed class RankRequestFactoryTests
 {
     [TestMethod]
-    [DataRow("cpu")]
-    [DataRow("CPU")]
-    [DataRow("Cpu")]
-    public void IsCpuMetric_CpuInAnyCase_IsTrue(string metric)
+    [DataRow("cpu", TraceMetric.Cpu)]
+    [DataRow("CPU", TraceMetric.Cpu)]
+    [DataRow("Cpu", TraceMetric.Cpu)]
+    [DataRow("alloc", TraceMetric.Allocations)]
+    [DataRow("Alloc", TraceMetric.Allocations)]
+    [DataRow("allocations", TraceMetric.Allocations)]
+    [DataRow("exceptions", TraceMetric.Exceptions)]
+    [DataRow("Exceptions", TraceMetric.Exceptions)]
+    [DataRow("threadtime", TraceMetric.ThreadTime)]
+    [DataRow("ThreadTime", TraceMetric.ThreadTime)]
+    public void TryResolveMetric_KnownMetric_ResolvesProvider(string metric, TraceMetric expected)
     {
-        RankRequestFactory.IsCpuMetric(metric).Should().BeTrue();
+        RankRequestFactory.TryResolveMetric(metric, out TraceMetric resolved).Should().BeTrue();
+        resolved.Should().Be(expected);
     }
 
     [TestMethod]
-    [DataRow("alloc")]
-    [DataRow("threadtime")]
+    [DataRow("gcstats")]
+    [DataRow("bogus")]
     [DataRow("")]
-    public void IsCpuMetric_OtherMetric_IsFalse(string metric)
+    public void TryResolveMetric_UnknownMetric_IsFalse(string metric)
     {
-        RankRequestFactory.IsCpuMetric(metric).Should().BeFalse();
+        // gcstats is a planned report provider (not a stack metric), so it resolves as
+        // unknown to the ranking verbs until its own verb lands.
+        RankRequestFactory.TryResolveMetric(metric, out _).Should().BeFalse();
     }
 
     [TestMethod]
     public void Create_NullFold_UsesDefaultFoldPatterns()
     {
         RankRequest request = RankRequestFactory.Create(
-            "t.nettrace", Measure.Self, root: "", top: 25, fold: null, symbols: null, OutputFormat.Text, strict: false);
+            "t.nettrace", TraceMetric.Cpu, Measure.Self, root: "", top: 25, fold: null, symbols: null, OutputFormat.Text, strict: false);
 
         request.Fold.Should().BeSameAs(FrameNames.DefaultFoldPatterns);
     }
@@ -40,7 +50,7 @@ public sealed class RankRequestFactoryTests
     public void Create_EmptyFold_UsesDefaultFoldPatterns()
     {
         RankRequest request = RankRequestFactory.Create(
-            "t.nettrace", Measure.Self, root: "", top: 25, fold: [], symbols: null, OutputFormat.Text, strict: false);
+            "t.nettrace", TraceMetric.Cpu, Measure.Self, root: "", top: 25, fold: [], symbols: null, OutputFormat.Text, strict: false);
 
         request.Fold.Should().BeSameAs(FrameNames.DefaultFoldPatterns);
     }
@@ -49,7 +59,7 @@ public sealed class RankRequestFactoryTests
     public void Create_ExplicitFold_IsUsed()
     {
         RankRequest request = RankRequestFactory.Create(
-            "t.nettrace", Measure.Self, root: "", top: 25, fold: ["^A", "^B"], symbols: null, OutputFormat.Text, strict: false);
+            "t.nettrace", TraceMetric.Cpu, Measure.Self, root: "", top: 25, fold: ["^A", "^B"], symbols: null, OutputFormat.Text, strict: false);
 
         request.Fold.Should().Equal("^A", "^B");
     }
@@ -59,6 +69,7 @@ public sealed class RankRequestFactoryTests
     {
         RankRequest request = RankRequestFactory.Create(
             "t.nettrace",
+            TraceMetric.Allocations,
             Measure.Inclusive,
             root: "MoveNext",
             top: 10,
@@ -68,6 +79,7 @@ public sealed class RankRequestFactoryTests
             strict: true);
 
         request.Path.Should().Be("t.nettrace");
+        request.Metric.Should().Be(TraceMetric.Allocations);
         request.Measure.Should().Be(Measure.Inclusive);
         request.Root.Should().Be("MoveNext");
         request.Top.Should().Be(10);

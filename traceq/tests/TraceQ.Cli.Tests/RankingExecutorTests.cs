@@ -14,6 +14,12 @@ public sealed class RankingExecutorTests
 
     private static string Speedscope => FixturePath("folding.speedscope.json");
 
+    private static string Alloc => FixturePath("alloc.nettrace");
+
+    private static string ExceptionsTrace => FixturePath("exceptions.nettrace");
+
+    private static string Etw => FixturePath("etw.etl");
+
     private static RankRequest Request(
         string path,
         Measure measure = Measure.Self,
@@ -21,8 +27,9 @@ public sealed class RankingExecutorTests
         int top = RankRequestFactory.DefaultTop,
         OutputFormat format = OutputFormat.Text,
         bool strict = false,
-        IReadOnlyList<string>? fold = null) =>
-        new(path, root, top, fold ?? FrameNames.DefaultFoldPatterns, measure, format, Symbols: null, strict);
+        IReadOnlyList<string>? fold = null,
+        TraceMetric metric = TraceMetric.Cpu) =>
+        new(path, metric, root, top, fold ?? FrameNames.DefaultFoldPatterns, measure, format, Symbols: null, strict);
 
     private static (int Exit, string Out, string Error) Run(RankRequest request)
     {
@@ -50,6 +57,75 @@ public sealed class RankingExecutorTests
 
         exit.Should().Be(ExitCodes.Success);
         output.Should().Contain("CPU inclusive-time");
+    }
+
+    [TestMethod]
+    public void Run_AllocMetric_RanksAllocationSitesInBytes()
+    {
+        // The allocation provider ranks the GCAllocationTick stacks of the .nettrace
+        // fixture, so the banner names the allocation metric and reports bytes, not ms.
+        (int exit, string output, _) = Run(Request(Alloc, metric: TraceMetric.Allocations));
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("Allocations self-time");
+        output.Should().Contain("bytes");
+    }
+
+    [TestMethod]
+    public void Run_AllocMetricOnSpeedscope_ReturnsInputError()
+    {
+        // A speedscope export carries no allocation events, so the format guardrail
+        // rejects it cleanly rather than letting the provider fail deep in the reader.
+        (int exit, _, string error) = Run(Request(Speedscope, metric: TraceMetric.Allocations));
+
+        exit.Should().Be(ExitCodes.InputError);
+        error.Should().Contain("allocation metric requires");
+    }
+
+    [TestMethod]
+    public void Run_ExceptionsMetric_RanksThrowSitesInCounts()
+    {
+        // The exceptions provider ranks the Exception/Start stacks of the .nettrace
+        // fixture, so the banner names the exceptions metric and reports counts.
+        (int exit, string output, _) = Run(Request(ExceptionsTrace, metric: TraceMetric.Exceptions));
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("Exceptions self-time");
+        output.Should().Contain("count");
+    }
+
+    [TestMethod]
+    public void Run_ExceptionsMetricOnSpeedscope_ReturnsInputError()
+    {
+        // A speedscope export carries no exception events, so the format guardrail
+        // rejects it cleanly.
+        (int exit, _, string error) = Run(Request(Speedscope, metric: TraceMetric.Exceptions));
+
+        exit.Should().Be(ExitCodes.InputError);
+        error.Should().Contain("exceptions metric requires");
+    }
+
+    [TestMethod]
+    public void Run_ThreadTimeMetricOnNetTrace_ReturnsInputError()
+    {
+        // The thread-time guardrail fires on the format before any .etl read, so this
+        // rejection is platform-agnostic and runs on every CI leg.
+        (int exit, _, string error) = Run(Request(Alloc, metric: TraceMetric.ThreadTime));
+
+        exit.Should().Be(ExitCodes.InputError);
+        error.Should().Contain("thread-time metric requires");
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Run_ThreadTimeMetric_RanksElapsedTimeInMs()
+    {
+        // Reading an .etl requires the Windows-only ETW conversion, so this runs on
+        // Windows and skips on the Linux CI leg.
+        (int exit, string output, _) = Run(Request(Etw, metric: TraceMetric.ThreadTime));
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("ThreadTime self-time");
     }
 
     [TestMethod]

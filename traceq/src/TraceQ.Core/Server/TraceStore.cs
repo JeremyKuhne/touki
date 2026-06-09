@@ -62,8 +62,13 @@ public sealed class TraceStore
     ///  extracted to resolve managed frames to <c>file:line</c>. The cache keys on it,
     ///  so the same trace loaded with and without symbols is cached separately.
     /// </param>
+    /// <param name="metric">
+    ///  Which provider's view to load: the CPU sampler's stacks (the default), the
+    ///  allocation sites, and so on. The cache keys on it, so the same trace's CPU
+    ///  and allocation views are cached separately.
+    /// </param>
     /// <returns>The cached loaded trace.</returns>
-    public LoadedTrace Get(string path, string? symbolsDirectory = null)
+    public LoadedTrace Get(string path, string? symbolsDirectory = null, TraceMetric metric = TraceMetric.Cpu)
     {
         string fullPath = Path.GetFullPath(path);
         string? fullSymbols = string.IsNullOrEmpty(symbolsDirectory)
@@ -73,9 +78,11 @@ public sealed class TraceStore
         // Length-prefix the first path so the two components cannot be confused for a
         // different pair: '|' - like every other ASCII separator - is a legal POSIX
         // file-name character, so a plain "a|b" delimiter could collide ("a|b" + "c"
-        // versus "a" + "b|c"). Loading uses the normalized symbols path so a relative
-        // symbolsDirectory resolves exactly the way it was keyed.
-        string key = $"{fullPath.Length}|{fullPath}{fullSymbols}";
-        return _cache.GetOrAdd(key, _ => _loader.Load(fullPath, fullSymbols));
+        // versus "a" + "b|c"). The metric prefix keeps a trace's distinct provider
+        // views (CPU versus allocation) from sharing one cache entry. Loading uses the
+        // normalized symbols path so a relative symbolsDirectory resolves exactly the
+        // way it was keyed.
+        string key = $"{(int)metric}:{fullPath.Length}|{fullPath}{fullSymbols}";
+        return _cache.GetOrAdd(key, _ => _loader.Load(fullPath, metric, fullSymbols));
     }
 }

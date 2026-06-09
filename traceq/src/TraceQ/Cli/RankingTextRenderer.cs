@@ -45,8 +45,10 @@ internal static class RankingTextRenderer
         string measureLabel = measure == Measure.Inclusive ? "inclusive-time" : "self-time";
         string scope = ranking.RootFrame.Length > 0 ? $"scoped to '{ranking.RootFrame}'" : "whole trace";
 
+        // The banner total is the sum of the sample weights in the metric's own unit
+        // (ms for CPU, bytes for allocation), so it reads correctly for every family.
         output.WriteLine(
-            $"{info.Format}  {info.SampleCount} samples  {info.DurationMs:N1} ms  symbols {info.SymbolResolutionRate:P0}");
+            $"{info.Format}  {info.SampleCount} samples  {info.DurationMs:N1} {unit}  symbols {info.SymbolResolutionRate:P0}");
         output.WriteLine();
         output.WriteLine($"{metric.Name} {measureLabel}  -  scope {ranking.ScopeWeight:N2} {unit}  ({scope})");
 
