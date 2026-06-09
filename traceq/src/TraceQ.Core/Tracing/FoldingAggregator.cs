@@ -397,6 +397,105 @@ public sealed class FoldingAggregator
     }
 
     /// <summary>
+    ///  Builds a top-down call tree over the scoped samples: each node's children
+    ///  are the frames it called, weighted by the metric spent in them.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Folded frames are skipped so the tree shows only real methods, mirroring
+    ///   inclusive-time. The tree is bounded two ways so it stays readable and within
+    ///   an agent's token budget: <paramref name="maxDepth"/> caps how far below the
+    ///   root it descends, and <paramref name="minPercentOfScope"/> prunes branches
+    ///   whose share of the scoped total is too small to matter.
+    ///  </para>
+    /// </remarks>
+    /// <param name="rootFrame">Substring scoping the tree to a subtree, or empty for the whole trace.</param>
+    /// <param name="foldPatterns">Frame fold patterns; folded frames are skipped.</param>
+    /// <param name="maxDepth">The maximum number of frame levels below the root to descend. Must be non-negative.</param>
+    /// <param name="minPercentOfScope">The minimum share of the scoped total, in percent, a node must have to appear. Must be non-negative.</param>
+    /// <returns>The call tree.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///  <paramref name="maxDepth"/> or <paramref name="minPercentOfScope"/> is negative.
+    /// </exception>
+    public CallTreeResult CallTree(
+        string rootFrame,
+        IReadOnlyList<string> foldPatterns,
+        int maxDepth,
+        double minPercentOfScope)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(maxDepth);
+        ArgumentOutOfRangeException.ThrowIfNegative(minPercentOfScope);
+
+        Regex[] fold = FrameNames.CompileFoldPatterns(foldPatterns);
+        TreeBuilder root = new("<root>");
+        double total = 0.0;
+
+        foreach (SampleStack sample in _samples)
+        {
+            IReadOnlyList<string> frames = sample.Frames;
+            int startIdx = ResolveStart(frames, rootFrame, out bool include);
+            if (!include || frames.Count == 0)
+            {
+                continue;
+            }
+
+            total += sample.Weight;
+            root.Weight += sample.Weight;
+
+            TreeBuilder node = root;
+            int depth = 0;
+            for (int fi = startIdx; fi < frames.Count && depth < maxDepth; fi++)
+            {
+                string name = ShortOf(frames[fi]);
+                if (FrameNames.IsFolded(name, fold))
+                {
+                    continue;
+                }
+
+                node = node.Child(name);
+                node.Weight += sample.Weight;
+                depth++;
+            }
+        }
+
+        return new CallTreeResult(total, rootFrame, BuildTreeNode(root, total, minPercentOfScope));
+    }
+
+    /// <summary>
+    ///  Converts a mutable <see cref="TreeBuilder"/> into the immutable
+    ///  <see cref="TreeNode"/>, pruning children below the threshold and ordering
+    ///  the survivors by weight (ordinal name as the deterministic tiebreak).
+    /// </summary>
+    private static TreeNode BuildTreeNode(TreeBuilder node, double scopeTotal, double minPercentOfScope)
+    {
+        double percent = scopeTotal > 0 ? 100.0 * node.Weight / scopeTotal : 0.0;
+        if (node.Children is null)
+        {
+            return new TreeNode(node.Frame, node.Weight, percent, []);
+        }
+
+        List<TreeNode> children = [];
+        foreach (TreeBuilder child in node.Children.Values)
+        {
+            double childPercent = scopeTotal > 0 ? 100.0 * child.Weight / scopeTotal : 0.0;
+            if (childPercent < minPercentOfScope)
+            {
+                continue;
+            }
+
+            children.Add(BuildTreeNode(child, scopeTotal, minPercentOfScope));
+        }
+
+        children.Sort(static (a, b) =>
+        {
+            int byWeight = b.Weight.CompareTo(a.Weight);
+            return byWeight != 0 ? byWeight : string.CompareOrdinal(a.Frame, b.Frame);
+        });
+
+        return new TreeNode(node.Frame, node.Weight, percent, children);
+    }
+
+    /// <summary>
     ///  Splits a <c>file:line</c> location into its file name and line number.
     ///  Returns <see langword="false"/> for empty, unresolved (<c>&lt;no source&gt;</c>)
     ///  or otherwise malformed locations.
@@ -494,4 +593,35 @@ public sealed class FoldingAggregator
             }
         }
     }
+
+    /// <summary>
+    ///  A mutable call-tree node used while aggregating: a frame, the accumulating
+    ///  inclusive weight of its subtree, and its child frames keyed by name. Converted
+    ///  to the immutable <see cref="TreeNode"/> once aggregation completes.
+    /// </summary>
+    private sealed class TreeBuilder
+    {
+        public TreeBuilder(string frame) => Frame = frame;
+
+        public string Frame { get; }
+
+        public double Weight { get; set; }
+
+        // Allocated lazily: a leaf node (the common case at the bottom of every stack)
+        // never calls anything, so most nodes keep this null.
+        public Dictionary<string, TreeBuilder>? Children { get; private set; }
+
+        public TreeBuilder Child(string frame)
+        {
+            Children ??= new Dictionary<string, TreeBuilder>(StringComparer.Ordinal);
+            if (!Children.TryGetValue(frame, out TreeBuilder? child))
+            {
+                child = new TreeBuilder(frame);
+                Children[frame] = child;
+            }
+
+            return child;
+        }
+    }
 }
+

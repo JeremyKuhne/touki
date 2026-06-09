@@ -185,6 +185,34 @@ internal sealed class TraceCommands
     }
 
     /// <summary>
+    ///  Show the top-down call tree, following the hot path from the root into its callees.
+    /// </summary>
+    /// <param name="trace">Path to a .speedscope.json, .nettrace, or .etl file.</param>
+    /// <param name="root">Substring scoping the tree to the subtree under a frame.</param>
+    /// <param name="maxDepth">-d, Maximum number of frame levels to expand below the root.</param>
+    /// <param name="minPct">Minimum share of the scoped total (percent) a node must have to appear; 0 shows all.</param>
+    /// <param name="fold">Extra leaf-frame fold regexes (comma-separated); omit to use the built-in defaults.</param>
+    /// <param name="symbols">-s, Build-output directory whose embedded PDBs resolve managed frames.</param>
+    /// <param name="format">Render format: text or json.</param>
+    /// <param name="strict">Exit 3 when symbol resolution is below the trusted threshold.</param>
+    /// <returns>A process exit code.</returns>
+    [Command("tree")]
+    public int Tree(
+        [Argument] string trace,
+        string root = "",
+        [Range(0, int.MaxValue)] int maxDepth = TreeRequest.DefaultMaxDepth,
+        [Range(0.0, 100.0)] double minPct = TreeRequest.DefaultMinPercent,
+        string[]? fold = null,
+        string? symbols = null,
+        OutputFormat format = OutputFormat.Text,
+        bool strict = false)
+    {
+        IReadOnlyList<string> foldPatterns = fold is { Length: > 0 } ? fold : FrameNames.DefaultFoldPatterns;
+        TreeRequest request = new(trace, root, foldPatterns, maxDepth, minPct, symbols, format, strict);
+        return TreeExecutor.Run(request, Console.Out, Console.Error);
+    }
+
+    /// <summary>
     ///  Export a trace to a flame-graph file for speedscope or chrome://tracing.
     /// </summary>
     /// <param name="trace">Path to a .speedscope.json, .nettrace, or .etl file.</param>
