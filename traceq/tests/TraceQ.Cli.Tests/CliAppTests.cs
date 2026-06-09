@@ -25,6 +25,8 @@ public sealed class CliAppTests
 
     private static string Etw => FixturePath("etw.etl");
 
+    private static string Jit => FixturePath("jit.nettrace");
+
     private static (int Exit, string Out, string Error) Run(params string[] args)
     {
         TextWriter originalOut = Console.Out;
@@ -65,6 +67,9 @@ public sealed class CliAppTests
         output.Should().Contain("diff");
         output.Should().Contain("export");
         output.Should().Contain("tree");
+        output.Should().Contain("gcstats");
+        output.Should().Contain("jitstats");
+        output.Should().Contain("events");
     }
 
     [TestMethod]
@@ -423,6 +428,63 @@ public sealed class CliAppTests
         // The depth bound is capped so a recursive deep tree cannot overflow the stack; an
         // over-cap request is rejected as a usage error before any trace work.
         (int exit, _, _) = Run("tree", Speedscope, "--max-depth", "100000");
+
+        exit.Should().Be(ExitCodes.UsageError);
+    }
+
+    [TestMethod]
+    public void Run_GcStats_ReportsCollections()
+    {
+        (int exit, string output, _) = Run("gcstats", Alloc);
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("GC report");
+        output.Should().Contain("collections");
+    }
+
+    [TestMethod]
+    public void Run_GcStatsWrongFormat_ReturnsInputError()
+    {
+        (int exit, _, string error) = Run("gcstats", Speedscope);
+
+        exit.Should().Be(ExitCodes.InputError);
+        error.Should().Contain("GC report requires");
+    }
+
+    [TestMethod]
+    public void Run_JitStats_ReportsMethods()
+    {
+        (int exit, string output, _) = Run("jitstats", Jit);
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("JIT report");
+        output.Should().Contain("methods");
+    }
+
+    [TestMethod]
+    public void Run_Events_RendersJsonAndPages()
+    {
+        (int exit, string output, _) = Run("events", Alloc, "--take", "1", "--format", "json");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Trim().Should().Contain("\"totalMatched\"");
+    }
+
+    [TestMethod]
+    public void Run_EventsNameFilterAndTakeAlias_AreParsed()
+    {
+        // -n is the take alias; the name option filters by provider/event substring.
+        (int exit, string output, _) = Run("events", Alloc, "--name", "AllocationTick", "-n", "5");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("filter 'AllocationTick'");
+    }
+
+    [TestMethod]
+    public void Run_EventsNegativeSkip_ReturnsUsageError()
+    {
+        // ConsoleAppFramework's [Range(0, ...)] rejects a negative skip before the verb runs.
+        (int exit, _, _) = Run("events", Alloc, "--skip", "-1");
 
         exit.Should().Be(ExitCodes.UsageError);
     }

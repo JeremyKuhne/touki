@@ -34,6 +34,9 @@
     <None Include="..\TraceQ.Core.Tests\Fixtures\exceptions.nettrace" Link="Fixtures\exceptions.nettrace">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="..\TraceQ.Core.Tests\Fixtures\jit.nettrace" Link="Fixtures\jit.nettrace">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\TraceQ.Core.Tests\Fixtures\etw.etl" Link="Fixtures\etw.etl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -118,6 +118,71 @@ internal static class TraceExecution
     }
 
     /// <summary>
+    ///  Runs a structured-report provider (GC, JIT, events) against a
+    ///  <c>.nettrace</c> EventPipe trace, applying the format guardrail and mapping
+    ///  the provider's failure modes to a clean error rather than an unhandled
+    ///  exception.
+    /// </summary>
+    /// <typeparam name="T">The report result type.</typeparam>
+    /// <param name="path">The trace file path.</param>
+    /// <param name="reportName">
+    ///  The report's name, used in the wrong-format message (for example <c>GC</c>).
+    /// </param>
+    /// <param name="read">The provider call producing the report.</param>
+    /// <param name="error">The writer a guardrail or failure message is reported to.</param>
+    /// <param name="result">The report on success.</param>
+    /// <returns>
+    ///  <see langword="true"/> on success; otherwise <see langword="false"/>, and the
+    ///  caller should return <see cref="ExitCodes.InputError"/>.
+    /// </returns>
+    /// <remarks>
+    ///  <para>
+    ///   The report providers read EventPipe traces only (they assemble structured
+    ///   records from a <c>.nettrace</c>), so a non-<c>.nettrace</c> input is rejected
+    ///   up front by extension rather than failing deep inside TraceEvent's EventPipe
+    ///   parser with an opaque message.
+    ///  </para>
+    /// </remarks>
+    public static bool TryReadNetTraceReport<T>(
+        string path,
+        string reportName,
+        Func<T> read,
+        TextWriter error,
+        [NotNullWhen(true)] out T? result) where T : class
+    {
+        // Format guardrail (an extension test, no I/O): the report providers parse the
+        // EventPipe format, so reject an .etl or speedscope export cleanly here.
+        if (!path.EndsWith(".nettrace", StringComparison.OrdinalIgnoreCase))
+        {
+            error.WriteLine(
+                $"The {reportName} report requires a .nettrace EventPipe trace; '{path}' is not a .nettrace file.");
+            result = null;
+            return false;
+        }
+
+        try
+        {
+            result = read();
+            return true;
+        }
+        catch (Exception ex) when (
+            ex is IOException
+            or UnauthorizedAccessException
+            or NotSupportedException
+            or InvalidOperationException
+            or FormatException
+            or ArgumentException)
+        {
+            // A missing, unreadable, or malformed .nettrace terminates with a defined
+            // exit code rather than crashing the process; a corrupt EventPipe stream
+            // surfaces from TraceEvent as one of these.
+            error.WriteLine(ex.Message);
+            result = null;
+            return false;
+        }
+    }
+
+    /// <summary>
     ///  Produces the symbol-resolution warning for a loaded trace, or an empty list
     ///  when resolution is above the trusted threshold.
     /// </summary>
