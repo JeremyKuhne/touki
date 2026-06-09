@@ -45,13 +45,19 @@ if (-not (Test-Path $cliDll)) {
 }
 
 # The verb set is the source of truth: every [Command("name")] in TraceCommands.
-$verbs = Select-String -Path $commandsFile -Pattern '\[Command\("([^"]+)"\)\]' -AllMatches |
-    ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
+# @(...) forces an array so a single-verb surface does not collapse to a string
+# (which would make foreach iterate characters).
+$verbs = @(Select-String -Path $commandsFile -Pattern '\[Command\("([^"]+)"\)\]' -AllMatches |
+    ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
 if ($verbs.Count -eq 0) { throw "No [Command(...)] verbs found in $commandsFile." }
 Write-Host "Linting help for $($verbs.Count) verbs: $($verbs -join ', ')"
 
-# 1. Top-level help lists every verb.
+# 1. Top-level help lists every verb. If the CLI itself fails to run, fail with a
+# focused message rather than letting every verb check cascade into noise.
 $topHelp = (& dotnet $cliDll 2>&1 | Out-String)
+if ($LASTEXITCODE -ne 0) {
+    throw "Top-level help ('dotnet traceq.dll') exited with code $LASTEXITCODE.`n$topHelp"
+}
 foreach ($verb in $verbs) {
     if ($topHelp -notmatch "(?m)^\s+$([regex]::Escape($verb))\s") {
         Add-Failure "Top-level help does not list the '$verb' verb."
@@ -67,7 +73,9 @@ foreach ($verb in $verbs) {
     if ($verbHelp -notmatch '(?m)^Usage:') {
         Add-Failure "'$verb --help' has no Usage: line."
     }
-    $lineCount = ($verbHelp -split "`n").Count
+    # Out-String appends a trailing newline; trim it so the count reflects the
+    # actually rendered lines rather than overcounting by one.
+    $lineCount = ($verbHelp.TrimEnd("`r", "`n") -split "`n").Count
     if ($lineCount -gt $MaxVerbHelpLines) {
         Add-Failure "'$verb --help' is $lineCount lines (budget $MaxVerbHelpLines)."
     }

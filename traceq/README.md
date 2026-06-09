@@ -45,13 +45,16 @@ dotnet tool install --global --add-source ./artifacts/packages TraceQ.Tool
 | `exceptions` | Throw sites, by count | `traceq exceptions app.nettrace` |
 | `threadtime` | Wall-clock (running + blocked), Windows `.etl` | `traceq threadtime app.etl` |
 
-Ranking verbs accept `--root` (scope to a frame subtree), `--process` /
-`--all-processes` (scope a multi-process capture; the busiest is auto-scoped by
-default), and `--benchmark` (scope a BenchmarkDotNet capture to the measured
-workload, past the harness):
+Every ranking verb accepts `--root` (scope to a frame subtree) and `--benchmark`
+(scope a BenchmarkDotNet capture to the measured workload, past the harness). The
+verbs that can read a multi-process ETW `.etl` - `cpu`, `threadtime`, and `rank` -
+also accept `--process` / `--all-processes` (the busiest process tree is
+auto-scoped by default); `alloc` and `exceptions` read single-process
+`.nettrace` only, so they have no process options.
 
 ```pwsh
 traceq cpu bdn.nettrace --benchmark          # just the [Benchmark] code
+traceq alloc bdn.nettrace --benchmark        # allocations under the workload
 traceq cpu machinewide.etl --process MyApp   # one process tree
 ```
 

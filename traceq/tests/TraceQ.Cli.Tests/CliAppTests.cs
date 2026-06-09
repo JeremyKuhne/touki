@@ -253,6 +253,28 @@ public sealed class CliAppTests
     }
 
     [TestMethod]
+    public void Run_AllocBenchmark_ScopesToTheMeasuredWorkload()
+    {
+        // --benchmark is frame-based, so it applies to the allocation family too: the
+        // alloc BDN fixture scopes to the WorkloadAction subtree, past the harness.
+        (int exit, string output, _) = Run("alloc", Alloc, "--benchmark", "--measure", "inclusive");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("scoped to 'WorkloadAction'");
+        output.Should().Contain("AllocLoop");
+    }
+
+    [TestMethod]
+    public void Run_AllocProcessOption_IsRejected()
+    {
+        // alloc reads single-process .nettrace, so it deliberately exposes no
+        // --process option; the parser rejects the unknown option as a usage error.
+        (int exit, _, _) = Run("alloc", Alloc, "--process", "MyApp");
+
+        exit.Should().Be(ExitCodes.UsageError);
+    }
+
+    [TestMethod]
     public void Run_AllProcessesOnSpeedscope_Succeeds()
     {
         // Speedscope is single-process, so --all-processes is a harmless no-op there;

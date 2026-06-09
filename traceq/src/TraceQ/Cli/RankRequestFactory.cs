@@ -157,7 +157,9 @@ internal static class RankRequestFactory
         if (benchmark && !string.IsNullOrEmpty(root))
         {
             // --benchmark is itself a root preset, so a second explicit root is ambiguous.
-            resolvedRoot = root;
+            // The return is false, so the out value is "don't care"; set it to empty to
+            // make that explicit rather than propagate the ambiguous root.
+            resolvedRoot = string.Empty;
             errorMessage = "Specify only one of --root and --benchmark.";
             return false;
         }

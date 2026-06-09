@@ -135,11 +135,14 @@ internal sealed class TraceCommands
     /// <param name="top">-n, Maximum number of rows to return.</param>
     /// <param name="fold">Extra leaf-frame fold regexes (comma-separated); omit to use the built-in defaults.</param>
     /// <param name="format">Render format: text or json.</param>
+    /// <param name="benchmark">Scope to the BenchmarkDotNet measured-workload subtree (preset root); for BDN captures.</param>
     /// <returns>A process exit code.</returns>
     /// <remarks>
     ///  Allocation frames resolve from the trace's own CLR rundown, so this verb has
     ///  no <c>--symbols</c> or <c>--strict</c> option: those resolve and gate native
-    ///  frames, which the allocation view does not depend on.
+    ///  frames, which the allocation view does not depend on. It also has no
+    ///  <c>--process</c> / <c>--all-processes</c> option: an EventPipe <c>.nettrace</c>
+    ///  is single-process, so there is nothing to scope across.
     /// </remarks>
     [Command("alloc")]
     public int Alloc(
@@ -148,10 +151,17 @@ internal sealed class TraceCommands
         string root = "",
         [Range(1, int.MaxValue)] int top = RankRequestFactory.DefaultTop,
         string[]? fold = null,
-        OutputFormat format = OutputFormat.Text)
+        OutputFormat format = OutputFormat.Text,
+        bool benchmark = false)
     {
+        if (!RankRequestFactory.TryResolveRoot(root, benchmark, out string resolvedRoot, out string? rootError))
+        {
+            Console.Error.WriteLine(rootError);
+            return ExitCodes.UsageError;
+        }
+
         RankRequest request = RankRequestFactory.Create(
-            trace, TraceMetric.Allocations, measure, root, top, fold, symbols: null, format, strict: false);
+            trace, TraceMetric.Allocations, measure, resolvedRoot, top, fold, symbols: null, format, strict: false);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -164,11 +174,14 @@ internal sealed class TraceCommands
     /// <param name="top">-n, Maximum number of rows to return.</param>
     /// <param name="fold">Extra leaf-frame fold regexes (comma-separated); omit to use the built-in defaults.</param>
     /// <param name="format">Render format: text or json.</param>
+    /// <param name="benchmark">Scope to the BenchmarkDotNet measured-workload subtree (preset root); for BDN captures.</param>
     /// <returns>A process exit code.</returns>
     /// <remarks>
     ///  Throw-site frames resolve from the trace's own CLR rundown, so this verb has
     ///  no <c>--symbols</c> or <c>--strict</c> option: those resolve and gate native
-    ///  frames, which the exception view does not depend on.
+    ///  frames, which the exception view does not depend on. It also has no
+    ///  <c>--process</c> / <c>--all-processes</c> option: an EventPipe <c>.nettrace</c>
+    ///  is single-process, so there is nothing to scope across.
     /// </remarks>
     [Command("exceptions")]
     public int Exceptions(
@@ -177,10 +190,17 @@ internal sealed class TraceCommands
         string root = "",
         [Range(1, int.MaxValue)] int top = RankRequestFactory.DefaultTop,
         string[]? fold = null,
-        OutputFormat format = OutputFormat.Text)
+        OutputFormat format = OutputFormat.Text,
+        bool benchmark = false)
     {
+        if (!RankRequestFactory.TryResolveRoot(root, benchmark, out string resolvedRoot, out string? rootError))
+        {
+            Console.Error.WriteLine(rootError);
+            return ExitCodes.UsageError;
+        }
+
         RankRequest request = RankRequestFactory.Create(
-            trace, TraceMetric.Exceptions, measure, root, top, fold, symbols: null, format, strict: false);
+            trace, TraceMetric.Exceptions, measure, resolvedRoot, top, fold, symbols: null, format, strict: false);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
