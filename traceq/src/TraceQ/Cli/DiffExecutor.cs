@@ -85,12 +85,12 @@ internal static class DiffExecutor
     private static IReadOnlyList<string> Warnings(TraceInfo before, TraceInfo after)
     {
         List<string> warnings = [];
-        foreach (string warning in TraceExecution.SymbolWarnings(before))
+        foreach (string warning in TraceExecution.ResultWarnings(before))
         {
             warnings.Add($"baseline: {warning}");
         }
 
-        foreach (string warning in TraceExecution.SymbolWarnings(after))
+        foreach (string warning in TraceExecution.ResultWarnings(after))
         {
             warnings.Add($"current: {warning}");
         }

@@ -30,10 +30,12 @@ public sealed class TraceLoader
     ///  extracted to resolve managed frames to <c>file:line</c> for line-level
     ///  rankings. Ignored for speedscope inputs.
     /// </param>
-    /// <param name="processScope">
-    ///  Optional process-tree scope. When set, only samples belonging to the matched
-    ///  workload process tree are loaded, narrowing a machine-wide capture to one
-    ///  scenario losslessly. Ignored for single-process inputs (speedscope).
+    /// <param name="scope">
+    ///  Optional process scope. A <see langword="null"/> request is the automatic
+    ///  busiest-process default (the same as <see cref="ScopeRequest.Auto"/>): the read
+    ///  is narrowed to an explicit name, the busiest process automatically, or every
+    ///  process when opted out - losslessly. Ignored for single-process inputs
+    ///  (speedscope).
     /// </param>
     /// <returns>The loaded trace.</returns>
     /// <exception cref="ArgumentException">
@@ -41,8 +43,8 @@ public sealed class TraceLoader
     /// </exception>
     /// <exception cref="FileNotFoundException">The file does not exist.</exception>
     /// <exception cref="NotSupportedException">No reader recognizes the file extension.</exception>
-    public LoadedTrace Load(string path, string? symbolsDirectory = null, ProcessScope? processScope = null) =>
-        Load(path, TraceMetric.Cpu, symbolsDirectory, processScope);
+    public LoadedTrace Load(string path, string? symbolsDirectory = null, ScopeRequest? scope = null) =>
+        Load(path, TraceMetric.Cpu, symbolsDirectory, scope);
 
     /// <summary>
     ///  Loads the <paramref name="metric"/> view of the trace at <paramref name="path"/>.
@@ -58,11 +60,13 @@ public sealed class TraceLoader
     ///  rankings. Ignored for speedscope inputs and for the metrics whose managed
     ///  frames resolve from the trace's own CLR rundown (allocation, exceptions).
     /// </param>
-    /// <param name="processScope">
-    ///  Optional process-tree scope. When set, only samples belonging to the matched
-    ///  workload process tree are loaded, narrowing a machine-wide capture to one
-    ///  scenario losslessly. Ignored for single-process inputs (speedscope) and for
-    ///  the single-process EventPipe metrics (allocation, exceptions).
+    /// <param name="scope">
+    ///  Optional process scope. A <see langword="null"/> request is the automatic
+    ///  busiest-process default (the same as <see cref="ScopeRequest.Auto"/>): the read
+    ///  is narrowed to an explicit name, the busiest process automatically, or every
+    ///  process when opted out - losslessly. Ignored for single-process inputs
+    ///  (speedscope) and for the single-process EventPipe metrics (allocation,
+    ///  exceptions).
     /// </param>
     /// <returns>The loaded trace.</returns>
     /// <exception cref="ArgumentException">
@@ -79,7 +83,7 @@ public sealed class TraceLoader
         string path,
         TraceMetric metric,
         string? symbolsDirectory = null,
-        ProcessScope? processScope = null)
+        ScopeRequest? scope = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
 
@@ -95,10 +99,10 @@ public sealed class TraceLoader
 
         return metric switch
         {
-            TraceMetric.Cpu => LoadCpu(fullPath, reader, symbolsDirectory, processScope),
+            TraceMetric.Cpu => LoadCpu(fullPath, reader, symbolsDirectory, scope),
             TraceMetric.Allocations => LoadAllocations(fullPath, reader),
             TraceMetric.Exceptions => LoadExceptions(fullPath, reader),
-            TraceMetric.ThreadTime => LoadThreadTime(fullPath, reader, processScope),
+            TraceMetric.ThreadTime => LoadThreadTime(fullPath, reader, scope),
             // Enums can be cast from any int, so reject an undefined value rather than
             // silently falling back to a CPU load and masking a bad caller (or a future
             // TraceMetric addition this switch was not updated for).
@@ -111,9 +115,9 @@ public sealed class TraceLoader
         string fullPath,
         ITraceReader reader,
         string? symbolsDirectory,
-        ProcessScope? processScope)
+        ScopeRequest? scope)
     {
-        TraceReadResult result = reader.Read(fullPath, symbolsDirectory, processScope);
+        TraceReadResult result = reader.Read(fullPath, symbolsDirectory, scope);
         TraceInfo info = BuildInfo(
             fullPath,
             reader.Format,
@@ -178,7 +182,7 @@ public sealed class TraceLoader
         return new LoadedTrace(info, source);
     }
 
-    private static LoadedTrace LoadThreadTime(string fullPath, ITraceReader reader, ProcessScope? processScope)
+    private static LoadedTrace LoadThreadTime(string fullPath, ITraceReader reader, ScopeRequest? scope)
     {
         // Thread time is reconstructed from ETW context-switch events, which only an
         // .etl capture carries; an EventPipe .nettrace samples only running threads and
@@ -189,13 +193,24 @@ public sealed class TraceLoader
                 $"The thread-time metric requires an .etl ETW capture; '{fullPath}' is {reader.Format}.");
         }
 
-        StackSampleSource source = new ThreadTimeProvider().Read(fullPath, processScope);
+        StackSampleSource source = new ThreadTimeProvider().Read(fullPath, scope, out string? appliedScopeName);
 
         List<string> warnings = [];
         if (source.Samples.Count == 0)
         {
+            // An empty result has two distinct causes now that scoping can drop every
+            // sample: a scope that matched no process (the capture is fine), or a capture
+            // taken without the context-switch keywords. Name the right one so the
+            // message does not blame the capture when the scope is at fault.
+            warnings.Add(appliedScopeName is not null
+                ? $"No thread-time samples remained after scoping to the '{appliedScopeName}' process tree; "
+                    + "the scope may match no process with samples - pass --all-processes to read every process."
+                : "No thread-time samples were found. Was the capture taken with the context-switch keywords?");
+        }
+        else if (appliedScopeName is not null)
+        {
             warnings.Add(
-                "No thread-time samples were found. Was the capture taken with the context-switch keywords?");
+                $"Scoped to the '{appliedScopeName}' process tree; pass --all-processes to read every process.");
         }
 
         // The thread-time computer resolves frames from the ETW capture itself and

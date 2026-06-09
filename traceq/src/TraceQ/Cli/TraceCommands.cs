@@ -21,7 +21,11 @@ internal sealed class TraceCommands
     ///  Rank the hottest frames in a trace by self- or inclusive-time.
     /// </summary>
     /// <param name="trace">Path to a .speedscope.json, .nettrace, or .etl file.</param>
-    /// <param name="metric">Provider metric to rank: cpu (default), alloc, exceptions, or threadtime.</param>
+    /// <param name="metric">
+    ///  Provider metric to rank: cpu (default), alloc, exceptions, or threadtime. The cpu
+    ///  metric weights each sample as 1 ms, so its weights are approximate; the relative
+    ///  percentages are exact.
+    /// </param>
     /// <param name="measure">-m, Which measure to report: self (leaf time, helpers folded) or inclusive.</param>
     /// <param name="root">Substring scoping the ranking to the subtree under a frame.</param>
     /// <param name="top">-n, Maximum number of rows to return.</param>
@@ -29,6 +33,8 @@ internal sealed class TraceCommands
     /// <param name="symbols">-s, Build-output directory whose embedded PDBs resolve managed frames.</param>
     /// <param name="format">Render format: text or json.</param>
     /// <param name="strict">Exit 3 when symbol resolution is below the trusted threshold.</param>
+    /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
+    /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest (multi-process captures).</param>
     /// <returns>A process exit code.</returns>
     [Command("rank")]
     public int Rank(
@@ -40,7 +46,9 @@ internal sealed class TraceCommands
         string[]? fold = null,
         string? symbols = null,
         OutputFormat format = OutputFormat.Text,
-        bool strict = false)
+        bool strict = false,
+        string process = "",
+        bool allProcesses = false)
     {
         if (!RankRequestFactory.TryResolveMetric(metric, out TraceMetric resolved))
         {
@@ -49,8 +57,14 @@ internal sealed class TraceCommands
             return ExitCodes.UsageError;
         }
 
+        if (!RankRequestFactory.TryResolveScope(process, allProcesses, out ScopeRequest scope, out string? scopeError))
+        {
+            Console.Error.WriteLine(scopeError);
+            return ExitCodes.UsageError;
+        }
+
         RankRequest request = RankRequestFactory.Create(
-            trace, resolved, measure, root, top, fold, symbols, format, strict);
+            trace, resolved, measure, root, top, fold, symbols, format, strict, scope);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -58,13 +72,19 @@ internal sealed class TraceCommands
     ///  Rank CPU-time hotspots; the shortcut for 'rank --metric cpu'.
     /// </summary>
     /// <param name="trace">Path to a .speedscope.json, .nettrace, or .etl file.</param>
-    /// <param name="measure">-m, Which measure to report: self (leaf time, helpers folded) or inclusive.</param>
+    /// <param name="measure">
+    ///  -m, Which measure to report: self (leaf time, helpers folded) or inclusive. Each
+    ///  sample weighs 1 ms, so the weights are approximate; the relative percentages are
+    ///  exact.
+    /// </param>
     /// <param name="root">Substring scoping the ranking to the subtree under a frame.</param>
     /// <param name="top">-n, Maximum number of rows to return.</param>
     /// <param name="fold">Extra leaf-frame fold regexes (comma-separated); omit to use the built-in defaults.</param>
     /// <param name="symbols">-s, Build-output directory whose embedded PDBs resolve managed frames.</param>
     /// <param name="format">Render format: text or json.</param>
     /// <param name="strict">Exit 3 when symbol resolution is below the trusted threshold.</param>
+    /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
+    /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest (multi-process captures).</param>
     /// <returns>A process exit code.</returns>
     [Command("cpu")]
     public int Cpu(
@@ -75,10 +95,18 @@ internal sealed class TraceCommands
         string[]? fold = null,
         string? symbols = null,
         OutputFormat format = OutputFormat.Text,
-        bool strict = false)
+        bool strict = false,
+        string process = "",
+        bool allProcesses = false)
     {
+        if (!RankRequestFactory.TryResolveScope(process, allProcesses, out ScopeRequest scope, out string? scopeError))
+        {
+            Console.Error.WriteLine(scopeError);
+            return ExitCodes.UsageError;
+        }
+
         RankRequest request = RankRequestFactory.Create(
-            trace, TraceMetric.Cpu, measure, root, top, fold, symbols, format, strict);
+            trace, TraceMetric.Cpu, measure, root, top, fold, symbols, format, strict, scope);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -150,6 +178,8 @@ internal sealed class TraceCommands
     /// <param name="top">-n, Maximum number of rows to return.</param>
     /// <param name="fold">Extra leaf-frame fold regexes (comma-separated); omit to use the built-in defaults.</param>
     /// <param name="format">Render format: text or json.</param>
+    /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
+    /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest.</param>
     /// <returns>A process exit code.</returns>
     /// <remarks>
     ///  Unlike CPU sampling, thread time accounts for off-CPU (blocked) intervals, so
@@ -165,10 +195,18 @@ internal sealed class TraceCommands
         string root = "",
         [Range(1, int.MaxValue)] int top = RankRequestFactory.DefaultTop,
         string[]? fold = null,
-        OutputFormat format = OutputFormat.Text)
+        OutputFormat format = OutputFormat.Text,
+        string process = "",
+        bool allProcesses = false)
     {
+        if (!RankRequestFactory.TryResolveScope(process, allProcesses, out ScopeRequest scope, out string? scopeError))
+        {
+            Console.Error.WriteLine(scopeError);
+            return ExitCodes.UsageError;
+        }
+
         RankRequest request = RankRequestFactory.Create(
-            trace, TraceMetric.ThreadTime, measure, root, top, fold, symbols: null, format, strict: false);
+            trace, TraceMetric.ThreadTime, measure, root, top, fold, symbols: null, format, strict: false, scope);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 

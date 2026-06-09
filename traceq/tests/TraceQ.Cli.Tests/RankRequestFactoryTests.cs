@@ -87,4 +87,38 @@ public sealed class RankRequestFactoryTests
         request.Format.Should().Be(OutputFormat.Json);
         request.Strict.Should().BeTrue();
     }
+
+    [TestMethod]
+    public void TryResolveScope_NoOptions_IsAutomatic()
+    {
+        RankRequestFactory.TryResolveScope("", allProcesses: false, out ScopeRequest scope, out string? error)
+            .Should().BeTrue();
+        error.Should().BeNull();
+        scope.Should().BeSameAs(ScopeRequest.Auto);
+    }
+
+    [TestMethod]
+    public void TryResolveScope_AllProcesses_IsTheOptOut()
+    {
+        RankRequestFactory.TryResolveScope("", allProcesses: true, out ScopeRequest scope, out _)
+            .Should().BeTrue();
+        scope.Should().BeSameAs(ScopeRequest.AllProcesses);
+    }
+
+    [TestMethod]
+    public void TryResolveScope_ProcessName_BuildsAnExplicitScope()
+    {
+        RankRequestFactory.TryResolveScope("MyApp", allProcesses: false, out ScopeRequest scope, out _)
+            .Should().BeTrue();
+        scope.ProcessName.Should().Be("MyApp");
+        scope.IncludeAll.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void TryResolveScope_BothOptions_IsAUsageError()
+    {
+        RankRequestFactory.TryResolveScope("MyApp", allProcesses: true, out _, out string? error)
+            .Should().BeFalse();
+        error.Should().Contain("only one of --process and --all-processes");
+    }
 }

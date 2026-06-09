@@ -78,6 +78,11 @@ internal static class TraceExecution
     /// <param name="symbols">Optional build-output directory for symbol resolution.</param>
     /// <param name="error">The writer a load-failure message is reported to.</param>
     /// <param name="trace">The loaded trace on success.</param>
+    /// <param name="scope">
+    ///  Optional process scope (an explicit name, the automatic busiest-process
+    ///  default when <see langword="null"/>, or every process). Consumed only by the
+    ///  CPU and thread-time metrics.
+    /// </param>
     /// <returns>
     ///  <see langword="true"/> on success; otherwise <see langword="false"/>, and the
     ///  caller should return <see cref="ExitCodes.InputError"/>.
@@ -87,11 +92,12 @@ internal static class TraceExecution
         TraceMetric metric,
         string? symbols,
         TextWriter error,
-        [NotNullWhen(true)] out LoadedTrace? trace)
+        [NotNullWhen(true)] out LoadedTrace? trace,
+        ScopeRequest? scope = null)
     {
         try
         {
-            trace = new TraceStore().Get(path, symbols, metric);
+            trace = new TraceStore().Get(path, symbols, metric, scope);
             return true;
         }
         catch (Exception ex) when (
@@ -183,15 +189,21 @@ internal static class TraceExecution
     }
 
     /// <summary>
-    ///  Produces the symbol-resolution warning for a loaded trace, or an empty list
-    ///  when resolution is above the trusted threshold.
+    ///  The quality warnings to attach to a result envelope: the full list the reader
+    ///  and loader recorded on <see cref="TraceInfo.Warnings"/>.
     /// </summary>
     /// <param name="info">The loaded trace's metadata.</param>
     /// <returns>The warnings to attach to the result envelope.</returns>
-    public static IReadOnlyList<string> SymbolWarnings(TraceInfo info) =>
-        SymbolGate.TryGetWarning(info.SymbolResolutionRate, info.SampleCount, out string? warning)
-            ? [warning]
-            : [];
+    /// <remarks>
+    ///  <para>
+    ///   <see cref="TraceInfo.Warnings"/> is the authoritative list - the reader builds
+    ///   it with the symbol-resolution warning, the no-samples notice, and the
+    ///   applied-scope notice when a machine-wide capture was narrowed. Forwarding it
+    ///   whole keeps every quality signal visible rather than recomputing or
+    ///   cherry-picking a subset, which silently dropped the others.
+    ///  </para>
+    /// </remarks>
+    public static IReadOnlyList<string> ResultWarnings(TraceInfo info) => info.Warnings;
 
     /// <summary>
     ///  Decides the exit code for an otherwise successful run, applying the

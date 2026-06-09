@@ -48,7 +48,7 @@ internal static class HeatmapExecutor
         string fileName = System.IO.Path.GetFileName(request.File);
         SourceHeatmapResult heatmap = trace.Aggregator.SourceHeatmap(fileName, request.Fold);
 
-        AnalysisResult<SourceHeatmapResult> envelope = new(heatmap, TraceExecution.SymbolWarnings(info));
+        AnalysisResult<SourceHeatmapResult> envelope = new(heatmap, TraceExecution.ResultWarnings(info));
 
         if (request.Format == OutputFormat.Json)
         {

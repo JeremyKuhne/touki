@@ -183,4 +183,21 @@ public sealed class TraceLoaderThreadTimeTests
         trace.Info.SampleCount.Should().BeGreaterThan(0);
         trace.Info.TotalWeight.Should().BeGreaterThan(0);
     }
+
+    [TestMethod]
+    public void Load_ThreadTimeScopeMatchingNoProcess_WarnsAboutTheScopeNotTheCapture()
+    {
+        TraceLoader loader = new();
+
+        LoadedTrace trace = loader.Load(
+            FixturePath("etw.etl"),
+            TraceMetric.ThreadTime,
+            scope: ScopeRequest.ForProcess("no-such-process-name"));
+
+        // When the scope drops every sample the warning must blame the scope, not imply
+        // the capture lacks the context-switch keywords (the capture is fine).
+        trace.Info.Warnings.Should().Contain(w => w.Contains("after scoping to", StringComparison.Ordinal));
+        trace.Info.Warnings.Should().NotContain(w =>
+            w.Contains("context-switch keywords", StringComparison.Ordinal));
+    }
 }

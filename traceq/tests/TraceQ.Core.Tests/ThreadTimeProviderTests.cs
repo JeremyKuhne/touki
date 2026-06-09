@@ -15,8 +15,12 @@ public sealed class ThreadTimeProviderTests
 {
     private static string EtwFixture => Path.Combine(AppContext.BaseDirectory, "Fixtures", "etw.etl");
 
-    private static StackSampleSource Read(ProcessScope? scope = null) =>
-        new ThreadTimeProvider().Read(EtwFixture, scope);
+    // The load path treats null as the automatic busiest-process default; the tests
+    // that want the whole capture pass ScopeRequest.AllProcesses explicitly. The
+    // single-result tests pass null (the default) since the fixture's busiest tree is
+    // the whole capture anyway.
+    private static StackSampleSource Read(ScopeRequest? scope = null) =>
+        new ThreadTimeProvider().Read(EtwFixture, scope, out _);
 
     private static bool HasLeaf(StackSampleSource source, string leaf) =>
         source.Samples.Any(s => s.Frames.Count > 0
@@ -60,8 +64,8 @@ public sealed class ThreadTimeProviderTests
     [TestMethod]
     public void Read_ScopedToJobChild_NarrowsToThatProcess()
     {
-        StackSampleSource all = Read();
-        StackSampleSource scoped = Read(new ProcessScope("HotLoopBench-Job", IncludeChildren: false));
+        StackSampleSource all = Read(ScopeRequest.AllProcesses);
+        StackSampleSource scoped = Read(ScopeRequest.ForProcess("HotLoopBench-Job", includeChildren: false));
 
         scoped.Samples.Should().NotBeEmpty();
         scoped.Samples.Count.Should().BeLessThan(all.Samples.Count);
@@ -73,7 +77,7 @@ public sealed class ThreadTimeProviderTests
     [TestMethod]
     public void Read_ScopeMatchingNoProcess_YieldsNoSamples()
     {
-        StackSampleSource scoped = Read(new ProcessScope("no-such-process-name"));
+        StackSampleSource scoped = Read(ScopeRequest.ForProcess("no-such-process-name"));
 
         scoped.Samples.Should().BeEmpty();
     }
@@ -81,7 +85,7 @@ public sealed class ThreadTimeProviderTests
     [TestMethod]
     public void Read_ScopedSource_RanksThroughTheEngine()
     {
-        StackSampleSource source = Read(new ProcessScope("HotLoopBench-Job", IncludeChildren: false));
+        StackSampleSource source = Read(ScopeRequest.ForProcess("HotLoopBench-Job", includeChildren: false));
         FoldingAggregator aggregator = new(source);
 
         RankingResult ranking = aggregator.SelfTime("", FrameNames.DefaultFoldPatterns, 5);
@@ -94,7 +98,7 @@ public sealed class ThreadTimeProviderTests
     public void Read_MissingFile_ThrowsFileNotFound()
     {
         Action act = () => new ThreadTimeProvider().Read(
-            Path.Combine(AppContext.BaseDirectory, "Fixtures", "does-not-exist.etl"));
+            Path.Combine(AppContext.BaseDirectory, "Fixtures", "does-not-exist.etl"), scope: null, out _);
 
         act.Should().Throw<FileNotFoundException>();
     }
@@ -104,7 +108,7 @@ public sealed class ThreadTimeProviderTests
     [DataRow(null)]
     public void Read_NullOrEmptyPath_ThrowsArgument(string? path)
     {
-        Action act = () => new ThreadTimeProvider().Read(path!);
+        Action act = () => new ThreadTimeProvider().Read(path!, scope: null, out _);
 
         act.Should().Throw<ArgumentException>();
     }

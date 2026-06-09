@@ -44,7 +44,7 @@ internal static class LinesExecutor
         TraceInfo info = trace.Info;
         LineRankingResult lines = trace.Aggregator.HotLines(request.Method, request.Fold, request.Top);
 
-        AnalysisResult<LineRankingResult> envelope = new(lines, TraceExecution.SymbolWarnings(info));
+        AnalysisResult<LineRankingResult> envelope = new(lines, TraceExecution.ResultWarnings(info));
 
         if (request.Format == OutputFormat.Json)
         {

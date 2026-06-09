@@ -54,16 +54,24 @@ public sealed class ThreadTimeProvider
     ///  <paramref name="path"/>.
     /// </summary>
     /// <param name="path">The <c>.etl</c> file path.</param>
-    /// <param name="processScope">
-    ///  Optional process-tree scope. When set, only the stacks of the matched
-    ///  workload tree are returned, narrowing a machine-wide capture to one scenario.
+    /// <param name="scope">
+    ///  Optional process scope. A <see langword="null"/> request is the automatic
+    ///  busiest-process default (the same as <see cref="ScopeRequest.Auto"/>): only the
+    ///  stacks of the matched workload tree are returned - an explicit name, the busiest
+    ///  process automatically, or every process when opted out - narrowing a
+    ///  machine-wide capture to one scenario.
+    /// </param>
+    /// <param name="appliedProcessName">
+    ///  The name of the process the scope resolved to, or <see langword="null"/> when
+    ///  no scope applied (all-processes, or no busy process found).
     /// </param>
     /// <returns>The thread-time source: elapsed-millisecond-weighted stacks.</returns>
     /// <exception cref="ArgumentException"><paramref name="path"/> is <see langword="null"/> or empty.</exception>
     /// <exception cref="FileNotFoundException">The file does not exist.</exception>
-    public StackSampleSource Read(string path, ProcessScope? processScope = null)
+    public StackSampleSource Read(string path, ScopeRequest? scope, out string? appliedProcessName)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
+        appliedProcessName = null;
 
         string fullPath = Path.GetFullPath(path);
         if (!File.Exists(fullPath))
@@ -77,7 +85,11 @@ public sealed class ThreadTimeProvider
 
         using SymbolReader symbolReader = new(TextWriter.Null, "", null);
 
-        HashSet<int>? scopePids = processScope is null ? null : ProcessTree.ResolvePids(traceLog, processScope);
+        // A null request is "unspecified", which is the automatic default (the same as
+        // ScopeRequest.Auto): a caller that passes nothing still gets scenario scope. A
+        // null pid set means no scoping (every process, the all-processes opt-out).
+        HashSet<int>? scopePids = ProcessTree.ResolveScope(
+            traceLog, scope ?? ScopeRequest.Auto, out appliedProcessName);
 
         MutableTraceEventStackSource stackSource = new(traceLog);
 
