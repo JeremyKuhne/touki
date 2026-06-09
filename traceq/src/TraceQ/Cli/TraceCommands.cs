@@ -5,6 +5,7 @@
 using System.ComponentModel.DataAnnotations;
 using ConsoleAppFramework;
 using TraceQ.Tracing;
+using TraceQ.Tracing.Providers;
 
 namespace TraceQ.Cli;
 
@@ -323,5 +324,74 @@ internal sealed class TraceCommands
     {
         ExportRequest request = new(trace, format, output, symbols, name);
         return ExportExecutor.Run(request, Console.Out, Console.Error);
+    }
+
+    /// <summary>
+    ///  Report garbage-collection behavior: counts by generation, pause-time summary, and per-collection detail.
+    /// </summary>
+    /// <param name="trace">Path to a .nettrace EventPipe file captured with GC events (GcVerbose).</param>
+    /// <param name="top">-n, Maximum number of per-collection rows to show, ranked by pause time.</param>
+    /// <param name="format">Render format: text or json.</param>
+    /// <returns>A process exit code.</returns>
+    /// <remarks>
+    ///  This is a structured report, not a stack ranking: the summary always reflects
+    ///  every collection, while the detail rows are capped and ranked by pause time.
+    /// </remarks>
+    [Command("gcstats")]
+    public int GcStats(
+        [Argument] string trace,
+        [Range(1, int.MaxValue)] int top = 50,
+        OutputFormat format = OutputFormat.Text)
+    {
+        GcStatsRequest request = new(trace, top, format);
+        return GcStatsExecutor.Run(request, Console.Out, Console.Error);
+    }
+
+    /// <summary>
+    ///  Report just-in-time compilation: method count, compile-time summary, and per-method detail.
+    /// </summary>
+    /// <param name="trace">Path to a .nettrace EventPipe file captured with JIT events.</param>
+    /// <param name="top">-n, Maximum number of per-method rows to show, ranked by compile time.</param>
+    /// <param name="format">Render format: text or json.</param>
+    /// <returns>A process exit code.</returns>
+    /// <remarks>
+    ///  This is a structured report, not a stack ranking: the summary always reflects
+    ///  every method, while the detail rows are capped and ranked by compile time.
+    /// </remarks>
+    [Command("jitstats")]
+    public int JitStats(
+        [Argument] string trace,
+        [Range(1, int.MaxValue)] int top = 25,
+        OutputFormat format = OutputFormat.Text)
+    {
+        JitStatsRequest request = new(trace, top, format);
+        return JitStatsExecutor.Run(request, Console.Out, Console.Error);
+    }
+
+    /// <summary>
+    ///  Query the trace's raw events by name, with paging and a per-event payload cap.
+    /// </summary>
+    /// <param name="trace">Path to a .nettrace EventPipe file.</param>
+    /// <param name="name">Case-insensitive substring matched against provider/event; omit to match every event.</param>
+    /// <param name="skip">Number of matches to skip, for paging.</param>
+    /// <param name="take">-n, Maximum number of matches to return on this page.</param>
+    /// <param name="maxPayload">Per-event payload character cap; 0 omits payloads.</param>
+    /// <param name="format">Render format: text or json.</param>
+    /// <returns>A process exit code.</returns>
+    /// <remarks>
+    ///  Paging (<c>--skip</c> / <c>--take</c>) and the payload cap keep the output
+    ///  bounded even when a query matches hundreds of thousands of events.
+    /// </remarks>
+    [Command("events")]
+    public int Events(
+        [Argument] string trace,
+        string name = "",
+        [Range(0, int.MaxValue)] int skip = 0,
+        [Range(1, int.MaxValue)] int take = 50,
+        [Range(0, int.MaxValue)] int maxPayload = EventQueryProvider.DefaultMaxPayloadChars,
+        OutputFormat format = OutputFormat.Text)
+    {
+        EventsRequest request = new(trace, name, skip, take, maxPayload, format);
+        return EventsExecutor.Run(request, Console.Out, Console.Error);
     }
 }
