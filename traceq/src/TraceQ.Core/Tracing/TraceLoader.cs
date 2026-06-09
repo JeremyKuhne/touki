@@ -198,11 +198,16 @@ public sealed class TraceLoader
         List<string> warnings = [];
         if (source.Samples.Count == 0)
         {
-            warnings.Add(
-                "No thread-time samples were found. Was the capture taken with the context-switch keywords?");
+            // An empty result has two distinct causes now that scoping can drop every
+            // sample: a scope that matched no process (the capture is fine), or a capture
+            // taken without the context-switch keywords. Name the right one so the
+            // message does not blame the capture when the scope is at fault.
+            warnings.Add(appliedScopeName is not null
+                ? $"No thread-time samples remained after scoping to the '{appliedScopeName}' process tree; "
+                    + "the scope may match no process with samples - pass --all-processes to read every process."
+                : "No thread-time samples were found. Was the capture taken with the context-switch keywords?");
         }
-
-        if (appliedScopeName is not null)
+        else if (appliedScopeName is not null)
         {
             warnings.Add(
                 $"Scoped to the '{appliedScopeName}' process tree; pass --all-processes to read every process.");

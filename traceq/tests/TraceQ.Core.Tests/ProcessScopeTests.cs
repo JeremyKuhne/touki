@@ -161,6 +161,19 @@ public sealed class ProcessScopeTests
     }
 
     [TestMethod]
+    public void Read_ScopeMatchingNoProcess_WarnsAboutTheScopeNotTheCapture()
+    {
+        LoadedTrace loaded = new TraceLoader().Load(
+            EtwFixture, scope: ScopeRequest.ForProcess("no-such-process-name"));
+
+        // When scoping drops every sample the warning must blame the scope, not imply
+        // the capture lacks CPU events (the trace is fine - the scope matched nothing).
+        loaded.Info.Warnings.Should().Contain(w => w.Contains("after scoping to", StringComparison.Ordinal));
+        loaded.Info.Warnings.Should().NotContain(w =>
+            w.Contains("Was the trace captured with a CPU sampler", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Read_ScopedTree_RanksThroughTheEngineUnchanged()
     {
         LoadedTrace loaded = new TraceLoader().Load(

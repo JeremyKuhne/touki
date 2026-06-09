@@ -213,10 +213,16 @@ internal abstract class TraceLogReader : ITraceReader
         List<string> warnings = [];
         if (samples.Count == 0)
         {
-            warnings.Add("No sampled-profile (CPU) events were found. Was the trace captured with a CPU sampler?");
+            // An empty result has two distinct causes now that scoping can drop every
+            // sample: a scope that matched no process (the trace is fine), or a trace
+            // that carried no CPU samples at all. Name the right one so the message does
+            // not blame the capture when the scope is at fault.
+            warnings.Add(appliedScopeName is not null
+                ? $"No samples remained after scoping to the '{appliedScopeName}' process tree; "
+                    + "the scope may match no process with samples - pass --all-processes to read every process."
+                : "No sampled-profile (CPU) events were found. Was the trace captured with a CPU sampler?");
         }
-
-        if (appliedScopeName is not null)
+        else if (appliedScopeName is not null)
         {
             warnings.Add(
                 $"Scoped to the '{appliedScopeName}' process tree; pass --all-processes to read every process.");
