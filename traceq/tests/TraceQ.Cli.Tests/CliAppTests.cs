@@ -55,6 +55,7 @@ public sealed class CliAppTests
         output.Should().Contain("heatmap");
         output.Should().Contain("diff");
         output.Should().Contain("export");
+        output.Should().Contain("tree");
     }
 
     [TestMethod]
@@ -278,5 +279,45 @@ public sealed class CliAppTests
         exit.Should().Be(ExitCodes.Success);
         output.Should().Contain("--format");
         output.Should().Contain("--output");
+    }
+
+    [TestMethod]
+    public void Run_Tree_RendersIndentedHierarchy()
+    {
+        (int exit, string output, _) = Run("tree", Speedscope);
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("CPU call tree");
+        output.Should().Contain("<root>");
+    }
+
+    [TestMethod]
+    public void Run_TreeMaxDepthAlias_IsParsed()
+    {
+        // -d caps the depth: at depth 1 the root's children show but their callees do not.
+        (int exit, string output, _) = Run("tree", Speedscope, "-d", "1", "--format", "json");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("Program.Main");
+        output.Should().NotContain("MyApp.Work");
+    }
+
+    [TestMethod]
+    public void Run_TreeNegativeMaxDepth_ReturnsUsageError()
+    {
+        // ConsoleAppFramework's [Range(0, ...)] rejects a negative depth before the verb runs.
+        (int exit, _, _) = Run("tree", Speedscope, "--max-depth", "-1");
+
+        exit.Should().Be(ExitCodes.UsageError);
+    }
+
+    [TestMethod]
+    public void Run_TreeMaxDepthAboveCap_ReturnsUsageError()
+    {
+        // The depth bound is capped so a recursive deep tree cannot overflow the stack; an
+        // over-cap request is rejected as a usage error before any trace work.
+        (int exit, _, _) = Run("tree", Speedscope, "--max-depth", "100000");
+
+        exit.Should().Be(ExitCodes.UsageError);
     }
 }
