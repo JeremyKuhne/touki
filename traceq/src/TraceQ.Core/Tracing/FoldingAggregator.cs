@@ -35,6 +35,15 @@ namespace TraceQ.Tracing;
 /// </remarks>
 public sealed class FoldingAggregator
 {
+    /// <summary>
+    ///  The largest call-tree depth <see cref="CallTree"/> accepts. The tree is
+    ///  materialized and rendered by recursion whose depth equals the tree height,
+    ///  which the depth bound caps; limiting that bound keeps a deep (possibly
+    ///  hand-authored) input trace from driving either recursion into a
+    ///  <see cref="StackOverflowException"/>. It is far beyond any readable tree depth.
+    /// </summary>
+    public const int MaxTreeDepth = 1024;
+
     private readonly StackSampleSource _source;
     private readonly IReadOnlyList<SampleStack> _samples;
 
@@ -411,11 +420,12 @@ public sealed class FoldingAggregator
     /// </remarks>
     /// <param name="rootFrame">Substring scoping the tree to a subtree, or empty for the whole trace.</param>
     /// <param name="foldPatterns">Frame fold patterns; folded frames are skipped.</param>
-    /// <param name="maxDepth">The maximum number of frame levels below the root to descend. Must be non-negative.</param>
+    /// <param name="maxDepth">The maximum number of frame levels below the root to descend. Must be in <c>[0, <see cref="MaxTreeDepth"/>]</c>.</param>
     /// <param name="minPercentOfScope">The minimum share of the scoped total, in percent, a node must have to appear. Must be non-negative.</param>
     /// <returns>The call tree.</returns>
     /// <exception cref="ArgumentOutOfRangeException">
-    ///  <paramref name="maxDepth"/> or <paramref name="minPercentOfScope"/> is negative.
+    ///  <paramref name="maxDepth"/> is negative or greater than <see cref="MaxTreeDepth"/>, or
+    ///  <paramref name="minPercentOfScope"/> is negative.
     /// </exception>
     public CallTreeResult CallTree(
         string rootFrame,
@@ -424,6 +434,7 @@ public sealed class FoldingAggregator
         double minPercentOfScope)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(maxDepth);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(maxDepth, MaxTreeDepth);
         ArgumentOutOfRangeException.ThrowIfNegative(minPercentOfScope);
 
         Regex[] fold = FrameNames.CompileFoldPatterns(foldPatterns);

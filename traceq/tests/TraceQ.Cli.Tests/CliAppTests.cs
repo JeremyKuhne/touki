@@ -310,4 +310,14 @@ public sealed class CliAppTests
 
         exit.Should().Be(ExitCodes.UsageError);
     }
+
+    [TestMethod]
+    public void Run_TreeMaxDepthAboveCap_ReturnsUsageError()
+    {
+        // The depth bound is capped so a recursive deep tree cannot overflow the stack; an
+        // over-cap request is rejected as a usage error before any trace work.
+        (int exit, _, _) = Run("tree", Speedscope, "--max-depth", "100000");
+
+        exit.Should().Be(ExitCodes.UsageError);
+    }
 }

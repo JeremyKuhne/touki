@@ -152,4 +152,59 @@ public sealed class CallTreeTests
 
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
+
+    [TestMethod]
+    public void CallTree_MaxDepthAboveCap_Throws()
+    {
+        FoldingAggregator aggregator = LoadFolding().Aggregator;
+
+        Action act = () => aggregator.CallTree("", FrameNames.DefaultFoldPatterns, FoldingAggregator.MaxTreeDepth + 1, 0.0);
+
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [TestMethod]
+    public void CallTree_DeepStackAtCap_MaterializesWithoutOverflowingAndIsBounded()
+    {
+        // A trace far deeper than the cap (a hand-authored speedscope could do this) must
+        // not drive the recursive materialization into a StackOverflowException: the depth
+        // bound caps the tree height, so building completes and the tree is no deeper than
+        // the cap.
+        string[] frames = new string[FoldingAggregator.MaxTreeDepth * 2];
+        for (int i = 0; i < frames.Length; i++)
+        {
+            frames[i] = $"app!F{i}";
+        }
+
+        List<SampleStack> samples = [new(frames, 1.0, "1")];
+
+        CallTreeResult result = Engine(samples).CallTree("", FrameNames.DefaultFoldPatterns, FoldingAggregator.MaxTreeDepth, 0.0);
+
+        // Measure the height iteratively so the assertion itself never recurses deeply.
+        MaxDepthOf(result.Root).Should().Be(FoldingAggregator.MaxTreeDepth);
+    }
+
+    // Iterative tree-height measurement (root is depth 0), so the test does not itself
+    // recurse on a deep tree.
+    private static int MaxDepthOf(TreeNode root)
+    {
+        int max = 0;
+        Stack<(TreeNode Node, int Depth)> pending = new();
+        pending.Push((root, 0));
+        while (pending.Count > 0)
+        {
+            (TreeNode node, int depth) = pending.Pop();
+            if (depth > max)
+            {
+                max = depth;
+            }
+
+            foreach (TreeNode child in node.Children)
+            {
+                pending.Push((child, depth + 1));
+            }
+        }
+
+        return max;
+    }
 }

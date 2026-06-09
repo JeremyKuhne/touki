@@ -200,7 +200,7 @@ internal sealed class TraceCommands
     public int Tree(
         [Argument] string trace,
         string root = "",
-        [Range(0, int.MaxValue)] int maxDepth = TreeRequest.DefaultMaxDepth,
+        [Range(0, FoldingAggregator.MaxTreeDepth)] int maxDepth = TreeRequest.DefaultMaxDepth,
         [Range(0.0, 100.0)] double minPct = TreeRequest.DefaultMinPercent,
         string[]? fold = null,
         string? symbols = null,
