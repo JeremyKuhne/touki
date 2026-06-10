@@ -12,7 +12,10 @@ using TraceQ.Server;
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
 // stdout carries the MCP JSON-RPC stream; every diagnostic must go to stderr or it
-// corrupts the protocol. Route all logging - down to the most verbose level - to stderr.
+// corrupts the protocol. Drop the host's default providers first so nothing the host
+// pre-registered can reach stdout, then add a single console provider pinned to stderr
+// for every level.
+builder.Logging.ClearProviders();
 builder.Logging.AddConsole(static options => options.LogToStandardErrorThreshold = LogLevel.Trace);
 
 // One cache of parsed traces is shared across every tool call for the server's lifetime.

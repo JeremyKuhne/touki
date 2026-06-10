@@ -157,6 +157,18 @@ public sealed class TraceToolsTests
     }
 
     [TestMethod]
+    public void Rank_InvalidFoldPattern_ThrowsMcpExceptionNamingThePattern()
+    {
+        TraceStore store = new();
+
+        // A malformed user-supplied fold regex is a usage error, not an internal failure:
+        // it must surface as a clean tool error that names the offending pattern.
+        Action act = () => TraceTools.Rank(store, FixturePath(Speedscope), fold: ["("]);
+
+        act.Should().Throw<McpException>().WithMessage("*Invalid fold pattern*");
+    }
+
+    [TestMethod]
     public void Callers_Speedscope_ReturnsCallerBreakdown()
     {
         TraceStore store = new();
@@ -185,6 +197,16 @@ public sealed class TraceToolsTests
     }
 
     [TestMethod]
+    public void Lines_InvalidFoldPattern_ThrowsMcpException()
+    {
+        TraceStore store = new();
+
+        Action act = () => TraceTools.Lines(store, FixturePath(Speedscope), fold: ["("]);
+
+        act.Should().Throw<McpException>().WithMessage("*Invalid fold pattern*");
+    }
+
+    [TestMethod]
     public void Heatmap_SpeedscopeWithoutLineData_ReturnsEmptyMap()
     {
         TraceStore store = new();
@@ -195,6 +217,16 @@ public sealed class TraceToolsTests
         JsonElement root = doc.RootElement;
         AssertEnvelopeShape(root);
         root.GetProperty("result").GetProperty("lines").GetArrayLength().Should().Be(0);
+    }
+
+    [TestMethod]
+    public void Heatmap_InvalidFoldPattern_ThrowsMcpException()
+    {
+        TraceStore store = new();
+
+        Action act = () => TraceTools.Heatmap(store, FixturePath(Speedscope), file: "ExtGlob.cs", fold: ["("]);
+
+        act.Should().Throw<McpException>().WithMessage("*Invalid fold pattern*");
     }
 
     [TestMethod]

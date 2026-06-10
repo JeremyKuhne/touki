@@ -100,7 +100,7 @@ public static class TraceTools
         TraceMetric resolved = ResolveMetric(metric);
         bool inclusive = ResolveMeasure(measure);
         RequirePositiveTop(top);
-        IReadOnlyList<string> foldPatterns = fold is { Length: > 0 } ? fold : FrameNames.DefaultFoldPatterns;
+        IReadOnlyList<string> foldPatterns = ResolveFold(fold);
 
         LoadedTrace trace = Load(store, path, NullIfEmpty(symbols), resolved);
         TraceInfo info = trace.Info;
@@ -178,7 +178,7 @@ public static class TraceTools
         string symbols = "")
     {
         RequirePositiveTop(top);
-        IReadOnlyList<string> foldPatterns = fold is { Length: > 0 } ? fold : FrameNames.DefaultFoldPatterns;
+        IReadOnlyList<string> foldPatterns = ResolveFold(fold);
         LoadedTrace trace = Load(store, path, NullIfEmpty(symbols));
         TraceInfo info = trace.Info;
         LineRankingResult lines = trace.Aggregator.HotLines(method, foldPatterns, top);
@@ -212,7 +212,7 @@ public static class TraceTools
             + "portable PDBs are extracted so managed frames resolve to source lines.")]
         string symbols = "")
     {
-        IReadOnlyList<string> foldPatterns = fold is { Length: > 0 } ? fold : FrameNames.DefaultFoldPatterns;
+        IReadOnlyList<string> foldPatterns = ResolveFold(fold);
         LoadedTrace trace = Load(store, path, NullIfEmpty(symbols));
         TraceInfo info = trace.Info;
 
@@ -282,6 +282,33 @@ public static class TraceTools
         {
             throw new McpException("top must be 1 or greater.");
         }
+    }
+
+    /// <summary>
+    ///  Resolves the fold patterns to use - the caller's patterns or the built-in
+    ///  JIT-helper defaults - and validates them up front so a malformed user-supplied
+    ///  regex surfaces as a clean, actionable tool error rather than escaping the
+    ///  aggregator as a framework-level exception.
+    /// </summary>
+    private static IReadOnlyList<string> ResolveFold(string[]? fold)
+    {
+        IReadOnlyList<string> patterns = fold is { Length: > 0 } ? fold : FrameNames.DefaultFoldPatterns;
+
+        try
+        {
+            // Compile only to validate; the aggregator compiles its own copy when it runs.
+            // CompileFoldPatterns also caps each match with a timeout, so a pathological
+            // user pattern cannot hang the server.
+            _ = FrameNames.CompileFoldPatterns(patterns);
+        }
+        catch (ArgumentException ex)
+        {
+            // A malformed fold regex is a usage error; surface the message (which names the
+            // offending pattern) as a clean tool error instead of an internal failure.
+            throw new McpException(ex.Message);
+        }
+
+        return patterns;
     }
 
     private static string? NullIfEmpty(string value) => string.IsNullOrEmpty(value) ? null : value;
