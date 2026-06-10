@@ -40,6 +40,20 @@ public static class OutputJson
     private static readonly JsonSerializerOptions s_options = CreateOptions();
 
     /// <summary>
+    ///  The shared serializer options: the source-generated (AOT-safe) metadata plus the
+    ///  relaxed encoder and the deterministic double-rounding the wire format requires.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   The CLI serializes through <see cref="Serialize"/>; the MCP head hands these same
+    ///   options to its tool registration so a tool's typed result (its structured content
+    ///   and the text mirror the SDK emits) is written with the identical naming, encoding,
+    ///   and rounding - one serialization contract across both heads.
+    ///  </para>
+    /// </remarks>
+    public static JsonSerializerOptions SerializerOptions => s_options;
+
+    /// <summary>
     ///  Serializes an analysis result to compact, deterministic JSON.
     /// </summary>
     /// <typeparam name="T">The payload type.</typeparam>

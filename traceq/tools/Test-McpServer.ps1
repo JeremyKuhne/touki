@@ -5,11 +5,11 @@
 
 <#
 .SYNOPSIS
-  Validates the traceq MCP server's two wire-protocol contracts as build artifacts.
+  Validates the traceq MCP server's wire-protocol contracts as build artifacts.
 
 .DESCRIPTION
   Enforces the two checks born with the MCP facade (docs/traceq-implementation-plan.md,
-  milestone M3):
+  milestone M3), plus a scripted client round-trip:
 
     1. stdout purity - stdout carries only JSON-RPC. The server is run with a
        deliberately chatty log level (Trace) forced through configuration; every
@@ -19,23 +19,28 @@
        The serialized `tools` array from a real `tools/list` round-trip is measured
        and the estimated token cost must stay within the budget, so the curated
        surface cannot grow into an unscannable wall that crowds the model's context.
+    3. tool round-trip - a real `tools/call` (trace_info against a committed
+       fixture) must come back as the tool's result envelope, not an error,
+       exercising the whole client -> server -> service -> client path.
 
   Drives the server over stdio exactly as a client would: initialize, initialized,
-  then tools/list. Run from the traceq subtree root (the directory holding
-  traceq.slnx).
+  tools/list, then tools/call. Run from the traceq subtree root (the directory
+  holding traceq.slnx).
 
 .PARAMETER Configuration
   The build configuration whose MCP binary to exercise. Defaults to Release.
 
 .PARAMETER MaxSchemaTokens
-  The tool-list token budget. Defaults to 4000. Tokens are estimated at four
+  The tool-list token budget. Defaults to 6000. Tokens are estimated at four
   characters each; the check prints the measured characters and estimate so a
-  regression is legible.
+  regression is legible. The budget covers each tool's name, description, input
+  schema, and (because the tools advertise structured content) its output schema -
+  everything the client puts in front of the model from tools/list.
 #>
 [CmdletBinding()]
 param(
     [string]$Configuration = 'Release',
-    [int]$MaxSchemaTokens = 4000
+    [int]$MaxSchemaTokens = 6000
 )
 
 $ErrorActionPreference = 'Stop'
@@ -96,12 +101,32 @@ $stderrTask = $p.StandardError.ReadToEndAsync()
 $p.StandardInput.WriteLine('{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"1.0"}}}')
 $p.StandardInput.WriteLine('{"jsonrpc":"2.0","method":"notifications/initialized"}')
 $p.StandardInput.WriteLine('{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}')
+
+# Round-trip a real tool call (id 3): invoke trace_info against a committed fixture
+# so the harness exercises the full client -> server -> service -> client path, not
+# just tools/list. ConvertTo-Json handles escaping the (possibly back-slashed) path.
+$fixture = Join-Path $root 'tests/TraceQ.Core.Tests/Fixtures/folding.speedscope.json'
+if (-not (Test-Path $fixture)) {
+    throw "Round-trip fixture not found at '$fixture'."
+}
+$callRequest = @{
+    jsonrpc = '2.0'
+    id      = 3
+    method  = 'tools/call'
+    params  = @{ name = 'trace_info'; arguments = @{ path = $fixture } }
+} | ConvertTo-Json -Compress -Depth 6
+$p.StandardInput.WriteLine($callRequest)
 $p.StandardInput.Flush()
 
 # Single async read pump with a hard overall deadline; do not break on a per-read
 # timeout because a cold server's first stdout line can take several seconds.
+# JSON-RPC responses may arrive out of order, so collect until BOTH the tools/list
+# (id 2) and the tools/call (id 3) responses have been seen rather than breaking on
+# id 3 alone - otherwise a tools/list that landed second would be missed and the
+# schema-budget check below would fail on an otherwise healthy server.
 $stdout = [System.Collections.Generic.List[string]]::new()
 $gotTools = $false
+$gotRoundTrip = $false
 $deadline = [DateTime]::UtcNow.AddSeconds(30)
 $pending = $p.StandardOutput.ReadLineAsync()
 while ([DateTime]::UtcNow -lt $deadline) {
@@ -109,17 +134,21 @@ while ([DateTime]::UtcNow -lt $deadline) {
         $line = $pending.Result
         if ($null -eq $line) { break }
         $stdout.Add($line)
-        # Detect the tools/list response by a real JSON-RPC id == 2, not a substring
-        # (which would also match id 20, 21, ...). A non-JSON line is left for the
-        # purity check below to flag.
+        # Track the tools/list (id 2) and tools/call (id 3) responses by a real
+        # JSON-RPC id, not a substring (which would also match id 20, 30, ...). A
+        # non-JSON line is left for the purity check below to flag.
         $trimmed = $line.Trim()
         if ($trimmed.Length -gt 0) {
             try {
                 $probe = [System.Text.Json.JsonDocument]::Parse($trimmed)
-                if ((Get-JsonRpcId $probe.RootElement) -eq 2) { $gotTools = $true; break }
+                switch (Get-JsonRpcId $probe.RootElement) {
+                    2 { $gotTools = $true }
+                    3 { $gotRoundTrip = $true }
+                }
             }
             catch { }
         }
+        if ($gotTools -and $gotRoundTrip) { break }
         $pending = $p.StandardOutput.ReadLineAsync()
     }
 }
@@ -137,16 +166,20 @@ if (-not $p.WaitForExit(5000)) {
 # failure output. Surfaced only on failure so a passing run stays quiet.
 $stderrOutput = $stderrTask.GetAwaiter().GetResult()
 
-if (-not $gotTools) {
+if (-not ($gotTools -and $gotRoundTrip)) {
+    $missing = if (-not $gotTools -and -not $gotRoundTrip) { 'tools/list and tools/call' }
+        elseif (-not $gotTools) { 'tools/list' }
+        else { 'tools/call' }
     throw (
-        "The server did not return a tools/list response within the deadline.`n" +
+        "The server did not return the $missing response within the deadline.`n" +
         "stdout:`n$($stdout -join "`n")`n" +
         "stderr:`n$stderrOutput")
 }
 
 # 1. stdout purity: every non-empty stdout line must be a JSON-RPC 2.0 message, not
-# merely parseable JSON. The tools/list response is the one whose id == 2.
+# merely parseable JSON. The tools/list response is id == 2; the tools/call is id == 3.
 $toolsLine = $null
+$callLine = $null
 foreach ($line in $stdout) {
     $trimmed = $line.Trim()
     if ($trimmed.Length -eq 0) { continue }
@@ -163,7 +196,9 @@ foreach ($line in $stdout) {
         continue
     }
 
-    if ((Get-JsonRpcId $doc.RootElement) -eq 2) { $toolsLine = $trimmed }
+    $id = Get-JsonRpcId $doc.RootElement
+    if ($id -eq 2) { $toolsLine = $trimmed }
+    elseif ($id -eq 3) { $callLine = $trimmed }
 }
 
 # 2. schema budget: measure the serialized tools array from the tools/list response.
@@ -184,6 +219,46 @@ if ($null -ne $toolsLine) {
 }
 else {
     Add-Failure 'Could not locate the tools/list response to measure the schema budget.'
+}
+
+# 3. tool round-trip: the tools/call response (id 3) must carry the tool's result
+# envelope, not an error, and that envelope must be the AnalysisResult contract.
+if ($null -ne $callLine) {
+    $callDoc = [System.Text.Json.JsonDocument]::Parse($callLine)
+    $callRoot = $callDoc.RootElement
+
+    # A JSON-RPC error response carries an 'error' member instead of 'result'.
+    $hasError = $false
+    try { $null = $callRoot.GetProperty('error'); $hasError = $true } catch { }
+    if ($hasError) {
+        Add-Failure "trace_info round-trip returned a JSON-RPC error: $callLine"
+    }
+    else {
+        try {
+            $callResult = $callRoot.GetProperty('result')
+
+            # A tool-level failure sets isError == true on the result.
+            $isError = $false
+            try { $isError = $callResult.GetProperty('isError').GetBoolean() } catch { }
+            if ($isError) {
+                Add-Failure "trace_info round-trip reported a tool error: $callLine"
+            }
+
+            # The tool's text content is the AnalysisResult envelope; confirm it parses
+            # and carries the schema version, proving the full path returned real data.
+            $firstContent = $callResult.GetProperty('content').EnumerateArray() | Select-Object -First 1
+            $text = $firstContent.GetProperty('text').GetString()
+            $envelope = [System.Text.Json.JsonDocument]::Parse($text)
+            $schemaVersion = $envelope.RootElement.GetProperty('schemaVersion').GetInt32()
+            Write-Host "Round-trip: trace_info returned an envelope (schemaVersion $schemaVersion)"
+        }
+        catch {
+            Add-Failure "trace_info round-trip response was not the expected envelope: $callLine"
+        }
+    }
+}
+else {
+    Add-Failure 'Could not locate the trace_info tools/call response (id 3).'
 }
 
 if ($failures.Count -gt 0) {
