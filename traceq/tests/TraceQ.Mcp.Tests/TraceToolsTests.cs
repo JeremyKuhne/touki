@@ -383,6 +383,13 @@ public sealed class TraceToolsTests
             root.GetProperty("result").GetProperty("format").GetString().Should().Be("chromium");
             root.GetProperty("hints").EnumerateArray().Should().Contain(h =>
                 h.GetString()!.Contains("perfetto", StringComparison.OrdinalIgnoreCase));
+
+            // The written file is the Chrome Trace Event Format the exporter produced; its
+            // distinctive marker is the traceEvents array. Asserting on the file content -
+            // not just the envelope - catches a regression that writes the wrong or empty
+            // content to disk.
+            string written = File.ReadAllText(outputPath);
+            written.Should().Contain("\"traceEvents\"");
         }
         finally
         {
