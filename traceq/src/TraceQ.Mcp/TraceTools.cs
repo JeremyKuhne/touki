@@ -16,18 +16,22 @@ namespace TraceQ.Mcp;
 /// <summary>
 ///  The curated MCP tool surface over the TraceQ analysis core: load a trace and
 ///  query its quality signals, folded self/inclusive rankings, immediate callers,
-///  line-level attribution, two-trace diffs, and the garbage-collection report
-///  across speedscope, EventPipe (<c>.nettrace</c>), and ETW (<c>.etl</c>) inputs,
-///  plus export a flame graph to a file. Every tool but <c>trace_export</c> is
-///  read-only; <c>trace_export</c> writes a file.
+///  line-level attribution, two-trace diffs, the garbage-collection report, and a
+///  raw event query across speedscope, EventPipe (<c>.nettrace</c>), and ETW
+///  (<c>.etl</c>) inputs, plus export a flame graph to a file. Every tool but
+///  <c>trace_export</c> is read-only; <c>trace_export</c> writes a file.
 /// </summary>
 /// <remarks>
 ///  <para>
-///   Each tool returns the same JSON the CLI's <c>--format json</c> emits: an
-///   <see cref="AnalysisResult{T}"/> envelope serialized by <see cref="OutputJson"/>,
-///   so a client gets one shape - schema version, warnings, hints, typed result -
-///   across every tool. The single injected <see cref="TraceStore"/> caches parsed
-///   traces, so repeated queries against the same path reuse one parse.
+///   Each tool returns a typed <see cref="AnalysisResult{T}"/> envelope - the same
+///   shape the CLI emits - rather than a pre-serialized string, so the server can
+///   advertise an <c>outputSchema</c> per tool and return both structured content
+///   (the parsed object) and a text mirror. Every tool shares one shape: a schema
+///   version, warnings, hints, and the typed result. The host registers the tools
+///   with <see cref="OutputJson.SerializerOptions"/>, so that envelope is serialized
+///   with the same deterministic naming, encoding, and double-rounding the CLI uses.
+///   The single injected <see cref="TraceStore"/> caches parsed traces, so repeated
+///   queries against the same path reuse one parse.
 ///  </para>
 /// </remarks>
 [McpServerToolType]
@@ -40,14 +44,14 @@ public sealed class TraceTools
     /// <param name="store">The trace cache (injected).</param>
     /// <param name="path">Path to the trace file.</param>
     /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
-    /// <returns>The trace summary envelope, as compact JSON.</returns>
-    [McpServerTool(Name = "trace_info", ReadOnly = true, Idempotent = true, OpenWorld = false)]
+    /// <returns>The trace summary envelope.</returns>
+    [McpServerTool(Name = "trace_info", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description(
         "Load a trace (.speedscope.json, .nettrace, or .etl) and return its format, total weight (CPU "
         + "milliseconds, bytes allocated, or event counts depending on the trace), sample count, "
         + "symbol-resolution rate, per-thread sample counts, and quality warnings. Call this first: a "
         + "resolution rate below 0.8 means symbols are missing and the rankings should not be trusted.")]
-    public static string Info(
+    public static AnalysisResult<TraceInfoView> Info(
         TraceStore store,
         [Description("Path to a .speedscope.json, .nettrace, or .etl trace file.")] string path,
         [Description(
@@ -63,7 +67,7 @@ public sealed class TraceTools
             info.SampleCount,
             info.SymbolResolutionRate,
             info.Threads);
-        return OutputJson.Serialize(new AnalysisResult<TraceInfoView>(view, info.Warnings));
+        return new AnalysisResult<TraceInfoView>(view, info.Warnings);
     }
 
     /// <summary>
@@ -78,8 +82,8 @@ public sealed class TraceTools
     /// <param name="top">Maximum rows to return.</param>
     /// <param name="fold">Optional fold patterns; defaults to the built-in JIT-helper list.</param>
     /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
-    /// <returns>The ranking envelope, as compact JSON.</returns>
-    [McpServerTool(Name = "trace_rank", ReadOnly = true, Idempotent = true, OpenWorld = false)]
+    /// <returns>The ranking envelope.</returns>
+    [McpServerTool(Name = "trace_rank", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description(
         "Rank the hottest frames over a chosen provider metric. measure=self credits the executing leaf "
         + "(JIT-helper leaves folded into the real method that incurred them); measure=inclusive credits a "
@@ -87,7 +91,7 @@ public sealed class TraceTools
         + "format), threadtime (wall-clock per thread, .etl only), alloc (bytes allocated, .nettrace only), or "
         + "exceptions (throw count, .nettrace only). Scope to a subtree with root; for a BenchmarkDotNet "
         + "capture set root to the measured workload to exclude harness warmup.")]
-    public static string Rank(
+    public static AnalysisResult<RankingResult> Rank(
         TraceStore store,
         [Description("Path to a .speedscope.json, .nettrace, or .etl trace file.")] string path,
         [Description("Provider view to rank: cpu, threadtime, alloc, or exceptions.")] string metric = "cpu",
@@ -111,8 +115,7 @@ public sealed class TraceTools
             ? trace.Aggregator.InclusiveTime(root, foldPatterns, top)
             : trace.Aggregator.SelfTime(root, foldPatterns, top);
 
-        return OutputJson.Serialize(
-            new AnalysisResult<RankingResult>(ranking, info.Warnings, SteeringHints.ForRanking(ranking)));
+        return new AnalysisResult<RankingResult>(ranking, info.Warnings, SteeringHints.ForRanking(ranking));
     }
 
     /// <summary>
@@ -125,13 +128,13 @@ public sealed class TraceTools
     /// <param name="root">Optional substring scoping the analysis to a subtree.</param>
     /// <param name="top">Maximum caller rows to return.</param>
     /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
-    /// <returns>The caller-breakdown envelope, as compact JSON.</returns>
-    [McpServerTool(Name = "trace_callers", ReadOnly = true, Idempotent = true, OpenWorld = false)]
+    /// <returns>The caller-breakdown envelope.</returns>
+    [McpServerTool(Name = "trace_callers", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description(
         "Immediate callers of the frame matching 'frame', with the CPU time each contributes. Use it to learn "
         + "what a JIT-helper or shared-utility frame (e.g. BulkMoveWithWriteBarrier) is really attributable to, "
         + "or to walk up a hot stack one level at a time. Scope to a subtree with root.")]
-    public static string Callers(
+    public static AnalysisResult<CallersResult> Callers(
         TraceStore store,
         [Description("Path to a .speedscope.json, .nettrace, or .etl trace file.")] string path,
         [Description("Substring identifying the focus frame whose callers to report.")] string frame,
@@ -147,8 +150,7 @@ public sealed class TraceTools
         TraceInfo info = trace.Info;
         CallersResult callers = trace.Aggregator.CallersOf(frame, root, top);
 
-        return OutputJson.Serialize(
-            new AnalysisResult<CallersResult>(callers, info.Warnings, SteeringHints.ForCallers(callers)));
+        return new AnalysisResult<CallersResult>(callers, info.Warnings, SteeringHints.ForCallers(callers));
     }
 
     /// <summary>
@@ -161,15 +163,15 @@ public sealed class TraceTools
     /// <param name="top">Maximum rows to return.</param>
     /// <param name="fold">Optional fold patterns; defaults to the built-in JIT-helper list.</param>
     /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
-    /// <returns>The line-level self-time envelope, as compact JSON.</returns>
-    [McpServerTool(Name = "trace_lines", ReadOnly = true, Idempotent = true, OpenWorld = false)]
+    /// <returns>The line-level self-time envelope.</returns>
+    [McpServerTool(Name = "trace_lines", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description(
         "Line-level self time: each leaf sample (JIT-helper leaves folded into their caller) attributed to the "
         + "source file:line that was executing, scoped to methods whose name contains 'method'. Requires a "
         + ".nettrace or .etl trace whose modules have portable PDBs; pass 'symbols' pointing at the build-output "
         + "directory. Speedscope inputs carry no line data and return an empty ranking. A '<no source>' row is "
         + "time in matching methods whose PDB was not found.")]
-    public static string Lines(
+    public static AnalysisResult<LineRankingResult> Lines(
         TraceStore store,
         [Description("Path to a .nettrace or .etl trace file (speedscope carries no line data).")] string path,
         [Description("Optional substring of a method name to scope the ranking; omit for every method.")] string method = "",
@@ -186,7 +188,7 @@ public sealed class TraceTools
         TraceInfo info = trace.Info;
         LineRankingResult lines = trace.Aggregator.HotLines(method, foldPatterns, top);
 
-        return OutputJson.Serialize(new AnalysisResult<LineRankingResult>(lines, info.Warnings));
+        return new AnalysisResult<LineRankingResult>(lines, info.Warnings);
     }
 
     /// <summary>
@@ -198,14 +200,14 @@ public sealed class TraceTools
     /// <param name="file">Path or file name of the source file to map.</param>
     /// <param name="fold">Optional fold patterns; defaults to the built-in JIT-helper list.</param>
     /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
-    /// <returns>The heat-map envelope, as compact JSON.</returns>
-    [McpServerTool(Name = "trace_heatmap", ReadOnly = true, Idempotent = true, OpenWorld = false)]
+    /// <returns>The heat-map envelope.</returns>
+    [McpServerTool(Name = "trace_heatmap", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description(
         "Per-line self-time heat map for one source file: each leaf sample (JIT-helper leaves folded into their "
         + "caller) attributed to the line that was executing, ordered by line number to overlay onto the source. "
         + "Matching is by file name only. Requires a .nettrace or .etl trace whose modules have portable PDBs; "
         + "pass 'symbols' pointing at the build-output directory. Speedscope inputs return an empty map.")]
-    public static string Heatmap(
+    public static AnalysisResult<SourceHeatmapResult> Heatmap(
         TraceStore store,
         [Description("Path to a .nettrace or .etl trace file (speedscope carries no line data).")] string path,
         [Description("Path or bare name of the source file to map, e.g. ExtGlob.cs.")] string file,
@@ -223,7 +225,7 @@ public sealed class TraceTools
         string fileName = Path.GetFileName(file);
         SourceHeatmapResult heatmap = trace.Aggregator.SourceHeatmap(fileName, foldPatterns);
 
-        return OutputJson.Serialize(new AnalysisResult<SourceHeatmapResult>(heatmap, info.Warnings));
+        return new AnalysisResult<SourceHeatmapResult>(heatmap, info.Warnings);
     }
 
     /// <summary>
@@ -238,15 +240,15 @@ public sealed class TraceTools
     /// <param name="top">Maximum changed rows to return.</param>
     /// <param name="fold">Optional fold patterns; defaults to the built-in JIT-helper list.</param>
     /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
-    /// <returns>The diff envelope, as compact JSON.</returns>
-    [McpServerTool(Name = "trace_diff", ReadOnly = true, Idempotent = true, OpenWorld = false)]
+    /// <returns>The diff envelope.</returns>
+    [McpServerTool(Name = "trace_diff", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description(
         "Compare two CPU traces and report the per-frame change (regressions and improvements), largest absolute "
         + "change first. Both traces are ranked fully (no row cap) before diffing, so a frame hot on only one side "
         + "is not misreported as a total regression. measure=self credits the executing leaf (JIT-helper leaves "
         + "folded into the real method); measure=inclusive credits a frame and everything it calls. Use it to find "
         + "what got slower or faster between two runs - for example a capture from before and after a change.")]
-    public static string Diff(
+    public static AnalysisResult<RankingDiffResult> Diff(
         TraceStore store,
         [Description("Path to the baseline (before) .speedscope.json, .nettrace, or .etl trace file.")] string beforePath,
         [Description("Path to the current (after) .speedscope.json, .nettrace, or .etl trace file.")] string afterPath,
@@ -278,8 +280,7 @@ public sealed class TraceTools
 
         RankingDiffResult diff = RankingDiff.Diff(beforeRanking, afterRanking, top);
 
-        return OutputJson.Serialize(
-            new AnalysisResult<RankingDiffResult>(diff, DiffWarnings(before.Info, after.Info), SteeringHints.ForDiff(diff)));
+        return new AnalysisResult<RankingDiffResult>(diff, DiffWarnings(before.Info, after.Info), SteeringHints.ForDiff(diff));
     }
 
     /// <summary>
@@ -288,14 +289,14 @@ public sealed class TraceTools
     /// </summary>
     /// <param name="path">Path to the trace file.</param>
     /// <param name="top">Maximum per-collection records to return, ranked by pause time.</param>
-    /// <returns>The GC-report envelope, as compact JSON.</returns>
-    [McpServerTool(Name = "trace_gc", ReadOnly = true, Idempotent = true, OpenWorld = false)]
+    /// <returns>The GC-report envelope.</returns>
+    [McpServerTool(Name = "trace_gc", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description(
         "Garbage-collection report for a .nettrace EventPipe trace: aggregate counts (gen 0/1/2), total, max, and "
         + "mean pause time, peak heap size, total promoted bytes, and the per-collection records capped to the "
         + "'top' hottest pauses. Use it to judge GC pressure - frequent gen-2 collections or long pauses point at "
         + "allocation problems. Requires a .nettrace trace; .etl and speedscope inputs are rejected.")]
-    public static string Gc(
+    public static AnalysisResult<GcStatsResult> Gc(
         [Description("Path to a .nettrace EventPipe trace file.")] string path,
         [Description("Maximum number of per-collection records to return, ranked by pause time.")] int top = 25)
     {
@@ -313,7 +314,61 @@ public sealed class TraceTools
         }
 
         GcStatsResult report = full with { Gcs = shown };
-        return OutputJson.Serialize(new AnalysisResult<GcStatsResult>(report, warnings));
+        return new AnalysisResult<GcStatsResult>(report, warnings);
+    }
+
+    /// <summary>
+    ///  Queries the raw events of a <c>.nettrace</c> EventPipe trace by name, paged and
+    ///  with each event's payload truncated, so an agent can inspect arbitrary events.
+    /// </summary>
+    /// <param name="path">Path to the trace file.</param>
+    /// <param name="name">Substring matched against <c>Provider/EventName</c>; empty matches every event.</param>
+    /// <param name="skip">The number of matches to skip, for paging.</param>
+    /// <param name="take">The maximum number of matches to return on this page.</param>
+    /// <param name="maxPayload">The per-event payload character cap.</param>
+    /// <returns>The events-page envelope.</returns>
+    [McpServerTool(Name = "trace_query_events", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
+    [Description(
+        "Query the raw events of a .nettrace EventPipe trace by name - the escape hatch for inspecting arbitrary "
+        + "events the structured reports do not cover. 'name' is a case-insensitive substring matched against "
+        + "Provider/EventName (empty matches every event). Results are paged with 'skip'/'take' and each event's "
+        + "payload is truncated to 'maxPayload' characters, so a query matching hundreds of thousands of events "
+        + "stays within budget; when more matches remain, a hint gives the next page's skip. Requires a .nettrace "
+        + "trace; .etl and speedscope inputs are rejected.")]
+    public static AnalysisResult<EventQueryResult> QueryEvents(
+        [Description("Path to a .nettrace EventPipe trace file.")] string path,
+        [Description("Substring matched against Provider/EventName; omit to match every event.")] string name = "",
+        [Description("The number of matches to skip, for paging.")] int skip = 0,
+        [Description("The maximum number of matches to return on this page.")] int take = 100,
+        [Description("The per-event payload character cap.")] int maxPayload = 200)
+    {
+        if (skip < 0)
+        {
+            throw new McpException("skip must be 0 or greater.");
+        }
+
+        if (take < 0)
+        {
+            throw new McpException("take must be 0 or greater.");
+        }
+
+        if (maxPayload < 0)
+        {
+            throw new McpException("maxPayload must be 0 or greater.");
+        }
+
+        EventQueryResult result = ReadEvents(path, name, skip, take, maxPayload);
+
+        // When matches remain beyond this page, steer toward the next one rather than
+        // leaving the agent to work out the skip arithmetic.
+        List<string> hints = [];
+        int shownThrough = result.Skipped + result.Events.Count;
+        if (shownThrough < result.TotalMatched)
+        {
+            hints.Add($"{result.TotalMatched - shownThrough} more match; page with skip {shownThrough}.");
+        }
+
+        return new AnalysisResult<EventQueryResult>(result, hints: hints);
     }
 
     /// <summary>
@@ -326,8 +381,8 @@ public sealed class TraceTools
     /// <param name="format">The flame-graph format: <c>speedscope</c> or <c>chromium</c>.</param>
     /// <param name="name">The profile name embedded in the flame graph, shown in the viewer.</param>
     /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
-    /// <returns>The export-confirmation envelope, as compact JSON.</returns>
-    [McpServerTool(Name = "trace_export", ReadOnly = false, Idempotent = true, OpenWorld = false)]
+    /// <returns>The export-confirmation envelope.</returns>
+    [McpServerTool(Name = "trace_export", ReadOnly = false, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description(
         "Export a trace's CPU samples to a flame-graph file for a human to open in a viewer - this is how you hand "
         + "off a visual. format=speedscope (the default) opens at speedscope.app; format=chromium writes the Chrome "
@@ -335,7 +390,7 @@ public sealed class TraceTools
         + "unlike the query tools this writes a file rather than returning the data, and overwrites an existing file "
         + "at that path). The whole sample source is exported - no folding, scoping, or ranking. The response "
         + "confirms the path, format, and byte count.")]
-    public static string Export(
+    public static AnalysisResult<ExportResult> Export(
         TraceStore store,
         [Description("Path to a .speedscope.json, .nettrace, or .etl trace file.")] string path,
         [Description("The file path to write the flame graph to (it is overwritten if it exists).")] string output,
@@ -368,7 +423,7 @@ public sealed class TraceTools
             ? $"open {outputPath} in chrome://tracing or the Perfetto UI (https://ui.perfetto.dev)"
             : $"open {outputPath} at https://speedscope.app";
 
-        return OutputJson.Serialize(new AnalysisResult<ExportResult>(result, info.Warnings, [hint]));
+        return new AnalysisResult<ExportResult>(result, info.Warnings, [hint]);
     }
 
     /// <summary>
@@ -511,14 +566,7 @@ public sealed class TraceTools
     /// </summary>
     private static GcStatsResult ReadGcStats(string path)
     {
-        // Format guardrail (an extension test, no I/O): the GC provider parses the
-        // EventPipe format, so reject an .etl or speedscope export cleanly here rather
-        // than failing deep inside the EventPipe parser with an opaque message.
-        if (!path.EndsWith(".nettrace", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new McpException(
-                $"The GC report requires a .nettrace EventPipe trace; '{path}' is not a .nettrace file.");
-        }
+        RequireNetTrace(path, "GC report");
 
         try
         {
@@ -535,6 +583,48 @@ public sealed class TraceTools
             // A missing, unreadable, or malformed .nettrace surfaces as a clean tool
             // error rather than an unhandled exception.
             throw new McpException(ex.Message);
+        }
+    }
+
+    /// <summary>
+    ///  Reads an events page for a <c>.nettrace</c> trace, applying the format guardrail
+    ///  and mapping the provider's failure modes to a clean <see cref="McpException"/>.
+    /// </summary>
+    private static EventQueryResult ReadEvents(string path, string name, int skip, int take, int maxPayload)
+    {
+        RequireNetTrace(path, "events query");
+
+        try
+        {
+            return new EventQueryProvider().Query(path, name, skip, take, maxPayload);
+        }
+        catch (Exception ex) when (
+            ex is IOException
+            or UnauthorizedAccessException
+            or NotSupportedException
+            or InvalidOperationException
+            or FormatException
+            or ArgumentException)
+        {
+            // A missing, unreadable, or malformed .nettrace surfaces as a clean tool
+            // error rather than an unhandled exception.
+            throw new McpException(ex.Message);
+        }
+    }
+
+    /// <summary>
+    ///  Rejects a non-<c>.nettrace</c> input up front for the EventPipe-only report
+    ///  providers, with a clean message naming the report, rather than failing deep
+    ///  inside the EventPipe parser.
+    /// </summary>
+    private static void RequireNetTrace(string path, string reportName)
+    {
+        // Format guardrail (an extension test, no I/O): the report providers parse the
+        // EventPipe format, so reject an .etl or speedscope export cleanly here.
+        if (!path.EndsWith(".nettrace", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new McpException(
+                $"The {reportName} requires a .nettrace EventPipe trace; '{path}' is not a .nettrace file.");
         }
     }
 

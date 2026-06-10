@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Protocol;
 using TraceQ.Mcp;
+using TraceQ.Output;
 using TraceQ.Server;
 
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
@@ -34,7 +35,11 @@ builder.Services
         options.ServerInstructions = TraceServerInstructions.Text;
     })
     .WithStdioServerTransport()
-    .WithTools<TraceTools>();
+    // Register the tools with the shared serializer options so each typed result - its
+    // structured content, its text mirror, and the generated output schema - is written
+    // with the same source-generated (AOT-safe), deterministically rounded contract the
+    // CLI uses.
+    .WithTools<TraceTools>(OutputJson.SerializerOptions);
 
 await builder.Build().RunAsync().ConfigureAwait(false);
 return 0;

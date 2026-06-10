@@ -45,6 +45,10 @@ namespace TraceQ.Output;
 [JsonSerializable(typeof(AnalysisResult<GcStatsResult>))]
 [JsonSerializable(typeof(AnalysisResult<EventQueryResult>))]
 [JsonSerializable(typeof(AnalysisResult<ExportResult>))]
+// Tool-parameter types the MCP head binds through these same options but that no result
+// type reaches transitively: the optional `fold` regex array. The scalar parameter types
+// (string, int) are already reached through the result records above.
+[JsonSerializable(typeof(string[]))]
 internal sealed partial class TraceQJsonContext : JsonSerializerContext
 {
 }

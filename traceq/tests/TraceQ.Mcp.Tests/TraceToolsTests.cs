@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using System.Text.Json;
 using ModelContextProtocol;
+using TraceQ.Output;
 using TraceQ.Server;
+using TraceQ.Tracing;
+using TraceQ.Tracing.Providers;
 
 namespace TraceQ.Mcp;
 
@@ -19,14 +21,15 @@ public sealed class TraceToolsTests
     private static string FixturePath(string name) =>
         Path.Combine(AppContext.BaseDirectory, "Fixtures", name);
 
-    private static void AssertEnvelopeShape(JsonElement root)
+    // Every tool returns the typed AnalysisResult envelope; the SDK serializes it (with
+    // an output schema and structured content) from the typed shape, so the unit tests
+    // assert on the object directly rather than re-parsing JSON.
+    private static void AssertEnvelope<T>(AnalysisResult<T> envelope)
     {
-        root.GetProperty("schemaVersion").GetInt32().Should().Be(2);
-        root.TryGetProperty("warnings", out JsonElement warnings).Should().BeTrue();
-        warnings.ValueKind.Should().Be(JsonValueKind.Array);
-        root.TryGetProperty("hints", out JsonElement hints).Should().BeTrue();
-        hints.ValueKind.Should().Be(JsonValueKind.Array);
-        root.TryGetProperty("result", out _).Should().BeTrue();
+        envelope.SchemaVersion.Should().Be(2);
+        envelope.Warnings.Should().NotBeNull();
+        envelope.Hints.Should().NotBeNull();
+        envelope.Result.Should().NotBeNull();
     }
 
     [TestMethod]
@@ -34,31 +37,24 @@ public sealed class TraceToolsTests
     {
         TraceStore store = new();
 
-        string json = TraceTools.Info(store, FixturePath(Speedscope));
+        AnalysisResult<TraceInfoView> envelope = TraceTools.Info(store, FixturePath(Speedscope));
 
-        using JsonDocument doc = JsonDocument.Parse(json);
-        JsonElement root = doc.RootElement;
-        AssertEnvelopeShape(root);
-
-        JsonElement result = root.GetProperty("result");
-        result.GetProperty("path").GetString().Should().EndWith(Speedscope);
-        result.GetProperty("format").GetString().Should().Be("Speedscope");
-        result.GetProperty("sampleCount").GetInt32().Should().Be(4);
-        result.GetProperty("symbolResolutionRate").GetDouble().Should().BeInRange(0.0, 1.0);
-        result.GetProperty("threads").GetArrayLength().Should().BeGreaterThan(0);
+        AssertEnvelope(envelope);
+        TraceInfoView result = envelope.Result;
+        result.Path.Should().EndWith(Speedscope);
+        result.Format.Should().Be("Speedscope");
+        result.SampleCount.Should().Be(4);
+        result.SymbolResolutionRate.Should().BeInRange(0.0, 1.0);
+        result.Threads.Should().NotBeEmpty();
     }
 
     [TestMethod]
-    public void Info_DoesNotRepeatWarningsInsideResult()
+    public void Info_Payload_HasNoWarningsMember()
     {
-        TraceStore store = new();
-
-        // The quality warnings travel only in the envelope's warnings channel; the
-        // trace_info payload itself must not carry a second copy of them.
-        string json = TraceTools.Info(store, FixturePath(Speedscope));
-
-        using JsonDocument doc = JsonDocument.Parse(json);
-        doc.RootElement.GetProperty("result").TryGetProperty("warnings", out _).Should().BeFalse();
+        // The quality warnings travel only in the envelope's warnings channel; the typed
+        // trace_info payload has no warnings member, so the duplication the old string
+        // contract risked is now impossible by construction.
+        typeof(TraceInfoView).GetProperty("Warnings").Should().BeNull();
     }
 
     [TestMethod]
@@ -66,13 +62,11 @@ public sealed class TraceToolsTests
     {
         TraceStore store = new();
 
-        string json = TraceTools.Rank(store, FixturePath(Speedscope));
+        AnalysisResult<RankingResult> envelope = TraceTools.Rank(store, FixturePath(Speedscope));
 
-        using JsonDocument doc = JsonDocument.Parse(json);
-        JsonElement root = doc.RootElement;
-        AssertEnvelopeShape(root);
-        root.GetProperty("hints").GetArrayLength().Should().BeGreaterThan(0);
-        root.GetProperty("result").GetProperty("rows").GetArrayLength().Should().BeGreaterThan(0);
+        AssertEnvelope(envelope);
+        envelope.Hints.Should().NotBeEmpty();
+        envelope.Result.Rows.Should().NotBeEmpty();
     }
 
     [TestMethod]
@@ -80,10 +74,9 @@ public sealed class TraceToolsTests
     {
         TraceStore store = new();
 
-        string json = TraceTools.Rank(store, FixturePath(Speedscope), measure: "inclusive");
+        AnalysisResult<RankingResult> envelope = TraceTools.Rank(store, FixturePath(Speedscope), measure: "inclusive");
 
-        using JsonDocument doc = JsonDocument.Parse(json);
-        doc.RootElement.GetProperty("result").GetProperty("rows").GetArrayLength().Should().BeGreaterThan(0);
+        envelope.Result.Rows.Should().NotBeEmpty();
     }
 
     [TestMethod]
@@ -91,12 +84,10 @@ public sealed class TraceToolsTests
     {
         TraceStore store = new();
 
-        string json = TraceTools.Rank(store, FixturePath(Alloc), metric: "alloc");
+        AnalysisResult<RankingResult> envelope = TraceTools.Rank(store, FixturePath(Alloc), metric: "alloc");
 
-        using JsonDocument doc = JsonDocument.Parse(json);
-        JsonElement root = doc.RootElement;
-        AssertEnvelopeShape(root);
-        root.GetProperty("result").GetProperty("rows").GetArrayLength().Should().BeGreaterThan(0);
+        AssertEnvelope(envelope);
+        envelope.Result.Rows.Should().NotBeEmpty();
     }
 
     [TestMethod]
@@ -104,12 +95,10 @@ public sealed class TraceToolsTests
     {
         TraceStore store = new();
 
-        string json = TraceTools.Rank(store, FixturePath(Exceptions), metric: "exceptions");
+        AnalysisResult<RankingResult> envelope = TraceTools.Rank(store, FixturePath(Exceptions), metric: "exceptions");
 
-        using JsonDocument doc = JsonDocument.Parse(json);
-        JsonElement root = doc.RootElement;
-        AssertEnvelopeShape(root);
-        root.GetProperty("result").GetProperty("rows").GetArrayLength().Should().BeGreaterThan(0);
+        AssertEnvelope(envelope);
+        envelope.Result.Rows.Should().NotBeEmpty();
     }
 
     [TestMethod]
@@ -118,12 +107,10 @@ public sealed class TraceToolsTests
     {
         TraceStore store = new();
 
-        string json = TraceTools.Rank(store, FixturePath(Etw), metric: "threadtime");
+        AnalysisResult<RankingResult> envelope = TraceTools.Rank(store, FixturePath(Etw), metric: "threadtime");
 
-        using JsonDocument doc = JsonDocument.Parse(json);
-        JsonElement root = doc.RootElement;
-        AssertEnvelopeShape(root);
-        root.GetProperty("result").GetProperty("rows").GetArrayLength().Should().BeGreaterThan(0);
+        AssertEnvelope(envelope);
+        envelope.Result.Rows.Should().NotBeEmpty();
     }
 
     [TestMethod]
@@ -173,13 +160,10 @@ public sealed class TraceToolsTests
     {
         TraceStore store = new();
 
-        string json = TraceTools.Callers(store, FixturePath(Speedscope), frame: "");
+        AnalysisResult<CallersResult> envelope = TraceTools.Callers(store, FixturePath(Speedscope), frame: "");
 
-        using JsonDocument doc = JsonDocument.Parse(json);
-        JsonElement root = doc.RootElement;
-        AssertEnvelopeShape(root);
-        root.GetProperty("result").TryGetProperty("callers", out JsonElement callers).Should().BeTrue();
-        callers.ValueKind.Should().Be(JsonValueKind.Array);
+        AssertEnvelope(envelope);
+        envelope.Result.Callers.Should().NotBeNull();
     }
 
     [TestMethod]
@@ -188,12 +172,10 @@ public sealed class TraceToolsTests
         TraceStore store = new();
 
         // Speedscope carries no per-frame source locations, so the line ranking is empty.
-        string json = TraceTools.Lines(store, FixturePath(Speedscope));
+        AnalysisResult<LineRankingResult> envelope = TraceTools.Lines(store, FixturePath(Speedscope));
 
-        using JsonDocument doc = JsonDocument.Parse(json);
-        JsonElement root = doc.RootElement;
-        AssertEnvelopeShape(root);
-        root.GetProperty("result").GetProperty("rows").GetArrayLength().Should().Be(0);
+        AssertEnvelope(envelope);
+        envelope.Result.Rows.Should().BeEmpty();
     }
 
     [TestMethod]
@@ -211,12 +193,11 @@ public sealed class TraceToolsTests
     {
         TraceStore store = new();
 
-        string json = TraceTools.Heatmap(store, FixturePath(Speedscope), file: "ExtGlob.cs");
+        AnalysisResult<SourceHeatmapResult> envelope =
+            TraceTools.Heatmap(store, FixturePath(Speedscope), file: "ExtGlob.cs");
 
-        using JsonDocument doc = JsonDocument.Parse(json);
-        JsonElement root = doc.RootElement;
-        AssertEnvelopeShape(root);
-        root.GetProperty("result").GetProperty("lines").GetArrayLength().Should().Be(0);
+        AssertEnvelope(envelope);
+        envelope.Result.Lines.Should().BeEmpty();
     }
 
     [TestMethod]
@@ -247,17 +228,11 @@ public sealed class TraceToolsTests
 
         // Diffing a trace against itself: every frame matches, so the scope total is
         // unchanged and no frame shows a delta.
-        string json = TraceTools.Diff(store, path, path);
+        AnalysisResult<RankingDiffResult> envelope = TraceTools.Diff(store, path, path);
 
-        using JsonDocument doc = JsonDocument.Parse(json);
-        JsonElement root = doc.RootElement;
-        AssertEnvelopeShape(root);
-        JsonElement result = root.GetProperty("result");
-        result.GetProperty("scopeDelta").GetDouble().Should().Be(0.0);
-        foreach (JsonElement changed in result.GetProperty("rows").EnumerateArray())
-        {
-            changed.GetProperty("delta").GetDouble().Should().Be(0.0);
-        }
+        AssertEnvelope(envelope);
+        envelope.Result.ScopeDelta.Should().Be(0.0);
+        envelope.Result.Rows.Should().OnlyContain(row => row.Delta == 0.0);
     }
 
     [TestMethod]
@@ -279,25 +254,20 @@ public sealed class TraceToolsTests
 
         // The inclusive branch ranks both sides with InclusiveTime; diffing a trace
         // against itself still yields no change.
-        string json = TraceTools.Diff(store, path, path, measure: "inclusive");
+        AnalysisResult<RankingDiffResult> envelope = TraceTools.Diff(store, path, path, measure: "inclusive");
 
-        using JsonDocument doc = JsonDocument.Parse(json);
-        JsonElement root = doc.RootElement;
-        AssertEnvelopeShape(root);
-        root.GetProperty("result").GetProperty("scopeDelta").GetDouble().Should().Be(0.0);
+        AssertEnvelope(envelope);
+        envelope.Result.ScopeDelta.Should().Be(0.0);
     }
 
     [TestMethod]
     public void Gc_NetTrace_ReturnsAggregateSummary()
     {
-        string json = TraceTools.Gc(FixturePath(Alloc));
+        AnalysisResult<GcStatsResult> envelope = TraceTools.Gc(FixturePath(Alloc));
 
-        using JsonDocument doc = JsonDocument.Parse(json);
-        JsonElement root = doc.RootElement;
-        AssertEnvelopeShape(root);
-        JsonElement result = root.GetProperty("result");
-        result.GetProperty("gcCount").GetInt32().Should().BeGreaterThan(0);
-        result.GetProperty("gcs").GetArrayLength().Should().BeGreaterThan(0);
+        AssertEnvelope(envelope);
+        envelope.Result.GcCount.Should().BeGreaterThan(0);
+        envelope.Result.Gcs.Should().NotBeEmpty();
     }
 
     [TestMethod]
@@ -323,10 +293,9 @@ public sealed class TraceToolsTests
     {
         // The aggregate summary always reflects every collection, but the per-collection
         // detail list is capped to 'top' so a long trace cannot blow the output budget.
-        string json = TraceTools.Gc(FixturePath(Alloc), top: 1);
+        AnalysisResult<GcStatsResult> envelope = TraceTools.Gc(FixturePath(Alloc), top: 1);
 
-        using JsonDocument doc = JsonDocument.Parse(json);
-        doc.RootElement.GetProperty("result").GetProperty("gcs").GetArrayLength().Should().BeLessThanOrEqualTo(1);
+        envelope.Result.Gcs.Count.Should().BeLessThanOrEqualTo(1);
     }
 
     [TestMethod]
@@ -337,21 +306,18 @@ public sealed class TraceToolsTests
 
         try
         {
-            string json = TraceTools.Export(store, FixturePath(Speedscope), outputPath);
+            AnalysisResult<ExportResult> envelope = TraceTools.Export(store, FixturePath(Speedscope), outputPath);
 
             File.Exists(outputPath).Should().BeTrue();
-            using JsonDocument doc = JsonDocument.Parse(json);
-            JsonElement root = doc.RootElement;
-            AssertEnvelopeShape(root);
+            AssertEnvelope(envelope);
 
-            JsonElement result = root.GetProperty("result");
-            result.GetProperty("format").GetString().Should().Be("speedscope");
-            result.GetProperty("outputPath").GetString().Should().Be(Path.GetFullPath(outputPath));
-            result.GetProperty("byteCount").GetInt64().Should().BeGreaterThan(0);
+            ExportResult result = envelope.Result;
+            result.Format.Should().Be("speedscope");
+            result.OutputPath.Should().Be(Path.GetFullPath(outputPath));
+            result.ByteCount.Should().BeGreaterThan(0);
 
             // The hint steers a human to the viewer for the chosen format.
-            root.GetProperty("hints").EnumerateArray().Should().Contain(h =>
-                h.GetString()!.Contains("speedscope.app", StringComparison.Ordinal));
+            envelope.Hints.Should().Contain(h => h.Contains("speedscope.app", StringComparison.Ordinal));
 
             // The written file is the same speedscope JSON the exporter produced.
             string written = File.ReadAllText(outputPath);
@@ -374,15 +340,13 @@ public sealed class TraceToolsTests
 
         try
         {
-            string json = TraceTools.Export(store, FixturePath(Speedscope), outputPath, format: "chromium");
+            AnalysisResult<ExportResult> envelope =
+                TraceTools.Export(store, FixturePath(Speedscope), outputPath, format: "chromium");
 
             File.Exists(outputPath).Should().BeTrue();
-            using JsonDocument doc = JsonDocument.Parse(json);
-            JsonElement root = doc.RootElement;
-            AssertEnvelopeShape(root);
-            root.GetProperty("result").GetProperty("format").GetString().Should().Be("chromium");
-            root.GetProperty("hints").EnumerateArray().Should().Contain(h =>
-                h.GetString()!.Contains("perfetto", StringComparison.OrdinalIgnoreCase));
+            AssertEnvelope(envelope);
+            envelope.Result.Format.Should().Be("chromium");
+            envelope.Hints.Should().Contain(h => h.Contains("perfetto", StringComparison.OrdinalIgnoreCase));
 
             // The written file is the Chrome Trace Event Format the exporter produced; its
             // distinctive marker is the traceEvents array. Asserting on the file content -
@@ -434,5 +398,49 @@ public sealed class TraceToolsTests
         Action act = () => TraceTools.Export(store, FixturePath(Speedscope), badPath);
 
         act.Should().Throw<McpException>().WithMessage("*Could not write*");
+    }
+
+    [TestMethod]
+    public void QueryEvents_NetTrace_ReturnsMatchingEventsPage()
+    {
+        AnalysisResult<EventQueryResult> envelope = TraceTools.QueryEvents(FixturePath(Alloc));
+
+        AssertEnvelope(envelope);
+        envelope.Result.TotalMatched.Should().BeGreaterThan(0);
+        envelope.Result.Events.Should().NotBeEmpty();
+    }
+
+    [TestMethod]
+    public void QueryEvents_Take_PagesAndHintsRemaining()
+    {
+        // A take smaller than the total match count returns one page and steers toward
+        // the next with a paging hint.
+        AnalysisResult<EventQueryResult> envelope = TraceTools.QueryEvents(FixturePath(Alloc), take: 1);
+
+        envelope.Result.Events.Count.Should().BeLessThanOrEqualTo(1);
+
+        // When more matches remain, a hint gives the next page's skip.
+        if (envelope.Result.TotalMatched > 1)
+        {
+            envelope.Hints.Should().Contain(h => h.Contains("page with skip", StringComparison.Ordinal));
+        }
+    }
+
+    [TestMethod]
+    public void QueryEvents_NonNetTraceInput_ThrowsMcpException()
+    {
+        // The events query parses the EventPipe format; an .etl or speedscope is rejected
+        // up front by the extension guardrail.
+        Action act = () => TraceTools.QueryEvents(FixturePath(Speedscope));
+
+        act.Should().Throw<McpException>().WithMessage("*requires a .nettrace*");
+    }
+
+    [TestMethod]
+    public void QueryEvents_NegativeSkip_Throws()
+    {
+        Action act = () => TraceTools.QueryEvents(FixturePath(Alloc), skip: -1);
+
+        act.Should().Throw<McpException>().WithMessage("*skip must be 0 or greater*");
     }
 }
