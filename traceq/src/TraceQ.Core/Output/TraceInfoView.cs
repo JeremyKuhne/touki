@@ -4,7 +4,7 @@
 
 using TraceQ.Tracing;
 
-namespace TraceQ.Mcp;
+namespace TraceQ.Output;
 
 /// <summary>
 ///  The <c>trace_info</c> payload: a loaded trace's identity and quality signals.
@@ -12,9 +12,8 @@ namespace TraceQ.Mcp;
 /// <remarks>
 ///  <para>
 ///   The trace's quality warnings are not repeated here; they travel in the
-///   <see cref="TraceQ.Output.AnalysisResult{T}.Warnings"/> channel of the
-///   envelope this view is wrapped in, the same uniform channel every other tool
-///   reports them through.
+///   <see cref="AnalysisResult{T}.Warnings"/> channel of the envelope this view is
+///   wrapped in, the same uniform channel every other tool reports them through.
 ///  </para>
 /// </remarks>
 /// <param name="Path">The absolute path the trace was loaded from.</param>

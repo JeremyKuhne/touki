@@ -5,6 +5,7 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace TraceQ.Output;
 
@@ -20,6 +21,13 @@ namespace TraceQ.Output;
 ///   tokens on whitespace and, having no line breaks, compares cleanly in
 ///   cross-platform golden-file tests. Rounding the doubles keeps the output
 ///   stable and free of floating-point noise.
+///  </para>
+///  <para>
+///   Serialization goes through the <see cref="TraceQJsonContext"/> source-generated
+///   metadata rather than reflection, so the published heads stay Native-AOT- and
+///   trim-safe. The shared options seed from that context (inheriting the camel-case
+///   naming and the type-info resolver) and layer on the relaxed encoder and the
+///   double-rounding converter that the wire format requires.
 ///  </para>
 /// </remarks>
 public static class OutputJson
@@ -38,19 +46,30 @@ public static class OutputJson
     /// <param name="result">The envelope to serialize.</param>
     /// <returns>The compact JSON representation.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="result"/> is <see langword="null"/>.</exception>
+    /// <exception cref="NotSupportedException">
+    ///  <typeparamref name="T"/> has no entry in <see cref="TraceQJsonContext"/>; add a
+    ///  <c>[JsonSerializable(typeof(AnalysisResult&lt;T&gt;))]</c> declaration there.
+    /// </exception>
     public static string Serialize<T>(AnalysisResult<T> result)
     {
         ArgumentNullException.ThrowIfNull(result);
-        return JsonSerializer.Serialize(result, s_options);
+
+        // Resolve the source-generated metadata for this closed generic and serialize
+        // through the JsonTypeInfo overload - the reflection-based Serialize overload is
+        // neither AOT- nor trim-safe.
+        JsonTypeInfo<AnalysisResult<T>> typeInfo =
+            (JsonTypeInfo<AnalysisResult<T>>)s_options.GetTypeInfo(typeof(AnalysisResult<T>));
+        return JsonSerializer.Serialize(result, typeInfo);
     }
 
     private static JsonSerializerOptions CreateOptions()
     {
-        JsonSerializerOptions options = new()
+        // Seed from the source-gen context so the camel-case naming policy and the
+        // type-info resolver carry over, then layer on the write-time concerns the
+        // context attribute cannot express: the relaxed encoder and the rounding
+        // converter.
+        JsonSerializerOptions options = new(TraceQJsonContext.Default.Options)
         {
-            WriteIndented = false,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-
             // Frame names carry '<', '>', '&' (for example "<root>" and generic
             // arguments). This output is an agent / CLI wire format, never embedded
             // in HTML, so the relaxed encoder leaves those characters literal rather

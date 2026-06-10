@@ -107,4 +107,42 @@ public sealed class OutputContractTests
 
         json.Should().Be(expected);
     }
+
+    [TestMethod]
+    public void Serialize_TraceInfoViewPayload_ResolvesThroughSourceGenContext()
+    {
+        // trace_info's payload is a second closed generic over AnalysisResult; serializing
+        // it confirms the source-gen context covers more than the ranking envelope and
+        // that the camel-case naming and double rounding apply uniformly.
+        TraceInfoView view = new(
+            "/traces/sample.nettrace",
+            "EventPipe",
+            1234.567,
+            42,
+            0.91234,
+            [new ThreadSampleInfo("tid-1", 30)]);
+        AnalysisResult<TraceInfoView> envelope = new(view);
+
+        string json = OutputJson.Serialize(envelope);
+
+        using JsonDocument doc = JsonDocument.Parse(json);
+        JsonElement result = doc.RootElement.GetProperty("result");
+        result.GetProperty("format").GetString().Should().Be("EventPipe");
+        result.GetProperty("totalWeight").GetDouble().Should().Be(1234.57);
+        result.GetProperty("symbolResolutionRate").GetDouble().Should().Be(0.91);
+        result.GetProperty("threads")[0].GetProperty("thread").GetString().Should().Be("tid-1");
+    }
+
+    [TestMethod]
+    public void Serialize_UnregisteredPayloadType_Throws()
+    {
+        // The source-gen context is the only type-info resolver, so a payload type that
+        // is not declared in TraceQJsonContext has no metadata and cannot be serialized.
+        // This pins the maintenance invariant: every new payload type must be registered.
+        AnalysisResult<int> envelope = new(42);
+
+        Action act = () => OutputJson.Serialize(envelope);
+
+        act.Should().Throw<NotSupportedException>();
+    }
 }
