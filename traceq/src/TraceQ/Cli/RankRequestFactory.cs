@@ -40,28 +40,14 @@ internal static class RankRequestFactory
     ///  <see langword="true"/> when <paramref name="metric"/> names a wired provider;
     ///  otherwise <see langword="false"/>, and the caller should report a usage error.
     /// </returns>
-    public static bool TryResolveMetric(string metric, out TraceMetric resolved)
-    {
-        switch (metric.ToLowerInvariant())
-        {
-            case CpuMetric:
-                resolved = TraceMetric.Cpu;
-                return true;
-            case "alloc":
-            case "allocations":
-                resolved = TraceMetric.Allocations;
-                return true;
-            case "exceptions":
-                resolved = TraceMetric.Exceptions;
-                return true;
-            case "threadtime":
-                resolved = TraceMetric.ThreadTime;
-                return true;
-            default:
-                resolved = TraceMetric.Cpu;
-                return false;
-        }
-    }
+    /// <remarks>
+    ///  <para>
+    ///   Delegates to <see cref="TraceMetricSelector.TryResolve"/> so the CLI and the
+    ///   MCP <c>trace_rank</c> tool share one selector vocabulary.
+    ///  </para>
+    /// </remarks>
+    public static bool TryResolveMetric(string metric, out TraceMetric resolved) =>
+        TraceMetricSelector.TryResolve(metric, out resolved);
 
     /// <summary>
     ///  Builds a ranking request from the verb parameters, applying the built-in fold

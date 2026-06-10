@@ -179,6 +179,27 @@ Help is treated as a build artifact (**landed**): the README carries an examples
 
 ### M3 — MCP facade
 
+> **Progress:** the facade has begun. The first slice stands up the **standalone
+> `TraceQ.Mcp` stdio server** (stderr-only logging, a singleton `TraceStore`, the
+> server `instructions` field carrying the workflow summary, `readOnlyHint` /
+> `openWorldHint` / `idempotentHint` annotations) plus the **read-only query
+> tools**: `trace_info` (folding the old `load_trace` and `list_threads` into one
+> metadata call), `trace_rank` (the D5 consolidation - one tool with a
+> `metric: cpu|threadtime|alloc|exceptions` selector and a `measure: self|inclusive`
+> switch), `trace_callers`, `trace_lines`, and `trace_heatmap`. Each returns the
+> same `AnalysisResult` envelope through `OutputJson`, byte-identical to the CLI's
+> `--format json`, with the warnings forwarded whole and the ranking/callers steering
+> hints reused. The selector vocabulary moved to a canonical
+> `TraceMetricSelector` in the core so the CLI's `RankRequestFactory` and the tool
+> share one mapping. `TraceQ.Mcp.Tests` exercises every tool, the metric and measure
+> guards, the `top >= 1` boundary, and the load-failure path; a manual stdio
+> handshake confirmed `tools/list` registration, the instructions field, and stdout
+> purity. **Deferred to the next slice:** `trace_diff`, `trace_export`, and a
+> `trace_gc` / `trace_query_events` report tool; the **stdout-purity** and
+> **schema-budget** CI checks; the MCP Inspector smoke and scripted client
+> round-trip; and `outputSchema` / `structuredContent`. `trace_trim` stays parked
+> with the `trim` verb.
+
 The eight tools (§5.2) re-cut over the same services: port touki.mcp's description text, apply the D5 consolidation (`trace_rank` with `metric`), fold `list_threads` into `trace_info`, add `trace_gc`/`trace_diff`/`trace_query_events`. The broadened surface (section 1A) raises the consolidation stakes, not the tool count: the **engine** tools take a `metric`/provider parameter, so `trace_rank(metric: cpu|threadtime|alloc|…)` is *one* tool spanning every family rather than one tool per family - the token budget below is what forces this. `trace_export` and `trace_trim` join the curated set (they are how an agent hands a human a flame graph or shrinks a trace); the rich family reports (`alloc`/`jit`/`exceptions`/`heap`) stay CLI-first and are promoted to MCP only when an eval task demands it (backlog O4). Annotations (`readOnlyHint` et al.), `outputSchema` + `structuredContent` where the C# SDK supports them, the server `instructions` field carrying the workflow summary, and `traceq mcp` hosting with stderr-only logging.
 
 Two CI checks born here and kept forever: the **stdout-purity test** (run the server under load, including a deliberately chatty logging provider, and assert nothing but JSON-RPC reaches stdout) and the **schema budget check** (serialize the tool list, fail above ~1.5k tokens). MCP Inspector smoke plus one scripted client round-trip test.
@@ -198,7 +219,7 @@ With the facade demonstrably standing alone, execute the rehearsed extraction:
 
 ### M4 — Knowledge layer and distribution
 
-Write the SKILL.md, trap catalog, and AGENTS.md snippet from `docs/` single-sourcing with the drift check (§6 of the design); generate `server.json`; self-contained non-AOT publish profiles (D13); **first packages (Core, tool, Mcp shim) land on the promoted repo's GitHub Packages feed — private until v1.0.** Feed-auth realities are an M4 deliverable because they bite every consumer: CI uses `GITHUB_TOKEN`; local installs need a PAT-backed `nuget.config` source; the Copilot cloud agent needs the credential supplied through `copilot-setup-steps.yml` env/secrets — ship that snippet alongside the §8.2 one. The NuGet MCP package-type metadata rides along now so nothing changes shape at 1.0; install badges and the MCP registry entry wait for the public publish (M6).
+Write the SKILL.md, trap catalog, and AGENTS.md snippet from `docs/` single-sourcing with the drift check (§6 of the design); generate `server.json`; self-contained publish profiles (interim non-AOT - full Native AOT is the goal, but TraceEvent blocks it today; this reverses D13, see the AOT-goal note in section 6); **first packages (Core, tool, Mcp shim) land on the promoted repo's GitHub Packages feed — private until v1.0.** Feed-auth realities are an M4 deliverable because they bite every consumer: CI uses `GITHUB_TOKEN`; local installs need a PAT-backed `nuget.config` source; the Copilot cloud agent needs the credential supplied through `copilot-setup-steps.yml` env/secrets — ship that snippet alongside the §8.2 one. The NuGet MCP package-type metadata rides along now so nothing changes shape at 1.0; install badges and the MCP registry entry wait for the public publish (M6).
 
 **Exit:** cold-discovery (eval task 8) passes from a fresh clone carrying only the AGENTS.md pointer; `dotnet tool install --add-source <feed>` and `dnx <Pkg>@<ver>` against the feed both work on clean, feed-authenticated Windows and Linux machines.
 
@@ -271,6 +292,29 @@ The extraction's safety net is a fixed corpus of traces with known-good answers:
 For the record, the road not taken on Q1: extract-now was recommended on identity grounds (a product accrues stars/issues/registry presence from day one). Incubation trades that for the tightest dogfood loop and a deferred commitment — a trade the rehearsal check and the M3½ gate are designed to keep cheap. If incubation drags past M3 with the facade green, that's the signal the deferral has stopped paying.
 
 Recorded in the design document's decision log as **D15–D17**.
+
+### AOT - full Native AOT is a goal (reverses D13; 2026-06-09)
+
+The published heads (the `TraceQ` CLI and the `TraceQ.Mcp` server) target full
+Native AOT. This reverses D13's "non-AOT" framing: non-AOT is now the *interim*
+state, not the end state. Blockers, in dependency order:
+
+1. **TraceEvent** (`Microsoft.Diagnostics.Tracing.TraceEvent`) - the long pole.
+   Reflection, dynamically built event parsers, and ETW native interop; no AOT
+   annotations, so neither AOT- nor trim-safe. It is mandatory (every analysis
+   path reads a trace through it) and flows transitively to both heads, so the
+   whole graph stays non-AOT until it is made AOT-safe or replaced. No
+   `IsAotCompatible` / `PublishAot` flag goes on any traceq project until this
+   clears - the per-assembly analyzer would pass while a real publish still
+   fails.
+2. **Reflection-based `System.Text.Json`** in `OutputJson` - swap the reflection
+   serializer for a `JsonSerializerContext` source-gen resolver.
+3. **Reflection-based MCP tool discovery** - `WithToolsFromAssembly()` (warns
+   IL2026) becomes the generic `WithTools<T>()`, which requires `TraceTools` to
+   stop being a static class.
+
+Items 2 and 3 are inside our control and can land incrementally; item 1 gates
+the actual AOT publish.
 
 ### D-N — Naming (gate: M3½ promotion; availability pass: M0)
 

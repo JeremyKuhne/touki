@@ -15,6 +15,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/TraceQ.Core.Tests/TraceQ.Core.Tests.csproj" />
     <Project Path="tests/TraceQ.Cli.Tests/TraceQ.Cli.Tests.csproj" />
+    <Project Path="tests/TraceQ.Mcp.Tests/TraceQ.Mcp.Tests.csproj" />
     <Project Path="tests/TraceQ.Parity.Tests/TraceQ.Parity.Tests.csproj" />
   </Folder>
 </Solution>

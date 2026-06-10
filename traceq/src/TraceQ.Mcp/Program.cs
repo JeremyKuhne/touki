@@ -2,15 +2,39 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using TraceQ;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using ModelContextProtocol.Protocol;
+using TraceQ.Mcp;
+using TraceQ.Server;
 
-// M0 scaffold for the MCP shim. The curated tool surface (trace_info,
-// trace_rank with a metric selector, trace_callers, trace_diff, trace_export,
-// trace_trim, ...) is built in M3 over the shared TraceQ.Core service layer,
-// with stderr-only logging and the stdout-purity guarantee. This stub exists so
-// the ModelContextProtocol + Hosting dependencies resolve and the shim is wired
-// to the same core assembly the CLI uses.
+HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
-Console.Error.WriteLine(
-    $"traceq MCP facade ({TraceQCore.Milestone} scaffold): not implemented until milestone M3.");
+// stdout carries the MCP JSON-RPC stream; every diagnostic must go to stderr or it
+// corrupts the protocol. Drop the host's default providers first so nothing the host
+// pre-registered can reach stdout, then add a single console provider pinned to stderr
+// for every level.
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole(static options => options.LogToStandardErrorThreshold = LogLevel.Trace);
+
+// One cache of parsed traces is shared across every tool call for the server's lifetime.
+builder.Services.AddSingleton<TraceStore>();
+
+builder.Services
+    .AddMcpServer(static options =>
+    {
+        options.ServerInfo = new Implementation
+        {
+            Name = "traceq",
+            Version = typeof(TraceTools).Assembly.GetName().Version?.ToString() ?? "0.0.0"
+        };
+
+        // The workflow summary the client surfaces to the model at initialize time.
+        options.ServerInstructions = TraceServerInstructions.Text;
+    })
+    .WithStdioServerTransport()
+    .WithToolsFromAssembly();
+
+await builder.Build().RunAsync().ConfigureAwait(false);
 return 0;
