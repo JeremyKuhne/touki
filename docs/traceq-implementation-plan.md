@@ -307,14 +307,22 @@ state, not the end state. Blockers, in dependency order:
    `IsAotCompatible` / `PublishAot` flag goes on any traceq project until this
    clears - the per-assembly analyzer would pass while a real publish still
    fails.
-2. **Reflection-based `System.Text.Json`** in `OutputJson` - swap the reflection
-   serializer for a `JsonSerializerContext` source-gen resolver.
+2. **Reflection-based `System.Text.Json`** in `OutputJson` - **done.** A
+   `TraceQJsonContext` source-generation context declares every closed
+   `AnalysisResult<T>` the CLI and MCP heads serialize; `OutputJson` seeds its
+   options from that context and serializes through the resolved `JsonTypeInfo`,
+   so the reflection IL2026/IL3050 are gone (verified by the per-assembly AOT
+   analyzer). The custom double-rounding converter and relaxed encoder are layered
+   on the runtime options under metadata-mode generation, keeping the golden output
+   byte-identical. `TraceInfoView` moved from the MCP head into `TraceQ.Core/Output`
+   so one context covers all payloads. A new payload type must be registered in the
+   context or `Serialize` throws `NotSupportedException` (pinned by a test).
 3. **Reflection-based MCP tool discovery** - `WithToolsFromAssembly()` (warns
    IL2026) becomes the generic `WithTools<T>()`, which requires `TraceTools` to
    stop being a static class.
 
-Items 2 and 3 are inside our control and can land incrementally; item 1 gates
-the actual AOT publish.
+Item 3 is inside our control and can land incrementally; item 1 gates the actual
+AOT publish.
 
 ### D-N — Naming (gate: M3½ promotion; availability pass: M0)
 
