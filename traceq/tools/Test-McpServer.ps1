@@ -119,10 +119,13 @@ $p.StandardInput.WriteLine($callRequest)
 $p.StandardInput.Flush()
 
 # Single async read pump with a hard overall deadline; do not break on a per-read
-# timeout because a cold server's first stdout line can take several seconds. The
-# tools/call response (id 3) is the last one expected, so reading until it arrives
-# collects the initialize, tools/list, and tools/call responses.
+# timeout because a cold server's first stdout line can take several seconds.
+# JSON-RPC responses may arrive out of order, so collect until BOTH the tools/list
+# (id 2) and the tools/call (id 3) responses have been seen rather than breaking on
+# id 3 alone - otherwise a tools/list that landed second would be missed and the
+# schema-budget check below would fail on an otherwise healthy server.
 $stdout = [System.Collections.Generic.List[string]]::new()
+$gotTools = $false
 $gotRoundTrip = $false
 $deadline = [DateTime]::UtcNow.AddSeconds(30)
 $pending = $p.StandardOutput.ReadLineAsync()
@@ -131,17 +134,21 @@ while ([DateTime]::UtcNow -lt $deadline) {
         $line = $pending.Result
         if ($null -eq $line) { break }
         $stdout.Add($line)
-        # Detect the final tools/call response by a real JSON-RPC id == 3, not a
-        # substring (which would also match id 30, 31, ...). A non-JSON line is left
-        # for the purity check below to flag.
+        # Track the tools/list (id 2) and tools/call (id 3) responses by a real
+        # JSON-RPC id, not a substring (which would also match id 20, 30, ...). A
+        # non-JSON line is left for the purity check below to flag.
         $trimmed = $line.Trim()
         if ($trimmed.Length -gt 0) {
             try {
                 $probe = [System.Text.Json.JsonDocument]::Parse($trimmed)
-                if ((Get-JsonRpcId $probe.RootElement) -eq 3) { $gotRoundTrip = $true; break }
+                switch (Get-JsonRpcId $probe.RootElement) {
+                    2 { $gotTools = $true }
+                    3 { $gotRoundTrip = $true }
+                }
             }
             catch { }
         }
+        if ($gotTools -and $gotRoundTrip) { break }
         $pending = $p.StandardOutput.ReadLineAsync()
     }
 }
@@ -159,9 +166,12 @@ if (-not $p.WaitForExit(5000)) {
 # failure output. Surfaced only on failure so a passing run stays quiet.
 $stderrOutput = $stderrTask.GetAwaiter().GetResult()
 
-if (-not $gotRoundTrip) {
+if (-not ($gotTools -and $gotRoundTrip)) {
+    $missing = if (-not $gotTools -and -not $gotRoundTrip) { 'tools/list and tools/call' }
+        elseif (-not $gotTools) { 'tools/list' }
+        else { 'tools/call' }
     throw (
-        "The server did not return the tools/call response within the deadline.`n" +
+        "The server did not return the $missing response within the deadline.`n" +
         "stdout:`n$($stdout -join "`n")`n" +
         "stderr:`n$stderrOutput")
 }

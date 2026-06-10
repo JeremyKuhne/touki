@@ -443,4 +443,36 @@ public sealed class TraceToolsTests
 
         act.Should().Throw<McpException>().WithMessage("*skip must be 0 or greater*");
     }
+
+    [TestMethod]
+    public void QueryEvents_TakeAboveMax_ClampsWithWarning()
+    {
+        // A take past the page ceiling is clamped rather than honored, so a caller cannot
+        // request a page large enough to exhaust memory or blow the token budget; the
+        // clamp is surfaced as a warning so paging still works.
+        AnalysisResult<EventQueryResult> envelope = TraceTools.QueryEvents(FixturePath(Alloc), take: int.MaxValue);
+
+        envelope.Result.Events.Count.Should().BeLessThanOrEqualTo(1000);
+        envelope.Warnings.Should().Contain(w => w.Contains("clamped", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void QueryEvents_MaxPayloadAboveMax_ClampsWithWarning()
+    {
+        // A maxPayload past the ceiling is clamped with a warning for the same reason.
+        AnalysisResult<EventQueryResult> envelope =
+            TraceTools.QueryEvents(FixturePath(Alloc), maxPayload: int.MaxValue);
+
+        envelope.Warnings.Should().Contain(w => w.Contains("clamped", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void QueryEvents_NullPath_ThrowsMcpException()
+    {
+        // A null path must fail through the format guardrail as a clean McpException, not
+        // a NullReferenceException surfaced as an opaque JSON-RPC error.
+        Action act = () => TraceTools.QueryEvents(null!);
+
+        act.Should().Throw<McpException>().WithMessage("*requires a .nettrace*");
+    }
 }

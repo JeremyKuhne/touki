@@ -318,6 +318,19 @@ public sealed class TraceTools
     }
 
     /// <summary>
+    ///  The largest page <see cref="QueryEvents"/> returns. A larger <c>take</c> is
+    ///  clamped to this with a warning, so one call cannot accumulate an unbounded
+    ///  page into memory or push the response past the token budget.
+    /// </summary>
+    private const int MaxEventsPage = 1000;
+
+    /// <summary>
+    ///  The largest per-event payload cap <see cref="QueryEvents"/> honors. A larger
+    ///  <c>maxPayload</c> is clamped to this with a warning.
+    /// </summary>
+    private const int MaxEventPayloadChars = 4000;
+
+    /// <summary>
     ///  Queries the raw events of a <c>.nettrace</c> EventPipe trace by name, paged and
     ///  with each event's payload truncated, so an agent can inspect arbitrary events.
     /// </summary>
@@ -357,6 +370,23 @@ public sealed class TraceTools
             throw new McpException("maxPayload must be 0 or greater.");
         }
 
+        // Clamp the page and payload sizes to a ceiling so a caller cannot request a
+        // page large enough to exhaust memory or push the response past the token
+        // budget; a clamp is a warning rather than an error, so the query still runs.
+        List<string> warnings = [];
+        if (take > MaxEventsPage)
+        {
+            warnings.Add($"take {take} exceeds the {MaxEventsPage} maximum; clamped to {MaxEventsPage}.");
+            take = MaxEventsPage;
+        }
+
+        if (maxPayload > MaxEventPayloadChars)
+        {
+            warnings.Add(
+                $"maxPayload {maxPayload} exceeds the {MaxEventPayloadChars} maximum; clamped to {MaxEventPayloadChars}.");
+            maxPayload = MaxEventPayloadChars;
+        }
+
         EventQueryResult result = ReadEvents(path, name, skip, take, maxPayload);
 
         // When matches remain beyond this page, steer toward the next one rather than
@@ -368,7 +398,7 @@ public sealed class TraceTools
             hints.Add($"{result.TotalMatched - shownThrough} more match; page with skip {shownThrough}.");
         }
 
-        return new AnalysisResult<EventQueryResult>(result, hints: hints);
+        return new AnalysisResult<EventQueryResult>(result, warnings, hints);
     }
 
     /// <summary>
@@ -620,8 +650,10 @@ public sealed class TraceTools
     private static void RequireNetTrace(string path, string reportName)
     {
         // Format guardrail (an extension test, no I/O): the report providers parse the
-        // EventPipe format, so reject an .etl or speedscope export cleanly here.
-        if (!path.EndsWith(".nettrace", StringComparison.OrdinalIgnoreCase))
+        // EventPipe format, so reject an .etl or speedscope export - or a null/empty
+        // path - cleanly here rather than failing deep inside the parser or on a null
+        // dereference that would surface as an opaque JSON-RPC error.
+        if (string.IsNullOrEmpty(path) || !path.EndsWith(".nettrace", StringComparison.OrdinalIgnoreCase))
         {
             throw new McpException(
                 $"The {reportName} requires a .nettrace EventPipe trace; '{path}' is not a .nettrace file.");
