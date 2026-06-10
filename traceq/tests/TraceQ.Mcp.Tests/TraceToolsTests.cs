@@ -328,4 +328,104 @@ public sealed class TraceToolsTests
         using JsonDocument doc = JsonDocument.Parse(json);
         doc.RootElement.GetProperty("result").GetProperty("gcs").GetArrayLength().Should().BeLessThanOrEqualTo(1);
     }
+
+    [TestMethod]
+    public void Export_Speedscope_WritesFileAndConfirms()
+    {
+        TraceStore store = new();
+        string outputPath = Path.Combine(Path.GetTempPath(), $"{Path.GetRandomFileName()}.speedscope.json");
+
+        try
+        {
+            string json = TraceTools.Export(store, FixturePath(Speedscope), outputPath);
+
+            File.Exists(outputPath).Should().BeTrue();
+            using JsonDocument doc = JsonDocument.Parse(json);
+            JsonElement root = doc.RootElement;
+            AssertEnvelopeShape(root);
+
+            JsonElement result = root.GetProperty("result");
+            result.GetProperty("format").GetString().Should().Be("speedscope");
+            result.GetProperty("outputPath").GetString().Should().Be(Path.GetFullPath(outputPath));
+            result.GetProperty("byteCount").GetInt64().Should().BeGreaterThan(0);
+
+            // The hint steers a human to the viewer for the chosen format.
+            root.GetProperty("hints").EnumerateArray().Should().Contain(h =>
+                h.GetString()!.Contains("speedscope.app", StringComparison.Ordinal));
+
+            // The written file is the same speedscope JSON the exporter produced.
+            string written = File.ReadAllText(outputPath);
+            written.Should().Contain("\"$schema\"");
+        }
+        finally
+        {
+            if (File.Exists(outputPath))
+            {
+                File.Delete(outputPath);
+            }
+        }
+    }
+
+    [TestMethod]
+    public void Export_Chromium_WritesChromeTraceFormat()
+    {
+        TraceStore store = new();
+        string outputPath = Path.Combine(Path.GetTempPath(), $"{Path.GetRandomFileName()}.chrome.json");
+
+        try
+        {
+            string json = TraceTools.Export(store, FixturePath(Speedscope), outputPath, format: "chromium");
+
+            File.Exists(outputPath).Should().BeTrue();
+            using JsonDocument doc = JsonDocument.Parse(json);
+            JsonElement root = doc.RootElement;
+            AssertEnvelopeShape(root);
+            root.GetProperty("result").GetProperty("format").GetString().Should().Be("chromium");
+            root.GetProperty("hints").EnumerateArray().Should().Contain(h =>
+                h.GetString()!.Contains("perfetto", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            if (File.Exists(outputPath))
+            {
+                File.Delete(outputPath);
+            }
+        }
+    }
+
+    [TestMethod]
+    public void Export_UnknownFormat_Throws()
+    {
+        TraceStore store = new();
+        string outputPath = Path.Combine(Path.GetTempPath(), $"{Path.GetRandomFileName()}.json");
+
+        Action act = () => TraceTools.Export(store, FixturePath(Speedscope), outputPath, format: "perfetto");
+
+        act.Should().Throw<McpException>().WithMessage("*Unknown format 'perfetto'*");
+        File.Exists(outputPath).Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void Export_EmptyOutput_Throws()
+    {
+        TraceStore store = new();
+
+        Action act = () => TraceTools.Export(store, FixturePath(Speedscope), output: "  ");
+
+        act.Should().Throw<McpException>().WithMessage("*output is required*");
+    }
+
+    [TestMethod]
+    public void Export_UnwritablePath_ThrowsMcpException()
+    {
+        TraceStore store = new();
+
+        // A path into a directory that does not exist is not writable; the failure
+        // surfaces as a clean tool error rather than an unhandled exception.
+        string badPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName(), "nested", "out.json");
+
+        Action act = () => TraceTools.Export(store, FixturePath(Speedscope), badPath);
+
+        act.Should().Throw<McpException>().WithMessage("*Could not write*");
+    }
 }

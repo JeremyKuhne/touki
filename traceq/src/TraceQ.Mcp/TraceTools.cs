@@ -14,11 +14,12 @@ using TraceQ.Tracing.Providers;
 namespace TraceQ.Mcp;
 
 /// <summary>
-///  The curated read-only MCP tool surface over the TraceQ analysis core: load a
-///  trace and query its quality signals, folded self/inclusive rankings, immediate
-///  callers, line-level attribution, two-trace diffs, and the garbage-collection
-///  report across speedscope, EventPipe (<c>.nettrace</c>), and ETW (<c>.etl</c>)
-///  inputs.
+///  The curated MCP tool surface over the TraceQ analysis core: load a trace and
+///  query its quality signals, folded self/inclusive rankings, immediate callers,
+///  line-level attribution, two-trace diffs, and the garbage-collection report
+///  across speedscope, EventPipe (<c>.nettrace</c>), and ETW (<c>.etl</c>) inputs,
+///  plus export a flame graph to a file. Every tool but <c>trace_export</c> is
+///  read-only; <c>trace_export</c> writes a file.
 /// </summary>
 /// <remarks>
 ///  <para>
@@ -316,6 +317,61 @@ public sealed class TraceTools
     }
 
     /// <summary>
+    ///  Exports a trace's CPU sample source to a speedscope or Chrome-trace flame-graph
+    ///  file an agent can hand a human to open in a viewer.
+    /// </summary>
+    /// <param name="store">The trace cache (injected).</param>
+    /// <param name="path">Path to the trace file.</param>
+    /// <param name="output">The file path to write the flame graph to.</param>
+    /// <param name="format">The flame-graph format: <c>speedscope</c> or <c>chromium</c>.</param>
+    /// <param name="name">The profile name embedded in the flame graph, shown in the viewer.</param>
+    /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
+    /// <returns>The export-confirmation envelope, as compact JSON.</returns>
+    [McpServerTool(Name = "trace_export", ReadOnly = false, Idempotent = true, OpenWorld = false)]
+    [Description(
+        "Export a trace's CPU samples to a flame-graph file for a human to open in a viewer - this is how you hand "
+        + "off a visual. format=speedscope (the default) opens at speedscope.app; format=chromium writes the Chrome "
+        + "Trace Event Format for chrome://tracing or the Perfetto UI. 'output' is the file path to write (required; "
+        + "unlike the query tools this writes a file rather than returning the data, and overwrites an existing file "
+        + "at that path). The whole sample source is exported - no folding, scoping, or ranking. The response "
+        + "confirms the path, format, and byte count.")]
+    public static string Export(
+        TraceStore store,
+        [Description("Path to a .speedscope.json, .nettrace, or .etl trace file.")] string path,
+        [Description("The file path to write the flame graph to (it is overwritten if it exists).")] string output,
+        [Description("The flame-graph format: speedscope or chromium.")] string format = "speedscope",
+        [Description("The profile name embedded in the flame graph, shown in the viewer.")] string name = "traceq",
+        [Description(
+            "Optional build-output directory whose assemblies' embedded portable PDBs are extracted so "
+            + "managed frames resolve to source lines.")]
+        string symbols = "")
+    {
+        bool chromium = ResolveExportFormat(format);
+
+        if (string.IsNullOrWhiteSpace(output))
+        {
+            throw new McpException("output is required: the file path to write the flame graph to.");
+        }
+
+        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols));
+        TraceInfo info = trace.Info;
+
+        string exported = chromium
+            ? ChromiumExporter.Export(trace.Source, name)
+            : SpeedscopeExporter.Export(trace.Source, name);
+
+        string outputPath = WriteExport(output, exported);
+        long byteCount = new FileInfo(outputPath).Length;
+
+        ExportResult result = new(chromium ? "chromium" : "speedscope", outputPath, byteCount, name);
+        string hint = chromium
+            ? $"open {outputPath} in chrome://tracing or the Perfetto UI (https://ui.perfetto.dev)"
+            : $"open {outputPath} at https://speedscope.app";
+
+        return OutputJson.Serialize(new AnalysisResult<ExportResult>(result, info.Warnings, [hint]));
+    }
+
+    /// <summary>
     ///  Loads the <paramref name="metric"/> view of the trace, mapping the loader's
     ///  failure modes to a clean <see cref="McpException"/> rather than letting an
     ///  opaque exception propagate to the client.
@@ -366,6 +422,52 @@ public sealed class TraceTools
         }
 
         throw new McpException($"Unknown measure '{measure}'. Valid measures: self, inclusive.");
+    }
+
+    /// <summary>
+    ///  Resolves the export <c>format</c> selector to whether the Chrome-trace exporter
+    ///  is used (otherwise speedscope).
+    /// </summary>
+    private static bool ResolveExportFormat(string format)
+    {
+        if (string.Equals(format, "speedscope", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (string.Equals(format, "chromium", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        throw new McpException($"Unknown format '{format}'. Valid formats: speedscope, chromium.");
+    }
+
+    /// <summary>
+    ///  Writes the exported flame graph to <paramref name="output"/>, mapping a bad or
+    ///  unwritable path to a clean <see cref="McpException"/>, and returns the absolute
+    ///  path written.
+    /// </summary>
+    private static string WriteExport(string output, string content)
+    {
+        try
+        {
+            string fullPath = Path.GetFullPath(output);
+            File.WriteAllText(fullPath, content);
+            return fullPath;
+        }
+        catch (Exception ex) when (
+            ex is IOException
+            or UnauthorizedAccessException
+            or NotSupportedException
+            or System.Security.SecurityException
+            or ArgumentException)
+        {
+            // A bad or unwritable output path (missing directory, permission denied,
+            // invalid characters) surfaces as a clean tool error rather than an
+            // unhandled exception.
+            throw new McpException($"Could not write '{output}': {ex.Message}");
+        }
     }
 
     private static void RequirePositiveTop(int top)
