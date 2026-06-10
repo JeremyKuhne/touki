@@ -34,7 +34,7 @@ builder.Services
         options.ServerInstructions = TraceServerInstructions.Text;
     })
     .WithStdioServerTransport()
-    .WithToolsFromAssembly();
+    .WithTools<TraceTools>();
 
 await builder.Build().RunAsync().ConfigureAwait(false);
 return 0;

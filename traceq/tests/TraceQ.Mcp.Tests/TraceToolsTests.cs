@@ -238,4 +238,94 @@ public sealed class TraceToolsTests
 
         act.Should().Throw<McpException>();
     }
+
+    [TestMethod]
+    public void Diff_SameTraceTwice_ReturnsZeroScopeDelta()
+    {
+        TraceStore store = new();
+        string path = FixturePath(Speedscope);
+
+        // Diffing a trace against itself: every frame matches, so the scope total is
+        // unchanged and no frame shows a delta.
+        string json = TraceTools.Diff(store, path, path);
+
+        using JsonDocument doc = JsonDocument.Parse(json);
+        JsonElement root = doc.RootElement;
+        AssertEnvelopeShape(root);
+        JsonElement result = root.GetProperty("result");
+        result.GetProperty("scopeDelta").GetDouble().Should().Be(0.0);
+        foreach (JsonElement changed in result.GetProperty("rows").EnumerateArray())
+        {
+            changed.GetProperty("delta").GetDouble().Should().Be(0.0);
+        }
+    }
+
+    [TestMethod]
+    public void Diff_UnknownMeasure_Throws()
+    {
+        TraceStore store = new();
+        string path = FixturePath(Speedscope);
+
+        Action act = () => TraceTools.Diff(store, path, path, measure: "average");
+
+        act.Should().Throw<McpException>().WithMessage("*Unknown measure 'average'*");
+    }
+
+    [TestMethod]
+    public void Diff_InclusiveMeasure_SameTraceTwice_ReturnsZeroScopeDelta()
+    {
+        TraceStore store = new();
+        string path = FixturePath(Speedscope);
+
+        // The inclusive branch ranks both sides with InclusiveTime; diffing a trace
+        // against itself still yields no change.
+        string json = TraceTools.Diff(store, path, path, measure: "inclusive");
+
+        using JsonDocument doc = JsonDocument.Parse(json);
+        JsonElement root = doc.RootElement;
+        AssertEnvelopeShape(root);
+        root.GetProperty("result").GetProperty("scopeDelta").GetDouble().Should().Be(0.0);
+    }
+
+    [TestMethod]
+    public void Gc_NetTrace_ReturnsAggregateSummary()
+    {
+        string json = TraceTools.Gc(FixturePath(Alloc));
+
+        using JsonDocument doc = JsonDocument.Parse(json);
+        JsonElement root = doc.RootElement;
+        AssertEnvelopeShape(root);
+        JsonElement result = root.GetProperty("result");
+        result.GetProperty("gcCount").GetInt32().Should().BeGreaterThan(0);
+        result.GetProperty("gcs").GetArrayLength().Should().BeGreaterThan(0);
+    }
+
+    [TestMethod]
+    public void Gc_NonNetTraceInput_ThrowsMcpException()
+    {
+        // The GC report parses the EventPipe format; an .etl or speedscope is rejected
+        // up front by the extension guardrail.
+        Action act = () => TraceTools.Gc(FixturePath(Speedscope));
+
+        act.Should().Throw<McpException>().WithMessage("*requires a .nettrace*");
+    }
+
+    [TestMethod]
+    public void Gc_NonPositiveTop_Throws()
+    {
+        Action act = () => TraceTools.Gc(FixturePath(Alloc), top: 0);
+
+        act.Should().Throw<McpException>().WithMessage("*top must be 1 or greater*");
+    }
+
+    [TestMethod]
+    public void Gc_Top_CapsPerCollectionDetail()
+    {
+        // The aggregate summary always reflects every collection, but the per-collection
+        // detail list is capped to 'top' so a long trace cannot blow the output budget.
+        string json = TraceTools.Gc(FixturePath(Alloc), top: 1);
+
+        using JsonDocument doc = JsonDocument.Parse(json);
+        doc.RootElement.GetProperty("result").GetProperty("gcs").GetArrayLength().Should().BeLessThanOrEqualTo(1);
+    }
 }

@@ -9,14 +9,16 @@ using ModelContextProtocol.Server;
 using TraceQ.Output;
 using TraceQ.Server;
 using TraceQ.Tracing;
+using TraceQ.Tracing.Providers;
 
 namespace TraceQ.Mcp;
 
 /// <summary>
 ///  The curated read-only MCP tool surface over the TraceQ analysis core: load a
 ///  trace and query its quality signals, folded self/inclusive rankings, immediate
-///  callers, and line-level attribution across speedscope, EventPipe
-///  (<c>.nettrace</c>), and ETW (<c>.etl</c>) inputs.
+///  callers, line-level attribution, two-trace diffs, and the garbage-collection
+///  report across speedscope, EventPipe (<c>.nettrace</c>), and ETW (<c>.etl</c>)
+///  inputs.
 /// </summary>
 /// <remarks>
 ///  <para>
@@ -28,7 +30,7 @@ namespace TraceQ.Mcp;
 ///  </para>
 /// </remarks>
 [McpServerToolType]
-public static class TraceTools
+public sealed class TraceTools
 {
     /// <summary>
     ///  Loads a trace and returns its format, total weight, sample count, symbol
@@ -224,6 +226,96 @@ public static class TraceTools
     }
 
     /// <summary>
+    ///  Compares two CPU traces and reports the per-frame change, largest absolute
+    ///  change first, so an agent can see what got slower or faster between runs.
+    /// </summary>
+    /// <param name="store">The trace cache (injected).</param>
+    /// <param name="beforePath">The baseline trace file path.</param>
+    /// <param name="afterPath">The current trace file path.</param>
+    /// <param name="measure">Whether to compare self time or inclusive time.</param>
+    /// <param name="root">Optional substring scoping both rankings to a subtree.</param>
+    /// <param name="top">Maximum changed rows to return.</param>
+    /// <param name="fold">Optional fold patterns; defaults to the built-in JIT-helper list.</param>
+    /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
+    /// <returns>The diff envelope, as compact JSON.</returns>
+    [McpServerTool(Name = "trace_diff", ReadOnly = true, Idempotent = true, OpenWorld = false)]
+    [Description(
+        "Compare two CPU traces and report the per-frame change (regressions and improvements), largest absolute "
+        + "change first. Both traces are ranked fully (no row cap) before diffing, so a frame hot on only one side "
+        + "is not misreported as a total regression. measure=self credits the executing leaf (JIT-helper leaves "
+        + "folded into the real method); measure=inclusive credits a frame and everything it calls. Use it to find "
+        + "what got slower or faster between two runs - for example a capture from before and after a change.")]
+    public static string Diff(
+        TraceStore store,
+        [Description("Path to the baseline (before) .speedscope.json, .nettrace, or .etl trace file.")] string beforePath,
+        [Description("Path to the current (after) .speedscope.json, .nettrace, or .etl trace file.")] string afterPath,
+        [Description("Which measure to compare: self or inclusive.")] string measure = "self",
+        [Description("Optional substring of a frame name to scope both rankings to its subtree.")] string root = "",
+        [Description("Maximum number of changed rows to return.")] int top = 25,
+        [Description("Optional regex fold patterns; omit to use the built-in JIT-helper defaults.")] string[]? fold = null,
+        [Description(
+            "Optional build-output directory whose assemblies' embedded portable PDBs are extracted so "
+            + "managed frames resolve to source lines.")]
+        string symbols = "")
+    {
+        bool inclusive = ResolveMeasure(measure);
+        RequirePositiveTop(top);
+        IReadOnlyList<string> foldPatterns = ResolveFold(fold);
+        string? resolvedSymbols = NullIfEmpty(symbols);
+
+        LoadedTrace before = Load(store, beforePath, resolvedSymbols);
+        LoadedTrace after = Load(store, afterPath, resolvedSymbols);
+
+        // Rank every frame (no row cap) so the diff is not skewed by per-side truncation;
+        // RankingDiff applies the requested top to the changed rows instead.
+        RankingResult beforeRanking = inclusive
+            ? before.Aggregator.InclusiveTime(root, foldPatterns, int.MaxValue)
+            : before.Aggregator.SelfTime(root, foldPatterns, int.MaxValue);
+        RankingResult afterRanking = inclusive
+            ? after.Aggregator.InclusiveTime(root, foldPatterns, int.MaxValue)
+            : after.Aggregator.SelfTime(root, foldPatterns, int.MaxValue);
+
+        RankingDiffResult diff = RankingDiff.Diff(beforeRanking, afterRanking, top);
+
+        return OutputJson.Serialize(
+            new AnalysisResult<RankingDiffResult>(diff, DiffWarnings(before.Info, after.Info), SteeringHints.ForDiff(diff)));
+    }
+
+    /// <summary>
+    ///  Returns the garbage-collection report for a <c>.nettrace</c> EventPipe trace:
+    ///  the aggregate pause and heap summary plus the hottest per-collection records.
+    /// </summary>
+    /// <param name="path">Path to the trace file.</param>
+    /// <param name="top">Maximum per-collection records to return, ranked by pause time.</param>
+    /// <returns>The GC-report envelope, as compact JSON.</returns>
+    [McpServerTool(Name = "trace_gc", ReadOnly = true, Idempotent = true, OpenWorld = false)]
+    [Description(
+        "Garbage-collection report for a .nettrace EventPipe trace: aggregate counts (gen 0/1/2), total, max, and "
+        + "mean pause time, peak heap size, total promoted bytes, and the per-collection records capped to the "
+        + "'top' hottest pauses. Use it to judge GC pressure - frequent gen-2 collections or long pauses point at "
+        + "allocation problems. Requires a .nettrace trace; .etl and speedscope inputs are rejected.")]
+    public static string Gc(
+        [Description("Path to a .nettrace EventPipe trace file.")] string path,
+        [Description("Maximum number of per-collection records to return, ranked by pause time.")] int top = 25)
+    {
+        RequirePositiveTop(top);
+        GcStatsResult full = ReadGcStats(path);
+
+        // Keep the full aggregate summary, but cap the per-collection detail to the
+        // hottest pauses so a long trace cannot blow the output budget.
+        List<string> warnings = [];
+        IReadOnlyList<GcRecord> shown = full.Gcs;
+        if (shown.Count > top)
+        {
+            shown = [.. shown.OrderByDescending(static g => g.PauseMs).Take(top)];
+            warnings.Add($"Showing the top {top} of {full.GcCount} collections by pause time.");
+        }
+
+        GcStatsResult report = full with { Gcs = shown };
+        return OutputJson.Serialize(new AnalysisResult<GcStatsResult>(report, warnings));
+    }
+
+    /// <summary>
     ///  Loads the <paramref name="metric"/> view of the trace, mapping the loader's
     ///  failure modes to a clean <see cref="McpException"/> rather than letting an
     ///  opaque exception propagate to the client.
@@ -309,6 +401,59 @@ public static class TraceTools
         }
 
         return patterns;
+    }
+
+    /// <summary>
+    ///  Reads the GC report for a <c>.nettrace</c> trace, applying the format guardrail
+    ///  and mapping the provider's failure modes to a clean <see cref="McpException"/>.
+    /// </summary>
+    private static GcStatsResult ReadGcStats(string path)
+    {
+        // Format guardrail (an extension test, no I/O): the GC provider parses the
+        // EventPipe format, so reject an .etl or speedscope export cleanly here rather
+        // than failing deep inside the EventPipe parser with an opaque message.
+        if (!path.EndsWith(".nettrace", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new McpException(
+                $"The GC report requires a .nettrace EventPipe trace; '{path}' is not a .nettrace file.");
+        }
+
+        try
+        {
+            return new GcStatsProvider().Read(path);
+        }
+        catch (Exception ex) when (
+            ex is IOException
+            or UnauthorizedAccessException
+            or NotSupportedException
+            or InvalidOperationException
+            or FormatException
+            or ArgumentException)
+        {
+            // A missing, unreadable, or malformed .nettrace surfaces as a clean tool
+            // error rather than an unhandled exception.
+            throw new McpException(ex.Message);
+        }
+    }
+
+    /// <summary>
+    ///  Builds the diff warnings: the baseline and current traces' quality warnings,
+    ///  each prefixed with which side it came from.
+    /// </summary>
+    private static IReadOnlyList<string> DiffWarnings(TraceInfo before, TraceInfo after)
+    {
+        List<string> warnings = [];
+        foreach (string warning in before.Warnings)
+        {
+            warnings.Add($"baseline: {warning}");
+        }
+
+        foreach (string warning in after.Warnings)
+        {
+            warnings.Add($"current: {warning}");
+        }
+
+        return warnings;
     }
 
     private static string? NullIfEmpty(string value) => string.IsNullOrEmpty(value) ? null : value;

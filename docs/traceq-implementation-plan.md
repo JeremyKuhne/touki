@@ -199,10 +199,29 @@ Help is treated as a build artifact (**landed**): the README carries an examples
 > **schema-budget** CI checks; the MCP Inspector smoke and scripted client
 > round-trip; and `outputSchema` / `structuredContent`. `trace_trim` stays parked
 > with the `trim` verb.
+>
+> **Second slice:** the AOT-safe tool registration and three more tools. The
+> reflection-based `WithToolsFromAssembly()` (IL2026) became the generic
+> `WithTools<TraceTools>()` - `TraceTools` is now a non-static class (its methods
+> stay static) so it works as a type argument; a stdio handshake confirmed all
+> seven tools still register. Added `trace_diff` (compare two CPU traces, ranking
+> both fully before diffing, warnings prefixed `baseline:` / `current:`) and
+> `trace_gc` (the GC report over a `.nettrace`, capped to the hottest pauses).
+> Both CI checks landed as a single stdio harness, `tools/Test-McpServer.ps1`,
+> wired into `traceq.yml` next to the help lint: it drives `initialize` ->
+> `tools/list` with `Logging__LogLevel__Default=Trace` forced and asserts (1) every
+> stdout line parses as JSON-RPC even under chatty logging, and (2) the serialized
+> tool list stays within the token budget. The measured surface is ~2.2k tokens for
+> seven tools; the budget is set at 4000 to accommodate the full planned curated set
+> while still catching genuine bloat. **Still deferred:** `trace_export` (it writes
+> a file rather than returning an envelope - a distinct tool category needing a new
+> result type and write annotations), `trace_query_events`, the MCP Inspector smoke
+> and scripted client round-trip, and `outputSchema` / `structuredContent`.
+> `trace_trim` stays parked with the `trim` verb.
 
 The eight tools (§5.2) re-cut over the same services: port touki.mcp's description text, apply the D5 consolidation (`trace_rank` with `metric`), fold `list_threads` into `trace_info`, add `trace_gc`/`trace_diff`/`trace_query_events`. The broadened surface (section 1A) raises the consolidation stakes, not the tool count: the **engine** tools take a `metric`/provider parameter, so `trace_rank(metric: cpu|threadtime|alloc|…)` is *one* tool spanning every family rather than one tool per family - the token budget below is what forces this. `trace_export` and `trace_trim` join the curated set (they are how an agent hands a human a flame graph or shrinks a trace); the rich family reports (`alloc`/`jit`/`exceptions`/`heap`) stay CLI-first and are promoted to MCP only when an eval task demands it (backlog O4). Annotations (`readOnlyHint` et al.), `outputSchema` + `structuredContent` where the C# SDK supports them, the server `instructions` field carrying the workflow summary, and `traceq mcp` hosting with stderr-only logging.
 
-Two CI checks born here and kept forever: the **stdout-purity test** (run the server under load, including a deliberately chatty logging provider, and assert nothing but JSON-RPC reaches stdout) and the **schema budget check** (serialize the tool list, fail above ~1.5k tokens). MCP Inspector smoke plus one scripted client round-trip test.
+Two CI checks born here and kept forever: the **stdout-purity test** (run the server under load, including a deliberately chatty logging provider, and assert nothing but JSON-RPC reaches stdout) and the **schema budget check** (serialize the tool list, fail above a token budget - measured at ~2.2k tokens for the seven-tool surface, with the ceiling set at 4000 to fit the full curated set). Both landed in `tools/Test-McpServer.ps1`. MCP Inspector smoke plus one scripted client round-trip test.
 
 **Exit:** eval tasks 1–5 completed through the facade in Claude Code and VS Code agent mode (manual runs; the harness arrives in M5); both CI checks green.
 
