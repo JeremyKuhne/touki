@@ -218,6 +218,19 @@ Help is treated as a build artifact (**landed**): the README carries an examples
 > result type and write annotations), `trace_query_events`, the MCP Inspector smoke
 > and scripted client round-trip, and `outputSchema` / `structuredContent`.
 > `trace_trim` stays parked with the `trim` verb.
+>
+> **Third slice:** `trace_export`, the first write tool. It exports a trace's CPU
+> sample source to a speedscope or Chrome-trace flame-graph file, taking a required
+> `output` path (there is no stdout to write to under the protocol) and a `format`
+> selector, and is annotated `readOnlyHint=false` (the others are read-only). Its
+> product is a file, so it returns an `ExportResult` receipt (format, absolute path,
+> byte count, profile name) through the same envelope, with a viewer hint
+> (speedscope.app or the Perfetto UI) in the hints channel; `ExportResult` joins the
+> source-gen JSON context so the head stays AOT-clean. Write failures map to a clean
+> `McpException`. The surface is now eight tools at ~2.6k tokens, still under budget.
+> **Still deferred:** `trace_query_events`, the MCP Inspector smoke and scripted
+> client round-trip, and `outputSchema` / `structuredContent`. `trace_trim` stays
+> parked with the `trim` verb.
 
 The eight tools (§5.2) re-cut over the same services: port touki.mcp's description text, apply the D5 consolidation (`trace_rank` with `metric`), fold `list_threads` into `trace_info`, add `trace_gc`/`trace_diff`/`trace_query_events`. The broadened surface (section 1A) raises the consolidation stakes, not the tool count: the **engine** tools take a `metric`/provider parameter, so `trace_rank(metric: cpu|threadtime|alloc|…)` is *one* tool spanning every family rather than one tool per family - the token budget below is what forces this. `trace_export` and `trace_trim` join the curated set (they are how an agent hands a human a flame graph or shrinks a trace); the rich family reports (`alloc`/`jit`/`exceptions`/`heap`) stay CLI-first and are promoted to MCP only when an eval task demands it (backlog O4). Annotations (`readOnlyHint` et al.), `outputSchema` + `structuredContent` where the C# SDK supports them, the server `instructions` field carrying the workflow summary, and `traceq mcp` hosting with stderr-only logging.
 

@@ -44,6 +44,7 @@ namespace TraceQ.Output;
 [JsonSerializable(typeof(AnalysisResult<JitStatsResult>))]
 [JsonSerializable(typeof(AnalysisResult<GcStatsResult>))]
 [JsonSerializable(typeof(AnalysisResult<EventQueryResult>))]
+[JsonSerializable(typeof(AnalysisResult<ExportResult>))]
 internal sealed partial class TraceQJsonContext : JsonSerializerContext
 {
 }
