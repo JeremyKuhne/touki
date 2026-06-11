@@ -20,7 +20,11 @@ namespace TraceQ.Mcp;
 ///  work-category breakdown, two-trace diffs, the garbage-collection and JIT reports,
 ///  and a raw event query across speedscope, EventPipe (<c>.nettrace</c>), and ETW
 ///  (<c>.etl</c>) inputs, plus export a flame graph to a file. Every tool but
-///  <c>trace_export</c> is read-only; <c>trace_export</c> writes a file.
+///  <c>trace_export</c> is read-only; <c>trace_export</c> writes a file. Two tools -
+///  <c>trace_rank</c> and <c>trace_classify</c> - reach the Microsoft public symbol
+///  server and write a local symbol cache when their opt-in <c>nativeSymbols</c> flag
+///  is set, so both carry the open-world hint; with the flag off (the default) they
+///  stay offline and read-only like the rest.
 /// </summary>
 /// <remarks>
 ///  <para>
@@ -91,7 +95,7 @@ public sealed class TraceTools
     /// <param name="process">Optional process-name substring scoping a multi-process .etl capture to one process tree.</param>
     /// <param name="nativeSymbols">Resolve native runtime frames from the public symbol server (opt-in, network); cpu/.etl only.</param>
     /// <returns>The ranking envelope.</returns>
-    [McpServerTool(Name = "trace_rank", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
+    [McpServerTool(Name = "trace_rank", ReadOnly = true, Idempotent = true, OpenWorld = true, UseStructuredContent = true)]
     [Description(
         "Rank the hottest frames over a chosen provider metric. measure=self credits the executing leaf "
         + "(JIT-helper leaves folded into the real method that incurred them); measure=inclusive credits a "
@@ -579,7 +583,7 @@ public sealed class TraceTools
     /// <param name="process">Optional process-name substring scoping a multi-process .etl capture to one process tree.</param>
     /// <param name="nativeSymbols">Resolve native runtime frames from the public symbol server (opt-in, network); cpu/.etl only.</param>
     /// <returns>The classification envelope.</returns>
-    [McpServerTool(Name = "trace_classify", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
+    [McpServerTool(Name = "trace_classify", ReadOnly = true, Idempotent = true, OpenWorld = true, UseStructuredContent = true)]
     [Description(
         "Bucket CPU self-time by runtime work category - zeroing, copying, write-barrier, GC, JIT, or other - to "
         + "answer 'where did the time go: zeroing memory? copying? in the GC?'. The categories are recognized from "

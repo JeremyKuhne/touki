@@ -295,11 +295,13 @@ internal abstract class TraceLogReader : ITraceReader
             {
                 traceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, moduleFile);
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is not (OutOfMemoryException or AccessViolationException))
             {
                 // Best-effort: an unfetchable module keeps its unresolved frames rather
                 // than failing the read. Offline use and modules with no published PDB
-                // both land here.
+                // both land here. Fatal process-corruption conditions (out of memory,
+                // access violation) are allowed to surface rather than being masked as
+                // a merely-missing symbol.
             }
         }
     }

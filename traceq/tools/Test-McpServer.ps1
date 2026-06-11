@@ -127,6 +127,7 @@ $p.StandardInput.Flush()
 # collects the initialize, tools/list, and tools/call responses.
 $stdout = [System.Collections.Generic.List[string]]::new()
 $gotRoundTrip = $false
+$gotToolsList = $false
 $deadline = [DateTime]::UtcNow.AddSeconds(30)
 $pending = $p.StandardOutput.ReadLineAsync()
 while ([DateTime]::UtcNow -lt $deadline) {
@@ -134,14 +135,20 @@ while ([DateTime]::UtcNow -lt $deadline) {
         $line = $pending.Result
         if ($null -eq $line) { break }
         $stdout.Add($line)
-        # Detect the final tools/call response by a real JSON-RPC id == 3, not a
-        # substring (which would also match id 30, 31, ...). A non-JSON line is left
-        # for the purity check below to flag.
+        # Track the responses we need by real JSON-RPC id (not a substring, which would
+        # also match id 30, 31, ...): tools/list is id 2, the tools/call round-trip is
+        # id 3. JSON-RPC responses can arrive in any order, so wait for BOTH before
+        # stopping - breaking on id 3 alone could miss a later-arriving tools/list and
+        # silently skip the schema-budget check. A non-JSON line is left for the purity
+        # check below to flag.
         $trimmed = $line.Trim()
         if ($trimmed.Length -gt 0) {
             try {
                 $probe = [System.Text.Json.JsonDocument]::Parse($trimmed)
-                if ((Get-JsonRpcId $probe.RootElement) -eq 3) { $gotRoundTrip = $true; break }
+                $probeId = Get-JsonRpcId $probe.RootElement
+                if ($probeId -eq 2) { $gotToolsList = $true }
+                elseif ($probeId -eq 3) { $gotRoundTrip = $true }
+                if ($gotToolsList -and $gotRoundTrip) { break }
             }
             catch { }
         }

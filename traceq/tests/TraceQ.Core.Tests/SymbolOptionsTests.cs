@@ -49,6 +49,20 @@ public sealed class SymbolOptionsTests
     }
 
     [TestMethod]
+    [DataRow(@"C:\sym*evil")]
+    [DataRow("*")]
+    [DataRow(@"srv*c:\x*https://evil.example/symbols")]
+    public void WithCache_DirectoryWithStar_Throws(string dir)
+    {
+        // The cache directory is interpolated into a SymSrv path element
+        // (srv*<cache>*<server>), so a '*' would split into extra elements and could
+        // redirect the effective symbol path; it is rejected up front.
+        Action act = () => SymbolOptions.WithCache(dir);
+
+        act.Should().Throw<ArgumentException>().WithParameterName("cacheDirectory");
+    }
+
+    [TestMethod]
     public void DefaultCacheDirectory_IsUnderTheTempPath()
     {
         SymbolOptions.DefaultCacheDirectory.Should().Be(Path.Combine(Path.GetTempPath(), "traceq-symbols"));

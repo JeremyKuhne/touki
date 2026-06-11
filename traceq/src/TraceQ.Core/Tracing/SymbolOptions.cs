@@ -47,8 +47,26 @@ public sealed class SymbolOptions
     ///  (<c>traceq-symbols</c>), so repeated reads reuse one cache.
     /// </param>
     /// <returns>The opt-in native-symbol options.</returns>
-    public static SymbolOptions WithCache(string? cacheDirectory = null) =>
-        new(resolveNativeRuntime: true, cacheDirectory: string.IsNullOrEmpty(cacheDirectory) ? null : cacheDirectory);
+    /// <exception cref="ArgumentException">
+    ///  <paramref name="cacheDirectory"/> contains <c>*</c>, which is the symbol-path
+    ///  element separator (<c>srv*&lt;cache&gt;*&lt;server&gt;</c>); allowing it would
+    ///  let the cache directory alter the effective symbol path.
+    /// </exception>
+    public static SymbolOptions WithCache(string? cacheDirectory = null)
+    {
+        // The cache directory is interpolated into a SymSrv path element of the form
+        // `srv*<cache>*https://...`; a `*` in the directory would split into extra path
+        // elements and corrupt that syntax, so reject it up front rather than letting it
+        // alter the effective symbol path.
+        if (cacheDirectory is not null && cacheDirectory.Contains('*'))
+        {
+            throw new ArgumentException(
+                "The symbol-cache directory cannot contain '*'; it is the symbol-path element separator.",
+                nameof(cacheDirectory));
+        }
+
+        return new(resolveNativeRuntime: true, cacheDirectory: string.IsNullOrEmpty(cacheDirectory) ? null : cacheDirectory);
+    }
 
     /// <summary>
     ///  Whether to resolve native runtime frames from the public symbol server. When
