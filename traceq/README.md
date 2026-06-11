@@ -87,6 +87,7 @@ traceq cpu app.etl --process MyApp --native-symbols   # name the GC/JIT/memcpy f
 | Verb | Purpose | Example |
 |---|---|---|
 | `processes` | List processes by CPU-sample weight, to pick a `--process` target | `traceq processes machinewide.etl` |
+| `classify` | Summarize CPU time by runtime work category (zeroing / copying / GC / ...) | `traceq classify app.etl --native-symbols` |
 
 **Compare and export:**
 

@@ -177,9 +177,68 @@ public sealed class FoldingAggregator
     }
 
     /// <summary>
-    ///  Computes the inclusive-time ranking, crediting each distinct non-folded
-    ///  frame on a stack once per sample.
+    ///  Classifies self-time by runtime work category - zeroing, copying, GC,
+    ///  write-barrier, JIT, or other - so a CPU profile can be summarized as "where did
+    ///  the time go: zeroing memory? copying strings? in the GC?".
     /// </summary>
+    /// <param name="rootFrame">Substring scoping the classification to a subtree, or empty for the whole trace.</param>
+    /// <returns>The categories, ranked by self-time weight.</returns>
+    /// <remarks>
+    ///  <para>
+    ///   The self-time leaf of each sample is found the same way <see cref="SelfTime"/>
+    ///   finds it, but folding is fixed to the synthetic sample markers only
+    ///   (<see cref="FrameNames.MarkerOnlyFoldPatterns"/>): the JIT-helper thunks the
+    ///   categories classify (memset / memcpy / write barriers) must not be folded away,
+    ///   or the work being classified would be folded into its managed caller and lost.
+    ///   The leaf is then bucketed by <see cref="FrameCategories.Classify"/>.
+    ///  </para>
+    /// </remarks>
+    public ClassifyResult Classify(string rootFrame)
+    {
+        Regex[] fold = FrameNames.CompileFoldPatterns(FrameNames.MarkerOnlyFoldPatterns);
+        Dictionary<string, double> byCategory = new(StringComparer.Ordinal);
+        double total = 0.0;
+
+        foreach (SampleStack sample in _samples)
+        {
+            IReadOnlyList<string> frames = sample.Frames;
+            int startIdx = ResolveStart(frames, rootFrame, out bool include);
+            if (!include || frames.Count == 0)
+            {
+                continue;
+            }
+
+            total += sample.Weight;
+
+            int leafIdx = frames.Count - 1;
+            while (leafIdx > startIdx && FrameNames.IsFolded(ShortOf(frames[leafIdx]), fold))
+            {
+                leafIdx--;
+            }
+
+            string category = FrameCategories.Classify(ShortOf(frames[leafIdx]));
+            byCategory.TryGetValue(category, out double current);
+            byCategory[category] = current + sample.Weight;
+        }
+
+        List<CategoryRow> rows = new(byCategory.Count);
+        foreach (KeyValuePair<string, double> entry in byCategory)
+        {
+            double percent = total > 0.0 ? entry.Value / total * 100.0 : 0.0;
+            rows.Add(new CategoryRow(entry.Key, entry.Value, percent));
+        }
+
+        // Highest weight first; ties break by category name so the ranking is stable
+        // and the JSON output deterministic.
+        rows.Sort(static (a, b) =>
+        {
+            int byWeight = b.Weight.CompareTo(a.Weight);
+            return byWeight != 0 ? byWeight : string.CompareOrdinal(a.Category, b.Category);
+        });
+
+        return new ClassifyResult(total, rootFrame, rows);
+    }
+
     /// <param name="rootFrame">Substring scoping the ranking to a subtree, or empty for the whole trace.</param>
     /// <param name="foldPatterns">Frame fold patterns.</param>
     /// <param name="top">Maximum number of rows to return.</param>

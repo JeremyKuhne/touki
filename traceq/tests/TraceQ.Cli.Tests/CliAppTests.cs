@@ -411,6 +411,31 @@ public sealed class CliAppTests
     }
 
     [TestMethod]
+    public void Run_Classify_OnSpeedscope_RendersCategoryTable()
+    {
+        // classify reads the CPU view and buckets self-time by runtime work category;
+        // on the speedscope fixture (no native frames) it renders the table with every
+        // leaf in 'other'. Runs on every CI leg.
+        (int exit, string output, _) = Run("classify", Speedscope);
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("by work category");
+        output.Should().Contain("other");
+    }
+
+    [TestMethod]
+    public void Run_ClassifyJson_WritesSingleLineEnvelope()
+    {
+        (int exit, string output, _) = Run("classify", Speedscope, "--format", "json");
+
+        exit.Should().Be(ExitCodes.Success);
+        string json = output.Trim();
+        json.Should().NotContain("\n");
+        json.Should().Contain("\"schemaVersion\"");
+        json.Should().Contain("\"categories\"");
+    }
+
+    [TestMethod]
     [OSCondition(OperatingSystems.Windows)]
     public void Run_ExplicitProcessScope_OnMachineWideCapture_WarnsAndNarrows()
     {
