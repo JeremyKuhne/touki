@@ -82,6 +82,36 @@ public sealed class TraceLoaderTests
     }
 
     [TestMethod]
+    public void Load_NetTrace_ResolvesDotNetRuntimeManagedMethods()
+    {
+        TraceLoader loader = new();
+
+        LoadedTrace trace = loader.Load(FixturePath("alloc.nettrace"), TraceMetric.Allocations);
+
+        // The .NET runtime/framework managed methods on the stacks are ReadyToRun
+        // (R2R) precompiled images on modern .NET, not JITted - so this pins that
+        // precompiled managed frames resolve to qualified names from the EventPipe
+        // CLR rundown, with no symbol server and no local PDBs. A regression here
+        // (an unresolved BCL frame surfacing as "module!?" or "?") would silently
+        // degrade every managed ranking, so it is asserted directly rather than
+        // inferred from the aggregate resolution rate.
+        IEnumerable<string> allFrames = trace.Source.Samples.SelectMany(static s => s.Frames);
+
+        // The BCL namespace is `System.`; a resolved frame is a qualified
+        // `Namespace.Type.Method`, never the `?` / `module!?` unresolved placeholders.
+        allFrames.Should().Contain(
+            f => f.StartsWith("System.", StringComparison.Ordinal) && !f.EndsWith("!?", StringComparison.Ordinal),
+            because: "precompiled .NET runtime managed methods must resolve to names from the CLR rundown");
+
+        // A concrete BCL type the AllocLoop fixture exercises (it allocates strings),
+        // pinning that a specific runtime type resolves by name and not just that
+        // some `System.` frame happens to be present.
+        allFrames.Should().Contain(
+            f => f.Contains("System.String", StringComparison.Ordinal),
+            because: "the string allocations in the fixture must attribute to a named System.String method");
+    }
+
+    [TestMethod]
     public void Load_AllocationMetricOnSpeedscope_ThrowsNotSupported()
     {
         TraceLoader loader = new();
