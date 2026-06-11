@@ -50,6 +50,17 @@ internal interface ITraceReader
     ///  is narrowed to an explicit name, the busiest process automatically, or every
     ///  process when opted out. Ignored by single-process formats (speedscope).
     /// </param>
+    /// <param name="symbolOptions">
+    ///  Optional native-symbol resolution. <see langword="null"/> or
+    ///  <see cref="SymbolOptions.None"/> resolves managed frames from the trace's
+    ///  rundown only (offline); <see cref="SymbolOptions.WithCache"/> additionally
+    ///  fetches native runtime PDBs from the public symbol server. Ignored by formats
+    ///  with no native frames (speedscope).
+    /// </param>
     /// <returns>The normalized samples and quality signals.</returns>
-    TraceReadResult Read(string path, string? symbolsDirectory = null, ScopeRequest? scope = null);
+    TraceReadResult Read(
+        string path,
+        string? symbolsDirectory = null,
+        ScopeRequest? scope = null,
+        SymbolOptions? symbolOptions = null);
 }

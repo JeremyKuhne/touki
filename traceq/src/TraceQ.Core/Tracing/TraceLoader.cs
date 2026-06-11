@@ -68,6 +68,13 @@ public sealed class TraceLoader
     ///  (speedscope) and for the single-process EventPipe metrics (allocation,
     ///  exceptions).
     /// </param>
+    /// <param name="symbolOptions">
+    ///  Optional native-symbol resolution for the CPU metric. <see langword="null"/>
+    ///  or <see cref="SymbolOptions.None"/> resolves managed frames from the rundown
+    ///  only (offline); <see cref="SymbolOptions.WithCache"/> additionally fetches
+    ///  native runtime PDBs from the public symbol server. Consumed only by the CPU
+    ///  metric over a <see cref="TraceFormat.Etl"/> capture.
+    /// </param>
     /// <returns>The loaded trace.</returns>
     /// <exception cref="ArgumentException">
     ///  <paramref name="path"/> is <see langword="null"/>, empty, or not a valid file path.
@@ -83,7 +90,8 @@ public sealed class TraceLoader
         string path,
         TraceMetric metric,
         string? symbolsDirectory = null,
-        ScopeRequest? scope = null)
+        ScopeRequest? scope = null,
+        SymbolOptions? symbolOptions = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
 
@@ -99,7 +107,7 @@ public sealed class TraceLoader
 
         return metric switch
         {
-            TraceMetric.Cpu => LoadCpu(fullPath, reader, symbolsDirectory, scope),
+            TraceMetric.Cpu => LoadCpu(fullPath, reader, symbolsDirectory, scope, symbolOptions),
             TraceMetric.Allocations => LoadAllocations(fullPath, reader),
             TraceMetric.Exceptions => LoadExceptions(fullPath, reader),
             TraceMetric.ThreadTime => LoadThreadTime(fullPath, reader, scope),
@@ -115,9 +123,10 @@ public sealed class TraceLoader
         string fullPath,
         ITraceReader reader,
         string? symbolsDirectory,
-        ScopeRequest? scope)
+        ScopeRequest? scope,
+        SymbolOptions? symbolOptions)
     {
-        TraceReadResult result = reader.Read(fullPath, symbolsDirectory, scope);
+        TraceReadResult result = reader.Read(fullPath, symbolsDirectory, scope, symbolOptions);
         TraceInfo info = BuildInfo(
             fullPath,
             reader.Format,

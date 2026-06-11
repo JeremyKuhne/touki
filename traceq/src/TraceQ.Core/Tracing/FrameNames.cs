@@ -54,6 +54,27 @@ public static partial class FrameNames
         "JIT_"
     ];
 
+    /// <summary>
+    ///  The minimal fold set: only the synthetic sample markers, not the JIT-helper
+    ///  thunks. Used by the <c>--no-fold</c> / <c>--raw</c> option so the native
+    ///  runtime leaves (the GC, <c>memset</c> / <c>memcpy</c>, write barriers) rank on
+    ///  their own instead of being folded into their managed caller.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   The synthetic <c>CPU_TIME</c> / <c>UNMANAGED_CODE_TIME</c> leaf markers must
+    ///   stay folded even in "no fold" mode: every sample's self-time collapses onto
+    ///   that marker otherwise, which would report almost all time against one
+    ///   meaningless row rather than the real native leaves. So "no fold" means "fold
+    ///   only the markers", not "fold nothing".
+    ///  </para>
+    /// </remarks>
+    public static IReadOnlyList<string> MarkerOnlyFoldPatterns { get; } =
+    [
+        "CPU_TIME",
+        "UNMANAGED_CODE_TIME"
+    ];
+
     [GeneratedRegex(@"!([^(]+)")]
     private static partial Regex AfterModuleRegex();
 

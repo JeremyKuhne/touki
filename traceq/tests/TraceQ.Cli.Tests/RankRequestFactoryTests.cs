@@ -154,4 +154,69 @@ public sealed class RankRequestFactoryTests
             .Should().BeFalse();
         error.Should().Contain("only one of --root and --benchmark");
     }
+
+    [TestMethod]
+    public void ResolveSymbolOptions_Default_IsManagedOnly()
+    {
+        // No --native-symbols: the offline managed-only default, so the CPU read never
+        // reaches a symbol server.
+        SymbolOptions options = RankRequestFactory.ResolveSymbolOptions(nativeSymbols: false, symbolCache: "");
+
+        options.Should().BeSameAs(SymbolOptions.None);
+    }
+
+    [TestMethod]
+    public void ResolveSymbolOptions_NativeSymbols_OptsInToNativeResolution()
+    {
+        SymbolOptions options = RankRequestFactory.ResolveSymbolOptions(nativeSymbols: true, symbolCache: "");
+
+        options.ResolveNativeRuntime.Should().BeTrue();
+    }
+
+    [TestMethod]
+    public void ResolveSymbolOptions_SymbolCache_IsCarriedThrough()
+    {
+        SymbolOptions options = RankRequestFactory.ResolveSymbolOptions(nativeSymbols: true, symbolCache: @"C:\sym");
+
+        options.ResolveNativeRuntime.Should().BeTrue();
+        options.CacheDirectory.Should().Be(@"C:\sym");
+    }
+
+    [TestMethod]
+    public void TryResolveFold_NoOptions_LeavesNullForTheBuiltInDefault()
+    {
+        // Neither --fold nor --no-fold: null patterns signal Create to apply the
+        // built-in default fold list.
+        RankRequestFactory.TryResolveFold(fold: null, noFold: false, out string[]? patterns, out string? error)
+            .Should().BeTrue();
+        error.Should().BeNull();
+        patterns.Should().BeNull();
+    }
+
+    [TestMethod]
+    public void TryResolveFold_NoFold_FoldsOnlyTheSyntheticMarkers()
+    {
+        RankRequestFactory.TryResolveFold(fold: null, noFold: true, out string[]? patterns, out _)
+            .Should().BeTrue();
+        // Marker-only: the synthetic sample markers stay folded, but the JIT-helper
+        // thunks (Memmove, WriteBarrier, JIT_) do not, so native leaves rank raw.
+        patterns.Should().BeEquivalentTo(FrameNames.MarkerOnlyFoldPatterns);
+        patterns.Should().NotContain("JIT_");
+    }
+
+    [TestMethod]
+    public void TryResolveFold_ExplicitFold_IsPassedThrough()
+    {
+        RankRequestFactory.TryResolveFold(fold: ["MyHelper"], noFold: false, out string[]? patterns, out _)
+            .Should().BeTrue();
+        patterns.Should().BeEquivalentTo(["MyHelper"]);
+    }
+
+    [TestMethod]
+    public void TryResolveFold_BothOptions_IsAUsageError()
+    {
+        RankRequestFactory.TryResolveFold(fold: ["MyHelper"], noFold: true, out _, out string? error)
+            .Should().BeFalse();
+        error.Should().Contain("only one of --fold and --no-fold");
+    }
 }

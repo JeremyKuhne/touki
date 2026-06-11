@@ -29,6 +29,7 @@ namespace TraceQ.Cli;
 /// <param name="Symbols">Optional build-output directory whose embedded PDBs resolve managed frames.</param>
 /// <param name="Strict">Whether to trip the strict symbol-resolution exit gate.</param>
 /// <param name="Scope">The process scope (explicit name, automatic default, or all processes).</param>
+/// <param name="SymbolOptions">Native-symbol resolution, or <see langword="null"/> for managed-only (the offline default).</param>
 internal sealed record RankRequest(
     string Path,
     TraceMetric Metric,
@@ -39,4 +40,5 @@ internal sealed record RankRequest(
     OutputFormat Format,
     string? Symbols,
     bool Strict,
-    ScopeRequest? Scope = null);
+    ScopeRequest? Scope = null,
+    SymbolOptions? SymbolOptions = null);

@@ -29,10 +29,15 @@ internal sealed class SpeedscopeReader : ITraceReader
         path.EndsWith(".speedscope.json", StringComparison.OrdinalIgnoreCase);
 
     /// <inheritdoc/>
-    public TraceReadResult Read(string path, string? symbolsDirectory = null, ScopeRequest? scope = null)
+    public TraceReadResult Read(
+        string path,
+        string? symbolsDirectory = null,
+        ScopeRequest? scope = null,
+        SymbolOptions? symbolOptions = null)
     {
         // A speedscope profile carries no process information, so process scoping does
-        // not apply; the parameter is accepted for interface uniformity.
+        // not apply; likewise it carries no native frames, so symbolOptions does not
+        // apply. Both parameters are accepted for interface uniformity.
         using FileStream stream = File.OpenRead(path);
         using JsonDocument document = JsonDocument.Parse(stream);
         JsonElement root = document.RootElement;

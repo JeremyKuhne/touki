@@ -93,11 +93,12 @@ internal static class TraceExecution
         string? symbols,
         TextWriter error,
         [NotNullWhen(true)] out LoadedTrace? trace,
-        ScopeRequest? scope = null)
+        ScopeRequest? scope = null,
+        SymbolOptions? symbolOptions = null)
     {
         try
         {
-            trace = new TraceStore().Get(path, symbols, metric, scope);
+            trace = new TraceStore().Get(path, symbols, metric, scope, symbolOptions);
             return true;
         }
         catch (Exception ex) when (

@@ -286,6 +286,40 @@ public sealed class CliAppTests
     }
 
     [TestMethod]
+    public void Run_NativeSymbolsOnSpeedscope_BindsAndIsHarmlessNoOp()
+    {
+        // --native-symbols binds on the cpu verb; speedscope carries no native frames,
+        // so it is a no-op that reaches no symbol server (offline-safe) and still
+        // renders the ranking. This proves the option is wired without a network fetch.
+        (int exit, string output, _) = Run("cpu", Speedscope, "--native-symbols");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("CPU self-time");
+    }
+
+    [TestMethod]
+    public void Run_NoFold_BindsAndRenders()
+    {
+        // --no-fold binds on the cpu verb and folds only the synthetic markers; on the
+        // speedscope fixture it still renders a ranking.
+        (int exit, string output, _) = Run("cpu", Speedscope, "--no-fold");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("CPU self-time");
+    }
+
+    [TestMethod]
+    public void Run_NoFoldAndFold_ReturnsUsageError()
+    {
+        // --no-fold and --fold are mutually exclusive; the conflict is caught before any
+        // ranking, so it runs on every CI leg.
+        (int exit, _, string error) = Run("cpu", Speedscope, "--no-fold", "--fold", "Helper");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("only one of --fold and --no-fold");
+    }
+
+    [TestMethod]
     public void Run_LinesProcessAndAllProcesses_ReturnsUsageError()
     {
         // The scope options are wired into the lines verb and remain mutually
@@ -374,6 +408,31 @@ public sealed class CliAppTests
         exit.Should().Be(ExitCodes.Success);
         output.Should().Contain("processes by");
         output.Should().Contain("HotLoopBench");
+    }
+
+    [TestMethod]
+    public void Run_Classify_OnSpeedscope_RendersCategoryTable()
+    {
+        // classify reads the CPU view and buckets self-time by runtime work category;
+        // on the speedscope fixture (no native frames) it renders the table with every
+        // leaf in 'other'. Runs on every CI leg.
+        (int exit, string output, _) = Run("classify", Speedscope);
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("by work category");
+        output.Should().Contain("other");
+    }
+
+    [TestMethod]
+    public void Run_ClassifyJson_WritesSingleLineEnvelope()
+    {
+        (int exit, string output, _) = Run("classify", Speedscope, "--format", "json");
+
+        exit.Should().Be(ExitCodes.Success);
+        string json = output.Trim();
+        json.Should().NotContain("\n");
+        json.Should().Contain("\"schemaVersion\"");
+        json.Should().Contain("\"categories\"");
     }
 
     [TestMethod]

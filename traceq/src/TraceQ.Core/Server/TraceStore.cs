@@ -76,12 +76,18 @@ public sealed class TraceStore
     ///  cache keys on it for those metrics, so the same trace scoped two ways is cached
     ///  separately.
     /// </param>
+    /// <param name="symbolOptions">
+    ///  Optional native-symbol resolution. Consumed only by the CPU metric; the cache
+    ///  keys on it, so the same trace read with and without native symbols is cached
+    ///  separately. <see langword="null"/> is the managed-only offline default.
+    /// </param>
     /// <returns>The cached loaded trace.</returns>
     public LoadedTrace Get(
         string path,
         string? symbolsDirectory = null,
         TraceMetric metric = TraceMetric.Cpu,
-        ScopeRequest? scope = null)
+        ScopeRequest? scope = null,
+        SymbolOptions? symbolOptions = null)
     {
         string fullPath = Path.GetFullPath(path);
 
@@ -101,15 +107,22 @@ public sealed class TraceStore
             ? ScopeKey(scope)
             : "-";
 
+        // Only the CPU loader consumes symbolOptions (native resolution), so a trace
+        // read with native symbols caches separately from one without; the other
+        // metrics ignore it and share the "managed" fragment.
+        string symbolKey = metric == TraceMetric.Cpu
+            ? (symbolOptions ?? SymbolOptions.None).CacheKeyFragment()
+            : "managed";
+
         // Length-prefix the first path so the two components cannot be confused for a
         // different pair: '|' - like every other ASCII separator - is a legal POSIX
         // file-name character, so a plain "a|b" delimiter could collide ("a|b" + "c"
-        // versus "a" + "b|c"). The metric and scope prefixes keep a trace's distinct
-        // provider views and scopes from sharing one cache entry. Loading uses the
-        // normalized symbols path so a relative symbolsDirectory resolves exactly the
-        // way it was keyed.
-        string key = $"{(int)metric}:{scopeKey}:{fullPath.Length}|{fullPath}{fullSymbols}";
-        return _cache.GetOrAdd(key, _ => _loader.Load(fullPath, metric, fullSymbols, scope));
+        // versus "a" + "b|c"). The metric, scope, and symbol prefixes keep a trace's
+        // distinct provider views, scopes, and symbol modes from sharing one cache
+        // entry. Loading uses the normalized symbols path so a relative symbolsDirectory
+        // resolves exactly the way it was keyed.
+        string key = $"{(int)metric}:{scopeKey}:{symbolKey}:{fullPath.Length}|{fullPath}{fullSymbols}";
+        return _cache.GetOrAdd(key, _ => _loader.Load(fullPath, metric, fullSymbols, scope, symbolOptions));
     }
 
     // A stable cache-key fragment for a scope request: 'all' for all-processes, 'auto'

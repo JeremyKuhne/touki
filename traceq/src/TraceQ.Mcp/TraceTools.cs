@@ -15,11 +15,16 @@ namespace TraceQ.Mcp;
 
 /// <summary>
 ///  The curated MCP tool surface over the TraceQ analysis core: load a trace and
-///  query its quality signals, folded self/inclusive rankings, immediate callers,
-///  line-level attribution, two-trace diffs, the garbage-collection report, and a
-///  raw event query across speedscope, EventPipe (<c>.nettrace</c>), and ETW
+///  query its quality signals, the process inventory, folded self/inclusive rankings,
+///  the top-down call tree, immediate callers, line-level attribution, a runtime
+///  work-category breakdown, two-trace diffs, the garbage-collection and JIT reports,
+///  and a raw event query across speedscope, EventPipe (<c>.nettrace</c>), and ETW
 ///  (<c>.etl</c>) inputs, plus export a flame graph to a file. Every tool but
-///  <c>trace_export</c> is read-only; <c>trace_export</c> writes a file.
+///  <c>trace_export</c> is read-only; <c>trace_export</c> writes a file. Two tools -
+///  <c>trace_rank</c> and <c>trace_classify</c> - reach the Microsoft public symbol
+///  server and write a local symbol cache when their opt-in <c>nativeSymbols</c> flag
+///  is set, so both carry the open-world hint; with the flag off (the default) they
+///  stay offline and read-only like the rest.
 /// </summary>
 /// <remarks>
 ///  <para>
@@ -88,8 +93,9 @@ public sealed class TraceTools
     /// <param name="fold">Optional fold patterns; defaults to the built-in JIT-helper list.</param>
     /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
     /// <param name="process">Optional process-name substring scoping a multi-process .etl capture to one process tree.</param>
+    /// <param name="nativeSymbols">Resolve native runtime frames from the public symbol server (opt-in, network); cpu/.etl only.</param>
     /// <returns>The ranking envelope.</returns>
-    [McpServerTool(Name = "trace_rank", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
+    [McpServerTool(Name = "trace_rank", ReadOnly = true, Idempotent = true, OpenWorld = true, UseStructuredContent = true)]
     [Description(
         "Rank the hottest frames over a chosen provider metric. measure=self credits the executing leaf "
         + "(JIT-helper leaves folded into the real method that incurred them); measure=inclusive credits a "
@@ -112,14 +118,19 @@ public sealed class TraceTools
         [Description(
             "Optional process-name substring scoping a multi-process .etl capture to one process tree; omit "
             + "to auto-scope to the busiest. Ignored for single-process .nettrace/speedscope traces.")]
-        string process = "")
+        string process = "",
+        [Description(
+            "Resolve native runtime frames (GC, JIT, memset/memcpy) from the Microsoft public symbol server. "
+            + "Opt-in - it fetches over the network and caches locally. cpu metric over an .etl capture only; "
+            + "managed frames already resolve without it.")]
+        bool nativeSymbols = false)
     {
         TraceMetric resolved = ResolveMetric(metric);
         bool inclusive = ResolveMeasure(measure);
         RequirePositiveTop(top);
         IReadOnlyList<string> foldPatterns = ResolveFold(fold);
 
-        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols), resolved, ResolveScope(process));
+        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols), resolved, ResolveScope(process), ResolveSymbols(nativeSymbols));
         TraceInfo info = trace.Info;
         RankingResult ranking = inclusive
             ? trace.Aggregator.InclusiveTime(root, foldPatterns, top)
@@ -482,6 +493,165 @@ public sealed class TraceTools
     }
 
     /// <summary>
+    ///  Lists the processes a trace contains, ranked by CPU-sample weight, so a
+    ///  multi-process capture can be scoped to the right one before ranking.
+    /// </summary>
+    /// <param name="store">The trace cache (injected).</param>
+    /// <param name="path">Path to the trace file.</param>
+    /// <returns>The process-inventory envelope.</returns>
+    [McpServerTool(Name = "trace_processes", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
+    [Description(
+        "List the processes a trace contains, ranked by CPU-sample weight. This is the first move on a "
+        + "machine-wide .etl capture: see who is in it, then scope the ranking and drill-down tools to one with "
+        + "their 'process' parameter. Reads every process - it does not auto-scope to the busiest. A single-process "
+        + ".nettrace or speedscope trace lists just its one process.")]
+    public static AnalysisResult<ProcessListResult> Processes(
+        TraceStore store,
+        [Description("Path to a .speedscope.json, .nettrace, or .etl trace file.")] string path)
+    {
+        // The inventory's whole purpose is to reveal every process, so it opts out of
+        // the busiest-process auto-scope the ranking tools default to.
+        LoadedTrace trace = Load(store, path, symbols: null, TraceMetric.Cpu, ScopeRequest.AllProcesses);
+        TraceInfo info = trace.Info;
+        ProcessListResult processes = trace.Aggregator.Processes();
+
+        return new AnalysisResult<ProcessListResult>(processes, info.Warnings);
+    }
+
+    /// <summary>
+    ///  Returns the top-down call tree from the root into its callees, following the hot
+    ///  path down to the work that dominates it.
+    /// </summary>
+    /// <param name="store">The trace cache (injected).</param>
+    /// <param name="path">Path to the trace file.</param>
+    /// <param name="root">Optional substring scoping the tree to a frame's subtree.</param>
+    /// <param name="maxDepth">Maximum frame levels below the root to expand.</param>
+    /// <param name="minPercent">Minimum share of the scoped total, in percent, a node must have to appear.</param>
+    /// <param name="fold">Optional fold patterns; defaults to the built-in JIT-helper list.</param>
+    /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
+    /// <param name="process">Optional process-name substring scoping a multi-process .etl capture to one process tree.</param>
+    /// <returns>The call-tree envelope.</returns>
+    [McpServerTool(Name = "trace_tree", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
+    [Description(
+        "Top-down CPU call tree from a root frame into its callees, following the hot path down to the work that "
+        + "dominates it - the complement to trace_callers, which walks up. Each node carries its inclusive share; "
+        + "maxDepth caps how far below the root it expands and minPercent prunes nodes below a share of the scoped "
+        + "total so the tree stays to the meaningful paths. Scope to a subtree with root; omit it for the whole "
+        + "trace. JIT-helper leaves are folded into their caller.")]
+    public static AnalysisResult<CallTreeResult> Tree(
+        TraceStore store,
+        [Description("Path to a .speedscope.json, .nettrace, or .etl trace file.")] string path,
+        [Description("Optional substring of a frame name to scope the tree to its subtree; omit for the whole trace.")] string root = "",
+        [Description("Maximum number of frame levels below the root to expand.")] int maxDepth = 10,
+        [Description("Minimum share of the scoped total, in percent, a node must have to appear.")] double minPercent = 1.0,
+        [Description("Optional regex fold patterns; omit to use the built-in JIT-helper defaults.")] string[]? fold = null,
+        [Description(
+            "Optional build-output directory whose assemblies' embedded portable PDBs are extracted so "
+            + "managed frames resolve to source lines.")]
+        string symbols = "",
+        [Description(
+            "Optional process-name substring scoping a multi-process .etl capture to one process tree; omit "
+            + "to auto-scope to the busiest. Ignored for single-process .nettrace/speedscope traces.")]
+        string process = "")
+    {
+        if (maxDepth < 0 || maxDepth > FoldingAggregator.MaxTreeDepth)
+        {
+            throw new McpException($"maxDepth must be in [0, {FoldingAggregator.MaxTreeDepth}].");
+        }
+
+        if (minPercent < 0)
+        {
+            throw new McpException("minPercent must be 0 or greater.");
+        }
+
+        IReadOnlyList<string> foldPatterns = ResolveFold(fold);
+        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols), scope: ResolveScope(process));
+        TraceInfo info = trace.Info;
+        CallTreeResult tree = trace.Aggregator.CallTree(root, foldPatterns, maxDepth, minPercent);
+
+        return new AnalysisResult<CallTreeResult>(tree, info.Warnings);
+    }
+
+    /// <summary>
+    ///  Buckets CPU self-time by runtime work category - zeroing, copying, write-barrier,
+    ///  GC, JIT, or other - to answer where the time went at the machine level.
+    /// </summary>
+    /// <param name="store">The trace cache (injected).</param>
+    /// <param name="path">Path to the trace file.</param>
+    /// <param name="root">Optional substring scoping the classification to a subtree.</param>
+    /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
+    /// <param name="process">Optional process-name substring scoping a multi-process .etl capture to one process tree.</param>
+    /// <param name="nativeSymbols">Resolve native runtime frames from the public symbol server (opt-in, network); cpu/.etl only.</param>
+    /// <returns>The classification envelope.</returns>
+    [McpServerTool(Name = "trace_classify", ReadOnly = true, Idempotent = true, OpenWorld = true, UseStructuredContent = true)]
+    [Description(
+        "Bucket CPU self-time by runtime work category - zeroing, copying, write-barrier, GC, JIT, or other - to "
+        + "answer 'where did the time go: zeroing memory? copying? in the GC?'. The categories are recognized from "
+        + "native runtime frames, so pair this with nativeSymbols=true on an .etl capture; without resolved native "
+        + "symbols the runtime leaves fall in 'other' and the breakdown understates the real cost. Scope to a "
+        + "subtree with root.")]
+    public static AnalysisResult<ClassifyResult> Classify(
+        TraceStore store,
+        [Description("Path to a .speedscope.json, .nettrace, or .etl trace file.")] string path,
+        [Description("Optional substring of a frame name to scope the classification to its subtree.")] string root = "",
+        [Description(
+            "Optional build-output directory whose assemblies' embedded portable PDBs are extracted so "
+            + "managed frames resolve to source lines.")]
+        string symbols = "",
+        [Description(
+            "Optional process-name substring scoping a multi-process .etl capture to one process tree; omit "
+            + "to auto-scope to the busiest. Ignored for single-process .nettrace/speedscope traces.")]
+        string process = "",
+        [Description(
+            "Resolve native runtime frames (GC, JIT, memset/memcpy) from the Microsoft public symbol server so "
+            + "they classify instead of falling in 'other'. Opt-in - it fetches over the network and caches "
+            + "locally. cpu over an .etl capture only.")]
+        bool nativeSymbols = false)
+    {
+        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols), TraceMetric.Cpu, ResolveScope(process), ResolveSymbols(nativeSymbols));
+        TraceInfo info = trace.Info;
+        ClassifyResult classification = trace.Aggregator.Classify(root);
+
+        return new AnalysisResult<ClassifyResult>(classification, info.Warnings);
+    }
+
+    /// <summary>
+    ///  Returns the JIT-compilation report for a <c>.nettrace</c> EventPipe trace:
+    ///  the aggregate compile summary plus the costliest per-method records.
+    /// </summary>
+    /// <param name="path">Path to the trace file.</param>
+    /// <param name="top">Maximum per-method records to return, ranked by compile time.</param>
+    /// <returns>The JIT-report envelope.</returns>
+    [McpServerTool(Name = "trace_jit", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
+    [Description(
+        "JIT-compilation report for a .nettrace EventPipe trace: the method count, total and mean compile time, "
+        + "and the per-method records capped to the 'top' costliest compiles. Use it to judge startup or first-call "
+        + "JIT cost - a startup trace can compile thousands of methods. The aggregate summary always reflects every "
+        + "method; only the per-method detail is capped. Requires a .nettrace trace; .etl and speedscope inputs are "
+        + "rejected.")]
+    public static AnalysisResult<JitStatsResult> Jit(
+        [Description("Path to a .nettrace EventPipe trace file.")] string path,
+        [Description("Maximum number of per-method records to return, ranked by compile time.")] int top = 25)
+    {
+        RequirePositiveTop(top);
+        JitStatsResult full = ReadJitStats(path);
+
+        // Keep the full aggregate summary, but cap the per-method detail to the
+        // costliest compiles so a startup trace's thousands of methods cannot blow
+        // the output budget.
+        List<string> warnings = [];
+        IReadOnlyList<JitMethodRecord> shown = full.Methods;
+        if (shown.Count > top)
+        {
+            shown = [.. shown.OrderByDescending(static m => m.CompileMs).Take(top)];
+            warnings.Add($"Showing the top {top} of {full.MethodCount} methods by compile time.");
+        }
+
+        JitStatsResult report = full with { Methods = shown };
+        return new AnalysisResult<JitStatsResult>(report, warnings);
+    }
+
+    /// <summary>
     ///  Loads the <paramref name="metric"/> view of the trace, mapping the loader's
     ///  failure modes to a clean <see cref="McpException"/> rather than letting an
     ///  opaque exception propagate to the client.
@@ -491,11 +661,12 @@ public sealed class TraceTools
         string path,
         string? symbols,
         TraceMetric metric = TraceMetric.Cpu,
-        ScopeRequest? scope = null)
+        ScopeRequest? scope = null,
+        SymbolOptions? symbolOptions = null)
     {
         try
         {
-            return store.Get(path, symbols, metric, scope);
+            return store.Get(path, symbols, metric, scope, symbolOptions);
         }
         catch (Exception ex) when (
             ex is IOException
@@ -643,6 +814,32 @@ public sealed class TraceTools
     }
 
     /// <summary>
+    ///  Reads the JIT report for a <c>.nettrace</c> trace, applying the format guardrail
+    ///  and mapping the provider's failure modes to a clean <see cref="McpException"/>.
+    /// </summary>
+    private static JitStatsResult ReadJitStats(string path)
+    {
+        RequireNetTrace(path, "JIT report");
+
+        try
+        {
+            return new JitStatsProvider().Read(path);
+        }
+        catch (Exception ex) when (
+            ex is IOException
+            or UnauthorizedAccessException
+            or NotSupportedException
+            or InvalidOperationException
+            or FormatException
+            or ArgumentException)
+        {
+            // A missing, unreadable, or malformed .nettrace surfaces as a clean tool
+            // error rather than an unhandled exception.
+            throw new McpException(ex.Message);
+        }
+    }
+
+    /// <summary>
     ///  Reads an events page for a <c>.nettrace</c> trace, applying the format guardrail
     ///  and mapping the provider's failure modes to a clean <see cref="McpException"/>.
     /// </summary>
@@ -711,4 +908,9 @@ public sealed class TraceTools
     // value scopes a multi-process .etl capture to the named process tree.
     private static ScopeRequest? ResolveScope(string process) =>
         string.IsNullOrEmpty(process) ? null : ScopeRequest.ForProcess(process);
+
+    // Opt-in native runtime symbol resolution; the default cache directory is used.
+    // Off resolves managed frames from the rundown only (offline).
+    private static SymbolOptions ResolveSymbols(bool nativeSymbols) =>
+        nativeSymbols ? SymbolOptions.WithCache() : SymbolOptions.None;
 }

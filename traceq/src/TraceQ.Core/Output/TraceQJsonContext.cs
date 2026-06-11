@@ -41,15 +41,18 @@ namespace TraceQ.Output;
 [JsonSerializable(typeof(AnalysisResult<SourceHeatmapResult>))]
 [JsonSerializable(typeof(AnalysisResult<CallTreeResult>))]
 [JsonSerializable(typeof(AnalysisResult<ProcessListResult>))]
+[JsonSerializable(typeof(AnalysisResult<ClassifyResult>))]
 [JsonSerializable(typeof(AnalysisResult<RankingDiffResult>))]
 [JsonSerializable(typeof(AnalysisResult<JitStatsResult>))]
 [JsonSerializable(typeof(AnalysisResult<GcStatsResult>))]
 [JsonSerializable(typeof(AnalysisResult<EventQueryResult>))]
 [JsonSerializable(typeof(AnalysisResult<ExportResult>))]
 // Tool-parameter types the MCP head binds through these same options but that no result
-// type reaches transitively: the optional `fold` regex array. The scalar parameter types
-// (string, int) are already reached through the result records above.
+// type reaches transitively: the optional `fold` regex array, and `bool` (the
+// `nativeSymbols` tool parameter - no result record carries a bool). The other scalar
+// parameter types (string, int) are already reached through the result records above.
 [JsonSerializable(typeof(string[]))]
+[JsonSerializable(typeof(bool))]
 internal sealed partial class TraceQJsonContext : JsonSerializerContext
 {
 }

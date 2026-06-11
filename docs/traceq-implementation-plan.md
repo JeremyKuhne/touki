@@ -6,10 +6,14 @@ its findings back into the tool - see [§7](#7-dogfooding-hardening-2026-06-10-e
 Shipped: process scoping on the line-level verbs and the MCP tools (A1), a
 sample-count busiest-process auto-scope (A2), a `processes` inventory verb (A3),
 the [tools/Capture-EtwTrace.ps1](../tools/Capture-EtwTrace.ps1) capture wrapper
-(C1), and the rewritten ETW skill (D). **What's next: the runtime-symbol plan
-([§7.6](#76-whats-next-the-runtime-symbol-plan-managed--unmanaged))** - resolve
-managed *and* unmanaged runtime symbols so a profile can say where time actually
-goes (zeroing memory? copying strings?), then resume the product milestones at
+(C1), and the rewritten ETW skill (D). **Managed runtime symbols: verified
+(2026-06-11)** - a probe of real captures confirmed .NET runtime/framework
+managed methods already resolve from the CLR rundown on both TFMs (net10 R2R at
+100%, net481 NGEN managed leaves resolve), pinned by a regression test; no
+managed-symbol work is needed (§7.6). **What's next: native runtime symbols
+([§7.6](#76-whats-next-the-runtime-symbol-plan-managed--unmanaged))** - the
+opt-in symbol-server path for the unmanaged ~10% (zeroing / copying / GC), so a
+profile can name where that time goes, then resume the product milestones at
 M3½ (promotion).
 **Progress (2026-06-09):** M0 complete (PR #182). M1's analysis core is complete and M2 (the CLI head) is the active milestone. M1 landings - core relocation merged (PR #183); provider/engine seam laid (`StackSampleSource` + `MetricInfo`); output-contract envelope landed (`AnalysisResult<T>` + compact, rounded, deterministic JSON with golden tests); symbol gate landed (`SymbolGate`; `--strict`/exit-3 deferred to M2); tier-2 LRU landed (`LruCache`); token budget landed (`OutputBudget`; truncation + text renderer deferred to M2); fixture corpus + parity harness landed for the net10 EventPipe half (PR #186); allocation provider landed (`AllocationProvider` reads `GCAllocationTick` into byte-weighted stacks ranked by the same metric-generic engine - `SampleStack.Weight`); GC-stats provider landed (`GcStatsProvider` reads `TraceGC` structured records, reusing the GC-verbose fixture). **ThreadTime landed (ETW):** the earlier EventPipe spike was a strictly worse CPU view (no `BLOCKED_TIME`, since EventPipe samples only running threads), but the net481 ETW capture carries context switches, so `ThreadTimeProvider` reconstructs each thread's running and blocked intervals into elapsed-millisecond stacks (`MetricInfo.ThreadTime`) the metric-generic engine ranks unchanged. Export engine verb landed (`SpeedscopeExporter` writes any provider's stacks to the speedscope sampled format, metric-aware unit). Filter/scope grammar subset landed (`ScopeFilter` include/exclude on frame names; sample-level time/process scoping deferred for model + fixture reasons). Diff engine verb landed (`RankingDiff` compares two rankings - provider-agnostic regression/improvement deltas). Group transform landed (`GroupTransform` collapses a matched module's frames into a `module!` box). Chromium export landed (`ChromiumExporter` writes any provider's stacks to the Chrome Trace Event Format). EventQuery provider landed (`EventQueryProvider` paginated raw-event query with payload cap). JitStats provider landed (`JitStatsProvider` per-method JIT compile-time / size / tier records, with a tuned `JitLoop` smoke fixture). Steering-hint taxonomy landed (`SteeringHints` turns a ranking, callers, or diff result into the canonical next-step nudge). The net481 ETW (`.etl`) corpus half landed: an `EtwLoop` benchmark captured under the ETW profiler with context-switch keywords, a process-tree relog `trim` (native-only; the managed-JIT limit and the physical-trim follow-up are captured in [traceq-etl-trimming.md](traceq-etl-trimming.md)), and a committed ~1 MB multi-process scenario fixture. Process-tree scoping landed (`ProcessScope` + read-time filtering in the ETL/EventPipe reader): a machine-wide capture is scoped losslessly to the workload process tree and its children at analysis time, resolving the workload's managed frames. The tier-1 ETLX disk cache is deferred with reason (TraceEvent already caches `.nettrace`/`.etl` -> `.etlx` on both paths; a custom cache adds nothing measurable without the elevated `.etl` half). ThreadTime landed over the ETW capture (`ThreadTimeProvider`: running + blocked intervals into elapsed-millisecond stacks). The O1 cross-machine hand-off spike passed: a Windows-converted `.etlx` resolves managed frames byte-identically on Ubuntu 26.04, so the hand-off is advertised (only the `.etl` -> `.etlx` conversion stays Windows-only). Exceptions provider landed (`ExceptionsProvider` reads `Exception/Start` events into count-weighted throw-site stacks). The text renderer (landed in M2) and the grouping altitude (`GroupTransform`, landed in M1) are no longer outstanding, so the only deferred M1 work is the sample-level time- and process-filter altitudes (M1 step 5, parked for want of fixture data - distinct from the read-time `ProcessScope`, which is already built). **M2 (CLI head):** the engine verbs `rank`/`cpu`/`callers`/`lines`/`heatmap`/`diff`/`tree`/`export` have merged (PRs #195-198); the fifth slice has wired the provider-selection seam (a `TraceMetric` selector threaded through `TraceStore` -> `TraceLoader`, which dispatches to each provider and synthesizes the `TraceInfo` for the non-CPU families) and lit up the three stack-source family shortcuts - `alloc`, `exceptions`, and `threadtime` - each selectable as `rank --metric <name>` or its own verb (PR #199), and added the three report verbs `gcstats` / `jitstats` / `events` (structured records rather than rankable stacks, each with its own executor and renderer), and wired the `--process` / `--all-processes` scope options onto the stack-ranking verbs (a `ScopeRequest` intent the loader resolves to a process tree, defaulting to the busiest process automatically). M2's verb surface is complete, and the CLI head is closed out: the `--benchmark` scope option (frame-based, presets the root to the BenchmarkDotNet workload wrapper) and the `convert` / `clean` file-op verbs landed, the CLI packages as a local `dotnet tool` (an exit criterion), and a CI help-lint guards the help/README contract. `heap` stays unbuilt (no provider yet, Addendum A capture work); `trim` stays parked (the relog rewrite resolves native frames only - see traceq-etl-trimming.md); the eval-task exit criterion rides the M5 harness. See the M2 section for detail.
 **Date:** 2026-06-04
@@ -260,8 +264,22 @@ Help is treated as a build artifact (**landed**): the README carries an examples
 > budget was re-measured (~4.4k tokens for nine tools) and the ceiling raised to 6000.
 > **Only the MCP Inspector smoke remains** (a manual check); `trace_trim` stays parked
 > with the `trim` verb.
+>
+> **Surface parity with the CLI (later pass).** The "rich family reports stay
+> CLI-first" stance below was revisited so an agent reaches the same analyses a human
+> does. Four tools joined the curated set - `trace_processes` (the process inventory),
+> `trace_tree` (the top-down call tree), `trace_classify` (the runtime work-category
+> breakdown), and `trace_jit` (the JIT report, a `.nettrace` report alongside
+> `trace_gc`) - taking it to **thirteen tools**. `alloc` and `exceptions` were already
+> reachable through `trace_rank`'s `metric` parameter, so the only analysis verbs that
+> stay CLI-only are the file-management verbs `convert` and `clean` (they manage the
+> on-disk ETLX cache rather than return an analysis, and `clean` deletes files - both
+> sit outside the read-only analysis contract). The output schemas put the
+> thirteen-tool surface at ~6.7k tokens (~520 each), so the schema-budget ceiling was
+> re-measured and raised to 8000 - still a bloat guard (a doubled description or a few
+> unplanned tools trips it), not a cap on legitimate parity.
 
-The eight tools (§5.2) re-cut over the same services: port touki.mcp's description text, apply the D5 consolidation (`trace_rank` with `metric`), fold `list_threads` into `trace_info`, add `trace_gc`/`trace_diff`/`trace_query_events`. The broadened surface (section 1A) raises the consolidation stakes, not the tool count: the **engine** tools take a `metric`/provider parameter, so `trace_rank(metric: cpu|threadtime|alloc|…)` is *one* tool spanning every family rather than one tool per family - the token budget below is what forces this. `trace_export` and `trace_trim` join the curated set (they are how an agent hands a human a flame graph or shrinks a trace); the rich family reports (`alloc`/`jit`/`exceptions`/`heap`) stay CLI-first and are promoted to MCP only when an eval task demands it (backlog O4). Annotations (`readOnlyHint` et al.), `outputSchema` + `structuredContent` where the C# SDK supports them, the server `instructions` field carrying the workflow summary, and `traceq mcp` hosting with stderr-only logging.
+The eight tools (§5.2) re-cut over the same services: port touki.mcp's description text, apply the D5 consolidation (`trace_rank` with `metric`), fold `list_threads` into `trace_info`, add `trace_gc`/`trace_diff`/`trace_query_events`. The broadened surface (section 1A) raises the consolidation stakes, not the tool count: the **engine** tools take a `metric`/provider parameter, so `trace_rank(metric: cpu|threadtime|alloc|…)` is *one* tool spanning every family rather than one tool per family - the token budget below is what forces this. `trace_export` and `trace_trim` join the curated set (they are how an agent hands a human a flame graph or shrinks a trace); the rich family reports were initially CLI-first and promoted to MCP only as eval tasks demanded (backlog O4), but the surface was later brought to parity with the analysis verbs (see the parity-pass update above), leaving only the `heap` family (future) and the file-management verbs `convert`/`clean` CLI-only. Annotations (`readOnlyHint` et al.), `outputSchema` + `structuredContent` where the C# SDK supports them, the server `instructions` field carrying the workflow summary, and `traceq mcp` hosting with stderr-only logging.
 
 Two CI checks born here and kept forever: the **stdout-purity test** (run the server under load, including a deliberately chatty logging provider, and assert nothing but JSON-RPC reaches stdout) and the **schema budget check** (serialize the tool list, fail above a token budget - ~4.4k tokens for the nine-tool surface once each tool advertises an output schema, with the ceiling set at 6000 to fit the curated set). Both landed in `tools/Test-McpServer.ps1`, which also runs a scripted `tools/call` round-trip. The MCP Inspector smoke is a manual check.
 
@@ -298,7 +316,7 @@ Build the §10 harness: headless Claude Code + Copilot CLI runners, the four arm
 
 ### Post-1.0 backlog (eval- and demand-gated, per design §13)
 
-`collect` verb (CLI-only, Windows-only, elevation-guarded — D11) · promote `alloc`/`jit`/`exceptions` to MCP when an eval task demands it (O4) · MCP Tasks for large-trace first load (O2) · MCP Apps flame-graph view (O3) · kernel ETW surface as a bounded expansion (O7) · Linux `perf`/LTTng ingestion · **net-mem provider** by factoring `GCHeapSimulator` into TraceEvent (Addendum A) · **heap-snapshot capture** via the HeapDump assembly or `dotnet-gcdump` (Addendum A) · **trigger-based + circular-buffer collection** (Addendum A) · **PMC / CPU-counter** capture and ranking (section 1A) · promote the retention / leak-diff family to MCP · richer interactive views (Perfetto deep-link, MCP Apps).
+`collect` verb (CLI-only, Windows-only, elevation-guarded — D11) · promote the `heap` family to MCP when an eval task demands it (O4; `alloc`/`exceptions` are reachable via `trace_rank`'s `metric`, and `jit`/`processes`/`tree`/`classify` shipped as `trace_jit`/`trace_processes`/`trace_tree`/`trace_classify`) · MCP Tasks for large-trace first load (O2) · MCP Apps flame-graph view (O3) · kernel ETW surface as a bounded expansion (O7) · Linux `perf`/LTTng ingestion · **net-mem provider** by factoring `GCHeapSimulator` into TraceEvent (Addendum A) · **heap-snapshot capture** via the HeapDump assembly or `dotnet-gcdump` (Addendum A) · **trigger-based + circular-buffer collection** (Addendum A) · **PMC / CPU-counter** capture and ranking (section 1A) · promote the retention / leak-diff family to MCP · richer interactive views (Perfetto deep-link, MCP Apps).
 
 ---
 
@@ -483,13 +501,27 @@ artifact. The goal is to name that work.
 
 **Two symbol classes, two very different costs:**
 
-1. **Managed frames - already resolved, free.** JITted method names come from the
-   CLR rundown baked into every trace, so `System.*`, `Buffer.Memmove`,
-   `SpanHelpers.*`, and all touki methods already rank correctly on both TFMs with
-   no symbol server. The one gap is **precompiled images**: on net481 the
-   Framework assemblies are NGENed (need NGEN PDBs), and on net10 the runtime
-   ships ReadyToRun (R2R) - TraceEvent usually resolves R2R from the rundown, but
-   this must be verified, not assumed.
+1. **Managed frames - already resolved, free (VERIFIED 2026-06-11).** Method names
+   come from the CLR rundown baked into every trace, so `System.*`,
+   `Buffer.Memmove`, `SpanHelpers.*`, and all touki methods rank correctly on both
+   TFMs with no symbol server. The precompiled-image question - net481 NGEN and
+   net10 ReadyToRun (R2R) - is now **answered, not assumed**: a probe of real
+   captures showed net10 EventPipe resolves R2R framework methods at **100%**
+   (`System.String.Ctor`, `System.MemoryExtensions.IndexOf`,
+   `System.Reflection.*`), and a full net481 ETW capture resolves NGEN framework
+   methods (`System.Runtime.InteropServices.MemoryMarshal.GetReference`,
+   `System.Buffers.DefaultArrayPool...`, `System.IO.PathInternal.*`) - the only
+   unresolved leaves there are **native** (the ~10% `?`), not managed. So there is
+   **no managed-symbol work to do** for the captures traceq's profilers produce;
+   `Load_NetTrace_ResolvesDotNetRuntimeManagedMethods` pins net10 R2R resolution as
+   a regression guard. Two caveats: (a) a trace whose CLR rundown was **stripped**
+   (the committed, relog-trimmed `etw.etl` fixture resolves at ~1%) loses managed
+   names - that is a trimming artifact, not a resolution gap, and is why the net481
+   NGEN case is verified manually but not yet pinned by a committed fixture (it
+   needs a managed-resolving `.etl` release asset, per the fixture strategy);
+   (b) the aggregate resolution rate conflates managed and native, so a net481
+   capture can read "44%" while every managed leaf resolves - the `SymbolGate`
+   warning already hedges this ("managed-method rankings remain usable").
 2. **Native runtime frames - the missing 10%, needs a symbol server.** These are
    the frames that answer the question, and they live in unmanaged modules whose
    PDBs are on the **Microsoft public symbol server**
@@ -513,13 +545,16 @@ samples are fetched - bounding the download to what the trace actually hit, not
 every loaded DLL. The current offline, deterministic, local-PDB-only mode stays
 the **default**.
 
-**Phase 2 - precompiled-image PDBs.** For NGEN modules (net481), call
-`SymbolReader.GenerateNGenSymbolsForModule` during the read (TraceEvent
-regenerates the NGEN PDB from the native image locally; Windows-only). We
-confirmed BDN's `EtwProfiler` writes **no** `.etl.ngenpdb` folder, so
-analysis-time generation is the only path. For net10, verify R2R frames resolve
-from the rundown; if not, the R2R PDB comes from the same symbol server as the
-native modules.
+**Phase 2 - precompiled-image PDBs (managed names: not needed; see below).**
+The verification above settles this for the *managed* case: NGEN (net481) and R2R
+(net10) framework method **names already resolve from the CLR rundown**, so no
+`SymbolReader.GenerateNGenSymbolsForModule` call or R2R PDB fetch is required to
+get managed runtime symbols. NGEN-PDB generation only becomes relevant for two
+narrower needs that are not the current ask: **(a)** managed **line numbers**
+inside precompiled framework code (the rundown carries names, not source lines),
+and **(b)** rehydrating managed names from a capture whose rundown was stripped.
+Both are deferred until an eval task demands them; for now Phase 2 is a no-op for
+the "get managed runtime symbols" goal, which is already met.
 
 **Phase 3 - surface the work (the part that actually answers the question).**
 The default fold list *hides* exactly these frames: it folds `memmove`,

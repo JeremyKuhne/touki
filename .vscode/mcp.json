@@ -5,6 +5,17 @@
         "microsoft-learn": {
             "type": "http",
             "url": "https://learn.microsoft.com/api/mcp"
+        },
+        // Local traceq trace-analysis server (incubating under traceq/). Points at the
+        // built Release DLL for fast startup and clean stdout; rebuild with
+        // `dotnet build traceq/src/TraceQ.Mcp/TraceQ.Mcp.csproj -c Release` and restart
+        // the server after changing traceq. See docs/traceq-local-demo.md.
+        "traceq": {
+            "type": "stdio",
+            "command": "dotnet",
+            "args": [
+                "${workspaceFolder}/traceq/src/TraceQ.Mcp/bin/Release/net10.0/TraceQ.Mcp.dll"
+            ]
         }
     }
 }
