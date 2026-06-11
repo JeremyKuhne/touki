@@ -264,8 +264,22 @@ Help is treated as a build artifact (**landed**): the README carries an examples
 > budget was re-measured (~4.4k tokens for nine tools) and the ceiling raised to 6000.
 > **Only the MCP Inspector smoke remains** (a manual check); `trace_trim` stays parked
 > with the `trim` verb.
+>
+> **Surface parity with the CLI (later pass).** The "rich family reports stay
+> CLI-first" stance below was revisited so an agent reaches the same analyses a human
+> does. Four tools joined the curated set - `trace_processes` (the process inventory),
+> `trace_tree` (the top-down call tree), `trace_classify` (the runtime work-category
+> breakdown), and `trace_jit` (the JIT report, a `.nettrace` report alongside
+> `trace_gc`) - taking it to **thirteen tools**. `alloc` and `exceptions` were already
+> reachable through `trace_rank`'s `metric` parameter, so the only analysis verbs that
+> stay CLI-only are the file-management verbs `convert` and `clean` (they manage the
+> on-disk ETLX cache rather than return an analysis, and `clean` deletes files - both
+> sit outside the read-only analysis contract). The output schemas put the
+> thirteen-tool surface at ~6.7k tokens (~520 each), so the schema-budget ceiling was
+> re-measured and raised to 8000 - still a bloat guard (a doubled description or a few
+> unplanned tools trips it), not a cap on legitimate parity.
 
-The eight tools (§5.2) re-cut over the same services: port touki.mcp's description text, apply the D5 consolidation (`trace_rank` with `metric`), fold `list_threads` into `trace_info`, add `trace_gc`/`trace_diff`/`trace_query_events`. The broadened surface (section 1A) raises the consolidation stakes, not the tool count: the **engine** tools take a `metric`/provider parameter, so `trace_rank(metric: cpu|threadtime|alloc|…)` is *one* tool spanning every family rather than one tool per family - the token budget below is what forces this. `trace_export` and `trace_trim` join the curated set (they are how an agent hands a human a flame graph or shrinks a trace); the rich family reports (`alloc`/`jit`/`exceptions`/`heap`) stay CLI-first and are promoted to MCP only when an eval task demands it (backlog O4). Annotations (`readOnlyHint` et al.), `outputSchema` + `structuredContent` where the C# SDK supports them, the server `instructions` field carrying the workflow summary, and `traceq mcp` hosting with stderr-only logging.
+The eight tools (§5.2) re-cut over the same services: port touki.mcp's description text, apply the D5 consolidation (`trace_rank` with `metric`), fold `list_threads` into `trace_info`, add `trace_gc`/`trace_diff`/`trace_query_events`. The broadened surface (section 1A) raises the consolidation stakes, not the tool count: the **engine** tools take a `metric`/provider parameter, so `trace_rank(metric: cpu|threadtime|alloc|…)` is *one* tool spanning every family rather than one tool per family - the token budget below is what forces this. `trace_export` and `trace_trim` join the curated set (they are how an agent hands a human a flame graph or shrinks a trace); the rich family reports were initially CLI-first and promoted to MCP only as eval tasks demanded (backlog O4), but the surface was later brought to parity with the analysis verbs (see the parity-pass update above), leaving only the `heap` family (future) and the file-management verbs `convert`/`clean` CLI-only. Annotations (`readOnlyHint` et al.), `outputSchema` + `structuredContent` where the C# SDK supports them, the server `instructions` field carrying the workflow summary, and `traceq mcp` hosting with stderr-only logging.
 
 Two CI checks born here and kept forever: the **stdout-purity test** (run the server under load, including a deliberately chatty logging provider, and assert nothing but JSON-RPC reaches stdout) and the **schema budget check** (serialize the tool list, fail above a token budget - ~4.4k tokens for the nine-tool surface once each tool advertises an output schema, with the ceiling set at 6000 to fit the curated set). Both landed in `tools/Test-McpServer.ps1`, which also runs a scripted `tools/call` round-trip. The MCP Inspector smoke is a manual check.
 
@@ -302,7 +316,7 @@ Build the §10 harness: headless Claude Code + Copilot CLI runners, the four arm
 
 ### Post-1.0 backlog (eval- and demand-gated, per design §13)
 
-`collect` verb (CLI-only, Windows-only, elevation-guarded — D11) · promote `alloc`/`jit`/`exceptions` to MCP when an eval task demands it (O4) · MCP Tasks for large-trace first load (O2) · MCP Apps flame-graph view (O3) · kernel ETW surface as a bounded expansion (O7) · Linux `perf`/LTTng ingestion · **net-mem provider** by factoring `GCHeapSimulator` into TraceEvent (Addendum A) · **heap-snapshot capture** via the HeapDump assembly or `dotnet-gcdump` (Addendum A) · **trigger-based + circular-buffer collection** (Addendum A) · **PMC / CPU-counter** capture and ranking (section 1A) · promote the retention / leak-diff family to MCP · richer interactive views (Perfetto deep-link, MCP Apps).
+`collect` verb (CLI-only, Windows-only, elevation-guarded — D11) · promote the `heap` family to MCP when an eval task demands it (O4; `alloc`/`exceptions` are reachable via `trace_rank`'s `metric`, and `jit`/`processes`/`tree`/`classify` shipped as `trace_jit`/`trace_processes`/`trace_tree`/`trace_classify`) · MCP Tasks for large-trace first load (O2) · MCP Apps flame-graph view (O3) · kernel ETW surface as a bounded expansion (O7) · Linux `perf`/LTTng ingestion · **net-mem provider** by factoring `GCHeapSimulator` into TraceEvent (Addendum A) · **heap-snapshot capture** via the HeapDump assembly or `dotnet-gcdump` (Addendum A) · **trigger-based + circular-buffer collection** (Addendum A) · **PMC / CPU-counter** capture and ranking (section 1A) · promote the retention / leak-diff family to MCP · richer interactive views (Perfetto deep-link, MCP Apps).
 
 ---
 

@@ -16,6 +16,7 @@ public sealed class TraceToolsTests
     private const string Speedscope = "folding.speedscope.json";
     private const string Alloc = "alloc.nettrace";
     private const string Exceptions = "exceptions.nettrace";
+    private const string Jit = "jit.nettrace";
     private const string Etw = "etw.etl";
 
     private static string FixturePath(string name) =>
@@ -339,6 +340,117 @@ public sealed class TraceToolsTests
         AnalysisResult<GcStatsResult> envelope = TraceTools.Gc(FixturePath(Alloc), top: 1);
 
         envelope.Result.Gcs.Count.Should().BeLessThanOrEqualTo(1);
+    }
+
+    [TestMethod]
+    public void Processes_Speedscope_ListsTheSingleProcess()
+    {
+        TraceStore store = new();
+
+        AnalysisResult<ProcessListResult> envelope = TraceTools.Processes(store, FixturePath(Speedscope));
+
+        AssertEnvelope(envelope);
+        envelope.Result.Processes.Should().NotBeEmpty();
+        envelope.Result.TotalSamples.Should().BeGreaterThan(0);
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Processes_Etw_RanksEveryProcessByWeight()
+    {
+        TraceStore store = new();
+
+        AnalysisResult<ProcessListResult> envelope = TraceTools.Processes(store, FixturePath(Etw));
+
+        AssertEnvelope(envelope);
+        // The inventory reads every process rather than auto-scoping to the busiest,
+        // and reports them highest weight first.
+        envelope.Result.Processes.Should().NotBeEmpty();
+        envelope.Result.Processes.Should().BeInDescendingOrder(static p => p.Weight);
+    }
+
+    [TestMethod]
+    public void Tree_Speedscope_ReturnsRootedCallTree()
+    {
+        TraceStore store = new();
+
+        AnalysisResult<CallTreeResult> envelope = TraceTools.Tree(store, FixturePath(Speedscope));
+
+        AssertEnvelope(envelope);
+        envelope.Result.ScopeWeight.Should().BeGreaterThan(0.0);
+        envelope.Result.Root.Children.Should().NotBeEmpty();
+    }
+
+    [TestMethod]
+    public void Tree_NegativeMaxDepth_Throws()
+    {
+        TraceStore store = new();
+
+        Action act = () => TraceTools.Tree(store, FixturePath(Speedscope), maxDepth: -1);
+
+        act.Should().Throw<McpException>().WithMessage("*maxDepth*");
+    }
+
+    [TestMethod]
+    public void Tree_NegativeMinPercent_Throws()
+    {
+        TraceStore store = new();
+
+        Action act = () => TraceTools.Tree(store, FixturePath(Speedscope), minPercent: -1.0);
+
+        act.Should().Throw<McpException>().WithMessage("*minPercent*");
+    }
+
+    [TestMethod]
+    public void Classify_Speedscope_BucketsSelfTimeByCategory()
+    {
+        TraceStore store = new();
+
+        AnalysisResult<ClassifyResult> envelope = TraceTools.Classify(store, FixturePath(Speedscope));
+
+        AssertEnvelope(envelope);
+        envelope.Result.ScopeWeight.Should().BeGreaterThan(0.0);
+        envelope.Result.Categories.Should().NotBeEmpty();
+    }
+
+    [TestMethod]
+    public void Jit_NetTrace_ReturnsCompileSummary()
+    {
+        AnalysisResult<JitStatsResult> envelope = TraceTools.Jit(FixturePath(Jit));
+
+        AssertEnvelope(envelope);
+        envelope.Result.MethodCount.Should().BeGreaterThan(0);
+        envelope.Result.Methods.Should().NotBeEmpty();
+        envelope.Result.TotalCompileMs.Should().BeGreaterThan(0.0);
+    }
+
+    [TestMethod]
+    public void Jit_NonNetTraceInput_ThrowsMcpException()
+    {
+        // The JIT report parses the EventPipe format; an .etl or speedscope is rejected
+        // up front by the extension guardrail.
+        Action act = () => TraceTools.Jit(FixturePath(Speedscope));
+
+        act.Should().Throw<McpException>().WithMessage("*requires a .nettrace*");
+    }
+
+    [TestMethod]
+    public void Jit_NonPositiveTop_Throws()
+    {
+        Action act = () => TraceTools.Jit(FixturePath(Jit), top: 0);
+
+        act.Should().Throw<McpException>().WithMessage("*top must be 1 or greater*");
+    }
+
+    [TestMethod]
+    public void Jit_Top_CapsPerMethodDetail()
+    {
+        // The aggregate summary always reflects every method, but the per-method detail
+        // list is capped to 'top' so a startup trace's thousands of methods cannot blow
+        // the output budget.
+        AnalysisResult<JitStatsResult> envelope = TraceTools.Jit(FixturePath(Jit), top: 1);
+
+        envelope.Result.Methods.Count.Should().BeLessThanOrEqualTo(1);
     }
 
     [TestMethod]
