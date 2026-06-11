@@ -74,11 +74,26 @@ internal static class RankRequestFactory
         string? symbols,
         OutputFormat format,
         bool strict,
-        ScopeRequest? scope = null)
+        ScopeRequest? scope = null,
+        SymbolOptions? symbolOptions = null)
     {
         IReadOnlyList<string> foldPatterns = fold is { Count: > 0 } ? fold : FrameNames.DefaultFoldPatterns;
-        return new RankRequest(trace, metric, root, top, foldPatterns, measure, format, symbols, strict, scope);
+        return new RankRequest(
+            trace, metric, root, top, foldPatterns, measure, format, symbols, strict, scope, symbolOptions);
     }
+
+    /// <summary>
+    ///  Builds the native-symbol options from the two verb options: the
+    ///  <c>--native-symbols</c> opt-in and the optional <c>--symbol-cache</c> directory.
+    /// </summary>
+    /// <param name="nativeSymbols">Whether <c>--native-symbols</c> was set.</param>
+    /// <param name="symbolCache">The <c>--symbol-cache</c> directory, or empty for the default.</param>
+    /// <returns>
+    ///  <see cref="SymbolOptions.WithCache"/> when native resolution was requested,
+    ///  otherwise <see cref="SymbolOptions.None"/> (the offline managed-only default).
+    /// </returns>
+    public static SymbolOptions ResolveSymbolOptions(bool nativeSymbols, string symbolCache) =>
+        nativeSymbols ? SymbolOptions.WithCache(symbolCache) : SymbolOptions.None;
 
     /// <summary>
     ///  Builds the process-scope request from the two mutually exclusive verb options:

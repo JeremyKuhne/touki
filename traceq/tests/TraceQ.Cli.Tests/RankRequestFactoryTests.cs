@@ -154,4 +154,31 @@ public sealed class RankRequestFactoryTests
             .Should().BeFalse();
         error.Should().Contain("only one of --root and --benchmark");
     }
+
+    [TestMethod]
+    public void ResolveSymbolOptions_Default_IsManagedOnly()
+    {
+        // No --native-symbols: the offline managed-only default, so the CPU read never
+        // reaches a symbol server.
+        SymbolOptions options = RankRequestFactory.ResolveSymbolOptions(nativeSymbols: false, symbolCache: "");
+
+        options.Should().BeSameAs(SymbolOptions.None);
+    }
+
+    [TestMethod]
+    public void ResolveSymbolOptions_NativeSymbols_OptsInToNativeResolution()
+    {
+        SymbolOptions options = RankRequestFactory.ResolveSymbolOptions(nativeSymbols: true, symbolCache: "");
+
+        options.ResolveNativeRuntime.Should().BeTrue();
+    }
+
+    [TestMethod]
+    public void ResolveSymbolOptions_SymbolCache_IsCarriedThrough()
+    {
+        SymbolOptions options = RankRequestFactory.ResolveSymbolOptions(nativeSymbols: true, symbolCache: @"C:\sym");
+
+        options.ResolveNativeRuntime.Should().BeTrue();
+        options.CacheDirectory.Should().Be(@"C:\sym");
+    }
 }

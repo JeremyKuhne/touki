@@ -286,6 +286,18 @@ public sealed class CliAppTests
     }
 
     [TestMethod]
+    public void Run_NativeSymbolsOnSpeedscope_BindsAndIsHarmlessNoOp()
+    {
+        // --native-symbols binds on the cpu verb; speedscope carries no native frames,
+        // so it is a no-op that reaches no symbol server (offline-safe) and still
+        // renders the ranking. This proves the option is wired without a network fetch.
+        (int exit, string output, _) = Run("cpu", Speedscope, "--native-symbols");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("CPU self-time");
+    }
+
+    [TestMethod]
     public void Run_LinesProcessAndAllProcesses_ReturnsUsageError()
     {
         // The scope options are wired into the lines verb and remain mutually

@@ -36,6 +36,8 @@ internal sealed class TraceCommands
     /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
     /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest (multi-process captures).</param>
     /// <param name="benchmark">Scope to the BenchmarkDotNet measured-workload subtree (preset root); for BDN captures.</param>
+    /// <param name="nativeSymbols">Resolve native runtime frames (GC, JIT, memset/memcpy) from the Microsoft public symbol server; opt-in, fetches over the network. .etl CPU captures only.</param>
+    /// <param name="symbolCache">Local cache directory for downloaded native PDBs; omit for the default under the temp path.</param>
     /// <returns>A process exit code.</returns>
     [Command("rank")]
     public int Rank(
@@ -50,7 +52,9 @@ internal sealed class TraceCommands
         bool strict = false,
         string process = "",
         bool allProcesses = false,
-        bool benchmark = false)
+        bool benchmark = false,
+        bool nativeSymbols = false,
+        string symbolCache = "")
     {
         if (!RankRequestFactory.TryResolveMetric(metric, out TraceMetric resolved))
         {
@@ -71,8 +75,9 @@ internal sealed class TraceCommands
             return ExitCodes.UsageError;
         }
 
+        SymbolOptions symbolOptions = RankRequestFactory.ResolveSymbolOptions(nativeSymbols, symbolCache);
         RankRequest request = RankRequestFactory.Create(
-            trace, resolved, measure, resolvedRoot, top, fold, symbols, format, strict, scope);
+            trace, resolved, measure, resolvedRoot, top, fold, symbols, format, strict, scope, symbolOptions);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -94,6 +99,8 @@ internal sealed class TraceCommands
     /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
     /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest (multi-process captures).</param>
     /// <param name="benchmark">Scope to the BenchmarkDotNet measured-workload subtree (preset root); for BDN captures.</param>
+    /// <param name="nativeSymbols">Resolve native runtime frames (GC, JIT, memset/memcpy) from the Microsoft public symbol server; opt-in, fetches over the network. .etl CPU captures only.</param>
+    /// <param name="symbolCache">Local cache directory for downloaded native PDBs; omit for the default under the temp path.</param>
     /// <returns>A process exit code.</returns>
     [Command("cpu")]
     public int Cpu(
@@ -107,7 +114,9 @@ internal sealed class TraceCommands
         bool strict = false,
         string process = "",
         bool allProcesses = false,
-        bool benchmark = false)
+        bool benchmark = false,
+        bool nativeSymbols = false,
+        string symbolCache = "")
     {
         if (!RankRequestFactory.TryResolveScope(process, allProcesses, out ScopeRequest scope, out string? scopeError))
         {
@@ -121,8 +130,9 @@ internal sealed class TraceCommands
             return ExitCodes.UsageError;
         }
 
+        SymbolOptions symbolOptions = RankRequestFactory.ResolveSymbolOptions(nativeSymbols, symbolCache);
         RankRequest request = RankRequestFactory.Create(
-            trace, TraceMetric.Cpu, measure, resolvedRoot, top, fold, symbols, format, strict, scope);
+            trace, TraceMetric.Cpu, measure, resolvedRoot, top, fold, symbols, format, strict, scope, symbolOptions);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 

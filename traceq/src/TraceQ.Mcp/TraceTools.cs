@@ -88,6 +88,7 @@ public sealed class TraceTools
     /// <param name="fold">Optional fold patterns; defaults to the built-in JIT-helper list.</param>
     /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
     /// <param name="process">Optional process-name substring scoping a multi-process .etl capture to one process tree.</param>
+    /// <param name="nativeSymbols">Resolve native runtime frames from the public symbol server (opt-in, network); cpu/.etl only.</param>
     /// <returns>The ranking envelope.</returns>
     [McpServerTool(Name = "trace_rank", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description(
@@ -112,14 +113,19 @@ public sealed class TraceTools
         [Description(
             "Optional process-name substring scoping a multi-process .etl capture to one process tree; omit "
             + "to auto-scope to the busiest. Ignored for single-process .nettrace/speedscope traces.")]
-        string process = "")
+        string process = "",
+        [Description(
+            "Resolve native runtime frames (GC, JIT, memset/memcpy) from the Microsoft public symbol server. "
+            + "Opt-in - it fetches over the network and caches locally. cpu metric over an .etl capture only; "
+            + "managed frames already resolve without it.")]
+        bool nativeSymbols = false)
     {
         TraceMetric resolved = ResolveMetric(metric);
         bool inclusive = ResolveMeasure(measure);
         RequirePositiveTop(top);
         IReadOnlyList<string> foldPatterns = ResolveFold(fold);
 
-        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols), resolved, ResolveScope(process));
+        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols), resolved, ResolveScope(process), ResolveSymbols(nativeSymbols));
         TraceInfo info = trace.Info;
         RankingResult ranking = inclusive
             ? trace.Aggregator.InclusiveTime(root, foldPatterns, top)
@@ -491,11 +497,12 @@ public sealed class TraceTools
         string path,
         string? symbols,
         TraceMetric metric = TraceMetric.Cpu,
-        ScopeRequest? scope = null)
+        ScopeRequest? scope = null,
+        SymbolOptions? symbolOptions = null)
     {
         try
         {
-            return store.Get(path, symbols, metric, scope);
+            return store.Get(path, symbols, metric, scope, symbolOptions);
         }
         catch (Exception ex) when (
             ex is IOException
@@ -711,4 +718,9 @@ public sealed class TraceTools
     // value scopes a multi-process .etl capture to the named process tree.
     private static ScopeRequest? ResolveScope(string process) =>
         string.IsNullOrEmpty(process) ? null : ScopeRequest.ForProcess(process);
+
+    // Opt-in native runtime symbol resolution; the default cache directory is used.
+    // Off resolves managed frames from the rundown only (offline).
+    private static SymbolOptions ResolveSymbols(bool nativeSymbols) =>
+        nativeSymbols ? SymbolOptions.WithCache() : SymbolOptions.None;
 }

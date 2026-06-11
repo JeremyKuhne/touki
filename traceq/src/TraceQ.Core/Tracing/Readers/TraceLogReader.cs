@@ -48,7 +48,11 @@ internal abstract class TraceLogReader : ITraceReader
     protected abstract TraceLog OpenTraceLog(string path);
 
     /// <inheritdoc/>
-    public TraceReadResult Read(string path, string? symbolsDirectory = null, ScopeRequest? scope = null)
+    public TraceReadResult Read(
+        string path,
+        string? symbolsDirectory = null,
+        ScopeRequest? scope = null,
+        SymbolOptions? symbolOptions = null)
     {
         using TraceLog traceLog = OpenTraceLog(path);
 
@@ -81,6 +85,16 @@ internal abstract class TraceLogReader : ITraceReader
             else if (!string.IsNullOrEmpty(symbolsDirectory))
             {
                 symbolReader.SymbolPath = symbolsDirectory;
+            }
+
+            // Opt-in native runtime symbols: point the reader at the Microsoft public
+            // symbol server (a local cache fronting it) and resolve the unmanaged
+            // runtime modules - the GC, the JIT, memset/memcpy, write barriers - whose
+            // PDBs are not in the trace. Off by default so the common path stays offline
+            // and deterministic; managed frames resolve from the rundown regardless.
+            if (symbolOptions is { ResolveNativeRuntime: true })
+            {
+                ResolveNativeRuntimeSymbols(traceLog, symbolReader, symbolOptions);
             }
 
             // Resolve the scope intent (an explicit name, the busiest process under the
@@ -235,6 +249,97 @@ internal abstract class TraceLogReader : ITraceReader
 
         return new TraceReadResult(samples, resolutionRate, warnings);
     }
+
+    /// <summary>
+    ///  Points <paramref name="symbolReader"/> at the Microsoft public symbol server
+    ///  (fronted by a local cache) and resolves the names of the unmanaged runtime
+    ///  modules, so native runtime frames (the GC, the JIT, <c>memset</c> /
+    ///  <c>memcpy</c>, write barriers) carry method names instead of a bare module
+    ///  address.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Only the runtime/OS modules are looked up - <c>coreclr</c> / <c>clr</c>,
+    ///   <c>clrjit</c>, <c>ntdll</c>, <c>kernelbase</c>, <c>kernel32</c>,
+    ///   <c>ucrtbase</c>, <c>msvcrt</c> - rather than every loaded module, so the
+    ///   download is bounded to the frames a runtime profile actually needs. Each
+    ///   lookup is best-effort: a module whose PDB cannot be fetched (offline, or no
+    ///   published symbols) simply keeps its unresolved frames rather than failing the
+    ///   whole read.
+    ///  </para>
+    /// </remarks>
+    private static void ResolveNativeRuntimeSymbols(
+        TraceLog traceLog,
+        SymbolReader symbolReader,
+        SymbolOptions options)
+    {
+        string cacheDirectory = options.CacheDirectory ?? SymbolOptions.DefaultCacheDirectory;
+        Directory.CreateDirectory(cacheDirectory);
+
+        // The standard symbol-path form: a local downstream cache backed by the public
+        // server, so the first read downloads and later reads hit the cache. Preserve
+        // any path already set (the local build-output PDBs) by appending the server.
+        string serverPath = $"srv*{cacheDirectory}*https://msdl.microsoft.com/download/symbols";
+        symbolReader.SymbolPath = string.IsNullOrEmpty(symbolReader.SymbolPath)
+            ? serverPath
+            : $"{symbolReader.SymbolPath}{Path.PathSeparator}{serverPath}";
+
+        foreach (TraceModuleFile moduleFile in traceLog.ModuleFiles)
+        {
+            if (!IsRuntimeModule(moduleFile.Name))
+            {
+                continue;
+            }
+
+            try
+            {
+                traceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, moduleFile);
+            }
+            catch (Exception)
+            {
+                // Best-effort: an unfetchable module keeps its unresolved frames rather
+                // than failing the read. Offline use and modules with no published PDB
+                // both land here.
+            }
+        }
+    }
+
+    /// <summary>
+    ///  Whether <paramref name="moduleName"/> is one of the unmanaged .NET runtime or
+    ///  OS modules whose symbols answer "where did the native time go" (GC, JIT,
+    ///  memory operations), so native resolution can be bounded to them.
+    /// </summary>
+    private static bool IsRuntimeModule(string? moduleName)
+    {
+        if (string.IsNullOrEmpty(moduleName))
+        {
+            return false;
+        }
+
+        // Match the runtime/OS modules by name substring (case-insensitive); the
+        // module name carries no extension here. `clr` is matched exactly because it is
+        // a short token that would otherwise match unrelated names.
+        foreach (string token in s_runtimeModuleTokens)
+        {
+            if (moduleName.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return moduleName.Equals("clr", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static readonly string[] s_runtimeModuleTokens =
+    [
+        "coreclr",
+        "clrjit",
+        "ntdll",
+        "kernelbase",
+        "kernel32",
+        "ucrtbase",
+        "msvcrt"
+    ];
 
     /// <summary>
     ///  Resolves the source location (<c>file:line</c>) for a code address,

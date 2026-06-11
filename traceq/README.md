@@ -61,6 +61,18 @@ traceq processes machinewide.etl             # list every process by weight
 traceq cpu machinewide.etl --process MyApp   # one process tree
 ```
 
+**Native runtime symbols.** Managed frames (including NGEN and ReadyToRun
+framework methods) resolve for free from the trace's CLR rundown. The *unmanaged*
+runtime frames - the GC, the JIT, `memset` / `memcpy`, write barriers - need PDBs
+from the Microsoft public symbol server, which `cpu` / `rank` fetch only when you
+opt in with `--native-symbols` (cached under `--symbol-cache`, default in the temp
+path). It is off by default so analysis stays offline and deterministic; the first
+run downloads, later runs hit the cache.
+
+```pwsh
+traceq cpu app.etl --process MyApp --native-symbols   # name the GC/JIT/memcpy frames
+```
+
 **Drill-down** - follow a ranking into detail:
 
 | Verb | Purpose | Example |
