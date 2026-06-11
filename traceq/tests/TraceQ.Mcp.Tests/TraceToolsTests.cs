@@ -211,6 +211,49 @@ public sealed class TraceToolsTests
     }
 
     [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Lines_ProcessScope_OnMachineWideCapture_Warns()
+    {
+        TraceStore store = new();
+
+        // The lines tool now scopes a multi-process ETW capture to a named process
+        // tree; the scope notice surfaces in the envelope warnings. Reading an .etl is
+        // Windows-only, so this is guarded.
+        AnalysisResult<LineRankingResult> envelope =
+            TraceTools.Lines(store, FixturePath(Etw), process: "HotLoopBench-Job");
+
+        AssertEnvelope(envelope);
+        envelope.Warnings.Should().Contain(w => w.Contains("Scoped to the"));
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Callers_ProcessScope_OnMachineWideCapture_Warns()
+    {
+        TraceStore store = new();
+
+        AnalysisResult<CallersResult> envelope =
+            TraceTools.Callers(store, FixturePath(Etw), frame: "", process: "HotLoopBench-Job");
+
+        AssertEnvelope(envelope);
+        envelope.Warnings.Should().Contain(w => w.Contains("Scoped to the"));
+    }
+
+    [TestMethod]
+    public void Lines_ProcessScopeOnSpeedscope_IsHarmlessNoOp()
+    {
+        TraceStore store = new();
+
+        // Speedscope is single-process, so a process selector is a no-op: the tool
+        // still succeeds and returns the (empty, no line data) ranking.
+        AnalysisResult<LineRankingResult> envelope =
+            TraceTools.Lines(store, FixturePath(Speedscope), process: "anything");
+
+        AssertEnvelope(envelope);
+        envelope.Result.Rows.Should().BeEmpty();
+    }
+
+    [TestMethod]
     public void Info_MissingFile_ThrowsMcpException()
     {
         TraceStore store = new();

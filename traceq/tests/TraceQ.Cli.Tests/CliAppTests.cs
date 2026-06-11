@@ -286,6 +286,97 @@ public sealed class CliAppTests
     }
 
     [TestMethod]
+    public void Run_LinesProcessAndAllProcesses_ReturnsUsageError()
+    {
+        // The scope options are wired into the lines verb and remain mutually
+        // exclusive; the conflict is caught before any trace read, so it runs on every
+        // CI leg. A verb missing the options would instead fail with an unknown-option
+        // error, so the specific message also proves the options are bound.
+        (int exit, _, string error) = Run("lines", Speedscope, "--process", "MyApp", "--all-processes");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("only one of --process and --all-processes");
+    }
+
+    [TestMethod]
+    public void Run_CallersProcessAndAllProcesses_ReturnsUsageError()
+    {
+        (int exit, _, string error) = Run("callers", Speedscope, "Frame", "--process", "MyApp", "--all-processes");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("only one of --process and --all-processes");
+    }
+
+    [TestMethod]
+    public void Run_HeatmapProcessAndAllProcesses_ReturnsUsageError()
+    {
+        (int exit, _, string error) = Run("heatmap", Speedscope, "Foo.cs", "--process", "MyApp", "--all-processes");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("only one of --process and --all-processes");
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Run_LinesProcessScope_OnMachineWideCapture_Narrows()
+    {
+        // The lines verb now scopes a multi-process ETW capture to a named process
+        // tree, mirroring cpu/rank: the scope notice is forwarded to the output.
+        // Reading an .etl is Windows-only, so this is guarded.
+        (int exit, string output, _) = Run("lines", Etw, "--process", "HotLoopBench-Job");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("Scoped to the");
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Run_CallersProcessScope_OnMachineWideCapture_Narrows()
+    {
+        (int exit, string output, _) = Run("callers", Etw, "Thread", "--process", "HotLoopBench-Job");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("Scoped to the");
+    }
+
+    [TestMethod]
+    public void Run_Processes_OnSpeedscope_ListsTheSingleProcess()
+    {
+        // Speedscope is single-process; the inventory still renders, naming the single
+        // (empty-labelled) process. Runs on every CI leg.
+        (int exit, string output, _) = Run("processes", Speedscope);
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("processes by");
+    }
+
+    [TestMethod]
+    public void Run_ProcessesJson_WritesSingleLineEnvelope()
+    {
+        (int exit, string output, _) = Run("processes", Speedscope, "--format", "json");
+
+        exit.Should().Be(ExitCodes.Success);
+        string json = output.Trim();
+        json.Should().NotContain("\n");
+        json.Should().Contain("\"schemaVersion\"");
+        json.Should().Contain("\"processes\"");
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Run_Processes_OnMachineWideCapture_ListsEveryProcess()
+    {
+        // The ETW fixture is a multi-process BenchmarkDotNet tree; the inventory lists
+        // every process (it does not auto-scope to the busiest) so the caller can pick
+        // one to scope. Reading an .etl is Windows-only.
+        (int exit, string output, _) = Run("processes", Etw);
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("processes by");
+        output.Should().Contain("HotLoopBench");
+    }
+
+    [TestMethod]
     [OSCondition(OperatingSystems.Windows)]
     public void Run_ExplicitProcessScope_OnMachineWideCapture_WarnsAndNarrows()
     {

@@ -31,7 +31,7 @@ internal static class CallersExecutor
     /// <returns>A process exit code (see <see cref="ExitCodes"/>).</returns>
     public static int Run(CallersRequest request, TextWriter output, TextWriter error)
     {
-        if (!TraceExecution.TryLoad(request.Path, request.Symbols, error, out LoadedTrace? trace))
+        if (!TraceExecution.TryLoad(request.Path, TraceMetric.Cpu, request.Symbols, error, out LoadedTrace? trace, request.Scope))
         {
             return ExitCodes.InputError;
         }

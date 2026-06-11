@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 
 namespace TraceQ.Tracing.Readers;
 
@@ -90,40 +93,83 @@ internal static class ProcessTree
     }
 
     /// <summary>
-    ///  Finds the name of the busiest process in the trace - the one that consumed
-    ///  the most CPU time - so an unscoped read can default to that process's tree
-    ///  rather than the whole machine-wide capture.
+    ///  Finds the name of the busiest process in the trace - the one that owns the most
+    ///  CPU samples - so an unscoped read can default to that process's tree rather than
+    ///  the whole machine-wide capture.
     /// </summary>
-    /// <param name="traceLog">The opened trace whose process table is queried.</param>
+    /// <param name="traceLog">The opened trace whose CPU samples are counted.</param>
     /// <returns>
     ///  The busiest named process's name, or <see langword="null"/> when the trace
-    ///  has no named process carrying CPU time (so no automatic scope applies).
+    ///  carries no CPU samples attributable to a named process (so no automatic scope
+    ///  applies).
     /// </returns>
     /// <remarks>
     ///  <para>
-    ///   "Busiest" is the workload heuristic: in a benchmark or profile capture the
-    ///   measured process dominates CPU, while the idle and bookkeeping processes
-    ///   barely register. The matched name still resolves to the whole tree (the
-    ///   process plus its descendants) at scope time, so a host that launches the
-    ///   real work in a child is covered.
+    ///   "Busiest" is ranked by <em>CPU sample count</em>, not <see cref="TraceProcess.CPUMSec"/>.
+    ///   The rankings this scope feeds are built from CPU samples, so the process that
+    ///   owns the most samples is by definition the one the analysis is about. CPUMSec
+    ///   can disagree sharply on a machine-wide capture: a long-lived background service
+    ///   (antivirus, a VPN client) accumulates more kernel CPU time across the whole
+    ///   capture window than a short benchmark, yet carries a tiny fraction of the
+    ///   profile's samples - which made a CPUMSec heuristic auto-scope to the wrong
+    ///   process. Counting samples is one extra lightweight event pass (process id only,
+    ///   no stack walk); it runs only for the automatic scope (no explicit process
+    ///   given) and its result is cached with the loaded trace.
+    ///  </para>
+    ///  <para>
+    ///   The matched name still resolves to the whole tree (the process plus its
+    ///   descendants) at scope time, so a host that launches the measured work in a
+    ///   child is covered.
     ///  </para>
     /// </remarks>
     public static string? FindBusiestProcessName(TraceLog traceLog)
     {
-        string? busiest = null;
-        float maxCpu = 0.0f;
-        foreach (TraceProcess process in traceLog.Processes)
+        // Count CPU samples per process id. The predicate mirrors the CPU-sample
+        // selection in TraceLogReader exactly (ETW SampledProfileTraceData, EventPipe
+        // ClrThreadSampleTraceData excluding error samples) so the busiest process is
+        // chosen by the same events the rankings are built from.
+        Dictionary<int, int> samplesByProcess = [];
+        foreach (TraceEvent data in traceLog.Events)
         {
-            // A process with no name cannot be matched by a name substring later, and
-            // the Idle process (pid 0) is bookkeeping, not workload - skip both.
-            if (string.IsNullOrEmpty(process.Name) || process.ProcessID == 0)
+            if (data is ClrThreadSampleTraceData clrSample)
+            {
+                if (clrSample.Type == ClrThreadSampleType.Error)
+                {
+                    continue;
+                }
+            }
+            else if (data is not SampledProfileTraceData)
             {
                 continue;
             }
 
-            if (process.CPUMSec > maxCpu)
+            int pid = data.ProcessID;
+            if (pid > 0)
             {
-                maxCpu = process.CPUMSec;
+                samplesByProcess[pid] = samplesByProcess.GetValueOrDefault(pid) + 1;
+            }
+        }
+
+        if (samplesByProcess.Count == 0)
+        {
+            return null;
+        }
+
+        // The Idle process (pid 0) is bookkeeping, not workload, and an unnamed process
+        // cannot be matched by a name substring later - skip both.
+        string? busiest = null;
+        int maxSamples = 0;
+        foreach (TraceProcess process in traceLog.Processes)
+        {
+            if (process.ProcessID == 0 || string.IsNullOrEmpty(process.Name))
+            {
+                continue;
+            }
+
+            int count = samplesByProcess.GetValueOrDefault(process.ProcessID);
+            if (count > maxSamples)
+            {
+                maxSamples = count;
                 busiest = process.Name;
             }
         }

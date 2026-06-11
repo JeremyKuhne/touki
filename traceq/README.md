@@ -47,14 +47,17 @@ dotnet tool install --global --add-source ./artifacts/packages TraceQ.Tool
 
 Every ranking verb accepts `--root` (scope to a frame subtree) and `--benchmark`
 (scope a BenchmarkDotNet capture to the measured workload, past the harness). The
-verbs that can read a multi-process ETW `.etl` - `cpu`, `threadtime`, and `rank` -
-also accept `--process` / `--all-processes` (the busiest process tree is
+verbs that can read a multi-process ETW `.etl` - `cpu`, `threadtime`, and `rank`,
+plus the drill-down `callers`, `lines`, and `heatmap` - also accept `--process` /
+`--all-processes` (the busiest process tree, ranked by CPU sample count, is
 auto-scoped by default); `alloc` and `exceptions` read single-process
-`.nettrace` only, so they have no process options.
+`.nettrace` only, so they have no process options. To see what is in a
+multi-process capture before scoping, run `traceq processes` (below).
 
 ```pwsh
 traceq cpu bdn.nettrace --benchmark          # just the [Benchmark] code
 traceq alloc bdn.nettrace --benchmark        # allocations under the workload
+traceq processes machinewide.etl             # list every process by weight
 traceq cpu machinewide.etl --process MyApp   # one process tree
 ```
 
@@ -66,6 +69,12 @@ traceq cpu machinewide.etl --process MyApp   # one process tree
 | `lines` | Hottest source lines of scoped methods | `traceq lines app.nettrace --symbols bin/Release/net10.0` |
 | `heatmap` | Per-line heat for one source file | `traceq heatmap app.nettrace Parser.cs` |
 | `tree` | Top-down call tree from the root | `traceq tree app.nettrace --max-depth 5` |
+
+**Inventory** - see what a (possibly machine-wide) capture contains:
+
+| Verb | Purpose | Example |
+|---|---|---|
+| `processes` | List processes by CPU-sample weight, to pick a `--process` target | `traceq processes machinewide.etl` |
 
 **Compare and export:**
 

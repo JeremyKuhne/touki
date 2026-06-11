@@ -1,6 +1,6 @@
 ---
 name: performance-testing
-description: Author and run BenchmarkDotNet performance tests in the `touki.perf` project. Use when adding new benchmarks, running existing ones, comparing implementations, profiling to find which method dominates a benchmark, drilling from a benchmark down to the hot source line (via the `touki.mcp` trace analyzer), or evaluating allocations / memory usage for code in the `touki` library.
+description: Author and run BenchmarkDotNet performance tests in the `touki.perf` project, and translate a user's outcome-shaped performance question into a measurement. Use when adding new benchmarks, running existing ones, comparing implementations, profiling to find which method dominates a benchmark, drilling from a benchmark down to the hot source line (via the `traceq` trace analyzer), evaluating allocations / memory usage, or when a user asks how long something takes, how much memory it uses, where time is spent, or to help make a method faster - which this skill turns into a scenario, a benchmark, and a drill-down.
 metadata:
   portability: semi-portable
 ---
@@ -17,6 +17,19 @@ available to perf code).
 
 Note: code under `touki/Framework/` is only compiled for the .NET Framework target.
 References to those types from a benchmark must be guarded with `#if NETFRAMEWORK`.
+
+## Starting from a user's question
+
+Users ask outcome questions - "how long does this take?", "how much memory does
+this use?", "where is the time going?", "help me make this faster?" - not tooling
+commands. They will not pick a scenario, write a benchmark, or capture a trace on
+their own; **translating the question into a measurement and leading them through
+it is the job.** Before reaching for the mechanics below, read
+[interpreting-requests.md](interpreting-requests.md): it maps each kind of
+question to the right workflow, says which clarifications to ask (and which to
+answer yourself from the code), walks the "make X faster" journey end to end, and
+lists the follow-ups to offer once a result is in hand. The rest of this skill is
+the *how*; that page is the *what to measure and why*.
 
 **Related skills:**
 
@@ -89,11 +102,15 @@ benchmarks themselves.
 
 ## Sub-pages
 
+- [interpreting-requests.md](interpreting-requests.md) - turning a user's
+  outcome question ("how long?", "how much memory?", "where's the time?", "make
+  it faster") into a scenario, a measurement, an answer in their words, and the
+  next follow-up to offer. Start here when the request is a question, not a task.
 - [authoring.md](authoring.md) - file/class layout, the imported globals, the
   required and optional attributes, and what a benchmark method must do.
 - [running.md](running.md) - the `-f <tfm>` requirement, filtering to a class or
   method, the interactive picker, and useful switches.
 - [profiling.md](profiling.md) - capturing an EventPipe trace and drilling it
-  with the `touki.mcp` analyzer from operation to method to line.
+  with the `traceq` analyzer from operation to method to line.
 - [interpreting-results.md](interpreting-results.md) - before/after discipline on
   both TFMs, reading the memory columns, and the tuple-swap exception.

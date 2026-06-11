@@ -264,6 +264,8 @@ internal sealed class TraceCommands
     /// <param name="symbols">-s, Build-output directory whose embedded PDBs resolve managed frames.</param>
     /// <param name="format">Render format: text or json.</param>
     /// <param name="strict">Exit 3 when symbol resolution is below the trusted threshold.</param>
+    /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
+    /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest (multi-process captures).</param>
     /// <returns>A process exit code.</returns>
     [Command("callers")]
     public int Callers(
@@ -273,9 +275,17 @@ internal sealed class TraceCommands
         [Range(1, int.MaxValue)] int top = RankRequestFactory.DefaultTop,
         string? symbols = null,
         OutputFormat format = OutputFormat.Text,
-        bool strict = false)
+        bool strict = false,
+        string process = "",
+        bool allProcesses = false)
     {
-        CallersRequest request = new(trace, frame, root, top, symbols, format, strict);
+        if (!RankRequestFactory.TryResolveScope(process, allProcesses, out ScopeRequest scope, out string? scopeError))
+        {
+            Console.Error.WriteLine(scopeError);
+            return ExitCodes.UsageError;
+        }
+
+        CallersRequest request = new(trace, frame, root, top, symbols, format, strict, scope);
         return CallersExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -289,6 +299,8 @@ internal sealed class TraceCommands
     /// <param name="symbols">-s, Build-output directory whose embedded PDBs resolve managed frames.</param>
     /// <param name="format">Render format: text or json.</param>
     /// <param name="strict">Exit 3 when symbol resolution is below the trusted threshold.</param>
+    /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
+    /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest (multi-process captures).</param>
     /// <returns>A process exit code.</returns>
     [Command("lines")]
     public int Lines(
@@ -298,10 +310,18 @@ internal sealed class TraceCommands
         string[]? fold = null,
         string? symbols = null,
         OutputFormat format = OutputFormat.Text,
-        bool strict = false)
+        bool strict = false,
+        string process = "",
+        bool allProcesses = false)
     {
+        if (!RankRequestFactory.TryResolveScope(process, allProcesses, out ScopeRequest scope, out string? scopeError))
+        {
+            Console.Error.WriteLine(scopeError);
+            return ExitCodes.UsageError;
+        }
+
         IReadOnlyList<string> foldPatterns = fold is { Length: > 0 } ? fold : FrameNames.DefaultFoldPatterns;
-        LinesRequest request = new(trace, method, foldPatterns, top, symbols, format, strict);
+        LinesRequest request = new(trace, method, foldPatterns, top, symbols, format, strict, scope);
         return LinesExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -314,6 +334,8 @@ internal sealed class TraceCommands
     /// <param name="symbols">-s, Build-output directory whose embedded PDBs resolve managed frames.</param>
     /// <param name="format">Render format: text or json.</param>
     /// <param name="strict">Exit 3 when symbol resolution is below the trusted threshold.</param>
+    /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
+    /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest (multi-process captures).</param>
     /// <returns>A process exit code.</returns>
     [Command("heatmap")]
     public int Heatmap(
@@ -322,11 +344,36 @@ internal sealed class TraceCommands
         string[]? fold = null,
         string? symbols = null,
         OutputFormat format = OutputFormat.Text,
-        bool strict = false)
+        bool strict = false,
+        string process = "",
+        bool allProcesses = false)
     {
+        if (!RankRequestFactory.TryResolveScope(process, allProcesses, out ScopeRequest scope, out string? scopeError))
+        {
+            Console.Error.WriteLine(scopeError);
+            return ExitCodes.UsageError;
+        }
+
         IReadOnlyList<string> foldPatterns = fold is { Length: > 0 } ? fold : FrameNames.DefaultFoldPatterns;
-        HeatmapRequest request = new(trace, file, foldPatterns, symbols, format, strict);
+        HeatmapRequest request = new(trace, file, foldPatterns, symbols, format, strict, scope);
         return HeatmapExecutor.Run(request, Console.Out, Console.Error);
+    }
+
+    /// <summary>
+    ///  List the processes in a trace, ranked by CPU-sample weight, so a multi-process
+    ///  capture can be scoped to the right one with the --process option on the other
+    ///  verbs.
+    /// </summary>
+    /// <param name="trace">Path to a .speedscope.json, .nettrace, or .etl file.</param>
+    /// <param name="format">Render format: text or json.</param>
+    /// <returns>A process exit code.</returns>
+    [Command("processes")]
+    public int Processes(
+        [Argument] string trace,
+        OutputFormat format = OutputFormat.Text)
+    {
+        ProcessesRequest request = new(trace, format);
+        return ProcessesExecutor.Run(request, Console.Out, Console.Error);
     }
 
     /// <summary>

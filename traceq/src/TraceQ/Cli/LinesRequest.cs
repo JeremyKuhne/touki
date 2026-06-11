@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using TraceQ.Tracing;
+
 namespace TraceQ.Cli;
 
 /// <summary>
@@ -15,6 +17,7 @@ namespace TraceQ.Cli;
 /// <param name="Symbols">Optional build-output directory whose embedded PDBs resolve managed frames.</param>
 /// <param name="Format">The render format.</param>
 /// <param name="Strict">Whether to trip the strict symbol-resolution exit gate.</param>
+/// <param name="Scope">The process scope for a multi-process capture, or <see langword="null"/> for the automatic default.</param>
 internal sealed record LinesRequest(
     string Path,
     string Method,
@@ -22,4 +25,5 @@ internal sealed record LinesRequest(
     int Top,
     string? Symbols,
     OutputFormat Format,
-    bool Strict);
+    bool Strict,
+    ScopeRequest? Scope = null);

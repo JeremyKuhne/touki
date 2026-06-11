@@ -44,6 +44,7 @@ public sealed class TraceTools
     /// <param name="store">The trace cache (injected).</param>
     /// <param name="path">Path to the trace file.</param>
     /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
+    /// <param name="process">Optional process-name substring scoping a multi-process .etl capture to one process tree.</param>
     /// <returns>The trace summary envelope.</returns>
     [McpServerTool(Name = "trace_info", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description(
@@ -57,9 +58,13 @@ public sealed class TraceTools
         [Description(
             "Optional build-output directory (e.g. artifacts/.../touki.perf/net10.0) whose assemblies' "
             + "embedded portable PDBs are extracted so managed frames resolve to source lines.")]
-        string symbols = "")
+        string symbols = "",
+        [Description(
+            "Optional process-name substring scoping a multi-process .etl capture to one process tree; omit "
+            + "to auto-scope to the busiest. Ignored for single-process .nettrace/speedscope traces.")]
+        string process = "")
     {
-        TraceInfo info = Load(store, path, NullIfEmpty(symbols)).Info;
+        TraceInfo info = Load(store, path, NullIfEmpty(symbols), scope: ResolveScope(process)).Info;
         TraceInfoView view = new(
             info.Path,
             info.Format.ToString(),
@@ -82,6 +87,7 @@ public sealed class TraceTools
     /// <param name="top">Maximum rows to return.</param>
     /// <param name="fold">Optional fold patterns; defaults to the built-in JIT-helper list.</param>
     /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
+    /// <param name="process">Optional process-name substring scoping a multi-process .etl capture to one process tree.</param>
     /// <returns>The ranking envelope.</returns>
     [McpServerTool(Name = "trace_rank", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description(
@@ -102,14 +108,18 @@ public sealed class TraceTools
         [Description(
             "Optional build-output directory whose assemblies' embedded portable PDBs are extracted so "
             + "managed frames resolve to source lines (cpu metric only).")]
-        string symbols = "")
+        string symbols = "",
+        [Description(
+            "Optional process-name substring scoping a multi-process .etl capture to one process tree; omit "
+            + "to auto-scope to the busiest. Ignored for single-process .nettrace/speedscope traces.")]
+        string process = "")
     {
         TraceMetric resolved = ResolveMetric(metric);
         bool inclusive = ResolveMeasure(measure);
         RequirePositiveTop(top);
         IReadOnlyList<string> foldPatterns = ResolveFold(fold);
 
-        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols), resolved);
+        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols), resolved, ResolveScope(process));
         TraceInfo info = trace.Info;
         RankingResult ranking = inclusive
             ? trace.Aggregator.InclusiveTime(root, foldPatterns, top)
@@ -128,6 +138,7 @@ public sealed class TraceTools
     /// <param name="root">Optional substring scoping the analysis to a subtree.</param>
     /// <param name="top">Maximum caller rows to return.</param>
     /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
+    /// <param name="process">Optional process-name substring scoping a multi-process .etl capture to one process tree.</param>
     /// <returns>The caller-breakdown envelope.</returns>
     [McpServerTool(Name = "trace_callers", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description(
@@ -143,10 +154,14 @@ public sealed class TraceTools
         [Description(
             "Optional build-output directory whose assemblies' embedded portable PDBs are extracted so "
             + "managed frames resolve to source lines.")]
-        string symbols = "")
+        string symbols = "",
+        [Description(
+            "Optional process-name substring scoping a multi-process .etl capture to one process tree; omit "
+            + "to auto-scope to the busiest. Ignored for single-process .nettrace/speedscope traces.")]
+        string process = "")
     {
         RequirePositiveTop(top);
-        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols));
+        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols), scope: ResolveScope(process));
         TraceInfo info = trace.Info;
         CallersResult callers = trace.Aggregator.CallersOf(frame, root, top);
 
@@ -163,6 +178,7 @@ public sealed class TraceTools
     /// <param name="top">Maximum rows to return.</param>
     /// <param name="fold">Optional fold patterns; defaults to the built-in JIT-helper list.</param>
     /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
+    /// <param name="process">Optional process-name substring scoping a multi-process .etl capture to one process tree.</param>
     /// <returns>The line-level self-time envelope.</returns>
     [McpServerTool(Name = "trace_lines", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description(
@@ -180,11 +196,15 @@ public sealed class TraceTools
         [Description(
             "Optional build-output directory (e.g. artifacts/.../touki.perf/net10.0) whose assemblies' embedded "
             + "portable PDBs are extracted so managed frames resolve to source lines.")]
-        string symbols = "")
+        string symbols = "",
+        [Description(
+            "Optional process-name substring scoping a multi-process .etl capture to one process tree; omit "
+            + "to auto-scope to the busiest. Ignored for single-process .nettrace/speedscope traces.")]
+        string process = "")
     {
         RequirePositiveTop(top);
         IReadOnlyList<string> foldPatterns = ResolveFold(fold);
-        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols));
+        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols), scope: ResolveScope(process));
         TraceInfo info = trace.Info;
         LineRankingResult lines = trace.Aggregator.HotLines(method, foldPatterns, top);
 
@@ -200,6 +220,7 @@ public sealed class TraceTools
     /// <param name="file">Path or file name of the source file to map.</param>
     /// <param name="fold">Optional fold patterns; defaults to the built-in JIT-helper list.</param>
     /// <param name="symbols">Optional build-output directory supplying embedded PDBs for line resolution.</param>
+    /// <param name="process">Optional process-name substring scoping a multi-process .etl capture to one process tree.</param>
     /// <returns>The heat-map envelope.</returns>
     [McpServerTool(Name = "trace_heatmap", ReadOnly = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description(
@@ -215,10 +236,14 @@ public sealed class TraceTools
         [Description(
             "Optional build-output directory (e.g. artifacts/.../touki.perf/net10.0) whose assemblies' embedded "
             + "portable PDBs are extracted so managed frames resolve to source lines.")]
-        string symbols = "")
+        string symbols = "",
+        [Description(
+            "Optional process-name substring scoping a multi-process .etl capture to one process tree; omit "
+            + "to auto-scope to the busiest. Ignored for single-process .nettrace/speedscope traces.")]
+        string process = "")
     {
         IReadOnlyList<string> foldPatterns = ResolveFold(fold);
-        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols));
+        LoadedTrace trace = Load(store, path, NullIfEmpty(symbols), scope: ResolveScope(process));
         TraceInfo info = trace.Info;
 
         // The trace records the build-time file name, not its full path, so match on the file name.
@@ -465,11 +490,12 @@ public sealed class TraceTools
         TraceStore store,
         string path,
         string? symbols,
-        TraceMetric metric = TraceMetric.Cpu)
+        TraceMetric metric = TraceMetric.Cpu,
+        ScopeRequest? scope = null)
     {
         try
         {
-            return store.Get(path, symbols, metric);
+            return store.Get(path, symbols, metric, scope);
         }
         catch (Exception ex) when (
             ex is IOException
@@ -650,9 +676,7 @@ public sealed class TraceTools
     private static void RequireNetTrace(string path, string reportName)
     {
         // Format guardrail (an extension test, no I/O): the report providers parse the
-        // EventPipe format, so reject an .etl or speedscope export - or a null/empty
-        // path - cleanly here rather than failing deep inside the parser or on a null
-        // dereference that would surface as an opaque JSON-RPC error.
+        // EventPipe format, so reject an .etl or speedscope export cleanly here.
         if (string.IsNullOrEmpty(path) || !path.EndsWith(".nettrace", StringComparison.OrdinalIgnoreCase))
         {
             throw new McpException(
@@ -681,4 +705,10 @@ public sealed class TraceTools
     }
 
     private static string? NullIfEmpty(string value) => string.IsNullOrEmpty(value) ? null : value;
+
+    // An empty process selector means "auto-scope to the busiest process tree" (the
+    // Load default), a no-op on a single-process .nettrace/speedscope trace; a non-empty
+    // value scopes a multi-process .etl capture to the named process tree.
+    private static ScopeRequest? ResolveScope(string process) =>
+        string.IsNullOrEmpty(process) ? null : ScopeRequest.ForProcess(process);
 }

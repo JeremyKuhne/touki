@@ -40,6 +40,7 @@ namespace TraceQ.Output;
 [JsonSerializable(typeof(AnalysisResult<LineRankingResult>))]
 [JsonSerializable(typeof(AnalysisResult<SourceHeatmapResult>))]
 [JsonSerializable(typeof(AnalysisResult<CallTreeResult>))]
+[JsonSerializable(typeof(AnalysisResult<ProcessListResult>))]
 [JsonSerializable(typeof(AnalysisResult<RankingDiffResult>))]
 [JsonSerializable(typeof(AnalysisResult<JitStatsResult>))]
 [JsonSerializable(typeof(AnalysisResult<GcStatsResult>))]
