@@ -38,6 +38,7 @@ internal sealed class TraceCommands
     /// <param name="benchmark">Scope to the BenchmarkDotNet measured-workload subtree (preset root); for BDN captures.</param>
     /// <param name="nativeSymbols">Resolve native runtime frames (GC, JIT, memset/memcpy) from the Microsoft public symbol server; opt-in, fetches over the network. .etl CPU captures only.</param>
     /// <param name="symbolCache">Local cache directory for downloaded native PDBs; omit for the default under the temp path.</param>
+    /// <param name="noFold">Fold only the synthetic sample markers, not the JIT-helper thunks, so native runtime leaves rank on their own. Mutually exclusive with --fold.</param>
     /// <returns>A process exit code.</returns>
     [Command("rank")]
     public int Rank(
@@ -54,7 +55,8 @@ internal sealed class TraceCommands
         bool allProcesses = false,
         bool benchmark = false,
         bool nativeSymbols = false,
-        string symbolCache = "")
+        string symbolCache = "",
+        bool noFold = false)
     {
         if (!RankRequestFactory.TryResolveMetric(metric, out TraceMetric resolved))
         {
@@ -75,9 +77,15 @@ internal sealed class TraceCommands
             return ExitCodes.UsageError;
         }
 
+        if (!RankRequestFactory.TryResolveFold(fold, noFold, out string[]? foldPatterns, out string? foldError))
+        {
+            Console.Error.WriteLine(foldError);
+            return ExitCodes.UsageError;
+        }
+
         SymbolOptions symbolOptions = RankRequestFactory.ResolveSymbolOptions(nativeSymbols, symbolCache);
         RankRequest request = RankRequestFactory.Create(
-            trace, resolved, measure, resolvedRoot, top, fold, symbols, format, strict, scope, symbolOptions);
+            trace, resolved, measure, resolvedRoot, top, foldPatterns, symbols, format, strict, scope, symbolOptions);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 
@@ -101,6 +109,7 @@ internal sealed class TraceCommands
     /// <param name="benchmark">Scope to the BenchmarkDotNet measured-workload subtree (preset root); for BDN captures.</param>
     /// <param name="nativeSymbols">Resolve native runtime frames (GC, JIT, memset/memcpy) from the Microsoft public symbol server; opt-in, fetches over the network. .etl CPU captures only.</param>
     /// <param name="symbolCache">Local cache directory for downloaded native PDBs; omit for the default under the temp path.</param>
+    /// <param name="noFold">Fold only the synthetic sample markers, not the JIT-helper thunks, so native runtime leaves rank on their own. Mutually exclusive with --fold.</param>
     /// <returns>A process exit code.</returns>
     [Command("cpu")]
     public int Cpu(
@@ -116,7 +125,8 @@ internal sealed class TraceCommands
         bool allProcesses = false,
         bool benchmark = false,
         bool nativeSymbols = false,
-        string symbolCache = "")
+        string symbolCache = "",
+        bool noFold = false)
     {
         if (!RankRequestFactory.TryResolveScope(process, allProcesses, out ScopeRequest scope, out string? scopeError))
         {
@@ -130,9 +140,15 @@ internal sealed class TraceCommands
             return ExitCodes.UsageError;
         }
 
+        if (!RankRequestFactory.TryResolveFold(fold, noFold, out string[]? foldPatterns, out string? foldError))
+        {
+            Console.Error.WriteLine(foldError);
+            return ExitCodes.UsageError;
+        }
+
         SymbolOptions symbolOptions = RankRequestFactory.ResolveSymbolOptions(nativeSymbols, symbolCache);
         RankRequest request = RankRequestFactory.Create(
-            trace, TraceMetric.Cpu, measure, resolvedRoot, top, fold, symbols, format, strict, scope, symbolOptions);
+            trace, TraceMetric.Cpu, measure, resolvedRoot, top, foldPatterns, symbols, format, strict, scope, symbolOptions);
         return RankingExecutor.Run(request, Console.Out, Console.Error);
     }
 

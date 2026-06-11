@@ -298,6 +298,28 @@ public sealed class CliAppTests
     }
 
     [TestMethod]
+    public void Run_NoFold_BindsAndRenders()
+    {
+        // --no-fold binds on the cpu verb and folds only the synthetic markers; on the
+        // speedscope fixture it still renders a ranking.
+        (int exit, string output, _) = Run("cpu", Speedscope, "--no-fold");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("CPU self-time");
+    }
+
+    [TestMethod]
+    public void Run_NoFoldAndFold_ReturnsUsageError()
+    {
+        // --no-fold and --fold are mutually exclusive; the conflict is caught before any
+        // ranking, so it runs on every CI leg.
+        (int exit, _, string error) = Run("cpu", Speedscope, "--no-fold", "--fold", "Helper");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("only one of --fold and --no-fold");
+    }
+
+    [TestMethod]
     public void Run_LinesProcessAndAllProcesses_ReturnsUsageError()
     {
         // The scope options are wired into the lines verb and remain mutually

@@ -96,6 +96,47 @@ internal static class RankRequestFactory
         nativeSymbols ? SymbolOptions.WithCache(symbolCache) : SymbolOptions.None;
 
     /// <summary>
+    ///  Resolves the effective leaf-fold patterns from the explicit <c>--fold</c>
+    ///  patterns and the <c>--no-fold</c> option, which are mutually exclusive.
+    /// </summary>
+    /// <param name="fold">The explicit <c>--fold</c> patterns, or <see langword="null"/>/empty when not given.</param>
+    /// <param name="noFold">
+    ///  Whether <c>--no-fold</c> was set: fold only the synthetic sample markers, so the
+    ///  native runtime leaves (GC, <c>memset</c> / <c>memcpy</c>, write barriers) rank
+    ///  on their own.
+    /// </param>
+    /// <param name="patterns">
+    ///  The resolved patterns on success: the explicit list, the marker-only list when
+    ///  <paramref name="noFold"/> is set, or <see langword="null"/> for the built-in
+    ///  default (which <see cref="Create"/> fills in).
+    /// </param>
+    /// <param name="errorMessage">The usage error when both options were given.</param>
+    /// <returns>
+    ///  <see langword="true"/> when the options are valid; otherwise <see langword="false"/>,
+    ///  and the caller should report <paramref name="errorMessage"/> as a usage error.
+    /// </returns>
+    public static bool TryResolveFold(
+        string[]? fold,
+        bool noFold,
+        out string[]? patterns,
+        [NotNullWhen(false)] out string? errorMessage)
+    {
+        bool hasFold = fold is { Length: > 0 };
+        if (hasFold && noFold)
+        {
+            patterns = null;
+            errorMessage = "Specify only one of --fold and --no-fold.";
+            return false;
+        }
+
+        // --no-fold folds only the synthetic markers; an explicit --fold wins; otherwise
+        // leave null so Create applies the built-in default fold list.
+        patterns = noFold ? [.. FrameNames.MarkerOnlyFoldPatterns] : fold;
+        errorMessage = null;
+        return true;
+    }
+
+    /// <summary>
     ///  Builds the process-scope request from the two mutually exclusive verb options:
     ///  an explicit <c>--process</c> name and the <c>--all-processes</c> opt-out.
     /// </summary>
