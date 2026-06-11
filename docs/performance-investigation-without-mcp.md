@@ -1,8 +1,8 @@
-# Profiling without the `touki.mcp` server
+# Profiling without the `traceq` server
 
 The primary way to turn a captured benchmark trace into ranked hotspots and
 line-level attribution is the in-workspace
-[touki.mcp](../touki.mcp/touki.mcp.csproj) analyzer - see
+[traceq](../traceq/README.md) analyzer - see
 [performance-investigation.md](performance-investigation.md) sections 3a, 3f,
 and 6.
 
@@ -18,8 +18,8 @@ applies identically here; this doc only covers the script invocations.
 
 | Script | Role | MCP equivalent |
 | --- | --- | --- |
-| `tools/Profile-Benchmark.ps1` | Run a benchmark under EventPipe **and** print folded self/inclusive rankings in one command (net10.0-only; refuses net481). | capture with `dotnet run ... -p EP` + `analyze`/`hotspots_self`/`hotspots_inclusive` |
-| `tools/Get-TraceHotspots.ps1` | Aggregate an existing `.speedscope.json` into folded self/inclusive rankings; `-CallersOf <frame>` reports a frame's callers. | `hotspots_self` / `hotspots_inclusive` / `callers_of` |
+| `tools/Profile-Benchmark.ps1` | Run a benchmark under EventPipe **and** print folded self/inclusive rankings in one command (net10.0-only; refuses net481). | capture with `dotnet run ... -p EP` + the `cpu` verb / `trace_rank` |
+| `tools/Get-TraceHotspots.ps1` | Aggregate an existing `.speedscope.json` into folded self/inclusive rankings; `-CallersOf <frame>` reports a frame's callers. | `trace_rank` (self/inclusive) / `trace_callers` |
 | `tools/speedscope-to-flamegraph.ps1` | Render an inclusive flame-graph SVG. | none - use this, or drag the speedscope into <https://www.speedscope.app/> |
 
 ## One command: run + profile + ranked hotspots
@@ -58,6 +58,6 @@ mandatory before trusting any self-time number.
 ## Line-level attribution
 
 The scripts stop at the method. For line-level (`file:line`) attribution there
-is **no script fallback** - it requires the `touki.mcp` analyzer reading a
+is **no script fallback** - it requires the `traceq` analyzer reading a
 `.nettrace`/`.etl` with the matching PDB. See
 [performance-investigation.md](performance-investigation.md) section 3f.

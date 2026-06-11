@@ -36,7 +36,7 @@ flowchart TD
     B -->|"Is impl A faster than B?"| C[BenchmarkDotNet A/B<br/>MemoryDiagnoser + Baseline]
     B -->|"Does this allocate?"| D[BenchmarkDotNet<br/>MemoryDiagnoser - read Allocated]
     B -->|"Which method eats the time<br/>in a whole operation?"| E[Profiler: EventPipeProfiler<br/>or dotnet-trace -> speedscope]
-    B -->|"Which source LINE inside<br/>the hot method?"| M[touki.mcp hot_lines<br/>.nettrace + --symbols]
+    B -->|"Which source LINE inside<br/>the hot method?"| M[traceq lines<br/>.nettrace + --symbols]
     B -->|"Why is THIS loop slow<br/>on net481?"| F[DisassemblyDiagnoser<br/>compare net481 vs net10 asm]
     B -->|"Branch mispredicts / cache?"| G[HardwareCounters<br/>Windows + admin]
     C --> H[Read *.md report only]
@@ -58,7 +58,7 @@ Rule of thumb for picking the entry point:
 | "A vs B", "did my change regress?" | BenchmarkDotNet `[Benchmark]` + `Baseline` | low |
 | "Does X allocate? how much?" | BenchmarkDotNet `[MemoryDiagnoser]` | low |
 | "Where in a multi-method operation is the time?" | `[EventPipeProfiler]` or `dotnet-trace` | medium |
-| "Which source *line* inside the hot method?" | `touki.mcp` `hot_lines` (`.nettrace` + `--symbols`) | medium |
+| "Which source *line* inside the hot method?" | `traceq` `lines` (`.nettrace` + `--symbols`) | medium |
 | "Why does the JIT emit slow code here?" | `[DisassemblyDiagnoser]` | medium |
 | "Is it branch misprediction / cache misses?" | `[HardwareCounters]` (Win+admin) | medium |
 | "Does it leak / churn the GC over a long run?" | `dotnet-counters`, `dotnet-gcdump` | medium |
@@ -256,12 +256,12 @@ It writes a `.speedscope.json` (and `.nettrace`) under
 <https://www.speedscope.app/> (drag-drop, nothing to install) to get a flame
 graph. Cross-platform, works on Linux/macOS/Windows, **no admin required**.
 
-#### Capture a trace, then rank hotspots (touki.mcp)
+#### Capture a trace, then rank hotspots (traceq)
 
 Capturing the trace and *reading* it are two steps. Capture is a plain
 `dotnet run`; the ranked, artifact-folded self/inclusive hotspots come from the
-in-workspace [touki.mcp](../touki.mcp/touki.mcp.csproj) analyzer (section 6),
-which reads the trace BenchmarkDotNet just wrote - no GUI, no PerfView:
+in-workspace [traceq](../traceq/README.md) analyzer (section 6), which reads the
+trace BenchmarkDotNet just wrote - no GUI, no PerfView:
 
 ```powershell
 # 1. Run the benchmark under EventPipe (--keepFiles preserves the build so its
@@ -274,14 +274,15 @@ $trace = (Get-ChildItem BenchmarkDotNet.Artifacts `
     Sort-Object LastWriteTime | Select-Object -Last 1).FullName
 
 # 2. Folded self-time + inclusive-time rankings, scoped to a workload frame.
-dotnet run --project touki.mcp -c Release -- analyze $trace --root 'RecordedDirectoryEnumerator.MoveNext' --top 25
+dotnet run --project traceq/src/TraceQ -c Release -- cpu $trace --root 'RecordedDirectoryEnumerator.MoveNext' --top 25
 
 # Confirm what a folded JIT-helper artifact is attributable to:
-dotnet run --project touki.mcp -c Release -- analyze $trace --callers 'BulkMoveWithWriteBarrier'
+dotnet run --project traceq/src/TraceQ -c Release -- callers $trace 'BulkMoveWithWriteBarrier'
 ```
 
-An agent that speaks MCP calls `hotspots_self` / `hotspots_inclusive` /
-`callers_of` directly on the same trace (section 6) instead of shelling out.
+An agent that speaks MCP calls `trace_rank` (with `measure: self|inclusive`) /
+`trace_callers` directly on the registered `traceq` server (section 6) instead
+of shelling out.
 
 > The committed PowerShell scripts (`Profile-Benchmark.ps1`,
 > `Get-TraceHotspots.ps1`) did this aggregation before the MCP server existed
@@ -291,7 +292,7 @@ An agent that speaks MCP calls `hotspots_self` / `hotspots_inclusive` /
 > [performance-investigation-without-mcp.md](performance-investigation-without-mcp.md).
 
 For line-level attribution on the same trace - which *source line* inside the
-ranked method dominates - hand the `.nettrace` to `touki.mcp` with `--lines`
+ranked method dominates - hand the `.nettrace` to `traceq` with the `lines` verb
 (section 3f). This has no script fallback.
 
 > **Reading the BenchmarkDotNet speedscope export - two traps.**
@@ -412,7 +413,7 @@ samples for a stable ranking. Levers that actually help, cheapest first:
   count already helps; an operation that runs for seconds (like the 25 s
   extglob enumeration here) yields thousands of samples and a stable tree.
 - **Fold the artifacts** (section 3a, Trap 2). This is the single biggest
-  accuracy win for *attribution* and costs nothing - the `touki.mcp` analyzer
+  accuracy win for *attribution* and costs nothing - the `traceq` analyzer
   (and the fallback scripts) do it by default.
 - **Split a suspect frame with `[MethodImpl(MethodImplOptions.NoInlining)]`.**
   If two methods are inlined together the sampler cannot tell them apart;
@@ -422,7 +423,7 @@ samples for a stable ranking. Levers that actually help, cheapest first:
   stdout - token-cheap for an agent, and it reads the same `.nettrace`.
 - **PerfView headless** (`PerfView /FoldPats=... stacks ...`) does the same fold
   the analyzer does, with richer grouping, when you already have PerfView. The
-  `touki.mcp` analyzer exists so the common case needs neither PerfView nor a
+  `traceq` analyzer exists so the common case needs neither PerfView nor a
   GUI.
 - **Want true CPU time and native frames?** EventPipe gives neither. On Windows
   use `[EtwProfiler]` (section 3b, admin). On Linux - including **WSL Ubuntu on
@@ -448,18 +449,18 @@ Stabilize the JIT **for clean attribution, not for absolute numbers**:
 - Do **not** chase JIT stability for a microbenchmark whose numbers you care
   about - measure those with the normal tiered harness.
 
-### 3f. Layer 2b - from the hot method down to the hot *line* (`touki.mcp`)
+### 3f. Layer 2b - from the hot method down to the hot *line* (`traceq`)
 
 The profilers above rank *methods*. The committed
-[touki.mcp](../touki.mcp/touki.mcp.csproj) project takes the same trace one
+[traceq](../traceq/README.md) project takes the same trace one
 level deeper: it reads the `.nettrace`/`.etl` through TraceEvent and attributes
 each leaf sample to the **source `file:line` that was executing**, so you can
 see which lines of a hot loop dominate. It is net10-only and runs two ways:
 
-- **Console front end** - `dotnet run --project touki.mcp -c Release -- analyze`.
-- **MCP server** - the same queries exposed as tools (`load_trace`,
-  `hotspots_self`, `hotspots_inclusive`, `callers_of`, `hot_lines`,
-  `list_threads`) for an agent that speaks MCP. See section 6.
+- **Console front end** - `dotnet run --project traceq/src/TraceQ -c Release -- <verb>`.
+- **MCP server** - the same queries exposed as tools (`trace_info`,
+  `trace_rank`, `trace_callers`, `trace_lines`, `trace_heatmap`) on the
+  registered `traceq` server for an agent that speaks MCP. See section 6.
 
 The top-down loop on a single captured trace:
 
@@ -475,15 +476,16 @@ $trace = (Get-ChildItem BenchmarkDotNet.Artifacts `
 $sym = 'artifacts/x64/Release/touki.perf/net10.0/touki.perf-DefaultJob-1/bin/Release/net10.0'
 
 # 1. Method ranking (self + inclusive), JIT-helper artifacts folded.
-dotnet run --project touki.mcp -c Release -- analyze $trace --symbols $sym --top 20
+dotnet run --project traceq/src/TraceQ -c Release -- cpu $trace --symbols $sym --top 20
 
 # 2. Line ranking inside the dominant method.
-dotnet run --project touki.mcp -c Release -- analyze $trace --lines RunEngine --symbols $sym --top 30
+dotnet run --project traceq/src/TraceQ -c Release -- lines $trace --method RunEngine --symbols $sym --top 30
 ```
 
-Console flags: `--root <substr>` scopes to a subtree, `--callers <substr>`
-reports a frame's callers, `--lines [<methodSubstr>]` switches to line-level,
-`--symbols <dir>` supplies PDBs, `--top N` caps rows.
+Verbs and flags: `cpu`/`rank` rank methods (`--root <substr>` scopes to a
+subtree), `callers <frame>` reports a frame's callers, `lines [--method
+<substr>]` is line-level, `heatmap <file>` overlays per-line heat; `--symbols
+<dir>` supplies PDBs and `--top N` caps rows.
 
 > **Embedded PDBs need `--symbols`.** `touki.dll` ships its portable PDB
 > *embedded* (`<DebugType>embedded</DebugType>`), and TraceEvent cannot read an
@@ -602,28 +604,33 @@ but unmatched depth. Pairs with `dotnet-trace`'s `.nettrace` output too.
 
 ## 6. MCP servers and programmatic API access
 
-### The in-workspace profiling MCP server: `touki.mcp`
+### The in-workspace profiling MCP server: `traceq`
 
-This workspace **does** ship a dedicated trace-analysis MCP server,
-[touki.mcp](../touki.mcp/touki.mcp.csproj) (net10-only). It reads the same
-`.nettrace`/`.etl` traces the diagnosers and `dotnet-trace` produce, folds the
-JIT-helper sampling artifacts (section 3a, Trap 2), and answers method- and
-line-level questions over MCP - so an agent that speaks MCP can drive the whole
-Layer 2 / Layer 2b loop without shelling out to the PowerShell scripts. It also
-has a console front end (`analyze`, section 3f).
+This workspace ships a dedicated trace-analysis MCP server,
+[traceq](../traceq/README.md) (net10-only), registered in
+[.vscode/mcp.json](../.vscode/mcp.json). It reads the same
+`.nettrace`/`.etl`/`.speedscope.json` traces the diagnosers and `dotnet-trace`
+produce, folds the JIT-helper sampling artifacts (section 3a, Trap 2), and
+answers method- and line-level questions over MCP - so an agent that speaks MCP
+can drive the whole Layer 2 / Layer 2b loop without shelling out to the
+PowerShell scripts. It also has a console front end (the CLI verbs, section 3f).
 
-Tools it exposes (all take a trace `path`):
+Tools it exposes (all take a trace `path`; `trace_rank` selects the family with
+`metric` and the measure with `measure`):
 
 | Tool | Answers |
 | --- | --- |
-| `load_trace(path, symbols)` | format / duration / sample count / symbol-resolution rate / threads. **Call first**; a rate below 0.8 means symbols are missing. |
-| `hotspots_self(path, rootFrame, fold, top)` | folded self-time ranking. |
-| `hotspots_inclusive(path, rootFrame, fold, top)` | folded inclusive-time ranking. |
-| `callers_of(path, frame, rootFrame, top)` | who calls a frame - confirms what a JIT-helper artifact is attributable to. |
-| `hot_lines(path, method, fold, top, symbols)` | **line-level** self-time, each leaf sample mapped to `file:line`. Needs `.nettrace`/`.etl` + `symbols`; speedscope yields nothing; `<no source>` = PDB not found. |
-| `list_threads(path)` | per-thread sample counts, to pick a `rootFrame` or spot idle thread-pool noise. |
+| `trace_info(path, symbols)` | format / total weight / sample count / symbol-resolution rate / per-thread counts / warnings. **Call first**; a rate below 0.8 means symbols are missing. Folds in the old per-thread listing. |
+| `trace_rank(path, metric, measure, root, fold, top, symbols)` | folded ranking by `metric` (cpu, alloc, exceptions, threadtime) and `measure` (self or inclusive). |
+| `trace_callers(path, frame, root, top)` | who calls a frame - confirms what a JIT-helper artifact is attributable to. |
+| `trace_lines(path, method, fold, top, symbols)` | **line-level** self-time, each leaf sample mapped to `file:line`. Needs `.nettrace`/`.etl` + `symbols`; speedscope yields nothing; `<no source>` = PDB not found. |
+| `trace_heatmap(path, file, fold, symbols)` | per-line self-time heat for one source file, ordered to overlay onto the source. |
+| `trace_diff(before, after, measure, root, fold, top)` | what got slower/faster between two traces. |
+| `trace_gc(path, top)` | GC counts, pauses, and heap summary (`.nettrace`). |
+| `trace_query_events(path, name, skip, take, maxPayload)` | raw event query by name, paged (`.nettrace`). |
+| `trace_export(path, output, format, name, symbols)` | write a speedscope / Chrome-trace flame-graph file. |
 
-`rootFrame` gotcha and symbol/`--keepFiles`/inlining caveats are the same as the
+The `root` gotcha and symbol/`--keepFiles`/inlining caveats are the same as the
 console form - see sections 3a and 3f.
 
 ### Research-oriented MCP/API surfaces
@@ -660,9 +667,9 @@ A concrete, token-efficient loop an agent should follow:
    `*-report-github.md`, quote only `Mean`/`Ratio`/`Allocated` for changed rows.
 6. **If the bottleneck is unclear**, attach `[EventPipeProfiler(CpuSampling)]`,
    capture a trace (`dotnet run ... --filter *<Subject>* -p EP --keepFiles` on
-   **net10.0**), then rank it with the `touki.mcp` analyzer
-   (`dotnet run --project touki.mcp -c Release -- analyze <trace> --root
-   <workload-frame>`, or the `hotspots_self`/`hotspots_inclusive` MCP tools; the
+   **net10.0**), then rank it with the `traceq` analyzer
+   (`dotnet run --project traceq/src/TraceQ -c Release -- cpu <trace> --root
+   <workload-frame>`, or the `trace_rank` MCP tool; the
    PowerShell scripts in
    [performance-investigation-without-mcp.md](performance-investigation-without-mcp.md)
    are the no-MCP fallback). **Fold the JIT-helper artifacts**
@@ -673,9 +680,9 @@ A concrete, token-efficient loop an agent should follow:
    EventPipe is net10.0-only; for net481 on-CPU attribution use `[EtwProfiler]`
    (admin) - see the per-TFM table in &sect;3.
 7. **If you need the hot *line*, not just the hot method**, feed the same
-   `.nettrace` to `touki.mcp`: `dotnet run --project touki.mcp -c Release --
-   analyze <trace> --lines <method> --symbols <build-dir> --top 30` (or the
-   `hot_lines` MCP tool). Capture with `--keepFiles` and point `--symbols` at
+   `.nettrace` to `traceq`: `dotnet run --project traceq/src/TraceQ -c Release --
+   lines <trace> --method <method> --symbols <build-dir> --top 30` (or the
+   `trace_lines` MCP tool). Capture with `--keepFiles` and point `--symbols` at
    BDN's surviving `...-DefaultJob-N/bin/Release/net10.0` so the PDB GUID
    matches; if the ranking collapses onto one or two call-site lines the callee
    is inlined - drill the non-inlined tail or add a temporary `NoInlining`. See
@@ -710,15 +717,15 @@ A/B + allocations ............ dotnet run -c Release -f <tfm> --project touki.pe
 Fast smoke ................... add --job short
 Read the result .............. BenchmarkDotNet.Artifacts/results/*-report-github.md
 Capture a trace .............. dotnet run -c Release -f net10.0 --project touki.perf -- --filter *X* -p EP --keepFiles
-Rank an existing trace ....... dotnet run --project touki.mcp -c Release -- analyze <trace> --root <workload-frame>
-                               folds JIT-helper artifacts + ranks self/inclusive. --callers <frame> = who calls it.
-No-MCP fallback scripts ...... ./tools/Profile-Benchmark.ps1 / Get-TraceHotspots.ps1 (see *-without-mcp.md)
+Rank an existing trace ....... dotnet run --project traceq/src/TraceQ -c Release -- cpu <trace> --root <workload-frame>
+                               folds JIT-helper artifacts + ranks self/inclusive. callers <frame> = who calls it.
+No-server fallback scripts ... ./tools/Profile-Benchmark.ps1 / Get-TraceHotspots.ps1 (see *-without-mcp.md)
 Flame-graph SVG .............. ./tools/speedscope-to-flamegraph.ps1   (or drag the speedscope into speedscope.app)
-Which source LINE? ........... dotnet run --project touki.mcp -c Release -- analyze <trace> --lines <method> --symbols <build-dir>
+Which source LINE? ........... dotnet run --project traceq/src/TraceQ -c Release -- lines <trace> --method <method> --symbols <build-dir>
                                net10 .nettrace/.etl + embedded PDB. Capture with --keepFiles; point --symbols
                                at BDN's ...-DefaultJob-N/bin/Release/net10.0 (PDB GUID must match the trace).
                                Inlined callee -> samples collapse on the call-site line; drill the tail. See 3f.
-touki.mcp as an MCP server ... tools: load_trace / hotspots_self / hotspots_inclusive / callers_of / hot_lines / list_threads
+traceq as an MCP server ...... tools: trace_info / trace_rank / trace_callers / trace_lines / trace_heatmap / trace_diff / trace_gc / trace_query_events / trace_export
 Where's the time? (in-harness) [EventPipeProfiler(EventPipeProfile.CpuSampling)] -> speedscope.app
                                net10.0 only (no admin); net481 needs [EtwProfiler] (admin) -> .etl
                                FOLD BulkMoveWithWriteBarrier/PollGC/CPU_TIME before reading self-time.
