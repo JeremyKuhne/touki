@@ -203,6 +203,25 @@ public sealed class ProcessScopeTests
     }
 
     [TestMethod]
+    public void Read_AutoScope_SelectsTheProcessWithTheMostCpuSamples()
+    {
+        IReadOnlyList<SampleStack> all = Load(ScopeRequest.AllProcesses);
+        IReadOnlyList<SampleStack> auto = Load(ScopeRequest.Auto);
+
+        // The automatic scope ranks by CPU sample count (not CPUMSec), so it must keep
+        // every sample of the most-sampled process - that process is the workload the
+        // ranking is about. Its tree may add child-process samples on top, so auto is
+        // never smaller than the busiest process's own sample set.
+        IGrouping<string, SampleStack> busiest = all
+            .GroupBy(static s => s.Process, StringComparer.Ordinal)
+            .OrderByDescending(static g => g.Count())
+            .First();
+
+        int autoFromBusiest = auto.Count(s => string.Equals(s.Process, busiest.Key, StringComparison.Ordinal));
+        autoFromBusiest.Should().Be(busiest.Count());
+    }
+
+    [TestMethod]
     public void Read_AutoScope_OnAnAlreadyScopedCapture_DoesNotWarn()
     {
         // The applied-scope notice is suppressed when the automatic scope did not

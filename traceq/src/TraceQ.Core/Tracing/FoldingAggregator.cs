@@ -67,6 +67,48 @@ public sealed class FoldingAggregator
     /// </summary>
     public MetricInfo Metric => _source.Metric;
 
+    /// <summary>
+    ///  Lists every process that owns samples, ranked by summed sample weight, so a
+    ///  multi-process capture can be scoped to the right one before ranking.
+    /// </summary>
+    /// <returns>The process inventory: each process's sample count, weight, and share.</returns>
+    /// <remarks>
+    ///  <para>
+    ///   No folding applies - a process owns a sample regardless of which leaf the
+    ///   sample resolved to - so this counts raw samples and sums their weights by the
+    ///   process label the reader tagged each sample with. Ties in weight break by the
+    ///   process label so the order is deterministic.
+    ///  </para>
+    /// </remarks>
+    public ProcessListResult Processes()
+    {
+        Dictionary<string, (int Count, double Weight)> byProcess = new(StringComparer.Ordinal);
+        double totalWeight = 0.0;
+        foreach (SampleStack sample in _samples)
+        {
+            (int Count, double Weight) accumulated = byProcess.GetValueOrDefault(sample.Process);
+            byProcess[sample.Process] = (accumulated.Count + 1, accumulated.Weight + sample.Weight);
+            totalWeight += sample.Weight;
+        }
+
+        List<ProcessSummary> processes = new(byProcess.Count);
+        foreach (KeyValuePair<string, (int Count, double Weight)> entry in byProcess)
+        {
+            double percent = totalWeight > 0.0 ? entry.Value.Weight / totalWeight * 100.0 : 0.0;
+            processes.Add(new ProcessSummary(entry.Key, entry.Value.Count, entry.Value.Weight, percent));
+        }
+
+        // Highest weight first; ties break by process label so the ranking is stable
+        // and the JSON output deterministic.
+        processes.Sort(static (a, b) =>
+        {
+            int byWeight = b.Weight.CompareTo(a.Weight);
+            return byWeight != 0 ? byWeight : string.CompareOrdinal(a.Process, b.Process);
+        });
+
+        return new ProcessListResult(totalWeight, _samples.Count, processes);
+    }
+
     private string ShortOf(string name) => _shortCache.GetOrAdd(name, static n => FrameNames.Short(n));
 
     /// <summary>

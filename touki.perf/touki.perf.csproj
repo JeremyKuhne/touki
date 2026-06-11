@@ -33,6 +33,8 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" />
+    <!-- ETW profiler (-p ETW) for capturing .etl traces, the net481 elevation path. -->
+    <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" />
     <PackageReference Include="Microsoft.Build" />
     <!-- Oracle reference for the FileSystemGlobbing dialect comparison benchmarks. -->
     <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" />

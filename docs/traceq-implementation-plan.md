@@ -1,6 +1,16 @@
 # `traceq` implementation plan
 
 **Status:** Active — Q1–Q3 resolved (§6)
+**Dogfooding hardening (2026-06-10):** A real net481 ETW profiling session folded
+its findings back into the tool - see [§7](#7-dogfooding-hardening-2026-06-10-etw-capture-process-scoping-and-the-runtime-symbol-plan).
+Shipped: process scoping on the line-level verbs and the MCP tools (A1), a
+sample-count busiest-process auto-scope (A2), a `processes` inventory verb (A3),
+the [tools/Capture-EtwTrace.ps1](../tools/Capture-EtwTrace.ps1) capture wrapper
+(C1), and the rewritten ETW skill (D). **What's next: the runtime-symbol plan
+([§7.6](#76-whats-next-the-runtime-symbol-plan-managed--unmanaged))** - resolve
+managed *and* unmanaged runtime symbols so a profile can say where time actually
+goes (zeroing memory? copying strings?), then resume the product milestones at
+M3½ (promotion).
 **Progress (2026-06-09):** M0 complete (PR #182). M1's analysis core is complete and M2 (the CLI head) is the active milestone. M1 landings - core relocation merged (PR #183); provider/engine seam laid (`StackSampleSource` + `MetricInfo`); output-contract envelope landed (`AnalysisResult<T>` + compact, rounded, deterministic JSON with golden tests); symbol gate landed (`SymbolGate`; `--strict`/exit-3 deferred to M2); tier-2 LRU landed (`LruCache`); token budget landed (`OutputBudget`; truncation + text renderer deferred to M2); fixture corpus + parity harness landed for the net10 EventPipe half (PR #186); allocation provider landed (`AllocationProvider` reads `GCAllocationTick` into byte-weighted stacks ranked by the same metric-generic engine - `SampleStack.Weight`); GC-stats provider landed (`GcStatsProvider` reads `TraceGC` structured records, reusing the GC-verbose fixture). **ThreadTime landed (ETW):** the earlier EventPipe spike was a strictly worse CPU view (no `BLOCKED_TIME`, since EventPipe samples only running threads), but the net481 ETW capture carries context switches, so `ThreadTimeProvider` reconstructs each thread's running and blocked intervals into elapsed-millisecond stacks (`MetricInfo.ThreadTime`) the metric-generic engine ranks unchanged. Export engine verb landed (`SpeedscopeExporter` writes any provider's stacks to the speedscope sampled format, metric-aware unit). Filter/scope grammar subset landed (`ScopeFilter` include/exclude on frame names; sample-level time/process scoping deferred for model + fixture reasons). Diff engine verb landed (`RankingDiff` compares two rankings - provider-agnostic regression/improvement deltas). Group transform landed (`GroupTransform` collapses a matched module's frames into a `module!` box). Chromium export landed (`ChromiumExporter` writes any provider's stacks to the Chrome Trace Event Format). EventQuery provider landed (`EventQueryProvider` paginated raw-event query with payload cap). JitStats provider landed (`JitStatsProvider` per-method JIT compile-time / size / tier records, with a tuned `JitLoop` smoke fixture). Steering-hint taxonomy landed (`SteeringHints` turns a ranking, callers, or diff result into the canonical next-step nudge). The net481 ETW (`.etl`) corpus half landed: an `EtwLoop` benchmark captured under the ETW profiler with context-switch keywords, a process-tree relog `trim` (native-only; the managed-JIT limit and the physical-trim follow-up are captured in [traceq-etl-trimming.md](traceq-etl-trimming.md)), and a committed ~1 MB multi-process scenario fixture. Process-tree scoping landed (`ProcessScope` + read-time filtering in the ETL/EventPipe reader): a machine-wide capture is scoped losslessly to the workload process tree and its children at analysis time, resolving the workload's managed frames. The tier-1 ETLX disk cache is deferred with reason (TraceEvent already caches `.nettrace`/`.etl` -> `.etlx` on both paths; a custom cache adds nothing measurable without the elevated `.etl` half). ThreadTime landed over the ETW capture (`ThreadTimeProvider`: running + blocked intervals into elapsed-millisecond stacks). The O1 cross-machine hand-off spike passed: a Windows-converted `.etlx` resolves managed frames byte-identically on Ubuntu 26.04, so the hand-off is advertised (only the `.etl` -> `.etlx` conversion stays Windows-only). Exceptions provider landed (`ExceptionsProvider` reads `Exception/Start` events into count-weighted throw-site stacks). The text renderer (landed in M2) and the grouping altitude (`GroupTransform`, landed in M1) are no longer outstanding, so the only deferred M1 work is the sample-level time- and process-filter altitudes (M1 step 5, parked for want of fixture data - distinct from the read-time `ProcessScope`, which is already built). **M2 (CLI head):** the engine verbs `rank`/`cpu`/`callers`/`lines`/`heatmap`/`diff`/`tree`/`export` have merged (PRs #195-198); the fifth slice has wired the provider-selection seam (a `TraceMetric` selector threaded through `TraceStore` -> `TraceLoader`, which dispatches to each provider and synthesizes the `TraceInfo` for the non-CPU families) and lit up the three stack-source family shortcuts - `alloc`, `exceptions`, and `threadtime` - each selectable as `rank --metric <name>` or its own verb (PR #199), and added the three report verbs `gcstats` / `jitstats` / `events` (structured records rather than rankable stacks, each with its own executor and renderer), and wired the `--process` / `--all-processes` scope options onto the stack-ranking verbs (a `ScopeRequest` intent the loader resolves to a process tree, defaulting to the busiest process automatically). M2's verb surface is complete, and the CLI head is closed out: the `--benchmark` scope option (frame-based, presets the root to the BenchmarkDotNet workload wrapper) and the `convert` / `clean` file-op verbs landed, the CLI packages as a local `dotnet tool` (an exit criterion), and a CI help-lint guards the help/README contract. `heap` stays unbuilt (no provider yet, Addendum A capture work); `trim` stays parked (the relog rewrite resolves native frames only - see traceq-etl-trimming.md); the eval-task exit criterion rides the M5 harness. See the M2 section for detail.
 **Date:** 2026-06-04
 **Basis:** *Agentic access to TraceEvent — design document* (2026-06-04). Section references (§) and decisions (D#) below point at that document.
@@ -380,6 +390,193 @@ AOT publish.
 The promoted repo and the first private packages need the final name, so the *decision* gates promotion — but the availability pass is an M0 task because it's cheap, and a squatted ID discovered mid-promotion would be annoying. Criteria: ≤ 7 chars for the tool command, unsquatted on NuGet (`<Name>`, `<Name>.Core`, `<Name>.Mcp`) and as a GitHub repo, no collision with existing .NET perf tooling (note: "TraceLens" is taken by an existing tracing product), pronounceable in a sentence ("just traceq it"). Current placeholder `traceq` plausibly survives; alternatives worth the pass: `perfq`, `hotpath`, `stackq`. Bikeshedding is not an M0 task.
 
 ---
+
+## 7. Dogfooding hardening (2026-06-10): ETW capture, process scoping, and the runtime-symbol plan
+
+> Folded in from the standalone ETW-improvement plan after a real net481 ETW
+> profiling session (the `!(bin|obj)/**/*.cs` extended-glob enumeration worst
+> case) drove a round of fixes back into the tool. Evidence is recorded in repo
+> memory (`extglob-perf.md`, `mcp-line-level.md`). A1-A3, C1, and D shipped
+> (built + tested green); the runtime-symbol plan (§7.6) is the explicit next
+> step.
+
+### 7.0 Why this section exists
+
+EventPipe (`-p EP`, `.nettrace`) is net10-only and managed-only. The real pain
+in this library is **net481** (.NET Framework 4.8.1 RyuJIT), where the same glob
+workload ran ~11.8x slower than net10 - and where weaker inlining relocates the
+hot frame entirely. Only ETW can profile net481, and the session proved the
+EventPipe ranking actively *misleads* for Framework: `ExtGlobEngine.ProduceAlternative`
+was ~1.5% self-time on the net10 EventPipe trace and **56%** on the net481 ETW
+trace (56.45% cpu vs 56.46% threadtime - so purely CPU-bound, no blocking).
+`CompareOrdinalIgnoreCaseAsciiFold` + `CompareAscii` were ~9% (the IgnoreCase
+ASCII fold net481 cannot vectorize). Capturing and analyzing that ETW trace
+exposed four sharp edges, now fixed, plus one gap that is the next milestone.
+
+### 7.1 The friction the session surfaced
+
+| Friction | Root cause | Fix |
+|---|---|---|
+| `lines` / `callers` / `heatmap` analyzed the wrong process (a background VPN client, not the benchmark) | Those three verbs had no `--process`; auto-scope picked max `CPUMSec` over the whole capture | A1 |
+| The MCP tools could not scope to a process at all | No `process` param on any MCP tool | A1 |
+| The auto-scope itself picked the wrong process | `FindBusiestProcessName` ranked by whole-capture `CPUMSec`, which a long-lived service wins over a short benchmark | A2 |
+| "Who is even in this capture?" had no answer | No process-inventory verb | A3 |
+| `-p ETW` was unavailable; the elevated capture window looked hung | `BenchmarkDotNet.Diagnostics.Windows` not referenced; capture redirected all streams to a log with `*>` | C1 / C2 |
+| Native runtime frames stay unresolved (~10% of the net481 trace was an unresolved `?` leaf - memcpy / GC / zeroing) | `SymbolReader` built with an empty symbol path, never reaches a symbol server | **§7.6 (next)** |
+
+### 7.2 A1 - process scoping on `lines` / `callers` / `heatmap` (shipped)
+
+The machinery already existed (`RankRequestFactory.TryResolveScope`, the
+scope-threaded `TraceExecution.TryLoad(..., ScopeRequest)` overload used by
+`cpu` / `rank` / `threadtime`); the line-level verbs just did not pass it. Now
+all three CLI verbs take `--process` / `--all-processes`, the three request
+records carry a `ScopeRequest`, and the MCP `trace_lines` / `trace_callers` /
+`trace_heatmap` (and `trace_rank` / `trace_info`) tools take a `process`
+parameter. Covered by new CLI and MCP tests (mutual-exclusion on every leg;
+Windows narrowing on the `etw.etl` fixture).
+
+### 7.3 A2 - sample-count busiest-process auto-scope (shipped)
+
+`ProcessTree.FindBusiestProcessName` now ranks by **CPU sample count** - the
+quantity the rankings actually consume - instead of `TraceProcess.CPUMSec`. A
+long-lived background service (antivirus, a VPN client) accumulates more kernel
+CPU across the whole capture window than a short benchmark, yet owns a tiny
+fraction of the profile's samples; counting samples picks the workload (39,003
+samples) over the noise (~600). One extra lightweight event pass (process id
+only, no stack walk), run only for the automatic scope. Pinned by a regression
+test asserting the auto-scope retains the most-sampled process's samples.
+
+### 7.4 A3 - the `processes` inventory verb (shipped)
+
+`traceq processes <trace>` lists every process by sample weight (CLI-only, like
+`tree` / `jitstats`), so the first move on any multi-process `.etl` is "who is
+actually here?" before scoping. Backed by `FoldingAggregator.Processes()` ->
+`ProcessListResult`; the `Capture-EtwTrace.ps1` output points at it first.
+
+### 7.5 C1 / C2 / D - capture script, package, skill (shipped)
+
+- **C1** - [tools/Capture-EtwTrace.ps1](../tools/Capture-EtwTrace.ps1): the net481
+  ETW analog of `tools/Profile-Benchmark.ps1`. Self-elevates (one UAC prompt),
+  shows the benchmark's **live** progress in the elevated window (output is
+  `Tee-Object`'d, never redirected with `*>`, so it never looks hung), checks the
+  `BenchmarkDotNet.Diagnostics.Windows` reference, and prints the exact
+  process-scoped next-step traceq commands.
+- **C2** - `BenchmarkDotNet.Diagnostics.Windows` (0.15.8) added to
+  `Directory.Packages.props` + `touki.perf.csproj`; the prerequisite for `-p ETW`
+  to exist. Kept.
+- **D** - the ETW section of
+  [.agents/skills/performance-testing/profiling.md](../.agents/skills/performance-testing/profiling.md)
+  was rewritten to lead with "always ETW-profile net481 directly; never
+  extrapolate the ranking from a net10 EventPipe trace," plus the multi-process
+  trap, the capture recipe, and threadtime-vs-cpu;
+  [interpreting-requests.md](../.agents/skills/performance-testing/interpreting-requests.md)
+  warns that the net481 hotspot can be a different *frame*, not just a different
+  number.
+
+### 7.6 What's next: the runtime-symbol plan (managed + unmanaged)
+
+**The question this answers.** "Where do we actually spend time - zeroing memory?
+copying strings? in the GC? in the JIT?" Today a profile cannot say: the hot
+*managed* method resolves, but the runtime work it bottoms out in shows as an
+unresolved `?` leaf (~10% of the net481 trace) or is folded away as a JIT-helper
+artifact. The goal is to name that work.
+
+**Two symbol classes, two very different costs:**
+
+1. **Managed frames - already resolved, free.** JITted method names come from the
+   CLR rundown baked into every trace, so `System.*`, `Buffer.Memmove`,
+   `SpanHelpers.*`, and all touki methods already rank correctly on both TFMs with
+   no symbol server. The one gap is **precompiled images**: on net481 the
+   Framework assemblies are NGENed (need NGEN PDBs), and on net10 the runtime
+   ships ReadyToRun (R2R) - TraceEvent usually resolves R2R from the rundown, but
+   this must be verified, not assumed.
+2. **Native runtime frames - the missing 10%, needs a symbol server.** These are
+   the frames that answer the question, and they live in unmanaged modules whose
+   PDBs are on the **Microsoft public symbol server**
+   (`https://msdl.microsoft.com/download/symbols`):
+   - **Zeroing:** `ntdll!RtlZeroMemory`, `ucrtbase!memset`, `coreclr!JIT_MemSet`,
+     the GC's clear-on-allocation, `coreclr!ZeroMemoryInGCHeap`.
+   - **Copying:** `ucrtbase!memcpy` / `memmove`, `coreclr!JIT_MemCpy`,
+     `ntdll!wmemcmp`, and the managed `Buffer.Memmove` they back.
+   - **GC:** `coreclr!WKS::gc_heap::*` / `SVR::gc_heap::*`.
+   - **Write barriers:** `coreclr!JIT_WriteBarrier`, `BulkMoveWithWriteBarrier`.
+   - **JIT:** `clrjit!*`, `coreclr!*::CompileMethod` (startup / first-call cost).
+
+**Phase 1 - reach the symbol server (opt-in).** Replace the empty symbol path in
+`new SymbolReader(TextWriter.Null, "", null)` with a real one *only when opted
+in*: a new `--native-symbols` CLI flag (and `nativeSymbols: true` MCP parameter)
+builds the reader with `srv*<cache>*https://msdl.microsoft.com/download/symbols`,
+backed by a local cache dir (`--symbol-cache <dir>`, default under
+`%TEMP%/traceq-symbols`). Honor an existing `_NT_SYMBOL_PATH` when set and the
+flag is absent. Use `SymbolReader.LookupWarmSymbols` so only modules that carry
+samples are fetched - bounding the download to what the trace actually hit, not
+every loaded DLL. The current offline, deterministic, local-PDB-only mode stays
+the **default**.
+
+**Phase 2 - precompiled-image PDBs.** For NGEN modules (net481), call
+`SymbolReader.GenerateNGenSymbolsForModule` during the read (TraceEvent
+regenerates the NGEN PDB from the native image locally; Windows-only). We
+confirmed BDN's `EtwProfiler` writes **no** `.etl.ngenpdb` folder, so
+analysis-time generation is the only path. For net10, verify R2R frames resolve
+from the rundown; if not, the R2R PDB comes from the same symbol server as the
+native modules.
+
+**Phase 3 - surface the work (the part that actually answers the question).**
+The default fold list *hides* exactly these frames: it folds `memmove`,
+`BulkMoveWithWriteBarrier`, and `PollGC` into their managed caller, which is right
+for "which method is hot" but wrong for "what kind of work dominates." So Phase 3
+adds two things:
+
+- **`--no-fold`** (a.k.a. `--raw`): disable artifact folding so native leaves rank
+  on their own. The fast way to see the leaf distribution once symbols resolve.
+- **A work-classification view** (`traceq classify`, or a grouping preset over
+  resolved leaves): bucket leaves by name pattern into **zeroing**, **copying**,
+  **GC**, **write-barrier**, **JIT**, and **other**, and report each bucket's
+  share of total time. This is the literal answer to "are we zeroing or copying?"
+  and reuses the existing `GroupTransform` machinery - the classification is just
+  a curated set of name->category rules over native frames.
+
+**Plumbing surface.** `ITraceReader.Read` already takes a symbols directory;
+extend symbol setup to a small `SymbolOptions` (native on/off, cache dir). Thread
+it through `TraceLoader`, the `TraceStore` cache key (a trace resolved with native
+symbols is a distinct cache entry), the CPU-reading CLI verbs, and the MCP tools.
+The classification view is a new engine transform plus a `classify` verb /
+`trace_classify` tool.
+
+**Safety, determinism, and why it was deferred.** Never auto-download in CI or by
+default; the local-only path stays the default so the `< 0.8` symbol-resolution
+warning and the test suite stay environment-independent. (The deferral reason was
+exactly this: honoring `_NT_SYMBOL_PATH` ambiently would make a developer with
+symbols configured resolve native frames during tests and flip the `< 0.8`
+assertions such as `Run_Cpu_ForwardsTheLoaderQualityWarnings`.) First run with
+`--native-symbols` is slow (network); later runs hit the cache. Tests that
+exercise native resolution are opt-in / network-gated and excluded from the
+default suite. The `-NativeSymbols` switch returns to `Capture-EtwTrace.ps1` with
+this work.
+
+**Validation target.** Capture the net481 glob enumeration under ETW with
+`--native-symbols`, then `traceq classify` (or `cpu --no-fold --native-symbols`),
+and produce a named split - e.g. "56% in `ProduceAlternative`'s ASCII-fold
+compare, N% in memory zeroing, M% in copying" - turning the unresolved `?` ~10%
+into an actionable answer.
+
+**Exit criteria.** `--native-symbols` resolves `ntdll` / `ucrtbase` / `coreclr`
+leaves on the net481 fixture (Windows, network, opt-in test); `classify` reports
+a zeroing-vs-copying-vs-GC split that sums to ~100% of scope; the default offline
+suite is unchanged and stays green with no network; `Capture-EtwTrace.ps1`
+re-gains `-NativeSymbols`.
+
+### 7.7 Sequencing
+
+1. **The runtime-symbol plan (§7.6)** - Phase 1 (symbol server, opt-in), then
+   Phase 2 (NGEN/R2R), then Phase 3 (`--no-fold` + `classify`). This is the next
+   work and directly answers a recurring need.
+2. Resume the product milestones: **M3½ promotion** (the facade stands alone),
+   then M4 distribution, M5 eval harness, M6 Touki migration + v1.0.
+
+The native-symbol work slots into the M1 symbol pipeline and Addendum A; it does
+not block promotion, but it is the highest-value analysis gap left for the
+day-to-day touki perf loop.
 
 ---
 
