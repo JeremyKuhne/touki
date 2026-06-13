@@ -28,6 +28,12 @@
   <Project Path="sample/sample.csproj">
     <Platform Project="x64" />
   </Project>
+  <Project Path="touki.analyzers.tests/touki.analyzers.tests.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="touki.analyzers/touki.analyzers.csproj">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="touki.fuzz/touki.fuzz.csproj">
     <Platform Project="x64" />
   </Project>

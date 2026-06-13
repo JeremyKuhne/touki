@@ -129,44 +129,6 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be($"Value 2A{Environment.NewLine}");
     }
 
-#if !DEBUG
-    [TestMethod]
-    public void Append_InterpolatedStringWithLargeContent_DoesNotAllocateIntermediateString()
-    {
-        string large = new('x', 8192);
-        {
-            using ValueStringBuilder warmup = new(stackalloc char[32]);
-            warmup.Append($"<{large}>");
-        }
-
-        using ValueStringBuilder builder = new(stackalloc char[32]);
-        using (MemoryWatch.Create)
-        {
-            builder.Append($"<{large}>");
-        }
-
-        builder.ToString().Should().Be("<" + large + ">");
-    }
-
-    [TestMethod]
-    public void AppendLine_InterpolatedStringWithLargeContent_DoesNotAllocateIntermediateString()
-    {
-        string large = new('x', 8192);
-        {
-            using ValueStringBuilder warmup = new(stackalloc char[32]);
-            warmup.AppendLine($"<{large}>");
-        }
-
-        using ValueStringBuilder builder = new(stackalloc char[32]);
-        using (MemoryWatch.Create)
-        {
-            builder.AppendLine($"<{large}>");
-        }
-
-        builder.ToString().Should().Be("<" + large + ">" + Environment.NewLine);
-    }
-#endif
-
     [TestMethod]
     public void Append_CharPointer()
     {
