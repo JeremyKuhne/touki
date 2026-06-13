@@ -73,6 +73,7 @@ public sealed class UseIsNullAnalyzer : DiagnosticAnalyzer
         string suggestion = isEquals ? "is null" : "is not null";
         string current = isEquals ? "== null" : "!= null";
 
-        context.ReportDiagnostic(Diagnostic.Create(s_rule, comparison.GetLocation(), suggestion, current));
+        // Report on the operator token so the squiggle lands on the exact '==' / '!=' to change.
+        context.ReportDiagnostic(Diagnostic.Create(s_rule, comparison.OperatorToken.GetLocation(), suggestion, current));
     }
 }

@@ -76,7 +76,7 @@ public class UseIsNullAnalyzerTests
     }
 
     [TestMethod]
-    public async Task AnalyzeComparison_EqualsNull_ReportsAtComparisonSpan()
+    public async Task AnalyzeComparison_EqualsNull_ReportsAtOperatorToken()
     {
         const string source = """
             class Sample
@@ -90,7 +90,7 @@ public class UseIsNullAnalyzerTests
 
         diagnostics.Should().ContainSingle();
         Location location = diagnostics[0].Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("value == null");
+        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("==");
     }
 
     [TestMethod]
