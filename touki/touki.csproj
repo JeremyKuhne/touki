@@ -138,4 +138,36 @@
     </PackageReference>
   </ItemGroup>
 
+  <!--
+    Analyzer related
+
+    The Touki analyzers ship inside this package under analyzers/dotnet/cs so consumers
+    get them automatically (packed by the _AddAnalyzersToPackage target below).
+
+    OutputItemType="Analyzer" also runs the analyzers against touki's own sources so the
+    library dogfoods its own rules. ReferenceOutputAssembly="false" keeps the analyzer
+    assembly out of touki's runtime references, and PrivateAssets="all" keeps it out of
+    the package's dependency graph.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\touki.analyzers\touki.analyzers.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
+  </ItemGroup>
+
+  <Target Name="_AddAnalyzersToPackage" BeforeTargets="GenerateNuspec">
+    <MSBuild Projects="..\touki.analyzers\touki.analyzers.csproj"
+             Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=netstandard2.0">
+      <Output TaskParameter="TargetOutputs" ItemName="_ToukiAnalyzerAssembly" />
+    </MSBuild>
+    <ItemGroup>
+      <_PackageFiles Include="@(_ToukiAnalyzerAssembly)">
+        <BuildAction>None</BuildAction>
+        <PackagePath>analyzers/dotnet/cs</PackagePath>
+      </_PackageFiles>
+    </ItemGroup>
+  </Target>
+
 </Project>

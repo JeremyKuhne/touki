@@ -25,6 +25,7 @@ The "Disambiguation" section below records every known overlap.
 | [fuzz-testing](./fuzz-testing/SKILL.md) | "add a fuzz target", "run the fuzzer", "install fuzzing prereqs", "fuzz SpanReader/SpanWriter", coverage-guided SharpFuzz runs on net10/net481, promoting a crash into a regression | semi-portable | `security-review`, `pre-pr-self-review`, `run-tests-on-wsl` |
 | [publish-release](./publish-release/SKILL.md) | "publish a new version", "release alpha.N", "ship a beta", "cut a release", "promote alpha to beta", "tag and publish" - choosing the right `Major.Minor.Patch`, alpha/beta/rc/stable channel, tag stream (`v*` vs `ts-v*`), and GitHub release notes | repo-specific | `pre-pr-self-review` |
 | [manage-skills](./manage-skills/SKILL.md) | "find a skill", "build a skill" / "create a skill" (checks for an existing one first), "update the skill", sync a local change upstream vs into an overlay; the find-first build path, tiered search, pull/push update flow | semi-portable | `agent-files-review` |
+| [roslyn-analyzers](./roslyn-analyzers/SKILL.md) | "write an analyzer", "create a Roslyn/diagnostic analyzer", "add an analyzer rule", "add a code fix", "enforce <convention> at build time", "flag <pattern> in code"; find-first check of existing `CA`/`IDE` rules, `BannedApiAnalyzers`, EditorConfig, Roslynator/StyleCop/Meziantou before authoring; `touki.analyzers` layout, packing into `KlutzyNinja.Touki`, statelessness/`IOperation` design, the `Microsoft.CodeAnalysis.Testing` harness, in-IDE perf budget | semi-portable | `performance-testing`, `security-review`, `pre-pr-self-review`, `create-pr` |
 
 **Portability** (mirrored from each skill's `metadata.portability`) marks how much
 a skill would need to change to be reused in another repo: `portable` (generic),
@@ -108,6 +109,21 @@ Both mention "evaluating allocations", but they answer different questions:
 
 Use `scratch-buffer-strategy` to pick the design; use `performance-testing` to
 verify it on both TFMs.
+
+### `roslyn-analyzers` vs `performance-testing`
+
+Both talk about "performance", but about different things:
+
+- **How fast the analyzer runs in the IDE** (per-keystroke budget, cheap-filter
+  ordering, `ReportAnalyzer`) &rarr; `roslyn-analyzers`. The subject is a
+  `DiagnosticAnalyzer`'s own execution time.
+- **How fast the library code runs at execution time** (BenchmarkDotNet `Mean`,
+  `Allocated`, both TFMs) &rarr; `performance-testing`. The subject is the shipped
+  product code.
+
+They share no harness and no budget. If the request is "make this analyzer faster
+to type against", it is `roslyn-analyzers`; if it is "make this method faster at
+run time", it is `performance-testing`.
 
 ## Maintenance
 

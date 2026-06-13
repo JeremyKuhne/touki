@@ -1,0 +1,9 @@
+# Ported BCL polyfills
+#
+# Code under this folder is ported as faithfully as possible from dotnet/runtime
+# to ease future updates from upstream (see polyfills.instructions.md). Touki's own
+# opinionated analyzers should not force idiomatic rewrites of this ported code.
+[*.cs]
+
+# TOUKI0001: Use pattern matching for null checks
+dotnet_diagnostic.TOUKI0001.severity = none

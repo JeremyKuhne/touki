@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Roslyn analyzers must target netstandard2.0 so they load in every compiler
+      host (command line, Visual Studio, VS Code). This is enforced by RS1038.
+    -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+
+    <!-- Turn on the extended analyzer authoring rules (banned APIs, target framework, etc.). -->
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Touki.Analyzers</RootNamespace>
+
+    <!--
+      This assembly ships inside the KlutzyNinja.Touki package (under
+      analyzers/dotnet/cs), not as its own package. The packing is done by the
+      _AddAnalyzersToPackage target in touki/touki.csproj.
+    -->
+    <IsPackable>false</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+
+    <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The Roslyn APIs the analyzer is built against. Compile-time only; the host provides these at run time. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <!-- Analyzers that validate analyzer authoring (the RS#### rules). -->
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Analyzer release tracking files (satisfies RS2008). -->
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+</Project>
