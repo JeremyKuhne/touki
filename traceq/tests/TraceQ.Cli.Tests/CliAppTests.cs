@@ -659,6 +659,34 @@ public sealed class CliAppTests
         exit.Should().Be(ExitCodes.Success);
         output.Should().Contain("--format");
         output.Should().Contain("--output");
+        output.Should().Contain("--process");
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Run_ExportProcessScope_OnMachineWideCapture_Narrows()
+    {
+        // The export verb scopes a multi-process ETW capture to a named process tree,
+        // mirroring cpu/rank/lines. The scope notice goes to the error stream so the
+        // exported JSON on stdout stays clean for a viewer. Reading an .etl is
+        // Windows-only, so this is guarded.
+        (int exit, string output, string error) = Run("export", Etw, "--process", "HotLoopBench-Job");
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("speedscope.app/file-format-schema");
+        error.Should().Contain("Scoped to the");
+    }
+
+    [TestMethod]
+    public void Run_ExportProcessAndAllProcesses_IsUsageError()
+    {
+        // The two scope options are mutually exclusive, matching the ranking verbs. The
+        // check runs before the trace loads, so the single-process speedscope fixture
+        // exercises it on every CI leg.
+        (int exit, _, string error) = Run("export", Speedscope, "--process", "x", "--all-processes");
+
+        exit.Should().Be(ExitCodes.UsageError);
+        error.Should().Contain("only one of --process and --all-processes");
     }
 
     [TestMethod]

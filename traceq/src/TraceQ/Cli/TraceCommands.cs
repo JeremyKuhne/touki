@@ -515,6 +515,8 @@ internal sealed class TraceCommands
     /// <param name="output">-o, Output file path; omit to write to standard output.</param>
     /// <param name="symbols">-s, Build-output directory whose embedded PDBs resolve managed frames.</param>
     /// <param name="name">Profile name shown in the viewer.</param>
+    /// <param name="process">Scope to the process tree whose name contains this; omit to auto-scope to the busiest.</param>
+    /// <param name="allProcesses">Read every process instead of auto-scoping to the busiest (multi-process captures).</param>
     /// <returns>A process exit code.</returns>
     [Command("export")]
     public int Export(
@@ -522,9 +524,17 @@ internal sealed class TraceCommands
         ExportFormat format = ExportFormat.Speedscope,
         string? output = null,
         string? symbols = null,
-        string name = "traceq")
+        string name = "traceq",
+        string process = "",
+        bool allProcesses = false)
     {
-        ExportRequest request = new(trace, format, output, symbols, name);
+        if (!RankRequestFactory.TryResolveScope(process, allProcesses, out ScopeRequest scope, out string? scopeError))
+        {
+            Console.Error.WriteLine(scopeError);
+            return ExitCodes.UsageError;
+        }
+
+        ExportRequest request = new(trace, format, output, symbols, name, scope);
         return ExportExecutor.Run(request, Console.Out, Console.Error);
     }
 

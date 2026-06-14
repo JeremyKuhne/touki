@@ -14,10 +14,11 @@ namespace TraceQ.Cli;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   Export is a raw conversion of the whole sample source, so it takes no folding,
-///   scoping, or ranking options. Any symbol-resolution warning is written to the
-///   error writer rather than mixed into the flame-graph output, keeping the written
-///   JSON clean for the viewer.
+///   Export is a raw conversion of the sample source, so it takes no folding or
+///   ranking options; it does honor process scoping, so a machine-wide <c>.etl</c>
+///   can be narrowed to one process tree (as the ranking verbs do). Any
+///   symbol-resolution or scoping warning is written to the error writer rather than
+///   mixed into the flame-graph output, keeping the written JSON clean for the viewer.
 ///  </para>
 /// </remarks>
 internal static class ExportExecutor
@@ -31,7 +32,7 @@ internal static class ExportExecutor
     /// <returns>A process exit code (see <see cref="ExitCodes"/>).</returns>
     public static int Run(ExportRequest request, TextWriter output, TextWriter error)
     {
-        if (!TraceExecution.TryLoad(request.Path, request.Symbols, error, out LoadedTrace? trace))
+        if (!TraceExecution.TryLoad(request.Path, TraceMetric.Cpu, request.Symbols, error, out LoadedTrace? trace, request.Scope))
         {
             return ExitCodes.InputError;
         }
