@@ -15,7 +15,10 @@ namespace System.Runtime.CompilerServices;
 ///  Simple default implementation of an interpolated string handler
 ///  that uses a <see cref="ValueStringBuilder"/> to build the string.
 /// </summary>
+// Owns a ValueStringBuilder (itself [NonCopyable]); copying the handler would copy the builder and double-free its
+// pooled array. The compiler only ever uses an interpolated string handler by ref, so this constraint is free here.
 [InterpolatedStringHandler]
+[NonCopyable]
 public ref struct DefaultInterpolatedStringHandler
 {
     private ValueStringBuilder _builder;

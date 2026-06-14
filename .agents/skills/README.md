@@ -26,6 +26,7 @@ The "Disambiguation" section below records every known overlap.
 | [publish-release](./publish-release/SKILL.md) | "publish a new version", "release alpha.N", "ship a beta", "cut a release", "promote alpha to beta", "tag and publish" - choosing the right `Major.Minor.Patch`, alpha/beta/rc/stable channel, tag stream (`v*` vs `ts-v*`), and GitHub release notes | repo-specific | `pre-pr-self-review` |
 | [manage-skills](./manage-skills/SKILL.md) | "find a skill", "build a skill" / "create a skill" (checks for an existing one first), "update the skill", sync a local change upstream vs into an overlay; the find-first build path, tiered search, pull/push update flow | semi-portable | `agent-files-review` |
 | [roslyn-analyzers](./roslyn-analyzers/SKILL.md) | "write an analyzer", "create a Roslyn/diagnostic analyzer", "add an analyzer rule", "add a code fix", "enforce <convention> at build time", "flag <pattern> in code"; find-first check of existing `CA`/`IDE` rules, `BannedApiAnalyzers`, EditorConfig, Roslynator/StyleCop/Meziantou before authoring; `touki.analyzers` layout, packing into `KlutzyNinja.Touki`, statelessness/`IOperation` design, the `Microsoft.CodeAnalysis.Testing` harness, in-IDE perf budget | semi-portable | `performance-testing`, `security-review`, `pre-pr-self-review`, `create-pr` |
+| [il-copy-inspection](./il-copy-inspection/SKILL.md) | "find struct copies", "where does the compiler copy this struct", "is this a defensive copy", "check for boxing in IL", "did the compiler emit a copy", "confirm the analyzer's defensive-copy warning", "audit a `[NonCopyable]` type's copies after build"; reading emitted IL (`ildasm`/`ilspycmd`/Cecil/`MetadataReader`) for the `ldobj`/`stloc`/`ldloca` defensive-copy signature, `box`, by-value field/arg/return copies, and PDB offset-to-source mapping | semi-portable | `roslyn-analyzers`, `framework-jit-optimization`, `performance-testing`, `scratch-buffer-strategy` |
 
 **Portability** (mirrored from each skill's `metadata.portability`) marks how much
 a skill would need to change to be reused in another repo: `portable` (generic),
@@ -124,6 +125,24 @@ Both talk about "performance", but about different things:
 They share no harness and no budget. If the request is "make this analyzer faster
 to type against", it is `roslyn-analyzers`; if it is "make this method faster at
 run time", it is `performance-testing`.
+
+### `il-copy-inspection` vs `roslyn-analyzers` vs the perf skills
+
+"Find the struct copies" is ambiguous across four artifact layers. Route by what is
+being read:
+
+- **Predict copies from source, live in the IDE** &rarr; `roslyn-analyzers`
+  (the TOUKI0002-0004 defensive-copy / `[NonCopyable]` rules over `IOperation`).
+- **Read the compiler's emitted IL** for the actual `ldobj`/`box`/by-value copies
+  &rarr; `il-copy-inspection`. It is post-build and sees synthesized copies the
+  analyzer cannot.
+- **Read the JIT's machine code** (was the copy elided?) &rarr;
+  `framework-jit-optimization` + `[DisassemblyDiagnoser]`.
+- **Measure the runtime cost** (allocation / time) &rarr; `performance-testing`.
+
+`il-copy-inspection` never runs the code and never measures time; if a request needs
+a number, it belongs to `performance-testing`. The natural chain is analyzer
+prediction &rarr; IL confirmation &rarr; asm/runtime cost.
 
 ## Maintenance
 

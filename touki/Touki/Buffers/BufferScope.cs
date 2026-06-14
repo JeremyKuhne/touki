@@ -8,6 +8,7 @@ namespace Touki.Buffers;
 ///  Allows renting a buffer from <see cref="ArrayPool{T}"/> with a using statement. Can be used directly as if it
 ///  were a <see cref="Span{T}"/>.
 /// </summary>
+[NonCopyable]
 public ref struct BufferScope<T>
 {
     private T[]? _array;

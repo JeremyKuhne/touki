@@ -11,7 +11,13 @@ namespace Touki.Collections;
 /// </summary>
 public struct ArraySegmentEnumerator<T> : IEnumerator<T>
 {
-    private readonly ArraySegment<T> _segment;
+    // The segment is decomposed into its parts rather than stored as an ArraySegment<T> field. On .NET Framework
+    // ArraySegment<T>.Array/Offset/Count are not readonly members, so accessing them through a readonly struct
+    // field forces a defensive copy of the whole segment on every access - in the per-element MoveNext hot path.
+    // Storing the array reference and two ints sidesteps that entirely (and is free on modern .NET as well).
+    private readonly T[] _array;
+    private readonly int _offset;
+    private readonly int _count;
     private int _index;
     private T _current;
 
@@ -22,7 +28,9 @@ public struct ArraySegmentEnumerator<T> : IEnumerator<T>
     internal ArraySegmentEnumerator(ArraySegment<T> segment)
     {
         ArgumentNullException.ThrowIfNull(segment.Array, nameof(segment));
-        _segment = segment;
+        _array = segment.Array;
+        _offset = segment.Offset;
+        _count = segment.Count;
         _index = 0;
         _current = default!;
     }
@@ -47,15 +55,14 @@ public struct ArraySegmentEnumerator<T> : IEnumerator<T>
     /// </returns>
     public bool MoveNext()
     {
-        if ((uint)_index < (uint)_segment.Count)
+        if ((uint)_index < (uint)_count)
         {
-            // .NET Framework doesn't have a public indexer method, would otherwise have to cast.
-            _current = _segment.Array![_index + _segment.Offset];
+            _current = _array[_index + _offset];
             _index++;
             return true;
         }
 
-        _index = _segment.Count + 1;
+        _index = _count + 1;
         _current = default!;
         return false;
     }

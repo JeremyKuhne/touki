@@ -27,6 +27,8 @@
     <PackageReference Include="AwesomeAssertions" />
     <!-- Roslyn APIs used by the in-memory test harness to run the analyzer. -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <!-- Workspaces APIs used by the in-memory code-fix harness (AdhocWorkspace, CodeAction). -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" PrivateAssets="all" />
     <!-- Enables the MTP runner's TRX report option used by CI. -->
     <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" PrivateAssets="all" />
@@ -37,6 +39,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\touki.analyzers\touki.analyzers.csproj" />
+    <ProjectReference Include="..\touki.analyzers.codefixes\touki.analyzers.codefixes.csproj" />
   </ItemGroup>
 
 </Project>

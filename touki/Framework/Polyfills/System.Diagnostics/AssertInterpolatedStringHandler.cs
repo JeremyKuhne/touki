@@ -8,8 +8,11 @@ namespace System.Diagnostics;
 ///  Provides an interpolated string handler for <see cref="Debug.Assert(bool)"/> that only formats when the assert fails.
 /// </summary>
 // Only invoked from Debug.Assert overloads, which are [Conditional("DEBUG")] and unreachable in Release coverage runs.
+// Owns a ValueStringBuilder (itself [NonCopyable]); copying the handler would copy the builder, so it propagates the
+// constraint. The compiler only ever uses an interpolated string handler by ref, so this is free here.
 [InterpolatedStringHandler]
 [ExcludeFromCodeCoverage]
+[Touki.NonCopyable]
 public ref struct AssertInterpolatedStringHandler
 {
     private ValueStringBuilder _builder;

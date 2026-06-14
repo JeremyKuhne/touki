@@ -1,0 +1,9 @@
+# Touki dogfoods its own analyzers (touki.analyzers, wired via OutputItemType="Analyzer"
+# in touki.csproj). TOUKI0002 (defensive copy of any struct) ships Hidden because it is
+# high volume for consumers; for touki's own sources we raise it to a suggestion so new
+# defensive copies stay visible to maintainers. It stays below warning on purpose: some
+# defensive copies come from BCL structs whose members are not readonly on net472 and are
+# only avoidable by decomposing/caching, so this must not break the build under
+# TreatWarningsAsErrors. TOUKI0003/TOUKI0004 keep their default Warning severity.
+[*.cs]
+dotnet_diagnostic.TOUKI0002.severity = suggestion
