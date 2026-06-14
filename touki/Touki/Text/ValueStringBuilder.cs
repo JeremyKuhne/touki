@@ -33,6 +33,7 @@ namespace Touki.Text;
 ///  </para>
 /// </remarks>
 [InterpolatedStringHandler]
+[NonCopyable]
 public ref partial struct ValueStringBuilder
 {
     private const int GuessedLengthPerHole = 11;

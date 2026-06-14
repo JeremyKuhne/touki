@@ -17,6 +17,10 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
 #if DEBUG
     public class Scope : DisposalTracking.Tracker, IDisposable
 #else
+    // Ref-counts a CacheEntry: the entry constructor calls AddRef and Dispose calls Release. Copying the scope by
+    // value would duplicate the single logical reference without an extra AddRef, so disposing both copies would
+    // Release twice and corrupt the count. In DEBUG it is a class (a reference type, already non-copyable).
+    [NonCopyable]
     public readonly ref struct Scope
 #endif
     {

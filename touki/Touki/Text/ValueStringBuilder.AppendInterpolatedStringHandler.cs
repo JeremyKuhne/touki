@@ -12,6 +12,7 @@ public ref partial struct ValueStringBuilder
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
     [InterpolatedStringHandler]
+    [NonCopyable]
     public ref struct InterpolatedStringHandler
     {
         private ValueStringBuilder _builder;
