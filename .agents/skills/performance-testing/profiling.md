@@ -44,7 +44,7 @@ Things that bite, kept short - full rationale in
 sections 3a (methods) and 3f (lines):
 
 - **EventPipe is net10.0-only** - net481 has no EventPipe, so profile it under
-  ETW instead (see [Capturing under ETW](#capturing-under-etw-net481-denser-samples-native-frames)
+  ETW instead (see [Capturing under ETW](#capturing-under-etw-net481-inlining-accurate-attribution-denser-samples-native-frames)
   and [tools/Capture-EtwTrace.ps1](../../../tools/Capture-EtwTrace.ps1)); never
   read a net481 hotspot off a net10 trace. EventPipe's CPU sampler is also fixed
   at **~100 Hz** and **net10 cannot raise it**

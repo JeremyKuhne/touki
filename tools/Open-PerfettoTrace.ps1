@@ -179,7 +179,12 @@ try {
             }
             elseif (($request.HttpMethod -in "GET", "HEAD") -and $requestPath -eq "/$fname") {
                 $bytes = [System.IO.File]::ReadAllBytes($full)
-                $response.ContentType = "application/json"
+
+                # A Chrome-trace export is JSON; a native Perfetto capture (.pftrace,
+                # .perfetto-trace, .pb) is a binary proto. Label the payload accordingly
+                # so the Content-Type matches what is actually served.
+                $isJson = [System.IO.Path]::GetExtension($fname).ToLowerInvariant() -eq ".json"
+                $response.ContentType = if ($isJson) { "application/json" } else { "application/octet-stream" }
                 $response.ContentLength64 = $bytes.Length
                 if ($request.HttpMethod -eq "GET") {
                     $response.OutputStream.Write($bytes, 0, $bytes.Length)

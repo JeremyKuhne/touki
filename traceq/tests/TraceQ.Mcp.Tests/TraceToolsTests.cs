@@ -548,7 +548,7 @@ public sealed class TraceToolsTests
     }
 
     [TestMethod]
-    public void Export_ProcessScopeOnSpeedscope_IsHarmlessNoOp()
+    public void Export_ProcessScope_OnSpeedscope_IsHarmlessNoOp()
     {
         TraceStore store = new();
         string outputPath = Path.Combine(Path.GetTempPath(), $"{Path.GetRandomFileName()}.speedscope.json");
