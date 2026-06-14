@@ -6,15 +6,17 @@
             "type": "http",
             "url": "https://learn.microsoft.com/api/mcp"
         },
-        // Local traceq trace-analysis server (incubating under traceq/). Points at the
-        // built Release DLL for fast startup and clean stdout; rebuild with
-        // `dotnet build traceq/src/TraceQ.Mcp/TraceQ.Mcp.csproj -c Release` and restart
-        // the server after changing traceq. See docs/traceq-local-demo.md.
-        "traceq": {
+        // Local filtrace trace-analysis server. filtrace was promoted out of this
+        // repo into its own sibling repository (github.com/JeremyKuhne/filtrace,
+        // cloned alongside touki at ../filtrace). Points at the built Release DLL
+        // for fast startup and clean stdout; rebuild with
+        // `dotnet build ../filtrace/src/Filtrace.Mcp/Filtrace.Mcp.csproj -c Release`
+        // and restart the server after changing filtrace.
+        "filtrace": {
             "type": "stdio",
             "command": "dotnet",
             "args": [
-                "${workspaceFolder}/traceq/src/TraceQ.Mcp/bin/Release/net10.0/TraceQ.Mcp.dll"
+                "${workspaceFolder}/../filtrace/src/Filtrace.Mcp/bin/Release/net10.0/Filtrace.Mcp.dll"
             ]
         }
     }
