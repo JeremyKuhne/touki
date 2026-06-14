@@ -100,6 +100,11 @@ That skill is the right entry point for "this loop is slow on `net481`, what
 should I try?" questions, while this one is about authoring and running the
 benchmarks themselves.
 
+To see *why* a result is what it is - the C# lowering, the IL, or the JIT asm
+behind a number - see [reading-codegen.md](reading-codegen.md). It covers
+sharplab, BenchmarkDotNet's `[DisassemblyDiagnoser]` / `[HardwareCounters]`, the
+`DOTNET_JitDisasm*` knobs, and the tiering/PGO traps that bite codegen inspection.
+
 ## Sub-pages
 
 - [interpreting-requests.md](interpreting-requests.md) - turning a user's
@@ -114,3 +119,6 @@ benchmarks themselves.
   with the `traceq` analyzer from operation to method to line.
 - [interpreting-results.md](interpreting-results.md) - before/after discipline on
   both TFMs, reading the memory columns, and the tuple-swap exception.
+- [reading-codegen.md](reading-codegen.md) - seeing the C# lowering, IL, and JIT
+  asm behind a number: sharplab, `[DisassemblyDiagnoser]`, `[HardwareCounters]`,
+  the `DOTNET_JitDisasm*` knobs, and the tiering/PGO inspection traps.

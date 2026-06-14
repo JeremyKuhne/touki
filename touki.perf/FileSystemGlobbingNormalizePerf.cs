@@ -118,7 +118,8 @@ public class FileSystemGlobbingNormalizePerf
 
         ValueStringBuilder builder = new(stackalloc char[256]);
         BuildRewritten(pattern, separator, ref builder);
-        pattern = builder.ToStringAndDispose().AsSpan();
+        pattern = builder.ToString().AsSpan();
+        builder.Dispose();
     }
 
     private static bool NeedsRewrite(ReadOnlySpan<char> pattern, char separator)
@@ -201,7 +202,8 @@ public class FileSystemGlobbingNormalizePerf
             return;
         }
 
-        pattern = builder.ToStringAndDispose().AsSpan();
+        pattern = builder.ToString().AsSpan();
+        builder.Dispose();
     }
 
     // ---- Shared rewrite body ----

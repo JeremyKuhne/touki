@@ -9,6 +9,7 @@ namespace Touki.Buffers;
 ///  were a <see cref="Span{T}"/>.
 /// </summary>
 [NonCopyable]
+[MustDispose]
 public ref struct BufferScope<T>
 {
     private T[]? _array;

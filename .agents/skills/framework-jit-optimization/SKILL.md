@@ -1,5 +1,5 @@
 ---
-description: Optimize hot-path code for the `net481` (.NET Framework) target in a multi-targeted library's Framework-only sources. Use when writing or reviewing performance-sensitive loops, deciding whether to specialize a generic method for primitive types, choosing between scalar/unrolled/BCL-delegating implementations, or diagnosing why a net481 micro-benchmark regresses on the older RyuJIT. For BenchmarkDotNet harness mechanics (authoring/running benchmarks, evaluating allocations) see the `performance-testing` skill.
+description: Optimize hot-path code for the `net481` (.NET Framework) target in a multi-targeted library's Framework-only sources. Use when writing or reviewing performance-sensitive loops, deciding whether to specialize a generic method for primitive types, choosing between scalar/unrolled/BCL-delegating implementations, or diagnosing why a net481 micro-benchmark regresses on the older RyuJIT. Also covers the modern .NET (net10) counterpart - vectorization, hardware intrinsics, struct-generic kernels, JIT-friendly shapes - and the cross-TFM codegen fundamentals shared by both targets (arithmetic and branchless lowering, struct layout, zero-allocation static data, hot-path allocation anti-patterns). For BenchmarkDotNet harness mechanics (authoring/running benchmarks, evaluating allocations) see the `performance-testing` skill.
 license: MIT
 metadata:
     github-path: skills/framework-jit-optimization
@@ -36,6 +36,14 @@ tree.
 For choosing how a hot path gets its scratch buffer (zeroed `stackalloc` vs
 `[SkipLocalsInit]` vs a stack-with-pool-fallback buffer vs an `ArrayPool` rental,
 and the net481/net10 size crossovers), see the `scratch-buffer-strategy` skill.
+
+The net481 rules below have two companions. What the **modern target enables** that
+net481 does not (vectorization, hardware intrinsics, struct-generic kernels, and the
+JIT-friendly shapes you should *not* hand-tune away) is in
+[modern-net.md](modern-net.md). The codegen fundamentals that hold on **both**
+targets (arithmetic and branchless lowering, `uint`-for-non-negative, struct layout,
+zero-allocation static data, hot-path allocation anti-patterns) are in
+[cross-tfm-codegen.md](cross-tfm-codegen.md).
 
 A consuming repository wires the concrete cross-skill links and source-tree paths
 in its overlay.
@@ -130,3 +138,11 @@ The two BCL rows look contradictory. They aren't. See
   `SequenceEqual` on `net481` despite no vectorization.
 - [antipatterns.md](antipatterns.md) - specific tricks that look clever but
   regress on the older JIT.
+- [modern-net.md](modern-net.md) - the `net10` counterpart: BCL-first
+  (`SearchValues`/`TensorPrimitives`), the canonical vectorized loop, hardware
+  intrinsics, struct-generic kernels, sealing/devirtualization, escape analysis,
+  and why to keep the modern source simple.
+- [cross-tfm-codegen.md](cross-tfm-codegen.md) - fundamentals for both targets:
+  division/modulo lowering, `uint`-for-non-negative, `BitOperations`, struct field
+  ordering, AoS->SoA, false sharing, `ReadOnlySpan<byte>` blobs, `[InlineArray]`,
+  `const`-vs-`static readonly`, and hot-path allocation anti-patterns.

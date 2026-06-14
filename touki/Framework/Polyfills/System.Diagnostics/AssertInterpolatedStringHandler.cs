@@ -101,5 +101,15 @@ public ref struct AssertInterpolatedStringHandler
     }
 
     /// <summary>Gets the built string and clears the handler.</summary>
-    public string ToStringAndClear() => _shouldAppend ? _builder.ToStringAndDispose() : string.Empty;
+    public string ToStringAndClear()
+    {
+        if (!_shouldAppend)
+        {
+            return string.Empty;
+        }
+
+        string result = _builder.ToString();
+        _builder.Dispose();
+        return result;
+    }
 }

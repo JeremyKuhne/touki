@@ -14,15 +14,13 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
     /// <summary>
     ///  Disposable struct that manages reference counting of <see cref="CacheEntry"/>.
     /// </summary>
-#if DEBUG
-    public class Scope : DisposalTracking.Tracker, IDisposable
-#else
     // Ref-counts a CacheEntry: the entry constructor calls AddRef and Dispose calls Release. Copying the scope by
     // value would duplicate the single logical reference without an extra AddRef, so disposing both copies would
-    // Release twice and corrupt the count. In DEBUG it is a class (a reference type, already non-copyable).
+    // Release twice and corrupt the count - hence [NonCopyable]. [MustDispose] (the TOUKI0010 analyzer) reports a
+    // scope that is never disposed at compile time.
     [NonCopyable]
+    [MustDispose]
     public readonly ref struct Scope
-#endif
     {
         private readonly TValue _object;
         private readonly CacheEntry _entry;
@@ -86,38 +84,18 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
         /// <remarks>
         ///  <para>
         ///   This is somewhat dangerous as implicit casting in the using statement will leak the scope. Not doing
-        ///   this, however, makes usage with APIs difficult. We track in DEBUG to catch misuse as a mitigation.
+        ///   this, however, makes usage with APIs difficult. The <c>[MustDispose]</c> analyzer (TOUKI0010) treats
+        ///   the conversion as a use rather than a dispose, so a scope that is only implicitly converted is flagged.
         ///  </para>
         /// </remarks>
         public static implicit operator TValue(in Scope scope)
         {
-#if DEBUG
-            // In DEBUG the scope is a class and we create "default" scopes in some cases.
-            if (scope is null)
-            {
-                return default!;
-            }
-#endif
-
             CacheEntry entry = scope._entry;
             return entry is null ? scope._object : entry.Object;
         }
 
         /// <inheritdoc cref="IDisposable.Dispose"/>
-        public void Dispose()
-        {
-            _entry?.RemoveRef();
-            DisposalTracking.SuppressFinalize(this!);
-        }
-
-#if DEBUG
-        // Only need to define this constructor when we are a class
-        internal Scope()
-        {
-            _entry = default!;
-            _object = default!;
-        }
-#endif
+        public void Dispose() => _entry?.RemoveRef();
     }
 }
 

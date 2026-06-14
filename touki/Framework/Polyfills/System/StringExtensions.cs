@@ -212,7 +212,7 @@ public static class StringExtensions
                 return source;
             }
 
-            ValueStringBuilder builder = new(stackalloc char[256]);
+            using ValueStringBuilder builder = new(stackalloc char[256]);
             builder.EnsureCapacity(source.Length);
             builder.Append(source.AsSpan(0, firstMatch));
             builder.Append(newValue);
@@ -231,7 +231,7 @@ public static class StringExtensions
                 start = matchStart + oldValue.Length;
             }
 
-            return builder.ToStringAndDispose();
+            return builder.ToString();
         }
 
         /// <summary>
@@ -259,7 +259,7 @@ public static class StringExtensions
                 return source;
             }
 
-            ValueStringBuilder builder = new(stackalloc char[256]);
+            using ValueStringBuilder builder = new(stackalloc char[256]);
             builder.EnsureCapacity(source.Length);
             builder.Append(source.AsSpan(0, firstIndex));
             int i = firstIndex;
@@ -286,7 +286,7 @@ public static class StringExtensions
                 }
             }
 
-            return builder.ToStringAndDispose();
+            return builder.ToString();
         }
 
         /// <summary>

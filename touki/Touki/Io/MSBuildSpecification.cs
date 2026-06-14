@@ -539,13 +539,16 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
             replaceBuilder.Length = 0;
             Paths.RemoveRelativeSegments(currentState, ref replaceBuilder);
             RemoveDuplicateMatchAnyDirectory(ref replaceBuilder);
-            return replaceBuilder.ToStringAndDispose();
+            string normalized = replaceBuilder.ToString();
+            replaceBuilder.Dispose();
+            return normalized;
         }
         else
         {
             if (specification.IndexOf(Path.DirectorySeparatorChar) < 0)
             {
                 // No path segments to normalize, return the original segment.
+                replaceBuilder.Dispose();
                 return specification;
             }
 
@@ -554,7 +557,9 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
 
             if (modified)
             {
-                return replaceBuilder.ToStringAndDispose();
+                string normalized = replaceBuilder.ToString();
+                replaceBuilder.Dispose();
+                return normalized;
             }
             else
             {
@@ -614,6 +619,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
 
             builder.Clear();
             builder.Append(replaceBuilder.AsSpan());
+            replaceBuilder.Dispose();
             return true;
         }
     }

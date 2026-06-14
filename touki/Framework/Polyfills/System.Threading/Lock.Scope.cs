@@ -12,6 +12,8 @@ public sealed partial class Lock
     /// <summary>
     /// A disposable structure that is returned by <see cref="EnterScope()"/>, which when disposed, exits the lock.
     /// </summary>
+    [Touki.NonCopyable]
+    [Touki.MustDispose]
     public ref struct Scope
     {
         private Lock? _lockObj;
