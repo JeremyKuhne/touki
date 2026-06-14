@@ -18,7 +18,7 @@ them through it; do not hand back a tool and a shrug.
 |---|---|---|
 | "How long does X take?" / "Is X fast enough?" | a latency number for a real scenario | benchmark the scenario, report `Mean` + error on both TFMs ([authoring](authoring.md), [running](running.md)) |
 | "How much memory does X use?" / "Does X allocate?" | bytes per operation | `[MemoryDiagnoser]` benchmark, report `Allocated` on both TFMs ([interpreting-results](interpreting-results.md)) |
-| "Where is the time spent?" / "Why is X slow?" | the hot method or line | profile a trace (EventPipe on net10, **ETW on net481**), rank -> callers -> lines ([profiling](profiling.md)) |
+| "Where is the time spent?" / "Why is X slow?" | the hot method or line | profile a trace (EventPipe on net10, **ETW on net481**), rank -> callers -> lines; if a thin driver/wrapper tops the net10 ranking, cross-check under ETW - inlining can misattribute self-time to the host ([profiling](profiling.md)) |
 | "What's allocating?" / "What's the GC doing?" | the hot alloc site / GC pressure | the allocation or GC view of a trace ([profiling](profiling.md)) |
 | "Make X faster" / "improve this method" | a *verified* improvement | the full loop below: scenario -> baseline -> profile -> change -> re-measure |
 | "Did my change help / regress anything?" | a before/after delta | baseline before, re-run after, diff both TFMs ([interpreting-results](interpreting-results.md)) |
@@ -105,10 +105,21 @@ yet. Offer it:
   pooled / `stackalloc` version and measure it?"
 - After a **hot spot** -> "Want me to try `<specific change the evidence
   suggests>` and measure whether it helps?"
+- After a **hot spot whose call-tree *shape* is the interesting part** (deep
+  recursion, a fan of shallow callers, or you want to show the EventPipe-vs-ETW
+  flip visually) -> "Want me to open this as an interactive flame graph in
+  speedscope so you can explore it?" Offer this *after* the line-level answer, not
+  instead of it - the `trace_lines` / `trace_heatmap` drill is the more practical
+  result. See [graphical-viewers.md](graphical-viewers.md).
 - After a **shallow line/heat map** (too few samples to attribute per line) ->
   "EventPipe sampled too coarsely to pin the hot lines; want me to re-capture
   under ETW (~1 kHz) for a deeper heat map?" See
   [profiling.md](profiling.md) - "When line attribution is too sparse".
+- After a **net10 method ranking topped by a driver/wrapper frame** (its body is
+  mostly a call into a loop) -> "EventPipe may be crediting an inlined callee's
+  time to its host; want me to re-capture under ETW - which resolves the inlinee -
+  and diff the two?" See [profiling.md](profiling.md) - reason 4 under "Capturing
+  under ETW". Lengthening the run will not fix this; only ETW reattributes it.
 - After an **improvement** -> "Want me to push the scenario harder (larger input,
   worst case), or check whether the win holds on the other TFM?"
 - After a **surprising divergence** -> "The net481 path is 3x slower here; want me
@@ -126,6 +137,14 @@ yet. Offer it:
   the Framework JIT inlines far less, so the hot frame can move entirely. Profile
   net481 directly under ETW rather than reading its hotspot off the net10 EventPipe
   trace (see [profiling](profiling.md)).
+- **Trusting the net10 EventPipe *method* ranking under heavy inlining.** It
+  credits an inlined callee's self-time to its physical host, so a thin
+  driver/wrapper can top the ranking while the real hot loop reads near-zero -
+  the same hotspot move, this time between *capture methods* on one TFM. Verified
+  flip on one binary (same PDB GUID): `ProduceAlternative` collected 98 EventPipe
+  leaf samples vs 11,516 ETW for the same op.
+  Cross-check under ETW when a wrapper tops the ranking; duration will not fix
+  it (see [profiling](profiling.md), reason 4).
 - **A single Mean with no error bars or allocation column.** Sub-microsecond
   deltas on this machine are noise; trust `Allocated` and deltas outside
   `Error`/`StdDev` ([interpreting-results](interpreting-results.md)).

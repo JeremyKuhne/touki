@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using TraceQ.Tracing;
+
 namespace TraceQ.Cli;
 
 [TestClass]
@@ -12,12 +14,15 @@ public sealed class ExportExecutorTests
 
     private static string Speedscope => FixturePath("folding.speedscope.json");
 
+    private static string Etw => FixturePath("etw.etl");
+
     private static ExportRequest Request(
         string path,
         ExportFormat format = ExportFormat.Speedscope,
         string? output = null,
-        string name = "traceq") =>
-        new(path, format, output, Symbols: null, name);
+        string name = "traceq",
+        ScopeRequest? scope = null) =>
+        new(path, format, output, Symbols: null, name, scope ?? ScopeRequest.Auto);
 
     private static (int Exit, string Out, string Error) Run(ExportRequest request)
     {
@@ -95,6 +100,22 @@ public sealed class ExportExecutorTests
 
         exit.Should().Be(ExitCodes.InputError);
         error.Should().NotBeEmpty();
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Run_EtwScopedToProcess_WritesProfileAndWarns()
+    {
+        // Scoping the export to a named process tree narrows a machine-wide .etl, just
+        // as the ranking verbs do. The scope notice goes to the error writer so the
+        // flame-graph JSON on the output writer stays clean for a viewer. Reading an
+        // .etl is Windows-only, so this is guarded.
+        (int exit, string output, string error) =
+            Run(Request(Etw, scope: ScopeRequest.ForProcess("HotLoopBench-Job")));
+
+        exit.Should().Be(ExitCodes.Success);
+        output.Should().Contain("speedscope.app/file-format-schema");
+        error.Should().Contain("Scoped to the");
     }
 
     [TestMethod]

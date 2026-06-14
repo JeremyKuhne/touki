@@ -520,6 +520,60 @@ public sealed class TraceToolsTests
     }
 
     [TestMethod]
+    [OSCondition(OperatingSystems.Windows)]
+    public void Export_ProcessScope_OnMachineWideCapture_Warns()
+    {
+        TraceStore store = new();
+        string outputPath = Path.Combine(Path.GetTempPath(), $"{Path.GetRandomFileName()}.speedscope.json");
+
+        try
+        {
+            // The export tool now scopes a multi-process ETW capture to a named process
+            // tree, mirroring the ranking tools; the scope notice surfaces in the envelope
+            // warnings. Reading an .etl is Windows-only, so this is guarded.
+            AnalysisResult<ExportResult> envelope =
+                TraceTools.Export(store, FixturePath(Etw), outputPath, process: "HotLoopBench-Job");
+
+            File.Exists(outputPath).Should().BeTrue();
+            AssertEnvelope(envelope);
+            envelope.Warnings.Should().Contain(w => w.Contains("Scoped to the"));
+        }
+        finally
+        {
+            if (File.Exists(outputPath))
+            {
+                File.Delete(outputPath);
+            }
+        }
+    }
+
+    [TestMethod]
+    public void Export_ProcessScope_OnSpeedscope_IsHarmlessNoOp()
+    {
+        TraceStore store = new();
+        string outputPath = Path.Combine(Path.GetTempPath(), $"{Path.GetRandomFileName()}.speedscope.json");
+
+        try
+        {
+            // Speedscope is single-process, so a process selector is a no-op: the export
+            // still succeeds and writes the file.
+            AnalysisResult<ExportResult> envelope =
+                TraceTools.Export(store, FixturePath(Speedscope), outputPath, process: "anything");
+
+            File.Exists(outputPath).Should().BeTrue();
+            AssertEnvelope(envelope);
+            envelope.Result.Format.Should().Be("speedscope");
+        }
+        finally
+        {
+            if (File.Exists(outputPath))
+            {
+                File.Delete(outputPath);
+            }
+        }
+    }
+
+    [TestMethod]
     public void Export_UnknownFormat_Throws()
     {
         TraceStore store = new();

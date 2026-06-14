@@ -44,7 +44,7 @@ Things that bite, kept short - full rationale in
 sections 3a (methods) and 3f (lines):
 
 - **EventPipe is net10.0-only** - net481 has no EventPipe, so profile it under
-  ETW instead (see [Capturing under ETW](#capturing-under-etw-net481-denser-samples-native-frames)
+  ETW instead (see [Capturing under ETW](#capturing-under-etw-net481-inlining-accurate-attribution-denser-samples-native-frames)
   and [tools/Capture-EtwTrace.ps1](../../../tools/Capture-EtwTrace.ps1)); never
   read a net481 hotspot off a net10 trace. EventPipe's CPU sampler is also fixed
   at **~100 Hz** and **net10 cannot raise it**
@@ -63,15 +63,22 @@ sections 3a (methods) and 3f (lines):
   build** - `touki.dll` ships its PDB embedded, and the symbols build's GUID
   must match the trace (hence `--keepFiles`). A wrong dir resolves frames to
   `<no source>` or is rejected with a GUID mismatch.
-- **Line attribution stops at inlined boundaries** - a fully-inlined callee
-  collapses onto its caller's call-site line. If the ranking piles onto one or
-  two call-site lines, scope `--method` to the callee (`--method ExtGlobEngine`)
-  or add a temporary `[MethodImpl(MethodImplOptions.NoInlining)]`.
+- **Inlining attribution differs by profiler, and it corrupts the *method*
+  ranking - not just the line view.** EventPipe's managed walker credits a
+  fully-inlined callee's self-time to its *physical host* method (and, in the
+  line view, collapses it onto the host's call-site line); BDN's ETW
+  `EtwProfiler` resolves it back to the inlinee. So a fully-inlined callee can
+  read near-zero on the EventPipe *method* ranking while its host tops it. If the
+  top self-frames are thin drivers/wrappers, suspect this and cross-check under
+  ETW (reason 4 below). Scoping `--method` to the callee or a temporary
+  `[MethodImpl(MethodImplOptions.NoInlining)]` also exposes it, but NoInlining
+  changes codegen (it can force a ref-struct engine to materialize per call), so
+  treat it as a probe, not a measurement.
 
-## Capturing under ETW (net481, denser samples, native frames)
+## Capturing under ETW (net481, inlining-accurate attribution, denser samples, native frames)
 
 EventPipe is net10-only and managed-only. Reach for an ETW (`.etl`) capture in
-three situations - the first is the one that bites hardest:
+four situations - the first two bite hardest:
 
 1. **Profiling net481 at all.** The Framework target has no EventPipe, so ETW is
    the only profiler - and the net481 hotspot can differ *completely* from net10,
@@ -86,6 +93,23 @@ three situations - the first is the one that bites hardest:
 3. **Line attribution is too sparse** - kernel CPU sampling is ~1 kHz, ~10x
    EventPipe's fixed ~100 Hz, so a short hot path spreads across more source lines
    (escalation detail below).
+4. **Method attribution under heavy inlining - even on net10.** EventPipe's
+   managed walker credits a fully-inlined callee's self-time to its *physical
+   host* method; BDN's ETW `EtwProfiler` (TraceEvent + the CLR inline map)
+   resolves it to the real inlinee. This is *not* a net481-only effect and *not*
+   a density effect - it reorders the net10 method ranking on the same binary.
+   Proven A/B (same PDB GUID, same net10 scenario, only the capture method
+   differs): `ExtGlobEngine.ProduceAlternative` collected just **98** leaf
+   samples in the EventPipe trace versus **11,516** in the ETW trace of the same
+   op - a ~117x attribution gap - while EventPipe parked 99.76 % of the engine's
+   self-time on two host call/setup lines (`RunEngine` :385 and
+   `RunEngineDirectory` :410) that ETW spread across `ProduceAlternative`'s real
+   body. **Signal in the `.nettrace`:** a thin
+   driver/wrapper method tops the self-time ranking while the inner loop you
+   expect to be hot reads near-zero. **Duration cannot fix this** - more samples
+   give a more confident wrong answer; only ETW (or reading the host's source /
+   a temporary NoInlining probe) corrects it. When you escalate, keep both
+   captures: the EventPipe-to-ETW flip *is* the evidence.
 
 **Capture it with one command.** [tools/Capture-EtwTrace.ps1](../../../tools/Capture-EtwTrace.ps1)
 self-elevates (one UAC prompt), shows the benchmark's **live** progress in the
@@ -111,6 +135,34 @@ other CPU consumers before capturing, or scope explicitly.
 running *and* blocked - while `cpu` is on-CPU time. When they agree closely the
 work is CPU-bound (the glob example: 56.45 % cpu vs 56.46 % threadtime - no
 blocking); when `threadtime` is much larger the frame is waiting on I/O or a lock.
+
+### Is EventPipe enough, or escalate to ETW?
+
+EventPipe is the right *first* capture on net10: unelevated, one command, and its
+method ranking locates the hot *region*. Treat it as triage, then decide whether
+to trust it or escalate. Three cases, two different fixes:
+
+- **Density - are there enough samples?** EventPipe samples each managed thread at
+  a fixed **~100 Hz**, so coverage is a function of *total* capture time (BDN
+  repeats the op across many iterations), not single-op latency. Rules of thumb
+  from this machine: a frame needs roughly **>=200-300 samples** for a trustworthy
+  self-%, and **>=1,000 samples** - about **~10 s of cumulative time in that
+  frame** at 100 Hz - before its *line* view spreads usefully. `trace_info`
+  reports the total count; multiply by the frame's self-% to see whether it clears
+  the bar. Under BDN's repetition you almost always clear the *method* bar; for a
+  short hot path you usually miss the *line* bar.
+- **Sparse but *correct* - the tree points at the right method, just thin.**
+  Lengthen the measured work (a larger input or the long-running scenario) or
+  capture ETW for ~10x density. **Lengthening the scenario is the right lever
+  here**, and the cheapest.
+- **Misattributed - a driver/wrapper tops the ranking (reason 4 above).**
+  Lengthening does **nothing**; it only sharpens a wrong answer. ETW is the fix.
+  This is the distinction that matters: **duration cures sparsity, never
+  misattribution.** Tell them apart by reading the top self-frame's source - if
+  its body is mostly a call into a loop, its self-time is borrowed from an
+  inlinee, and only ETW (or a NoInlining probe) will hand it back.
+
+The line-level escalation ladder below refines the first two cases.
 
 ### When line attribution is too sparse
 
@@ -141,3 +193,53 @@ The older `Profile-Benchmark.ps1` / `Get-TraceHotspots.ps1` scripts predate the
 analyzer and remain as a no-MCP fallback (plus `speedscope-to-flamegraph.ps1`
 for SVG) in
 [docs/performance-investigation-without-mcp.md](../../../docs/performance-investigation-without-mcp.md).
+
+## Reading the line ranking - what the heat *shape* means
+
+A correct, dense line ranking (a method's own `trace_lines`, or `trace_heatmap`
+over its file) still has to be *interpreted*. Two shapes recur and point at
+opposite levers - say which one you see, not just the top line:
+
+- **The method's entry/prologue line dominates its own ranking -> it is called
+  too often, not doing too much per call.** A method's first source line carries
+  the prologue and the first (bounds-checked) field/argument access, so when it
+  tops the method's *own* line ranking - and the next few field-bind lines pile in
+  behind it - the cost is *invocation count*, not any one computation. Worked
+  example: in `ProduceAlternative` (the negation backtracker) line 1006
+  (`ref Frame frame = ref _frames[frameIdx]`, the prologue) was **39 %** of the
+  method and the field binds on the next lines brought the entry preamble to
+  **~50 %**. The lever is calling it fewer times (prune dead candidates earlier),
+  not shaving its body. A *body*-line hotspot points the opposite way - optimize
+  that computation.
+- **A callee that recurs hot across several branches beats any single top line.**
+  Scan the ranking for the same helper at multiple `file:line`s and sum them - one
+  fix lands on every site. Same example: `CopyRanges` (the per-frame range
+  snapshot) appeared at three call sites summing above most single lines, so a
+  cheaper snapshot/restore is a better target than the single hottest line.
+
+A `:0` or `<no source>` row is self-time the PDB could not map to a line (a
+compiler-synthesized region, or a missing symbol), not a real line 0 - treat it as
+unattributed, not a hotspot.
+
+**Before trusting an *existing* trace, confirm the source has not moved since the
+capture.** Compare the hot file's last-commit date
+(`git log -1 --format=%ci -- <file>`) to the trace's timestamp; if the source
+changed after the capture the line numbers are stale - recapture rather than read
+them. (Reusing a still-matching trace is the right call - it skips a recapture -
+but only after this check.)
+
+## Handing off an interactive flame graph (optional)
+
+The drills above - `trace_rank`, `trace_lines`, `trace_heatmap` - are the
+practical answer to "where is the time" and should be offered first: they are
+line-precise, fold the sampling artifacts, and need no viewer literacy. When the
+*shape* of the call tree is the insight, or a human wants to explore the trace
+interactively (or see the EventPipe-vs-ETW attribution flip side by side),
+`trace_export` writes a flame graph for speedscope or Perfetto, and
+[tools/Open-SpeedscopeTrace.ps1](../../../tools/Open-SpeedscopeTrace.ps1) /
+[tools/Open-PerfettoTrace.ps1](../../../tools/Open-PerfettoTrace.ps1) open it in
+the browser hands-free with the right view already active. See
+[graphical-viewers.md](graphical-viewers.md) for when it is worth offering, which
+viewer to pick, and how to guide the user once it is open. Scope a machine-wide
+`.etl` on export with `--process <name>` (or the `process` MCP argument), the
+same as the ranking verbs.
