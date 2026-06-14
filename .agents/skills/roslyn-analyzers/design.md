@@ -21,7 +21,11 @@ The host creates one analyzer instance and reuses it across compilations, thread
 and (in the IDE) edits. Never store per-analysis state in an instance or static
 field. All state lives in locals inside the registered callbacks, or in
 per-compilation state captured by `RegisterCompilationStartAction` (see
-[performance.md](performance.md)).
+[performance.md](performance.md)). Storing a `Compilation` or `ISymbol` in a field
+is doubly wrong: besides the race, it **roots** that compilation's object graph
+across every later edit. Resolve well-known symbols at compilation start and capture
+them in the closure - see the rooting rule in
+[performance.md](performance.md#the-rooting-rule-capture-in-the-closure-never-in-a-field).
 
 In `Initialize`, always:
 
@@ -135,18 +139,59 @@ disagree, so this cannot be forgotten if you build before committing.
 
 A code fix is a separate type from the analyzer:
 
-- `[ExportCodeFixProvider(LanguageNames.CSharp)]` on a `CodeFixProvider`.
-- `FixableDiagnosticIds` returns the analyzer's ID(s).
+- `[ExportCodeFixProvider(LanguageNames.CSharp)]` plus `[Shared]` on a
+  `CodeFixProvider`.
+- `FixableDiagnosticIds` returns the analyzer's ID(s). Hardcode the id strings (a
+  stable public contract) rather than referencing the analyzer assembly - the
+  code fix lives in a different assembly (see below).
 - Implement `RegisterCodeFixesAsync`; compute the edit as an immutable
-  `Document`/`SyntaxNode` transformation and register a `CodeAction`.
+  `Document`/`Solution`/`SyntaxNode` transformation and register a `CodeAction`.
+  `SyntaxGenerator` (from `Microsoft.CodeAnalysis.Editing`) is the language-neutral
+  way to edit modifiers/declarations - e.g. `generator.WithModifiers(decl,
+  generator.GetModifiers(decl).WithIsReadOnly(true))`.
 - Override `GetFixAllProvider()` (usually `WellKnownFixAllProviders.BatchFixer`) so
   "fix all occurrences" works.
 - Use a stable, descriptive `equivalenceKey` on the `CodeAction` so FixAll can group
   identical fixes.
+- Only offer the fix when the target is editable - check
+  `member.DeclaringSyntaxReferences` is non-empty before registering, so the fix
+  does not appear on members defined in metadata.
 
-Code fixes live in the analyzer package and are validated with the code-fix verifier
-in [validation.md](validation.md). A fix that can change behavior (not just style)
-should be offered conservatively and covered by before/after tests.
+A fix that can change behavior (not just style) should be offered conservatively
+and covered by before/after tests ([validation.md](validation.md)).
+
+### Code fixes go in a SEPARATE assembly (RS1022)
+
+A `CodeFixProvider` references the Roslyn **Workspaces** layer
+(`Document`, `CodeAction`, `SyntaxGenerator`). **RS1022 forbids any reference to
+Workspaces types from an assembly that also contains a `DiagnosticAnalyzer`** -
+analyzers must stay Workspaces-free so they load in the command-line compiler. So
+a repo that ships code fixes needs a second project:
+
+- `touki.analyzers` - the `DiagnosticAnalyzer`s. References
+  `Microsoft.CodeAnalysis.CSharp`, `EnforceExtendedAnalyzerRules=true`.
+- [touki.analyzers.codefixes](../../../touki.analyzers.codefixes/touki.analyzers.codefixes.csproj) -
+  the `CodeFixProvider`s. `netstandard2.0`, signed, `IsPackable=false`,
+  `IncludeBuildOutput=false`. References
+  `Microsoft.CodeAnalysis.CSharp.Workspaces`. Do **not** set
+  `EnforceExtendedAnalyzerRules` and do **not** add
+  `Microsoft.CodeAnalysis.Analyzers` here - those are for the analyzer assembly.
+
+Both assemblies pack into `analyzers/dotnet/cs/` from the **same**
+`_AddAnalyzersToPackage` target (a second `MSBuild Targets="GetTargetPath"` call
+feeding the same `_PackageFiles` group). The command-line compiler loads the
+code-fix dll but never instantiates the provider (no analyzer in it), so the
+absence of Workspaces at build time is fine; the IDE supplies Workspaces when it
+offers the fix. This is the standard StyleCop/Roslynator split.
+
+**Packaging gotcha:** `MSBuild Targets="GetTargetPath"` returns the code-fix
+assembly path but does **not** build it, and nothing else in touki's graph builds
+it either (it is not an analyzer *of* touki). Add a build-ordering
+`ProjectReference` from `touki.csproj` to the code-fix project with
+`ReferenceOutputAssembly="false" PrivateAssets="all"` and **no**
+`OutputItemType="Analyzer"` (adding that would load Workspaces into the
+command-line compiler's analyzer context). Without the reference the pack fails
+with "Could not find a part of the path ...\touki.analyzers.codefixes\...".
 
 ## Checklist
 

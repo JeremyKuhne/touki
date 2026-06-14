@@ -29,8 +29,9 @@ have a greater impact on performance."
 ## Cache well-known symbols once per compilation
 
 If your rule compares against specific types or members (e.g. "is this
-`System.Enum.HasFlag`"), do **not** resolve them inside the per-node callback.
-Resolve them once at compilation start and capture them:
+`System.Enum.HasFlag`", "does this type carry `[NonCopyable]`"), do **not** resolve
+them inside the per-node callback. Resolve them once at compilation start and
+capture them:
 
 ```csharp
 context.RegisterCompilationStartAction(static start =>
@@ -49,10 +50,57 @@ context.RegisterCompilationStartAction(static start =>
 });
 ```
 
+- **Resolve by metadata name, compare by symbol identity - never by string.**
+  `Compilation.GetTypeByMetadataName("Namespace.TypeName")` returns the
+  `INamedTypeSymbol` for a fully qualified CLR metadata name (or null on absence /
+  ambiguity). The official Roslyn analyzer tutorial is explicit: check types
+  through the semantic model and *"don't compare the string from `ToString()`."*
+  `ToString()` / `ToDisplayString()` allocate a fresh string on every call;
+  `SymbolEqualityComparer.Default.Equals(symbol, target)` is allocation-free.
 - `GetTypeByMetadataName` once per compilation, not once per node.
 - **Bail early**: if the type/API the rule is about is not referenced by the
-  compilation, register nothing and the analyzer costs ~zero on that project.
-- Compare symbols with `SymbolEqualityComparer.Default`, never by display string.
+  compilation, register nothing and the analyzer costs ~zero on that project. (Only
+  bail when *every* diagnostic needs the symbol; if one rule still fires without it,
+  pass the nullable symbol through and branch instead.)
+
+### Matching an attribute on a type
+
+To answer "is this type marked `[SomeAttribute]`?", resolve the attribute symbol
+once (above) and walk the candidate's already-materialized attribute list,
+comparing by identity:
+
+```csharp
+foreach (AttributeData attribute in type.GetAttributes())
+{
+    if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, attributeSymbol))
+    {
+        return true;
+    }
+}
+```
+
+`GetAttributes()` returns the symbol's existing attribute array, so this iterate-
+and-compare is allocation-free - no dictionary, no string build. A
+`ConcurrentDictionary<INamedTypeSymbol, bool>` "cache" on top of this is usually
+overhead, not savings: the work it memoizes is already cheap, and the dictionary
+itself allocates. Reach for a memo only when a *profile* shows the lookup dominating.
+
+Matching the fully qualified metadata name (via `GetTypeByMetadataName`) is also
+stricter and safer than matching the attribute's *simple* name
+(`AttributeClass.Name == "SomeAttribute"`): simple-name matching silently accepts an
+unrelated same-named attribute in another namespace. Match the simple name only when
+you deliberately want consumers to be able to declare their own marker attribute.
+
+### The rooting rule: capture in the closure, never in a field
+
+A `Compilation` (and the symbols hanging off it) is a large object graph. The
+analyzer **instance is reused across compilations and edits**, so storing a
+`Compilation`, `ISymbol`, or symbol-keyed collection in a **static or instance
+field** of the analyzer roots that graph and leaks memory across edits. Capturing
+the resolved symbol in the `RegisterCompilationStartAction` lambda (as above) is the
+correct pattern: the closure lives only as long as that one compilation's analysis,
+so nothing is rooted afterward. The danger is the field, not the capture - a
+per-compilation local or closure is fine.
 
 ## Enable concurrency
 
@@ -106,4 +154,6 @@ dotnet build touki/touki.csproj -c Release -p:ReportAnalyzer=true -bl
 | Slow even where rule is irrelevant | No early bail | Resolve target symbol at compilation start; return if absent |
 | Time scales with file size | `DescendantNodes()` / tree walk | Register a narrower node/operation kind |
 | GC pressure during typing | LINQ / closures in callback | Direct loops, `static` lambdas, cached arrays |
+| GC pressure on type checks | `ToString()` / `ToDisplayString()` compares | Resolve once with `GetTypeByMetadataName`, compare via `SymbolEqualityComparer` |
+| Memory grows across edits | `Compilation`/`ISymbol` in a static/instance field | Capture per-compilation symbols in the closure, never a field |
 | Wrong results under parallelism | Shared mutable state | Remove it; keep state per-callback or per-compilation |

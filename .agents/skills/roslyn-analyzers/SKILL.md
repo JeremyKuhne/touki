@@ -50,11 +50,16 @@ The short version, in priority order:
 - [touki.analyzers.tests/](../../../touki.analyzers.tests/touki.analyzers.tests.csproj) -
   `net10.0` MSTest project. Every test project needs a local `.editorconfig`
   disabling `CS1591` (see the existing one).
+- [touki.analyzers.codefixes/](../../../touki.analyzers.codefixes/touki.analyzers.codefixes.csproj) -
+  the `CodeFixProvider`s. A **separate** assembly because a code fix references the
+  Roslyn Workspaces layer, which RS1022 forbids in the analyzer assembly. Only
+  needed when you ship fixes; see the code-fix section in [design.md](design.md).
 - The analyzer ships **inside** `KlutzyNinja.Touki`, not as its own package. The
   `_AddAnalyzersToPackage` target in
-  [touki/touki.csproj](../../../touki/touki.csproj) packs it to
-  `analyzers/dotnet/cs/`, and the `OutputItemType="Analyzer"` project reference in
-  the same file dogfoods it against touki's own sources.
+  [touki/touki.csproj](../../../touki/touki.csproj) packs both the analyzer and the
+  code-fix assemblies to `analyzers/dotnet/cs/`, and the `OutputItemType="Analyzer"`
+  project reference in the same file dogfoods the analyzers against touki's own
+  sources.
 
 ## Workflow
 
@@ -99,6 +104,10 @@ The short version, in priority order:
 - Validate library runtime perf (not analyzer perf) with `performance-testing`.
 - Run `pre-pr-self-review` before opening a PR; `create-pr` to publish.
 - If the analyzer parses or reinterprets untrusted input, run `security-review`.
+- For a rule about struct copies (like the TOUKI0002-0004 defensive-copy /
+  `[NonCopyable]` analyzers), `il-copy-inspection` is the post-build, ground-truth
+  counterpart: it reads emitted IL to confirm a prediction and to find the
+  compiler-synthesized copies an `IOperation`-based analyzer cannot see.
 
 ## Disambiguation
 

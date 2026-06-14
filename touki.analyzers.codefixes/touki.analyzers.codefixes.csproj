@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Code-fix providers reference the Roslyn Workspaces APIs, which must not live in the analyzer assembly
+      (RS1022). They ship in a separate assembly that is packed alongside the analyzer under analyzers/dotnet/cs
+      by the _AddAnalyzersToPackage target in touki/touki.csproj. netstandard2.0 so the IDE can load it.
+    -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Touki.Analyzers</RootNamespace>
+
+    <IsPackable>false</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+
+    <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Brings CodeFixProvider, Document, CodeAction, and SyntaxGenerator (and CodeAnalysis.CSharp transitively). -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

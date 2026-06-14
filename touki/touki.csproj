@@ -154,10 +154,22 @@
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all" />
+    <!--
+      Build-ordering only (no OutputItemType, so it is not loaded as an analyzer during touki's build): ensures the
+      code-fix assembly exists for the _AddAnalyzersToPackage target to pack.
+    -->
+    <ProjectReference Include="..\touki.analyzers.codefixes\touki.analyzers.codefixes.csproj"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
   </ItemGroup>
 
   <Target Name="_AddAnalyzersToPackage" BeforeTargets="GenerateNuspec">
     <MSBuild Projects="..\touki.analyzers\touki.analyzers.csproj"
+             Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=netstandard2.0">
+      <Output TaskParameter="TargetOutputs" ItemName="_ToukiAnalyzerAssembly" />
+    </MSBuild>
+    <MSBuild Projects="..\touki.analyzers.codefixes\touki.analyzers.codefixes.csproj"
              Targets="GetTargetPath"
              Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=netstandard2.0">
       <Output TaskParameter="TargetOutputs" ItemName="_ToukiAnalyzerAssembly" />

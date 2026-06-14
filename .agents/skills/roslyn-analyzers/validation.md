@@ -46,6 +46,21 @@ you need exact span markup, code-fix verification, or controlled reference sets.
 Either way the test project is `net10.0` MSTest with AwesomeAssertions, and needs a
 local `.editorconfig` disabling `CS1591`.
 
+### Testing a code fix without the official harness
+
+If you skip `Microsoft.CodeAnalysis.CSharp.CodeFix.Testing`, a code fix can still be
+exercised in-memory with an `AdhocWorkspace` (the test project references
+`Microsoft.CodeAnalysis.CSharp.Workspaces`):
+[touki.analyzers.tests/CodeFixTestHarness.cs](../../../touki.analyzers.tests/CodeFixTestHarness.cs)
+adds a `Document` to an ad-hoc project, runs the analyzer to get the diagnostic,
+calls `provider.RegisterCodeFixesAsync` with a `CodeFixContext` whose registration
+delegate captures the offered `CodeAction`s, then applies the first action via
+`action.GetOperationsAsync()` -> `ApplyChangesOperation.ChangedSolution` and returns
+the changed document's text to assert on. The test project also needs a project
+reference to `touki.analyzers.codefixes`. Pin the before/after source and assert the
+expected member gained `readonly`; test the fix on a **non-mutating** member, since
+"make readonly" on a genuinely mutating member would produce a compiler error.
+
 ## Coverage checklist
 
 For every rule, test all of:
