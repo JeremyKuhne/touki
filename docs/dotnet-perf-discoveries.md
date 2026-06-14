@@ -18,7 +18,7 @@ stay fast on `net472`/`net481` (slow-span layout, `MemoryMarshal.GetReference`
 see [framework-span-performance.md](framework-span-performance.md).
 
 These are *measured observations*. For the generic technique catalog they draw on -
-arithmetic/branchless lowering, `BitOperations`, struct layout, AoS&rarr;SoA,
+arithmetic/branchless lowering, `BitOperations`, struct layout, AoS->SoA,
 zero-allocation static data, the `net10` vectorization counterpart, and hot-path
 allocation anti-patterns - see the
 [framework-jit-optimization](../.agents/skills/framework-jit-optimization/SKILL.md)
