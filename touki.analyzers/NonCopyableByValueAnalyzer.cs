@@ -65,7 +65,7 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
         category: "Reliability",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "A type marked [NonCopyable] owns a resource that must not be duplicated. Pass it by reference rather than copying it by value.",
+        description: "A type marked [NonCopyable] owns a resource that must not be duplicated. Where feasible pass or alias it by reference ('ref'/'in'/'ref readonly'); otherwise redesign so the value is not copied by value.",
         helpLinkUri: "https://github.com/JeremyKuhne/touki");
 
     private static readonly ImmutableArray<DiagnosticDescriptor> s_supportedDiagnostics = [s_rule];
@@ -112,7 +112,7 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        Report(context, argument.Value, argument.Value.Type!, $"argument to parameter '{parameter.Name}'; pass it by 'ref' or 'in' instead");
+        Report(context, argument.Value, argument.Value.Type!, $"as an argument to parameter '{parameter.Name}'");
     }
 
     private static void AnalyzeReturn(OperationAnalysisContext context, INamedTypeSymbol nonCopyable)
@@ -134,7 +134,7 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        Report(context, value, value.Type!, "return value; return by 'ref' to hand back the original");
+        Report(context, value, value.Type!, "as a return value");
     }
 
     private static void AnalyzeAssignment(OperationAnalysisContext context, INamedTypeSymbol nonCopyable)
@@ -152,7 +152,7 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        Report(context, assignment.Value, assignment.Value.Type!, "assignment; bind the target by 'ref' to alias the original");
+        Report(context, assignment.Value, assignment.Value.Type!, "via assignment");
     }
 
     private static void AnalyzeVariableDeclarator(OperationAnalysisContext context, INamedTypeSymbol nonCopyable)
@@ -175,7 +175,7 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        Report(context, value, value.Type!, $"local '{declarator.Symbol.Name}'; declare it 'ref' to alias the original");
+        Report(context, value, value.Type!, $"into local '{declarator.Symbol.Name}'");
     }
 
     private static void AnalyzeConversion(OperationAnalysisContext context, INamedTypeSymbol nonCopyable)
@@ -196,7 +196,7 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
         // Boxing converts a value type to a reference type (object, an interface, or dynamic).
         if (conversion.Type is { IsReferenceType: true })
         {
-            Report(context, conversion, conversion.Operand.Type!, "boxing conversion; do not convert it to object, an interface, or dynamic");
+            Report(context, conversion, conversion.Operand.Type!, "via a boxing conversion");
         }
     }
 
