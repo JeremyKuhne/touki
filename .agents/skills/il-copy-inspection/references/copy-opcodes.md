@@ -12,7 +12,7 @@ instance member is invoked on a read-only struct location (an `in` parameter, a
 is invisible in source. For `void M(in Pooled p) => p.Mutate();` where `Mutate` is
 not `readonly`, the compiler emits a **synthesized temporary**:
 
-```
+```cil
 ldarg.1            // &p   - address of the in-parameter (no copy yet)
 ldobj      Pooled  // copy *p onto the stack
 stloc.0            // spill the copy into a compiler temp local
@@ -26,7 +26,7 @@ read-only location). The mutation lands on the temp and is thrown away. Contrast
 no-copy form, where a `readonly` member (or a mutable receiver) is called directly
 on the address with no intervening `ldobj`/`stloc`:
 
-```
+```cil
 ldarg.1            // &p
 call       instance int32 Pooled::Peek()    // readonly member - no copy
 ```
