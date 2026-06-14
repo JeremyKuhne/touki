@@ -3,10 +3,10 @@ description: Optimize hot-path code for the `net481` (.NET Framework) target in 
 license: MIT
 metadata:
     github-path: skills/framework-jit-optimization
-    github-pinned: v0.3.0
-    github-ref: refs/tags/v0.3.0
+    github-pinned: v0.6.0
+    github-ref: refs/tags/v0.6.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 428c10165d3481855b1a0477c715f7bace02e89d
+    github-tree-sha: 854e92f1efe594bc805617ebdb1fc7a38dcad3aa
     portability: semi-portable
 name: framework-jit-optimization
 ---

@@ -98,8 +98,8 @@ Pull upstream changes to the core (and its `references/`) with
 `gh skill update framework-jit-optimization` (review the diff, re-pin). Keep
 touki-specific additions in this file, not in the core.
 
-Note: [modern-net.md](modern-net.md) and [cross-tfm-codegen.md](cross-tfm-codegen.md)
-were added to the core locally and have not yet been pushed to the
-[agent-skills commons](https://github.com/JeremyKuhne/agent-skills). Until they are,
-`gh skill update` will show them as drift - push them upstream and re-pin rather
-than reverting.
+The [modern-net.md](modern-net.md) and [cross-tfm-codegen.md](cross-tfm-codegen.md)
+sibling pages originated here and were upstreamed to the
+[agent-skills commons](https://github.com/JeremyKuhne/agent-skills) in
+[PR #1](https://github.com/JeremyKuhne/agent-skills/pull/1); the vendored core is
+pinned to `v0.6.0`, which includes them. No pending divergence remains.
