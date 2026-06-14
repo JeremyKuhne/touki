@@ -29,7 +29,7 @@ public sealed partial class GlobSpecification
         ///   untouched and no string is allocated. When a rewrite is needed
         ///   the helper walks the pattern once into a
         ///   <see cref="ValueStringBuilder"/> seeded on the stack and produces
-        ///   exactly one string via <see cref="ValueStringBuilder.ToStringAndDispose"/>.
+        ///   exactly one string via <see cref="ValueStringBuilder.ToString"/>.
         ///   Verified via
         ///   <c>touki.perf/FileSystemGlobbingNormalizePerf.cs</c> to outperform
         ///   a single-pass build-then-compare on the common case (real-world
@@ -141,7 +141,8 @@ public sealed partial class GlobSpecification
                 builder.Append("**");
             }
 
-            pattern = builder.ToStringAndDispose();
+            pattern = builder.ToString();
+            builder.Dispose();
         }
 
         /// <summary>

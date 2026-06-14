@@ -17,6 +17,15 @@ stay fast on `net472`/`net481` (slow-span layout, `MemoryMarshal.GetReference`
 + `Unsafe.Add` pattern, when to pin, when to split TFM implementations),
 see [framework-span-performance.md](framework-span-performance.md).
 
+These are *measured observations*. For the generic technique catalog they draw on -
+arithmetic/branchless lowering, `BitOperations`, struct layout, AoS&rarr;SoA,
+zero-allocation static data, the `net10` vectorization counterpart, and hot-path
+allocation anti-patterns - see the
+[framework-jit-optimization](../.agents/skills/framework-jit-optimization/SKILL.md)
+skill's `cross-tfm-codegen.md` and `modern-net.md` pages, and
+[reading-codegen.md](../.agents/skills/performance-testing/reading-codegen.md) for
+inspecting what the JIT emitted.
+
 ---
 
 ## 1. `MemoryExtensions.Equals(span, span, StringComparison.OrdinalIgnoreCase)` has a perf valley at length 6-15

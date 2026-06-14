@@ -34,6 +34,7 @@ namespace Touki.Text;
 /// </remarks>
 [InterpolatedStringHandler]
 [NonCopyable]
+[MustDispose]
 public ref partial struct ValueStringBuilder
 {
     private const int GuessedLengthPerHole = 11;
@@ -209,20 +210,6 @@ public ref partial struct ValueStringBuilder
     /// </summary>
     /// <returns>A string representation of the value of this builder.</returns>
     public override readonly string ToString() => _chars[.._length].ToString();
-
-    /// <summary>
-    ///  Converts the value of this builder to a <see cref="string"/> and clears the builder.
-    /// </summary>
-    /// <returns>A string representation of the value of this builder.</returns>
-    /// <remarks>
-    ///  This method disposes the builder after converting to string, making it unusable afterwards.
-    /// </remarks>
-    public string ToStringAndDispose()
-    {
-        string s = ToString();
-        Dispose();
-        return s;
-    }
 
     /// <summary>
     ///  Returns a span around the contents of the builder.

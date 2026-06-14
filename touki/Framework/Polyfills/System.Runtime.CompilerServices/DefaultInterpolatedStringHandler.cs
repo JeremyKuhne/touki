@@ -82,8 +82,18 @@ public ref struct DefaultInterpolatedStringHandler
     /// <returns>The built string.</returns>
     public override readonly string ToString() => _builder.ToString();
 
-    /// <inheritdoc cref="ValueStringBuilder.ToStringAndDispose()"/>
-    public string ToStringAndClear() => _builder.ToStringAndDispose();
+    /// <summary>Gets the built <see cref="string"/> and releases the underlying builder.</summary>
+    /// <returns>The built string.</returns>
+    /// <remarks>
+    ///  This method releases the underlying <see cref="ValueStringBuilder"/>; the handler must not be used
+    ///  afterwards.
+    /// </remarks>
+    public string ToStringAndClear()
+    {
+        string result = _builder.ToString();
+        _builder.Dispose();
+        return result;
+    }
 
     /// <summary>Clears the handler.</summary>
     /// <remarks>

@@ -274,8 +274,10 @@ catch a mistake.
   - `Touki.Text.ValueStringBuilder` instead of `System.Text.StringBuilder`.
     Always seed it with a stack buffer (`stackalloc char[256]` is the
     standard size); it rents from `ArrayPool<byte>` automatically if the
-    content outgrows the buffer, and `ToStringAndDispose()` returns the
-    final string while releasing the rental. Verified savings of
+    content outgrows the buffer. It is `[MustDispose]`: declare it with
+    `using` and read the result with `ToString()`, or - when the builder is
+    mutated via `ref`/`Length`, which a `using` variable forbids - call
+    `ToString()` then `Dispose()` explicitly. Verified savings of
     58-63&nbsp;% allocated bytes when replacing `StringBuilder` in the
     `GlobMatcherFactory` bytecode encoder, with no measurable throughput
     cost.

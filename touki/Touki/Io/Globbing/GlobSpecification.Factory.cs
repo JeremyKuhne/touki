@@ -727,7 +727,7 @@ public sealed partial class GlobSpecification
                 return false;
             }
 
-            ValueStringBuilder builder = new(stackalloc char[256]);
+            using ValueStringBuilder builder = new(stackalloc char[256]);
             ReadOnlySpan<char> asteriskReplacement = needsAsteriskCollapse
                 ? (dialect is GlobDialect.Git or GlobDialect.Bash ? "**" : "*")
                 : default;
@@ -839,7 +839,7 @@ public sealed partial class GlobSpecification
                 k++;
             }
 
-            pattern = builder.ToStringAndDispose();
+            pattern = builder.ToString();
             return true;
         }
 
@@ -1795,7 +1795,8 @@ public sealed partial class GlobSpecification
                 return false;
             }
 
-            program = builder.ToStringAndDispose();
+            program = builder.ToString();
+            builder.Dispose();
             return true;
         }
 
@@ -2613,7 +2614,7 @@ public sealed partial class GlobSpecification
                 return source.ToString();
             }
 
-            ValueStringBuilder builder = new(stackalloc char[256]);
+            using ValueStringBuilder builder = new(stackalloc char[256]);
             for (int i = 0; i < source.Length; i++)
             {
                 char current = source[i];
@@ -2626,7 +2627,7 @@ public sealed partial class GlobSpecification
                 builder.Append(current);
             }
 
-            return builder.ToStringAndDispose();
+            return builder.ToString();
         }
     }
 }

@@ -47,8 +47,8 @@ public class ValueStringBuilderFormattingPerf
     [Benchmark]
     public string ValueStringBuilder_AppendFormat()
     {
-        ValueStringBuilder builder = new(stackalloc char[256]);
+        using ValueStringBuilder builder = new(stackalloc char[256]);
         builder.AppendFormat(Format, _name, _score, _percent);
-        return builder.ToStringAndDispose();
+        return builder.ToString();
     }
 }

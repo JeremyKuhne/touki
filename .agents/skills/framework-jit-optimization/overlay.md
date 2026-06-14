@@ -14,7 +14,13 @@ touki-specific lives here instead.
 
 - [`performance-testing`](../performance-testing/SKILL.md) - author/run the
   BenchmarkDotNet benchmarks and capture the before/after tables this skill's
-  decisions depend on.
+  decisions depend on. Its [reading-codegen.md](../performance-testing/reading-codegen.md)
+  is the "codegen-reading page" that `modern-net.md` and `cross-tfm-codegen.md`
+  point to (sharplab, `[DisassemblyDiagnoser]`, `[HardwareCounters]`,
+  `DOTNET_JitDisasm*`).
+- [`il-copy-inspection`](../il-copy-inspection/SKILL.md) - the "IL-copy-inspection
+  skill" that `cross-tfm-codegen.md` section 4 names for confirming defensive copies
+  (the source-level counterpart is the TOUKI0002-0004 analyzers).
 - [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - the checklist to run
   before opening a PR; its framework-correctness items apply directly here.
 - [`polyfill-dotnet-api`](../polyfill-dotnet-api/SKILL.md) - the upstream "how do
@@ -37,6 +43,36 @@ touki-specific lives here instead.
   [touki.perf/ReplaceUnsafeAsPerf.cs](../../../touki.perf/ReplaceUnsafeAsPerf.cs).
 - The production helpers that resulted from the span-walking experiments are in
   [touki/Touki/Buffers/SpanExtensions.IgnoreCase.cs](../../../touki/Touki/Buffers/SpanExtensions.IgnoreCase.cs).
+
+## `modern-net.md` and `cross-tfm-codegen.md` - touki examples
+
+The two newer sibling pages are written generically; here is where touki already
+applies them.
+
+- **`BitOperations`** ([cross-tfm-codegen.md](cross-tfm-codegen.md) section 2) is
+  polyfilled for the Framework target in
+  [touki/Framework/Polyfills/System.Numerics/BitOperations.cs](../../../touki/Framework/Polyfills/System.Numerics/BitOperations.cs).
+  Use it instead of hand-rolled bit tricks on both TFMs.
+- **`Math.DivRem` / `Math.BigMul`** (same page, section 1) are polyfilled in
+  [touki/Framework/Polyfills/System/MathExtensions.cs](../../../touki/Framework/Polyfills/System/MathExtensions.cs).
+- **`ReadOnlySpan<byte>` RVA blob** (section 5) - the live example is
+  `CharToHexLookup` in
+  [touki/Touki/Text/HexConverter.cs](../../../touki/Touki/Text/HexConverter.cs).
+- **Hot-path allocation anti-patterns** (section 7) - the repo's avoidance types are
+  [Touki.Text.ValueStringBuilder](../../../touki/Touki/Text/ValueStringBuilder.cs)
+  (stack-seeded string building), the
+  [Touki.Collections](../../../touki/Touki/Collections/ContiguousList.cs) pooled
+  lists, and the [EnumExtensions](../../../touki/Touki/EnumExtensions.cs) flag
+  helpers (no `Enum.HasFlag` boxing).
+- **Branchless vs branchful** ([cross-tfm-codegen.md](cross-tfm-codegen.md) section 3
+  and [antipatterns.md](antipatterns.md)) - the tuple-swap A/B is
+  [touki.perf/SpanSwapPerf.cs](../../../touki.perf/SpanSwapPerf.cs); the `Unsafe.As`
+  constant-propagation pitfall is
+  [touki.perf/ReplaceUnsafeAsPerf.cs](../../../touki.perf/ReplaceUnsafeAsPerf.cs).
+- **BCL-first on `net10`** ([modern-net.md](modern-net.md)) - the `SearchValues<char>`
+  class-membership matcher is tracked in
+  [docs/dotnet-perf-discoveries.md](../../../docs/dotnet-perf-discoveries.md) and the
+  [globbing feature plan](../../../docs/globbing-feature-plan.md).
 
 ## The span field manual and the touki worked example
 
@@ -61,3 +97,9 @@ the `StringSegment.CompareTo` before/after baseline is
 Pull upstream changes to the core (and its `references/`) with
 `gh skill update framework-jit-optimization` (review the diff, re-pin). Keep
 touki-specific additions in this file, not in the core.
+
+Note: [modern-net.md](modern-net.md) and [cross-tfm-codegen.md](cross-tfm-codegen.md)
+were added to the core locally and have not yet been pushed to the
+[agent-skills commons](https://github.com/JeremyKuhne/agent-skills). Until they are,
+`gh skill update` will show them as drift - push them upstream and re-pin rather
+than reverting.

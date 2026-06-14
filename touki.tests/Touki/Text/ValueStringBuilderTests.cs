@@ -329,15 +329,16 @@ public unsafe class ValueStringBuilderTests
     }
 
     [TestMethod]
-    public void ToStringAndClear_WithContent()
+    public void ToStringThenDispose_WithContent()
     {
         ValueStringBuilder builder = new(stackalloc char[20]);
         builder.Append("Hello World");
 
-        string result = builder.ToStringAndDispose();
+        string result = builder.ToString();
+        builder.Dispose();
         result.Should().Be("Hello World");
 
-        // Builder should be disposed and unusable after ToStringAndClear
+        // Builder is disposed and unusable after Dispose.
     }
 
     [TestMethod]
@@ -597,7 +598,12 @@ public unsafe class ValueStringBuilderTests
 #endif
     }
 
-    private static string TestFormat(ref ValueStringBuilder builder) => builder.ToStringAndDispose();
+    private static string TestFormat(ref ValueStringBuilder builder)
+    {
+        string result = builder.ToString();
+        builder.Dispose();
+        return result;
+    }
 
     [TestMethod]
     public void AppendFormat_Int()
