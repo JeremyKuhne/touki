@@ -64,6 +64,14 @@ public sealed class MakeMemberReadonlyCodeFixProvider : CodeFixProvider
                 continue;
             }
 
+            // A member-level 'readonly' modifier also applies to a property/indexer's set or init accessor, which is
+            // a compiler error even when the getter is non-mutating. Only offer the fix for read-only properties
+            // (get-only / expression-bodied); a getter-only readonly edit would be a future enhancement.
+            if (member is IPropertySymbol { SetMethod: not null })
+            {
+                continue;
+            }
+
             context.RegisterCodeFix(
                 CodeAction.Create(
                     title: $"Make '{member.Name}' readonly",

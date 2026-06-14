@@ -123,8 +123,8 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        // A by-ref return hands back the original location, not a copy.
-        if (context.ContainingSymbol is IMethodSymbol { ReturnsByRef: true })
+        // A by-ref (or ref readonly) return hands back the original location, not a copy.
+        if (context.ContainingSymbol is IMethodSymbol { ReturnsByRef: true } or IMethodSymbol { ReturnsByRefReadonly: true })
         {
             return;
         }
@@ -222,7 +222,7 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
                 s_rule,
                 location,
                 field.Type.Name,
-                $"field '{field.Name}'; mark the containing type [NonCopyable] or make this a 'ref' field"));
+                $"field '{field.Name}'; mark the containing type [NonCopyable] or avoid storing it by value"));
         }
     }
 

@@ -11,9 +11,9 @@ namespace Touki;
 /// <remarks>
 ///  <para>
 ///   The Touki analyzers (<c>TOUKI0003</c> and <c>TOUKI0004</c>) report defensive copies and by-value copies of
-///   types annotated with this attribute. A type is recognized by the attribute's simple name
-///   (<c>NonCopyableAttribute</c>) in any namespace, so a consumer that cannot reference this type may declare its
-///   own attribute with the same name and get the same analysis.
+///   types annotated with this attribute. A type is recognized by this attribute's fully qualified name,
+///   <c>Touki.NonCopyableAttribute</c>; a marker attribute of the same simple name in a different namespace is not
+///   recognized.
 ///  </para>
 ///  <para>
 ///   Applying this attribute does not change runtime behavior; it only drives static analysis. Prefer passing

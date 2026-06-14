@@ -102,6 +102,39 @@ public class NonCopyableByValueAnalyzerTests
     }
 
     [TestMethod]
+    public async Task RefReadonlyReturn_OfNonCopyable_ReportsNothing()
+    {
+        // A 'ref readonly' return hands back the original location, not a copy.
+        string source = Types + """
+            class C
+            {
+                static Pooled s_pooled;
+                static ref readonly Pooled M() => ref s_pooled;
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task RefReturn_OfNonCopyable_ReportsNothing()
+    {
+        string source = Types + """
+            class C
+            {
+                static Pooled s_pooled;
+                static ref Pooled M() => ref s_pooled;
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
     public async Task AssignmentFromLocation_OfNonCopyable_Reports()
     {
         string source = Types + """
