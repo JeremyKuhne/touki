@@ -6,17 +6,17 @@
             "type": "http",
             "url": "https://learn.microsoft.com/api/mcp"
         },
-        // Local filtrace trace-analysis server. filtrace was promoted out of this
-        // repo into its own sibling repository (github.com/JeremyKuhne/filtrace,
-        // cloned alongside touki at ../filtrace). Points at the built Release DLL
-        // for fast startup and clean stdout; rebuild with
-        // `dotnet build ../filtrace/src/Filtrace.Mcp/Filtrace.Mcp.csproj -c Release`
-        // and restart the server after changing filtrace.
+        // filtrace trace-analysis MCP server, consumed from the published
+        // KlutzyNinja.Filtrace.Mcp package (github.com/JeremyKuhne/filtrace).
+        // `dnx` (the .NET 10 SDK tool runner) downloads and runs the package on
+        // demand; `--yes` auto-confirms the one-time download. No local clone or
+        // build required - restart the server after filtrace publishes a new version.
         "filtrace": {
             "type": "stdio",
-            "command": "dotnet",
+            "command": "dnx",
             "args": [
-                "${workspaceFolder}/../filtrace/src/Filtrace.Mcp/bin/Release/net10.0/Filtrace.Mcp.dll"
+                "KlutzyNinja.Filtrace.Mcp",
+                "--yes"
             ]
         }
     }

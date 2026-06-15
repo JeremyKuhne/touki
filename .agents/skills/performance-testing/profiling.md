@@ -24,19 +24,18 @@ $trace = (Get-ChildItem BenchmarkDotNet.Artifacts `
 # The exact build BDN profiled - its PDB GUID matches the trace:
 $sym = 'artifacts/x64/Release/touki.perf/net10.0/touki.perf-DefaultJob-1/bin/Release/net10.0'
 
-# filtrace is the standalone analyzer (github.com/JeremyKuhne/filtrace), cloned
-# beside touki at ../filtrace; run it from that checkout. Once filtrace is
-# published to NuGet, `dotnet tool install -g KlutzyNinja.Filtrace` lets you call
-# `filtrace <verb>` directly instead. (The MCP tools above need neither.)
+# filtrace is the standalone analyzer (github.com/JeremyKuhne/filtrace), published
+# to NuGet. Install once with `dotnet tool install -g KlutzyNinja.Filtrace`, then
+# call `filtrace <verb>` directly. (The MCP tools above need no install.)
 
 # Method ranking, scoped to a workload frame (which method owns the self-time).
-dotnet run --project ../filtrace/src/Filtrace -c Release -- cpu $trace --root 'RecordedDirectoryEnumerator.MoveNext' --top 25
+filtrace cpu $trace --root 'RecordedDirectoryEnumerator.MoveNext' --top 25
 
 # Line ranking inside the dominant method (which lines of its hot loop dominate).
-dotnet run --project ../filtrace/src/Filtrace -c Release -- lines $trace --method RunEngine --symbols $sym --top 30
+filtrace lines $trace --method RunEngine --symbols $sym --top 30
 
 # Who calls a folded JIT-helper artifact, to confirm what it's attributable to.
-dotnet run --project ../filtrace/src/Filtrace -c Release -- callers $trace 'BulkMoveWithWriteBarrier'
+filtrace callers $trace 'BulkMoveWithWriteBarrier'
 ```
 
 The MCP tools map onto those verbs one-to-one: `trace_rank` (with
