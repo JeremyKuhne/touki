@@ -16,7 +16,7 @@ Include, as far as you can:
 - steps to reproduce, ideally with a minimal code sample or input;
 - any known workaround.
 
-touki is a low-level library whose APIs parse and transform untrusted input -
+Touki is a low-level library whose APIs parse and transform untrusted input -
 glob and extended-glob patterns, format strings, path strings, and spans of
 bytes/chars. Parsing and decoding issues triggered by crafted input - crashes,
 unbounded allocation, catastrophic backtracking, or other denial-of-service
@@ -24,8 +24,9 @@ shapes - are in scope, on both the .NET 10 and .NET Framework 4.7.2 targets.
 
 ## Supported versions
 
-Fixes are applied to the latest release from the `main` branch. There is no
-long-term back-port stream; upgrade to the newest `KlutzyNinja.Touki` /
+Security fixes land on the `main` branch and ship in the next release. Only the
+latest released version line is supported; there is no long-term back-port
+stream, so upgrade to the newest `KlutzyNinja.Touki` /
 `KlutzyNinja.Touki.TestSupport` release to pick up a security fix.
 
 ## Response
