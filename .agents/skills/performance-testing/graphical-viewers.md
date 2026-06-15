@@ -8,7 +8,7 @@ flame-graph viewer for a human.
 
 ## Reach for the direct drill first
 
-The traceq tools answer "where is the time" at line precision, in text, with no
+The filtrace tools answer "where is the time" at line precision, in text, with no
 viewer literacy required - so they are the practical default, and the thing to
 offer before a graphical viewer:
 
@@ -38,13 +38,13 @@ insight, or the user wants to explore interactively. Good moments:
 - **Exploring an unfamiliar method** whose call structure you do not yet know -
   clicking down the hot path interactively beats guessing `--method` filters.
 - **Handing a visual to someone else** (a PR reviewer, an issue) who will not run
-  traceq.
+  filtrace.
 
 If none of those apply, stay in the direct drill.
 
 ## Pick the viewer by export format
 
-traceq's `export` writes either format; the viewer follows from it. **Scope a
+filtrace's `export` writes either format; the viewer follows from it. **Scope a
 machine-wide `.etl` when you export** - pass `--process <name>` (CLI) or the
 `process` argument (the `trace_export` MCP tool), exactly as the ranking verbs
 do, or the export captures whichever process was busiest (a background app, not
@@ -103,7 +103,7 @@ user to:
 - use the search box (the magnifier) to filter frames by name - this is a UI
   control, not a URL parameter, so it cannot be preset.
 
-**Perfetto** shows the flame graph under the pinned `traceq` track (the opener
+**Perfetto** shows the flame graph under the pinned `filtrace` track (the opener
 expands and pins it). Tell the user to:
 
 - drag-select a time region, then read the per-frame breakdown in the bottom
@@ -112,16 +112,16 @@ expands and pins it). Tell the user to:
 
 ## Caveats that will mislead if unsaid
 
-- **Perfetto slice durations are inclusive, not self-time.** traceq's chromium
+- **Perfetto slice durations are inclusive, not self-time.** filtrace's chromium
   export reconstructs begin/end slices from the samples, so a frame's `dur` (and
   any `SUM(dur)` SQL) is inclusive of its callees. For self-time, trust
   `trace_rank` / `trace_lines` - do not read a Perfetto SQL sum as self-time.
-- **traceq exports a single aggregate track.** The engine's rankings aggregate
+- **filtrace exports a single aggregate track.** The engine's rankings aggregate
   across threads, so the flame graph is one synthetic thread named by the
-  export's `--name` (default `traceq`), not the real per-thread timeline. It is a
+  export's `--name` (default `filtrace`), not the real per-thread timeline. It is a
   flame graph, not a scheduling view.
 - **speedscope cannot deep-link a scope** - only the view. To focus a frame the
   user clicks it; there is no preset frame filter.
 - **A flame graph is not the source of truth for a number.** It is for *shape*
-  and *exploration*; quote the hot line/percentage from the traceq drill, which
+  and *exploration*; quote the hot line/percentage from the filtrace drill, which
   folds the sampling artifacts the raw flame graph still shows.

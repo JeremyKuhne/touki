@@ -1,6 +1,6 @@
 ---
 name: performance-testing
-description: Author and run BenchmarkDotNet performance tests in the `touki.perf` project, and translate a user's outcome-shaped performance question into a measurement. Use when adding new benchmarks, running existing ones, comparing implementations, profiling to find which method dominates a benchmark, drilling from a benchmark down to the hot source line (via the `traceq` trace analyzer), visualizing a trace as an interactive flame graph in speedscope or Perfetto, evaluating allocations / memory usage, or when a user asks how long something takes, how much memory it uses, where time is spent, or to help make a method faster - which this skill turns into a scenario, a benchmark, and a drill-down.
+description: Author and run BenchmarkDotNet performance tests in the `touki.perf` project, and translate a user's outcome-shaped performance question into a measurement. Use when adding new benchmarks, running existing ones, comparing implementations, profiling to find which method dominates a benchmark, drilling from a benchmark down to the hot source line (via the `filtrace` trace analyzer), visualizing a trace as an interactive flame graph in speedscope or Perfetto, evaluating allocations / memory usage, or when a user asks how long something takes, how much memory it uses, where time is spent, or to help make a method faster - which this skill turns into a scenario, a benchmark, and a drill-down.
 metadata:
   portability: semi-portable
 ---
@@ -116,7 +116,7 @@ sharplab, BenchmarkDotNet's `[DisassemblyDiagnoser]` / `[HardwareCounters]`, the
 - [running.md](running.md) - the `-f <tfm>` requirement, filtering to a class or
   method, the interactive picker, and useful switches.
 - [profiling.md](profiling.md) - capturing an EventPipe trace and drilling it
-  with the `traceq` analyzer from operation to method to line, and *reading* the
+  with the `filtrace` analyzer from operation to method to line, and *reading* the
   line ranking (prologue-dominated = call-count-bound; a helper recurring across
   branches = the real target).
 - [graphical-viewers.md](graphical-viewers.md) - the *optional* last step:

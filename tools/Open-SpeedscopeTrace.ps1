@@ -26,7 +26,7 @@
       - left-heavy   : stacks merged and sorted by weight (the hotspot view) [default]
       - sandwich     : the per-function caller/callee table
 
-    The input must be a speedscope-format profile (what `traceq export` writes by
+    The input must be a speedscope-format profile (what `filtrace export` writes by
     default, or `--format speedscope`). A Chrome-trace / Perfetto export is NOT a
     speedscope profile - open those with tools/Open-PerfettoTrace.ps1.
 
