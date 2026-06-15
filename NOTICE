@@ -1,0 +1,23 @@
+touki
+Copyright (c) 2025 Jeremy W. Kuhne and contributors
+
+This product is licensed under the MIT License (see LICENSE).
+
+Third-party components redistributed with this project are attributed separately
+in THIRD-PARTY-NOTICES.TXT.
+
+Additional permission granted by the copyright holder
+-----------------------------------------------------
+
+In addition to the permissions granted by the MIT License, Jeremy W. Kuhne, as
+the copyright holder, grants the following relaxation of the attribution
+requirement (the requirement that the copyright and permission notice be
+included in all copies or substantial portions of the Software):
+
+  When this software is used in .NET Foundation projects, attribution is only
+  needed in commit and pull request text. Other Microsoft projects (open or
+  closed) may also follow this .NET Foundation exclusion as long as it was
+  included in pull requests created when the author is employed by Microsoft.
+
+This is an additional permission only: it grants more latitude than the MIT
+License and removes none of the rights the MIT License already provides.
