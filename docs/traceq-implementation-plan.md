@@ -289,8 +289,8 @@ Two CI checks born here and kept forever: the **stdout-purity test** (run the se
 
 With the facade demonstrably standing alone, execute the rehearsed extraction:
 
-1. **Name finalized** (§6, D-N) — the repo needs it now, and the first private packages at M4 need final IDs. The availability pass was an M0 task, so this is a decision, not research.
-2. Copy `traceq/`'s files into a fresh `JeremyKuhne/<name>` repo at the root (a plain copy plus an initial commit; history is intentionally not carried - the parity harness, not git lineage, is the correctness guarantee, and the `touki.mcp` history was judged not worth preserving).
+1. **Name finalized** (§6, D-N) — **decided: `filtrace`** (2026-06-14; rationale and availability evidence in [§6, D-N](#d-n--naming--decided-filtrace-2026-06-14)). The repo, tool command, and packages (`KlutzyNinja.Filtrace`, `Filtrace.Core`, `Filtrace.Mcp`) take this name; the `traceq` subtree identifier is renamed **as part of the extraction** (below), not in-place beforehand.
+2. **Extract `traceq/` into a fresh `JeremyKuhne/filtrace` repo, preserving history.** Use `git filter-repo --path traceq/ --path-rename traceq/:` (the recommended tool; `git subtree split` is the built-in fallback) so the new repo's root carries the per-file commit history of the subtree, then apply the `traceq`->`filtrace` / `TraceQ`->`Filtrace` identifier rename as the first post-extraction commit. (This reverses the earlier "history intentionally not carried - plain copy" stance: the user chose to preserve lineage. **Carve-out:** the `TraceQ.Fixtures.HotLoopBench` namespace stays as-is - it is baked into the committed binary captures (`.etl`/`.nettrace`) that cannot be regenerated without elevated ETW, so renaming it would desync the parity goldens from their fixtures.)
 3. Stand up the promoted repo: port the subtree CI jobs verbatim; seed AGENTS.md / copilot-instructions trimmed from Touki's (deliberately lighter — this is a tool product, not a public API surface); enable the GitHub Packages NuGet feed; wire Trusted Publishing, dormant until the v1.0 public push.
 4. **Delete the subtree from Touki** in a single commit. `touki.mcp` itself remains untouched and working — it stays the daily driver until M6 flips the switch.
 
@@ -403,9 +403,43 @@ state, not the end state. Blockers, in dependency order:
 Item 3 is inside our control and can land incrementally; item 1 gates the actual
 AOT publish.
 
-### D-N — Naming (gate: M3½ promotion; availability pass: M0)
+### D-N — Naming — DECIDED: `filtrace` (2026-06-14)
 
-The promoted repo and the first private packages need the final name, so the *decision* gates promotion — but the availability pass is an M0 task because it's cheap, and a squatted ID discovered mid-promotion would be annoying. Criteria: ≤ 7 chars for the tool command, unsquatted on NuGet (`<Name>`, `<Name>.Core`, `<Name>.Mcp`) and as a GitHub repo, no collision with existing .NET perf tooling (note: "TraceLens" is taken by an existing tracing product), pronounceable in a sentence ("just traceq it"). Current placeholder `traceq` plausibly survives; alternatives worth the pass: `perfq`, `hotpath`, `stackq`. Bikeshedding is not an M0 task.
+**Decision: the promoted tool, repo, and packages are named `filtrace`** (a
+portmanteau of "filter trace"). This supersedes the earlier same-day `perfq`
+entry. The incubation subtree keeps the `traceq` directory/identifier until the
+M3½ extraction, where the rename is applied while history is preserved (see M3½
+step 2); an in-place rename beforehand was attempted and abandoned (it churns 185
+files immediately before the extraction copies them out anyway, and hit a
+build-output file lock).
+
+**Why `filtrace`.** It names the tool's *signature behavior*, not just its
+substrate: scenario scoping / filtering a trace is the default, not an option
+(§1A). It avoids every collision the other finalists carried - no `-q`
+query-language shape (the `traceq`↔Grafana **TraceQL** clash), no `perf`→Linux-perf
+autocorrect (`perfq`), no same-domain product (the `tracescope`↔Rust-flamegraph
+and `tracex`↔Eclipse-ThreadX-TraceX clashes). It is catchy and memorable, which
+is why it was chosen over the equally-clean `traceprobe` / `tracescout`.
+
+**Availability (verified 2026-06-14, namespaces probed directly):**
+
+- **NuGet:** the exact id `filtrace` 404s (unregistered), so the prefixed ids
+  this repo ships - `KlutzyNinja.Filtrace`, plus `Filtrace.Core` / `Filtrace.Mcp`
+  for the unprefixed internal names - are all clear.
+- **GitHub:** the repo `github.com/JeremyKuhne/filtrace` is free. The org/user
+  `github.com/filtrace` exists but is a **dormant empty account** (0 repos, 0
+  contributions) - harmless for a repo under the `JeremyKuhne` org. The ~20
+  "filtrace" repos are all 0-star: "filtrace" is the **Czech word for
+  "filtration"**, so they are student projects, not software products.
+
+**Accepted caveats** (cosmetic, not collisions): (a) it is a real word in Czech,
+so searches surface the dictionary sense - minor; (b) spoken stress is ambiguous
+("FILL-trace" vs "fil-TRACE") - the inverse of `perfq`, which read awkwardly but
+said cleanly. Neither is a trademark or same-domain-product clash. Alternatives
+considered and not chosen: `perfq` (perf-autocorrect; recorded earlier the same
+day, now superseded), `traceprobe` / `tracescout` (clean trace+verb forms, plainer),
+`tracetop` (echoes `perf top`), `tracesift` (best thematic fit but two adjacent
+log-triage namesakes).
 
 ---
 
