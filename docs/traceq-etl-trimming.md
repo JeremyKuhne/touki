@@ -1,5 +1,11 @@
 # traceq ETL trimming - state and follow-up
 
+> **Historical record.** Refers to `traceq`, the trace analyzer since promoted to
+> the standalone **`filtrace`** repository
+> ([github.com/JeremyKuhne/filtrace](https://github.com/JeremyKuhne/filtrace)).
+> The `traceq/...` paths below are from the in-touki incubation phase. Kept as a
+> design record; the narrative is not rewritten.
+
 Status: parked (2026-06-07). This document captures the full state of the
 physical ETW trace-trimming investigation so it can be picked up later. The
 lossless analysis-time alternative (process-tree scoping in the ETL reader) is

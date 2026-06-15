@@ -36,7 +36,7 @@ flowchart TD
     B -->|"Is impl A faster than B?"| C[BenchmarkDotNet A/B<br/>MemoryDiagnoser + Baseline]
     B -->|"Does this allocate?"| D[BenchmarkDotNet<br/>MemoryDiagnoser - read Allocated]
     B -->|"Which method eats the time<br/>in a whole operation?"| E[Profiler: EventPipeProfiler<br/>or dotnet-trace -> speedscope]
-    B -->|"Which source LINE inside<br/>the hot method?"| M[traceq lines<br/>.nettrace + --symbols]
+    B -->|"Which source LINE inside<br/>the hot method?"| M[filtrace lines<br/>.nettrace + --symbols]
     B -->|"Why is THIS loop slow<br/>on net481?"| F[DisassemblyDiagnoser<br/>compare net481 vs net10 asm]
     B -->|"Branch mispredicts / cache?"| G[HardwareCounters<br/>Windows + admin]
     C --> H[Read *.md report only]
@@ -58,7 +58,7 @@ Rule of thumb for picking the entry point:
 | "A vs B", "did my change regress?" | BenchmarkDotNet `[Benchmark]` + `Baseline` | low |
 | "Does X allocate? how much?" | BenchmarkDotNet `[MemoryDiagnoser]` | low |
 | "Where in a multi-method operation is the time?" | `[EventPipeProfiler]` or `dotnet-trace` | medium |
-| "Which source *line* inside the hot method?" | `traceq` `lines` (`.nettrace` + `--symbols`) | medium |
+| "Which source *line* inside the hot method?" | `filtrace` `lines` (`.nettrace` + `--symbols`) | medium |
 | "Why does the JIT emit slow code here?" | `[DisassemblyDiagnoser]` | medium |
 | "Is it branch misprediction / cache misses?" | `[HardwareCounters]` (Win+admin) | medium |
 | "Does it leak / churn the GC over a long run?" | `dotnet-counters`, `dotnet-gcdump` | medium |
@@ -256,11 +256,11 @@ It writes a `.speedscope.json` (and `.nettrace`) under
 <https://www.speedscope.app/> (drag-drop, nothing to install) to get a flame
 graph. Cross-platform, works on Linux/macOS/Windows, **no admin required**.
 
-#### Capture a trace, then rank hotspots (traceq)
+#### Capture a trace, then rank hotspots (filtrace)
 
 Capturing the trace and *reading* it are two steps. Capture is a plain
 `dotnet run`; the ranked, artifact-folded self/inclusive hotspots come from the
-in-workspace [traceq](../traceq/README.md) analyzer (section 6), which reads the
+standalone [filtrace](https://github.com/JeremyKuhne/filtrace) analyzer (section 6), which reads the
 trace BenchmarkDotNet just wrote - no GUI, no PerfView:
 
 ```powershell
@@ -274,14 +274,14 @@ $trace = (Get-ChildItem BenchmarkDotNet.Artifacts `
     Sort-Object LastWriteTime | Select-Object -Last 1).FullName
 
 # 2. Folded self-time + inclusive-time rankings, scoped to a workload frame.
-dotnet run --project traceq/src/TraceQ -c Release -- cpu $trace --root 'RecordedDirectoryEnumerator.MoveNext' --top 25
+dotnet run --project ../filtrace/src/Filtrace -c Release -- cpu $trace --root 'RecordedDirectoryEnumerator.MoveNext' --top 25
 
 # Confirm what a folded JIT-helper artifact is attributable to:
-dotnet run --project traceq/src/TraceQ -c Release -- callers $trace 'BulkMoveWithWriteBarrier'
+dotnet run --project ../filtrace/src/Filtrace -c Release -- callers $trace 'BulkMoveWithWriteBarrier'
 ```
 
 An agent that speaks MCP calls `trace_rank` (with `measure: self|inclusive`) /
-`trace_callers` directly on the registered `traceq` server (section 6) instead
+`trace_callers` directly on the registered `filtrace` server (section 6) instead
 of shelling out.
 
 > The committed PowerShell scripts (`Profile-Benchmark.ps1`,
@@ -292,7 +292,7 @@ of shelling out.
 > [performance-investigation-without-mcp.md](performance-investigation-without-mcp.md).
 
 For line-level attribution on the same trace - which *source line* inside the
-ranked method dominates - hand the `.nettrace` to `traceq` with the `lines` verb
+ranked method dominates - hand the `.nettrace` to `filtrace` with the `lines` verb
 (section 3f). This has no script fallback.
 
 > **Reading the BenchmarkDotNet speedscope export - two traps.**
@@ -413,7 +413,7 @@ samples for a stable ranking. Levers that actually help, cheapest first:
   count already helps; an operation that runs for seconds (like the 25 s
   extglob enumeration here) yields thousands of samples and a stable tree.
 - **Fold the artifacts** (section 3a, Trap 2). This is the single biggest
-  accuracy win for *attribution* and costs nothing - the `traceq` analyzer
+  accuracy win for *attribution* and costs nothing - the `filtrace` analyzer
   (and the fallback scripts) do it by default.
 - **Split a suspect frame with `[MethodImpl(MethodImplOptions.NoInlining)]`.**
   If two methods are inlined together the sampler cannot tell them apart;
@@ -423,7 +423,7 @@ samples for a stable ranking. Levers that actually help, cheapest first:
   stdout - token-cheap for an agent, and it reads the same `.nettrace`.
 - **PerfView headless** (`PerfView /FoldPats=... stacks ...`) does the same fold
   the analyzer does, with richer grouping, when you already have PerfView. The
-  `traceq` analyzer exists so the common case needs neither PerfView nor a
+  `filtrace` analyzer exists so the common case needs neither PerfView nor a
   GUI.
 - **Want true CPU time and native frames?** EventPipe gives neither. On Windows
   use `[EtwProfiler]` (section 3b, admin). On Linux - including **WSL Ubuntu on
@@ -449,18 +449,18 @@ Stabilize the JIT **for clean attribution, not for absolute numbers**:
 - Do **not** chase JIT stability for a microbenchmark whose numbers you care
   about - measure those with the normal tiered harness.
 
-### 3f. Layer 2b - from the hot method down to the hot *line* (`traceq`)
+### 3f. Layer 2b - from the hot method down to the hot *line* (`filtrace`)
 
-The profilers above rank *methods*. The committed
-[traceq](../traceq/README.md) project takes the same trace one
+The profilers above rank *methods*. The standalone
+[filtrace](https://github.com/JeremyKuhne/filtrace) project takes the same trace one
 level deeper: it reads the `.nettrace`/`.etl` through TraceEvent and attributes
 each leaf sample to the **source `file:line` that was executing**, so you can
 see which lines of a hot loop dominate. It is net10-only and runs two ways:
 
-- **Console front end** - `dotnet run --project traceq/src/TraceQ -c Release -- <verb>`.
+- **Console front end** - `dotnet run --project ../filtrace/src/Filtrace -c Release -- <verb>`.
 - **MCP server** - the same queries exposed as tools (`trace_info`,
   `trace_rank`, `trace_callers`, `trace_lines`, `trace_heatmap`) on the
-  registered `traceq` server for an agent that speaks MCP. See section 6.
+  registered `filtrace` server for an agent that speaks MCP. See section 6.
 
 The top-down loop on a single captured trace:
 
@@ -476,10 +476,10 @@ $trace = (Get-ChildItem BenchmarkDotNet.Artifacts `
 $sym = 'artifacts/x64/Release/touki.perf/net10.0/touki.perf-DefaultJob-1/bin/Release/net10.0'
 
 # 1. Method ranking (self + inclusive), JIT-helper artifacts folded.
-dotnet run --project traceq/src/TraceQ -c Release -- cpu $trace --symbols $sym --top 20
+dotnet run --project ../filtrace/src/Filtrace -c Release -- cpu $trace --symbols $sym --top 20
 
 # 2. Line ranking inside the dominant method.
-dotnet run --project traceq/src/TraceQ -c Release -- lines $trace --method RunEngine --symbols $sym --top 30
+dotnet run --project ../filtrace/src/Filtrace -c Release -- lines $trace --method RunEngine --symbols $sym --top 30
 ```
 
 Verbs and flags: `cpu`/`rank` rank methods (`--root <substr>` scopes to a
@@ -604,10 +604,10 @@ but unmatched depth. Pairs with `dotnet-trace`'s `.nettrace` output too.
 
 ## 6. MCP servers and programmatic API access
 
-### The in-workspace profiling MCP server: `traceq`
+### The profiling MCP server: `filtrace`
 
-This workspace ships a dedicated trace-analysis MCP server,
-[traceq](../traceq/README.md) (net10-only), registered in
+This workspace registers a dedicated trace-analysis MCP server,
+[filtrace](https://github.com/JeremyKuhne/filtrace) (net10-only), in
 [.vscode/mcp.json](../.vscode/mcp.json). It reads the same
 `.nettrace`/`.etl`/`.speedscope.json` traces the diagnosers and `dotnet-trace`
 produce, folds the JIT-helper sampling artifacts (section 3a, Trap 2), and
@@ -667,8 +667,8 @@ A concrete, token-efficient loop an agent should follow:
    `*-report-github.md`, quote only `Mean`/`Ratio`/`Allocated` for changed rows.
 6. **If the bottleneck is unclear**, attach `[EventPipeProfiler(CpuSampling)]`,
    capture a trace (`dotnet run ... --filter *<Subject>* -p EP --keepFiles` on
-   **net10.0**), then rank it with the `traceq` analyzer
-   (`dotnet run --project traceq/src/TraceQ -c Release -- cpu <trace> --root
+   **net10.0**), then rank it with the `filtrace` analyzer
+   (`dotnet run --project ../filtrace/src/Filtrace -c Release -- cpu <trace> --root
    <workload-frame>`, or the `trace_rank` MCP tool; the
    PowerShell scripts in
    [performance-investigation-without-mcp.md](performance-investigation-without-mcp.md)
@@ -680,7 +680,7 @@ A concrete, token-efficient loop an agent should follow:
    EventPipe is net10.0-only; for net481 on-CPU attribution use `[EtwProfiler]`
    (admin) - see the per-TFM table in &sect;3.
 7. **If you need the hot *line*, not just the hot method**, feed the same
-   `.nettrace` to `traceq`: `dotnet run --project traceq/src/TraceQ -c Release --
+   `.nettrace` to `filtrace`: `dotnet run --project ../filtrace/src/Filtrace -c Release --
    lines <trace> --method <method> --symbols <build-dir> --top 30` (or the
    `trace_lines` MCP tool). Capture with `--keepFiles` and point `--symbols` at
    BDN's surviving `...-DefaultJob-N/bin/Release/net10.0` so the PDB GUID
@@ -717,15 +717,15 @@ A/B + allocations ............ dotnet run -c Release -f <tfm> --project touki.pe
 Fast smoke ................... add --job short
 Read the result .............. BenchmarkDotNet.Artifacts/results/*-report-github.md
 Capture a trace .............. dotnet run -c Release -f net10.0 --project touki.perf -- --filter *X* -p EP --keepFiles
-Rank an existing trace ....... dotnet run --project traceq/src/TraceQ -c Release -- cpu <trace> --root <workload-frame>
+Rank an existing trace ....... dotnet run --project ../filtrace/src/Filtrace -c Release -- cpu <trace> --root <workload-frame>
                                folds JIT-helper artifacts + ranks self/inclusive. callers <frame> = who calls it.
 No-server fallback scripts ... ./tools/Profile-Benchmark.ps1 / Get-TraceHotspots.ps1 (see *-without-mcp.md)
 Flame-graph SVG .............. ./tools/speedscope-to-flamegraph.ps1   (or drag the speedscope into speedscope.app)
-Which source LINE? ........... dotnet run --project traceq/src/TraceQ -c Release -- lines <trace> --method <method> --symbols <build-dir>
+Which source LINE? ........... dotnet run --project ../filtrace/src/Filtrace -c Release -- lines <trace> --method <method> --symbols <build-dir>
                                net10 .nettrace/.etl + embedded PDB. Capture with --keepFiles; point --symbols
                                at BDN's ...-DefaultJob-N/bin/Release/net10.0 (PDB GUID must match the trace).
                                Inlined callee -> samples collapse on the call-site line; drill the tail. See 3f.
-traceq as an MCP server ...... tools: trace_info / trace_rank / trace_callers / trace_lines / trace_heatmap / trace_diff / trace_gc / trace_query_events / trace_export
+filtrace as an MCP server .... tools: trace_info / trace_rank / trace_callers / trace_lines / trace_heatmap / trace_diff / trace_gc / trace_query_events / trace_export
 Where's the time? (in-harness) [EventPipeProfiler(EventPipeProfile.CpuSampling)] -> speedscope.app
                                net10.0 only (no admin); net481 needs [EtwProfiler] (admin) -> .etl
                                FOLD BulkMoveWithWriteBarrier/PollGC/CPU_TIME before reading self-time.
