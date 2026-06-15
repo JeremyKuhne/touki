@@ -1,6 +1,6 @@
-# traceq manual demo - user-oriented prompts
+# filtrace manual demo - user-oriented prompts
 
-A short, manual follow-along for exercising **traceq** from Copilot Chat the way
+A short, manual follow-along for exercising **filtrace** from Copilot Chat the way
 a real touki developer actually talks to it: outcome questions - "how long does
 this take?", "how much does it allocate?", "where's the time going?", "make this
 faster?" - not tool-by-tool instructions.
@@ -16,16 +16,17 @@ faster?" - not tool-by-tool instructions.
 
 ## Setup (one time)
 
-Build the MCP server and register it, then start it from the Command Palette
-(*MCP: List Servers* -> `traceq` -> *Start Server*):
+filtrace lives in its own repo (github.com/JeremyKuhne/filtrace), cloned beside
+touki at `../filtrace`. Build the MCP server and register it, then start it from
+the Command Palette (*MCP: List Servers* -> `filtrace` -> *Start Server*):
 
 ```pwsh
-dotnet build traceq/src/TraceQ.Mcp/TraceQ.Mcp.csproj -c Release
+dotnet build ../filtrace/src/Filtrace.Mcp/Filtrace.Mcp.csproj -c Release
 ```
 
 The server entry lives in [.vscode/mcp.json](../.vscode/mcp.json) (rebuild the
-DLL and restart the server after changing traceq). Confirm nine `trace_*` tools
-register in the chat tool picker.
+DLL and restart the server after changing filtrace). Confirm the 13 `trace_*`
+tools register in the chat tool picker.
 
 ---
 
@@ -81,7 +82,7 @@ glob case it was: a method that was ~1.5% on net10 was ~56% on net481. A bare
 
 > **Prompt:** That ETW capture is machine-wide. How do I make sure we're looking at the benchmark and not something else running on my box?
 
-**Good:** the agent runs `traceq processes <etl>` to list the processes by weight,
+**Good:** the agent runs `filtrace processes <etl>` to list the processes by weight,
 then scopes every later query with `--process touki.perf` (or the right name).
 It should explain that an `.etl` is machine-wide, that the auto-scope picks the
 most-sampled process, and that a noisy background app can otherwise steal the
@@ -119,9 +120,9 @@ benchmark/trace rather than starting over.
 If you just want to exercise the analysis tools against a trace that already
 exists, point the agent at a committed fixture and ask:
 
-> - **Prompt:** What's in `traceq\tests\TraceQ.Core.Tests\Fixtures\folding.speedscope.json`, and is anything obviously off? (`trace_info` - resolution rate, threads)
+> - **Prompt:** What's in `../filtrace/tests/Filtrace.Core.Tests/Fixtures/folding.speedscope.json`, and is anything obviously off? (`trace_info` - resolution rate, threads)
 > - **Prompt:** Where's the CPU time in that trace? (`trace_rank` cpu, then a steer toward the hottest frame's callers)
-> - **Prompt:** What's allocating the most in `traceq\tests\TraceQ.Core.Tests\Fixtures\alloc.nettrace`? (`trace_rank` alloc - answered in **bytes**, not time)
+> - **Prompt:** What's allocating the most in `../filtrace/tests/Filtrace.Core.Tests/Fixtures/alloc.nettrace`? (`trace_rank` alloc - answered in **bytes**, not time)
 
 ---
 
@@ -136,5 +137,6 @@ exists, point the agent at a committed fixture and ask:
 - On a machine-wide `.etl`, ranks without scoping to a process (see step 5).
 - Guesses at native runtime cost it cannot yet resolve (see step 6).
 
-For the CLI equivalents and every verb's options, see the traceq README and
+For the CLI equivalents and every verb's options, see the
+[filtrace README](https://github.com/JeremyKuhne/filtrace) and
 [tools/Capture-EtwTrace.ps1](../tools/Capture-EtwTrace.ps1).

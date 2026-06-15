@@ -1,8 +1,8 @@
-# Profiling without the `traceq` server
+# Profiling without the `filtrace` MCP server
 
 The primary way to turn a captured benchmark trace into ranked hotspots and
-line-level attribution is the in-workspace
-[traceq](../traceq/README.md) analyzer - see
+line-level attribution is the standalone
+[filtrace](https://github.com/JeremyKuhne/filtrace) analyzer - see
 [performance-investigation.md](performance-investigation.md) sections 3a, 3f,
 and 6.
 
@@ -58,6 +58,6 @@ mandatory before trusting any self-time number.
 ## Line-level attribution
 
 The scripts stop at the method. For line-level (`file:line`) attribution there
-is **no script fallback** - it requires the `traceq` analyzer reading a
+is **no script fallback** - it requires the `filtrace` analyzer reading a
 `.nettrace`/`.etl` with the matching PDB. See
 [performance-investigation.md](performance-investigation.md) section 3f.

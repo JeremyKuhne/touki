@@ -1,5 +1,13 @@
 # `traceq` implementation plan
 
+> **Historical record.** This plan tracked the design and extraction of the
+> `traceq` trace analyzer, which shipped and was promoted on 2026-06-14 to its
+> own standalone repository as **`filtrace`**
+> ([github.com/JeremyKuhne/filtrace](https://github.com/JeremyKuhne/filtrace)).
+> The `traceq/...` paths and the `traceq` / `TraceQ` names below describe the
+> in-touki incubation phase; see the filtrace repo for the final form. Kept here
+> as the decision record - the narrative is intentionally not rewritten.
+
 **Status:** Active — Q1–Q3 resolved (§6)
 **Dogfooding hardening (2026-06-10):** A real net481 ETW profiling session folded
 its findings back into the tool - see [§7](#7-dogfooding-hardening-2026-06-10-etw-capture-process-scoping-and-the-runtime-symbol-plan).

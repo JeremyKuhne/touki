@@ -23,7 +23,7 @@ question; they are complementary, not interchangeable.
 | Source | `IOperation` (pre-lowering) | `roslyn-analyzers` (TOUKI0002-0004) | A copy is *predicted* from C# rules, live in the IDE |
 | **IL** | **compiled bytecode (post-lowering)** | **this skill** (`ildasm` / `ilspycmd` / Cecil) | **A copy was *emitted* by the C# compiler** |
 | Asm | JIT machine code | `framework-jit-optimization` + `DisassemblyDiagnoser` | Whether the JIT *kept* the copy or elided it |
-| Runtime | ETW / wall-clock | `performance-testing` + `traceq` | Whether the copy *costs* measurable time / allocation |
+| Runtime | ETW / wall-clock | `performance-testing` + `filtrace` | Whether the copy *costs* measurable time / allocation |
 
 The IL layer is uniquely able to see copies the **compiler synthesizes during
 lowering** - async / iterator state-machine field hoisting, closures, thunks -
@@ -62,7 +62,7 @@ defensive-copy signature, the analyzer was right.
 4. **Map IL offset to source.** Use the PDB sequence points (most disassemblers can
    interleave source, e.g. `ilspycmd -il` with debug info, or read sequence points
    via `System.Reflection.Metadata`) to attribute each copy to a line - the same
-   artifact-to-source drill the `performance-testing` skill does with `traceq`.
+   artifact-to-source drill the `performance-testing` skill does with `filtrace`.
 5. **Report** the type copied, the mechanism (defensive / box / by-value), and the
    source line. Distinguish *intended* copies (a documented value transfer) from
    *unintended* ones; IL alone cannot, so use the source context.

@@ -21,7 +21,7 @@
     security policy whitelists, so the fetch is only allowed from that port without
     enabling the UI's "Relax CSP" flag.
 
-    The input must be a Chrome Trace Event Format file (what `traceq export --format
+    The input must be a Chrome Trace Event Format file (what `filtrace export --format
     chromium` writes) or a native Perfetto proto trace. A speedscope export is NOT a
     Perfetto format - open those with the speedscope CLI instead.
 
@@ -44,7 +44,7 @@
 .PARAMETER PinTrack
     Regex of track name(s) to pin to the top of the timeline once the trace loads,
     via the stable dev.perfetto.PinTracksByRegex startup command. Defaults to
-    'traceq' - the single aggregate track traceq's chromium export emits (named by
+    'filtrace' - the single aggregate track filtrace's chromium export emits (named by
     the export's --name). Pass '' to skip pinning.
 
 .PARAMETER NoExpand
@@ -75,7 +75,7 @@ param(
     [string]$Origin = "https://ui.perfetto.dev",
     [int]$Port = 9001,
     [int]$TimeoutSeconds = 300,
-    [string]$PinTrack = "traceq",
+    [string]$PinTrack = "filtrace",
     [switch]$NoExpand,
     [string[]]$StartupCommands,
     [switch]$NoOpenBrowser

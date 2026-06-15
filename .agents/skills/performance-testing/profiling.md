@@ -4,9 +4,9 @@ Detail for the [performance-testing](SKILL.md) skill.
 
 To find where a benchmark spends its time - optimizing a hot path or chasing a
 regression - capture an EventPipe CPU trace on `net10.0`, then drill it with the
-in-workspace [traceq](../../../traceq/README.md) analyzer. It reads the trace
-through TraceEvent, folds the JIT-helper sampling artifacts, and ranks by method
-or by source `file:line`. traceq is registered as an MCP server in
+standalone [filtrace](https://github.com/JeremyKuhne/filtrace) analyzer. It reads
+the trace through TraceEvent, folds the JIT-helper sampling artifacts, and ranks
+by method or by source `file:line`. filtrace is registered as an MCP server in
 [.vscode/mcp.json](../../../.vscode/mcp.json), so **an agent calls its tools
 directly** - `trace_info` first, then `trace_rank` / `trace_callers` /
 `trace_lines` / `trace_heatmap`. The equivalent CLI verbs (below) are the manual
@@ -24,14 +24,19 @@ $trace = (Get-ChildItem BenchmarkDotNet.Artifacts `
 # The exact build BDN profiled - its PDB GUID matches the trace:
 $sym = 'artifacts/x64/Release/touki.perf/net10.0/touki.perf-DefaultJob-1/bin/Release/net10.0'
 
+# filtrace is the standalone analyzer (github.com/JeremyKuhne/filtrace), cloned
+# beside touki at ../filtrace; run it from that checkout. Once filtrace is
+# published to NuGet, `dotnet tool install -g KlutzyNinja.Filtrace` lets you call
+# `filtrace <verb>` directly instead. (The MCP tools above need neither.)
+
 # Method ranking, scoped to a workload frame (which method owns the self-time).
-dotnet run --project traceq/src/TraceQ -c Release -- cpu $trace --root 'RecordedDirectoryEnumerator.MoveNext' --top 25
+dotnet run --project ../filtrace/src/Filtrace -c Release -- cpu $trace --root 'RecordedDirectoryEnumerator.MoveNext' --top 25
 
 # Line ranking inside the dominant method (which lines of its hot loop dominate).
-dotnet run --project traceq/src/TraceQ -c Release -- lines $trace --method RunEngine --symbols $sym --top 30
+dotnet run --project ../filtrace/src/Filtrace -c Release -- lines $trace --method RunEngine --symbols $sym --top 30
 
 # Who calls a folded JIT-helper artifact, to confirm what it's attributable to.
-dotnet run --project traceq/src/TraceQ -c Release -- callers $trace 'BulkMoveWithWriteBarrier'
+dotnet run --project ../filtrace/src/Filtrace -c Release -- callers $trace 'BulkMoveWithWriteBarrier'
 ```
 
 The MCP tools map onto those verbs one-to-one: `trace_rank` (with
@@ -116,18 +121,18 @@ self-elevates (one UAC prompt), shows the benchmark's **live** progress in the
 elevated window (output is teed, never redirected with `*>`, so it never looks
 hung), checks that the `BenchmarkDotNet.Diagnostics.Windows` package is
 referenced - without it `-p ETW` silently no-ops - and prints the exact,
-process-scoped next-step traceq commands:
+process-scoped next-step filtrace commands:
 
 ```powershell
 ./tools/Capture-EtwTrace.ps1 -Filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingle'
 ```
 
-**An `.etl` is a machine-wide capture - scope it to your process.** traceq
+**An `.etl` is a machine-wide capture - scope it to your process.** filtrace
 auto-scopes to the busiest process *by CPU sample count* (the quantity the
 rankings consume), which is normally the benchmark; but a noisy background app
 (antivirus, a VPN client) can own enough samples to win, so pass `--process <name>`
 to pin it. **Every CPU verb takes it** - `cpu`, `rank`, `threadtime`, `lines`,
-`callers`, `heatmap` (and the matching `trace_*` MCP tools). `traceq processes
+`callers`, `heatmap` (and the matching `trace_*` MCP tools). `filtrace processes
 <etl>` lists every process by weight so you can choose the right target. Quiesce
 other CPU consumers before capturing, or scope explicitly.
 
