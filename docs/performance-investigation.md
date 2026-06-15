@@ -274,10 +274,10 @@ $trace = (Get-ChildItem BenchmarkDotNet.Artifacts `
     Sort-Object LastWriteTime | Select-Object -Last 1).FullName
 
 # 2. Folded self-time + inclusive-time rankings, scoped to a workload frame.
-dotnet run --project ../filtrace/src/Filtrace -c Release -- cpu $trace --root 'RecordedDirectoryEnumerator.MoveNext' --top 25
+filtrace cpu $trace --root 'RecordedDirectoryEnumerator.MoveNext' --top 25
 
 # Confirm what a folded JIT-helper artifact is attributable to:
-dotnet run --project ../filtrace/src/Filtrace -c Release -- callers $trace 'BulkMoveWithWriteBarrier'
+filtrace callers $trace 'BulkMoveWithWriteBarrier'
 ```
 
 An agent that speaks MCP calls `trace_rank` (with `measure: self|inclusive`) /
@@ -457,7 +457,8 @@ level deeper: it reads the `.nettrace`/`.etl` through TraceEvent and attributes
 each leaf sample to the **source `file:line` that was executing**, so you can
 see which lines of a hot loop dominate. It is net10-only and runs two ways:
 
-- **Console front end** - `dotnet run --project ../filtrace/src/Filtrace -c Release -- <verb>`.
+- **Console front end** - `filtrace <verb>` (install once with
+  `dotnet tool install -g KlutzyNinja.Filtrace`).
 - **MCP server** - the same queries exposed as tools (`trace_info`,
   `trace_rank`, `trace_callers`, `trace_lines`, `trace_heatmap`) on the
   registered `filtrace` server for an agent that speaks MCP. See section 6.
@@ -476,10 +477,10 @@ $trace = (Get-ChildItem BenchmarkDotNet.Artifacts `
 $sym = 'artifacts/x64/Release/touki.perf/net10.0/touki.perf-DefaultJob-1/bin/Release/net10.0'
 
 # 1. Method ranking (self + inclusive), JIT-helper artifacts folded.
-dotnet run --project ../filtrace/src/Filtrace -c Release -- cpu $trace --symbols $sym --top 20
+filtrace cpu $trace --symbols $sym --top 20
 
 # 2. Line ranking inside the dominant method.
-dotnet run --project ../filtrace/src/Filtrace -c Release -- lines $trace --method RunEngine --symbols $sym --top 30
+filtrace lines $trace --method RunEngine --symbols $sym --top 30
 ```
 
 Verbs and flags: `cpu`/`rank` rank methods (`--root <substr>` scopes to a
@@ -668,8 +669,7 @@ A concrete, token-efficient loop an agent should follow:
 6. **If the bottleneck is unclear**, attach `[EventPipeProfiler(CpuSampling)]`,
    capture a trace (`dotnet run ... --filter *<Subject>* -p EP --keepFiles` on
    **net10.0**), then rank it with the `filtrace` analyzer
-   (`dotnet run --project ../filtrace/src/Filtrace -c Release -- cpu <trace> --root
-   <workload-frame>`, or the `trace_rank` MCP tool; the
+   (`filtrace cpu <trace> --root <workload-frame>`, or the `trace_rank` MCP tool; the
    PowerShell scripts in
    [performance-investigation-without-mcp.md](performance-investigation-without-mcp.md)
    are the no-MCP fallback). **Fold the JIT-helper artifacts**
@@ -680,8 +680,8 @@ A concrete, token-efficient loop an agent should follow:
    EventPipe is net10.0-only; for net481 on-CPU attribution use `[EtwProfiler]`
    (admin) - see the per-TFM table in &sect;3.
 7. **If you need the hot *line*, not just the hot method**, feed the same
-   `.nettrace` to `filtrace`: `dotnet run --project ../filtrace/src/Filtrace -c Release --
-   lines <trace> --method <method> --symbols <build-dir> --top 30` (or the
+   `.nettrace` to `filtrace`: `filtrace lines <trace> --method <method>
+   --symbols <build-dir> --top 30` (or the
    `trace_lines` MCP tool). Capture with `--keepFiles` and point `--symbols` at
    BDN's surviving `...-DefaultJob-N/bin/Release/net10.0` so the PDB GUID
    matches; if the ranking collapses onto one or two call-site lines the callee
@@ -717,11 +717,11 @@ A/B + allocations ............ dotnet run -c Release -f <tfm> --project touki.pe
 Fast smoke ................... add --job short
 Read the result .............. BenchmarkDotNet.Artifacts/results/*-report-github.md
 Capture a trace .............. dotnet run -c Release -f net10.0 --project touki.perf -- --filter *X* -p EP --keepFiles
-Rank an existing trace ....... dotnet run --project ../filtrace/src/Filtrace -c Release -- cpu <trace> --root <workload-frame>
+Rank an existing trace ....... filtrace cpu <trace> --root <workload-frame>
                                folds JIT-helper artifacts + ranks self/inclusive. callers <frame> = who calls it.
 No-server fallback scripts ... ./tools/Profile-Benchmark.ps1 / Get-TraceHotspots.ps1 (see *-without-mcp.md)
 Flame-graph SVG .............. ./tools/speedscope-to-flamegraph.ps1   (or drag the speedscope into speedscope.app)
-Which source LINE? ........... dotnet run --project ../filtrace/src/Filtrace -c Release -- lines <trace> --method <method> --symbols <build-dir>
+Which source LINE? ........... filtrace lines <trace> --method <method> --symbols <build-dir>
                                net10 .nettrace/.etl + embedded PDB. Capture with --keepFiles; point --symbols
                                at BDN's ...-DefaultJob-N/bin/Release/net10.0 (PDB GUID must match the trace).
                                Inlined callee -> samples collapse on the call-site line; drill the tail. See 3f.

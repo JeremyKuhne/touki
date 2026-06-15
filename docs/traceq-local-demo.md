@@ -16,17 +16,11 @@ faster?" - not tool-by-tool instructions.
 
 ## Setup (one time)
 
-filtrace lives in its own repo (github.com/JeremyKuhne/filtrace), cloned beside
-touki at `../filtrace`. Build the MCP server and register it, then start it from
-the Command Palette (*MCP: List Servers* -> `filtrace` -> *Start Server*):
-
-```pwsh
-dotnet build ../filtrace/src/Filtrace.Mcp/Filtrace.Mcp.csproj -c Release
-```
-
-The server entry lives in [.vscode/mcp.json](../.vscode/mcp.json) (rebuild the
-DLL and restart the server after changing filtrace). Confirm the 13 `trace_*`
-tools register in the chat tool picker.
+filtrace is published to NuGet (github.com/JeremyKuhne/filtrace). The MCP server
+entry in [.vscode/mcp.json](../.vscode/mcp.json) runs it on demand via `dnx` (the
+.NET 10 SDK tool runner) - no clone or build required. Start it from the Command
+Palette (*MCP: List Servers* -> `filtrace` -> *Start Server*) and confirm the 13
+`trace_*` tools register in the chat tool picker.
 
 ---
 
@@ -118,7 +112,9 @@ benchmark/trace rather than starting over.
 ## Warm-up: you already have a trace
 
 If you just want to exercise the analysis tools against a trace that already
-exists, point the agent at a committed fixture and ask:
+exists, point the agent at any trace you have and ask. The examples below use
+filtrace's own committed test fixtures, so they assume the filtrace repo is
+checked out at `../filtrace`; substitute any `.nettrace` / `.speedscope.json`:
 
 > - **Prompt:** What's in `../filtrace/tests/Filtrace.Core.Tests/Fixtures/folding.speedscope.json`, and is anything obviously off? (`trace_info` - resolution rate, threads)
 > - **Prompt:** Where's the CPU time in that trace? (`trace_rank` cpu, then a steer toward the hottest frame's callers)

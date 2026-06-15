@@ -138,10 +138,10 @@ if ($null -eq $etl) {
 # The net481 build-output directory BenchmarkDotNet kept (--keepFiles); its embedded
 # PDBs resolve managed frames to source lines for the `lines`/`heatmap` verbs.
 $symbols = "artifacts/x64/Release/touki.perf/$Tfm/touki.perf-DefaultJob-1/bin/Release/$Tfm"
-# filtrace is the standalone analyzer (github.com/JeremyKuhne/filtrace), cloned beside
-# touki at ../filtrace. Once it is published to NuGet (dotnet tool install -g
-# KlutzyNinja.Filtrace) the printed commands become just `filtrace <verb> ...`.
-$filtrace = "dotnet run --project ../filtrace/src/Filtrace -c Release --"
+# filtrace is the standalone analyzer (github.com/JeremyKuhne/filtrace), published to
+# NuGet. Install once with `dotnet tool install -g KlutzyNinja.Filtrace`; the printed
+# commands below then run as `filtrace <verb> ...`.
+$filtrace = "filtrace"
 
 Write-Host "`nCaptured: $($etl.FullName)" -ForegroundColor Green
 Write-Host "`nNext-step filtrace commands (scoped to '$Process'):" -ForegroundColor Green
