@@ -120,9 +120,9 @@ benchmark/trace rather than starting over.
 If you just want to exercise the analysis tools against a trace that already
 exists, point the agent at a committed fixture and ask:
 
-> - **Prompt:** What's in `..\filtrace\tests\Filtrace.Core.Tests\Fixtures\folding.speedscope.json`, and is anything obviously off? (`trace_info` - resolution rate, threads)
+> - **Prompt:** What's in `../filtrace/tests/Filtrace.Core.Tests/Fixtures/folding.speedscope.json`, and is anything obviously off? (`trace_info` - resolution rate, threads)
 > - **Prompt:** Where's the CPU time in that trace? (`trace_rank` cpu, then a steer toward the hottest frame's callers)
-> - **Prompt:** What's allocating the most in `..\filtrace\tests\Filtrace.Core.Tests\Fixtures\alloc.nettrace`? (`trace_rank` alloc - answered in **bytes**, not time)
+> - **Prompt:** What's allocating the most in `../filtrace/tests/Filtrace.Core.Tests/Fixtures/alloc.nettrace`? (`trace_rank` alloc - answered in **bytes**, not time)
 
 ---
 
