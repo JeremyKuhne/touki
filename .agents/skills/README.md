@@ -54,9 +54,9 @@ match the user's request, follow the rule below.
 Both touch skill files. They are mutually exclusive by **scope**:
 
 - **The catalog lifecycle** - discovering a skill, adding one, vendoring from the
-  commons, syncing a local change up or down &rarr; `manage-skills`.
+  commons, syncing a local change up or down -> `manage-skills`.
 - **Validating one agent file** - frontmatter, mirror sync, whitespace, the
-  `agent-files.yml` gate &rarr; `agent-files-review`.
+  `agent-files.yml` gate -> `agent-files-review`.
 
 The normal order is to run `manage-skills` to bring a skill in or push one out,
 then `agent-files-review` to validate the file you ended up with.
@@ -65,10 +65,10 @@ then `agent-files-review` to validate the file you ended up with.
 
 Both touch PR mechanics. They are mutually exclusive by **lifecycle stage**:
 
-- **No PR exists yet** &rarr; `create-pr`. The skill ensures changes are on a
+- **No PR exists yet** -> `create-pr`. The skill ensures changes are on a
   non-`main` branch, commits and pushes, and targets `upstream/main` when
   available.
-- **PR exists, reviewer left comments / CI failed** &rarr; `address-pr-feedback`.
+- **PR exists, reviewer left comments / CI failed** -> `address-pr-feedback`.
   Edit-only by default. Does **not** push without explicit approval.
 
 If the user says "open a PR" while a PR already exists for this branch, ask
@@ -78,11 +78,11 @@ which they mean before invoking either.
 
 Both fire on "polyfill". They split by **which side of the decision** you are on:
 
-- **"Which package or generator already supplies this downlevel?"** &rarr;
+- **"Which package or generator already supplies this downlevel?"** ->
   `dotnet-polyfills`. The vendored survey of the official Microsoft backport
   packages, PolySharp, and the `KlutzyNinja.Touki` runtime layer - the
   consume/choose side. Start here.
-- **"None of them have it - write it by hand."** &rarr; `polyfill-dotnet-api`.
+- **"None of them have it - write it by hand."** -> `polyfill-dotnet-api`.
   Touki's authoring rules for a hand-rolled polyfill under `touki/Framework/`
   (layout, behavior-parity, the net481 codegen gotchas).
 
@@ -94,10 +94,10 @@ answer is genuinely "no package covers this."
 Both can land code under `touki/Framework/`. They are mutually exclusive by
 **intent**:
 
-- **Adding/back-porting an API surface** missing on net472 &rarr;
+- **Adding/back-porting an API surface** missing on net472 ->
   `polyfill-dotnet-api`. Picks the right source (Microsoft package vs PolySharp
   vs hand-rolled) and enforces namespace/`#if` rules.
-- **Tuning an existing hot path** for net481 RyuJIT specifically &rarr;
+- **Tuning an existing hot path** for net481 RyuJIT specifically ->
   `framework-jit-optimization`. No new public surface; the file already exists.
 
 If a polyfill needs hot-path tuning after the fact, run `polyfill-dotnet-api`
@@ -109,9 +109,9 @@ pass.
 Adjacent, not overlapping, but easy to confuse:
 
 - **Harness mechanics** (writing a benchmark class, parameters, diagnosers,
-  reading the output) &rarr; `performance-testing`.
+  reading the output) -> `performance-testing`.
 - **What the JIT will do with the code under benchmark** (inlining, intrinsics,
-  devirtualization, the `Unsafe.As` foot-gun) &rarr;
+  devirtualization, the `Unsafe.As` foot-gun) ->
   `framework-jit-optimization`.
 
 You will frequently use both in sequence.
@@ -122,10 +122,10 @@ Both mention "evaluating allocations", but they answer different questions:
 
 - **Which buffer strategy should this hot path use** (zeroed `stackalloc` vs
   `[SkipLocalsInit]` vs `BufferScope<T>` vs an `ArrayPool` rental), and at what
-  size does renting beat zeroing &rarr; `scratch-buffer-strategy`. It hands back
+  size does renting beat zeroing -> `scratch-buffer-strategy`. It hands back
   a decision, not a measurement.
 - **How do I measure a buffer/allocation cost** (author a benchmark, add
-  `[MemoryDiagnoser]`, read `Allocated`) &rarr; `performance-testing`.
+  `[MemoryDiagnoser]`, read `Allocated`) -> `performance-testing`.
 
 ### `performance-testing` vs `filtrace`
 
@@ -134,10 +134,10 @@ sides of a hand-off:
 
 - **Author or run a benchmark, capture a touki trace, and interpret the result**
   (the `-p EP --keepFiles` recipe, the EventPipe-vs-ETW divergence, reading the
-  line ranking) &rarr; `performance-testing`.
+  line ranking) -> `performance-testing`.
 - **Drive the filtrace analyzer over an existing trace** - the `cpu` / `rank` /
   `callers` / `lines` / `diff` / `export` verbs and `trace_*` tools, the symbol
-  gate, the trap catalog &rarr; `filtrace`.
+  gate, the trap catalog -> `filtrace`.
 
 The usual flow is `performance-testing` to produce the trace, then `filtrace` to
 rank and drill it.
@@ -150,10 +150,10 @@ verify it on both TFMs.
 Both talk about "performance", but about different things:
 
 - **How fast the analyzer runs in the IDE** (per-keystroke budget, cheap-filter
-  ordering, `ReportAnalyzer`) &rarr; `roslyn-analyzers`. The subject is a
+  ordering, `ReportAnalyzer`) -> `roslyn-analyzers`. The subject is a
   `DiagnosticAnalyzer`'s own execution time.
 - **How fast the library code runs at execution time** (BenchmarkDotNet `Mean`,
-  `Allocated`, both TFMs) &rarr; `performance-testing`. The subject is the shipped
+  `Allocated`, both TFMs) -> `performance-testing`. The subject is the shipped
   product code.
 
 They share no harness and no budget. If the request is "make this analyzer faster
@@ -165,18 +165,18 @@ run time", it is `performance-testing`.
 "Find the struct copies" is ambiguous across four artifact layers. Route by what is
 being read:
 
-- **Predict copies from source, live in the IDE** &rarr; `roslyn-analyzers`
+- **Predict copies from source, live in the IDE** -> `roslyn-analyzers`
   (the TOUKI0002-0004 defensive-copy / `[NonCopyable]` rules over `IOperation`).
 - **Read the compiler's emitted IL** for the actual `ldobj`/`box`/by-value copies
-  &rarr; `il-copy-inspection`. It is post-build and sees synthesized copies the
+  -> `il-copy-inspection`. It is post-build and sees synthesized copies the
   analyzer cannot.
-- **Read the JIT's machine code** (was the copy elided?) &rarr;
+- **Read the JIT's machine code** (was the copy elided?) ->
   `framework-jit-optimization` + `[DisassemblyDiagnoser]`.
-- **Measure the runtime cost** (allocation / time) &rarr; `performance-testing`.
+- **Measure the runtime cost** (allocation / time) -> `performance-testing`.
 
 `il-copy-inspection` never runs the code and never measures time; if a request needs
 a number, it belongs to `performance-testing`. The natural chain is analyzer
-prediction &rarr; IL confirmation &rarr; asm/runtime cost.
+prediction -> IL confirmation -> asm/runtime cost.
 
 ## Maintenance
 
