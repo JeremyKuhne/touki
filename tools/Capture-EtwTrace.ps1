@@ -49,8 +49,9 @@
     ./tools/Capture-EtwTrace.ps1 -Filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingle'
 
 .NOTES
-    Native runtime-symbol resolution (a -NativeSymbols switch) is planned but not
-    yet wired - see the runtime-symbol plan in docs/traceq-implementation-plan.md.
+    Native runtime-symbol resolution happens at analysis time in filtrace via its
+    `--native-symbols` option, not in this capture script - see
+    https://github.com/JeremyKuhne/filtrace.
 #>
 param(
     [Parameter(Mandatory)][string]$Filter,
