@@ -10,9 +10,10 @@ and 6.
 
 This document is the **last-resort fallback**: the committed PowerShell scripts
 that do the same trace aggregation with no filtrace install at all (for an
-environment where neither filtrace head is available, or when you want a
-flame-graph SVG, which filtrace does not render). The *conceptual* guidance - the
-JIT-helper folding traps and the `RootFrame` gotcha - lives in
+environment where neither the filtrace CLI nor its MCP server is available, or
+when you want a flame-graph SVG, which filtrace does not render). The
+*conceptual* guidance - the JIT-helper folding traps and the `RootFrame` gotcha -
+lives in
 [performance-investigation.md](performance-investigation.md) section 3a and
 applies identically here; this doc only covers the script invocations.
 
