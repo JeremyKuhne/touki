@@ -10,9 +10,9 @@ core - `gh skill update` would flag the drift. Everything touki-specific lives
 here, plus the two profiling pages below, which are a touki overlay (they drive
 the repo's trace analyzer).
 
-> **Provisional pin.** The core is currently pinned to a commons *commit*
-> (`add-performance-testing` branch), not a release tag. When the commons cuts
-> `v0.7.0`, re-pin `github-pinned` / `github-ref` / `github-tree-sha` to the tag.
+> **Pinned to a release.** The core is pinned to the commons **v0.7.0** tag. Pull
+> later upstream changes with `gh skill update performance-testing` (review the
+> diff, re-pin to the new tag).
 
 ## Concrete bindings for the core's placeholders
 
