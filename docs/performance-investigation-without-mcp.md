@@ -1,16 +1,19 @@
-# Profiling without the `filtrace` MCP server
+# Profiling without filtrace: the PowerShell fallback scripts
 
 The primary way to turn a captured benchmark trace into ranked hotspots and
 line-level attribution is the standalone
-[filtrace](https://github.com/JeremyKuhne/filtrace) analyzer - see
+[filtrace](https://github.com/JeremyKuhne/filtrace) analyzer - its MCP tools for
+an agent, or the `filtrace` CLI (`dotnet tool install -g KlutzyNinja.Filtrace`)
+when the MCP server is unavailable - see
 [performance-investigation.md](performance-investigation.md) sections 3a, 3f,
 and 6.
 
-This document is the **fallback**: the committed PowerShell scripts that do the
-same trace aggregation without the MCP server (for an environment where the MCP
-server is unavailable, or when you want a flame-graph SVG, which the analyzer
-does not render). The *conceptual* guidance - the JIT-helper folding traps and
-the `RootFrame` gotcha - lives in
+This document is the **last-resort fallback**: the committed PowerShell scripts
+that do the same trace aggregation with no filtrace install at all (for an
+environment where neither the filtrace CLI nor its MCP server is available, or
+when you want a flame-graph SVG, which filtrace does not render). The
+*conceptual* guidance - the JIT-helper folding traps and the `RootFrame` gotcha -
+lives in
 [performance-investigation.md](performance-investigation.md) section 3a and
 applies identically here; this doc only covers the script invocations.
 

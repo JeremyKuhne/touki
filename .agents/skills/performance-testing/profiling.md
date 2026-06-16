@@ -195,9 +195,10 @@ first:
    lever for line-level depth. See [docs/performance-investigation.md](../../../docs/performance-investigation.md)
    sections 3b (`EtwProfiler`) and 3e (sample density).
 
-The older `Profile-Benchmark.ps1` / `Get-TraceHotspots.ps1` scripts predate the
-analyzer and remain as a no-MCP fallback (plus `speedscope-to-flamegraph.ps1`
-for SVG) in
+The older `Profile-Benchmark.ps1` / `Get-TraceHotspots.ps1` scripts predate
+filtrace and remain as a no-filtrace fallback (when the MCP server is unavailable
+the `filtrace` CLI is the better path; plus `speedscope-to-flamegraph.ps1` for
+SVG) in
 [docs/performance-investigation-without-mcp.md](../../../docs/performance-investigation-without-mcp.md).
 
 ## Reading the line ranking - what the heat *shape* means

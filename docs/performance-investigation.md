@@ -285,8 +285,9 @@ An agent that speaks MCP calls `trace_rank` (with `measure: self|inclusive`) /
 of shelling out.
 
 > The committed PowerShell scripts (`Profile-Benchmark.ps1`,
-> `Get-TraceHotspots.ps1`) did this aggregation before the MCP server existed
-> and the analyzer now supersedes them. They remain as a no-MCP fallback - and
+> `Get-TraceHotspots.ps1`) did this aggregation before filtrace existed and it
+> now supersedes them. They remain as a no-filtrace fallback (when the MCP server
+> is unavailable the `filtrace` CLI is the better path) - and
 > `speedscope-to-flamegraph.ps1` still has unique value for rendering an SVG
 > flame graph. See
 > [performance-investigation-without-mcp.md](performance-investigation-without-mcp.md).
@@ -672,7 +673,7 @@ A concrete, token-efficient loop an agent should follow:
    (`filtrace cpu <trace> --root <workload-frame>`, or the `trace_rank` MCP tool; the
    PowerShell scripts in
    [performance-investigation-without-mcp.md](performance-investigation-without-mcp.md)
-   are the no-MCP fallback). **Fold the JIT-helper artifacts**
+   are the no-filtrace fallback). **Fold the JIT-helper artifacts**
    (`BulkMoveWithWriteBarrier`, `PollGC`, the synthetic `CPU_TIME` leaf) before
    trusting any self-time number - the analyzer does this by default; see
    &sect;3a Trap 2. Profiling is part of the loop: capture a `before/` trace,
