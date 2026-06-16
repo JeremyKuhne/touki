@@ -5,10 +5,10 @@ compatibility: Pairs with the filtrace MCP server (the KlutzyNinja.Filtrace.Mcp 
 license: MIT
 metadata:
   github-path: .agents/skills/filtrace
-  github-pinned: 10481a3e84c82b2cd7fa7709eadbf3afbbf45727
+  github-pinned: 04fd8573ef801b98aeb77442642aca9180f0a49e
   github-ref: refs/heads/main
   github-repo: https://github.com/JeremyKuhne/filtrace
-  github-tree-sha: e0b5c675e3c3fa57158cc3dbec619675173d6dd2
+  github-tree-sha: f75c6b3147d52a5782e715c2b9578e439cbd9455
   portability: repo-specific
 ---
 
@@ -83,7 +83,7 @@ filtrace diff before.nettrace after.nettrace # 4. what changed
 | Verb | Does |
 |---|---|
 | `diff <before> <after>` | what got slower/faster between two traces |
-| `export --format <speedscope\|chromium>` | write a flame graph for a viewer |
+| `export --format <fmt>` | write a flame graph for a viewer - `speedscope` or `chromium` |
 
 **Structured reports** (EventPipe `.nettrace`):
 
