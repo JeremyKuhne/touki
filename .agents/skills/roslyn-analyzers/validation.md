@@ -3,8 +3,8 @@
 Detail for the [roslyn-analyzers](SKILL.md) skill. An analyzer is only as good as
 its test suite: it must fire on exactly the code it should and stay silent on
 everything else. False positives are worse than a missing rule because they train
-users to ignore (or suppress) the analyzer. The working reference is
-[touki.analyzers.tests/UseIsNullAnalyzerTests.cs](../../../touki.analyzers.tests/UseIsNullAnalyzerTests.cs).
+users to ignore (or suppress) the analyzer. The examples below use the test suite
+for a `UseIsNull` analyzer (`UseIsNullAnalyzerTests.cs`) as a running example.
 
 ## Two harness options
 
@@ -18,7 +18,7 @@ diagnostic-only analyzer, and **always** for code fixes. It gives you:
 
 - A **markup syntax** that pins the exact expected diagnostic span in the source:
   - `[|text|]` - a diagnostic is reported on `text` (single-descriptor analyzers).
-  - `{|TOUKI0001:text|}` - a diagnostic with that specific ID is reported on `text`.
+  - `{|ABCD0001:text|}` - a diagnostic with that specific ID is reported on `text`.
 - `VerifyCS.VerifyAnalyzerAsync(source)` - asserts the marked diagnostics, and only
   those, are produced.
 - `VerifyCS.VerifyCodeFixAsync(source, fixedSource)` - applies the fix and asserts
@@ -31,9 +31,9 @@ diagnostic-only analyzer, and **always** for code fixes. It gives you:
 Span-accurate location testing is the main reason to use this harness: it catches
 the "fires, but squiggles the wrong token" bug that a presence-only check misses.
 
-### This repo's lightweight in-memory harness
+### A lightweight in-memory harness
 
-[touki.analyzers.tests/AnalyzerTestHarness.cs](../../../touki.analyzers.tests/AnalyzerTestHarness.cs)
+A minimal hand-written harness (`AnalyzerTestHarness.cs`)
 compiles a snippet with `CSharpCompilation.Create` (references pulled from
 `TRUSTED_PLATFORM_ASSEMBLIES`), runs the analyzer via
 `compilation.WithAnalyzers([analyzer]).GetAnalyzerDiagnosticsAsync()`, and returns
@@ -43,21 +43,22 @@ dependency on the testing packages.
 
 Use it for simple presence/absence assertions. Reach for the official harness when
 you need exact span markup, code-fix verification, or controlled reference sets.
-Either way the test project is `net10.0` MSTest with AwesomeAssertions, and needs a
-local `.editorconfig` disabling `CS1591`.
+Either way, if your repo treats warnings as errors or enforces XML-doc comments,
+the test project may need a local `.editorconfig` to relax rules that fire on the
+inline test snippets - for example disabling `CS1591` (missing XML docs).
 
 ### Testing a code fix without the official harness
 
 If you skip `Microsoft.CodeAnalysis.CSharp.CodeFix.Testing`, a code fix can still be
 exercised in-memory with an `AdhocWorkspace` (the test project references
 `Microsoft.CodeAnalysis.CSharp.Workspaces`):
-[touki.analyzers.tests/CodeFixTestHarness.cs](../../../touki.analyzers.tests/CodeFixTestHarness.cs)
+`<root>.analyzers.tests/CodeFixTestHarness.cs`
 adds a `Document` to an ad-hoc project, runs the analyzer to get the diagnostic,
 calls `provider.RegisterCodeFixesAsync` with a `CodeFixContext` whose registration
 delegate captures the offered `CodeAction`s, then applies the first action via
 `action.GetOperationsAsync()` -> `ApplyChangesOperation.ChangedSolution` and returns
 the changed document's text to assert on. The test project also needs a project
-reference to `touki.analyzers.codefixes`. Pin the before/after source and assert the
+reference to `<root>.analyzers.codefixes`. Pin the before/after source and assert the
 expected member gained `readonly`; test the fix on a **non-mutating** member, since
 "make readonly" on a genuinely mutating member would produce a compiler error.
 
@@ -91,24 +92,25 @@ over-triggers until the semantic guards are added.
 
 ## Run in Debug and Release
 
-Per the repo rule, run `dotnet test -c Release` before declaring the analyzer done,
-not just Debug. Analyzers are ordinary IL subject to the same Release inlining and
-optimization differences as the rest of the codebase.
+Run `dotnet test -c Release`, not just Debug, before declaring the analyzer done.
+Analyzers are ordinary IL subject to the same Release inlining and optimization
+differences as the rest of the codebase.
 
 ```pwsh
-dotnet test touki.analyzers.tests/touki.analyzers.tests.csproj -c Release
+dotnet test <root>.analyzers.tests/<root>.analyzers.tests.csproj -c Release
 ```
 
 ## The dogfood probe
 
-If you wire the analyzer to run on touki's own sources (`OutputItemType="Analyzer"`
-in [touki/touki.csproj](../../../touki/touki.csproj)), prove it is actually live -
+If you wire the analyzer to run on the library's own sources (`OutputItemType="Analyzer"`
+in `<root>.csproj`), prove it is actually live -
 a misconfigured analyzer reference fails open and silently analyzes nothing. The
 cheapest proof is a temporary violation:
 
 1. Introduce one line that should trip the rule in a real source file.
-2. `dotnet build touki/touki.csproj -c Release` - confirm it now reports the
-   diagnostic as an **error** (the repo's `TreatWarningsAsErrors` makes it fatal).
+2. `dotnet build <root>.csproj -c Release` - confirm it now reports the
+   diagnostic (it is fatal as a build **error** if the consumer repo sets
+   `TreatWarningsAsErrors`).
 3. Revert the line and confirm the build is green again.
 
 This is more reliable than reading the analyzer-execution report from build output,
@@ -118,15 +120,12 @@ probe behind.
 ## When the analyzer should not apply everywhere
 
 Dogfooding can collide with code you deliberately do not want restyled - e.g. the
-faithfully-ported BCL polyfills under `touki/Framework/Polyfills/`. Scope the rule
+faithfully-ported BCL polyfills under `src/_generated/`. Scope the rule
 off for that subtree with a folder `.editorconfig` rather than rewriting ported
 code:
 
 ```ini
-# touki/Framework/Polyfills/.editorconfig
+# src/_generated/.editorconfig
 [*.cs]
-dotnet_diagnostic.TOUKI0001.severity = none
+dotnet_diagnostic.ABCD0001.severity = none
 ```
-
-See the real example at
-[touki/Framework/Polyfills/.editorconfig](../../../touki/Framework/Polyfills/.editorconfig).

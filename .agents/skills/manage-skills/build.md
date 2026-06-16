@@ -48,18 +48,17 @@ exposed secrets). Before installing anything from a public source:
 
 ## Building a new skill (it exists nowhere)
 
-Author it to [FORMAT.md](../FORMAT.md):
+Author it to the repo's `FORMAT.md`:
 
 - A thin `SKILL.md` core under the size budget; push deep detail into sibling
   `*.md` files in the same directory (the pattern this very skill uses).
 - `name` matches the directory; a "pushy" `description` with explicit trigger
   phrasing that will auto-invoke on the right asks without over-firing.
 - Set `metadata.portability`.
-- Add a row to the catalog [README.md](../README.md) inventory in the same change,
-  and a disambiguation entry if the trigger phrasing competes with an existing
-  skill.
-- Validate: `pwsh tools/Validate-AgentFiles.ps1` and
-  `pwsh tools/Test-AgentFileLinks.ps1`.
+- Add a row to the catalog `README.md` inventory in the same change, and a
+  disambiguation entry if the trigger phrasing competes with an existing skill.
+- Validate with the repo's agent-file checks - a frontmatter validator and a link
+  checker.
 
 ### Born-local vs born-shared
 
@@ -71,8 +70,10 @@ Decide where the skill's home is before writing much:
 - **Born-shared** - the skill is generic and other repos will want it. Author the
   portable core directly in the commons, then vendor it back here with an overlay.
   Keep repo-specific paths, cross-references, and example links out of the core
-  from the start - they belong in the overlay. (Until the commons exists, author
-  it here, keep the core clean, and migrate it when the commons is stood up.)
+  from the start - they belong in the overlay. Leave a short prose cue in the core
+  pointing the agent at the overlay (e.g. "a consuming repository wires the
+  concrete cross-references in its overlay"); that cue is what gets the overlay
+  read.
 
 A skill that is mostly generic but needs a few local specifics is still
 born-shared: the generic part is the core, the specifics are the overlay. The test
