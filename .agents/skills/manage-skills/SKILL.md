@@ -1,37 +1,27 @@
 ---
-name: manage-skills
 description: Find, add, update, and share agent skills in this repo. Use when asked to "find a skill" for a task, "build a skill" or "create a skill" (this skill checks whether one already exists - in the repo, the shared commons, or a public catalog - before authoring a new one), "update a skill", or reconcile a local skill change against the upstream commons vs a repo-local overlay. Covers the find-first build path, the tiered search, and the pull/push update flow. Not for validating one agent file's syntax - that is `agent-files-review`.
+license: MIT
 metadata:
-  portability: semi-portable
+    github-path: skills/manage-skills
+    github-pinned: v0.8.1
+    github-ref: refs/tags/v0.8.1
+    github-repo: https://github.com/JeremyKuhne/agent-skills
+    github-tree-sha: 2e2aa63453c2a3231c475d2b4d9e170904cdd5b9
+    portability: portable
+name: manage-skills
 ---
-
 # Manage skills
 
-The lifecycle skill for the skills under [.agents/skills/](../): discover one,
+The lifecycle skill for the skills under a repo's `.agents/skills/`: discover one,
 add one, update one, and keep local changes in sync with the shared set. It turns
 "find a skill", "build a skill", and "update the skill" into actions aligned with
-this repo's sharing model instead of ad-hoc edits.
+the sharing model instead of ad-hoc edits.
 
 The model in one paragraph: skills are authored once as a portable **core** and
 shared through a common skills repo (the **commons**); each consuming repo holds a
 pinned, provenance-stamped **copy** plus a thin repo-specific **overlay**. The
 commons is bidirectional - a generic improvement made in any repo flows back
 upstream, while a repo-specific tweak lives only in that repo's overlay.
-
-## Current status
-
-Read this before running commons-dependent steps; it is the one part that changes
-as the rollout proceeds.
-
-- **Live now:** local search (this repo's `.agents/skills/`) and authoring a new
-  skill. These need no external tooling.
-- **Pending:** the shared **commons** repo is not stood up yet, so the commons
-  tier of `find`, and the `update` push/pull against upstream, are not yet
-  operational. Treat those steps as the target flow, and fall back to local +
-  public sources until the commons exists.
-- **Tooling:** the `gh skill` commands below are GitHub CLI (>= 2.90, preview) and
-  require `gh auth login` first. When `gh` is unavailable or unauthenticated, use
-  the manual fallbacks each sub-page notes.
 
 ## The three verbs
 
@@ -66,13 +56,13 @@ that an improvement was written into the wrong layer. See [update.md](update.md)
 
 ## Conventions every skill follows
 
-Whatever the verb, the result must satisfy the repo's format rules
-([FORMAT.md](../FORMAT.md)): a thin `SKILL.md` core under the size budget with
-deep detail in sibling files; `name` matching the directory; a "pushy"
-`description` with trigger phrasing; `metadata.portability` set; a row in the
-catalog [README.md](../README.md); and a disambiguation entry when the trigger
-phrasing competes with an existing skill. After any add or edit, validate with
-`pwsh tools/Validate-AgentFiles.ps1` and `pwsh tools/Test-AgentFileLinks.ps1`.
+Whatever the verb, the result must satisfy the repo's format rules (its
+`FORMAT.md`): a thin `SKILL.md` core under the size budget with deep detail in
+sibling files; `name` matching the directory; a "pushy" `description` with trigger
+phrasing; `metadata.portability` set; a row in the catalog `README.md`; and a
+disambiguation entry when the trigger phrasing competes with an existing skill.
+After any add or edit, validate with the repo's agent-file checks - a frontmatter
+validator and a link checker.
 
 ## Sub-pages
 

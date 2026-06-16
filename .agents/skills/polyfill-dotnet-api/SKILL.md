@@ -1,6 +1,6 @@
 ---
 name: polyfill-dotnet-api
-description: Polyfill a modern .NET BCL API for .NET Framework. Use when asked to "polyfill", "backport", "add a span overload for net472/net481", "make API X available downlevel", or any time a member is missing on net472 and present on net10. Picks the right source (Microsoft-shipped package vs PolySharp source-gen vs hand-rolled `touki/Framework/` polyfill) and captures the recurring design gotchas.
+description: Polyfill a modern .NET BCL API for .NET Framework by hand-rolling it under `touki/Framework/`. Use when asked to "polyfill", "backport", "add a span overload for net472/net481", "make API X available downlevel", or any time a member is missing on net472 and present on net10. The authoring counterpart to the vendored `dotnet-polyfills` skill (which surveys *which* Microsoft package or PolySharp generator supplies a member); this skill covers the source-preference order, the behavior-parity design rules, and the recurring net472/net481 gotchas.
 compatibility: Uses the microsoft-learn MCP server to confirm modern BCL API shapes and edge cases when available; falls back to fetching learn.microsoft.com and the dotnet/runtime reference source otherwise.
 metadata:
   portability: repo-specific
@@ -16,6 +16,9 @@ metadata:
 exercise the `net472` polyfill assembly.
 
 **Related skills:**
+[`dotnet-polyfills`](../dotnet-polyfills/SKILL.md) (the vendored survey of
+*which* Microsoft package or PolySharp generator supplies a member - consult it
+for steps 1-2 of the source order below),
 [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) (this skill feeds
 into its tests / allocation / parity items),
 [`framework-jit-optimization`](../framework-jit-optimization/SKILL.md)
@@ -26,9 +29,10 @@ required for any perf trade-off).
 ## Source preference order (stop at the first hit)
 
 Don't add a hand polyfill for something a Microsoft package or PolySharp
-already ships. Full detail - the package table, the PolySharp attribute
-list, and the hand-rolled folder/namespace rules - is in
-[source-selection.md](source-selection.md).
+already ships. The vendored [`dotnet-polyfills`](../dotnet-polyfills/SKILL.md)
+skill is the full survey of steps 1-2 (which package or generator supplies a
+member); [source-selection.md](source-selection.md) keeps the touki-specific
+bindings and the hand-rolled folder/namespace rules.
 
 1. **Microsoft-shipped NuGet package.** Probe first: write a tiny
    `#if NETFRAMEWORK` snippet in `touki.tests/Framework/`, build `net472`,

@@ -10,18 +10,18 @@ Search in order and stop reporting once you have the picture; do not skip a tier
 because a local hit changes the recommendation entirely.
 
 1. **Local - this repo's `.agents/skills/`.** List the skill directories and read
-   the catalog [README.md](../README.md) inventory and disambiguation. A match
-   here means the skill is already present; the answer is "you have it", and the
-   only question is whether it needs an overlay tweak. No tooling required.
+   the catalog `README.md` inventory and disambiguation. A match here means the
+   skill is already present; the answer is "you have it", and the only question is
+   whether it needs an overlay tweak. No tooling required.
 
-2. **The commons (pending).** Once the shared skills repo exists, search it:
+2. **The commons.** Search the shared skills repo:
 
    ```pwsh
    gh skill search <terms> --repo JeremyKuhne/agent-skills
    ```
 
-   Anything here is curated and pre-vetted. Until the commons is stood up, skip
-   this tier (see "Current status" in [SKILL.md](SKILL.md)).
+   Anything here is curated and pre-vetted. When `gh` is unavailable, browse the
+   commons repo directly and note that the install path will be manual.
 
 3. **Public catalogs.** Search the wider ecosystem - the awesome-copilot
    collection, `anthropics/skills`, and the registry:

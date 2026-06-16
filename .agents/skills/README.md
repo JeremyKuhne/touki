@@ -13,6 +13,7 @@ The "Disambiguation" section below records every known overlap.
 | Skill | Trigger phrasing | Portability | Cross-references |
 | ----- | ---------------- | ----------- | ---------------- |
 | [polyfill-dotnet-api](./polyfill-dotnet-api/SKILL.md) | "polyfill", "backport", "add a span overload for net472/net481", "make API X available downlevel", missing-on-net472-present-on-net10 | repo-specific | `pre-pr-self-review`, `performance-testing`, `framework-jit-optimization`, `create-pr` |
+| [dotnet-polyfills](./dotnet-polyfills/SKILL.md) | "use a modern .NET API on net472/net481", which official downlevel package (`System.Memory`, `Microsoft.Bcl.*`) supplies a type, setting up PolySharp, "is this already polyfilled" - the package-choosing/consume side (vs authoring) | vendored (portable core) + overlay | `polyfill-dotnet-api` (via [overlay](./dotnet-polyfills/overlay.md)) |
 | [framework-jit-optimization](./framework-jit-optimization/SKILL.md) | hot-path tuning for `net481` in `touki/Framework/`, generic specialization, scalar/unrolled vs BCL delegation, net481 RyuJIT regressions; the `net10` counterpart (vectorization, intrinsics, struct-generic, devirtualization); cross-TFM codegen (arithmetic/branchless lowering, struct layout, allocation anti-patterns) | semi-portable | `performance-testing`, `il-copy-inspection` |
 | [performance-testing](./performance-testing/SKILL.md) | authoring/running BenchmarkDotNet benchmarks in `touki.perf`, comparing implementations, evaluating allocations, reading the generated code (sharplab/`[DisassemblyDiagnoser]`/`[HardwareCounters]`/`DOTNET_JitDisasm*`) | vendored (portable core) + overlay | `filtrace`, `framework-jit-optimization`, `scratch-buffer-strategy`, `il-copy-inspection` (via [overlay](./performance-testing/overlay.md)) |
 | [filtrace](./filtrace/SKILL.md) | "where's the time/memory in this trace or benchmark", which method or source line is hot, why a run regressed vs a baseline, what a captured `.nettrace`/`.etl` holds, rank / drill / diff / export a CPU / alloc / exception / GC / JIT / thread-time profile, profiling net481 via ETW | vendored (tool repo) + overlay | `performance-testing` (via [overlay](./filtrace/overlay.md)) |
@@ -23,11 +24,11 @@ The "Disambiguation" section below records every known overlap.
 | [address-pr-feedback](./address-pr-feedback/SKILL.md) | "address the review", "fix the comments", "address Copilot's feedback", "fix the CI failure" - **post-PR** review-cycle work | repo-specific | `pre-pr-self-review` |
 | [agent-files-review](./agent-files-review/SKILL.md) | reviewing/validating agent-customization files (`AGENTS.md`, `*.instructions.md`, `*.prompt.md`, `*.agent.md`, `SKILL.md`, validator, CI workflow); fixing `agent-files.yml` failures | semi-portable | - |
 | [run-tests-on-wsl](./run-tests-on-wsl/SKILL.md) | "run tests on Linux", "run the Posix/PosixPath/Bash oracles", "iterate Unix tests locally"; WSL Ubuntu bootstrap, the `~/repos/touki` Linux-native mirror that sidesteps the `/mnt/` DrvFs NuGet trap, the `DOTNET_ROOT` apphost requirement, and the `iconv` UTF-16 log trick | repo-specific | `performance-testing`, `pre-pr-self-review` |
-| [fuzz-testing](./fuzz-testing/SKILL.md) | "add a fuzz target", "run the fuzzer", "install fuzzing prereqs", "fuzz SpanReader/SpanWriter", coverage-guided SharpFuzz runs on net10/net481, promoting a crash into a regression | semi-portable | `security-review`, `pre-pr-self-review`, `run-tests-on-wsl` |
+| [fuzz-testing](./fuzz-testing/SKILL.md) | "add a fuzz target", "run the fuzzer", "install fuzzing prereqs", "fuzz SpanReader/SpanWriter", coverage-guided SharpFuzz runs on net10/net481, promoting a crash into a regression | vendored (portable core) + overlay | `security-review`, `pre-pr-self-review`, `run-tests-on-wsl` (via [overlay](./fuzz-testing/overlay.md)) |
 | [publish-release](./publish-release/SKILL.md) | "publish a new version", "release alpha.N", "ship a beta", "cut a release", "promote alpha to beta", "tag and publish" - choosing the right `Major.Minor.Patch`, alpha/beta/rc/stable channel, tag stream (`v*` vs `ts-v*`), and GitHub release notes | repo-specific | `pre-pr-self-review` |
-| [manage-skills](./manage-skills/SKILL.md) | "find a skill", "build a skill" / "create a skill" (checks for an existing one first), "update the skill", sync a local change upstream vs into an overlay; the find-first build path, tiered search, pull/push update flow | semi-portable | `agent-files-review` |
-| [roslyn-analyzers](./roslyn-analyzers/SKILL.md) | "write an analyzer", "create a Roslyn/diagnostic analyzer", "add an analyzer rule", "add a code fix", "enforce <convention> at build time", "flag <pattern> in code"; find-first check of existing `CA`/`IDE` rules, `BannedApiAnalyzers`, EditorConfig, Roslynator/StyleCop/Meziantou before authoring; `touki.analyzers` layout, packing into `KlutzyNinja.Touki`, statelessness/`IOperation` design, the `Microsoft.CodeAnalysis.Testing` harness, in-IDE perf budget | semi-portable | `performance-testing`, `security-review`, `pre-pr-self-review`, `create-pr` |
-| [il-copy-inspection](./il-copy-inspection/SKILL.md) | "find struct copies", "where does the compiler copy this struct", "is this a defensive copy", "check for boxing in IL", "did the compiler emit a copy", "confirm the analyzer's defensive-copy warning", "audit a `[NonCopyable]` type's copies after build"; reading emitted IL (`ildasm`/`ilspycmd`/Cecil/`MetadataReader`) for the `ldobj`/`stloc`/`ldloca` defensive-copy signature, `box`, by-value field/arg/return copies, and PDB offset-to-source mapping | semi-portable | `roslyn-analyzers`, `framework-jit-optimization`, `performance-testing`, `scratch-buffer-strategy` |
+| [manage-skills](./manage-skills/SKILL.md) | "find a skill", "build a skill" / "create a skill" (checks for an existing one first), "update the skill", sync a local change upstream vs into an overlay; the find-first build path, tiered search, pull/push update flow | vendored (portable core) | `agent-files-review` |
+| [roslyn-analyzers](./roslyn-analyzers/SKILL.md) | "write an analyzer", "create a Roslyn/diagnostic analyzer", "add an analyzer rule", "add a code fix", "enforce <convention> at build time", "flag <pattern> in code"; find-first check of existing `CA`/`IDE` rules, `BannedApiAnalyzers`, EditorConfig, Roslynator/StyleCop/Meziantou before authoring; `touki.analyzers` layout, packing into `KlutzyNinja.Touki`, statelessness/`IOperation` design, the `Microsoft.CodeAnalysis.Testing` harness, in-IDE perf budget | vendored (portable core) + overlay | `performance-testing`, `security-review`, `il-copy-inspection`, `pre-pr-self-review`, `create-pr` (via [overlay](./roslyn-analyzers/overlay.md)) |
+| [il-copy-inspection](./il-copy-inspection/SKILL.md) | "find struct copies", "where does the compiler copy this struct", "is this a defensive copy", "check for boxing in IL", "did the compiler emit a copy", "confirm the analyzer's defensive-copy warning", "audit a `[NonCopyable]` type's copies after build"; reading emitted IL (`ildasm`/`ilspycmd`/Cecil/`MetadataReader`) for the `ldobj`/`stloc`/`ldloca` defensive-copy signature, `box`, by-value field/arg/return copies, and PDB offset-to-source mapping | vendored (portable core) + overlay | `roslyn-analyzers`, `framework-jit-optimization`, `performance-testing`, `scratch-buffer-strategy` (via [overlay](./il-copy-inspection/overlay.md)) |
 
 **Portability** (mirrored from each skill's `metadata.portability`) marks how much
 a skill would need to change to be reused in another repo: `portable` (generic),
@@ -41,9 +42,7 @@ that carries the touki-specific cross-references and example links.
 instead of the commons: `filtrace` is a copy of the skill shipped by the
 standalone [JeremyKuhne/filtrace](https://github.com/JeremyKuhne/filtrace)
 analyzer, re-vendored from there rather than the commons. Do not
-hand-edit a vendored core; `gh skill update` tracks it against upstream. See the
-sharing roadmap in
-[docs/skills-improvement-plan.md](../../docs/skills-improvement-plan.md).
+hand-edit a vendored core; `gh skill update` tracks it against upstream.
 
 ## Disambiguation
 
@@ -74,6 +73,21 @@ Both touch PR mechanics. They are mutually exclusive by **lifecycle stage**:
 
 If the user says "open a PR" while a PR already exists for this branch, ask
 which they mean before invoking either.
+
+### `dotnet-polyfills` vs `polyfill-dotnet-api`
+
+Both fire on "polyfill". They split by **which side of the decision** you are on:
+
+- **"Which package or generator already supplies this downlevel?"** &rarr;
+  `dotnet-polyfills`. The vendored survey of the official Microsoft backport
+  packages, PolySharp, and the `KlutzyNinja.Touki` runtime layer - the
+  consume/choose side. Start here.
+- **"None of them have it - write it by hand."** &rarr; `polyfill-dotnet-api`.
+  Touki's authoring rules for a hand-rolled polyfill under `touki/Framework/`
+  (layout, behavior-parity, the net481 codegen gotchas).
+
+Come to `dotnet-polyfills` first; hand off to `polyfill-dotnet-api` only once the
+answer is genuinely "no package covers this."
 
 ### `polyfill-dotnet-api` vs `framework-jit-optimization`
 

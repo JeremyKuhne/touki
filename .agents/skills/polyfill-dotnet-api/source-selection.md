@@ -6,43 +6,30 @@ Microsoft package or PolySharp already ships.
 
 ## 1. Microsoft-shipped NuGet packages
 
-Probe before polyfilling: write a tiny `#if NETFRAMEWORK` snippet in
-`touki.tests/Framework/` that calls the candidate API and try a `net472`
-build. If it compiles, a referenced package already supplies the member;
-delete the probe.
+The vendored [dotnet-polyfills](../dotnet-polyfills/SKILL.md) skill (and its
+`references/packages.md`) is the full catalog of which official package supplies
+which API. The touki-specific bindings:
 
-| Package | Covers | Referenced |
-| --- | --- | --- |
-| `System.Memory` | `Span<T>` / `ReadOnlySpan<T>` / `Memory<T>`, base `MemoryExtensions`, `MemoryMarshal`, `Unsafe`, `BinaryPrimitives`, `ArrayPool<T>` | yes |
-| `Microsoft.Bcl.Memory` | `Range`, `Index`, newer `MemoryExtensions` (`Count`, `CommonPrefixLength`, `ContainsAnyExcept`, `IsWhiteSpace`) | yes |
-| `Microsoft.Bcl.HashCode` | `HashCode` | yes |
-| `Microsoft.IO.Redist` | .NET 6 `System.IO` (via `global using Microsoft.IO;`) | yes |
-| `Microsoft.Bcl.AsyncInterfaces` | `IAsyncEnumerable<T>`, `IAsyncDisposable`, async-returning interfaces | not yet |
-| `Microsoft.Bcl.TimeProvider` | `TimeProvider`, `ITimer` | not yet |
-| `Microsoft.Bcl.Numerics` | `Half`, `BigInteger` additions | not yet |
-
-When adding a new package, place the `<PackageReference>` inside the
-`Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'"`
-ItemGroup - never unconditional.
+- **Already referenced** (net472/net481 target only): `System.Memory`,
+  `Microsoft.Bcl.Memory`, `Microsoft.Bcl.HashCode`, `Microsoft.IO.Redist`.
+- **Probe before polyfilling**: write a tiny `#if NETFRAMEWORK` snippet in
+  `touki.tests/Framework/` that calls the candidate API and try a `net472`
+  build. If it compiles, a referenced package already supplies the member;
+  delete the probe.
+- **When adding a package**, place the `<PackageReference>` inside the
+  `Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'"` ItemGroup -
+  never unconditional.
 
 ## 2. PolySharp source-generated polyfills
 
-[PolySharp](https://github.com/Sergio0694/PolySharp) (referenced for the
-.NET Framework target only) supplies **language / compiler attributes**,
-not runtime types. Use it for `IsExternalInit`, `RequiredMember`,
-`CompilerFeatureRequired`, `CallerArgumentExpression`,
-`ModuleInitializerAttribute`, `SkipLocalsInit`, and the nullable
-attributes (`NotNullWhen`, `MaybeNullWhen`, `MemberNotNull`,
-`DoesNotReturn`, ...).
-
-The repo enables:
+See [dotnet-polyfills](../dotnet-polyfills/SKILL.md) for what PolySharp covers
+(compiler / language attributes, not runtime types - never hand-write them).
+Touki enables:
 
 ```xml
 <PolySharpUsePublicAccessibilityForGeneratedTypes>true</PolySharpUsePublicAccessibilityForGeneratedTypes>
 <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
 ```
-
-Don't hand-write attribute polyfills; PolySharp generates them.
 
 ## 3. Hand-rolled polyfill in `touki/Framework/Polyfills/<BclNamespace>/`
 

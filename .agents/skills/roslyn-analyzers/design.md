@@ -1,9 +1,9 @@
 # Designing the analyzer
 
 Detail for the [roslyn-analyzers](SKILL.md) skill. Authoring rules for a correct,
-maintainable `DiagnosticAnalyzer`. The working reference is
-[touki.analyzers/UseIsNullAnalyzer.cs](../../../touki.analyzers/UseIsNullAnalyzer.cs);
-this page explains the choices behind it.
+maintainable `DiagnosticAnalyzer`. The running example is a `UseIsNull` analyzer
+(flag `== null` / `!= null`, prefer `is null`); this page explains the choices
+behind it.
 
 ## Project setup recap
 
@@ -88,18 +88,18 @@ first and only then reach for `context.SemanticModel` - never the other way roun
 
 ```csharp
 private static readonly DiagnosticDescriptor s_rule = new(
-    id: "TOUKI0001",
+    id: "ABCD0001",
     title: "Use pattern matching for null checks",
     messageFormat: "Use '{0}' instead of '{1}'",
     category: "Usage",
     defaultSeverity: DiagnosticSeverity.Warning,
     isEnabledByDefault: true,
     description: "Comparisons against the null literal should use 'is null' / 'is not null'.",
-    helpLinkUri: "https://github.com/JeremyKuhne/touki");
+    helpLinkUri: "https://github.com/your-org/your-repo");
 ```
 
 - **ID** is a permanent contract - users pin severities to it in `.editorconfig`.
-  Pick the `TOUKI####` prefix and never reuse or renumber an ID.
+  Pick the `<PREFIX>####` prefix and never reuse or renumber an ID.
 - Cache the descriptor in a `static readonly` field and return a cached
   `ImmutableArray` from `SupportedDiagnostics` (`ImmutableArray.Create(s_rule)`).
   Do not allocate a new descriptor or array per call.
@@ -129,7 +129,7 @@ read severities yourself or branch on configuration; the descriptor's
 Every new or changed rule updates the analyzer release files in the same commit:
 
 - New rule -> add a row under `### New Rules` in
-  [AnalyzerReleases.Unshipped.md](../../../touki.analyzers/AnalyzerReleases.Unshipped.md).
+  `AnalyzerReleases.Unshipped.md`.
 - On release, entries move from `Unshipped` to `Shipped` under a version heading.
 
 RS2000/RS2002 fail the build if the unshipped file and `SupportedDiagnostics`
@@ -168,9 +168,9 @@ Workspaces types from an assembly that also contains a `DiagnosticAnalyzer`** -
 analyzers must stay Workspaces-free so they load in the command-line compiler. So
 a repo that ships code fixes needs a second project:
 
-- `touki.analyzers` - the `DiagnosticAnalyzer`s. References
+- `<root>.analyzers` - the `DiagnosticAnalyzer`s. References
   `Microsoft.CodeAnalysis.CSharp`, `EnforceExtendedAnalyzerRules=true`.
-- [touki.analyzers.codefixes](../../../touki.analyzers.codefixes/touki.analyzers.codefixes.csproj) -
+- `<root>.analyzers.codefixes` -
   the `CodeFixProvider`s. `netstandard2.0`, signed, `IsPackable=false`,
   `IncludeBuildOutput=false`. References
   `Microsoft.CodeAnalysis.CSharp.Workspaces`. Do **not** set
@@ -185,13 +185,13 @@ absence of Workspaces at build time is fine; the IDE supplies Workspaces when it
 offers the fix. This is the standard StyleCop/Roslynator split.
 
 **Packaging gotcha:** `MSBuild Targets="GetTargetPath"` returns the code-fix
-assembly path but does **not** build it, and nothing else in touki's graph builds
-it either (it is not an analyzer *of* touki). Add a build-ordering
-`ProjectReference` from `touki.csproj` to the code-fix project with
+assembly path but does **not** build it, and nothing else in the library's graph builds
+it either (it is not an analyzer *of* the library). Add a build-ordering
+`ProjectReference` from `<root>.csproj` to the code-fix project with
 `ReferenceOutputAssembly="false" PrivateAssets="all"` and **no**
 `OutputItemType="Analyzer"` (adding that would load Workspaces into the
 command-line compiler's analyzer context). Without the reference the pack fails
-with "Could not find a part of the path ...\touki.analyzers.codefixes\...".
+with "Could not find a part of the path ...\<root>.analyzers.codefixes\...".
 
 ## Checklist
 

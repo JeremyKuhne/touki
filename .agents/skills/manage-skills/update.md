@@ -17,9 +17,9 @@ gh skill update --all
 
 `gh skill update` compares the local copy's provenance tree SHA against upstream
 and surfaces the difference as a normal diff. Review it like a dependency bump:
-read what changed, run `pwsh tools/Validate-AgentFiles.ps1` and
-`pwsh tools/Test-AgentFileLinks.ps1`, then re-pin when satisfied. A `--pin`ned
-skill is skipped by `--all`; bump its pin deliberately when you want its updates.
+read what changed, run the repo's agent-file checks (the frontmatter validator and
+the link checker), then re-pin when satisfied. A skill pinned with `--pin` is
+skipped by `--all`; bump its pin deliberately when you want its updates.
 
 Manual fallback (no `gh`): compare the local core against the commons copy at the
 recorded ref, apply the diff by hand, and update the provenance SHA.
@@ -42,9 +42,9 @@ where it lives. Classification does not trigger any action on its own.
 ### The upstreaming query (common changes only)
 
 Stop and ask the user whether to attempt upstreaming. **Never open a commons PR on
-your own** - it is a publish action, gated by the same rule as any push (see
-[AGENTS.md](../../../AGENTS.md)). Present what the change is, why it is common, and
-the options:
+your own** - it is a publish action, gated by the same rule as any push (the
+repo's contribution and publish rules). Present what the change is, why it is
+common, and the options:
 
 - **Upstream it now** - prepare the PR to the commons; *creating* it still needs an
   explicit publish verb from the user. Once merged, re-vendor here at the new pin.
@@ -87,7 +87,7 @@ core.
 ## After any update
 
 Re-run the validators and the link check, and if the change touched the catalog
-or a skill's trigger phrasing, reconcile [README.md](../README.md) (inventory row,
+or a skill's trigger phrasing, reconcile the catalog `README.md` (inventory row,
 disambiguation) in the same change. Then hand off to
 [agent-files-review](../agent-files-review/SKILL.md) to validate the resulting
 files.

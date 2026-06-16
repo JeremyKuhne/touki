@@ -1,17 +1,22 @@
 ---
-name: il-copy-inspection
-description: Find struct value copies in a method's compiled IL - defensive copies, boxing, by-value field/argument/return copies - by reading the emitted bytecode rather than predicting from source. Use when asked to "find struct copies", "where does the compiler copy this struct", "is this a defensive copy", "check for boxing in IL", "did the compiler emit a copy here", "confirm the analyzer's defensive-copy warning", or "audit a [NonCopyable] type's copies after build". Post-build, ground-truth counterpart to the source-level `roslyn-analyzers` defensive-copy rules (TOUKI0002-0004): IL is post-lowering, so synthesized copies the analyzer cannot see are visible here. Not for wall-clock/allocation measurement (that is `performance-testing`) nor for JIT-emitted machine code (that is `framework-jit-optimization` + `DisassemblyDiagnoser`).
+description: Find struct value copies in a method's compiled IL - defensive copies, boxing, by-value field/argument/return copies - by reading the emitted bytecode rather than predicting from source. Use when asked to "find struct copies", "where does the compiler copy this struct", "is this a defensive copy", "check for boxing in IL", "did the compiler emit a copy here", "confirm the analyzer's defensive-copy warning", or "audit a [NonCopyable] type's copies after build". Post-build, ground-truth counterpart to source-level defensive-copy analyzers - IL is post-lowering, so synthesized copies the analyzer cannot see are visible here. Not for wall-clock/allocation measurement (that is `performance-testing`) nor for JIT-emitted machine code (that is `framework-jit-optimization` + `DisassemblyDiagnoser`).
+license: MIT
 metadata:
+    github-path: skills/il-copy-inspection
+    github-pinned: v0.8.1
+    github-ref: refs/tags/v0.8.1
+    github-repo: https://github.com/JeremyKuhne/agent-skills
+    github-tree-sha: d40f176e676b2afc9cb625e2d6afcb92a2e5c48f
     portability: semi-portable
+name: il-copy-inspection
 ---
-
 # Inspecting IL for struct copies
 
 A struct copy is invisible in C# source but concrete in IL. This skill reads a
 method's **emitted bytecode** to find where the compiler actually copies a value
 type - defensive copies, boxing, and by-value field/argument/return copies - and
 maps each back to a source line. It is the ground-truth, post-build complement to
-the predictive, in-IDE `roslyn-analyzers` rules.
+the predictive, in-IDE rules of a source-level defensive-copy analyzer.
 
 ## The four layers (where this sits)
 
@@ -20,7 +25,7 @@ question; they are complementary, not interchangeable.
 
 | Layer | Artifact | Tool / skill | What it tells you |
 | ----- | -------- | ------------ | ----------------- |
-| Source | `IOperation` (pre-lowering) | `roslyn-analyzers` (TOUKI0002-0004) | A copy is *predicted* from C# rules, live in the IDE |
+| Source | `IOperation` (pre-lowering) | `roslyn-analyzers` (defensive-copy rules) | A copy is *predicted* from C# rules, live in the IDE |
 | **IL** | **compiled bytecode (post-lowering)** | **this skill** (`ildasm` / `ilspycmd` / Cecil) | **A copy was *emitted* by the C# compiler** |
 | Asm | JIT machine code | `framework-jit-optimization` + `DisassemblyDiagnoser` | Whether the JIT *kept* the copy or elided it |
 | Runtime | ETW / wall-clock | `performance-testing` + `filtrace` | Whether the copy *costs* measurable time / allocation |
@@ -28,15 +33,15 @@ question; they are complementary, not interchangeable.
 The IL layer is uniquely able to see copies the **compiler synthesizes during
 lowering** - async / iterator state-machine field hoisting, closures, thunks -
 which have no source operation and are therefore out of reach for an analyzer. It
-is also the cheapest way to *confirm* a TOUKI0002/0003 prediction: if the IL has the
-defensive-copy signature, the analyzer was right.
+is also the cheapest way to *confirm* a defensive-copy prediction: if the IL has
+the defensive-copy signature, the analyzer was right.
 
 ## Step 0 - is something already answering this?
 
-- **"Does my code have a defensive copy I can fix in the editor?"** -> the
-  `roslyn-analyzers` rules already flag the common cases live. Use this skill only
-  to (a) confirm a flagged case, or (b) find the synthesized copies the analyzer
-  documents as out of scope.
+- **"Does my code have a defensive copy I can fix in the editor?"** -> a
+  source-level defensive-copy analyzer (`roslyn-analyzers`) already flags the
+  common cases live. Use this skill only to (a) confirm a flagged case, or (b) find
+  the synthesized copies the analyzer documents as out of scope.
 - **"Is this copy actually costing me time / allocations?"** -> `performance-testing`
   (boxing shows as `Allocated` under `[MemoryDiagnoser]`; a hot defensive copy shows
   in a trace).
@@ -49,9 +54,9 @@ defensive-copy signature, the analyzer was right.
 
 1. **Build Release with a portable PDB.** Optimized IL is what ships; Debug IL has
    extra copies and spills. The PDB's sequence points are what map IL offsets back
-   to `file:line`. (`touki` already emits embedded portable PDBs - see
-   `<DebugType>embedded</DebugType>` in
-   [touki/touki.csproj](../../../touki/touki.csproj).)
+   to `file:line`. Make sure the build emits a portable PDB -
+   `<DebugType>embedded</DebugType>` or `<DebugType>portable</DebugType>` in the
+   project.
 2. **Extract the method's IL.** Pick a tool from the table below. Disassemble the
    single method of interest, not the whole assembly.
 3. **Match the copy patterns.** Scan the method body for the copy opcodes and the
@@ -91,17 +96,20 @@ durable choice; `ilspycmd` is the fastest manual spot-check.
   value-type substitution.
 - **Intent is lost in IL.** A by-value copy that is a deliberate transfer looks
   identical to an accidental one. Keep the source open to classify; this is the same
-  "unintended vs intended" limit the `roslyn-analyzers` defensive-copy docs call out.
+  "unintended vs intended" limit a defensive-copy analyzer's docs call out.
 
 ## Cross-skill
 
-- `roslyn-analyzers` - the source-level, predictive side (TOUKI0002-0004). This
-  skill confirms its predictions and covers the synthesized copies it cannot see.
+- `roslyn-analyzers` - the source-level, predictive side (defensive-copy rules).
+  This skill confirms its predictions and covers the synthesized copies it cannot
+  see.
 - `framework-jit-optimization` - the next layer down (asm); whether the JIT kept the
-  copy, and what to do about it on net481.
+  copy, and what to do about it on .NET Framework.
 - `performance-testing` - whether the copy costs measurable time / allocation.
 - `scratch-buffer-strategy` - many `[NonCopyable]` types are pooled buffers; this
   skill audits whether one is being copied by value.
+- A consuming repository wires these cross-references and its concrete diagnostic
+  IDs and project names in its overlay.
 
 ## Disambiguation
 

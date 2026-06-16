@@ -35,8 +35,8 @@ existing rule whose severity just needs raising.
 
 - Tune breadth with `AnalysisMode` / `AnalysisLevel` rather than per-rule lines
   when you want a whole band on.
-- Code-style rules only run in the build when `EnforceCodeStyleInBuild=true` (this
-  repo sets it). Confirm that before assuming an `IDE####` rule will fail CI.
+- Code-style rules only run in the build when `EnforceCodeStyleInBuild=true`.
+  Confirm that is set before assuming an `IDE####` rule will fail CI.
 
 If an existing rule covers it, **that is the answer.** No new code.
 
@@ -79,10 +79,10 @@ accepting the whole default set blind.
 ### 4. Author a custom analyzer
 
 Only when the rule is genuinely specific to this codebase's conventions and none of
-the above expresses it - e.g. "prefer `Touki.EnumExtensions.AreFlagsSet` over
+the above expresses it - e.g. "prefer `MyLib.EnumExtensions.AreFlagsSet` over
 `Enum.HasFlag`", "seed `ValueStringBuilder` with a stack buffer", "call
 `Value.Create()` not `new Value()`". These encode *local* knowledge no shipping
-suite knows about. That is the legitimate case for `touki.analyzers`. Proceed to
+suite knows about. That is the legitimate case for `<root>.analyzers`. Proceed to
 [design.md](design.md).
 
 ## How to tell what is already active
@@ -92,7 +92,7 @@ Before claiming "nothing flags this," check what is actually running:
 - **Build with the analyzer report on** and read which analyzers ran:
 
   ```pwsh
-  dotnet build touki/touki.csproj -c Release -p:ReportAnalyzer=true -bl
+  dotnet build <root>.csproj -c Release -p:ReportAnalyzer=true -bl
   ```
 
   Open the resulting `msbuild.binlog` in the MSBuild Structured Log Viewer and
