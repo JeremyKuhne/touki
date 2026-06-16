@@ -86,14 +86,14 @@ ranking.
 
 > **Prompt:** Of that net481 time, how much is the runtime zeroing memory versus copying strings versus GC?
 
-**Good (target, gated on the runtime-symbol plan):** answering this needs native
-runtime symbols, which is the next milestone - see
-[§7.6 of the implementation plan](traceq-implementation-plan.md#76-whats-next-the-runtime-symbol-plan-managed--unmanaged).
-Until it lands, a good answer is honest: managed frames resolve, but the native
-leaf (memset / memcpy / GC) currently shows as an unresolved `?` (~10% in the
-glob trace), and the plan is `--native-symbols` + a `classify` view that buckets
-the work into zeroing / copying / GC / JIT. Watch that the agent says what it
-*cannot* yet measure rather than guessing.
+**Good:** answering this needs native runtime symbols, which filtrace resolves on
+demand. The agent opts in with `--native-symbols` (frames pulled from the
+Microsoft public symbol server and cached locally), then runs `classify` (the
+`trace_classify` tool) to bucket the CPU time into zeroing / copying / GC / JIT /
+other - the direct answer to "zeroing or copying?". Without `--native-symbols`
+the native leaf (memset / memcpy / GC) shows as an unresolved `?` (~10% in the
+glob trace), so the failure to watch for is the agent guessing at the native cost
+instead of opting in.
 
 ### 7. "Help me make it faster" - the full journey
 
@@ -131,7 +131,8 @@ checked out at `../filtrace`; substitute any `.nettrace` / `.speedscope.json`:
 - Pastes a raw table and stops, instead of answering the question and offering
   the next drill.
 - On a machine-wide `.etl`, ranks without scoping to a process (see step 5).
-- Guesses at native runtime cost it cannot yet resolve (see step 6).
+- Guesses at native runtime cost instead of opting into `--native-symbols` to
+  resolve it (see step 6).
 
 For the CLI equivalents and every verb's options, see the
 [filtrace README](https://github.com/JeremyKuhne/filtrace) and
