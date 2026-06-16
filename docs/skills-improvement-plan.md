@@ -17,6 +17,23 @@ consumers, [`JeremyKuhne/madowaku`](https://github.com/JeremyKuhne/madowaku)
 (a merge) and [`JeremyKuhne/thirtytwo`](https://github.com/JeremyKuhne/thirtytwo)
 (greenfield). Authored 2026-06-04; last updated 2026-06-06.
 
+**Update 2026-06-15 - the `traceq` seam is cleared.** The trace tooling was
+promoted out of touki into the standalone
+[`filtrace`](https://github.com/JeremyKuhne/filtrace) repo, published to NuGet
+(`KlutzyNinja.Filtrace` CLI + `KlutzyNinja.Filtrace.Mcp` server, `0.1.0`), and
+touki migrated onto the packages (touki #220). filtrace **ships its own agent
+skill**, which adds a third skill source beyond born-local and the commons: a
+**tool-shipped skill** whose canonical home is the tool's own repo
+(single-sourced from filtrace `docs/`), vendored into consumers exactly like a
+commons core but re-vendored from the tool repo rather than the commons. touki
+now vendors it at
+[.agents/skills/filtrace/](../.agents/skills/filtrace/SKILL.md) (pinned, with a
+touki [overlay](../.agents/skills/filtrace/overlay.md)), and `performance-testing`
+delegates trace-driving to it instead of re-documenting the verbs. What remains of
+Phase 4 is the `performance-testing` BenchmarkDotNet core extraction into the
+commons - its profiling half now points at the vendored `filtrace` skill, not the
+retired `touki.mcp`.
+
 This plan answers three questions about the agent skills under
 [.agents/skills/](../.agents/skills/):
 
@@ -1017,6 +1034,7 @@ applies. thirtytwo answers assume its scaffolding is stood up first (Phase 8).
 | `agent-files-review` | semi-portable | universal | yes | yes | yes |
 | `manage-skills` (section 3) | semi-portable | universal | yes (built) | yes | yes |
 | `performance-testing` | semi-portable | universal, project-gated (`<root>.perf`) | overlay | overlay | bootstrap |
+| `filtrace` (from filtrace) | vendored (tool repo) | dotnet-profiling | yes | yes | yes |
 | `scratch-buffer-strategy` | semi-portable | dotnet-perf | yes | yes | yes |
 | `framework-jit-optimization` | semi-portable | dotnet-framework | yes | yes | marginal |
 | `polyfill-dotnet-api` | repo-specific (small core) | dotnet-framework-polyfill | yes | yes | marginal |

@@ -1,6 +1,8 @@
 # Profiling a benchmark: from operation to method to line
 
-Detail for the [performance-testing](SKILL.md) skill.
+Detail for the [performance-testing](SKILL.md) skill. For the full filtrace
+verb / tool reference and trap catalog, see the [`filtrace`](../filtrace/SKILL.md)
+skill; this page is the touki capture recipe and how to read the result.
 
 To find where a benchmark spends its time - optimizing a hot path or chasing a
 regression - capture an EventPipe CPU trace on `net10.0`, then drill it with the

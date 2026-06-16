@@ -33,6 +33,10 @@ the *how*; that page is the *what to measure and why*.
 
 **Related skills:**
 
+- [`filtrace`](../filtrace/SKILL.md) - the trace analyzer this skill drives for
+  profiling: the full verb / tool reference (`cpu` / `rank` / `callers` / `lines`
+  / `diff`, the `trace_*` MCP tools) and the trap catalog.
+  [profiling.md](profiling.md) captures the trace; filtrace ranks and drills it.
 - [`polyfill-dotnet-api`](../polyfill-dotnet-api/SKILL.md) - reasons
   to add a polyfill (and therefore a benchmark) in the first place.
 - [`framework-jit-optimization`](../framework-jit-optimization/SKILL.md) -
