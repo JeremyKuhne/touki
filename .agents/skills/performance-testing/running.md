@@ -45,11 +45,11 @@ dotnet run -c Release -f net10.0 --project <root>.perf -- --filter *MyBenchmark.
 ## Interactive picker
 
 ```powershell
-dotnet run -c Release --project <root>.perf
+dotnet run -c Release -f <tfm> --project <root>.perf
 ```
 
 With no `--filter`, BenchmarkSwitcher prints a numbered menu. Useful when
-exploring.
+exploring. `-f <tfm>` is still required on a multi-targeted project.
 
 ## Useful extra switches
 

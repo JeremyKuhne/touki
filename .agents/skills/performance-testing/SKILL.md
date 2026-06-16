@@ -4,10 +4,10 @@ description: Author and run BenchmarkDotNet performance tests in a multi-targete
 license: MIT
 metadata:
   github-path: skills/performance-testing
-  github-pinned: 31fd95137a7a145200ff0df626df328c41fd9902
+  github-pinned: 4dadc23e28750f9da50ebeb56a9e18ac73d61d34
   github-ref: refs/heads/add-performance-testing
   github-repo: https://github.com/JeremyKuhne/agent-skills
-  github-tree-sha: c0a8f06a8b05c5b3a4d363b3871c0329597d8591
+  github-tree-sha: c7319b537b3e4c9b1d13244c7c7a9a364cbb36a2
   portability: semi-portable
 ---
 
