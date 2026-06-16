@@ -14,7 +14,8 @@ The "Disambiguation" section below records every known overlap.
 | ----- | ---------------- | ----------- | ---------------- |
 | [polyfill-dotnet-api](./polyfill-dotnet-api/SKILL.md) | "polyfill", "backport", "add a span overload for net472/net481", "make API X available downlevel", missing-on-net472-present-on-net10 | repo-specific | `pre-pr-self-review`, `performance-testing`, `framework-jit-optimization`, `create-pr` |
 | [framework-jit-optimization](./framework-jit-optimization/SKILL.md) | hot-path tuning for `net481` in `touki/Framework/`, generic specialization, scalar/unrolled vs BCL delegation, net481 RyuJIT regressions; the `net10` counterpart (vectorization, intrinsics, struct-generic, devirtualization); cross-TFM codegen (arithmetic/branchless lowering, struct layout, allocation anti-patterns) | semi-portable | `performance-testing`, `il-copy-inspection` |
-| [performance-testing](./performance-testing/SKILL.md) | authoring/running BenchmarkDotNet benchmarks in `touki.perf`, comparing implementations, evaluating allocations, reading the generated code (sharplab/`[DisassemblyDiagnoser]`/`[HardwareCounters]`/`DOTNET_JitDisasm*`) | semi-portable | `framework-jit-optimization`, `scratch-buffer-strategy`, `il-copy-inspection` |
+| [performance-testing](./performance-testing/SKILL.md) | authoring/running BenchmarkDotNet benchmarks in `touki.perf`, comparing implementations, evaluating allocations, reading the generated code (sharplab/`[DisassemblyDiagnoser]`/`[HardwareCounters]`/`DOTNET_JitDisasm*`) | semi-portable | `filtrace`, `framework-jit-optimization`, `scratch-buffer-strategy`, `il-copy-inspection` |
+| [filtrace](./filtrace/SKILL.md) | "where's the time/memory in this trace or benchmark", which method or source line is hot, why a run regressed vs a baseline, what a captured `.nettrace`/`.etl` holds, rank / drill / diff / export a CPU / alloc / exception / GC / JIT / thread-time profile, profiling net481 via ETW | vendored (tool repo) + overlay | `performance-testing` (via [overlay](./filtrace/overlay.md)) |
 | [scratch-buffer-strategy](./scratch-buffer-strategy/SKILL.md) | choosing a scratch-buffer strategy (zeroed `stackalloc` vs `[SkipLocalsInit]` vs `BufferScope<T>` vs `ArrayPool` rental), "should I rent or stackalloc?", net481/net10 size crossovers, weighing `[SkipLocalsInit]` | vendored (portable core) + overlay | `performance-testing`, `framework-jit-optimization` (via [overlay](./scratch-buffer-strategy/overlay.md)) |
 | [pre-pr-self-review](./pre-pr-self-review/SKILL.md) | self-review checklist before opening or pushing a PR; missing tests, unchecked length sums, empty-span foot-guns, TFM phrasing | semi-portable | `create-pr`, `polyfill-dotnet-api` |
 | [security-review](./security-review/SKILL.md) | "assess for security vulnerabilities", "do a security review", "check for ReDoS / DoS", "audit untrusted input handling"; any member accepting caller-supplied data, any use of `unsafe` / `Unsafe.*` / `MemoryMarshal.*` / `Marshal.*`, or any BCL API whose name or doc says "unsafe" / "caller must" - abusive-input handling, length / integer overflow, allocation and algorithmic DoS, caller-validated preconditions, argument validation | vendored (portable core) + overlay | `pre-pr-self-review`, `performance-testing` (via [overlay](./security-review/overlay.md)) |
@@ -35,7 +36,11 @@ a skill would need to change to be reused in another repo: `portable` (generic),
 `vendored (portable core) + overlay` is a pinned copy of a portable core from the
 [agent-skills commons](https://github.com/JeremyKuhne/agent-skills) (see the
 `metadata.github-*` provenance in its `SKILL.md`) paired with a local `overlay.md`
-that carries the touki-specific cross-references and example links. Do not
+that carries the touki-specific cross-references and example links.
+`vendored (tool repo) + overlay` is the same pattern pinned to a tool's own repo
+instead of the commons: `filtrace` is a copy of the skill shipped by the
+standalone [JeremyKuhne/filtrace](https://github.com/JeremyKuhne/filtrace)
+analyzer, re-vendored from there rather than the commons. Do not
 hand-edit a vendored core; `gh skill update` tracks it against upstream. See the
 sharing roadmap in
 [docs/skills-improvement-plan.md](../../docs/skills-improvement-plan.md).
@@ -107,6 +112,21 @@ Both mention "evaluating allocations", but they answer different questions:
   a decision, not a measurement.
 - **How do I measure a buffer/allocation cost** (author a benchmark, add
   `[MemoryDiagnoser]`, read `Allocated`) &rarr; `performance-testing`.
+
+### `performance-testing` vs `filtrace`
+
+Both describe "where's the time / which method is hot", but they sit on opposite
+sides of a hand-off:
+
+- **Author or run a benchmark, capture a touki trace, and interpret the result**
+  (the `-p EP --keepFiles` recipe, the EventPipe-vs-ETW divergence, reading the
+  line ranking) &rarr; `performance-testing`.
+- **Drive the filtrace analyzer over an existing trace** - the `cpu` / `rank` /
+  `callers` / `lines` / `diff` / `export` verbs and `trace_*` tools, the symbol
+  gate, the trap catalog &rarr; `filtrace`.
+
+The usual flow is `performance-testing` to produce the trace, then `filtrace` to
+rank and drill it.
 
 Use `scratch-buffer-strategy` to pick the design; use `performance-testing` to
 verify it on both TFMs.
