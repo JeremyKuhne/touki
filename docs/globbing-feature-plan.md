@@ -16,10 +16,8 @@ This document now serves two purposes:
    which captures the current flame-graph investigation and the directory-pruning
    work it motivates.
 
-Companion docs: [globbing-optimization-plan.md](globbing-optimization-plan.md)
-(match-time micro-optimization slices) and
-[framework-span-performance.md](framework-span-performance.md) (the net472/net481
-slow-span playbook). For the per-dialect ignore-case mapping see
+Companion doc: [framework-span-performance.md](framework-span-performance.md) (the
+net472/net481 slow-span playbook). For the per-dialect ignore-case mapping see
 [touki/Touki/Io/Globbing/GlobOptions.cs](../touki/Touki/Io/Globbing/GlobOptions.cs)
 `IgnoreCase` and the internal `IgnoreCaseKind` enum.
 
@@ -583,11 +581,9 @@ includes). Add an `OrderedMatchSet` (or an `MatchSet` option) at the
 needed. This still lives at the `IEnumerationMatcher` boundary, not
 inside the glob matcher.
 
-Phase-4 in
-[globbing-optimization-plan.md](globbing-optimization-plan.md#36-pshufb-based-class-classifier)
-flags `SearchValues<string>` as the perf vehicle for include-set
-scanning; that optimization slots in behind the adapter once a
-benchmark exists.
+A future match-time optimization flags `SearchValues<string>` as the perf
+vehicle for include-set scanning; that optimization slots in behind the
+adapter once a benchmark exists.
 
 - **Scope:** New `IEnumerationMatcher` adapter under
   `touki/Touki/Io/Globbing/` that wraps a
@@ -808,8 +804,7 @@ case-insensitive (Unicode) matching - the historical D4 decision.
 
 ## Cross-cutting follow-ups
 
-### Ignore-case customization (in
-[globbing-optimization-plan.md §5](globbing-optimization-plan.md))
+### Ignore-case customization
 
 Today `IgnoreCaseKind` is dialect-defaulted. Future option: a
 `GlobOptions.IgnoreCaseAsciiOnly` flag (or a `GlobOptions.IgnoreCaseUnicode`
@@ -825,8 +820,7 @@ user-visible only after Phase 2 (when MSBuild/FileSystemGlobbing patterns
 start hitting class membership at scale) - defer until there's a
 failing test.
 
-### Match-time perf (
-[globbing-optimization-plan.md](globbing-optimization-plan.md))
+### Match-time perf
 
 - Slice 2: `SearchValues<char>` class membership (defer until F2 produces a
   class-heavy benchmark).
@@ -1294,7 +1288,6 @@ The cheapest items first, building toward the path-aware phase:
 | 11 | F5 POSIX bracket extras - **done** | ~half-day | `Posix` `[[:class:]]` parity |
 | - | F1.2 / F1.2b `Win32` + `WinNT` - **indefinitely postponed (removed from `GlobDialect`)** | ~2-3 days | Two dialects closed; needs dedicated `Win32GlobMatcher` (BCL `MatchPattern` port) |
 
-Stop conditions between slices - same as
-[globbing-optimization-plan.md §4](globbing-optimization-plan.md#4-proposed-slice-order):
-each slice runs the full test suite on both TFMs and re-runs the relevant
-benchmark rows; zero match-time allocations on `IsMatch_DoesNotAllocate`.
+Stop conditions between slices: each slice runs the full test suite on both
+TFMs and re-runs the relevant benchmark rows; zero match-time allocations on
+`IsMatch_DoesNotAllocate`.
