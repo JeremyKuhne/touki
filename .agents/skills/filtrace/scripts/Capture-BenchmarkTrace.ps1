@@ -11,7 +11,15 @@
 
       - EventPipe (-Profiler EP, the default): cross-platform, no elevation, single
         process. Runs `dotnet run -c Release -f <Tfm> --project <Project> --
-        --filter <Filter> -p EP`, which exports a .speedscope.json.
+        --filter <Filter> -p EP`, which writes a raw .nettrace and (today) also
+        a derived .speedscope.json from the same capture. The raw .nettrace is
+        preferred when both exist - it is the only one of the two that carries
+        allocation events and per-frame source locations, which the printed
+        `alloc` / `lines` commands need; a .speedscope.json is CPU-self-time
+        only, and its `filtrace lines` output is always empty (per the filtrace
+        skill, speedscope inputs carry no line data). Falls back to
+        .speedscope.json - printing only the commands that work against it
+        (`cpu`, `export`) - when no .nettrace was produced.
       - ETW (-Profiler ETW): Windows only, self-elevates (one UAC prompt), machine
         wide. Runs the same with `-p ETW --keepFiles`, which writes a .etl. Only an
         .etl carries wall-clock (threadtime), the native GC / JIT / memcpy split
@@ -129,11 +137,25 @@ dotnet run -c Release -f $Tfm --project $projFile.FullName -- --filter $Filter @
 if ($LASTEXITCODE -ne 0) { Write-Error "Benchmark run failed (exit $LASTEXITCODE). See $log." -ErrorAction Continue ; exit $LASTEXITCODE }
 
 # Locate the newest trace of the right kind (BenchmarkDotNet may nest it under a
-# results/ subfolder, so recurse).
-$pattern = if ($Profiler -eq 'ETW') { '*.etl' } else { '*.speedscope.json' }
-$trace = Get-ChildItem -Path $artifacts -Filter $pattern -Recurse -ErrorAction SilentlyContinue |
-    Sort-Object LastWriteTime | Select-Object -Last 1
-if ($null -eq $trace) { Write-Error "No $pattern found in $artifacts. Did the capture run?" -ErrorAction Continue ; exit 1 }
+# results/ subfolder, so recurse). For EventPipe, prefer the raw .nettrace over any
+# derived .speedscope.json from the same capture - the .nettrace also carries
+# allocation events and per-frame source locations that the alloc/lines commands
+# below need and a speedscope conversion does not; fall back to .speedscope.json
+# only when no .nettrace was produced.
+if ($Profiler -eq 'ETW') {
+    $trace = Get-ChildItem -Path $artifacts -Filter '*.etl' -Recurse -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime | Select-Object -Last 1
+    if ($null -eq $trace) { Write-Error "No *.etl found in $artifacts. Did the capture run?" -ErrorAction Continue ; exit 1 }
+}
+else {
+    $trace = Get-ChildItem -Path $artifacts -Filter '*.nettrace' -Recurse -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime | Select-Object -Last 1
+    if ($null -eq $trace) {
+        $trace = Get-ChildItem -Path $artifacts -Filter '*.speedscope.json' -Recurse -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime | Select-Object -Last 1
+    }
+    if ($null -eq $trace) { Write-Error "No *.nettrace or *.speedscope.json found in $artifacts. Did the capture run?" -ErrorAction Continue ; exit 1 }
+}
 
 # The build output BenchmarkDotNet kept (EventPipe) or --keepFiles preserved (ETW);
 # its embedded PDBs resolve managed frames to source lines for lines/heatmap.
@@ -154,12 +176,20 @@ if ($Profiler -eq 'ETW') {
     Write-Host "  filtrace classify `"$($trace.FullName)`" --process $Process --benchmark --native-symbols"
     Write-Host "  filtrace export `"$($trace.FullName)`" --process $Process --benchmark --native-symbols --symbols `"$symbols`" -o flame.speedscope.json"
 }
-else {
-    # A single-process EventPipe trace: scope past the BenchmarkDotNet harness with
-    # --benchmark - every verb here, export included, not just the ones that print
-    # a ranking.
+elseif ($trace.Name -like '*.nettrace') {
+    # A raw .nettrace carries CPU, allocations, and per-frame source locations -
+    # every verb below works against it. Scope past the BenchmarkDotNet harness
+    # with --benchmark - every verb here, export included, not just the ones that
+    # print a ranking.
     Write-Host "  filtrace cpu `"$($trace.FullName)`" --benchmark --top $Top"
     Write-Host "  filtrace alloc `"$($trace.FullName)`" --benchmark --top $Top"
     Write-Host "  filtrace lines `"$($trace.FullName)`" --benchmark --symbols `"$symbols`""
     Write-Host "  filtrace export `"$($trace.FullName)`" --benchmark --symbols `"$symbols`" -o flame.speedscope.json"
+}
+else {
+    # A derived .speedscope.json carries CPU self-time only: no allocation events
+    # (alloc needs a .nettrace) and no per-frame source locations (speedscope inputs
+    # never carry line data), so only print the commands that actually work against it.
+    Write-Host "  filtrace cpu `"$($trace.FullName)`" --benchmark --top $Top"
+    Write-Host "  filtrace export `"$($trace.FullName)`" --benchmark -o flame.speedscope.json"
 }
