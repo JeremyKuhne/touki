@@ -8,6 +8,35 @@
 > repository's [AGENTS.md](../AGENTS.md) "Working with the user on changes"
 > contract.
 
+## Implementation status (as of 2026-07-01)
+
+This plan is **fully implemented** and has since grown past its original scope.
+The [`touki.fuzz`](../touki.fuzz/) harness targets `net10.0;net481` and is
+excluded from the normal test run; the reusable instrument/run/crash-promotion
+workflow now lives in the [`fuzz-testing`](../.agents/skills/fuzz-testing/SKILL.md)
+skill.
+
+- **Phase 1** (project standup; `SpanReader`/`SpanWriter` on net10) - **DONE**.
+  `SpanReaderTarget` / `SpanWriterTarget`, the `corpus/` + `crashes/` layout,
+  `Install-FuzzPrereqs.ps1`, and the harness README all shipped.
+- **Phase 2** (net481 runs) - **DONE**. The harness multi-targets `net481`; the
+  net481 Release `Unsafe.As` sign-extension divergence this phase was meant to
+  hunt is pinned in
+  `touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs`.
+- **Phase 3** (RLE encode/decode) - **DONE**. `RunLengthTarget` covers the
+  round-trip, length-invariant, and malformed-decode scenarios.
+- **Phase 4** (promote findings to `touki.tests`) - **DONE / ongoing**. Glob
+  fuzzing found real catastrophic-backtracking and stack-overflow DoS bugs, now
+  pinned as deterministic cross-TFM cases in
+  `touki.tests/Touki/Io/Globbing/GlobSpecificationTests.Security.cs`.
+- **Cross-cutting skill** - **DONE**. The
+  [`fuzz-testing`](../.agents/skills/fuzz-testing/SKILL.md) skill is the
+  documented entry point for both engines and the crash-to-regression loop.
+- **Beyond the original plan:** added `StringSegmentTarget`,
+  `ValueStringBuilderTarget`, and `GlobSpecificationTarget`.
+
+The phase narratives below are retained as the historical record of the rollout.
+
 ## Guiding decisions
 
 - **SharpFuzz works cross-TFM.** The package targets `netstandard2.0`, so a
