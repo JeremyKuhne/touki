@@ -6,7 +6,7 @@ source code compiles and runs on both targets.
 
 ## Where the polyfills live
 
-All polyfills live under [touki/Framework/Polyfills/](../touki/Framework/Polyfills/),
+All polyfills live under [touki/Framework/Polyfills/](../../../../touki/Framework/Polyfills/),
 organized into one folder per BCL namespace:
 
 ```text
@@ -33,7 +33,7 @@ the BCL namespace means callers reach the polyfill through the same
 Anything outside `Polyfills/` is **not** a polyfill of public BCL
 surface - it is either Touki-specific functionality
 (under `touki/Framework/Touki/`) or shared library code (under
-[touki/Touki/](../touki/Touki/)).
+[touki/Touki/](../../../../touki/Touki/)).
 
 ## How polyfill members coexist with future BCL members
 

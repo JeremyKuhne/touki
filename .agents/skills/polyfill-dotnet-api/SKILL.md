@@ -90,6 +90,9 @@ TFM-phrasing foot-guns are in [gotchas.md](gotchas.md).
 - [gotchas.md](gotchas.md) - empty-span pinning, the net481 `Unsafe.As`
   sign-extension bug, native `Random.NextBytes`, process-local `HashCode`,
   and net472-vs-net481 phrasing.
+- [references/polyfill-layout.md](references/polyfill-layout.md) - the
+  user-facing package layout, the new-type list, and the `extern alias`
+  disambiguation recipe.
 
 ## Examples in this repo
 

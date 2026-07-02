@@ -41,5 +41,5 @@ skill. Headline:
 3. Hand-rolled polyfill in this directory - **last resort**, only with
    a real caller. Don't polyfill for completeness.
 
-See [docs/polyfill-layout.md](../../docs/polyfill-layout.md) for the
-user-facing description and the `extern alias` recipe for type-name conflicts.
+See [references/polyfill-layout.md](../../.agents/skills/polyfill-dotnet-api/references/polyfill-layout.md)
+for the user-facing description and the `extern alias` recipe for type-name conflicts.
