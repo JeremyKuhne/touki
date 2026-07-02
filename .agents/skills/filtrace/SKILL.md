@@ -1,14 +1,14 @@
 ---
 name: filtrace
-description: Analyze .NET CPU, allocation, exception, GC, JIT, and wall-clock (thread-time) traces - .nettrace, .etl, and speedscope captures - with the filtrace CLI or MCP server. Use when a user asks where time or memory goes in a trace or benchmark, which method or source line is hot, why a run regressed against a baseline, what a captured .nettrace / .etl contains, or to rank / drill / diff / export a profile - including profiling .NET Framework (net481) via ETW, where an EventPipe ranking would mislead.
+description: Analyze .NET CPU, allocation, exception, GC, JIT, and wall-clock (thread-time) traces - .nettrace, .etl, and speedscope captures - with the filtrace CLI or MCP server. Use when a user asks where time or memory goes in a trace or benchmark, which method or source line is hot, why a run regressed against a baseline, what a captured .nettrace / .etl contains, or to rank / drill / diff / export a profile - including profiling .NET Framework (net481) via ETW, where an EventPipe ranking would mislead. Also covers capturing the trace first - choosing EventPipe vs ETW, elevation, and the recording tool (dotnet-trace, BenchmarkDotNet, PerfView, wpr).
 compatibility: Pairs with the filtrace MCP server (the KlutzyNinja.Filtrace.Mcp package, run via `dnx`) for in-agent tool calls; otherwise shells out to the filtrace CLI (the KlutzyNinja.Filtrace global tool). Either head provides the same analysis, so the skill degrades gracefully to whichever is installed.
 license: MIT
 metadata:
   github-path: .agents/skills/filtrace
-  github-pinned: 04fd8573ef801b98aeb77442642aca9180f0a49e
-  github-ref: refs/heads/main
+  github-pinned: v0.3.0
+  github-ref: refs/tags/v0.3.0
   github-repo: https://github.com/JeremyKuhne/filtrace
-  github-tree-sha: f75c6b3147d52a5782e715c2b9578e439cbd9455
+  github-tree-sha: fe6ead566151f22e27be3c6371b838cecbc78b07
   portability: repo-specific
 ---
 
@@ -23,6 +23,32 @@ an MCP server - there is no GUI. Output is dense text by default, or compact JSO
 This skill is the *how*; the full reference is single-sourced in
 [docs/workflow.md](https://github.com/JeremyKuhne/filtrace/blob/main/docs/workflow.md)
 and [docs/traps.md](https://github.com/JeremyKuhne/filtrace/blob/main/docs/traps.md).
+
+## Getting a trace to analyze
+
+filtrace records ETW captures itself - the `collect` verb launches an executable and
+records an `.etl` (Windows, Administrator) - and otherwise analyzes traces other tools
+record; for an EventPipe `.nettrace`, that recorder is `dotnet-trace` (cross-platform).
+Record or produce one, then point a verb - or `trace_info` - at the file. Pick the
+capture by the question:
+
+- **EventPipe** (`.nettrace` / `.speedscope.json`) - cross-platform, no elevation,
+  single process. From `dotnet-trace collect` or BenchmarkDotNet `-p EP`. Carries
+  CPU, allocations, exceptions, GC, and JIT.
+- **ETW** (`.etl`) - **Windows only, needs Administrator** (kernel sampling),
+  machine-wide. From `filtrace collect`, BenchmarkDotNet `-p ETW`, PerfView, or `wpr`.
+  It is the *only* source for wall-clock (`threadtime`), the native GC / JIT / `memcpy` split
+  (`--native-symbols` + `classify`), and multi-process scoping (`processes` +
+  `--process`).
+
+So "where's the time / what allocates" on one process -> EventPipe; "CPU-bound or
+blocked?", "GC versus my code?", or a machine-wide capture -> ETW. Two bundled
+scripts wrap the capture-then-analyze loop and print the scoped filtrace commands:
+[scripts/Capture-BenchmarkTrace.ps1](scripts/Capture-BenchmarkTrace.ps1) profiles a
+BenchmarkDotNet micro-benchmark (add `--keepFiles`, analyze with `--benchmark`), and
+[scripts/Capture-ProjectTrace.ps1](scripts/Capture-ProjectTrace.ps1) builds an
+executable project and traces its running output directly - never `dotnet run`,
+whose build/run host is a different process (see the trap catalog).
 
 ## The workflow: orient -> rank -> drill -> compare
 
@@ -93,6 +119,12 @@ filtrace diff before.nettrace after.nettrace # 4. what changed
 | `jitstats` | JIT method count, compile time, sizes |
 | `events --name <n>` | raw events by name, paged |
 
+**Capture** - record a Windows ETW `.etl` yourself (for an EventPipe `.nettrace`, use `dotnet-trace`):
+
+| Verb | Does |
+|---|---|
+| `collect` | launch an executable and record a CPU / thread-time `.etl` (Windows, Administrator) |
+
 **File ops** - manage the ETLX conversion cache TraceEvent keeps beside a trace:
 
 | Verb | Does |
@@ -147,10 +179,16 @@ The recurring ways a .NET trace investigation goes wrong:
    that default is usually right - but run `processes` first to see what is in the
    capture, then pass `--process <name>` if the auto-pick is wrong.
 
-4. **BenchmarkDotNet captures include the harness.** A raw ranking of a BDN trace
-   is dominated by the orchestrator and warmup iterations, not your `[Benchmark]`.
+4. **BenchmarkDotNet captures include the harness - scope with `--benchmark` by
+   default, not as an afterthought.** A raw ranking (or export) of a BDN trace is
+   dominated by the orchestrator and warmup iterations, not your `[Benchmark]`.
    Pass `--benchmark` to preset the root to the measured-workload wrapper so only
-   the measured code is ranked.
+   the measured code is analyzed. This applies to **every** verb that takes
+   `--root`, including `export` - a flame graph with the harness left in is not
+   just noisy, its proportions are wrong (the workload's own share of time reads
+   too small). `export` is the easiest verb to forget this on: it writes a file
+   and prints no "scoped to X" summary, so there is no output to notice the
+   omission in - check the command before running it, not the graph after.
 
 5. **Native runtime frames need `--native-symbols`.** Without it, the unmanaged
    ~10% of a trace - GC, JIT, `memset` / `memcpy`, write barriers - shows as an
@@ -173,6 +211,14 @@ The recurring ways a .NET trace investigation goes wrong:
    `memmove`, write-barriers, and GC-poll helpers into their managed caller -
    right for "which method is hot", wrong for "what kind of work dominates". Use
    `--no-fold` (or `classify`) to let the native leaves rank on their own.
+
+9. **Trace the built app, not `dotnet run`.** `dotnet run` builds and then forks
+   your program into a separate child process, so a single-process EventPipe
+   session launched with `dotnet-trace collect -- dotnet run ...` records the
+   build/run host, not your code, and the hot frames never appear. Build first,
+   then launch the built output directly (`dotnet-trace collect -- <app>.dll`, or
+   the apphost `<app>.exe`); the bundled `Capture-ProjectTrace.ps1` resolves that
+   run target for you.
 <!-- filtrace:end traps -->
 
 ## CLI or MCP
