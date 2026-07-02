@@ -87,12 +87,12 @@ The exception is when the polyfill defines a **new type** in `System.*`
 A future Microsoft polyfill for that exact type collides (CS0436/CS0433)
 and callers need `extern alias`. The recipe and the list of new-type
 polyfills lives in
-[docs/polyfill-layout.md](../../../docs/polyfill-layout.md). Prefer
+[references/polyfill-layout.md](references/polyfill-layout.md). Prefer
 extension members over new `System.*` types when feasible.
 
 Touki's stated commitment is to **defer to Microsoft-shipped polyfills
 when they ship**: a future Touki release will reference the official
 package and remove (or thin-forward) the duplicate type, so callers
 upgrade automatically. See
-[docs/polyfill-layout.md](../../../docs/polyfill-layout.md) for the
+[references/polyfill-layout.md](references/polyfill-layout.md) for the
 user-facing version of that policy.

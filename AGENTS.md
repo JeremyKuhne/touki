@@ -300,9 +300,9 @@ catch a mistake.
   prefer Microsoft-shipped packages, then PolySharp source-gen for compiler
   attributes, and only hand-roll under
   `touki/Framework/Polyfills/<BclNamespace>/` as a last resort. See
-  [docs/polyfill-layout.md](docs/polyfill-layout.md) for the layout rules
-  (namespace = BCL namespace; Touki-specific code stays under
-  `touki/Framework/Touki/...`) and the `extern alias` recipe.
+  [references/polyfill-layout.md](.agents/skills/polyfill-dotnet-api/references/polyfill-layout.md)
+  for the layout rules (namespace = BCL namespace; Touki-specific code stays
+  under `touki/Framework/Touki/...`) and the `extern alias` recipe.
 
 ## Path-specific instructions
 

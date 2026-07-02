@@ -29,7 +29,7 @@ Some of the design goals include:
 - `MSBuildEnumerator` for MSBuild-style glob enumeration with no
   allocations until a match is produced
 - Polyfills for many modern .NET BCL APIs on .NET Framework 4.7.2 (see the
-  [polyfill layout doc](docs/polyfill-layout.md) for the full list)
+  [polyfill layout doc](.agents/skills/polyfill-dotnet-api/references/polyfill-layout.md) for the full list)
 - A `DisposableBase` with double-disposal protection and disposal
   tracking helpers for diagnosing leaks
 - Much more!
@@ -41,7 +41,7 @@ Some of the design goals include:
 - [Low-Allocation Collections](docs/collections.md)
 - [Buffers, Span Readers, and Span Writers](docs/buffers.md)
 - [IO Helpers (globs, paths, temp folders, stream formatting)](docs/io.md)
-- [.NET Framework Polyfill Layout & Disambiguation](docs/polyfill-layout.md)
+- [.NET Framework Polyfill Layout & Disambiguation](.agents/skills/polyfill-dotnet-api/references/polyfill-layout.md)
 - [Span Performance on .NET Framework (net472+)](.agents/skills/framework-jit-optimization/references/framework-span-performance.md)
 - [ArrayPool vs Stack Scratch Buffers (net481/net10)](.agents/skills/scratch-buffer-strategy/references/arraypool-performance.md)
 
