@@ -50,6 +50,14 @@ machine-wide `.etl` when you export** - pass `--process <name>` (CLI) or the
 do, or the export captures whichever process was busiest (a background app, not
 the benchmark).
 
+**For a BenchmarkDotNet capture, also pass `--benchmark` by default - every time,
+not just when the graph looks noisy.** `--process` only narrows the OS process;
+`--benchmark` is what excludes the harness/warmup subtree so the flame graph's
+proportions actually reflect the measured `[Benchmark]` code. Skipping it on
+`export` specifically is an easy miss: unlike a ranking verb, `export` writes a
+file and prints no "scoped to X" summary to notice is missing, so double-check
+the command line, not the output, before handing someone the graph.
+
 | | speedscope | Perfetto |
 |---|---|---|
 | Export format | `speedscope` (the default) | `chromium` (`--format chromium`) |

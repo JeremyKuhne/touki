@@ -24,6 +24,14 @@ and `docs/traps.md` as absolute `https://github.com/JeremyKuhne/filtrace` URLs:
 the load-bearing verb and trap catalogs are embedded in the skill body, so those
 links are supplementary and resolve from anywhere.
 
+The skill body also links two bundled scripts by *relative* path
+(`scripts/Capture-BenchmarkTrace.ps1`, `scripts/Capture-ProjectTrace.ps1`), so
+[scripts/](scripts/) is vendored here verbatim alongside `SKILL.md` - these are
+filtrace's own generic capture-then-analyze wrappers (any BenchmarkDotNet project
+or executable project), distinct from touki's own
+[tools/Capture-EtwTrace.ps1](../../../tools/Capture-EtwTrace.ps1) (a touki-specific
+net481 ETW wrapper, kept separately below).
+
 ## Cross-references (touki side)
 
 - [`performance-testing`](../performance-testing/SKILL.md) - the touki skill that
@@ -54,8 +62,14 @@ section 8.
 
 ## Updating
 
-Re-vendor from filtrace when its skill changes: copy
-`.agents/skills/filtrace/SKILL.md` from the filtrace repo, re-add this provenance
-block (bump `github-pinned` / `github-tree-sha` to the new commit), and keep
-touki-specific notes here, not in the core. When filtrace cuts a release whose
-package carries the updated skill, prefer pinning to that tag.
+Re-vendor from filtrace when its skill changes: copy both
+`.agents/skills/filtrace/SKILL.md` **and** its `scripts/` subfolder from the
+filtrace repo (the relative links in the body only resolve if `scripts/` is
+present here too), re-add this provenance block (bump `github-pinned` /
+`github-tree-sha` to the new commit or tag), and keep touki-specific notes here,
+not in the core. When filtrace cuts a release whose package carries the updated
+skill, pin to that tag (`github-ref: refs/tags/vX.Y.Z`, `github-pinned: vX.Y.Z` -
+a tag pin uses the tag name, not a commit SHA) rather than a branch/commit. After
+re-vendoring, run `tools/Validate-AgentFiles.ps1` and
+`tools/Test-AgentFileLinks.ps1` - the latter catches a missed `scripts/` copy
+immediately (dangling relative links).
