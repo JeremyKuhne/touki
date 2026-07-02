@@ -132,7 +132,7 @@ process-scoped next-step filtrace commands:
 auto-scopes to the busiest process *by CPU sample count* (the quantity the
 rankings consume), which is normally the benchmark; but a noisy background app
 (antivirus, a VPN client) can own enough samples to win, so pass `--process <name>`
-to pin it. **Every CPU verb takes it** - `cpu`, `rank`, `threadtime`, `lines`,
+to pin it. **Every analysis verb takes it** - `cpu`, `rank`, `threadtime`, `lines`,
 `callers`, `heatmap`, `export` (and the matching `trace_*` MCP tools). `filtrace
 processes <etl>` lists every process by weight so you can choose the right
 target. Quiesce other CPU consumers before capturing, or scope explicitly.
