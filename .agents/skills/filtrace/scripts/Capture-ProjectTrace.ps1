@@ -127,7 +127,11 @@ if ($Profiler -eq 'ETW' -and -not (Test-Elevated)) {
         '-Profiler', 'ETW', '-Metric', $Metric, '-Tfm', $Tfm, '-Configuration', "`"$Configuration`"", '-Top', $Top)
     if ($Output) { $argList += @('-Output', "`"$Output`"") }
     if ($AppArgs.Count -gt 0) { $argList += @('-AppArgs') + ($AppArgs | ForEach-Object { "`"$_`"" }) }
-    $proc = Start-Process pwsh -Verb RunAs -PassThru -Wait -WorkingDirectory (Get-Location).Path -ArgumentList $argList
+    # Relaunch with the host that is ALREADY running this script, not a hardcoded 'pwsh' -
+    # a caller on Windows PowerShell 5.1 without PowerShell 7 installed would otherwise
+    # fail here with pwsh unresolved.
+    $hostExe = (Get-Process -Id $PID).Path
+    $proc = Start-Process -FilePath $hostExe -Verb RunAs -PassThru -Wait -WorkingDirectory (Get-Location).Path -ArgumentList $argList
     if ($proc.ExitCode -ne 0) { Write-Error "Elevated capture failed (exit $($proc.ExitCode))." -ErrorAction Continue ; exit $proc.ExitCode }
     exit 0
 }

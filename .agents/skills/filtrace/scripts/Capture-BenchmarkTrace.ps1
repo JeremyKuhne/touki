@@ -16,8 +16,8 @@
         preferred when both exist - it is the only one of the two that carries
         allocation events and per-frame source locations, which the printed
         `alloc` / `lines` commands need; a .speedscope.json is CPU-self-time
-        only, and its `filtrace lines` output is always empty (per the filtrace
-        skill, speedscope inputs carry no line data). Falls back to
+        only and carries no per-frame source locations at all, so `filtrace
+        lines` against one always reports nothing. Falls back to
         .speedscope.json - printing only the commands that work against it
         (`cpu`, `export`) - when no .nettrace was produced.
       - ETW (-Profiler ETW): Windows only, self-elevates (one UAC prompt), machine
@@ -110,7 +110,11 @@ if ($Profiler -eq 'ETW' -and -not (Test-Elevated)) {
     # survives Start-Process joining the array into a single command line.
     $argList = @('-NoProfile', '-File', "`"$PSCommandPath`"", '-Project', "`"$($projFile.FullName)`"",
         '-Filter', "`"$Filter`"", '-Profiler', 'ETW', '-Tfm', $Tfm, '-Process', "`"$Process`"", '-Top', $Top)
-    $proc = Start-Process pwsh -Verb RunAs -PassThru -Wait -WorkingDirectory $repoRoot -ArgumentList $argList
+    # Relaunch with the host that is ALREADY running this script, not a hardcoded 'pwsh' -
+    # a caller on Windows PowerShell 5.1 without PowerShell 7 installed would otherwise
+    # fail here with pwsh unresolved.
+    $hostExe = (Get-Process -Id $PID).Path
+    $proc = Start-Process -FilePath $hostExe -Verb RunAs -PassThru -Wait -WorkingDirectory $repoRoot -ArgumentList $argList
     if ($proc.ExitCode -ne 0) { Write-Error "Elevated capture failed (exit $($proc.ExitCode)). See $log." -ErrorAction Continue ; exit $proc.ExitCode }
     if (Test-Path $log) { Write-Host "`n--- capture log tail (full log: $log) ---" -ForegroundColor Cyan ; Get-Content $log -Tail 20 }
     exit 0
@@ -140,19 +144,41 @@ if ($LASTEXITCODE -ne 0) { Write-Error "Benchmark run failed (exit $LASTEXITCODE
 # results/ subfolder, so recurse). For EventPipe, prefer the raw .nettrace over any
 # derived .speedscope.json from the same capture - the .nettrace also carries
 # allocation events and per-frame source locations that the alloc/lines commands
-# below need and a speedscope conversion does not; fall back to .speedscope.json
-# only when no .nettrace was produced.
+# below need and a speedscope conversion does not. But only prefer it when it is
+# actually the PAIRED raw file for this capture (same stem, i.e. produced together) -
+# otherwise a stale .nettrace left over from an earlier run would win over a fresh,
+# speedscope-only capture just because it happens to be a .nettrace. When the two
+# are not paired, whichever file is genuinely newest wins.
 if ($Profiler -eq 'ETW') {
     $trace = Get-ChildItem -Path $artifacts -Filter '*.etl' -Recurse -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTime | Select-Object -Last 1
     if ($null -eq $trace) { Write-Error "No *.etl found in $artifacts. Did the capture run?" -ErrorAction Continue ; exit 1 }
 }
 else {
-    $trace = Get-ChildItem -Path $artifacts -Filter '*.nettrace' -Recurse -ErrorAction SilentlyContinue |
+    $netTrace = Get-ChildItem -Path $artifacts -Filter '*.nettrace' -Recurse -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTime | Select-Object -Last 1
-    if ($null -eq $trace) {
-        $trace = Get-ChildItem -Path $artifacts -Filter '*.speedscope.json' -Recurse -ErrorAction SilentlyContinue |
-            Sort-Object LastWriteTime | Select-Object -Last 1
+    $speedscope = Get-ChildItem -Path $artifacts -Filter '*.speedscope.json' -Recurse -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime | Select-Object -Last 1
+
+    if ($null -eq $netTrace) {
+        $trace = $speedscope
+    }
+    elseif ($null -eq $speedscope) {
+        $trace = $netTrace
+    }
+    else {
+        # BenchmarkDotNet names both files from the same stem, e.g.
+        # foo-<timestamp>.nettrace / foo-<timestamp>.speedscope.json - strip each
+        # file's own suffix to compare the stems, not just Extension (which for
+        # *.speedscope.json is only ".json").
+        $netStem = $netTrace.BaseName
+        $scopeStem = $speedscope.Name -replace '\.speedscope\.json$', ''
+        if ($netStem -eq $scopeStem -or $netTrace.LastWriteTime -ge $speedscope.LastWriteTime) {
+            $trace = $netTrace
+        }
+        else {
+            $trace = $speedscope
+        }
     }
     if ($null -eq $trace) { Write-Error "No *.nettrace or *.speedscope.json found in $artifacts. Did the capture run?" -ErrorAction Continue ; exit 1 }
 }
