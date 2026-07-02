@@ -39,7 +39,7 @@ consuming repo's own style guide or `.editorconfig` win on any conflict.
 
 ## Screening thresholds
 
-Flag for review at "Review", refactor at "Refactor". Values between "Low" and "Review" are "moderate" — usually acceptable, but worth a quick "why" check.
+Flag for review at "Review", refactor at "Refactor". Values between "Low" and "Review" are "moderate" - usually acceptable, but worth a quick "why" check.
 Numbers aggregate research and industry-tool convergence; adjust to the team and language.
 
 | Factor | Low | Review | Refactor | Measure |
