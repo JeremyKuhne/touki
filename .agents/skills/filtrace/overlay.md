@@ -37,6 +37,21 @@ links are supplementary and resolve from anywhere.
 - [tools/Capture-EtwTrace.ps1](../../../tools/Capture-EtwTrace.ps1) - the touki
   net481 ETW capture wrapper that prints scoped `filtrace` next-step commands.
 
+## Touki note - a concrete Trap #8 hit
+
+The core's **Trap #8** already covers this: filtrace folds JIT-helper thunks
+(`memmove`, write-barriers, GC-poll) into their managed caller **by default**, so
+its ranking does not surface the artifact below - only a *raw / unfolded*
+EventPipe view (or a third-party viewer) does. Recorded here as the touki data
+point behind that trap: a pre-filtrace `CpuSampling` trace of touki's extglob
+enumeration read `System.Buffer.BulkMoveWithWriteBarrier` at 93% inclusive - a
+sampling artifact that really belonged to the two engine loop bodies calling it.
+The sharp tell: a write-barrier variant over a **ref-free** struct is impossible
+(it needs `RuntimeHelpers.IsReferenceOrContainsReferences<T>()`), so it cannot be
+a real call; attribute it to the caller with `callers`. Full writeup:
+[docs/dotnet-perf-discoveries.md](../../../docs/dotnet-perf-discoveries.md)
+section 8.
+
 ## Updating
 
 Re-vendor from filtrace when its skill changes: copy
