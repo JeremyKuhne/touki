@@ -133,9 +133,23 @@ auto-scopes to the busiest process *by CPU sample count* (the quantity the
 rankings consume), which is normally the benchmark; but a noisy background app
 (antivirus, a VPN client) can own enough samples to win, so pass `--process <name>`
 to pin it. **Every CPU verb takes it** - `cpu`, `rank`, `threadtime`, `lines`,
-`callers`, `heatmap` (and the matching `trace_*` MCP tools). `filtrace processes
-<etl>` lists every process by weight so you can choose the right target. Quiesce
-other CPU consumers before capturing, or scope explicitly.
+`callers`, `heatmap`, `export` (and the matching `trace_*` MCP tools). `filtrace
+processes <etl>` lists every process by weight so you can choose the right
+target. Quiesce other CPU consumers before capturing, or scope explicitly.
+
+**Default every BenchmarkDotNet analysis to `--benchmark`, not just `--process`.**
+Process scoping only narrows *which OS process* the samples come from; a BDN
+process itself still interleaves the harness bootstrap, JIT/overhead warmup
+iterations, and the measured `[Benchmark]` workload in one call tree. `--benchmark`
+(preset root = the generated `WorkloadAction*` wrapper) is what isolates the
+measured code from that scaffolding, and it is **not optional for a BDN trace** -
+apply it by default to every verb that takes `--root`, including `export`. An
+unscoped export is not just noisy, its *proportions* are wrong: a flame graph or
+line ranking that still includes warmup materially understates the workload's own
+share of time. Forgetting it on `export` specifically is an easy miss because the
+verb writes a file instead of rendering a ranking, so there is no immediate
+"scoped to X" line to notice is missing - check the command before running it,
+not the output after.
 
 **`threadtime` vs `cpu`.** `threadtime` (ETL-only) is wall-clock per thread -
 running *and* blocked - while `cpu` is on-CPU time. When they agree closely the
