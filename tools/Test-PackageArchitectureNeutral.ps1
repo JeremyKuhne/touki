@@ -47,24 +47,37 @@ try {
 
     $failures = @()
     foreach ($dll in $dlls) {
+        $relativePath = $dll.FullName.Substring($extractDir.Length + 1)
         $bytes = [System.IO.File]::ReadAllBytes($dll.FullName)
         $stream = [System.IO.MemoryStream]::new($bytes)
-        $peReader = [System.Reflection.PortableExecutable.PEReader]::new($stream)
         try {
-            $headers = $peReader.PEHeaders
-            $machine = $headers.CoffHeader.Machine
-            $requires32Bit = $headers.CorHeader.Flags -band [System.Reflection.PortableExecutable.CorFlags]::Requires32Bit
+            $peReader = [System.Reflection.PortableExecutable.PEReader]::new($stream)
+            try {
+                $headers = $peReader.PEHeaders
+                $machine = $headers.CoffHeader.Machine
+                $corHeader = $headers.CorHeader
 
-            $relativePath = $dll.FullName.Substring($extractDir.Length + 1)
-            if ($machine -ne [System.Reflection.PortableExecutable.Machine]::I386 -or $requires32Bit) {
-                $failures += "$relativePath -> Machine=$machine Requires32Bit=$([bool]$requires32Bit)"
+                if ($null -eq $corHeader) {
+                    $failures += "$relativePath -> not a managed (CLI) assembly"
+                    continue
+                }
+
+                $isILOnly = [bool]($corHeader.Flags -band [System.Reflection.PortableExecutable.CorFlags]::ILOnly)
+                $requires32Bit = [bool]($corHeader.Flags -band [System.Reflection.PortableExecutable.CorFlags]::Requires32Bit)
+
+                if ($machine -ne [System.Reflection.PortableExecutable.Machine]::I386 -or -not $isILOnly -or $requires32Bit) {
+                    $failures += "$relativePath -> Machine=$machine ILOnly=$isILOnly Requires32Bit=$requires32Bit"
+                }
+                else {
+                    Write-Host "OK: $relativePath -> Machine=$machine"
+                }
             }
-            else {
-                Write-Host "OK: $relativePath -> Machine=$machine"
+            finally {
+                $peReader.Dispose()
             }
         }
         finally {
-            $peReader.Dispose()
+            $stream.Dispose()
         }
     }
 
