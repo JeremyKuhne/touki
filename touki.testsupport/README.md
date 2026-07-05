@@ -13,6 +13,10 @@ extensions used by the touki test suite.
 - `net10.0`
 - `net472`
 
+Like `KlutzyNinja.Touki`, this package ships architecture-neutral
+("AnyCPU") assemblies with no native components, so x64 and ARM64 are both
+fully supported on Windows, Linux, and macOS.
+
 ## Notes
 
 This package is **not AOT-friendly** - it uses reflection to reach private

@@ -29,13 +29,13 @@
     <Platform Project="x64" />
   </Project>
   <Project Path="touki.analyzers.codefixes/touki.analyzers.codefixes.csproj">
-    <Platform Project="x64" />
+    <Platform Project="AnyCPU" />
   </Project>
   <Project Path="touki.analyzers.tests/touki.analyzers.tests.csproj">
     <Platform Project="x64" />
   </Project>
   <Project Path="touki.analyzers/touki.analyzers.csproj">
-    <Platform Project="x64" />
+    <Platform Project="AnyCPU" />
   </Project>
   <Project Path="touki.fuzz/touki.fuzz.csproj">
     <Platform Project="x64" />
@@ -50,9 +50,9 @@
     <Platform Project="x64" />
   </Project>
   <Project Path="touki.testsupport/touki.testsupport.csproj">
-    <Platform Project="x64" />
+    <Platform Project="AnyCPU" />
   </Project>
   <Project Path="touki/touki.csproj">
-    <Platform Project="x64" />
+    <Platform Project="AnyCPU" />
   </Project>
 </Solution>

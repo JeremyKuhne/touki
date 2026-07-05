@@ -53,6 +53,16 @@ jobs:
       run: dotnet build -c Release --no-restore
     - name: Pack
       run: dotnet pack -c Release --no-build -o ./artifacts
+    - name: Verify package is architecture neutral
+      # touki is a pure-IL library with no native components and must load on
+      # any CPU architecture (x64, ARM64, ...). touki.slnx maps it to
+      # Platform=AnyCPU even though the rest of the solution defaults to x64
+      # (see Directory.Build.props); this guards against that mapping
+      # regressing before anything is pushed to NuGet.
+      run: |
+        Get-ChildItem ./artifacts -Filter KlutzyNinja.Touki.*.nupkg |
+            Where-Object { $_.Name -notlike 'KlutzyNinja.Touki.TestSupport.*' } |
+            ForEach-Object { pwsh tools/Test-PackageArchitectureNeutral.ps1 -PackagePath $_.FullName }
     # Get a short-lived NuGet API key
     - name: NuGet login (OIDC → temp API key)
       uses: NuGet/login@v1
