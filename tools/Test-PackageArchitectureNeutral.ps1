@@ -32,6 +32,9 @@ Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
+# Needed for the PEReader/CorFlags/Machine type literals below - not always
+# already loaded in the host's AppDomain (e.g. Windows PowerShell 5.1).
+Add-Type -AssemblyName System.Reflection.Metadata
 
 $PackagePath = (Resolve-Path $PackagePath).Path
 $extractDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
