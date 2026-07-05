@@ -68,6 +68,9 @@ PM> Install-Package KlutzyNinja.Touki
 
 - .NET 10.0 or later **OR** .NET Framework 4.7.2 or later
 - C# 14.0 or later for the best experience
+- Any CPU architecture supported by .NET - the package ships
+  architecture-neutral ("AnyCPU") assemblies with no native components, so
+  x64 and ARM64 are both fully supported on Windows, Linux, and macOS
 
 ## Contributing
 
