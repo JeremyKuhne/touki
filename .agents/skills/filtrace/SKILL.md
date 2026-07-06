@@ -5,10 +5,10 @@ compatibility: Pairs with the filtrace MCP server (the KlutzyNinja.Filtrace.Mcp 
 license: MIT
 metadata:
   github-path: .agents/skills/filtrace
-  github-pinned: v0.3.0
-  github-ref: refs/tags/v0.3.0
+  github-pinned: v0.4.0
+  github-ref: refs/tags/v0.4.0
   github-repo: https://github.com/JeremyKuhne/filtrace
-  github-tree-sha: fe6ead566151f22e27be3c6371b838cecbc78b07
+  github-tree-sha: 934293350c746d43eabcf540e29929880d88a13f
   portability: repo-specific
 ---
 
@@ -50,12 +50,20 @@ BenchmarkDotNet micro-benchmark (add `--keepFiles`, analyze with `--benchmark`),
 executable project and traces its running output directly - never `dotnet run`,
 whose build/run host is a different process (see the trap catalog).
 
+Two more scripts open a filtrace `export` in a hosted viewer with the profile already
+loaded, no manual upload:
+[scripts/Open-SpeedscopeTrace.ps1](scripts/Open-SpeedscopeTrace.ps1) serves a
+`--format speedscope` profile to speedscope.app (defaulting to the Left Heavy hotspot
+view), and [scripts/Open-PerfettoTrace.ps1](scripts/Open-PerfettoTrace.ps1) serves a
+`--format chromium` trace to the Perfetto UI. Each hosts the file on a one-shot loopback
+listener, so nothing is uploaded.
+
 ## The workflow: orient -> rank -> drill -> compare
 
 Almost every investigation is the same four moves:
 
 1. **Orient.** Read the trace's format, sample count, and symbol-resolution rate
-   first - `filtrace processes <trace>` or the `trace_info` tool. A
+   first - `filtrace info <trace>` or the `trace_info` tool. A
    symbol-resolution rate **below 0.8** means managed frames are missing and the
    rankings cannot be trusted; pass `--symbols <build-output-dir>` (the directory
    holding your portable PDBs) before reading further.
@@ -69,7 +77,8 @@ Almost every investigation is the same four moves:
    `export --format speedscope` to hand a human a flame graph.
 
 ```pwsh
-filtrace cpu app.nettrace                    # 1-2. orient + rank self-time
+filtrace info app.nettrace                   # 1. orient: format, symbol rate, analyses
+filtrace cpu app.nettrace                    # 2. rank self-time
 filtrace callers app.nettrace MyApp.Parse    # 3. who drives the hot frame
 filtrace lines app.nettrace --symbols bin/Release/net10.0   # 3. hot source lines
 filtrace diff before.nettrace after.nettrace # 4. what changed
@@ -78,14 +87,20 @@ filtrace diff before.nettrace after.nettrace # 4. what changed
 <!-- filtrace:begin verbs -->
 ### CLI verbs
 
+**Orient** - see what a capture holds before ranking:
+
+| Verb | Shows |
+|---|---|
+| `info` | format, sample count, symbol-resolution rate, per-thread counts, the analyses the trace can answer, and quality warnings - the CLI counterpart of `trace_info` |
+
 **Rank** - find the hottest frames by a metric:
 
 | Verb | Ranks | Reads |
 |---|---|---|
-| `rank --metric <m>` | any metric (`cpu`, `alloc`, `exceptions`, `threadtime`) | per metric |
+| `rank --metric <m>` | any metric (`cpu`, `alloc`, `exceptions`, `threadtime`, `contention`, `wait`, `activity`) | per metric |
 | `cpu` | CPU self/inclusive time | `.nettrace`, `.etl`, `.speedscope.json` |
 | `alloc` | bytes allocated, by site | `.nettrace` |
-| `exceptions` | throw sites, by count | `.nettrace` |
+| `exceptions` | exception types, by count | `.nettrace` |
 | `threadtime` | wall-clock (running + blocked) | `.etl` (Windows) |
 
 **Drill** - follow a ranking into detail:
@@ -111,13 +126,15 @@ filtrace diff before.nettrace after.nettrace # 4. what changed
 | `diff <before> <after>` | what got slower/faster between two traces |
 | `export --format <fmt>` | write a flame graph for a viewer - `speedscope` or `chromium` |
 
-**Structured reports** (EventPipe `.nettrace`):
+**Structured reports:**
 
 | Verb | Reports |
 |---|---|
-| `gcstats` | GC counts, pauses, heap summary |
-| `jitstats` | JIT method count, compile time, sizes |
-| `events --name <n>` | raw events by name, paged |
+| `gcstats` | GC counts, pauses, heap summary (`.nettrace`) |
+| `jitstats` | JIT method count, compile time, sizes (`.nettrace`) |
+| `threadpool` | worker-thread adjustments and starvation - slow under load, CPU idle (`.nettrace`) |
+| `diskio` | physical disk I/O by file: bytes and disk service time (`.etl`, Windows) |
+| `events --name <n>` | raw events by name, paged (`.nettrace`, or `.etl` on Windows) |
 
 **Capture** - record a Windows ETW `.etl` yourself (for an EventPipe `.nettrace`, use `dotnet-trace`):
 
@@ -146,6 +163,11 @@ Run `filtrace <verb> --help` for the full option set of any verb.
 - **Scope to the benchmark.** For a BenchmarkDotNet capture, `--benchmark` presets
   the root to the measured-workload wrapper so the harness and warmup do not
   dominate the ranking.
+- **Scope to a time window.** `rank --time <start>,<end>` (milliseconds relative to
+  the trace start, either bound optional: `1000,5000`, `1000,`, or `,5000`) keeps
+  only the samples anchored in the window. It applies to every metric, so it zooms
+  a `.nettrace` / `.etl` ranking to the slice around a spike or one slow request
+  (not `.speedscope.json`, whose timeline is not in milliseconds).
 - **Symbols.** Managed frames (including NGEN and ReadyToRun framework methods)
   resolve for free from the trace's CLR rundown. `--symbols <dir>` resolves your
   own managed frames and source lines; `--native-symbols` (CPU `.etl` only,
@@ -219,6 +241,21 @@ The recurring ways a .NET trace investigation goes wrong:
    then launch the built output directly (`dotnet-trace collect -- <app>.dll`, or
    the apphost `<app>.exe`); the bundled `Capture-ProjectTrace.ps1` resolves that
    run target for you.
+
+10. **A machine-wide `.etl` can be huge - capture lean, then scope at analysis.**
+   ETW kernel tracing is machine-wide, so the wrong keywords balloon the file: the
+   File/Disk *name* rundowns enumerate every open file on the box (hundreds of
+   thousands of events that dwarf the workload) no matter how short the window.
+   `filtrace collect` avoids this by design - it enables only the CPU (and, for
+   `threadtime`, context-switch) keywords and stacks just the sampled events, never the
+   File/Disk rundown - so prefer it and bound open-ended runs with `--duration` or
+   `--max-size-mb` (a circular buffer that keeps the last N MB). Only a `diskio` capture
+   needs the File/Disk keywords, and `filtrace collect` has no switch for them: that
+   capture comes from another recorder (PerfView, `wpr`, or BenchmarkDotNet ETW), so
+   expect the system-wide rundown there and trim it down afterward. To focus a big
+   capture on your code, scope at *analysis* time with `--process` (lossless - it keeps
+   managed stacks); physically trimming the file by relogging is a transport-only
+   optimization that currently drops JITted managed frames.
 <!-- filtrace:end traps -->
 
 ## CLI or MCP
@@ -226,10 +263,11 @@ The recurring ways a .NET trace investigation goes wrong:
 The two heads expose the same analysis:
 
 - **CLI** - `dotnet tool install -g KlutzyNinja.Filtrace`, then `filtrace <verb>`.
-- **MCP server** - `dnx KlutzyNinja.Filtrace.Mcp` over stdio, exposing thirteen
+- **MCP server** - `dnx KlutzyNinja.Filtrace.Mcp` over stdio, exposing fifteen
   `trace_*` tools (`trace_info`, `trace_rank`, `trace_callers`, `trace_lines`,
   `trace_heatmap`, `trace_tree`, `trace_processes`, `trace_classify`,
-  `trace_diff`, `trace_export`, `trace_gc`, `trace_jit`, `trace_query_events`).
+  `trace_diff`, `trace_export`, `trace_gc`, `trace_jit`, `trace_threadpool`,
+  `trace_diskio`, `trace_query_events`).
   Each returns one envelope: a `schemaVersion`, a `warnings` list, next-step
   `hints`, and the typed result.
 

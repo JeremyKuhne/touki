@@ -15,7 +15,7 @@ touki-specific lives here.
 filtrace ships as published NuGet packages; touki uses both heads:
 
 - **MCP server** - registered in [.vscode/mcp.json](../../../.vscode/mcp.json) as
-  `dnx KlutzyNinja.Filtrace.Mcp`, exposing the thirteen `trace_*` tools an agent
+  `dnx KlutzyNinja.Filtrace.Mcp`, exposing the fifteen `trace_*` tools an agent
   calls directly. No clone or build required.
 - **CLI** - `dotnet tool install -g KlutzyNinja.Filtrace`, then `filtrace <verb>`.
 
@@ -24,13 +24,18 @@ and `docs/traps.md` as absolute `https://github.com/JeremyKuhne/filtrace` URLs:
 the load-bearing verb and trap catalogs are embedded in the skill body, so those
 links are supplementary and resolve from anywhere.
 
-The skill body also links two bundled scripts by *relative* path
-(`scripts/Capture-BenchmarkTrace.ps1`, `scripts/Capture-ProjectTrace.ps1`), so
-[scripts/](scripts/) is vendored here verbatim alongside `SKILL.md` - these are
-filtrace's own generic capture-then-analyze wrappers (any BenchmarkDotNet project
-or executable project), distinct from touki's own
+The skill body also links four bundled scripts by *relative* path
+(`scripts/Capture-BenchmarkTrace.ps1`, `scripts/Capture-ProjectTrace.ps1`,
+`scripts/Open-SpeedscopeTrace.ps1`, `scripts/Open-PerfettoTrace.ps1`), so
+[scripts/](scripts/) is vendored here verbatim alongside `SKILL.md` (and
+`README.md`) - these are filtrace's own generic capture-then-analyze and
+viewer-opener wrappers (any BenchmarkDotNet project or executable project),
+distinct from touki's own
 [tools/Capture-EtwTrace.ps1](../../../tools/Capture-EtwTrace.ps1) (a touki-specific
-net481 ETW wrapper, kept separately below).
+net481 ETW wrapper, kept separately below) and touki's own
+[tools/Open-SpeedscopeTrace.ps1](../../../tools/Open-SpeedscopeTrace.ps1) /
+[tools/Open-PerfettoTrace.ps1](../../../tools/Open-PerfettoTrace.ps1) (touki-specific
+viewer launchers wired into its BenchmarkDotNet artifact layout).
 
 ## Cross-references (touki side)
 
