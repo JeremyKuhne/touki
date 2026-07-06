@@ -28,7 +28,7 @@
 
     The input must be a speedscope-format profile (what `filtrace export` writes by
     default, or `--format speedscope`). A Chrome-trace / Perfetto export is NOT a
-    speedscope profile - open those with tools/Open-PerfettoTrace.ps1.
+    speedscope profile - open those with Open-PerfettoTrace.ps1.
 
 .PARAMETER Path
     Path to the speedscope profile (.speedscope.json) to serve.
@@ -55,15 +55,15 @@
     Print the deep link instead of launching the browser (useful for testing).
 
 .EXAMPLE
-    ./tools/Open-SpeedscopeTrace.ps1 BenchmarkDotNet.Artifacts/flamegraphs/net10-nettrace.speedscope.json
+    ./Open-SpeedscopeTrace.ps1 trace.speedscope.json
 
 .EXAMPLE
-    ./tools/Open-SpeedscopeTrace.ps1 trace.speedscope.json -View sandwich
+    ./Open-SpeedscopeTrace.ps1 trace.speedscope.json -View sandwich
 
 .NOTES
     The fully offline alternative is `npx -y speedscope <file>`, which embeds the
     profile in a self-contained temp HTML but cannot set the initial view.
-    Companion: tools/Open-PerfettoTrace.ps1 for Chrome-trace / Perfetto exports.
+    Companion: Open-PerfettoTrace.ps1 for Chrome-trace / Perfetto exports.
 #>
 [CmdletBinding()]
 param(
@@ -71,8 +71,10 @@ param(
     [ValidateSet("time-ordered", "left-heavy", "sandwich")]
     [string]$View = "left-heavy",
     [string]$Origin = "https://www.speedscope.app",
+    [ValidateRange(1, 65535)]
     [int]$Port = 9002,
     [string]$Title,
+    [ValidateRange(1, 2147483647)]
     [int]$TimeoutSeconds = 300,
     [switch]$NoOpenBrowser
 )
@@ -106,7 +108,9 @@ try {
 }
 catch [System.Net.HttpListenerException] {
     Write-Error ("Could not bind http://127.0.0.1:$Port/ - $($_.Exception.Message). " +
-        "Port $Port may be in use by a previous run.")
+        "Port $Port may be in use by a previous run, or (HttpListener 'Access is denied') the " +
+        "URL prefix may not be reserved for your account: pick another -Port, or reserve it with " +
+        "'netsh http add urlacl url=http://127.0.0.1:$Port/ user=$env:USERNAME'.")
     exit 1
 }
 
@@ -140,25 +144,33 @@ try {
         $response = $context.Response
         try {
             $response.Headers["Access-Control-Allow-Origin"] = $allowOrigin
+            # Private Network Access: a secure page (https) fetching a private address
+            # (127.0.0.1) is preflighted by modern Chromium, which requires this header on the
+            # response or it blocks the fetch. Harmless to browsers that do not send the check.
+            $response.Headers["Access-Control-Allow-Private-Network"] = "true"
             $response.Headers["Cache-Control"] = "no-cache"
 
             $requestPath = [System.Uri]::UnescapeDataString($request.Url.AbsolutePath)
             if ($request.HttpMethod -eq "OPTIONS") {
-                # Preflight (only sent if speedscope ever makes a non-simple request).
+                # Preflight - sent for a cross-origin non-simple request, and (via Private
+                # Network Access) for any https-to-loopback fetch on modern Chromium.
                 $response.Headers["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
                 $response.Headers["Access-Control-Allow-Headers"] = "*"
                 $response.StatusCode = 204
             }
             elseif (($request.HttpMethod -in "GET", "HEAD") -and $requestPath -eq "/$fname") {
-                $bytes = [System.IO.File]::ReadAllBytes($full)
+                # Stream the file to the response instead of buffering the whole profile in
+                # memory - a speedscope export can be tens or hundreds of MB.
+                $fileLength = [System.IO.FileInfo]::new($full).Length
                 $response.ContentType = "application/json"
-                $response.ContentLength64 = $bytes.Length
+                $response.ContentLength64 = $fileLength
                 if ($request.HttpMethod -eq "GET") {
-                    $response.OutputStream.Write($bytes, 0, $bytes.Length)
+                    $fs = [System.IO.File]::OpenRead($full)
+                    try { $fs.CopyTo($response.OutputStream) } finally { $fs.Dispose() }
                 }
 
                 $served++
-                Write-Host ("Served {0} ({1:N0} bytes)" -f $fname, $bytes.Length) -ForegroundColor Green
+                Write-Host ("Served {0} ({1:N0} bytes)" -f $fname, $fileLength) -ForegroundColor Green
             }
             else {
                 $response.StatusCode = 404

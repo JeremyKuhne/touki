@@ -81,11 +81,11 @@ for a side-by-side.
 
 ```powershell
 # speedscope, opening straight into Left Heavy (the hotspot view).
-./tools/Open-SpeedscopeTrace.ps1 BenchmarkDotNet.Artifacts/flamegraphs/<name>.speedscope.json
+./.agents/skills/filtrace/scripts/Open-SpeedscopeTrace.ps1 BenchmarkDotNet.Artifacts/flamegraphs/<name>.speedscope.json
 # -View sandwich | time-ordered to open in a different mode.
 
 # Perfetto, expanding + pinning the aggregate track so you land on the flame.
-./tools/Open-PerfettoTrace.ps1 BenchmarkDotNet.Artifacts/flamegraphs/<name>.perfetto.json
+./.agents/skills/filtrace/scripts/Open-PerfettoTrace.ps1 BenchmarkDotNet.Artifacts/flamegraphs/<name>.perfetto.json
 ```
 
 The fully offline speedscope alternative is `npx -y speedscope <file>`: it embeds

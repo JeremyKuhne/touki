@@ -23,7 +23,7 @@
 
     The input must be a Chrome Trace Event Format file (what `filtrace export --format
     chromium` writes) or a native Perfetto proto trace. A speedscope export is NOT a
-    Perfetto format - open those with the speedscope CLI instead.
+    Perfetto format - open those with Open-SpeedscopeTrace.ps1 instead.
 
 .PARAMETER Path
     Path to the trace file to serve (Chrome-trace JSON or Perfetto proto).
@@ -63,17 +63,19 @@
     Print the deep link instead of launching the browser (useful for testing).
 
 .EXAMPLE
-    ./tools/Open-PerfettoTrace.ps1 BenchmarkDotNet.Artifacts/flamegraphs/net10-etl-scoped.perfetto.json
+    ./Open-PerfettoTrace.ps1 trace.chromium.json
 
 .NOTES
-    Companion to the speedscope path: tools/Open-SpeedscopeTrace.ps1 opens a
+    Companion to the speedscope path: Open-SpeedscopeTrace.ps1 opens a
     speedscope flame graph hands-free with a chosen view (e.g. Left Heavy).
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$Path,
     [string]$Origin = "https://ui.perfetto.dev",
+    [ValidateRange(1, 65535)]
     [int]$Port = 9001,
+    [ValidateRange(1, 2147483647)]
     [int]$TimeoutSeconds = 300,
     [string]$PinTrack = "filtrace",
     [switch]$NoExpand,
@@ -134,7 +136,10 @@ try {
 }
 catch [System.Net.HttpListenerException] {
     Write-Error ("Could not bind http://127.0.0.1:$Port/ - $($_.Exception.Message). " +
-        "Port $Port may be in use by a trace_processor server or a previous run.")
+        "Port $Port may be in use by a trace_processor server or a previous run, or " +
+        "(HttpListener 'Access is denied') the URL prefix may not be reserved for your account: " +
+        "pick another -Port, or reserve it with " +
+        "'netsh http add urlacl url=http://127.0.0.1:$Port/ user=$env:USERNAME'.")
     exit 1
 }
 
@@ -168,30 +173,37 @@ try {
         $response = $context.Response
         try {
             $response.Headers["Access-Control-Allow-Origin"] = $allowOrigin
+            # Private Network Access: a secure page (https) fetching a private address
+            # (127.0.0.1) is preflighted by modern Chromium, which requires this header on the
+            # response or it blocks the fetch. Harmless to browsers that do not send the check.
+            $response.Headers["Access-Control-Allow-Private-Network"] = "true"
             $response.Headers["Cache-Control"] = "no-cache"
 
             $requestPath = [System.Uri]::UnescapeDataString($request.Url.AbsolutePath)
             if ($request.HttpMethod -eq "OPTIONS") {
-                # Preflight (only sent if the UI ever makes a non-simple request).
+                # Preflight - sent for a cross-origin non-simple request, and (via Private
+                # Network Access) for any https-to-loopback fetch on modern Chromium.
                 $response.Headers["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
                 $response.Headers["Access-Control-Allow-Headers"] = "*"
                 $response.StatusCode = 204
             }
             elseif (($request.HttpMethod -in "GET", "HEAD") -and $requestPath -eq "/$fname") {
-                $bytes = [System.IO.File]::ReadAllBytes($full)
-
                 # A Chrome-trace export is JSON; a native Perfetto capture (.pftrace,
                 # .perfetto-trace, .pb) is a binary proto. Label the payload accordingly
                 # so the Content-Type matches what is actually served.
                 $isJson = [System.IO.Path]::GetExtension($fname).ToLowerInvariant() -eq ".json"
                 $response.ContentType = if ($isJson) { "application/json" } else { "application/octet-stream" }
-                $response.ContentLength64 = $bytes.Length
+                # Stream the file to the response instead of buffering the whole trace in
+                # memory - a Perfetto capture is often tens or hundreds of MB.
+                $fileLength = [System.IO.FileInfo]::new($full).Length
+                $response.ContentLength64 = $fileLength
                 if ($request.HttpMethod -eq "GET") {
-                    $response.OutputStream.Write($bytes, 0, $bytes.Length)
+                    $fs = [System.IO.File]::OpenRead($full)
+                    try { $fs.CopyTo($response.OutputStream) } finally { $fs.Dispose() }
                 }
 
                 $served++
-                Write-Host ("Served {0} ({1:N0} bytes)" -f $fname, $bytes.Length) -ForegroundColor Green
+                Write-Host ("Served {0} ({1:N0} bytes)" -f $fname, $fileLength) -ForegroundColor Green
             }
             else {
                 $response.StatusCode = 404

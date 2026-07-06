@@ -15,7 +15,7 @@ touki-specific lives here.
 filtrace ships as published NuGet packages; touki uses both heads:
 
 - **MCP server** - registered in [.vscode/mcp.json](../../../.vscode/mcp.json) as
-  `dnx KlutzyNinja.Filtrace.Mcp`, exposing the thirteen `trace_*` tools an agent
+  `dnx KlutzyNinja.Filtrace.Mcp`, exposing the fifteen `trace_*` tools an agent
   calls directly. No clone or build required.
 - **CLI** - `dotnet tool install -g KlutzyNinja.Filtrace`, then `filtrace <verb>`.
 
@@ -24,13 +24,21 @@ and `docs/traps.md` as absolute `https://github.com/JeremyKuhne/filtrace` URLs:
 the load-bearing verb and trap catalogs are embedded in the skill body, so those
 links are supplementary and resolve from anywhere.
 
-The skill body also links two bundled scripts by *relative* path
-(`scripts/Capture-BenchmarkTrace.ps1`, `scripts/Capture-ProjectTrace.ps1`), so
-[scripts/](scripts/) is vendored here verbatim alongside `SKILL.md` - these are
-filtrace's own generic capture-then-analyze wrappers (any BenchmarkDotNet project
-or executable project), distinct from touki's own
-[tools/Capture-EtwTrace.ps1](../../../tools/Capture-EtwTrace.ps1) (a touki-specific
-net481 ETW wrapper, kept separately below).
+The skill body also links four bundled scripts by *relative* path
+(`scripts/Capture-BenchmarkTrace.ps1`, `scripts/Capture-ProjectTrace.ps1`,
+`scripts/Open-SpeedscopeTrace.ps1`, `scripts/Open-PerfettoTrace.ps1`), so
+[scripts/](scripts/) is vendored here verbatim alongside `SKILL.md` (and
+`README.md`) - these are filtrace's own generic capture-then-analyze and
+viewer-opener wrappers (any BenchmarkDotNet project or executable project).
+[profiling.md](../performance-testing/profiling.md) and
+[graphical-viewers.md](../performance-testing/graphical-viewers.md) link to these
+vendored scripts directly rather than keeping a touki-local fork - touki
+previously carried its own `tools/Open-SpeedscopeTrace.ps1` /
+`tools/Open-PerfettoTrace.ps1`, removed once filtrace started shipping (and
+improving on) the same scripts here. `tools/Capture-EtwTrace.ps1` remains
+touki-specific (a net481 ETW wrapper around a touki.perf benchmark run, kept
+separately below) since filtrace's `Capture-ProjectTrace.ps1` has no
+BenchmarkDotNet-specific knowledge.
 
 ## Cross-references (touki side)
 
