@@ -257,8 +257,8 @@ line-precise, fold the sampling artifacts, and need no viewer literacy. When the
 *shape* of the call tree is the insight, or a human wants to explore the trace
 interactively (or see the EventPipe-vs-ETW attribution flip side by side),
 `trace_export` writes a flame graph for speedscope or Perfetto, and
-[tools/Open-SpeedscopeTrace.ps1](../../../tools/Open-SpeedscopeTrace.ps1) /
-[tools/Open-PerfettoTrace.ps1](../../../tools/Open-PerfettoTrace.ps1) open it in
+[Open-SpeedscopeTrace.ps1](../filtrace/scripts/Open-SpeedscopeTrace.ps1) /
+[Open-PerfettoTrace.ps1](../filtrace/scripts/Open-PerfettoTrace.ps1) open it in
 the browser hands-free with the right view already active. See
 [graphical-viewers.md](graphical-viewers.md) for when it is worth offering, which
 viewer to pick, and how to guide the user once it is open. Scope a machine-wide

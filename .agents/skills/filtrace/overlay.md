@@ -29,13 +29,16 @@ The skill body also links four bundled scripts by *relative* path
 `scripts/Open-SpeedscopeTrace.ps1`, `scripts/Open-PerfettoTrace.ps1`), so
 [scripts/](scripts/) is vendored here verbatim alongside `SKILL.md` (and
 `README.md`) - these are filtrace's own generic capture-then-analyze and
-viewer-opener wrappers (any BenchmarkDotNet project or executable project),
-distinct from touki's own
-[tools/Capture-EtwTrace.ps1](../../../tools/Capture-EtwTrace.ps1) (a touki-specific
-net481 ETW wrapper, kept separately below) and touki's own
-[tools/Open-SpeedscopeTrace.ps1](../../../tools/Open-SpeedscopeTrace.ps1) /
-[tools/Open-PerfettoTrace.ps1](../../../tools/Open-PerfettoTrace.ps1) (touki-specific
-viewer launchers wired into its BenchmarkDotNet artifact layout).
+viewer-opener wrappers (any BenchmarkDotNet project or executable project).
+[profiling.md](../performance-testing/profiling.md) and
+[graphical-viewers.md](../performance-testing/graphical-viewers.md) link to these
+vendored scripts directly rather than keeping a touki-local fork - touki
+previously carried its own `tools/Open-SpeedscopeTrace.ps1` /
+`tools/Open-PerfettoTrace.ps1`, removed once filtrace started shipping (and
+improving on) the same scripts here. `tools/Capture-EtwTrace.ps1` remains
+touki-specific (a net481 ETW wrapper around a touki.perf benchmark run, kept
+separately below) since filtrace's `Capture-ProjectTrace.ps1` has no
+BenchmarkDotNet-specific knowledge.
 
 ## Cross-references (touki side)
 
