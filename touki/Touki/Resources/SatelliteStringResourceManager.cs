@@ -203,15 +203,18 @@ public sealed class SatelliteStringResourceManager : ResourceManager
             return LoadStringTable(path);
         }
         catch (Exception ex) when (ex is IOException
+            or UnauthorizedAccessException
             or FormatException
             or BadImageFormatException
             or ArgumentException
             or NotSupportedException)
         {
-            // The side file is missing, unreadable, malformed, or not a default-format string
-            // .resources file. ResourceReader throws ArgumentException for a bad magic number and
-            // NotSupportedException for a non-default reader type (for example one written by
-            // PreserializedResourceWriter for resources that need reflection). Behave as if absent.
+            // The side file is missing, unreadable (locked or access-denied), malformed, or not a
+            // default-format string .resources file. ResourceReader throws ArgumentException for a bad
+            // magic number and NotSupportedException for a non-default reader type (for example one
+            // written by PreserializedResourceWriter for resources that need reflection).
+            // UnauthorizedAccessException covers a probe directory or file the process cannot read.
+            // In every case, behave as if absent.
             return null;
         }
     }
