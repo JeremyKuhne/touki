@@ -36,19 +36,21 @@ namespace Touki.Resources;
 ///  <para>
 ///   The merged table for the last requested culture is cached (as a frozen dictionary on .NET) and
 ///   rebuilt when the requested culture changes, which fits the overwhelmingly common
-///   single-UI-culture usage. The cache is updated without locking: under concurrent use with a
-///   changing culture a lookup may briefly observe a table built for a different culture (a stale
-///   result), but never an inconsistent one or a failure.
+///   single-UI-culture usage. The cache is a single immutable snapshot published through a
+///   <see langword="volatile"/> field, so it is updated without locking: under concurrent use with a
+///   changing culture a lookup may briefly observe the snapshot for a previously requested culture (a
+///   stale result), but never a torn or inconsistent one, and never a failure.
 ///  </para>
 ///  <para>
-///   Only string resources are supported. A <c>.resources</c> file that
-///   <see cref="ResourceReader"/> can open is always in the default binary format, whose non-string
-///   entries are intrinsic types (<see langword="int"/>, <c>byte[]</c>, and so on) that read without
-///   reflection and are ignored here. Files that would require reflection or serialization to read
-///   (a non-default reader type, such as one written by
+///   Only string resources are supported. Each entry's stored type is inspected with
+///   <c>ResourceReader.GetResourceData</c>, which reads the raw type tag and bytes without
+///   deserializing the value; only entries tagged as intrinsic strings are decoded, and every other
+///   entry (a primitive, an array, or a serialized object) is skipped without deserialization. Files
+///   that would require a non-default reader (for example one written by
 ///   <c>System.Resources.Extensions.PreserializedResourceWriter</c>) are rejected by the
-///   <see cref="ResourceReader"/> constructor and treated as absent, so no reflection or
-///   serialization is ever triggered - keeping the manager trim- and AOT-safe.
+///   <see cref="ResourceReader"/> constructor and treated as absent. No value is ever deserialized, so
+///   no reflection or legacy serialization is triggered - keeping the manager trim- and AOT-safe and
+///   never exposing untrusted <c>.resources</c> content to a deserializer.
 ///  </para>
 /// </remarks>
 public sealed class SatelliteStringResourceManager : ResourceManager
@@ -57,12 +59,11 @@ public sealed class SatelliteStringResourceManager : ResourceManager
     private readonly string _probeRoot;
     private readonly string? _neutralCultureName;
 
-    // Single-culture cache: the last requested culture, whether it is the neutral culture, and its
-    // merged string table (null when the culture is neutral - its resources are embedded, so no side
-    // files are consulted). Reset whenever the culture changes. Updated without locking; see GetString.
-    private string? _cachedCultureName;
-    private bool _cachedCultureIsNeutral;
-    private IReadOnlyDictionary<string, string>? _cachedStrings;
+    // Single-culture cache published as one immutable snapshot (see CultureCache). It holds the last
+    // requested culture, whether that culture is the neutral one, and its merged string table, and is
+    // replaced wholesale whenever the culture changes. The field is volatile so a concurrent reader
+    // always observes a fully-initialized snapshot - never a torn mix of fields. See GetString.
+    private volatile CultureCache? _cache;
 
 #if NET
     private static readonly IReadOnlyDictionary<string, string> s_emptyStrings = FrozenDictionary<string, string>.Empty;
@@ -123,23 +124,26 @@ public sealed class SatelliteStringResourceManager : ResourceManager
         ArgumentNullException.ThrowIfNull(name);
         culture ??= CultureInfo.CurrentUICulture;
 
-        // Rebuild only when the culture changes; the neutral check and the merged table are then
-        // computed once and reused for every subsequent lookup in the same culture. No lock is taken -
-        // a concurrent culture change can at worst make a lookup observe a stale table, never crash
-        // (the table reference is snapshotted below) - and the single-culture path is always exact.
-        if (!string.Equals(_cachedCultureName, culture.Name, StringComparison.Ordinal))
+        // Read the published snapshot once. The volatile field gives this read acquire semantics, so a
+        // non-null reference is always a fully-initialized CultureCache and every field read below
+        // comes from that one snapshot - never a torn mix.
+        CultureCache? cache = _cache;
+        if (cache is null || !string.Equals(cache.CultureName, culture.Name, StringComparison.Ordinal))
         {
-            // The neutral culture is matched ordinally; string.Equals is null-safe, so a missing
-            // NeutralResourcesLanguage attribute (null _neutralCultureName) simply never matches.
+            // Rebuild for the new culture and publish the snapshot atomically (the volatile write has
+            // release semantics). No lock is taken - under a concurrent culture change a lookup may
+            // observe a stale (previous-culture) snapshot, but never a torn or inconsistent one, and
+            // never fails. The neutral culture is matched ordinally; string.Equals is null-safe, so a
+            // missing NeutralResourcesLanguage attribute (null _neutralCultureName) simply never
+            // matches and side files are always consulted.
             bool isNeutral = string.Equals(culture.Name, _neutralCultureName, StringComparison.Ordinal);
-            _cachedCultureIsNeutral = isNeutral;
-            _cachedStrings = isNeutral ? null : BuildStrings(culture);
-            _cachedCultureName = culture.Name;
+            cache = new CultureCache(culture.Name, isNeutral, isNeutral ? null : BuildStrings(culture));
+            _cache = cache;
         }
 
-        // Snapshot the table reference so a concurrent rebuild cannot turn it null between the check
-        // and the lookup.
-        if (!_cachedCultureIsNeutral && _cachedStrings is { } strings && strings.TryGetValue(name, out string? value))
+        // A neutral culture has its resources embedded (Strings is null); every other culture consults
+        // its merged side-file table first.
+        if (!cache.IsNeutral && cache.Strings is { } strings && strings.TryGetValue(name, out string? value))
         {
             return value;
         }
@@ -223,19 +227,62 @@ public sealed class SatelliteStringResourceManager : ResourceManager
     {
         Dictionary<string, string> table = new(StringComparer.Ordinal);
         using ResourceReader reader = new(path);
+
+        // Collect the names first. enumerator.Key returns the name without touching the value; reading
+        // enumerator.Value, by contrast, would deserialize every entry - invoking reflection or legacy
+        // serialization for non-string entries - which would break the trim/AOT guarantee and turn
+        // untrusted .resources content into a deserialization surface.
+        List<string> names = [];
         IDictionaryEnumerator enumerator = reader.GetEnumerator();
         while (enumerator.MoveNext())
         {
-            // Only string values are kept. A file ResourceReader can open is in the default binary
-            // format, whose non-string entries are intrinsic types that read without reflection, so
-            // reading the value and rejecting non-strings is safe. Files that would need reflection
-            // to read are rejected by the ResourceReader constructor (handled in LoadTable).
-            if (enumerator.Key is string key && enumerator.Value is string value)
+            if (enumerator.Key is string key)
             {
-                table[key] = value;
+                names.Add(key);
             }
         }
 
+        foreach (string name in names)
+        {
+            // GetResourceData reads the stored type tag and the raw value bytes without deserializing.
+            reader.GetResourceData(name, out string resourceType, out byte[] resourceData);
+
+            // Keep only intrinsic strings; every other entry (a primitive, an array, or a serialized
+            // object) is skipped, so no value is ever deserialized.
+            if (!string.Equals(resourceType, "ResourceTypeCode.String", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            // A ResourceTypeCode.String payload is a length-prefixed UTF-8 string - exactly the format
+            // BinaryReader.ReadString expects - so it decodes with no serializer or reflection.
+            using MemoryStream stream = new(resourceData);
+            using BinaryReader valueReader = new(stream, System.Text.Encoding.UTF8);
+            table[name] = valueReader.ReadString();
+        }
+
         return table;
+    }
+
+    /// <summary>
+    ///  An immutable snapshot of the resolution state for a single culture. It is published atomically
+    ///  through the <see langword="volatile"/> <c>_cache</c> field, so a reader that reads the
+    ///  reference sees a fully-initialized instance - the culture name, the neutral flag, and the table
+    ///  are always mutually consistent (never torn), even on weak memory models.
+    /// </summary>
+    private sealed class CultureCache
+    {
+        internal CultureCache(string cultureName, bool isNeutral, IReadOnlyDictionary<string, string>? strings)
+        {
+            CultureName = cultureName;
+            IsNeutral = isNeutral;
+            Strings = strings;
+        }
+
+        internal string CultureName { get; }
+
+        internal bool IsNeutral { get; }
+
+        internal IReadOnlyDictionary<string, string>? Strings { get; }
     }
 }
