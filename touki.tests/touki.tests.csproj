@@ -20,6 +20,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace />
 
+    <!-- Emits [NeutralResourcesLanguage("en-US")] so SatelliteStringResourceManager can recognize the
+         embedded neutral culture and skip side-file probing for it (exercised by its tests). -->
+    <NeutralLanguage>en-US</NeutralLanguage>
+
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
@@ -53,6 +57,9 @@
     <PackageReference Include="Microsoft.Build" />
     <!-- Oracle reference for the FileSystemGlobbing dialect. Cross-platform, pure managed. -->
     <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" />
+    <!-- Lets SatelliteStringResourceManager tests author a non-default-format (.resources) file via
+         PreserializedResourceWriter to validate how the manager handles reflection-requiring resources. -->
+    <PackageReference Include="System.Resources.Extensions" />
     <!-- Oracle reference for the Git dialect's gitignore evaluation. Ships native bits
          for Windows / Linux / macOS so the test class runs on every CI platform without
          a `git` executable on PATH. -->

@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Native AOT is only supported on .NET Core, so this project single-targets the current LTS.
+      It exercises Touki.Resources.SatelliteStringResourceManager under the AOT toolchain:
+
+        - `dotnet test` runs the tests in managed mode (the SatelliteStringResourceManager logic).
+        - `dotnet publish -r <rid>` drives the ILC AOT compiler over touki + these tests, which - with
+          the repo-wide TreatWarningsAsErrors - fails the build on any IL2xxx/IL3xxx AOT incompatibility
+          in SatelliteStringResourceManager. This is the AOT-compatibility gate.
+
+      Executing the compiled MSTest runner as a native binary additionally requires the experimental,
+      closed-source MSTest.Engine + MSTest.SourceGeneration packages (the reflection-based
+      MSTest.TestAdapter cannot bootstrap under AOT). That dependency is deliberately left out; see the
+      "Testing" section of docs/aot-localized-resources-plan.md.
+    -->
+    <TargetFramework>$(DotNetCoreVersion)</TargetFramework>
+    <OutputType>Exe</OutputType>
+
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Touki</RootNamespace>
+    <AssemblyName>touki.aot.tests</AssemblyName>
+
+    <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+
+    <!--
+      Turn on the trim/AOT analyzers at build time and compile to native on publish. Combined with the
+      repo-wide TreatWarningsAsErrors this fails the build if any referenced code (including
+      SatelliteStringResourceManager) is not AOT-safe.
+    -->
+    <PublishAot>true</PublishAot>
+
+    <!-- Microsoft Testing Platform + MSTest runner (managed run via `dotnet test`). -->
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <EnableMSTestRunner>true</EnableMSTestRunner>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Assertions use MSTest's own Assert (AOT-safe); no reflection-heavy assertion library is
+         referenced so the code exercised under AOT stays trim-clean. -->
+    <PackageReference Include="MSTest.TestFramework" PrivateAssets="all" />
+    <PackageReference Include="MSTest.TestAdapter" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\touki\touki.csproj" />
+  </ItemGroup>
+
+</Project>

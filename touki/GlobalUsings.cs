@@ -23,6 +23,7 @@ global using System.IO;
 global using System.IO.Enumeration;
 #endif
 
+global using IOException = System.IO.IOException;
 global using Stream = System.IO.Stream;
 global using StreamWriter = System.IO.StreamWriter;
 global using StringWriter = System.IO.StringWriter;
