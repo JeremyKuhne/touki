@@ -56,10 +56,25 @@ public static partial class SpanExtensions
                 return result;
             }
 
-            // If we've fully matched the shared length, follow the logic string would do. If there is no shared length
-            // or the shared length is odd, we return the next character in the longer span, inverted if it is from
-            // the second span (effectively comparing to "null").
-            return sharedLength != 0 && sharedLength % 2 == 0
+            // The shared prefix matched but the lengths differ. Ordinal string comparison reports one of two
+            // magnitudes for this case, and the boundary changed in .NET 11:
+            //
+            //  - .NET Framework and .NET 10 (and earlier) switch on the parity of the shared length: an even,
+            //    non-zero shared length yields the length difference, otherwise the next character wins.
+            //  - .NET 11 reports the length difference once at least one 32-bit chunk (two chars) of the shared
+            //    prefix has been compared; for a shorter shared prefix (zero or one char) the next character wins.
+            //
+            // Only the sign is contractually meaningful, but callers pin the exact value against string.Compare,
+            // so mirror the behavior of the running runtime.
+#if NET11_0_OR_GREATER
+            bool returnLengthDifference = sharedLength >= 2;
+#else
+            bool returnLengthDifference = sharedLength != 0 && sharedLength % 2 == 0;
+#endif
+
+            // When returning the next character, invert it if it comes from the second span (effectively
+            // comparing the shorter span to a trailing "null").
+            return returnLengthDifference
                 ? span1.Length - span2.Length
                 : span1.Length > span2.Length ? span1[sharedLength] : -span2[sharedLength];
         }

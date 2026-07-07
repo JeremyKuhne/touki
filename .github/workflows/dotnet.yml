@@ -190,8 +190,12 @@ jobs:
         fi
 
   macos-build:
-    name: ".NET / build (macOS / Release)"
+    name: ".NET / build (macOS / Release / ${{ matrix.tfm }})"
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tfm: [net10.0, net11.0]
 
     # The repo pins Platform=x64 in Directory.Build.props for the Windows-focused
     # main dev/test build, which embeds AMD64 in the managed assembly's COFF
@@ -223,13 +227,13 @@ jobs:
     - name: Restore
       run: dotnet restore touki.tests/touki.tests.csproj $_PlatformArgs
     - name: Build release
-      run: dotnet build touki.tests/touki.tests.csproj -c Release -f net10.0 --no-restore $_PlatformArgs
+      run: dotnet build touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-restore $_PlatformArgs
     - name: Test release
       run: |
-        resultsDir="$PWD/artifacts/test-results/macos-release"
+        resultsDir="$PWD/artifacts/test-results/macos-release-${{ matrix.tfm }}"
         mkdir -p "$resultsDir"
 
-        dotnet test touki.tests/touki.tests.csproj -c Release -f net10.0 --no-build \
+        dotnet test touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-build \
           $_PlatformArgs \
           -p:TestingPlatformCaptureOutput=false \
           --results-directory "$resultsDir" \
@@ -239,15 +243,19 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: mtp-logs-macos
+        name: mtp-logs-macos-${{ matrix.tfm }}
         path: |
           artifacts/test-results/**/*.trx
         if-no-files-found: warn
         retention-days: 14
 
   linux-build:
-    name: ".NET / build (Linux / Release)"
+    name: ".NET / build (Linux / Release / ${{ matrix.tfm }})"
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tfm: [net10.0, net11.0]
     env:
       NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
@@ -270,13 +278,13 @@ jobs:
     - name: Restore
       run: dotnet restore touki.tests/touki.tests.csproj
     - name: Build release
-      run: dotnet build touki.tests/touki.tests.csproj -c Release -f net10.0 --no-restore
+      run: dotnet build touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-restore
     - name: Test release
       run: |
-        resultsDir="$PWD/artifacts/test-results/linux-release"
+        resultsDir="$PWD/artifacts/test-results/linux-release-${{ matrix.tfm }}"
         mkdir -p "$resultsDir"
 
-        xvfb-run --auto-servernum dotnet test touki.tests/touki.tests.csproj -c Release -f net10.0 --no-build \
+        xvfb-run --auto-servernum dotnet test touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-build \
           -p:TestingPlatformCaptureOutput=false \
           --results-directory "$resultsDir" \
           --report-trx \
@@ -285,15 +293,19 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: mtp-logs-linux
+        name: mtp-logs-linux-${{ matrix.tfm }}
         path: |
           artifacts/test-results/**/*.trx
         if-no-files-found: warn
         retention-days: 14
 
   windows-arm64-build:
-    name: ".NET / build (Windows ARM64 / Release)"
+    name: ".NET / build (Windows ARM64 / Release / ${{ matrix.tfm }})"
     runs-on: windows-11-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        tfm: [net10.0, net11.0]
     env:
       NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
@@ -319,14 +331,14 @@ jobs:
     - name: Build release
       run: |
         $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
-        dotnet build touki.tests/touki.tests.csproj -c Release -f net10.0 --no-restore @platformArgs
+        dotnet build touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-restore @platformArgs
     - name: Test release
       run: |
         $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
-        $resultsDir = Join-Path $PWD.Path "artifacts/test-results/windows-arm64-release"
+        $resultsDir = Join-Path $PWD.Path "artifacts/test-results/windows-arm64-release-${{ matrix.tfm }}"
         New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
 
-        dotnet test touki.tests/touki.tests.csproj -c Release -f net10.0 --no-build `
+        dotnet test touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-build `
           @platformArgs `
           -p:TestingPlatformCaptureOutput=false `
           --results-directory "$resultsDir" `
@@ -336,15 +348,19 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: mtp-logs-windows-arm64
+        name: mtp-logs-windows-arm64-${{ matrix.tfm }}
         path: |
           artifacts/test-results/**/*.trx
         if-no-files-found: warn
         retention-days: 14
 
   linux-arm64-build:
-    name: ".NET / build (Linux ARM64 / Release)"
+    name: ".NET / build (Linux ARM64 / Release / ${{ matrix.tfm }})"
     runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        tfm: [net10.0, net11.0]
     env:
       _PlatformArgs: "-p:Platform=AnyCPU -p:Platforms=AnyCPU"
       NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
@@ -368,13 +384,13 @@ jobs:
     - name: Restore
       run: dotnet restore touki.tests/touki.tests.csproj $_PlatformArgs
     - name: Build release
-      run: dotnet build touki.tests/touki.tests.csproj -c Release -f net10.0 --no-restore $_PlatformArgs
+      run: dotnet build touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-restore $_PlatformArgs
     - name: Test release
       run: |
-        resultsDir="$PWD/artifacts/test-results/linux-arm64-release"
+        resultsDir="$PWD/artifacts/test-results/linux-arm64-release-${{ matrix.tfm }}"
         mkdir -p "$resultsDir"
 
-        xvfb-run --auto-servernum dotnet test touki.tests/touki.tests.csproj -c Release -f net10.0 --no-build \
+        xvfb-run --auto-servernum dotnet test touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-build \
           $_PlatformArgs \
           -p:TestingPlatformCaptureOutput=false \
           --results-directory "$resultsDir" \
@@ -384,7 +400,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: mtp-logs-linux-arm64
+        name: mtp-logs-linux-arm64-${{ matrix.tfm }}
         path: |
           artifacts/test-results/**/*.trx
         if-no-files-found: warn
