@@ -37,6 +37,9 @@
   <Project Path="touki.analyzers/touki.analyzers.csproj">
     <Platform Project="AnyCPU" />
   </Project>
+  <Project Path="touki.aot.tests/touki.aot.tests.csproj">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="touki.fuzz/touki.fuzz.csproj">
     <Platform Project="x64" />
   </Project>

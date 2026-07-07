@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Native AOT is only supported on .NET Core, so this project single-targets the current LTS.
+      It exercises Touki.Resources.SatelliteStringResourceManager under the AOT toolchain:
+
+        - `dotnet test` runs the tests in managed mode (the SatelliteStringResourceManager logic).
+        - `dotnet publish -r <rid> -c Release` drives the ILC AOT compiler over touki + these tests,
+          which - with the repo-wide TreatWarningsAsErrors - fails the build on any IL2xxx/IL3xxx AOT
+          incompatibility in SatelliteStringResourceManager. This is the AOT-compatibility gate.
+          (Supplying a RID turns on PublishAot; see the IsAotCompatible comment below for why it is
+          gated rather than always on.)
+
+      Executing the compiled MSTest runner as a native binary additionally requires the experimental,
+      closed-source MSTest.Engine + MSTest.SourceGeneration packages (the reflection-based
+      MSTest.TestAdapter cannot bootstrap under AOT). That dependency is deliberately left out; see the
+      "Testing" section of docs/aot-localized-resources-plan.md.
+    -->
+    <TargetFramework>$(DotNetCoreVersion)</TargetFramework>
+    <OutputType>Exe</OutputType>
+
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Touki</RootNamespace>
+    <AssemblyName>touki.aot.tests</AssemblyName>
+
+    <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+
+    <!--
+      Build-time trim/AOT analyzers are always on: IsAotCompatible turns on EnableAotAnalyzer,
+      EnableTrimAnalyzer, and EnableSingleFileAnalyzer, so - with the repo-wide TreatWarningsAsErrors -
+      a compile-time AOT/trim analyzer violation in any referenced code (including
+      SatelliteStringResourceManager) fails the build.
+
+      The full ILC whole-program gate turns on only for a RID publish (the AOT compiler always needs a
+      RID): "dotnet publish touki.aot.tests -r <rid> -c Release". PublishAot is gated on
+      RuntimeIdentifier rather than set unconditionally on purpose - a permanent PublishAot forces every
+      build (including the coverage-instrumented solution "dotnet test") into an AOT shape, under which
+      the code-coverage extension drops its "coverage-settings" option and the solution test run fails
+      with "Unknown option". Gating it here also keeps PublishAot from being passed as a global "-p:"
+      property, which would leak to non-AOT project references (net472, netstandard2.0) as NETSDK1207.
+    -->
+    <IsAotCompatible>true</IsAotCompatible>
+    <PublishAot Condition="'$(RuntimeIdentifier)' != ''">true</PublishAot>
+
+    <!-- Microsoft Testing Platform + MSTest runner (managed run via `dotnet test`). -->
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <EnableMSTestRunner>true</EnableMSTestRunner>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Assertions use MSTest's own Assert (AOT-safe); no reflection-heavy assertion library is
+         referenced so the code exercised under AOT stays trim-clean. -->
+    <PackageReference Include="MSTest.TestFramework" PrivateAssets="all" />
+    <PackageReference Include="MSTest.TestAdapter" PrivateAssets="all" />
+    <!--
+      The solution-wide "dotnet test" in CI passes the TRX report option (and, on Release, the
+      coverage option) to every Microsoft.Testing.Platform host. Those options are provided by these
+      extensions; without them this project's host rejects the option ("Unknown option", exit code 5)
+      and fails the run. Match touki.tests / touki.analyzers.tests. PrivateAssets="all" keeps the test
+      infrastructure from flowing to anything that references this project. The AOT gate is a separate
+      publish step, which does not exercise these code paths. -->
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\touki\touki.csproj" />
+  </ItemGroup>
+
+</Project>
