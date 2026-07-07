@@ -17,6 +17,13 @@
     <DotNetCoreVersion>net10.0</DotNetCoreVersion>
 
     <!--
+      Additional current-preview target that carries the C# `union` language feature. .NET 11 ships
+      UnionAttribute in the BCL; net10.0 and net472 use the local polyfill. Union support is additive
+      (opt-in via pattern matching on `Value`), so it is carried on every target.
+    -->
+    <DotNetCoreNextVersion>net11.0</DotNetCoreNextVersion>
+
+    <!--
       4.7.2 addresses issues when consuming .NET Standard 2.0 libraries from .NET Framework.
 
       Windows 10 1803 and Server 2019 included 4.7.2 in the box. Most OSes have gone out of support that shipped with
@@ -32,7 +39,8 @@
     <!-- C# Features -->
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <LangVersion>14</LangVersion>
+    <!-- preview required for the C# `union` feature under evaluation on this branch. -->
+    <LangVersion>preview</LangVersion>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 

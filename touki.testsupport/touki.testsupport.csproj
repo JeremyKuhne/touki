@@ -6,7 +6,7 @@
       Multitarget .NET Core and .NET Framework
       https://learn.microsoft.com/dotnet/standard/frameworks
     -->
-    <TargetFrameworks>$(DotNetCoreVersion);$(DotNetFrameworkVersion)</TargetFrameworks>
+    <TargetFrameworks>$(DotNetCoreVersion);$(DotNetCoreNextVersion);$(DotNetFrameworkVersion)</TargetFrameworks>
     <OutputType>Library</OutputType>
 
     <!--

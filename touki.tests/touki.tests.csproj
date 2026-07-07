@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <!-- Targeting 4.8.1 for tests to get some extra GC functionality -->
-    <TargetFrameworks>$(DotNetCoreVersion);net481</TargetFrameworks>
+    <TargetFrameworks>$(DotNetCoreVersion);$(DotNetCoreNextVersion);net481</TargetFrameworks>
     <DependencyTargetFramework>$(TargetFramework)</DependencyTargetFramework>
     <OutputType>Exe</OutputType>
 
