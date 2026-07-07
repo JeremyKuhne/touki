@@ -147,9 +147,13 @@ public readonly partial struct Value : Value.IUnionMembers
         bool TryGetValue(out StringSegment value);
     }
 
-    object? IUnionMembers.Value => Type is null ? null : As<object>();
+    // A Value is empty precisely when _object is null (see the Type property). These members are on the
+    // union pattern-matching path and only need to know whether a value is present, so they test the field
+    // directly rather than resolving the full Type (which pattern-matches TypeFlag, calls GetType(), and
+    // disambiguates ArraySegment).
+    object? IUnionMembers.Value => _object is null ? null : As<object>();
 
-    bool IUnionMembers.HasValue => Type is not null;
+    bool IUnionMembers.HasValue => _object is not null;
 
     bool IUnionMembers.TryGetValue(out bool value) => TryGetValue(out value);
 
