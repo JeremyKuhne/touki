@@ -32,7 +32,7 @@ namespace Touki.Resources;
 ///   <see cref="TryGetResourceData(int, Span{byte}, out int)"/> yield exactly the value bytes.
 ///  </para>
 /// </remarks>
-public sealed class RawResourceReader : IDisposable
+public sealed class RawResourceReader : DisposableBase
 {
     // On-disk layout of a default-format (version 2) .resources file. All integers are little-endian
     // and "7-bit int" is a LEB128-style length prefix. The reader validates and indexes this in place
@@ -221,15 +221,32 @@ public sealed class RawResourceReader : IDisposable
     }
 
     /// <summary>
-    ///  Releases the memory mapping owned by this reader. A reader constructed directly over a
-    ///  <see cref="ReadOnlyMemory{T}"/> owns nothing, so disposing it is a no-op.
+    ///  Releases the memory mapping owned by this reader, if any. Disposal is thread-safe and
+    ///  idempotent; after it, member access throws <see cref="ObjectDisposedException"/>. A reader
+    ///  constructed directly over a <see cref="ReadOnlyMemory{T}"/> owns no mapping to release.
     /// </summary>
-    public void Dispose() => _owned?.Dispose();
+    /// <param name="disposing">
+    ///  <see langword="true"/> when called from <see cref="DisposableBase.Dispose()"/>.
+    /// </param>
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _owned?.Dispose();
+        }
+    }
 
     /// <summary>
     ///  The number of resources in the file.
     /// </summary>
-    public int ResourceCount => _numResources;
+    public int ResourceCount
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(Disposed, this);
+            return _numResources;
+        }
+    }
 
     /// <summary>
     ///  Finds a resource by name.
@@ -240,6 +257,8 @@ public sealed class RawResourceReader : IDisposable
     /// <exception cref="BadImageFormatException">The file is malformed.</exception>
     public bool TryFindResource(ReadOnlySpan<char> name, out ResourceLocation location)
     {
+        ObjectDisposedException.ThrowIf(Disposed, this);
+
         location = default;
         if (_numResources == 0)
         {
@@ -357,6 +376,7 @@ public sealed class RawResourceReader : IDisposable
     /// <exception cref="BadImageFormatException">The file is malformed.</exception>
     public ResourceLocation GetLocation(int index)
     {
+        ObjectDisposedException.ThrowIf(Disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _numResources);
         return BuildLocation(index, ReadDataPosition(index));
@@ -423,6 +443,7 @@ public sealed class RawResourceReader : IDisposable
     /// <exception cref="BadImageFormatException">The file is malformed.</exception>
     public bool TryGetResourceName(int index, Span<char> destination, out int charsWritten)
     {
+        ObjectDisposedException.ThrowIf(Disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _numResources);
 

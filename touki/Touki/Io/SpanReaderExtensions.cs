@@ -66,7 +66,7 @@ public static class SpanReaderExtensions
         ///  <para>
         ///   Matches <see cref="System.IO.BinaryWriter.Write7BitEncodedInt(int)"/>. Returns
         ///   <see langword="false"/> for a truncated or overlong (overflowing) encoding rather than
-        ///   throwing, so it is safe on untrusted input.
+        ///   throwing, leaving the reader's position unchanged, so it is safe on untrusted input.
         ///  </para>
         /// </remarks>
         /// <param name="value">On success, the value read.</param>
@@ -74,6 +74,7 @@ public static class SpanReaderExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryRead7BitEncodedInt32(out int value)
         {
+            int start = reader.Position;
             uint result = 0;
             const int MaxBytesWithoutOverflow = 4;
 
@@ -82,6 +83,7 @@ public static class SpanReaderExtensions
                 if (!reader.TryRead(out byte b))
                 {
                     value = 0;
+                    reader.Position = start;
                     return false;
                 }
 
@@ -97,6 +99,7 @@ public static class SpanReaderExtensions
             if (!reader.TryRead(out byte last) || last > 0b1111)
             {
                 value = 0;
+                reader.Position = start;
                 return false;
             }
 

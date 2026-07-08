@@ -314,6 +314,30 @@ public class RawResourceReaderTests
     }
 
     [TestMethod]
+    public void Members_AfterDispose_ThrowObjectDisposedException()
+    {
+        byte[] bytes = Write(static w => w.AddResource("Greeting", "Hello"));
+        using TempFolder folder = new();
+        string path = System.IO.Path.Combine(folder.TempPath, "afterdispose.resources");
+        System.IO.File.WriteAllBytes(path, bytes);
+
+        RawResourceReader reader = RawResourceReader.CreateFromFile(path);
+        reader.Dispose();
+
+        Action resourceCount = () => _ = reader.ResourceCount;
+        Action find = () => reader.TryFindResource("Greeting", out _);
+        Action getLocation = () => reader.GetLocation(0);
+        Action getData = () => reader.TryGetResourceData(0, new byte[16], out _);
+        Action getName = () => reader.TryGetResourceName(0, new char[16], out _);
+
+        resourceCount.Should().Throw<ObjectDisposedException>();
+        find.Should().Throw<ObjectDisposedException>();
+        getLocation.Should().Throw<ObjectDisposedException>();
+        getData.Should().Throw<ObjectDisposedException>();
+        getName.Should().Throw<ObjectDisposedException>();
+    }
+
+    [TestMethod]
     public void GetLocation_InvalidIndex_ThrowsArgumentOutOfRange()
     {
         RawResourceReader reader = new(Write(static w => w.AddResource("a", "b")));
@@ -500,15 +524,16 @@ public class RawResourceReaderTests
     }
 
     [TestMethod]
-    public void Dispose_MemoryBackedReader_IsIdempotentNoOp()
+    public void Dispose_MemoryBackedReader_IsIdempotent()
     {
         RawResourceReader reader = new(Write(static w => w.AddResource("s", "Hello")));
         reader.Dispose();
         reader.Dispose();
 
-        // The caller still owns the memory, so the reader remains usable after a no-op dispose.
-        reader.TryFindResource("s", out ResourceLocation location).Should().BeTrue();
-        location.TypeCode.Should().Be(ResourceTypeCode.String);
+        // Disposal is idempotent (the second call is safe), and the reader is marked disposed even
+        // though it owns no mapping, so subsequent member access throws.
+        Action act = () => reader.TryFindResource("s", out _);
+        act.Should().Throw<ObjectDisposedException>();
     }
 
     private static byte[] WritePreserialized(Action<PreserializedResourceWriter> add)

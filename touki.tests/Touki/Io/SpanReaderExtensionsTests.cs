@@ -264,6 +264,7 @@ public class SpanReaderExtensionsTests
 
         reader.TryRead7BitEncodedInt32(out int value).Should().BeFalse();
         value.Should().Be(0);
+        reader.Position.Should().Be(0);
     }
 
     [TestMethod]
@@ -274,5 +275,20 @@ public class SpanReaderExtensionsTests
 
         reader.TryRead7BitEncodedInt32(out int value).Should().BeFalse();
         value.Should().Be(0);
+        reader.Position.Should().Be(0);
+    }
+
+    [TestMethod]
+    public void TryRead7BitEncodedInt32_TruncatedMidStream_RestoresPosition()
+    {
+        // Consume one byte, then attempt a truncated 7-bit read; the failed read must leave the reader
+        // where it began (position 1), not partially advanced.
+        byte[] data = [0x2A, 0x80];
+        SpanReader<byte> reader = new(data);
+        reader.TryRead(out byte _).Should().BeTrue();
+
+        reader.TryRead7BitEncodedInt32(out int value).Should().BeFalse();
+        value.Should().Be(0);
+        reader.Position.Should().Be(1);
     }
 }
