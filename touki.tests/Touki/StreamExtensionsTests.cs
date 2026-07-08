@@ -192,4 +192,93 @@ public class StreamExtensionsTests
         string result = writer.ToString();
         result.Should().Be(Environment.NewLine);
     }
+
+    [TestMethod]
+    public void Write_ByteSpan_AppendsToEmptyStream()
+    {
+        using MemoryStream memory = new();
+        ReadOnlySpan<byte> data = [1, 2, 3, 4, 5];
+
+        memory.Write(data);
+
+        memory.Position.Should().Be(5);
+        memory.Length.Should().Be(5);
+        byte[] expected = [1, 2, 3, 4, 5];
+        memory.ToArray().Should().Equal(expected);
+    }
+
+    [TestMethod]
+    public void Write_ByteSpan_OverwritesWithinLength()
+    {
+        using MemoryStream memory = new();
+        memory.Write([1, 2, 3, 4, 5], 0, 5);
+        memory.Position = 1;
+
+        ReadOnlySpan<byte> data = [9, 9];
+        memory.Write(data);
+
+        memory.Position.Should().Be(3);
+        memory.Length.Should().Be(5);
+        byte[] expected = [1, 9, 9, 4, 5];
+        memory.ToArray().Should().Equal(expected);
+    }
+
+    [TestMethod]
+    public void Write_ByteSpan_OverwritesAndExtends()
+    {
+        using MemoryStream memory = new();
+        memory.Write([1, 2, 3], 0, 3);
+        memory.Position = 2;
+
+        ReadOnlySpan<byte> data = [7, 8, 9];
+        memory.Write(data);
+
+        memory.Position.Should().Be(5);
+        memory.Length.Should().Be(5);
+        byte[] expected = [1, 2, 7, 8, 9];
+        memory.ToArray().Should().Equal(expected);
+    }
+
+    [TestMethod]
+    public void Write_ByteSpan_GrowsBeyondCapacity()
+    {
+        using MemoryStream memory = new(2);
+        ReadOnlySpan<byte> data = [1, 2, 3, 4, 5, 6, 7, 8];
+
+        memory.Write(data);
+
+        memory.Length.Should().Be(8);
+        byte[] expected = [1, 2, 3, 4, 5, 6, 7, 8];
+        memory.ToArray().Should().Equal(expected);
+    }
+
+    [TestMethod]
+    public void Write_ByteSpan_Empty_DoesNothing()
+    {
+        using MemoryStream memory = new();
+        memory.Write([1, 2, 3], 0, 3);
+        memory.Position = 3;
+
+        ReadOnlySpan<byte> empty = [];
+        memory.Write(empty);
+
+        memory.Position.Should().Be(3);
+        memory.Length.Should().Be(3);
+    }
+
+    [TestMethod]
+    public void Write_ByteSpan_NonExpandableBackedStream_UsesFallback()
+    {
+        // A MemoryStream over a caller-owned array is not publicly visible, so TryGetBuffer fails and
+        // the rent/copy fallback path handles the write.
+        byte[] backing = new byte[5];
+        using MemoryStream memory = new(backing);
+        ReadOnlySpan<byte> data = [1, 2, 3, 4, 5];
+
+        memory.Write(data);
+
+        memory.Position.Should().Be(5);
+        byte[] expected = [1, 2, 3, 4, 5];
+        backing.Should().Equal(expected);
+    }
 }

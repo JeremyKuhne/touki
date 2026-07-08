@@ -10,7 +10,7 @@ namespace Touki.Io;
 /// <summary>
 ///  Extension methods for <see cref="Stream"/>.
 /// </summary>
-public static partial class TextWriterExtensions
+public static partial class StreamExtensions
 {
     /// <param name="stream">The target stream.</param>
     extension(Stream stream)

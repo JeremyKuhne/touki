@@ -430,6 +430,23 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     public void Advance(int count) => _unread = _unread[count..];
 
     /// <summary>
+    ///  Try to advance the reader by the given <paramref name="count"/>.
+    /// </summary>
+    /// <param name="count">The number of positions to advance.</param>
+    /// <returns><see langword="true"/> if the reader was successfully advanced; otherwise, <see langword="false"/>.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryAdvance(int count)
+    {
+        if (count < 0 || count > _unread.Length)
+        {
+            return false;
+        }
+
+        UnsafeAdvance(count);
+        return true;
+    }
+
+    /// <summary>
     ///  Rewind the reader by the given <paramref name="count"/>.
     /// </summary>
     /// <param name="count">The number of positions to rewind.</param>

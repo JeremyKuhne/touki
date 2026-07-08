@@ -520,6 +520,59 @@ public class SpanReaderTests
     }
 
     [TestMethod]
+    public void SpanReader_TryAdvance_Success()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];
+        SpanReader<byte> reader = new(span);
+
+        reader.TryAdvance(2).Should().BeTrue();
+        reader.Position.Should().Be(2);
+
+        reader.TryAdvance(3).Should().BeTrue();
+        reader.Position.Should().Be(5);
+    }
+
+    [TestMethod]
+    public void SpanReader_TryAdvance_ExactRemaining()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3];
+        SpanReader<byte> reader = new(span);
+
+        reader.TryAdvance(3).Should().BeTrue();
+        reader.Position.Should().Be(3);
+    }
+
+    [TestMethod]
+    public void SpanReader_TryAdvance_Zero()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3];
+        SpanReader<byte> reader = new(span);
+
+        reader.TryAdvance(0).Should().BeTrue();
+        reader.Position.Should().Be(0);
+    }
+
+    [TestMethod]
+    public void SpanReader_TryAdvance_CountTooLarge()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3];
+        SpanReader<byte> reader = new(span);
+
+        reader.TryAdvance(4).Should().BeFalse();
+        reader.Position.Should().Be(0);
+    }
+
+    [TestMethod]
+    public void SpanReader_TryAdvance_NegativeCount()
+    {
+        ReadOnlySpan<byte> span = [1, 2, 3];
+        SpanReader<byte> reader = new(span);
+
+        reader.TryAdvance(-1).Should().BeFalse();
+        reader.Position.Should().Be(0);
+    }
+
+    [TestMethod]
     public void SpanReader_Length_Property()
     {
         ReadOnlySpan<byte> span = [1, 2, 3, 4, 5];

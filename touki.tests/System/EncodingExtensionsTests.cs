@@ -84,4 +84,32 @@ public class EncodingExtensionsTests
         Span<char> dst = stackalloc char[4];
         Encoding.UTF8.GetChars([], dst).Should().Be(0);
     }
+
+    [TestMethod]
+    public void TryGetChars_FitsDestination_WritesAndReturnsTrue()
+    {
+        string original = "abc\u4e2d";
+        byte[] bytes = Encoding.UTF8.GetBytes(original);
+        Span<char> dst = stackalloc char[original.Length];
+        Encoding.UTF8.TryGetChars(bytes, dst, out int written).Should().BeTrue();
+        written.Should().Be(original.Length);
+        dst.ToString().Should().Be(original);
+    }
+
+    [TestMethod]
+    public void TryGetChars_DestinationTooSmall_ReturnsFalse()
+    {
+        byte[] bytes = Encoding.UTF8.GetBytes("abcd");
+        Span<char> dst = stackalloc char[2];
+        Encoding.UTF8.TryGetChars(bytes, dst, out int written).Should().BeFalse();
+        written.Should().Be(0);
+    }
+
+    [TestMethod]
+    public void TryGetChars_EmptySource_ReturnsTrueZero()
+    {
+        Span<char> dst = stackalloc char[4];
+        Encoding.UTF8.TryGetChars([], dst, out int written).Should().BeTrue();
+        written.Should().Be(0);
+    }
 }

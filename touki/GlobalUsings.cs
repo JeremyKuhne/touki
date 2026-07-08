@@ -24,6 +24,11 @@ global using System.IO.Enumeration;
 #endif
 
 global using BinaryReader = System.IO.BinaryReader;
+global using FileAccess = System.IO.FileAccess;
+global using FileMode = System.IO.FileMode;
+global using FileShare = System.IO.FileShare;
+global using FileStream = System.IO.FileStream;
+global using HandleInheritability = System.IO.HandleInheritability;
 global using IOException = System.IO.IOException;
 global using MemoryStream = System.IO.MemoryStream;
 global using Stream = System.IO.Stream;
