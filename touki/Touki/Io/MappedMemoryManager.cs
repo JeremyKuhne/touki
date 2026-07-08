@@ -81,10 +81,20 @@ public sealed unsafe class MappedMemoryManager : MemoryManager<byte>
     }
 
     /// <inheritdoc/>
-    public override Span<byte> GetSpan() => new(_pointer, _length);
+    public override Span<byte> GetSpan()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return new(_pointer, _length);
+    }
 
     /// <inheritdoc/>
-    public override MemoryHandle Pin(int elementIndex = 0) => new(_pointer + elementIndex);
+    public override MemoryHandle Pin(int elementIndex = 0)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(elementIndex);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(elementIndex, _length);
+        return new(_pointer + elementIndex);
+    }
 
     /// <inheritdoc/>
     public override void Unpin()

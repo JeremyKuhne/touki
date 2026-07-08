@@ -511,6 +511,7 @@ public sealed class RawResourceReader : IDisposable
         SpanReader<byte> reader = new(_resources.Span) { Position = _nameSectionOffset + GetNamePosition(index) };
         if (!reader.TryRead7BitEncodedInt32(out int nameByteLength)
             || nameByteLength < 0
+            || (nameByteLength & 1) != 0
             || !reader.TryAdvance(nameByteLength))
         {
             ThrowBadImageFormatException("A resource name is corrupted.");

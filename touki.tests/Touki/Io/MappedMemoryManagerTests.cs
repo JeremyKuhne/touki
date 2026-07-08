@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.Buffers;
+
 namespace Touki.Io;
 
 [TestClass]
@@ -51,5 +53,78 @@ public class MappedMemoryManagerTests
         MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
         ((IDisposable)manager).Dispose();
         ((IDisposable)manager).Dispose();
+    }
+
+    [TestMethod]
+    public void GetSpan_AfterDispose_ThrowsObjectDisposedException()
+    {
+        using TempFolder folder = new();
+        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        System.IO.File.WriteAllBytes(path, [1, 2, 3]);
+
+        MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
+        ((IDisposable)manager).Dispose();
+
+        Action act = () => { _ = manager.GetSpan().Length; };
+        act.Should().Throw<ObjectDisposedException>();
+    }
+
+    [TestMethod]
+    public void Pin_AfterDispose_ThrowsObjectDisposedException()
+    {
+        using TempFolder folder = new();
+        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        System.IO.File.WriteAllBytes(path, [1, 2, 3]);
+
+        MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
+        ((IDisposable)manager).Dispose();
+
+        Action act = () => manager.Pin();
+        act.Should().Throw<ObjectDisposedException>();
+    }
+
+    [TestMethod]
+    public void Pin_NegativeIndex_ThrowsArgumentOutOfRangeException()
+    {
+        using TempFolder folder = new();
+        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        System.IO.File.WriteAllBytes(path, [1, 2, 3]);
+
+        using MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
+
+        Action act = () => manager.Pin(-1);
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [TestMethod]
+    public void Pin_IndexBeyondLength_ThrowsArgumentOutOfRangeException()
+    {
+        using TempFolder folder = new();
+        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        System.IO.File.WriteAllBytes(path, [1, 2, 3]);
+
+        using MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
+
+        Action act = () => manager.Pin(4);
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [TestMethod]
+    public unsafe void Pin_ValidIndex_PinsAtOffset()
+    {
+        byte[] bytes = [10, 20, 30];
+        using TempFolder folder = new();
+        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        System.IO.File.WriteAllBytes(path, bytes);
+
+        using MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
+
+        using (MemoryHandle handle = manager.Pin(1))
+        {
+            ((byte*)handle.Pointer)[0].Should().Be((byte)20);
+        }
+
+        // Pinning at the end (elementIndex == length) is allowed and yields an end pointer.
+        using MemoryHandle endHandle = manager.Pin(bytes.Length);
     }
 }
