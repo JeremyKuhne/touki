@@ -18,6 +18,13 @@ namespace Touki.Io;
 ///   are released as soon as the view exists; only the view is held for the life of this manager.
 ///  </para>
 ///  <para>
+///   The backing view is mapped read-only. <see cref="MemoryManager{T}"/> requires the buffer to be
+///   exposed as a writable <see cref="Span{T}"/> / <see cref="System.Memory{T}"/>, but the contents
+///   must be treated as read-only: writing through the returned span or memory faults with an
+///   <see cref="AccessViolationException"/> because the underlying pages are read-only. Prefer
+///   consuming it as <see cref="ReadOnlyMemory{T}"/> / <see cref="ReadOnlySpan{T}"/>.
+///  </para>
+///  <para>
 ///   Dispose the manager - directly, or through the owner returned by
 ///   <see cref="MemoryManager{T}.Memory"/> - to unmap the view. Do not use the memory after disposing.
 ///  </para>

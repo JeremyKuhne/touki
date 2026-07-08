@@ -434,16 +434,19 @@ public sealed class RawResourceReader : IDisposable
             ThrowBadImageFormatException("A resource name is corrupted.");
         }
 
+        // Read the name bytes before checking the destination size so a length that runs past the end
+        // of the file is rejected as corruption here, rather than returning false and driving the caller
+        // to grow its buffer toward the claimed (potentially unbounded) length.
+        if (!reader.TryRead(nameByteLength, out ReadOnlySpan<byte> nameBytes))
+        {
+            ThrowBadImageFormatException("A resource name is corrupted.");
+        }
+
         int charCount = nameByteLength / 2;
         if (destination.Length < charCount)
         {
             charsWritten = 0;
             return false;
-        }
-
-        if (!reader.TryRead(nameByteLength, out ReadOnlySpan<byte> nameBytes))
-        {
-            ThrowBadImageFormatException("A resource name is corrupted.");
         }
 
         // Names are stored UTF-16LE and the reader requires a little-endian architecture, so the bytes

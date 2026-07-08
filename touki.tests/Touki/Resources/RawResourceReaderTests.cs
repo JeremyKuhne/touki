@@ -295,6 +295,25 @@ public class RawResourceReaderTests
     }
 
     [TestMethod]
+    public void TryGetResourceName_NameLengthExceedsFile_ThrowsBadImageFormatException()
+    {
+        byte[] bytes = Write(static w => w.AddResource("resourcename", "v"));
+
+        // Corrupt the 7-bit name-length prefix (the byte just before the UTF-16LE name) to claim more
+        // bytes than the file holds. The reader must reject this as corruption rather than returning
+        // false, which would drive a caller to grow its buffer toward the claimed (unbounded) length.
+        byte[] nameUtf16 = Encoding.Unicode.GetBytes("resourcename");
+        int nameStart = bytes.AsSpan().IndexOf(nameUtf16);
+        nameStart.Should().BeGreaterThan(0);
+        bytes[nameStart - 1] = 126;
+
+        using RawResourceReader reader = new(bytes);
+        char[] destination = new char[8];
+        Action act = () => reader.TryGetResourceName(0, destination, out _);
+        act.Should().Throw<BadImageFormatException>();
+    }
+
+    [TestMethod]
     public void GetLocation_InvalidIndex_ThrowsArgumentOutOfRange()
     {
         RawResourceReader reader = new(Write(static w => w.AddResource("a", "b")));
