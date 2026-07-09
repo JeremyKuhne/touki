@@ -79,6 +79,7 @@ public class RawResourceReaderPerf
     public unsafe void Cleanup()
     {
         _cachedOracle?.Dispose();
+        _cachedRaw?.Dispose();
 
         if (_nativePointer is not null)
         {

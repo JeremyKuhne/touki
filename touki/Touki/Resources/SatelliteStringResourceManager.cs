@@ -220,7 +220,7 @@ public sealed class SatelliteStringResourceManager : ResourceManager
     [SkipLocalsInit]
     private static Dictionary<string, string> LoadStringTable(string path)
     {
-        Dictionary<string, string> table = new(StringComparer.Ordinal);
+        Dictionary<string, string> table = [with(StringComparer.Ordinal)];
         using RawResourceReader reader = RawResourceReader.CreateFromFile(path);
 
         // Walk the entries by index. RawResourceReader parses the .resources structure in place and
@@ -244,16 +244,29 @@ public sealed class SatelliteStringResourceManager : ResourceManager
                 continue;
             }
 
-            // The name is UTF-16; grow the scratch buffer on the rare chance a name does not fit.
+            // The name is UTF-16; grow the scratch buffer on the rare chance a name does not fit. The
+            // reader rejects a name length that exceeds the file, so growth is bounded; guard the
+            // doubling against int overflow as defense in depth and treat it as corruption.
             int nameLength;
             while (!reader.TryGetResourceName(i, nameBuffer.AsSpan(), out nameLength))
             {
-                nameBuffer.EnsureCapacity(nameBuffer.Length * 2);
+                int newLength = nameBuffer.Length * 2;
+                if (newLength < 0)
+                {
+                    throw new BadImageFormatException("A resource name length is corrupted.");
+                }
+
+                nameBuffer.EnsureCapacity(newLength);
             }
 
             // The value is the string's UTF-8 content bytes with the length prefix already stripped.
+            // The entry was validated as an intrinsic string and the buffer sized to its length, so a
+            // failed read means the file is inconsistent; treat it as corruption.
             valueBuffer.EnsureCapacity(location.ByteLength);
-            reader.TryGetResourceData(i, valueBuffer.AsSpan(), out int valueLength);
+            if (!reader.TryGetResourceData(i, valueBuffer.AsSpan(), out int valueLength))
+            {
+                throw new BadImageFormatException("A resource value is corrupted.");
+            }
 
             table[nameBuffer[..nameLength].ToString()] = Encoding.UTF8.GetString(valueBuffer[..valueLength]);
         }
