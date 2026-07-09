@@ -190,7 +190,7 @@ public class SatelliteStringResourceManagerTests
     }
 
     [TestMethod]
-    public void GetString_ReflectionRequiringResource_TreatedAsAbsent()
+    public void GetString_ExtensionsFormatSideFile_ReadsStringsSkipsUserTypes()
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
@@ -198,10 +198,11 @@ public class SatelliteStringResourceManagerTests
 
         SatelliteStringResourceManager manager = new(baseName, s_assembly, folder.TempPath);
 
-        // The file was written by PreserializedResourceWriter (a non-default reader type). The core
-        // ResourceReader rejects it at construction, so the whole file is treated as absent - no
-        // reflection is ever triggered and every key falls back to the embedded neutral resources.
-        manager.GetString("Greeting", new CultureInfo("de")).Should().Be("Hello");
+        // The file was written by PreserializedResourceWriter (Extensions format). RawResourceReader
+        // parses it structurally: the intrinsic string entry is read...
+        manager.GetString("Greeting", new CultureInfo("de")).Should().Be("Hallo");
+        // ...while the serialized user-type entry is skipped by its type code alone - never
+        // deserialized - so it falls back to the embedded neutral resources (absent -> null).
         manager.GetString("Fancy", new CultureInfo("de")).Should().BeNull();
     }
 

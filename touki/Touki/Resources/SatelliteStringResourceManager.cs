@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using System.Collections;
+using System.Collections.Frozen;
 using System.Globalization;
 using System.Reflection;
 using System.Resources;
-#if NET
-using System.Collections.Frozen;
-#endif
+using System.Text;
 
 namespace Touki.Resources;
 
@@ -34,7 +32,7 @@ namespace Touki.Resources;
 ///   <see cref="ResourceManager"/>.
 ///  </para>
 ///  <para>
-///   The merged table for the last requested culture is cached (as a frozen dictionary on .NET) and
+///   The merged table for the last requested culture is cached (as a frozen dictionary) and
 ///   rebuilt when the requested culture changes, which fits the overwhelmingly common
 ///   single-UI-culture usage. The cache is a single immutable snapshot published through a
 ///   <see langword="volatile"/> field, so it is updated without locking: under concurrent use with a
@@ -42,15 +40,16 @@ namespace Touki.Resources;
 ///   stale result), but never a torn or inconsistent one, and never a failure.
 ///  </para>
 ///  <para>
-///   Only string resources are supported. Each entry's stored type is inspected with
-///   <c>ResourceReader.GetResourceData</c>, which reads the raw type tag and bytes without
-///   deserializing the value; only entries tagged as intrinsic strings are decoded, and every other
-///   entry (a primitive, an array, or a serialized object) is skipped without deserialization. Files
-///   that would require a non-default reader (for example one written by
-///   <c>System.Resources.Extensions.PreserializedResourceWriter</c>) are rejected by the
-///   <see cref="ResourceReader"/> constructor and treated as absent. No value is ever deserialized, so
-///   no reflection or legacy serialization is triggered - keeping the manager trim- and AOT-safe and
-///   never exposing untrusted <c>.resources</c> content to a deserializer.
+///   Only string resources are supported. Each side file is read with <see cref="RawResourceReader"/>,
+///   which parses the binary <c>.resources</c> structure directly and never materializes managed
+///   values. Only entries whose stored type is the intrinsic string type are decoded; every other
+///   entry - a primitive, an array, a <see cref="Stream"/>, or a serialized user type - is skipped by
+///   its type code alone, so no value is ever deserialized. This holds even for files written by
+///   <c>System.Resources.Extensions.PreserializedResourceWriter</c>: their plain-string entries are
+///   read and their serialized user-type entries are skipped, with no reflection or legacy
+///   serialization ever triggered - keeping the manager trim- and AOT-safe and never exposing
+///   untrusted <c>.resources</c> content to a deserializer. Only default-format version 2
+///   <c>.resources</c> files are read; any other file is treated as absent.
 ///  </para>
 /// </remarks>
 public sealed class SatelliteStringResourceManager : ResourceManager
@@ -65,12 +64,11 @@ public sealed class SatelliteStringResourceManager : ResourceManager
     // always observes a fully-initialized snapshot - never a torn mix of fields. See GetString.
     private volatile CultureCache? _cache;
 
-#if NET
-    private static readonly IReadOnlyDictionary<string, string> s_emptyStrings = FrozenDictionary<string, string>.Empty;
-#else
-    private static readonly IReadOnlyDictionary<string, string> s_emptyStrings =
-        new Dictionary<string, string>(0, StringComparer.Ordinal);
-#endif
+    // IDE0301 suggests a '[]' collection expression here, but FrozenDictionary is abstract and cannot
+    // be constructed that way (CS0144); the cached empty singleton is correct and allocation-free.
+#pragma warning disable IDE0301
+    private static readonly FrozenDictionary<string, string> s_emptyStrings = FrozenDictionary<string, string>.Empty;
+#pragma warning restore IDE0301
 
     /// <summary>
     ///  Initializes a new instance of the <see cref="SatelliteStringResourceManager"/> class that
@@ -153,7 +151,7 @@ public sealed class SatelliteStringResourceManager : ResourceManager
         return base.GetString(name, CultureInfo.InvariantCulture);
     }
 
-    private IReadOnlyDictionary<string, string> BuildStrings(CultureInfo culture)
+    private FrozenDictionary<string, string> BuildStrings(CultureInfo culture)
     {
         Dictionary<string, string>? merged = null;
 
@@ -186,12 +184,8 @@ public sealed class SatelliteStringResourceManager : ResourceManager
 
         return merged is null ? s_emptyStrings : Freeze(merged);
 
-#if NET
         static FrozenDictionary<string, string> Freeze(Dictionary<string, string> table) =>
             table.ToFrozenDictionary(StringComparer.Ordinal);
-#else
-        static Dictionary<string, string> Freeze(Dictionary<string, string> table) => table;
-#endif
     }
 
     private Dictionary<string, string>? LoadTable(string cultureName)
@@ -214,51 +208,67 @@ public sealed class SatelliteStringResourceManager : ResourceManager
             or NotSupportedException)
         {
             // The side file is missing, unreadable (locked or access-denied), malformed, or not a
-            // default-format string .resources file. ResourceReader throws ArgumentException for a bad
-            // magic number and NotSupportedException for a non-default reader type (for example one
-            // written by PreserializedResourceWriter for resources that need reflection).
-            // UnauthorizedAccessException covers a probe directory or file the process cannot read.
-            // In every case, behave as if absent.
+            // default-format version 2 .resources file. RawResourceReader throws ArgumentException for a
+            // bad magic number, NotSupportedException for an unsupported format version, and
+            // BadImageFormatException for a truncated or malformed file; IOException and
+            // UnauthorizedAccessException cover a probe directory or file the process cannot open. In
+            // every case, behave as if absent.
             return null;
         }
     }
 
+    [SkipLocalsInit]
     private static Dictionary<string, string> LoadStringTable(string path)
     {
-        Dictionary<string, string> table = new(StringComparer.Ordinal);
-        using ResourceReader reader = new(path);
+        Dictionary<string, string> table = [with(StringComparer.Ordinal)];
+        using RawResourceReader reader = RawResourceReader.CreateFromFile(path);
 
-        // Collect the names first. enumerator.Key returns the name without touching the value; reading
-        // enumerator.Value, by contrast, would deserialize every entry - invoking reflection or legacy
-        // serialization for non-string entries - which would break the trim/AOT guarantee and turn
-        // untrusted .resources content into a deserialization surface.
-        List<string> names = [];
-        IDictionaryEnumerator enumerator = reader.GetEnumerator();
-        while (enumerator.MoveNext())
+        // Walk the entries by index. RawResourceReader parses the .resources structure in place and
+        // never materializes a value, so inspecting each entry's type code and reading a string's raw
+        // content bytes triggers no reflection or legacy serialization.
+        int count = reader.ResourceCount;
+
+        // Decode names and values through scratch buffers that start on the stack and spill to the
+        // shared ArrayPool only when an unusually long entry overflows them.
+        using BufferScope<char> nameBuffer = new(stackalloc char[256]);
+        using BufferScope<byte> valueBuffer = new(stackalloc byte[512]);
+
+        for (int i = 0; i < count; i++)
         {
-            if (enumerator.Key is string key)
-            {
-                names.Add(key);
-            }
-        }
+            ResourceLocation location = reader.GetLocation(i);
 
-        foreach (string name in names)
-        {
-            // GetResourceData reads the stored type tag and the raw value bytes without deserializing.
-            reader.GetResourceData(name, out string resourceType, out byte[] resourceData);
-
-            // Keep only intrinsic strings; every other entry (a primitive, an array, or a serialized
-            // object) is skipped, so no value is ever deserialized.
-            if (!string.Equals(resourceType, "ResourceTypeCode.String", StringComparison.Ordinal))
+            // Keep only intrinsic strings; every other entry - a primitive, an array, a stream, or
+            // a serialized user type - is skipped by its type code alone, so no value is decoded.
+            if (location.TypeCode != ResourceTypeCode.String)
             {
                 continue;
             }
 
-            // A ResourceTypeCode.String payload is a length-prefixed UTF-8 string - exactly the format
-            // BinaryReader.ReadString expects - so it decodes with no serializer or reflection.
-            using MemoryStream stream = new(resourceData);
-            using BinaryReader valueReader = new(stream, System.Text.Encoding.UTF8);
-            table[name] = valueReader.ReadString();
+            // The name is UTF-16; grow the scratch buffer on the rare chance a name does not fit. The
+            // reader rejects a name length that exceeds the file, so growth is bounded; guard the
+            // doubling against int overflow as defense in depth and treat it as corruption.
+            int nameLength;
+            while (!reader.TryGetResourceName(i, nameBuffer.AsSpan(), out nameLength))
+            {
+                int newLength = nameBuffer.Length * 2;
+                if (newLength < 0)
+                {
+                    throw new BadImageFormatException("A resource name length is corrupted.");
+                }
+
+                nameBuffer.EnsureCapacity(newLength);
+            }
+
+            // The value is the string's UTF-8 content bytes with the length prefix already stripped.
+            // The entry was validated as an intrinsic string and the buffer sized to its length, so a
+            // failed read means the file is inconsistent; treat it as corruption.
+            valueBuffer.EnsureCapacity(location.ByteLength);
+            if (!reader.TryGetResourceData(i, valueBuffer.AsSpan(), out int valueLength))
+            {
+                throw new BadImageFormatException("A resource value is corrupted.");
+            }
+
+            table[nameBuffer[..nameLength].ToString()] = Encoding.UTF8.GetString(valueBuffer[..valueLength]);
         }
 
         return table;
@@ -272,7 +282,7 @@ public sealed class SatelliteStringResourceManager : ResourceManager
     /// </summary>
     private sealed class CultureCache
     {
-        internal CultureCache(string cultureName, bool isNeutral, IReadOnlyDictionary<string, string>? strings)
+        internal CultureCache(string cultureName, bool isNeutral, FrozenDictionary<string, string>? strings)
         {
             CultureName = cultureName;
             IsNeutral = isNeutral;
@@ -283,6 +293,6 @@ public sealed class SatelliteStringResourceManager : ResourceManager
 
         internal bool IsNeutral { get; }
 
-        internal IReadOnlyDictionary<string, string>? Strings { get; }
+        internal FrozenDictionary<string, string>? Strings { get; }
     }
 }
