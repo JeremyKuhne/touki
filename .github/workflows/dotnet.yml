@@ -115,8 +115,7 @@ jobs:
 
         $reports = @(
           Get-ChildItem -Path $resultsDir -Recurse -Filter '*.cobertura.xml' -ErrorAction SilentlyContinue |
-            Group-Object Name |
-            ForEach-Object { $_.Group[0].FullName }
+            ForEach-Object { $_.FullName }
         )
         if ($reports.Count -eq 0) {
           throw 'No Cobertura reports found; coverage collection failed.'
