@@ -1,6 +1,3 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
 name: .NET
 
 on:
@@ -9,203 +6,78 @@ on:
   push:
     branches: [ "main" ]
 
-# Cancel in-flight runs when a force-push to a PR supersedes them. Pushes
-# to `main` are NOT queued: `github.head_ref` is empty for non-PR events,
-# so the group expression falls through to `github.run_id`, which is
-# unique per run. That keeps back-to-back merges into `main` running in
-# parallel instead of serializing behind each other.
+# Cancel superseded PR runs. Pushes to main use the unique run id and continue independently.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # The Windows build runs Debug and Release on two parallel runners.
-  # Coverage, pack, and Codecov are Release-only and gated by `matrix.configuration`.
-  # The `build` aggregator below depends on this matrix plus the macOS, Linux,
-  # and ARM64 (Windows and Linux) jobs and keeps the `.NET / build`
-  # status-check name stable for branch protection.
-  build-matrix:
-    name: ".NET / build (Windows / ${{ matrix.configuration }})"
-    runs-on: windows-latest
+  # Linux ARM64 is cheaper than standard Linux and Windows, so it owns the full
+  # Debug/Release x net10.0/net11.0 matrix. Release/net10.0 also performs the
+  # full-solution build, package checks, auxiliary tests, and coverage upload.
+  linux-arm64:
     strategy:
       fail-fast: false
       matrix:
         configuration: [Debug, Release]
-    env:
-      # Co-locate the NuGet cache inside the workspace so actions/cache can
-      # restore/save it reliably on every OS, avoiding ~/.nuget path quirks
-      # under non-bash shells.
-      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+        tfm: [net10.0, net11.0]
+    uses: ./.github/workflows/platform-tests.yml
+    with:
+      runner: ubuntu-24.04-arm
+      platform-name: Linux ARM64
+      artifact-name: linux-arm64-${{ matrix.configuration }}-${{ matrix.tfm }}
+      configuration: ${{ matrix.configuration }}
+      tfm: ${{ matrix.tfm }}
+      anycpu: true
+      linux-desktop: true
+      full-validation: ${{ matrix.configuration == 'Release' && matrix.tfm == 'net10.0' }}
+      collect-coverage: ${{ matrix.configuration == 'Release' && matrix.tfm == 'net10.0' }}
+      pack: ${{ matrix.configuration == 'Release' && matrix.tfm == 'net10.0' }}
+    secrets: inherit
 
-    steps:
-    - uses: actions/checkout@v5
-      with: { fetch-depth: 0 }
-    - name: Cache NuGet packages
-      uses: actions/cache@v4
-      with:
-        path: ${{ env.NUGET_PACKAGES }}
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'Directory.Build.props', 'Directory.Build.targets', 'global.json') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --configuration ${{ matrix.configuration }} --no-restore
-    - name: Pack
-      if: matrix.configuration == 'Release'
-      run: dotnet pack --configuration Release --no-build -o ./artifacts/packages
-    - name: Verify packages are architecture neutral
-      if: matrix.configuration == 'Release'
-      # touki and touki.testsupport are pure-IL libraries with no native
-      # components and must load on any CPU architecture (x64, ARM64, ...).
-      # touki.slnx maps them to Platform=AnyCPU even though the rest of the
-      # solution defaults to x64 (see Directory.Build.props); this guards
-      # against that mapping regressing.
-      run: |
-        Get-ChildItem ./artifacts/packages -Filter *.nupkg | ForEach-Object {
-          pwsh tools/Test-PackageArchitectureNeutral.ps1 -PackagePath $_.FullName
-        }
-    - name: Test
-      run: |
-        $configuration = '${{ matrix.configuration }}'
-        $resultsDir = Join-Path $PWD.Path "artifacts/test-results/$($configuration.ToLower())"
-        New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
+  # Keep one Windows x64 smoke leg for platform-specific behavior. The complete
+  # Windows matrix is available through the manually dispatched workflow.
+  windows:
+    uses: ./.github/workflows/platform-tests.yml
+    with:
+      runner: windows-latest
+      platform-name: Windows x64
+      artifact-name: windows-release-net10.0
+      configuration: Release
+      tfm: net10.0
+      additional-tfm: net481
 
-        # Coverage is Release-only: instrumentation slows tests and Codecov consumes one merged run.
-        $extraArgs = @()
-        if ($configuration -eq 'Release') {
-          $extraArgs = @(
-            '--coverage',
-            '--coverage-output-format', 'cobertura',
-            '--coverage-settings', "$PWD/.config/coverage.settings.xml"
-          )
-        }
+  # Keep one native Windows ARM64 smoke leg, also limited to the supported net10.0 baseline.
+  windows-arm64:
+    uses: ./.github/workflows/platform-tests.yml
+    with:
+      runner: windows-11-arm
+      platform-name: Windows ARM64
+      artifact-name: windows-arm64-release-net10.0
+      configuration: Release
+      tfm: net10.0
+      anycpu: true
 
-        dotnet test -c $configuration --no-build `
-          -p:TestingPlatformCaptureOutput=false `
-          --results-directory "$resultsDir" `
-          --report-trx `
-          --output Detailed `
-          @extraArgs
-
-        if ($LASTEXITCODE -ne 0) {
-          throw "Tests failed with exit code $LASTEXITCODE."
-        }
-    - name: Generate coverage report
-      if: matrix.configuration == 'Release'
-      run: |
-        $reportGeneratorVersion = '5.5.9'
-        if (dotnet tool list -g | Select-String -SimpleMatch 'dotnet-reportgenerator-globaltool') {
-          dotnet tool update -g dotnet-reportgenerator-globaltool --version $reportGeneratorVersion
-        }
-        else {
-          dotnet tool install -g dotnet-reportgenerator-globaltool --version $reportGeneratorVersion
-        }
-
-        if ($LASTEXITCODE -ne 0) {
-          throw "ReportGenerator setup failed with exit code $LASTEXITCODE."
-        }
-
-        $resultsDir = 'artifacts/test-results/release'
-        if (-not (Test-Path $resultsDir)) {
-          throw "Coverage results directory '$resultsDir' was not created."
-        }
-
-        $reports = @(
-          Get-ChildItem -Path $resultsDir -Recurse -Filter '*.cobertura.xml' -ErrorAction SilentlyContinue |
-            ForEach-Object { $_.FullName }
-        )
-        if ($reports.Count -eq 0) {
-          throw 'No Cobertura reports found; coverage collection failed.'
-        }
-        $reportsArg = ($reports -join ';')
-        New-Item -ItemType Directory -Force -Path artifacts/coverage | Out-Null
-        reportgenerator `
-          "-reports:$reportsArg" `
-          -targetdir:artifacts/coverage `
-          -reporttypes:'Cobertura;HtmlInline;MarkdownSummaryGithub' `
-          -classfilters:'-Touki.Resources.SR;-Touki.Framework.Resources.SRF' `
-          -title:'touki'
-
-        if ($LASTEXITCODE -ne 0) {
-          throw "ReportGenerator failed with exit code $LASTEXITCODE."
-        }
-
-        $coveragePath = 'artifacts/coverage/Cobertura.xml'
-        if (-not (Test-Path $coveragePath)) {
-          throw "ReportGenerator did not create '$coveragePath'."
-        }
-
-        [xml] $coverage = Get-Content -Raw $coveragePath
-        $linesValid = [int] $coverage.coverage.'lines-valid'
-        if ($linesValid -le 0) {
-          throw 'The merged Cobertura report contains no coverable lines.'
-        }
-
-        Write-Host "Merged coverage report: $linesValid coverable lines"
-
-        $summaryPath = 'artifacts/coverage/SummaryGithub.md'
-        if (Test-Path $summaryPath) {
-          Get-Content $summaryPath |
-            Add-Content -Path $env:GITHUB_STEP_SUMMARY
-        }
-    - name: Upload coverage report
-      if: matrix.configuration == 'Release'
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-report
-        path: artifacts/coverage
-        if-no-files-found: warn
-        retention-days: 14
-    - name: Upload coverage to Codecov
-      if: matrix.configuration == 'Release'
-      uses: codecov/codecov-action@v5
-      with:
-        files: artifacts/coverage/Cobertura.xml
-        # Coverage upload is informational and must not gate the build. The
-        # Codecov uploader has an intermittent sha256/GPG signature race on the
-        # CDN that hard-fails otherwise unrelated PRs (Codecov-side bug, "no
-        # security issue" per the maintainers):
-        # https://github.com/codecov/codecov-action/issues/1940
-        fail_ci_if_error: false
-        disable_search: true
-        token: ${{ secrets.CODECOV_TOKEN }}
-    - name: Upload raw logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: mtp-logs-${{ matrix.configuration }}
-        path: |
-          artifacts/test-results/**/*.trx
-        if-no-files-found: warn
-        retention-days: 14
-
-  # Aggregator: preserves the `.NET / build` status-check name so branch
-  # protection on `main` doesn't have to be updated. `needs.<job>.result` is
-  # `success` only when every upstream job (and every matrix leg of
-  # `build-matrix`) succeeded; any other state fails the aggregator and
-  # (transitively) the required check.
+  # Preserve the stable required-check name while using the cheapest runner for
+  # this lightweight aggregation job.
   build:
     name: ".NET / build"
-    runs-on: ubuntu-latest
-    needs: [build-matrix, macos-build, linux-build, windows-arm64-build, linux-arm64-build]
+    runs-on: ubuntu-slim
+    needs: [linux-arm64, windows, windows-arm64]
     if: always()
     steps:
     - name: Verify upstream jobs
+      shell: bash
       run: |
         results=(
-          "build-matrix=${{ needs.build-matrix.result }}"
-          "macos-build=${{ needs.macos-build.result }}"
-          "linux-build=${{ needs.linux-build.result }}"
-          "windows-arm64-build=${{ needs.windows-arm64-build.result }}"
-          "linux-arm64-build=${{ needs.linux-arm64-build.result }}"
+          "linux-arm64=${{ needs.linux-arm64.result }}"
+          "windows=${{ needs.windows.result }}"
+          "windows-arm64=${{ needs.windows-arm64.result }}"
         )
         failed=0
-        for r in "${results[@]}"; do
-          echo "$r"
-          case "$r" in
+        for result in "${results[@]}"; do
+          echo "$result"
+          case "$result" in
             *=success) ;;
             *) failed=1 ;;
           esac
@@ -214,220 +86,3 @@ jobs:
           echo "::error::One or more upstream jobs did not succeed."
           exit 1
         fi
-
-  macos-build:
-    name: ".NET / build (macOS / Release / ${{ matrix.tfm }})"
-    runs-on: macos-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        tfm: [net10.0, net11.0]
-
-    # The repo pins Platform=x64 in Directory.Build.props for the Windows-focused
-    # main dev/test build, which embeds AMD64 in the managed assembly's COFF
-    # header. touki.slnx maps the two NuGet-shipped projects (touki and
-    # touki.testsupport) to Platform=AnyCPU so the published packages stay
-    # architecture neutral, but touki.tests is still an x64-default
-    # executable (Microsoft.Testing.Platform host), and PlatformTarget follows
-    # $(Platform) for Exe outputs. The macOS GitHub-hosted runner is Apple
-    # Silicon (osx-arm64) and the .NET host refuses to load an AMD64-tagged
-    # executable. Building this job's test project as AnyCPU produces an
-    # architecture-neutral executable that loads on any host. The same
-    # pattern is reused by windows-arm64-build and linux-arm64-build below.
-    env:
-      _PlatformArgs: "-p:Platform=AnyCPU -p:Platforms=AnyCPU"
-      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
-
-    steps:
-    - uses: actions/checkout@v5
-      with: { fetch-depth: 0 }
-    - name: Cache NuGet packages
-      uses: actions/cache@v4
-      with:
-        path: ${{ env.NUGET_PACKAGES }}
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'Directory.Build.props', 'Directory.Build.targets', 'global.json') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5
-    - name: Restore
-      run: dotnet restore touki.tests/touki.tests.csproj $_PlatformArgs
-    - name: Build release
-      run: dotnet build touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-restore $_PlatformArgs
-    - name: Test release
-      run: |
-        resultsDir="$PWD/artifacts/test-results/macos-release-${{ matrix.tfm }}"
-        mkdir -p "$resultsDir"
-
-        dotnet test touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-build \
-          $_PlatformArgs \
-          -p:TestingPlatformCaptureOutput=false \
-          --results-directory "$resultsDir" \
-          --report-trx \
-          --output Detailed
-    - name: Upload raw logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: mtp-logs-macos-${{ matrix.tfm }}
-        path: |
-          artifacts/test-results/**/*.trx
-        if-no-files-found: warn
-        retention-days: 14
-
-  linux-build:
-    name: ".NET / build (Linux / Release / ${{ matrix.tfm }})"
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        tfm: [net10.0, net11.0]
-    env:
-      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
-
-    steps:
-    - uses: actions/checkout@v5
-      with: { fetch-depth: 0 }
-    - name: Cache NuGet packages
-      uses: actions/cache@v4
-      with:
-        path: ${{ env.NUGET_PACKAGES }}
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'Directory.Build.props', 'Directory.Build.targets', 'global.json') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5
-    - name: Install xclip, Xvfb, and xauth
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y --no-install-recommends xclip xvfb xauth
-    - name: Restore
-      run: dotnet restore touki.tests/touki.tests.csproj
-    - name: Build release
-      run: dotnet build touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-restore
-    - name: Test release
-      run: |
-        resultsDir="$PWD/artifacts/test-results/linux-release-${{ matrix.tfm }}"
-        mkdir -p "$resultsDir"
-
-        xvfb-run --auto-servernum dotnet test touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-build \
-          -p:TestingPlatformCaptureOutput=false \
-          --results-directory "$resultsDir" \
-          --report-trx \
-          --output Detailed
-    - name: Upload raw logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: mtp-logs-linux-${{ matrix.tfm }}
-        path: |
-          artifacts/test-results/**/*.trx
-        if-no-files-found: warn
-        retention-days: 14
-
-  windows-arm64-build:
-    name: ".NET / build (Windows ARM64 / Release / ${{ matrix.tfm }})"
-    runs-on: windows-11-arm
-    strategy:
-      fail-fast: false
-      matrix:
-        tfm: [net10.0, net11.0]
-    env:
-      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
-
-    steps:
-    - uses: actions/checkout@v5
-      with: { fetch-depth: 0 }
-    - name: Cache NuGet packages
-      uses: actions/cache@v4
-      with:
-        path: ${{ env.NUGET_PACKAGES }}
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'Directory.Build.props', 'Directory.Build.targets', 'global.json') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5
-    # This is a native ARM64 Windows runner: touki.tests defaults to x64 (see
-    # macos-build's comment above for why), which won't load here either.
-    # Build it as AnyCPU instead.
-    - name: Restore
-      run: |
-        $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
-        dotnet restore touki.tests/touki.tests.csproj @platformArgs
-    - name: Build release
-      run: |
-        $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
-        dotnet build touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-restore @platformArgs
-    - name: Test release
-      run: |
-        $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
-        $resultsDir = Join-Path $PWD.Path "artifacts/test-results/windows-arm64-release-${{ matrix.tfm }}"
-        New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
-
-        dotnet test touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-build `
-          @platformArgs `
-          -p:TestingPlatformCaptureOutput=false `
-          --results-directory "$resultsDir" `
-          --report-trx `
-          --output Detailed
-    - name: Upload raw logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: mtp-logs-windows-arm64-${{ matrix.tfm }}
-        path: |
-          artifacts/test-results/**/*.trx
-        if-no-files-found: warn
-        retention-days: 14
-
-  linux-arm64-build:
-    name: ".NET / build (Linux ARM64 / Release / ${{ matrix.tfm }})"
-    runs-on: ubuntu-24.04-arm
-    strategy:
-      fail-fast: false
-      matrix:
-        tfm: [net10.0, net11.0]
-    env:
-      _PlatformArgs: "-p:Platform=AnyCPU -p:Platforms=AnyCPU"
-      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
-
-    steps:
-    - uses: actions/checkout@v5
-      with: { fetch-depth: 0 }
-    - name: Cache NuGet packages
-      uses: actions/cache@v4
-      with:
-        path: ${{ env.NUGET_PACKAGES }}
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'Directory.Build.props', 'Directory.Build.targets', 'global.json') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5
-    - name: Install xclip, Xvfb, and xauth
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y --no-install-recommends xclip xvfb xauth
-    - name: Restore
-      run: dotnet restore touki.tests/touki.tests.csproj $_PlatformArgs
-    - name: Build release
-      run: dotnet build touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-restore $_PlatformArgs
-    - name: Test release
-      run: |
-        resultsDir="$PWD/artifacts/test-results/linux-arm64-release-${{ matrix.tfm }}"
-        mkdir -p "$resultsDir"
-
-        xvfb-run --auto-servernum dotnet test touki.tests/touki.tests.csproj -c Release -f ${{ matrix.tfm }} --no-build \
-          $_PlatformArgs \
-          -p:TestingPlatformCaptureOutput=false \
-          --results-directory "$resultsDir" \
-          --report-trx \
-          --output Detailed
-    - name: Upload raw logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: mtp-logs-linux-arm64-${{ matrix.tfm }}
-        path: |
-          artifacts/test-results/**/*.trx
-        if-no-files-found: warn
-        retention-days: 14

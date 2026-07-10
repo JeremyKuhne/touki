@@ -1,0 +1,31 @@
+name: .NET - Full macOS Matrix
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+        tfm: [net10.0, net11.0]
+        runner:
+          - label: macos-latest
+            platform: macOS ARM64
+            artifact: macos-arm64
+          - label: macos-15-intel
+            platform: macOS Intel
+            artifact: macos-intel
+    uses: ./.github/workflows/platform-tests.yml
+    with:
+      runner: ${{ matrix.runner.label }}
+      platform-name: ${{ matrix.runner.platform }}
+      artifact-name: ${{ matrix.runner.artifact }}-${{ matrix.configuration }}-${{ matrix.tfm }}
+      configuration: ${{ matrix.configuration }}
+      tfm: ${{ matrix.tfm }}
+      anycpu: true

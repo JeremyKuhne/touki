@@ -126,21 +126,44 @@ JIT-naming rule, regression thresholds) live in
 
 ## Working with the user on changes
 
-Two hard requirements, both violated on this repo before:
+Three hard requirements, all violated on this repo before:
 
-1. **Never push without explicit user approval.**
-2. **Never create a pull request without explicit user approval.**
+1. **Never create or rewrite a commit without explicit user approval.**
+2. **Never push without explicit user approval.**
+3. **Never create a pull request without explicit user approval.**
 
-Local commits are reversible and don't need approval. Anything that
-publishes to the remote or to GitHub does.
+Editing, committing, pushing, and pull-request operations are separate approval
+boundaries. A request to implement or fix something authorizes edits only. Leave
+completed changes pending and unstaged for review unless the user explicitly asks
+to stage them.
 
-### Pre-flight before any publishing tool
+### Pre-flight before any commit, push, or PR tool
 
-Re-read the **most recent user message verbatim**. The only acceptable
-approvals are an explicit publishing verb in that message: `push`,
-`commit and push`, `ship it`, `send it`, `open the PR`, `create the PR`,
-`make the PR`, or an equivalent. If the message does not contain one of
-those verbs, **stop and ask one short yes/no question.**
+Re-read the **most recent user message verbatim** before crossing each boundary.
+
+- Creating or rewriting a commit requires an explicit commit instruction in that
+  message: `commit`, `commit these changes`, `make the commit`, `commit and push`,
+  or an unambiguous equivalent that names creating a commit.
+- Pushing requires an explicit push instruction in that message: `push`,
+  `commit and push`, `ship it`, `send it`, or an equivalent.
+- Creating, editing, merging, or closing a PR requires an explicit instruction
+  for that PR action: `open the PR`, `create the PR`, `make the PR`, `edit the
+  PR`, `merge the PR`, `close the PR`, or an equivalent.
+- Approval for one boundary does not imply approval for another. In particular,
+  commit approval does not authorize a push; push approval does not authorize a
+  commit or PR action; and a PR request does not authorize a prerequisite commit
+  or push.
+
+If the message does not authorize the exact boundary, **stop and ask one short
+yes/no question.**
+
+Tools and commands that count as **commit or history rewrite** (require commit
+approval):
+
+- Terminal: `git commit` (including `--amend`), `git reset`, `git merge`,
+  `git cherry-pick`, `git revert`, and `git rebase`.
+- Any tool that creates or rewrites a local commit, even if it does not invoke
+  `git commit` by name.
 
 Tools that count as **push** (require approval):
 
@@ -160,10 +183,9 @@ approval):
   `mcp_io_github_git_merge_pull_request`,
   `github-pull-request_create_pull_request`.
 
-### Phrasings that are NOT approval
+### Phrasings with limited or no approval
 
-None of these authorize a push or a PR. They have all been
-mistaken for it on this repo:
+These have all been interpreted too broadly on this repo:
 
 - "address the review comments" / "fix the comments" / "look at the
   comments" - edit-only.
@@ -172,6 +194,10 @@ mistaken for it on this repo:
 - "fix the CI failure" / "the PR is failing" - diagnosis or local
   fix, not a push.
 - "pull main and work on X" - authorizes the work only.
+- "looks good" / "that works" - feedback, not permission to commit.
+- "push it" / "ship it" / "open the PR" when changes are still pending -
+  approval only for the named action, not permission to create a prerequisite
+  commit or perform another boundary action.
 
 When in doubt, ask one short yes/no question.
 
@@ -185,16 +211,24 @@ When in doubt, ask one short yes/no question.
    before the first push, unless the user says otherwise.
 2. Edit.
 3. Validate (`dotnet build`, `dotnet test -c Release`).
-4. Stage by path and commit locally whenever the change is coherent;
-   local commits are reversible and don't need approval.
-5. **Stop.** Describe the change and show or summarize the diff.
-   **On explicit publish verb**, push or PR. If unsure, ask.
+4. Leave the changes pending and unstaged. Describe the change and show or
+  summarize the diff, then **stop** for review.
+5. **On explicit commit approval**, stage by path and create only the approved
+  commit. Commit approval does not authorize a push.
+6. **On explicit push approval**, push only the approved commits. Push approval
+  does not authorize a PR operation.
+7. **On explicit PR-operation approval**, perform only the named PR action. If
+  the branch needs an unapproved commit or push first, stop and ask.
 
 ### After a violation
 
-Acknowledge directly without minimizing. **Do not push a follow-up
-"fix" commit without explicit approval** - that compounds the
-failure. The user decides whether to revert, force-push, or leave it.
+Acknowledge directly without minimizing. If an unauthorized local commit is the
+current unpushed `HEAD`, verify that fact, then ask for explicit approval before
+uncommitting that revision while preserving its changes in the working tree.
+Never erase the changes. If the commit was pushed or is not the current `HEAD`,
+stop and let the user decide whether to revert, rewrite, or leave it. **Do not
+create or push a follow-up "fix" commit without explicit approval** - that
+compounds the failure.
 
 ### Other rules
 
@@ -212,18 +246,20 @@ failure. The user decides whether to revert, force-push, or leave it.
 Autopilot, or with `chat.tools.global.autoApprove` enabled. The agent
 cannot tell from inside a session which mode is active. **Assume the
 mechanical backstops below may be disabled** and self-enforce the rule
-above on every publishing tool. The agent's pre-flight check is the
+above on every commit and publishing tool. The agent's pre-flight check is the
 only guard that works in every configuration.
 
 - **Terminal (VS Code Copilot agent mode).** [.vscode/settings.json](../.vscode/settings.json)
   contains a denylist (`chat.tools.terminal.autoApprove` with `false`
-  entries) for `git push`, `git reset --hard`, `git rebase`, `git merge`,
-  `git cherry-pick`, `git tag`, destructive `git branch -d/-D`, and
-  `gh pr create|merge|close|edit`. In Default Approvals mode each
-  denied command requires an in-chat **Allow** click; that click is
-  the approval. **In Bypass Approvals or Autopilot, this denylist is
+  entries) for `git commit`, `git push`, `git reset`, `git rebase`,
+  `git merge`, `git cherry-pick`, `git revert`, `git tag`, destructive
+  `git branch -d/-D`, and `gh pr create|merge|close|edit`. In Default
+  Approvals mode each denied command requires an in-chat **Allow** click.
+  That click is defense-in-depth only; it does not replace the explicit
+  commit or publishing instruction required in the latest user message.
+  **In Bypass Approvals or Autopilot, this denylist is
   ignored at runtime** - the entries remain as documentation of
-  which commands cross the publish boundary, and as a defense-in-depth
+  which commands cross a commit or publish boundary, and as a defense-in-depth
   tripwire for contributors and agents who *are* in Default Approvals
   mode. Do not rely on the denylist to stop you.
 - **MCP and in-process tools are NOT covered by
@@ -247,11 +283,11 @@ only guard that works in every configuration.
   direct writes to `main` itself.
 
 The agent's pre-flight check (re-read the user's most recent message
-verbatim and confirm it contains an explicit publishing verb) is
-load-bearing. If the message does not contain such a verb, stop and ask
-one short yes/no question. Do not assume the user "obviously" wants the
-change published, and do not assume an approval prompt will appear to
-catch a mistake.
+verbatim and confirm it authorizes the exact commit or publishing boundary)
+is load-bearing. If the message does not contain that authorization, stop and
+ask one short yes/no question. Do not assume the user "obviously" wants the
+change committed or published, and do not assume an approval prompt will
+appear to catch a mistake.
 
 ## General guidance
 

@@ -1,0 +1,400 @@
+name: Platform Tests
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        required: true
+        type: string
+      platform-name:
+        required: true
+        type: string
+      artifact-name:
+        required: true
+        type: string
+      tfm:
+        required: true
+        type: string
+      additional-tfm:
+        default: ''
+        type: string
+      configuration:
+        required: true
+        type: string
+      anycpu:
+        default: false
+        type: boolean
+      linux-desktop:
+        default: false
+        type: boolean
+      full-validation:
+        default: false
+        type: boolean
+      collect-coverage:
+        default: false
+        type: boolean
+      pack:
+        default: false
+        type: boolean
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+
+jobs:
+  test:
+    name: "${{ inputs.platform-name }} / ${{ inputs.configuration }} / ${{ inputs.tfm }}"
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 30
+    env:
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+    steps:
+    - uses: actions/checkout@v5
+      with: { fetch-depth: 0 }
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.NUGET_PACKAGES }}
+        key: ${{ runner.os }}-${{ runner.arch }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'Directory.Build.props', 'Directory.Build.targets', 'global.json') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ runner.arch }}-nuget-
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+    - name: Install Linux desktop dependencies
+      if: inputs.linux-desktop
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends xclip xvfb xauth
+    - name: Restore
+      shell: pwsh
+      run: |
+        $platformArgs = @()
+        if ('${{ inputs.anycpu }}' -eq 'true') {
+          $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
+        }
+
+        if ('${{ inputs.full-validation }}' -eq 'true') {
+          dotnet restore
+          if ($LASTEXITCODE -ne 0) {
+            throw "Solution restore failed with exit code $LASTEXITCODE."
+          }
+        }
+        else {
+          dotnet restore touki.tests/touki.tests.csproj @platformArgs
+        }
+
+        if ($LASTEXITCODE -ne 0) {
+          throw "Restore failed with exit code $LASTEXITCODE."
+        }
+    - name: Build
+      shell: pwsh
+      run: |
+        $platformArgs = @()
+        if ('${{ inputs.anycpu }}' -eq 'true') {
+          $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
+        }
+
+        if ('${{ inputs.full-validation }}' -eq 'true') {
+          # Compile the complete solution on its declared x64 platform. ARM jobs
+          # rebuild only the executable test hosts as AnyCPU below.
+          dotnet build --configuration '${{ inputs.configuration }}' --no-restore
+          if ($LASTEXITCODE -ne 0) {
+            throw "Solution build failed with exit code $LASTEXITCODE."
+          }
+
+          if ($platformArgs.Count -gt 0) {
+            foreach ($project in @(
+              'touki.tests/touki.tests.csproj',
+              'touki.analyzers.tests/touki.analyzers.tests.csproj',
+              'touki.aot.tests/touki.aot.tests.csproj'
+            )) {
+              dotnet restore $project @platformArgs
+              if ($LASTEXITCODE -ne 0) {
+                throw "Restore for '$project' failed with exit code $LASTEXITCODE."
+              }
+            }
+
+            dotnet build touki.tests/touki.tests.csproj `
+              --configuration '${{ inputs.configuration }}' `
+              --framework '${{ inputs.tfm }}' `
+              --no-restore `
+              @platformArgs
+            if ($LASTEXITCODE -ne 0) {
+              throw "touki.tests build failed with exit code $LASTEXITCODE."
+            }
+
+            dotnet build touki.analyzers.tests/touki.analyzers.tests.csproj `
+              --configuration '${{ inputs.configuration }}' `
+              --framework net10.0 `
+              --no-restore `
+              @platformArgs
+            if ($LASTEXITCODE -ne 0) {
+              throw "touki.analyzers.tests build failed with exit code $LASTEXITCODE."
+            }
+
+            dotnet build touki.aot.tests/touki.aot.tests.csproj `
+              --configuration '${{ inputs.configuration }}' `
+              --framework net10.0 `
+              --no-restore `
+              @platformArgs
+            if ($LASTEXITCODE -ne 0) {
+              throw "touki.aot.tests build failed with exit code $LASTEXITCODE."
+            }
+          }
+        }
+        else {
+          dotnet build touki.tests/touki.tests.csproj `
+            --configuration '${{ inputs.configuration }}' `
+            --framework '${{ inputs.tfm }}' `
+            --no-restore `
+            @platformArgs
+        }
+
+        if ($LASTEXITCODE -ne 0) {
+          throw "Build failed with exit code $LASTEXITCODE."
+        }
+    - name: Test
+      shell: pwsh
+      run: |
+        $platformArgs = @()
+        if ('${{ inputs.anycpu }}' -eq 'true') {
+          $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
+        }
+
+        $resultsDir = Join-Path $PWD.Path 'artifacts/test-results/${{ inputs.artifact-name }}'
+        New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
+
+        $testArgs = @(
+          'test', 'touki.tests/touki.tests.csproj',
+          '--configuration', '${{ inputs.configuration }}',
+          '--framework', '${{ inputs.tfm }}',
+          '--no-build'
+        )
+        $testArgs += $platformArgs
+        $testArgs += @(
+          '-p:TestingPlatformCaptureOutput=false',
+          '--results-directory', $resultsDir,
+          '--report-trx',
+          '--output', 'Detailed'
+        )
+
+        if ('${{ inputs.collect-coverage }}' -eq 'true') {
+          $testArgs += @(
+            '--coverage',
+            '--coverage-output-format', 'cobertura',
+            '--coverage-settings', "$PWD/.config/coverage.settings.xml"
+          )
+        }
+
+        if ('${{ inputs.linux-desktop }}' -eq 'true') {
+          & xvfb-run --auto-servernum dotnet @testArgs
+        }
+        else {
+          & dotnet @testArgs
+        }
+
+        if ($LASTEXITCODE -ne 0) {
+          throw "Tests failed with exit code $LASTEXITCODE."
+        }
+    - name: Build additional target framework
+      if: inputs.additional-tfm != ''
+      shell: pwsh
+      run: |
+        $platformArgs = @()
+        if ('${{ inputs.anycpu }}' -eq 'true') {
+          $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
+        }
+
+        dotnet build touki.tests/touki.tests.csproj `
+          --configuration '${{ inputs.configuration }}' `
+          --framework '${{ inputs.additional-tfm }}' `
+          --no-restore `
+          @platformArgs
+
+        if ($LASTEXITCODE -ne 0) {
+          throw "Build for '${{ inputs.additional-tfm }}' failed with exit code $LASTEXITCODE."
+        }
+    - name: Test additional target framework
+      if: inputs.additional-tfm != ''
+      shell: pwsh
+      run: |
+        $platformArgs = @()
+        if ('${{ inputs.anycpu }}' -eq 'true') {
+          $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
+        }
+
+        $resultsDir = Join-Path $PWD.Path `
+          'artifacts/test-results/${{ inputs.artifact-name }}/${{ inputs.additional-tfm }}'
+        New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
+
+        dotnet test touki.tests/touki.tests.csproj `
+          --configuration '${{ inputs.configuration }}' `
+          --framework '${{ inputs.additional-tfm }}' `
+          --no-build `
+          @platformArgs `
+          -p:TestingPlatformCaptureOutput=false `
+          --results-directory $resultsDir `
+          --report-trx `
+          --output Detailed
+
+        if ($LASTEXITCODE -ne 0) {
+          throw "Tests for '${{ inputs.additional-tfm }}' failed with exit code $LASTEXITCODE."
+        }
+    - name: Test auxiliary projects
+      if: inputs.full-validation
+      shell: pwsh
+      run: |
+        $platformArgs = @()
+        if ('${{ inputs.anycpu }}' -eq 'true') {
+          $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
+        }
+
+        $projects = @(
+          'touki.analyzers.tests/touki.analyzers.tests.csproj',
+          'touki.aot.tests/touki.aot.tests.csproj'
+        )
+
+        foreach ($project in $projects) {
+          $extraArgs = @()
+          if ('${{ inputs.collect-coverage }}' -eq 'true' -and $project -like 'touki.aot.tests/*') {
+            $extraArgs = @(
+              '--coverage',
+              '--coverage-output-format', 'cobertura',
+              '--coverage-settings', "$PWD/.config/coverage.settings.xml"
+            )
+          }
+
+          dotnet test $project `
+            --configuration '${{ inputs.configuration }}' `
+            --framework net10.0 `
+            --no-build `
+            @platformArgs `
+            -p:TestingPlatformCaptureOutput=false `
+            --results-directory 'artifacts/test-results/${{ inputs.artifact-name }}' `
+            --report-trx `
+            --output Detailed `
+            @extraArgs
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Tests for '$project' failed with exit code $LASTEXITCODE."
+          }
+        }
+    - name: Pack
+      if: inputs.pack
+      shell: pwsh
+      run: |
+        $platformArgs = @()
+        if ('${{ inputs.anycpu }}' -eq 'true') {
+          $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
+        }
+
+        $projects = @(
+          'touki/touki.csproj',
+          'touki.testsupport/touki.testsupport.csproj'
+        )
+        foreach ($project in $projects) {
+          dotnet pack $project `
+            --configuration '${{ inputs.configuration }}' `
+            --output ./artifacts/packages `
+            @platformArgs
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Pack for '$project' failed with exit code $LASTEXITCODE."
+          }
+        }
+    - name: Verify packages are architecture neutral
+      if: inputs.pack
+      shell: pwsh
+      run: |
+        $packages = @(Get-ChildItem ./artifacts/packages -Filter *.nupkg)
+        $expectedPackages = @{
+          'KlutzyNinja.Touki' = '^KlutzyNinja\.Touki\.\d.*\.nupkg$'
+          'KlutzyNinja.Touki.TestSupport' = '^KlutzyNinja\.Touki\.TestSupport\.\d.*\.nupkg$'
+        }
+
+        if ($packages.Count -ne $expectedPackages.Count) {
+          throw "Expected $($expectedPackages.Count) packages, found $($packages.Count)."
+        }
+
+        foreach ($expected in $expectedPackages.GetEnumerator()) {
+          $matches = @($packages | Where-Object Name -Match $expected.Value)
+          if ($matches.Count -ne 1) {
+            throw "Expected exactly one '$($expected.Key)' package, found $($matches.Count)."
+          }
+
+          pwsh tools/Test-PackageArchitectureNeutral.ps1 -PackagePath $matches[0].FullName
+          if ($LASTEXITCODE -ne 0) {
+            throw "Architecture validation failed for '$($matches[0].Name)'."
+          }
+        }
+    - name: Generate coverage report
+      if: inputs.collect-coverage
+      shell: pwsh
+      run: |
+        $reportGeneratorVersion = '5.5.9'
+        if (dotnet tool list -g | Select-String -SimpleMatch 'dotnet-reportgenerator-globaltool') {
+          dotnet tool update -g dotnet-reportgenerator-globaltool --version $reportGeneratorVersion
+        }
+        else {
+          dotnet tool install -g dotnet-reportgenerator-globaltool --version $reportGeneratorVersion
+        }
+
+        if ($LASTEXITCODE -ne 0) {
+          throw "ReportGenerator setup failed with exit code $LASTEXITCODE."
+        }
+
+        $resultsDir = 'artifacts/test-results/${{ inputs.artifact-name }}'
+        $reports = @(
+          Get-ChildItem -Path $resultsDir -Recurse -Filter '*.cobertura.xml' -ErrorAction SilentlyContinue |
+            ForEach-Object { $_.FullName }
+        )
+        if ($reports.Count -eq 0) {
+          throw 'No Cobertura reports found; coverage collection failed.'
+        }
+
+        New-Item -ItemType Directory -Force -Path artifacts/coverage | Out-Null
+        reportgenerator `
+          "-reports:$($reports -join ';')" `
+          -targetdir:artifacts/coverage `
+          -reporttypes:'Cobertura;HtmlInline;MarkdownSummaryGithub' `
+          -classfilters:'-Touki.Resources.SR;-Touki.Framework.Resources.SRF' `
+          -title:'touki'
+
+        if ($LASTEXITCODE -ne 0) {
+          throw "ReportGenerator failed with exit code $LASTEXITCODE."
+        }
+
+        [xml] $coverage = Get-Content -Raw artifacts/coverage/Cobertura.xml
+        if ([int] $coverage.coverage.'lines-valid' -le 0) {
+          throw 'The merged Cobertura report contains no coverable lines.'
+        }
+
+        if (Test-Path artifacts/coverage/SummaryGithub.md) {
+          Get-Content artifacts/coverage/SummaryGithub.md |
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY
+        }
+    - name: Upload coverage report
+      if: inputs.collect-coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: artifacts/coverage
+        if-no-files-found: warn
+        retention-days: 14
+    - name: Upload coverage to Codecov
+      if: inputs.collect-coverage
+      uses: codecov/codecov-action@v5
+      with:
+        files: artifacts/coverage/Cobertura.xml
+        fail_ci_if_error: false
+        disable_search: true
+        token: ${{ secrets.CODECOV_TOKEN }}
+    - name: Upload raw logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: mtp-logs-${{ inputs.artifact-name }}
+        path: artifacts/test-results/**/*.trx
+        if-no-files-found: warn
+        retention-days: 14

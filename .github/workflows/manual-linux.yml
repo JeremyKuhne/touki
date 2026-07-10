@@ -1,0 +1,41 @@
+name: .NET - Full Linux Matrix
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+        tfm: [net10.0, net11.0]
+        runner:
+          - label: ubuntu-slim
+            platform: Linux Slim x64
+            artifact: linux-slim
+            anycpu: false
+            desktop: false
+          - label: ubuntu-latest
+            platform: Linux x64
+            artifact: linux-x64
+            anycpu: false
+            desktop: true
+          - label: ubuntu-24.04-arm
+            platform: Linux ARM64
+            artifact: linux-arm64
+            anycpu: true
+            desktop: true
+    uses: ./.github/workflows/platform-tests.yml
+    with:
+      runner: ${{ matrix.runner.label }}
+      platform-name: ${{ matrix.runner.platform }}
+      artifact-name: ${{ matrix.runner.artifact }}-${{ matrix.configuration }}-${{ matrix.tfm }}
+      configuration: ${{ matrix.configuration }}
+      tfm: ${{ matrix.tfm }}
+      anycpu: ${{ matrix.runner.anycpu }}
+      linux-desktop: ${{ matrix.runner.desktop }}
