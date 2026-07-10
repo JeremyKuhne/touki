@@ -18,8 +18,10 @@ gh skill update --all
 `gh skill update` compares the local copy's provenance tree SHA against upstream
 and surfaces the difference as a normal diff. Review it like a dependency bump:
 read what changed, run the repo's agent-file checks (the frontmatter validator and
-the link checker), then re-pin when satisfied. A skill pinned with `--pin` is
-skipped by `--all`; bump its pin deliberately when you want its updates.
+the installed-artifact link checker), then re-pin when satisfied. Update the
+overlay's `core-pin` and re-review its bindings in the same change. A skill pinned
+with `--pin` is skipped by `--all`; bump its pin deliberately when you want its
+updates.
 
 Manual fallback (no `gh`): compare the local core against the commons copy at the
 recorded ref, apply the diff by hand, and update the provenance SHA.
@@ -31,8 +33,9 @@ where it lives. Classification does not trigger any action on its own.
 
 - **Local deviation** - specific to this repo (a repo-only tool, a local path, a
   repo-specific example). It belongs in the **overlay**, never in the vendored
-  core. Move the change into the overlay file and restore the core to match
-  upstream. No upstreaming question arises.
+  core. Move the change into `overlay.md` (starting from
+  `assets/overlay.md.tmpl` when needed), restore the core to match upstream, and
+  record the current pin in `core-pin`. No upstreaming question arises.
 - **Common** - generic, helps every consumer (a clearer phrasing of a portable
   rule, a new universally-applicable check, a fixed error). It *should* go
   upstream, but upstreaming is **never automatic** and is not always plausible:
@@ -88,6 +91,5 @@ core.
 
 Re-run the validators and the link check, and if the change touched the catalog
 or a skill's trigger phrasing, reconcile the catalog `README.md` (inventory row,
-disambiguation) in the same change. Then hand off to
-[agent-files-review](../agent-files-review/SKILL.md) to validate the resulting
-files.
+disambiguation) in the same change. Then hand off to the repository's
+`agent-files-review` skill to validate the resulting files.

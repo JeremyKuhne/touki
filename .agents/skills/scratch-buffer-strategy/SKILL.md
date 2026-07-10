@@ -1,16 +1,26 @@
 ---
-description: Choose how a hot path gets a short-lived scratch buffer - zeroed `stackalloc`, `[SkipLocalsInit]` + `stackalloc`, `BufferScope<T>` (stack with pool fallback), or an `ArrayPool<T>.Shared` rental - and apply the net481/net10 size crossovers. Use when designing or reviewing a performance-sensitive path that needs a temporary buffer, when deciding "should I rent or stackalloc?", when weighing `[SkipLocalsInit]`, or when evaluating buffer/allocation cost. Defers the backing measurements and full reasoning to the bundled references/arraypool-performance.md.
+compatibility: Applies to multi-targeted .NET code where modern .NET and .NET Framework runtime costs can be measured separately.
+description: Choose how a hot path gets a short-lived scratch buffer - zeroed `stackalloc`, `[SkipLocalsInit]` + `stackalloc`, `BufferScope` of T (stack with pool fallback), or a rental from the shared `ArrayPool` of T - and apply the net481/net10 size crossovers. Use when designing or reviewing a performance-sensitive path that needs a temporary buffer, when deciding "should I rent or stackalloc?", when weighing `[SkipLocalsInit]`, or when evaluating buffer/allocation cost. Defers the backing measurements and full reasoning to the bundled references/arraypool-performance.md.
 license: MIT
 metadata:
+    applicability: dotnet-framework
+    binding: optional-overlay
     github-path: skills/scratch-buffer-strategy
-    github-pinned: v0.2.1
-    github-ref: refs/tags/v0.2.1
+    github-pinned: v0.10.0
+    github-ref: refs/tags/v0.10.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 3b63a67f854011c50fc3beee69c6e4ea21778a9b
-    portability: semi-portable
+    github-tree-sha: 3ae67f801e33d4b55730633f22e27c0fa941ea99
+    maturity: canary
+    portability: portable
+    related: performance-testing, framework-jit-optimization
+    requires: none
+    risk: advisory
 name: scratch-buffer-strategy
 ---
 # Scratch buffer strategy (net481 + net10)
+
+If `overlay.md` exists beside this file, read it before acting; it contains
+repository-specific bindings. This core remains usable without it.
 
 Pick the cheapest correct way to get a short-lived scratch buffer on a hot path.
 This skill is the compact decision aid; the measured numbers, the per-call

@@ -1,3 +1,8 @@
+---
+core: agent-files-review
+core-pin: v0.10.0
+---
+
 # Touki overlay - agent-files-review
 
 Repo-specific companion to the vendored [agent-files-review](SKILL.md) skill. The

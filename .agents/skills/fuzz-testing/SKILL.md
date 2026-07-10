@@ -1,16 +1,26 @@
 ---
+compatibility: Requires the .NET SDK, SharpFuzz instrumentation, and a libfuzzer-dotnet driver for the host platform.
 description: Author and run SharpFuzz coverage-guided fuzz targets for a .NET library. Use when adding a new fuzz target, running the fuzzer locally, installing the fuzzing prerequisites, or promoting a crashing input into a regression test. Covers the cross-TFM harness, the libFuzzer driver workflow, and the crash-to-regression loop.
 license: MIT
 metadata:
+    applicability: dotnet-project-gated
+    binding: optional-overlay
     github-path: skills/fuzz-testing
-    github-pinned: v0.8.1
-    github-ref: refs/tags/v0.8.1
+    github-pinned: v0.10.0
+    github-ref: refs/tags/v0.10.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: f944ff4acb2beb257bc15f0addc4b49a144734ea
-    portability: semi-portable
+    github-tree-sha: fe13e0ef1efd66ebe32d7b37ef15669429591e39
+    maturity: canary
+    portability: portable
+    related: security-review, pre-pr-self-review
+    requires: none
+    risk: local-write
 name: fuzz-testing
 ---
 # Fuzz testing
+
+If `overlay.md` exists beside this file, read it before acting; it contains
+repository-specific bindings. This core remains usable without it.
 
 A coverage-guided fuzzing harness built on
 [SharpFuzz](https://github.com/Metalnem/sharpfuzz) finds defects that

@@ -1,3 +1,8 @@
+---
+core: code-comprehension
+core-pin: v0.10.0
+---
+
 # Touki overlay - code-comprehension
 
 Repo-specific companion to the vendored [code-comprehension](SKILL.md) skill. The

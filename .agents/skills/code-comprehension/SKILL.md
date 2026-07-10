@@ -2,15 +2,24 @@
 description: Evidence-based readability and cognitive-load review of code. Use when asked to "review this for readability", "is this too complex", "reduce nesting or cognitive load", "what is a reasonable method length / parameter count / nesting depth", or when judging whether code will be hard to understand. Screens code against research-backed thresholds and prioritizes the factors that actually drive comprehension - naming first, then structure that loads working memory.
 license: MIT
 metadata:
+    applicability: universal
+    binding: optional-overlay
     github-path: skills/code-comprehension
-    github-pinned: v0.9.0
-    github-ref: refs/tags/v0.9.0
+    github-pinned: v0.10.0
+    github-ref: refs/tags/v0.10.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: c7799dd0e27ece4afa84885429ed3d8eee6b2013
-    portability: semi-portable
+    github-tree-sha: d2e1be7b63a31345f054a1d0785a67d5ba2aa604
+    maturity: canary
+    portability: portable
+    related: pre-pr-self-review
+    requires: none
+    risk: advisory
 name: code-comprehension
 ---
 # Code comprehension review
+
+If `overlay.md` exists beside this file, read it before acting; it contains
+repository-specific bindings. This core remains usable without it.
 
 A research-backed screen for how hard code is to *understand* (not how hard it is
 to test). Four decades of studies - including recent eye-tracking, EEG, and fMRI
@@ -39,7 +48,7 @@ consuming repo's own style guide or `.editorconfig` win on any conflict.
 
 ## Screening thresholds
 
-Flag for review at "Review", refactor at "Refactor". Values between "Low" and "Review" are "moderate" - usually acceptable, but worth a quick "why" check.
+Flag for review at "Review", refactor at "Refactor". Values between "Low" and "Review" are "moderate" — usually acceptable, but worth a quick "why" check.
 Numbers aggregate research and industry-tool convergence; adjust to the team and language.
 
 | Factor | Low | Review | Refactor | Measure |

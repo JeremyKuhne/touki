@@ -1,3 +1,8 @@
+---
+core: framework-jit-optimization
+core-pin: v0.10.0
+---
+
 # Touki overlay - framework-jit-optimization
 
 Repo-specific companion to the vendored [framework-jit-optimization](SKILL.md)
@@ -102,4 +107,4 @@ The [modern-net.md](modern-net.md) and [cross-tfm-codegen.md](cross-tfm-codegen.
 sibling pages originated here and were upstreamed to the
 [agent-skills commons](https://github.com/JeremyKuhne/agent-skills) in
 [PR #1](https://github.com/JeremyKuhne/agent-skills/pull/1); the vendored core is
-pinned to `v0.6.0`, which includes them. No pending divergence remains.
+pinned to `v0.10.0`, which includes them. No pending divergence remains.

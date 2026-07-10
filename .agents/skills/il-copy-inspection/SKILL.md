@@ -1,16 +1,26 @@
 ---
+compatibility: Requires a Release build with portable or embedded PDBs and an IL reader such as ilspycmd, ildasm, Cecil, or System.Reflection.Metadata.
 description: Find struct value copies in a method's compiled IL - defensive copies, boxing, by-value field/argument/return copies - by reading the emitted bytecode rather than predicting from source. Use when asked to "find struct copies", "where does the compiler copy this struct", "is this a defensive copy", "check for boxing in IL", "did the compiler emit a copy here", "confirm the analyzer's defensive-copy warning", or "audit a [NonCopyable] type's copies after build". Post-build, ground-truth counterpart to source-level defensive-copy analyzers - IL is post-lowering, so synthesized copies the analyzer cannot see are visible here. Not for wall-clock/allocation measurement (that is `performance-testing`) nor for JIT-emitted machine code (that is `framework-jit-optimization` + `DisassemblyDiagnoser`).
 license: MIT
 metadata:
+    applicability: dotnet
+    binding: optional-overlay
     github-path: skills/il-copy-inspection
-    github-pinned: v0.8.1
-    github-ref: refs/tags/v0.8.1
+    github-pinned: v0.10.0
+    github-ref: refs/tags/v0.10.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: d40f176e676b2afc9cb625e2d6afcb92a2e5c48f
-    portability: semi-portable
+    github-tree-sha: 07bce64dc12f798aeeec01aab716d26bbde5c0ed
+    maturity: canary
+    portability: portable
+    related: roslyn-analyzers, framework-jit-optimization, performance-testing, scratch-buffer-strategy
+    requires: none
+    risk: advisory
 name: il-copy-inspection
 ---
 # Inspecting IL for struct copies
+
+If `overlay.md` exists beside this file, read it before acting; it contains
+repository-specific bindings. This core remains usable without it.
 
 A struct copy is invisible in C# source but concrete in IL. This skill reads a
 method's **emitted bytecode** to find where the compiler actually copies a value

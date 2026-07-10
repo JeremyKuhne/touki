@@ -1,16 +1,26 @@
 ---
+compatibility: Requires the repository's validator and relative-link check; exact commands may be supplied by an overlay.
 description: Review changes to AI-agent customization files (AGENTS.md, .github/copilot-instructions.md, *.instructions.md, *.prompt.md, *.agent.md, SKILL.md, the validator, the CI workflow). Use when asked to review or validate agent-file changes, fix CI failures from the agent-files workflow, or audit a draft of any of these files.
 license: MIT
 metadata:
+    applicability: agent-customization
+    binding: optional-overlay
     github-path: skills/agent-files-review
-    github-pinned: v0.5.1
-    github-ref: refs/tags/v0.5.1
+    github-pinned: v0.10.0
+    github-ref: refs/tags/v0.10.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 06f4a82d587ae2ab8bbf055339473728d081f9fd
-    portability: semi-portable
+    github-tree-sha: 64a00d548909d8f84fb8ac6f6e3db77deceab270
+    maturity: canary
+    portability: portable
+    related: manage-skills
+    requires: none
+    risk: local-write
 name: agent-files-review
 ---
 # Agent customization files - review checklist
+
+If `overlay.md` exists beside this file, read it before acting; it contains
+repository-specific bindings. This core remains usable without it.
 
 Run through every applicable item below before approving a change to an agent
 customization file. Each item below caught a real bug in PR review history.
@@ -27,7 +37,7 @@ overlay.
 
 - The mirror is generated. **Never edit `.github/copilot-instructions.md` by hand.**
   Edits go in `AGENTS.md`, then regenerate the mirror with the validator's
-  fix mode (`Validate-AgentFiles.ps1 -Fix`).
+  fix mode.
 - Run the validator after any `AGENTS.md` edit. The agent-files CI workflow
   enforces this; out-of-sync mirrors fail CI.
 - **Relative Markdown links must work in both `AGENTS.md` and the mirror.** The
@@ -44,48 +54,13 @@ overlay.
 - Run a grammar pass: singular vs. plural ("extension methods"),
   "for your needs" not "for your need", etc.
 
-## 2. `*.instructions.md` (path-specific instructions)
+## 2. Per-file frontmatter and naming
 
-- Frontmatter must include a non-empty `applyTo` glob.
-- Glob is comma-separated, relative to repo root. Quote the value for safety.
-- The validator only checks `applyTo`'s presence and emptiness; it does not
-  verify that the glob actually matches anything. Sanity-check by eye.
+The frontmatter and naming rules for each file type - `*.instructions.md`,
+`*.agent.md`, `SKILL.md`, and `*.prompt.md` - live in
+[frontmatter.md](frontmatter.md). Check the entry for the file type you touched.
 
-## 3. `*.agent.md` (custom agents)
-
-- Frontmatter must include `description`.
-- If `tools` is present, it must be a YAML list. Either form is accepted by
-  the validator:
-
-  ```yaml
-  tools: ['search', 'edit']
-  ```
-
-  ```yaml
-  tools:
-    - search
-    - edit
-  ```
-
-- The repo's authoring rules forbid end-of-line comments; document optional
-  fields with comment lines *above* them in any examples.
-
-## 4. `SKILL.md` (`.agents/skills/<name>/SKILL.md`)
-
-- `name` is **required** and must:
-  - match `^[a-z0-9-]{1,64}$`
-  - equal the parent directory name exactly
-- `description` is required; make it specific enough that another agent
-  can decide when to load it.
-- A name/dir mismatch causes the skill to silently fail to load. Always
-  verify by running the validator.
-
-## 5. `*.prompt.md` (reusable prompts)
-
-- No required frontmatter, but `description` is recommended for the slash
-  menu UX.
-
-## 6. Validator and workflow
+## 3. Validator and workflow
 
 - The frontmatter parser in the validator script is typically hand-rolled. A
   hand-rolled parser supports flat scalars, inline lists, and block lists, but
@@ -101,8 +76,15 @@ overlay.
   MD040 - adding a `text` language tag is trivial and prevents drift.
 - The CI job typically runs on `ubuntu-latest`. PowerShell is preinstalled
   there; no `pip` step is needed.
+- A commons repository should validate source `skills/*/SKILL.md`, not only a
+  consumer's `.agents/skills/` directory. Treat a conditional that silently
+  skips a populated source tree as a broken gate.
+- Validate agent frontmatter, plugin/marketplace/MCP manifests, relationship
+  names, and generated catalogs in addition to skill frontmatter. Then install
+  each core alone (plus declared `requires`) and resolve links inside that
+  artifact; a repo-wide link check cannot catch undeclared sibling dependencies.
 
-## 7. Relative Markdown links must resolve in this branch
+## 4. Relative Markdown links must resolve in this branch
 
 The CI link check is **offline lychee** - it only follows links that
 resolve to files in the current working tree. A link to a file that exists
@@ -131,7 +113,7 @@ on the canonical repo's `main` but not in your branch will fail.
   Either fix the link or rebase. Backtick references work as a last resort
   when the file truly does not exist in any branch yet.
 
-## 8. Whitespace (applies to every file in scope)
+## 5. Whitespace (applies to every file in scope)
 
 - No trailing whitespace.
 - No whitespace-only lines (a "blank" line must be truly empty).
@@ -164,3 +146,11 @@ If CI fails after a local validator pass, the failure is almost always
 markdownlint (open the failing job's annotations) or the lychee link check
 (broken relative link - remember the mirror rewrites links, so test
 the form in `AGENTS.md`, not the rewritten copy).
+
+For a commons portfolio, use strict mode and check generated collateral:
+
+```pwsh
+./skills/manage-skills/scripts/Validate-Skills.ps1 ./skills -RequirePortfolioMetadata
+./tools/Update-SkillCatalog.ps1
+Invoke-Pester ./tests
+```

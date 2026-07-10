@@ -1,16 +1,26 @@
 ---
-description: Self-review checklist before opening a PR. Use before invoking `create-pr`, when reviewing your own draft, or when a reviewer flags issues that should have been caught earlier. Codifies recurring mistakes from multi-targeted polyfill work - missing tests for new public surface, unchecked length sums, null-pointer foot-guns from `MemoryMarshal.GetReference` on empty spans, drift from `ArgumentNullException.ThrowIfNull` and `checked()` conventions, TFM phrasing errors, and stale PR descriptions.
+compatibility: Requires git plus the repository's build, test, and agent-file validation commands.
+description: Self-review checklist - plus an agentic review pass (a read-only reviewer persona over the diff) - before opening a PR. Use before invoking `create-pr`, when reviewing your own draft, or when a reviewer flags issues that should have been caught earlier. Codifies recurring mistakes from multi-targeted polyfill work - missing tests for new public surface, unchecked length sums, null-pointer foot-guns from `MemoryMarshal.GetReference` on empty spans, drift from `ArgumentNullException.ThrowIfNull` and `checked()` conventions, TFM phrasing errors, and stale PR descriptions.
 license: MIT
 metadata:
+    applicability: universal
+    binding: optional-overlay
     github-path: skills/pre-pr-self-review
-    github-pinned: v0.4.0
-    github-ref: refs/tags/v0.4.0
+    github-pinned: v0.10.0
+    github-ref: refs/tags/v0.10.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 67efd7e7fdde472bd96326fdf2cb109b1513f759
-    portability: semi-portable
+    github-tree-sha: 880e117910c69bb909f59a3dfea81cbbf33ac047
+    maturity: canary
+    portability: portable
+    related: create-pr, address-pr-feedback, security-review, performance-testing
+    requires: none
+    risk: local-write
 name: pre-pr-self-review
 ---
 # Pre-PR self-review
+
+If `overlay.md` exists beside this file, read it before acting; it contains
+repository-specific bindings. This core remains usable without it.
 
 Run this checklist before invoking the `create-pr` skill. Each item is a question
 your code or PR body must answer. Update the skill whenever a reviewer flags
@@ -30,6 +40,20 @@ allocation and algorithmic DoS, argument validation, and every use of `unsafe` /
 "unsafe" or "caller must"). Invoke `security-review` alongside this checklist for
 any change that adds or modifies a member accepting caller-supplied data, or that
 touches one of those caller-validated constructs - the common case, not a niche.
+
+## Agentic review pass
+
+Before walking the checklist, run an automated review pass over the diff so the
+reviewer-bot class of findings - correctness edge cases, hand-rolled
+parser/format pitfalls, CI and supply-chain hygiene, and doc-vs-behavior drift -
+surfaces locally instead of across PR rounds. Spawn a **read-only pre-PR reviewer
+persona** (a consuming repo wires the concrete agent in its overlay) over the
+working diff, triage its findings (valid / nit / judgment call / likely false
+positive), fix the valid ones, and re-run at most once when the fixes were
+non-trivial. Keep it bounded: a same-class model nitpicks indefinitely, so two
+passes is the cap and the deterministic gates - tests, lint, the format
+validators - stay the source of truth. The checklist below is the human
+complement: the recurring, domain-specific mistakes an agent pass tends to miss.
 
 ## 1. Tests cover every new branch
 
