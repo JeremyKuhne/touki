@@ -73,49 +73,25 @@ jobs:
         $resultsDir = Join-Path $PWD.Path "artifacts/test-results/$($configuration.ToLower())"
         New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
 
+        # Coverage is Release-only: instrumentation slows tests and Codecov consumes one merged run.
+        $extraArgs = @()
+        if ($configuration -eq 'Release') {
+          $extraArgs = @(
+            '--coverage',
+            '--coverage-output-format', 'cobertura',
+            '--coverage-settings', "$PWD/.config/coverage.settings.xml"
+          )
+        }
+
         dotnet test -c $configuration --no-build `
           -p:TestingPlatformCaptureOutput=false `
           --results-directory "$resultsDir" `
           --report-trx `
-          --output Detailed
-    - name: Collect coverage
-      if: matrix.configuration == 'Release'
-      run: |
-        # Coverage collected through the solution-level MTP invocation has produced empty Cobertura
-        # files on GitHub-hosted Windows runners since the repository switched to MTP.
-        # Run each production-code test target separately and sequentially instead. This also avoids
-        # merging the duplicate report copies MTP places under the TRX results directory.
-        $coverageRuns = @(
-          @{ Name = 'touki-net10'; Project = 'touki.tests/touki.tests.csproj'; Framework = 'net10.0' },
-          @{ Name = 'touki-net11'; Project = 'touki.tests/touki.tests.csproj'; Framework = 'net11.0' },
-          @{ Name = 'touki-net481'; Project = 'touki.tests/touki.tests.csproj'; Framework = 'net481' },
-          @{ Name = 'aot-net10'; Project = 'touki.aot.tests/touki.aot.tests.csproj'; Framework = 'net10.0' }
-        )
+          --output Detailed `
+          @extraArgs
 
-        foreach ($run in $coverageRuns) {
-          $resultsDir = Join-Path $PWD.Path "artifacts/coverage-results/$($run.Name)"
-          New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
-
-          dotnet test $run.Project -c Release -f $run.Framework --no-build `
-            -p:TestingPlatformCaptureOutput=false `
-            --results-directory "$resultsDir" `
-            --output Normal `
-            --coverage `
-            --coverage-output-format cobertura `
-            --coverage-settings "$PWD/.config/coverage.settings.xml"
-
-          $reports = @(Get-ChildItem -Path $resultsDir -Filter '*.cobertura.xml')
-          if ($reports.Count -ne 1) {
-            throw "Expected exactly one Cobertura report for $($run.Name), found $($reports.Count)."
-          }
-
-          [xml] $coverage = Get-Content -Raw $reports[0].FullName
-          $linesValid = [int] $coverage.coverage.'lines-valid'
-          if ($linesValid -le 0) {
-            throw "Coverage report for $($run.Name) is empty."
-          }
-
-          Write-Host "$($run.Name): $linesValid coverable lines"
+        if ($LASTEXITCODE -ne 0) {
+          throw "Tests failed with exit code $LASTEXITCODE."
         }
     - name: Generate coverage report
       if: matrix.configuration == 'Release'
@@ -128,12 +104,17 @@ jobs:
           dotnet tool install -g dotnet-reportgenerator-globaltool --version $reportGeneratorVersion
         }
 
-        if (-not (Test-Path artifacts)) {
-          Write-Warning 'No artifacts directory found; skipping report generation.'
-          exit 0
+        if ($LASTEXITCODE -ne 0) {
+          throw "ReportGenerator setup failed with exit code $LASTEXITCODE."
         }
+
+        $resultsDir = 'artifacts/test-results/release'
+        if (-not (Test-Path $resultsDir)) {
+          throw "Coverage results directory '$resultsDir' was not created."
+        }
+
         $reports = @(
-          Get-ChildItem -Path artifacts/coverage-results -Recurse -Filter '*.cobertura.xml' -ErrorAction SilentlyContinue |
+          Get-ChildItem -Path $resultsDir -Filter '*.cobertura.xml' -ErrorAction SilentlyContinue |
             ForEach-Object { $_.FullName }
         )
         if ($reports.Count -eq 0) {
@@ -147,8 +128,27 @@ jobs:
           -reporttypes:'Cobertura;HtmlInline;MarkdownSummaryGithub' `
           -classfilters:'-Touki.Resources.SR;-Touki.Framework.Resources.SRF' `
           -title:'touki'
-        if (Test-Path artifacts/coverage/SummaryGithub.md) {
-          Get-Content artifacts/coverage/SummaryGithub.md |
+
+        if ($LASTEXITCODE -ne 0) {
+          throw "ReportGenerator failed with exit code $LASTEXITCODE."
+        }
+
+        $coveragePath = 'artifacts/coverage/Cobertura.xml'
+        if (-not (Test-Path $coveragePath)) {
+          throw "ReportGenerator did not create '$coveragePath'."
+        }
+
+        [xml] $coverage = Get-Content -Raw $coveragePath
+        $linesValid = [int] $coverage.coverage.'lines-valid'
+        if ($linesValid -le 0) {
+          throw 'The merged Cobertura report contains no coverable lines.'
+        }
+
+        Write-Host "Merged coverage report: $linesValid coverable lines"
+
+        $summaryPath = 'artifacts/coverage/SummaryGithub.md'
+        if (Test-Path $summaryPath) {
+          Get-Content $summaryPath |
             Add-Content -Path $env:GITHUB_STEP_SUMMARY
         }
     - name: Upload coverage report
