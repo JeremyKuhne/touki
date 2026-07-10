@@ -70,7 +70,7 @@ Instead of creating complex logic, use MSBuild's built-in item attributes:
 ## Common Patterns and Anti-Patterns
 
 ### Correct Patterns
-✅ **DO:**
+**DO:**
 - **Create valid XML. Invalid XML is never acceptable.**
 - Ensure each XML element has unique attributes; do not repeat the same attribute in a single tag
 - Use `Condition` attributes on individual items, properties, or targets
@@ -82,7 +82,7 @@ Instead of creating complex logic, use MSBuild's built-in item attributes:
 - Match on multiple metadata values when needed for uniqueness (e.g., `MatchOnMetadata="Filename;Extension"`)
 
 ### Anti-Patterns to Avoid
-❌ **DON'T:**
+**DON'T:**
 - Create invalid XML (e.g. duplicate attributes, repeated attribute names in a single element)
 - Create foreach loops using targets when batching would suffice
 - Transform items to strings when you need to compare metadata

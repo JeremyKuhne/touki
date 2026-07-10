@@ -87,7 +87,8 @@ Top-level layout:
   plain `-` (with surrounding spaces when separating clauses) instead of
   em/en-dashes. Only escape when the raw character would actually be
   parsed as markup (e.g. `<` inside an XML doc comment); do not escape
-  defensively when it isn't needed.
+  defensively when it isn't needed. Exact vendored payloads are exempt: fix
+  generic punctuation upstream and re-vendor rather than editing a pinned core.
 
 ## Line breaks and whitespace
 
@@ -259,7 +260,7 @@ catch a mistake.
   production library code. `AreFlagsSet`, `AreAnyFlagsSet`,
   `IsOnlyOneFlagSet`, `SetFlags`, `ClearFlags` inline to the same
   instructions as `&`/`|`/`==` on both TFMs and avoid the `Enum.HasFlag`
-  boxing penalty on net472/net481 (~20&times; faster, zero alloc).
+  boxing penalty on net472/net481 (~20x faster, zero alloc).
 - **When optimizing span-walking helpers**, read the
   [`framework-jit-optimization`](.agents/skills/framework-jit-optimization/SKILL.md)
   skill and its bundled
@@ -278,7 +279,7 @@ catch a mistake.
     `using` and read the result with `ToString()`, or - when the builder is
     mutated via `ref`/`Length`, which a `using` variable forbids - call
     `ToString()` then `Dispose()` explicitly. Verified savings of
-    58-63&nbsp;% allocated bytes when replacing `StringBuilder` in the
+    58-63% allocated bytes when replacing `StringBuilder` in the
     `GlobMatcherFactory` bytecode encoder, with no measurable throughput
     cost.
   - `Touki.Text.StringSegment` / `Touki.Text.StringSpan` instead of
@@ -304,12 +305,17 @@ catch a mistake.
   for the layout rules (namespace = BCL namespace; Touki-specific code stays
   under `touki/Framework/Touki/...`) and the `extern alias` recipe.
 
+## Agent customization changes
+
+After editing agent files, run `pwsh tools/Validate-AgentFiles.ps1`,
+`pwsh tools/Validate-AgentSkills.ps1`, and `pwsh tools/Test-AgentFileLinks.ps1`.
+
 ## Path-specific instructions
 
 Additional rules apply to specific file types and live under
 [.github/instructions/](.github/instructions/). Tools that support the
-`*.instructions.md` format (Copilot cloud agent, Copilot code review, VS Code) load them
-automatically based on each file's `applyTo` glob.
+`*.instructions.md` format (Copilot cloud agent, code review, CLI, VS Code, and
+Visual Studio) load them automatically based on each file's `applyTo` glob.
 
 Currently:
 

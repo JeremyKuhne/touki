@@ -57,8 +57,8 @@ gh release create v0.1.0-alpha.13 `
   --prerelease
 ```
 
-If `gh` is not available, use the GitHub web UI (Releases → Draft a new
-release → choose the existing tag).
+If `gh` is not available, use the GitHub web UI (Releases -> Draft a new
+release -> choose the existing tag).
 
 ### Release notes template
 
@@ -78,13 +78,13 @@ release → choose the existing tag).
 
 ### Breaking changes
 <!-- Only present on Major bumps. AssemblyVersion changed from
-     0.0.0.0 → 1.0.0.0; consumers must rebuild. -->
+    0.0.0.0 -> 1.0.0.0; consumers must rebuild. -->
 - ...
 
 ## Compatibility
 
 - Targets: `net10.0`, `net472`.
-- AssemblyVersion: `<old>` → `<new>` (note **changed** or **unchanged**).
+- AssemblyVersion: `<old>` -> `<new>` (note **changed** or **unchanged**).
 
 ## Install
 

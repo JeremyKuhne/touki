@@ -28,8 +28,10 @@ jobs:
               - .github/prompts/**
               - .github/agents/**
               - .agents/**
+              - .vscode/mcp.json
               - docs/agent-customization.md
               - tools/Validate-AgentFiles.ps1
+              - tools/Validate-AgentSkills.ps1
               - .markdownlint.jsonc
               - .github/workflows/agent-files.yml
 
@@ -37,6 +39,11 @@ jobs:
         if: steps.changes.outputs.agent == 'true'
         shell: pwsh
         run: pwsh tools/Validate-AgentFiles.ps1
+
+      - name: Validate skill catalog and overlays
+        if: steps.changes.outputs.agent == 'true'
+        shell: pwsh
+        run: pwsh tools/Validate-AgentSkills.ps1
 
       - name: Skill freshness warning (90 days)
         if: steps.changes.outputs.agent == 'true'

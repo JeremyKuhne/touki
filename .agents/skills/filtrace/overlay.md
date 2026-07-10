@@ -1,3 +1,8 @@
+---
+core: filtrace
+core-pin: v0.4.0
+---
+
 # Touki overlay - filtrace
 
 Repo-specific companion to the vendored [filtrace](SKILL.md) skill. The `SKILL.md`
@@ -15,7 +20,7 @@ touki-specific lives here.
 filtrace ships as published NuGet packages; touki uses both heads:
 
 - **MCP server** - registered in [.vscode/mcp.json](../../../.vscode/mcp.json) as
-  `dnx KlutzyNinja.Filtrace.Mcp`, exposing the fifteen `trace_*` tools an agent
+  `dnx KlutzyNinja.Filtrace.Mcp@0.4.0`, exposing the fifteen `trace_*` tools an agent
   calls directly. No clone or build required.
 - **CLI** - `dotnet tool install -g KlutzyNinja.Filtrace`, then `filtrace <verb>`.
 
@@ -80,4 +85,5 @@ skill, pin to that tag (`github-ref: refs/tags/vX.Y.Z`, `github-pinned: vX.Y.Z` 
 a tag pin uses the tag name, not a commit SHA) rather than a branch/commit. After
 re-vendoring, run `tools/Validate-AgentFiles.ps1` and
 `tools/Test-AgentFileLinks.ps1` - the latter catches a missed `scripts/` copy
-immediately (dangling relative links).
+immediately (dangling relative links). Update the matching
+`KlutzyNinja.Filtrace.Mcp@<version>` pin in `.vscode/mcp.json` in the same change.

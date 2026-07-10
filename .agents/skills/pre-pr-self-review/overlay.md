@@ -38,9 +38,9 @@ vendored payload).
 - Test conventions (the `MethodName_StateUnderTest_ExpectedBehavior` naming, the
   disposables-in-test-bodies pattern, the culture-sensitive-assertions rule) are in
   [tests.instructions.md](../../../.github/instructions/tests.instructions.md).
-- The agent-file link checker the core's &sect;4 names generically is
+- The agent-file link checker the core's section 4 names generically is
   [tools/Test-AgentFileLinks.ps1](../../../tools/Test-AgentFileLinks.ps1) (see
-  [`agent-files-review`](../agent-files-review/SKILL.md) &sect;7 for `-ChangedOnly`
+  [`agent-files-review`](../agent-files-review/SKILL.md) section 7 for `-ChangedOnly`
   and `-Base`).
 - Touki utility types referenced in the checklist's test-hygiene items:
   `Touki.Text.ValueStringBuilder`, `Touki.Io.TempFolder`,
@@ -52,7 +52,7 @@ vendored payload).
 
 ## Polyfill correctness detail (touki overlay sibling)
 
-The deep per-item detail for the core's &sect;2 - empty-span pinning, `checked()`
+The deep per-item detail for the core's section 2 - empty-span pinning, `checked()`
 sums, throw helpers, the allocation-free strategy catalog, BCL parity, JIT-naming -
 lives in [polyfill-correctness.md](polyfill-correctness.md). It is **not** part of
 the vendored core (it links touki source files under `touki/Framework/`,

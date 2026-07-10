@@ -36,7 +36,7 @@ before inventing new ones:
 - **Pinned `unsafe` pass-through to BCL `T*` overloads** when no span
   variant exists; see
   [EncodingExtensions](../../../touki/Framework/Polyfills/System.Text/EncodingExtensions.cs).
-  Watch the empty-span null-pinnable foot-gun ([gotchas.md](gotchas.md) &sect;1).
+  Watch the empty-span null-pinnable foot-gun ([gotchas.md](gotchas.md) section 1).
 - **`MemoryMarshal.AsBytes` / `AsRef` / `GetReference`** for zero-copy
   reinterpretation.
 

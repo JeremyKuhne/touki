@@ -11,12 +11,14 @@
     2. *.instructions.md files have a non-empty `applyTo` frontmatter value.
     3. SKILL.md files have `name` (^[a-z0-9-]{1,64}$, matching parent directory) and
        `description`.
-    4. *.agent.md files have `description`; if `tools` is present it must be a YAML list.
+     4. *.agent.md files have `description`; if `tools` is present it must be a YAML list
+         and must not use the known legacy flat tool names.
     5. No trailing whitespace or whitespace-only lines in any agent file.
 
     Frontmatter is parsed with a small hand-written parser that handles the flat scalars
     and flat lists used by this repo's schema. If the schema grows beyond that, swap in
-    the `powershell-yaml` module.
+    the `powershell-yaml` module. Portfolio metadata, provenance, overlay contracts,
+    relationships, and catalog consistency are delegated to Validate-AgentSkills.ps1.
 
 .PARAMETER Fix
     Regenerate .github/copilot-instructions.md from AGENTS.md.
@@ -24,6 +26,9 @@
 .EXAMPLE
     pwsh tools/Validate-AgentFiles.ps1
     pwsh tools/Validate-AgentFiles.ps1 -Fix
+
+.NOTES
+    Run tools/Validate-AgentSkills.ps1 after changing any skill or catalog file.
 #>
 [CmdletBinding()]
 param(
@@ -47,10 +52,17 @@ $ScanDirs = @(
 $ExtraWhitespaceFiles = @(
     $AgentsMd,
     $CopilotMirror,
-    (Join-Path $RepoRoot 'docs/agent-customization.md')
+    (Join-Path $RepoRoot 'docs/agent-customization.md'),
+    (Join-Path $RepoRoot '.vscode/mcp.json')
 )
 
 $SkillNamePattern = '^[a-z0-9-]{1,64}$'
+$LegacyAgentToolNames = @{
+    usages = 'search/usages'
+    problems = 'read/problems'
+    changes = 'search/changes'
+    fetch = 'web/fetch'
+}
 $Errors = [System.Collections.Generic.List[string]]::new()
 
 function Add-Error([string]$Message) {
@@ -210,6 +222,13 @@ function Test-Agent([string]$Path) {
     }
     if ($fm.ContainsKey('tools') -and -not ($fm['tools'] -is [array])) {
         Add-Error "${rel}: ``tools`` must be a list."
+    }
+    elseif ($fm.ContainsKey('tools')) {
+        foreach ($tool in $fm['tools']) {
+            if ($LegacyAgentToolNames.ContainsKey([string]$tool)) {
+                Add-Error "${rel}: legacy tool '$tool' should be '$($LegacyAgentToolNames[[string]$tool])'."
+            }
+        }
     }
 }
 
