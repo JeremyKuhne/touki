@@ -37,11 +37,11 @@ Last resort, when a runtime member (instance method, static helper,
 ctor) isn't supplied by a package and isn't an attribute. Polyfill only
 when there's a real caller; "completeness" polyfills bloat the surface.
 
-- **Folder = BCL namespace, dotted.** `System.Convert` &rarr;
+- **Folder = BCL namespace, dotted.** `System.Convert` ->
   `touki/Framework/Polyfills/System/ConvertExtensions.cs`.
-  `System.Text.Encoding` &rarr;
+  `System.Text.Encoding` ->
   `touki/Framework/Polyfills/System.Text/EncodingExtensions.cs`.
-  `System.Security.Cryptography.CryptographicOperations` &rarr;
+  `System.Security.Cryptography.CryptographicOperations` ->
   `touki/Framework/Polyfills/System.Security.Cryptography/CryptographicOperations.cs`.
 - **`namespace` matches the folder.** `Polyfills/System/Foo.cs` declares
   `namespace System;`, `Polyfills/System.Text/Foo.cs` declares

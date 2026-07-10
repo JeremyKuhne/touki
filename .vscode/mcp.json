@@ -7,15 +7,16 @@
             "url": "https://learn.microsoft.com/api/mcp"
         },
         // filtrace trace-analysis MCP server, consumed from the published
-        // KlutzyNinja.Filtrace.Mcp package (github.com/JeremyKuhne/filtrace).
+        // KlutzyNinja.Filtrace.Mcp package (github.com/JeremyKuhne/filtrace),
+        // pinned to the same release as the vendored filtrace skill.
         // `dnx` (the .NET 10 SDK tool runner) downloads and runs the package on
         // demand; `--yes` auto-confirms the one-time download. No local clone or
-        // build required - restart the server after filtrace publishes a new version.
+        // build required. Update this pin with the vendored skill, then restart.
         "filtrace": {
             "type": "stdio",
             "command": "dnx",
             "args": [
-                "KlutzyNinja.Filtrace.Mcp",
+                "KlutzyNinja.Filtrace.Mcp@0.4.0",
                 "--yes"
             ]
         }

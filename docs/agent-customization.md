@@ -5,7 +5,7 @@ right one for your needs, place it in the right folder, and CI will validate it.
 
 ## Decision matrix
 
-| I want to&hellip;                                              | Use                                                                                  |
+| I want to...                                                   | Use                                                                                  |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | Set project-wide rules every agent should follow               | [AGENTS.md](../AGENTS.md) (canonical; mirrored to `.github/copilot-instructions.md`) |
 | Apply rules only to files matching a glob                      | [.github/instructions/](../.github/instructions/)`<name>.instructions.md`            |
@@ -19,9 +19,9 @@ right one for your needs, place it in the right folder, and CI will validate it.
 | --------------------------------- | --------------- | --------------------- | ----------- | -------------------------- | ------------- | ------------------------------- |
 | `AGENTS.md`                       | yes             | yes                   | yes         | yes                        | yes           | yes                             |
 | `.github/copilot-instructions.md` | yes             | yes                   | yes         | yes                        | no            | no                              |
-| `*.instructions.md` (`applyTo`)   | yes             | yes                   | partial     | yes                        | no            | no                              |
+| `*.instructions.md` (`applyTo`)   | yes             | yes                   | yes         | yes                        | no            | no                              |
 | `*.prompt.md`                     | yes             | yes                   | no          | no                         | no            | no                              |
-| `*.agent.md`                      | yes             | yes                   | no          | no                         | via `.claude` | no                              |
+| `*.agent.md`                      | yes             | yes                   | yes         | yes                        | via `.claude` | varies                          |
 | `SKILL.md` (Agent Skills)         | yes             | yes                   | yes         | yes                        | yes           | varies                          |
 
 `AGENTS.md` is the most broadly portable. Prefer it for anything that should apply
@@ -33,13 +33,16 @@ features (path scoping, tool restrictions, slash-command UX, packaged scripts).
 Workspace-scoped MCP server config lives in [.vscode/mcp.json](../.vscode/mcp.json).
 Add a server here only when the agent genuinely cannot reach the data otherwise -
 prefer instructions and skills first (see the practitioner guide rule "instructions
-&rarr; skills &rarr; MCP").
+-> skills -> MCP"). This file configures the VS Code workspace only. Copilot cloud
+agent and code review use the repository's MCP settings on GitHub.com, which are a
+separate configuration and tool allowlist.
 
 Currently wired up:
 
 | Server | Purpose |
 | ------ | ------- |
 | `microsoft-learn` (`https://learn.microsoft.com/api/mcp`) | Current official .NET BCL docs and reference content. Used by the [`polyfill-dotnet-api`](../.agents/skills/polyfill-dotnet-api/SKILL.md) workflow when verifying modern API shapes before deciding whether to polyfill. |
+| `filtrace` (`KlutzyNinja.Filtrace.Mcp@0.4.0`) | Pinned local .NET trace analysis tools used by the [`filtrace`](../.agents/skills/filtrace/SKILL.md) workflow. The package version matches the vendored skill release. |
 
 ## Frontmatter requirements
 
@@ -48,7 +51,12 @@ Currently wired up:
 | `*.instructions.md`  | `applyTo` (non-empty string)          | Comma-separated globs relative to repo root.                           |
 | `*.prompt.md`        | none                                  | `description` recommended.                                             |
 | `*.agent.md`         | `description`                         | If `tools` is present it must be a YAML list (inline `['a', 'b']` or block syntax). |
-| `SKILL.md`           | `name`, `description`                 | `name` must match parent directory name; `^[a-z0-9-]{1,64}$`.          |
+| `SKILL.md`           | `name`, `description`                 | Touki names use ASCII `^[a-z0-9-]{1,64}$` and match the parent directory. See [FORMAT.md](../.agents/skills/FORMAT.md) for portfolio metadata, provenance, and overlays. |
+
+Prompt and custom-agent bodies reference tools with `#tool:<tool-name>`. Their
+`tools` frontmatter uses tool-set aliases such as `read`, `search`, `edit`, and
+`web`, or namespaced tools such as `web/fetch`. Unrecognized tools are ignored,
+so validate the available set in the target host.
 
 ## Authoring rules
 
@@ -56,6 +64,8 @@ These come from [AGENTS.md](../AGENTS.md) and apply to every agent file in the r
 
 - No trailing whitespace; no whitespace-only lines.
 - Use spaces (not tabs) inside Markdown bodies and YAML frontmatter.
+- Prefer plain ASCII punctuation in Touki-authored files. Exact vendored cores
+  may retain upstream punctuation; correct it upstream and re-vendor.
 - Keep lines under ~120 characters where practical.
 - Single blank line between sections; preserve existing whitespace when editing.
 
@@ -65,15 +75,20 @@ Run the validator before pushing:
 
 ```pwsh
 pwsh tools/Validate-AgentFiles.ps1
+pwsh tools/Validate-AgentSkills.ps1
+pwsh tools/Test-AgentFileLinks.ps1
 ```
 
-Use `-Fix` to regenerate `.github/copilot-instructions.md` from `AGENTS.md`:
+Use `-Fix` after every `AGENTS.md` change to regenerate
+`.github/copilot-instructions.md`, then stage both files:
 
 ```pwsh
 pwsh tools/Validate-AgentFiles.ps1 -Fix
 ```
 
 The same checks run in CI via [.github/workflows/agent-files.yml](../.github/workflows/agent-files.yml).
+The skill validator checks the mixed catalog, the strict commons subset,
+overlay pins, relationship targets/cycles, and catalog category labels.
 
 ## Improvement loop
 
@@ -100,11 +115,11 @@ prose anywhere a rule has been violated before.
 
 Attention to instructions degrades as files grow. Targets:
 
-- [AGENTS.md](../AGENTS.md): &le; 10 KB. If it grows past this, split rules into
+- [AGENTS.md](../AGENTS.md): <= 20 KB. If it grows past this, split rules into
   a path-specific `*.instructions.md` and leave a one-line summary pointer.
-- Each `*.instructions.md`: &le; 8 KB. If a single area needs more, split it
+- Each `*.instructions.md`: <= 12 KB. If a single area needs more, split it
   further by glob.
-- Each `SKILL.md`: &le; 15 KB body. Move long examples or scripts into sibling
+- Each `SKILL.md`: <= 15 KB body. Move long examples or scripts into sibling
   files within the skill directory.
 
 ### Periodic maintenance

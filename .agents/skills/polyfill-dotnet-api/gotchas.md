@@ -47,7 +47,7 @@ tests that only use `byte`/`char` will not catch this.
 ## 3. `Random.NextBytes(byte[])` is native on net481
 
 The obvious managed span loop is slower per byte (loses to `byte[]` + copy
-by ~1.2&times; on big buffers despite saving the alloc). Use a pinned
+by ~1.2x on big buffers despite saving the alloc). Use a pinned
 pointer loop and only on the type-exact fast path; subclasses go through
 the array overload. See
 [RandomExtensions](../../../touki/Framework/Polyfills/System/RandomExtensions.cs).

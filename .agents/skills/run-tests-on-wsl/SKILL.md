@@ -2,7 +2,13 @@
 name: run-tests-on-wsl
 description: Run touki tests - especially the Unix-only oracle suites under `touki.tests/Touki/Io/Globbing/` - inside WSL Ubuntu on Windows. Use when the user asks to "run tests on Linux", "run the Posix/PosixPath/Bash oracles", or "iterate Unix tests locally", and for any fix that needs Linux verification before pushing.
 metadata:
+  applicability: repo-local
+  binding: none
+  maturity: stable
   portability: repo-specific
+  related: performance-testing, pre-pr-self-review
+  requires: none
+  risk: local-write
 ---
 
 # Running tests inside WSL Ubuntu
@@ -106,7 +112,7 @@ findings in [docs/globbing-feature-plan.md](../../../docs/globbing-feature-plan.
 
 The one OS-conditional row to expect is
 `SequentialSeparatorMSBuildOracleTests` `//a` vs `/a`: `MSBuildGlob` on
-Linux treats `//a` &equiv; `/a`; on Windows it treats `//a` as a UNC root.
+Linux treats `//a` as equivalent to `/a`; on Windows it treats `//a` as a UNC root.
 Touki is OS-stable, matching the Windows verdict - this is a
 documented platform divergence in the oracle, not in touki.
 

@@ -3,7 +3,13 @@ name: polyfill-dotnet-api
 description: Polyfill a modern .NET BCL API for .NET Framework by hand-rolling it under `touki/Framework/`. Use when asked to "polyfill", "backport", "add a span overload for net472/net481", "make API X available downlevel", or any time a member is missing on net472 and present on net10. The authoring counterpart to the vendored `dotnet-polyfills` skill (which surveys *which* Microsoft package or PolySharp generator supplies a member); this skill covers the source-preference order, the behavior-parity design rules, and the recurring net472/net481 gotchas.
 compatibility: Uses the microsoft-learn MCP server to confirm modern BCL API shapes and edge cases when available; falls back to fetching learn.microsoft.com and the dotnet/runtime reference source otherwise.
 metadata:
-  portability: repo-specific
+   applicability: dotnet-framework
+   binding: none
+   maturity: stable
+   portability: repo-specific
+   related: pre-pr-self-review, framework-jit-optimization, performance-testing
+   requires: dotnet-polyfills
+   risk: local-write
 ---
 
 # Polyfill a .NET API for .NET Framework

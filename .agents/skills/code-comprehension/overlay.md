@@ -35,6 +35,10 @@ differs:
   lines up to ~120 are normal and up to 150 are tolerated. Use touki's rule, not
   the core's 80-column lean.
 
+The vendored core also contains one upstream em dash. Keep the core byte-identical
+to its pin; Touki-authored additions use plain ASCII and the punctuation fix belongs
+upstream before the next re-vendor.
+
 ## Cross-references (the core's review-time siblings)
 
 - [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - the pre-PR checklist;

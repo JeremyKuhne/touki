@@ -51,14 +51,14 @@ as `recommended: true`):
 
 Channel rules of thumb:
 
-- Don't *skip* channels casually. `alpha → beta → rc → stable` is the
-  normal path. Going `alpha → stable` is allowed but should be deliberate.
+- Don't *skip* channels casually. `alpha -> beta -> rc -> stable` is the
+  normal path. Going `alpha -> stable` is allowed but should be deliberate.
 - Once you ship a stable `Major.Minor.Patch`, the next prerelease must
-  bump *something* (`0.1.0` → `0.1.1-alpha.1` or `0.2.0-alpha.1`); you
+  bump *something* (`0.1.0` -> `0.1.1-alpha.1` or `0.2.0-alpha.1`); you
   cannot ship `0.1.0-alpha.2` after `0.1.0` stable.
 - Do **not** mix channels backwards (no going from `beta` back to `alpha`
   for the same Major.Minor.Patch). If a beta turned out to need more
-  churn, bump the underlying version: `0.2.0-beta.3` → `0.3.0-alpha.1`.
+  churn, bump the underlying version: `0.2.0-beta.3` -> `0.3.0-alpha.1`.
 
 ## 3. Decide `Major.Minor.Patch`
 
@@ -106,7 +106,7 @@ silently keeps `AssemblyVersion = 0.0.0.0` across an incompatible
 boundary, which is a real foot-gun for downstream binders.
 
 When `Major` does bump, also note in the release that `AssemblyVersion`
-moved (`0.0.0.0` → `1.0.0.0`).
+moved (`0.0.0.0` -> `1.0.0.0`).
 
 ## 4. Compose the tag
 

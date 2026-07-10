@@ -1,6 +1,6 @@
 ---
 description: Read-only reviewer for touki PRs. Checks cross-TFM correctness, the JIT-naming rule, polyfill conventions, and missing tests/docs. Findings only - never offers fixes.
-tools: ['search', 'usages', 'problems', 'changes', 'fetch']
+tools: ['read', 'search', 'web']
 ---
 
 # Touki-Reviewer

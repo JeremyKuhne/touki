@@ -15,11 +15,11 @@ overloads produce.
 
 Before pinning:
 
-- Both empty &rarr; return the zero-length result without pinning.
-- Source non-empty, destination empty &rarr; pass a stack-allocated
+- Both empty -> return the zero-length result without pinning.
+- Source non-empty, destination empty -> pass a stack-allocated
   non-null pointer with length 0
   (`byte stack = 0; return Foo(src, &stack, 0);`).
-- Source empty &rarr; return the empty result without pinning.
+- Source empty -> return the empty result without pinning.
 - Cross-check the resulting exception type against the modern BCL.
 
 ## Multi-input length sums are `checked()`

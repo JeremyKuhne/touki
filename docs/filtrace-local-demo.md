@@ -17,10 +17,10 @@ faster?" - not tool-by-tool instructions.
 ## Setup (one time)
 
 filtrace is published to NuGet (github.com/JeremyKuhne/filtrace). The MCP server
-entry in [.vscode/mcp.json](../.vscode/mcp.json) runs it on demand via `dnx` (the
-.NET 10 SDK tool runner) - no clone or build required. Start it from the Command
-Palette (*MCP: List Servers* -> `filtrace` -> *Start Server*) and confirm the 13
-`trace_*` tools register in the chat tool picker.
+entry in [.vscode/mcp.json](../.vscode/mcp.json) runs version 0.4.0 on demand via
+`dnx` (the .NET 10 SDK tool runner) - no clone or build required. Start it from
+the Command Palette (*MCP: List Servers* -> `filtrace` -> *Start Server*) and
+confirm the 15 `trace_*` tools register in the chat tool picker.
 
 ---
 

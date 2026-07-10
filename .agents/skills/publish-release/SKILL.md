@@ -2,7 +2,13 @@
 name: publish-release
 description: Publish a new version of `KlutzyNinja.Touki` or `KlutzyNinja.Touki.TestSupport` to NuGet by cutting a release tag. Use when asked to "publish a new version", "release alpha.N", "ship a beta", "cut a release", "promote alpha to beta", or "tag and publish". Walks the user through choosing the right `Major.Minor.Patch` bump, deciding whether to stay in `alpha` / `beta` / `rc` / stable, picking the correct tag stream (`v*` vs `ts-v*`), pushing the tag, and creating the matching GitHub release. Vets when an `AssemblyVersion`-changing bump is required (binary breaking changes vs additive/bugfix work).
 metadata:
+  applicability: repo-local
+  binding: none
+  maturity: stable
   portability: repo-specific
+  related: create-pr
+  requires: pre-pr-self-review
+  risk: remote-write
 ---
 
 # Publish a release
@@ -28,7 +34,7 @@ typo) before any pack/push runs.
 **Approval scope.** "Publish a release" authorizes preparing the tag and
 release notes. It does **not** authorize the tag push. The
 **Approval checkpoint** below is the gate. See AGENTS.md
-§ "Working with the user on changes" for the canonical rule.
+section "Working with the user on changes" for the canonical rule.
 
 ## Steps overview
 
@@ -73,7 +79,7 @@ validated tag.
 **Stop here.** Show the user:
 
 - The chosen tag (e.g. `v0.1.0-alpha.13`).
-- The prior tag and what bumped (e.g. "alpha.12 → alpha.13, no Major/Minor
+- The prior tag and what bumped (e.g. "alpha.12 -> alpha.13, no Major/Minor
   change").
 - The commit the tag will point at (`git rev-parse HEAD`, short SHA + subject).
 - A short summary of the changes since the prior tag (`git log --oneline
@@ -102,7 +108,7 @@ watch the workflow, and create the GitHub release.
   shipping any change that lands in a release.
 - [`address-pr-feedback`](../address-pr-feedback/SKILL.md) - used to land
   the changes that this skill then ships.
-- AGENTS.md § "Working with the user on changes" - publish-boundary rule
+- AGENTS.md section "Working with the user on changes" - publish-boundary rule
   governing the approval checkpoint.
 - [Directory.Build.targets](../../../Directory.Build.targets) - central
   MinVer wiring.

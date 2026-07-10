@@ -14,9 +14,9 @@ don't auto-invoke the skill still pick them up.
 Files under `touki/Framework/Polyfills/<BclNamespace>/` declare the BCL
 namespace they are polyfilling, **not** a `Touki.*` namespace:
 
-- `Polyfills/System/Foo.cs` &rarr; `namespace System;`
-- `Polyfills/System.Text/Foo.cs` &rarr; `namespace System.Text;`
-- `Polyfills/System.Buffers/Foo.cs` &rarr; `namespace System.Buffers;`
+- `Polyfills/System/Foo.cs` -> `namespace System;`
+- `Polyfills/System.Text/Foo.cs` -> `namespace System.Text;`
+- `Polyfills/System.Buffers/Foo.cs` -> `namespace System.Buffers;`
 
 Touki-specific code that is **not** a polyfill of a modern .NET API stays
 under `touki/Framework/Touki/...` with `Touki.*` namespaces.

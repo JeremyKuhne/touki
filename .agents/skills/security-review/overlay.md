@@ -24,7 +24,7 @@ here instead.
 
 Concrete touki references for the generic checklist categories:
 
-- **&sect;1 Length / size of inputs** - the `DefaultMaxPatternLength` /
+- **Section 1 Length / size of inputs** - the `DefaultMaxPatternLength` /
   `maxPatternLength` opt-out shape lives in
   [touki/Touki/Io/Globbing/GlobSpecification.Factory.cs](../../../touki/Touki/Io/Globbing/GlobSpecification.Factory.cs).
 - **`stackalloc` row (unsafe-apis)** - when input could exceed the stack budget,
