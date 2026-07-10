@@ -1,3 +1,8 @@
+---
+core: create-pr
+core-pin: v0.10.0
+---
+
 # Touki overlay - create-pr
 
 Repo-specific companion to the vendored [create-pr](SKILL.md) skill. The

@@ -1,16 +1,26 @@
 ---
+compatibility: Requires the .NET SDK, package restore access, and a project targeting .NET Framework alongside modern .NET.
 description: Set up and use the standard .NET downlevel polyfill stack so a multi-targeted library can call modern BCL APIs on .NET Framework - PolySharp for compiler and language attributes, the official Microsoft downlevel NuGet packages (System.Memory, Microsoft.Bcl.Memory, Microsoft.Bcl.HashCode, Microsoft.IO.Redist, and the other Microsoft.Bcl.* / System.* backports), and the KlutzyNinja.Touki package's runtime polyfills layered on top. Use when adding a downlevel net472 / net481 target, choosing which package supplies a missing type before hand-rolling, configuring PolySharp, or checking whether an API is already polyfilled. For authoring a new hand-rolled polyfill inside a repo's own Framework tree, see polyfill-dotnet-api.
 license: MIT
 metadata:
+    applicability: dotnet-framework
+    binding: optional-overlay
     github-path: skills/dotnet-polyfills
-    github-pinned: v0.8.1
-    github-ref: refs/tags/v0.8.1
+    github-pinned: v0.10.0
+    github-ref: refs/tags/v0.10.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 164775827addf103d952a6be1768022335cf6827
-    portability: semi-portable
+    github-tree-sha: ae0aa41d3c5c002298172ba4e5f7b24eb615d9db
+    maturity: canary
+    portability: portable
+    related: pre-pr-self-review, framework-jit-optimization
+    requires: none
+    risk: local-write
 name: dotnet-polyfills
 ---
 # .NET downlevel polyfills
+
+If `overlay.md` exists beside this file, read it before acting; it contains
+repository-specific bindings. This core remains usable without it.
 
 The package-and-generator stack that lets a multi-targeted library call modern
 BCL APIs (`Span<T>`, `Index` / `Range`, `HashCode`, the C# language attributes,

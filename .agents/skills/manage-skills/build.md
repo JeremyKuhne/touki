@@ -54,11 +54,17 @@ Author it to the repo's `FORMAT.md`:
   `*.md` files in the same directory (the pattern this very skill uses).
 - `name` matches the directory; a "pushy" `description` with explicit trigger
   phrasing that will auto-invoke on the right asks without over-firing.
-- Set `metadata.portability`.
+- Set every portfolio metadata field (`portability`, `applicability`, `binding`,
+  `risk`, `maturity`, `requires`, and `related`) using the repo's `FORMAT.md`.
+- For an overlay-aware core, include the standard loader sentence. Create a
+  downstream overlay from `assets/overlay.md.tmpl`; replace `{{SKILL_NAME}}` and
+  `{{CORE_PIN}}`, then add only repository-specific bindings.
 - Add a row to the catalog `README.md` inventory in the same change, and a
   disambiguation entry if the trigger phrasing competes with an existing skill.
-- Validate with the repo's agent-file checks - a frontmatter validator and a link
-  checker.
+- Validate the `SKILL.md` frontmatter with the bundled
+  [scripts/Validate-Skills.ps1](scripts/Validate-Skills.ps1) in strict portfolio
+  mode, then run the repo's remaining agent-file checks (the installed-artifact
+  link check, markdown lint, and generated catalog check).
 
 ### Born-local vs born-shared
 
@@ -71,9 +77,8 @@ Decide where the skill's home is before writing much:
   portable core directly in the commons, then vendor it back here with an overlay.
   Keep repo-specific paths, cross-references, and example links out of the core
   from the start - they belong in the overlay. Leave a short prose cue in the core
-  pointing the agent at the overlay (e.g. "a consuming repository wires the
-  concrete cross-references in its overlay"); that cue is what gets the overlay
-  read.
+  telling the agent to read `overlay.md` when present; that stable loader contract
+  is what gets the overlay read.
 
 A skill that is mostly generic but needs a few local specifics is still
 born-shared: the generic part is the core, the specifics are the overlay. The test

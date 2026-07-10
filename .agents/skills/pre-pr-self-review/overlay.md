@@ -1,3 +1,8 @@
+---
+core: pre-pr-self-review
+core-pin: v0.10.0
+---
+
 # Touki overlay - pre-pr-self-review
 
 Repo-specific companion to the vendored [pre-pr-self-review](SKILL.md) skill. The

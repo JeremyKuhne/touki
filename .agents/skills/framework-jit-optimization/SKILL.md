@@ -1,16 +1,26 @@
 ---
+compatibility: Requires a .NET SDK that can build both modern .NET and .NET Framework targets; measurements use BenchmarkDotNet.
 description: Optimize hot-path code for the `net481` (.NET Framework) target in a multi-targeted library's Framework-only sources. Use when writing or reviewing performance-sensitive loops, deciding whether to specialize a generic method for primitive types, choosing between scalar/unrolled/BCL-delegating implementations, or diagnosing why a net481 micro-benchmark regresses on the older RyuJIT. Also covers the modern .NET (net10) counterpart - vectorization, hardware intrinsics, struct-generic kernels, JIT-friendly shapes - and the cross-TFM codegen fundamentals shared by both targets (arithmetic and branchless lowering, struct layout, zero-allocation static data, hot-path allocation anti-patterns). For BenchmarkDotNet harness mechanics (authoring/running benchmarks, evaluating allocations) see the `performance-testing` skill.
 license: MIT
 metadata:
+    applicability: dotnet-framework
+    binding: optional-overlay
     github-path: skills/framework-jit-optimization
-    github-pinned: v0.6.0
-    github-ref: refs/tags/v0.6.0
+    github-pinned: v0.10.0
+    github-ref: refs/tags/v0.10.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 854e92f1efe594bc805617ebdb1fc7a38dcad3aa
-    portability: semi-portable
+    github-tree-sha: 1523bdc712c82636a88605ecf3f31b95308a0e39
+    maturity: canary
+    portability: portable
+    related: performance-testing, scratch-buffer-strategy, pre-pr-self-review
+    requires: none
+    risk: local-write
 name: framework-jit-optimization
 ---
 # .NET Framework 4.8.1 JIT optimization
+
+If `overlay.md` exists beside this file, read it before acting; it contains
+repository-specific bindings. This core remains usable without it.
 
 A multi-targeted library targets `net481` in addition to modern .NET. Code in the
 Framework-only source tree (the `Framework/` subtree by convention, excluded from

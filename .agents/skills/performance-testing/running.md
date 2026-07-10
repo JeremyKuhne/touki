@@ -39,8 +39,13 @@ to the generic path on the modern runtime.
 dotnet run -c Release -f net10.0 --project <root>.perf -- --filter *MyBenchmark*
 
 # A single method
-dotnet run -c Release -f net10.0 --project <root>.perf -- --filter *MyBenchmark.Variant
+dotnet run -c Release -f net10.0 --project <root>.perf -- --filter *MyBenchmark.Variant*
 ```
+
+The trailing `*` matters: `--filter` globs the full benchmark ID
+(`Namespace.Type.Method`), so `*MyBenchmark.Variant*` also matches the
+parameterized cases (`Variant(x: 1)`, ...) that a bare `*MyBenchmark.Variant`
+would miss.
 
 ## Interactive picker
 

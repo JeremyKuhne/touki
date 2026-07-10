@@ -45,8 +45,8 @@ vendor, judge whether the skill's domain applies to **this** repo:
   vendoring something that will never fire.
 - A project-gated skill (one that drives a sibling project such as a fuzz or perf
   project) applies if the repo has that project *or should have it*. If the
-  project is missing, note that vendoring the skill can stand it up (see the
-  bootstrap path in [build.md](build.md)).
+  project is missing, report that project creation as a separate prerequisite;
+  vendoring the current core does not scaffold it.
 - A repo-local skill from another repo (tied to that repo's unique structure)
   does not transfer; flag it as out of scope.
 

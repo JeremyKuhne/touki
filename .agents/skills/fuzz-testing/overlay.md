@@ -1,3 +1,8 @@
+---
+core: fuzz-testing
+core-pin: v0.10.0
+---
+
 # Touki overlay - fuzz-testing
 
 Repo-specific companion to the vendored [fuzz-testing](SKILL.md) skill. The
@@ -7,7 +12,7 @@ portable core** from
 `metadata.github-*` provenance in `SKILL.md`). Do not hand-edit the core -
 `gh skill update` would flag the drift. Everything touki-specific lives here.
 
-> **Pinned to a release.** The core is pinned to the commons **v0.8.1** tag. Pull
+> **Pinned to a release.** The core is pinned to the commons **v0.10.0** tag. Pull
 > later upstream changes with `gh skill update fuzz-testing`.
 
 **Authoritative mechanics.** The core's

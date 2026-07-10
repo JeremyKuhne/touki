@@ -1,3 +1,8 @@
+---
+core: roslyn-analyzers
+core-pin: v0.10.0
+---
+
 # Touki overlay - roslyn-analyzers
 
 Repo-specific companion to the vendored [roslyn-analyzers](SKILL.md) skill. The
@@ -8,7 +13,7 @@ core** from
 `metadata.github-*` provenance in `SKILL.md`). Do not hand-edit the core -
 `gh skill update` would flag the drift. Everything touki-specific lives here.
 
-> **Pinned to a release.** The core is pinned to the commons **v0.8.1** tag. Pull
+> **Pinned to a release.** The core is pinned to the commons **v0.10.0** tag. Pull
 > later upstream changes with `gh skill update roslyn-analyzers` (review the diff,
 > re-pin to the new tag).
 

@@ -1,17 +1,26 @@
 ---
-name: performance-testing
+compatibility: Requires the .NET SDK and BenchmarkDotNet; source-line profiling may require a repository-specific trace tool.
 description: Author and run BenchmarkDotNet performance tests in a multi-targeted .NET library's perf project, and translate a user's outcome-shaped performance question into a measurement. Use when adding new benchmarks, running existing ones, comparing implementations, profiling to find which method or source line dominates, evaluating allocations / memory usage, reading the generated code (sharplab / DisassemblyDiagnoser / HardwareCounters), or when a user asks how long something takes, how much memory it uses, where time is spent, or to help make a method faster - which this skill turns into a scenario, a benchmark, and a drill-down.
 license: MIT
 metadata:
-  github-path: skills/performance-testing
-  github-pinned: v0.7.0
-  github-ref: refs/tags/v0.7.0
-  github-repo: https://github.com/JeremyKuhne/agent-skills
-  github-tree-sha: c7319b537b3e4c9b1d13244c7c7a9a364cbb36a2
-  portability: semi-portable
+    applicability: dotnet-project-gated
+    binding: optional-overlay
+    github-path: skills/performance-testing
+    github-pinned: v0.10.0
+    github-ref: refs/tags/v0.10.0
+    github-repo: https://github.com/JeremyKuhne/agent-skills
+    github-tree-sha: 5a20e5995ee9e6d6d6a24131e1522f0084761e79
+    maturity: canary
+    portability: portable
+    related: framework-jit-optimization, scratch-buffer-strategy, pre-pr-self-review
+    requires: none
+    risk: local-write
+name: performance-testing
 ---
-
 # Performance testing with BenchmarkDotNet
+
+If `overlay.md` exists beside this file, read it before acting; it contains
+repository-specific bindings. This core remains usable without it.
 
 This skill covers authoring and running
 [BenchmarkDotNet](https://benchmarkdotnet.org/) benchmarks in a multi-targeted

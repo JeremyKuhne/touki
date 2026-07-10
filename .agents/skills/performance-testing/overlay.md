@@ -1,3 +1,8 @@
+---
+core: performance-testing
+core-pin: v0.10.0
+---
+
 # Touki overlay - performance-testing
 
 Repo-specific companion to the vendored [performance-testing](SKILL.md) skill.
@@ -10,7 +15,7 @@ core - `gh skill update` would flag the drift. Everything touki-specific lives
 here, plus the two profiling pages below, which are a touki overlay (they drive
 the repo's trace analyzer).
 
-> **Pinned to a release.** The core is pinned to the commons **v0.7.0** tag. Pull
+> **Pinned to a release.** The core is pinned to the commons **v0.10.0** tag. Pull
 > later upstream changes with `gh skill update performance-testing` (review the
 > diff, re-pin to the new tag).
 

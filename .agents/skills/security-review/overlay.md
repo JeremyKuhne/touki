@@ -1,3 +1,8 @@
+---
+core: security-review
+core-pin: v0.10.0
+---
+
 # Touki overlay - security-review
 
 Repo-specific companion to the vendored [security-review](SKILL.md) skill. The

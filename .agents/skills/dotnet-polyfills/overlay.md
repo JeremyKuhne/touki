@@ -1,3 +1,8 @@
+---
+core: dotnet-polyfills
+core-pin: v0.10.0
+---
+
 # Touki overlay - dotnet-polyfills
 
 Repo-specific companion to the vendored [dotnet-polyfills](SKILL.md) skill. The
@@ -6,7 +11,7 @@ portable core** from
 [JeremyKuhne/agent-skills](https://github.com/JeremyKuhne/agent-skills) (see the
 `metadata.github-*` provenance in `SKILL.md`). Do not hand-edit the core.
 
-> **Pinned to a release.** The core is pinned to the commons **v0.8.1** tag.
+> **Pinned to a release.** The core is pinned to the commons **v0.10.0** tag.
 
 ## Touki bindings
 

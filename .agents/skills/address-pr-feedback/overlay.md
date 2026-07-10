@@ -1,3 +1,8 @@
+---
+core: address-pr-feedback
+core-pin: v0.10.0
+---
+
 # Touki overlay - address-pr-feedback
 
 Repo-specific companion to the vendored [address-pr-feedback](SKILL.md) skill. The

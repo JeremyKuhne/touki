@@ -1,16 +1,26 @@
 ---
+compatibility: Requires gh 2.90 or later for install and update operations; manual file comparison remains available without gh.
 description: Find, add, update, and share agent skills in this repo. Use when asked to "find a skill" for a task, "build a skill" or "create a skill" (this skill checks whether one already exists - in the repo, the shared commons, or a public catalog - before authoring a new one), "update a skill", or reconcile a local skill change against the upstream commons vs a repo-local overlay. Covers the find-first build path, the tiered search, and the pull/push update flow. Not for validating one agent file's syntax - that is `agent-files-review`.
 license: MIT
 metadata:
+    applicability: universal
+    binding: optional-overlay
     github-path: skills/manage-skills
-    github-pinned: v0.8.1
-    github-ref: refs/tags/v0.8.1
+    github-pinned: v0.10.0
+    github-ref: refs/tags/v0.10.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 2e2aa63453c2a3231c475d2b4d9e170904cdd5b9
+    github-tree-sha: bb78d07296156a84ee9f54023145532a5275607a
+    maturity: canary
     portability: portable
+    related: agent-files-review
+    requires: none
+    risk: remote-write
 name: manage-skills
 ---
 # Manage skills
+
+If `overlay.md` exists beside this file, read it before acting; it contains
+repository-specific bindings. This core remains usable without it.
 
 The lifecycle skill for the skills under a repo's `.agents/skills/`: discover one,
 add one, update one, and keep local changes in sync with the shared set. It turns
@@ -56,13 +66,21 @@ that an improvement was written into the wrong layer. See [update.md](update.md)
 
 ## Conventions every skill follows
 
-Whatever the verb, the result must satisfy the repo's format rules (its
-`FORMAT.md`): a thin `SKILL.md` core under the size budget with deep detail in
-sibling files; `name` matching the directory; a "pushy" `description` with trigger
-phrasing; `metadata.portability` set; a row in the catalog `README.md`; and a
-disambiguation entry when the trigger phrasing competes with an existing skill.
-After any add or edit, validate with the repo's agent-file checks - a frontmatter
-validator and a link checker.
+Whatever the verb, the result must satisfy the repo's authoring rules
+(`FORMAT.md`) and then pass `agent-files-review`, which owns the file-level
+checks - frontmatter, mirror sync, whitespace, and the validator and link
+checker. Don't restate those rules here.
+
+For the `SKILL.md` frontmatter check specifically, this skill bundles
+[scripts/Validate-Skills.ps1](scripts/Validate-Skills.ps1) - a dependency-free
+PowerShell port of the Agent Skills spec validator - so the check runs anywhere
+the skill is vendored, without the upstream tool. Run it on the skill directory:
+`pwsh scripts/Validate-Skills.ps1 <skill-dir>`. A commons portfolio uses
+`-RequirePortfolioMetadata` to enforce its metadata and overlay contract.
+
+For a new downstream binding, start from
+`assets/overlay.md.tmpl`, replace its skill and pin tokens, and keep every local
+path and concrete cross-reference in that overlay.
 
 ## Sub-pages
 
@@ -76,7 +94,7 @@ validator and a link checker.
 ## Disambiguation
 
 `manage-skills` operates on the **catalog lifecycle** - discover, add, vendor,
-sync. It is not [agent-files-review](../agent-files-review/SKILL.md), which
+sync. It is not `agent-files-review`, which
 validates the **syntax and conventions** of one agent file (frontmatter, mirror
 sync, whitespace). The normal order is: run `manage-skills` to bring a skill in
 or push one out, then `agent-files-review` to validate the file you ended up with.

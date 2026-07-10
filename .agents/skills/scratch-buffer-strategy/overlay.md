@@ -1,3 +1,8 @@
+---
+core: scratch-buffer-strategy
+core-pin: v0.10.0
+---
+
 # Touki overlay - scratch-buffer-strategy
 
 Repo-specific companion to the vendored [scratch-buffer-strategy](SKILL.md) skill.
