@@ -73,25 +73,52 @@ jobs:
         $resultsDir = Join-Path $PWD.Path "artifacts/test-results/$($configuration.ToLower())"
         New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
 
-        # MTP args appended only on Release: coverage instrumentation slows tests
-        # and Codecov only consumes the Release run.
-        $extraArgs = @()
-        if ($configuration -eq 'Release') {
-          $extraArgs = @(
-            '--coverage',
-            '--coverage-output-format', 'cobertura',
-            '--coverage-settings', "$PWD/.config/coverage.settings.xml"
-          )
-        }
-
         dotnet test -c $configuration --no-build `
           -p:TestingPlatformCaptureOutput=false `
           --results-directory "$resultsDir" `
           --report-trx `
-          --output Detailed `
-          @extraArgs
+          --output Detailed
+    - name: Collect coverage
+      if: matrix.configuration == 'Release'
+      run: |
+        # Coverage collected through the solution-level MTP invocation has produced empty Cobertura
+        # files on GitHub-hosted Windows runners since the repository switched to MTP.
+        # Run each production-code test target separately and sequentially instead. This also avoids
+        # merging the duplicate report copies MTP places under the TRX results directory.
+        $coverageRuns = @(
+          @{ Name = 'touki-net10'; Project = 'touki.tests/touki.tests.csproj'; Framework = 'net10.0' },
+          @{ Name = 'touki-net11'; Project = 'touki.tests/touki.tests.csproj'; Framework = 'net11.0' },
+          @{ Name = 'touki-net481'; Project = 'touki.tests/touki.tests.csproj'; Framework = 'net481' },
+          @{ Name = 'aot-net10'; Project = 'touki.aot.tests/touki.aot.tests.csproj'; Framework = 'net10.0' }
+        )
+
+        foreach ($run in $coverageRuns) {
+          $resultsDir = Join-Path $PWD.Path "artifacts/coverage-results/$($run.Name)"
+          New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
+
+          dotnet test $run.Project -c Release -f $run.Framework --no-build `
+            -p:TestingPlatformCaptureOutput=false `
+            --results-directory "$resultsDir" `
+            --output Normal `
+            --coverage `
+            --coverage-output-format cobertura `
+            --coverage-settings "$PWD/.config/coverage.settings.xml"
+
+          $reports = @(Get-ChildItem -Path $resultsDir -Filter '*.cobertura.xml')
+          if ($reports.Count -ne 1) {
+            throw "Expected exactly one Cobertura report for $($run.Name), found $($reports.Count)."
+          }
+
+          [xml] $coverage = Get-Content -Raw $reports[0].FullName
+          $linesValid = [int] $coverage.coverage.'lines-valid'
+          if ($linesValid -le 0) {
+            throw "Coverage report for $($run.Name) is empty."
+          }
+
+          Write-Host "$($run.Name): $linesValid coverable lines"
+        }
     - name: Generate coverage report
-      if: always() && matrix.configuration == 'Release'
+      if: matrix.configuration == 'Release'
       run: |
         $reportGeneratorVersion = '5.5.9'
         if (dotnet tool list -g | Select-String -SimpleMatch 'dotnet-reportgenerator-globaltool') {
@@ -106,12 +133,11 @@ jobs:
           exit 0
         }
         $reports = @(
-          Get-ChildItem -Path artifacts -Recurse -Filter '*.cobertura.xml' -ErrorAction SilentlyContinue |
+          Get-ChildItem -Path artifacts/coverage-results -Recurse -Filter '*.cobertura.xml' -ErrorAction SilentlyContinue |
             ForEach-Object { $_.FullName }
         )
         if ($reports.Count -eq 0) {
-          Write-Warning 'No cobertura reports found; skipping report generation.'
-          exit 0
+          throw 'No Cobertura reports found; coverage collection failed.'
         }
         $reportsArg = ($reports -join ';')
         New-Item -ItemType Directory -Force -Path artifacts/coverage | Out-Null
@@ -126,7 +152,7 @@ jobs:
             Add-Content -Path $env:GITHUB_STEP_SUMMARY
         }
     - name: Upload coverage report
-      if: always() && matrix.configuration == 'Release'
+      if: matrix.configuration == 'Release'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
@@ -134,7 +160,7 @@ jobs:
         if-no-files-found: warn
         retention-days: 14
     - name: Upload coverage to Codecov
-      if: always() && matrix.configuration == 'Release'
+      if: matrix.configuration == 'Release'
       uses: codecov/codecov-action@v5
       with:
         files: artifacts/coverage/Cobertura.xml
