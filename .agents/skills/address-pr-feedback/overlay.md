@@ -26,6 +26,23 @@ Repo-specific companion to the vendored [address-pr-feedback](SKILL.md) skill. T
   has been violated on this repo specifically during PR-feedback rounds. Re-read it
   at the start of every invocation.
 
+## Approval-boundary override
+
+Touki requires separate approval for committing and pushing review fixes. Where
+the vendored core treats one publishing verb as approval for both actions, this
+overlay narrows it:
+
+- `git commit` requires an explicit commit instruction in the user's most recent
+  message.
+- `push`, `ship it`, or `send it` authorizes only pushing existing commits.
+- `update the PR` or resolving review threads authorizes only the named remote PR
+  actions; it does not authorize a prerequisite commit or push.
+- Commit, push, and PR-operation approval do not imply one another. Every action
+  performed must be explicit in the same most recent message.
+
+The latest [AGENTS.md](../../../AGENTS.md#working-with-the-user-on-changes)
+always wins over examples in the vendored core.
+
 ## Updating
 
 Pull upstream changes to the core with `gh skill update address-pr-feedback`

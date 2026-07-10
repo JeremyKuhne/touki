@@ -28,6 +28,23 @@ Repo-specific companion to the vendored [create-pr](SKILL.md) skill. The
 - touki is the canonical repo (no `upstream` remote in the usual clone), so PRs
   target `origin/main`.
 
+## Approval-boundary override
+
+Touki requires separate approval for committing, pushing, and creating a PR.
+Where the vendored core groups these actions under one "publishing verb", this
+overlay narrows it:
+
+- `git commit` requires an explicit commit instruction in the user's most recent
+  message.
+- `push`, `ship it`, or `send it` authorizes only pushing existing commits.
+- A PR request authorizes only the named PR action; it does not authorize a
+  prerequisite commit or push.
+- Commit, push, and PR-operation approval do not imply one another. Every action
+  performed must be explicit in the same most recent message.
+
+The latest [AGENTS.md](../../../AGENTS.md#working-with-the-user-on-changes)
+always wins over examples in the vendored core.
+
 ## Updating
 
 Pull upstream changes to the core with `gh skill update create-pr` (review the

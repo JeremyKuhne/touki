@@ -1,0 +1,46 @@
+name: .NET - Full Windows Matrix
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  modern-windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+        tfm: [net10.0, net11.0]
+        runner:
+          - label: windows-latest
+            platform: Windows x64
+            artifact: windows-x64
+            anycpu: false
+          - label: windows-11-arm
+            platform: Windows ARM64
+            artifact: windows-arm64
+            anycpu: true
+    uses: ./.github/workflows/platform-tests.yml
+    with:
+      runner: ${{ matrix.runner.label }}
+      platform-name: ${{ matrix.runner.platform }}
+      artifact-name: ${{ matrix.runner.artifact }}-${{ matrix.configuration }}-${{ matrix.tfm }}
+      configuration: ${{ matrix.configuration }}
+      tfm: ${{ matrix.tfm }}
+      anycpu: ${{ matrix.runner.anycpu }}
+
+  net-framework:
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+    uses: ./.github/workflows/platform-tests.yml
+    with:
+      runner: windows-latest
+      platform-name: Windows x64
+      artifact-name: windows-x64-${{ matrix.configuration }}-net481
+      configuration: ${{ matrix.configuration }}
+      tfm: net481

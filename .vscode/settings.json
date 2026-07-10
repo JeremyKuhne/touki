@@ -13,17 +13,19 @@
       "slnx",
       "Touki"
     ],
-    // Publish-boundary enforcement for Copilot agent-mode terminal calls.
+    // Commit- and publish-boundary enforcement for Copilot agent-mode terminal calls.
     // See AGENTS.md "Working with the user on changes". Deny entries force an
     // explicit in-chat Allow click before the command runs; allow entries keep
     // routine read-only git verbs frictionless.
     "chat.tools.terminal.autoApprove": {
         "/^git\\s+(status|diff|log|show|branch|stash\\s+list|rev-parse|ls-files|config\\s+--get)\\b/": true,
+        "/^git\\s+commit\\b/": false,
         "/^git\\s+push\\b/": false,
-        "/^git\\s+reset\\s+--hard\\b/": false,
+        "/^git\\s+reset\\b/": false,
         "/^git\\s+rebase\\b/": false,
         "/^git\\s+merge\\b/": false,
         "/^git\\s+cherry-pick\\b/": false,
+        "/^git\\s+revert\\b/": false,
         "/^git\\s+tag\\b/": false,
         "/^git\\s+branch\\s+-[dD]\\b/": false,
         "/^gh\\s+pr\\s+(create|merge|close|edit)\\b/": false,
