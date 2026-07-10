@@ -73,8 +73,7 @@ jobs:
         $resultsDir = Join-Path $PWD.Path "artifacts/test-results/$($configuration.ToLower())"
         New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
 
-        # MTP args appended only on Release: coverage instrumentation slows tests
-        # and Codecov only consumes the Release run.
+        # Coverage is Release-only: instrumentation slows tests and Codecov consumes one merged run.
         $extraArgs = @()
         if ($configuration -eq 'Release') {
           $extraArgs = @(
@@ -90,8 +89,12 @@ jobs:
           --report-trx `
           --output Detailed `
           @extraArgs
+
+        if ($LASTEXITCODE -ne 0) {
+          throw "Tests failed with exit code $LASTEXITCODE."
+        }
     - name: Generate coverage report
-      if: always() && matrix.configuration == 'Release'
+      if: matrix.configuration == 'Release'
       run: |
         $reportGeneratorVersion = '5.5.9'
         if (dotnet tool list -g | Select-String -SimpleMatch 'dotnet-reportgenerator-globaltool') {
@@ -101,17 +104,21 @@ jobs:
           dotnet tool install -g dotnet-reportgenerator-globaltool --version $reportGeneratorVersion
         }
 
-        if (-not (Test-Path artifacts)) {
-          Write-Warning 'No artifacts directory found; skipping report generation.'
-          exit 0
+        if ($LASTEXITCODE -ne 0) {
+          throw "ReportGenerator setup failed with exit code $LASTEXITCODE."
         }
+
+        $resultsDir = 'artifacts/test-results/release'
+        if (-not (Test-Path $resultsDir)) {
+          throw "Coverage results directory '$resultsDir' was not created."
+        }
+
         $reports = @(
-          Get-ChildItem -Path artifacts -Recurse -Filter '*.cobertura.xml' -ErrorAction SilentlyContinue |
+          Get-ChildItem -Path $resultsDir -Recurse -Filter '*.cobertura.xml' -ErrorAction SilentlyContinue |
             ForEach-Object { $_.FullName }
         )
         if ($reports.Count -eq 0) {
-          Write-Warning 'No cobertura reports found; skipping report generation.'
-          exit 0
+          throw 'No Cobertura reports found; coverage collection failed.'
         }
         $reportsArg = ($reports -join ';')
         New-Item -ItemType Directory -Force -Path artifacts/coverage | Out-Null
@@ -121,12 +128,31 @@ jobs:
           -reporttypes:'Cobertura;HtmlInline;MarkdownSummaryGithub' `
           -classfilters:'-Touki.Resources.SR;-Touki.Framework.Resources.SRF' `
           -title:'touki'
-        if (Test-Path artifacts/coverage/SummaryGithub.md) {
-          Get-Content artifacts/coverage/SummaryGithub.md |
+
+        if ($LASTEXITCODE -ne 0) {
+          throw "ReportGenerator failed with exit code $LASTEXITCODE."
+        }
+
+        $coveragePath = 'artifacts/coverage/Cobertura.xml'
+        if (-not (Test-Path $coveragePath)) {
+          throw "ReportGenerator did not create '$coveragePath'."
+        }
+
+        [xml] $coverage = Get-Content -Raw $coveragePath
+        $linesValid = [int] $coverage.coverage.'lines-valid'
+        if ($linesValid -le 0) {
+          throw 'The merged Cobertura report contains no coverable lines.'
+        }
+
+        Write-Host "Merged coverage report: $linesValid coverable lines"
+
+        $summaryPath = 'artifacts/coverage/SummaryGithub.md'
+        if (Test-Path $summaryPath) {
+          Get-Content $summaryPath |
             Add-Content -Path $env:GITHUB_STEP_SUMMARY
         }
     - name: Upload coverage report
-      if: always() && matrix.configuration == 'Release'
+      if: matrix.configuration == 'Release'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
@@ -134,7 +160,7 @@ jobs:
         if-no-files-found: warn
         retention-days: 14
     - name: Upload coverage to Codecov
-      if: always() && matrix.configuration == 'Release'
+      if: matrix.configuration == 'Release'
       uses: codecov/codecov-action@v5
       with:
         files: artifacts/coverage/Cobertura.xml
