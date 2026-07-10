@@ -159,8 +159,8 @@ yes/no question.**
 Tools and commands that count as **commit or history rewrite** (require commit
 approval):
 
-- Terminal: `git commit` (including `--amend`), `git merge`, `git cherry-pick`,
-  `git revert`, and `git rebase`.
+- Terminal: `git commit` (including `--amend`), `git reset`, `git merge`,
+  `git cherry-pick`, `git revert`, and `git rebase`.
 - Any tool that creates or rewrites a local commit, even if it does not invoke
   `git commit` by name.
 

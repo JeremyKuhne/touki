@@ -264,9 +264,9 @@ public class MatchAnyTests
     [TestMethod]
     public void MatchAnyDirectoryAfter_MatchesFile_AlwaysReturnsFalse()
     {
-        IEnumerationMatcher matcher = new MatchAnyDirectory(
-            "/root",
+        using IEnumerationMatcher matcher = new MatchAnyDirectory(
             "subdir",
+            "/root",
             MatchType.Simple,
             MatchCasing.CaseSensitive);
 

@@ -333,7 +333,13 @@ jobs:
       shell: pwsh
       run: |
         $reportGeneratorVersion = '5.5.9'
-        dotnet tool install -g dotnet-reportgenerator-globaltool --version $reportGeneratorVersion
+        if (dotnet tool list -g | Select-String -SimpleMatch 'dotnet-reportgenerator-globaltool') {
+          dotnet tool update -g dotnet-reportgenerator-globaltool --version $reportGeneratorVersion
+        }
+        else {
+          dotnet tool install -g dotnet-reportgenerator-globaltool --version $reportGeneratorVersion
+        }
+
         if ($LASTEXITCODE -ne 0) {
           throw "ReportGenerator setup failed with exit code $LASTEXITCODE."
         }
