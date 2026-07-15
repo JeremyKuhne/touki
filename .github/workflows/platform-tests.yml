@@ -36,6 +36,9 @@ on:
       pack:
         default: false
         type: boolean
+      native-aot-rid:
+        default: ''
+        type: string
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -279,6 +282,18 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "Tests for '$project' failed with exit code $LASTEXITCODE."
           }
+        }
+    - name: Publish NativeAOT validation project
+      if: inputs.native-aot-rid != ''
+      shell: pwsh
+      run: |
+        dotnet publish touki.aot.tests/touki.aot.tests.csproj `
+          --configuration Release `
+          --runtime '${{ inputs.native-aot-rid }}' `
+          --output 'artifacts/native-aot/${{ inputs.native-aot-rid }}'
+
+        if ($LASTEXITCODE -ne 0) {
+          throw "NativeAOT publish for '${{ inputs.native-aot-rid }}' failed with exit code $LASTEXITCODE."
         }
     - name: Pack
       if: inputs.pack

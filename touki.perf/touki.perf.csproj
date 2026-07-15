@@ -24,6 +24,10 @@
     <!-- Don’t advertise “I am a test container/server” to VS/VS Code -->
     <DisableTestingPlatformServerCapability>true</DisableTestingPlatformServerCapability>
 
+    <!-- BinaryFormatter is used only as the trusted-data baseline for NRBF deserialization benchmarks. -->
+    <EnableUnsafeBinaryFormatterSerialization
+      Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</EnableUnsafeBinaryFormatterSerialization>
+
     <!--
       We don't want to have implicit usings as we're retargeting System.IO to Microsoft.IO
       in our GlobalUsings.cs file for .NET Framework.
@@ -38,6 +42,9 @@
     <PackageReference Include="Microsoft.Build" />
     <!-- Oracle reference for the FileSystemGlobbing dialect comparison benchmarks. -->
     <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" />
+    <!-- Restores the removed BinaryFormatter implementation for the modern benchmark hosts. -->
+    <PackageReference Include="System.Runtime.Serialization.Formatters"
+                      Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,6 +53,26 @@
     <ProjectReference Include="..\touki.msbuildshim\touki.msbuildshim.csproj" />
     <ProjectReference Include="..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
   </ItemGroup>
+
+  <!--
+    Optional exact-source baseline for https://github.com/JeremyKuhne/binaryformat at
+    aaa1dd1bf7ee8ce626b82c3c55343dfee4a71743. Use tools/Run-BinaryFormatComparison.ps1 to create a clean detached
+    checkout, build it in Release, and propagate the assembly path to BenchmarkDotNet child builds. The comparison is
+    modern-.NET-only because the upstream project does not target .NET Framework.
+  -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' And Exists('$(BinaryFormatUpstreamAssembly)')">
+    <Reference Include="BinaryFormat" HintPath="$(BinaryFormatUpstreamAssembly)" Private="true">
+      <Aliases>BinaryFormatUpstream</Aliases>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="EnableBinaryFormatUpstreamBenchmark"
+          BeforeTargets="CoreCompile"
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' And Exists('$(BinaryFormatUpstreamAssembly)')">
+    <PropertyGroup>
+      <DefineConstants>$(DefineConstants);BINARYFORMAT_UPSTREAM</DefineConstants>
+    </PropertyGroup>
+  </Target>
 
   <!--
     Recorded file-system snapshots replayed by MsBuildEnumeratePerf3. Committed as

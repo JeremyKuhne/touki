@@ -86,6 +86,20 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function Write-CaptureMetadata([string]$TracePath, [System.Collections.IDictionary]$Analyses) {
+    $metadata = [ordered]@{
+        schemaVersion = 1
+        analyses = $Analyses
+    } | ConvertTo-Json -Depth 3 -Compress
+    $encoding = New-Object System.Text.UTF8Encoding($false)
+    try {
+        [System.IO.File]::WriteAllText("$TracePath.filtrace.json", $metadata, $encoding)
+    }
+    catch {
+        Write-Warning "Capture succeeded, but metadata could not be written: $($_.Exception.Message). Provider enablement will be unknown during analysis."
+    }
+}
+
 # Resolve the project file (accept either a .csproj or a directory holding one).
 $projItem = Get-Item -LiteralPath $Project
 if ($projItem.PSIsContainer) {
@@ -248,6 +262,19 @@ if ($Profiler -eq 'EP') {
     $collectArgs += $AppArgs
     dotnet-trace @collectArgs | Out-Host
     if ($LASTEXITCODE -ne 0) { Write-Error "dotnet-trace failed (exit $LASTEXITCODE)." -ErrorAction Continue ; exit $LASTEXITCODE }
+
+    if ($Metric -eq 'alloc') {
+        # gc-verbose establishes allocation and GC events, but dotnet-trace profile
+        # composition varies across tool versions; leave other families unknown.
+        Write-CaptureMetadata $Output ([ordered]@{
+            alloc = 'enabled'; gcstats = 'enabled'; events = 'enabled'
+        })
+    }
+    else {
+        # cpu-sampling establishes CPU, but dotnet-trace profile composition varies
+        # across tool versions; leave other runtime families unknown.
+        Write-CaptureMetadata $Output ([ordered]@{ cpu = 'enabled'; events = 'enabled' })
+    }
 }
 else {
     Write-Host "Capturing ETW (CPU + threadtime) trace of $processName via filtrace collect..." -ForegroundColor Cyan
@@ -264,6 +291,10 @@ else {
     if ($launchArgs) { $collectArgs += @('--launch-args', $launchArgs) }
     filtrace @collectArgs | Out-Host
     if ($LASTEXITCODE -ne 0) { Write-Error "filtrace collect failed (exit $LASTEXITCODE)." -ErrorAction Continue ; exit $LASTEXITCODE }
+    Write-CaptureMetadata $Output ([ordered]@{
+        cpu = 'enabled'; threadtime = 'enabled'; classify = 'enabled';
+        processes = 'enabled'; diskio = 'disabled'; events = 'enabled'
+    })
 }
 
 Write-Host "`nCaptured: $Output" -ForegroundColor Green
@@ -280,10 +311,11 @@ else {
     # A single-process EventPipe trace ranks the whole app; there is no harness.
     if ($Metric -eq 'alloc') {
         Write-Host "  filtrace alloc `"$Output`" --top $Top"
+        Write-Host "  filtrace gcstats `"$Output`""
     }
     else {
         Write-Host "  filtrace cpu `"$Output`" --top $Top"
+        Write-Host "  filtrace lines `"$Output`" --symbols `"$symbols`""
+        Write-Host "  # scope past runtime startup with --root <Type>.<Method> once you see the ranking"
     }
-    Write-Host "  filtrace lines `"$Output`" --symbols `"$symbols`""
-    Write-Host "  # scope past runtime startup with --root <Type>.<Method> once you see the ranking"
 }

@@ -30,6 +30,11 @@ jobs:
               - .agents/**
               - .vscode/mcp.json
               - docs/agent-customization.md
+              - docs/binary-formatted-object-performance.md
+              - docs/filtrace-local-demo.md
+              - docs/performance-investigation.md
+              - docs/performance-investigation-without-mcp.md
+              - docs/performance-investigation-agent-tooling-retrospective.md
               - tools/Validate-AgentFiles.ps1
               - tools/Validate-AgentSkills.ps1
               - .markdownlint.jsonc
@@ -79,6 +84,11 @@ jobs:
             .github/agents/**/*.md
             .agents/**/*.md
             docs/agent-customization.md
+            docs/binary-formatted-object-performance.md
+            docs/filtrace-local-demo.md
+            docs/performance-investigation.md
+            docs/performance-investigation-without-mcp.md
+            docs/performance-investigation-agent-tooling-retrospective.md
           config: .markdownlint.jsonc
 
       - name: Link check
@@ -95,4 +105,9 @@ jobs:
             .github/agents/**/*.md
             .agents/**/*.md
             docs/agent-customization.md
+            docs/binary-formatted-object-performance.md
+            docs/filtrace-local-demo.md
+            docs/performance-investigation.md
+            docs/performance-investigation-without-mcp.md
+            docs/performance-investigation-agent-tooling-retrospective.md
           fail: true

@@ -19,6 +19,11 @@
       .github/agents/**/*.md
       .agents/**/*.md
       docs/agent-customization.md
+    docs/binary-formatted-object-performance.md
+    docs/filtrace-local-demo.md
+    docs/performance-investigation.md
+    docs/performance-investigation-without-mcp.md
+    docs/performance-investigation-agent-tooling-retrospective.md
 
     For each Markdown link of the form `](target)` that is not an external URL,
     `mailto:`, or pure in-page anchor, the script resolves the target relative
@@ -75,6 +80,11 @@ $ScopeEntries = @(
     'AGENTS.md',
     '.github/copilot-instructions.md',
     'docs/agent-customization.md',
+    'docs/binary-formatted-object-performance.md',
+    'docs/filtrace-local-demo.md',
+    'docs/performance-investigation.md',
+    'docs/performance-investigation-without-mcp.md',
+    'docs/performance-investigation-agent-tooling-retrospective.md',
     @{ Dir = '.github/instructions'; Filter = '*.md' },
     @{ Dir = '.github/prompts'; Filter = '*.md' },
     @{ Dir = '.github/agents'; Filter = '*.md' },

@@ -39,11 +39,11 @@ a skill would need to change to be reused in another repo: `portable` (generic),
 [agent-skills commons](https://github.com/JeremyKuhne/agent-skills) (see the
 `metadata.github-*` provenance in its `SKILL.md`) paired with a local `overlay.md`
 that carries the touki-specific cross-references and example links.
-`vendored (tool repo) + overlay` is the same pattern pinned to a tool's own repo
-instead of the commons: `filtrace` is a copy of the skill shipped by the
-standalone [JeremyKuhne/filtrace](https://github.com/JeremyKuhne/filtrace)
-analyzer, re-vendored from there rather than the commons. Do not
-hand-edit a vendored core; `gh skill update` tracks it against upstream.
+`vendored (tool repo) + overlay` is an exact skill payload from the tool's own
+repository plus a consumer-owned `overlay.md`. Filtrace is temporarily pinned to
+the exact source revision that enabled overlays while its executable packages
+remain at release 0.6.0. Do not hand-edit a vendored core; update it from an exact
+tool release or source revision.
 
 ## Disambiguation
 
@@ -134,11 +134,11 @@ Both describe "where's the time / which method is hot", but they sit on opposite
 sides of a hand-off:
 
 - **Author or run a benchmark, capture a touki trace, and interpret the result**
-  (the `-p EP --keepFiles` recipe, the EventPipe-vs-ETW divergence, reading the
-  line ranking) -> `performance-testing`.
+  (isolated all-case manifest capture, the EventPipe-vs-ETW divergence, reading
+  the method/line evidence) -> `performance-testing`.
 - **Drive the filtrace analyzer over an existing trace** - the `cpu` / `rank` /
-  `callers` / `lines` / `diff` / `export` verbs and `trace_*` tools, the symbol
-  gate, the trap catalog -> `filtrace`.
+  `callers` / `lines` / `diff` / `batch` / `export` verbs and `trace_*` tools,
+  the provider/source quality gates, the trap catalog -> `filtrace`.
 
 The usual flow is `performance-testing` to produce the trace, then `filtrace` to
 rank and drill it.

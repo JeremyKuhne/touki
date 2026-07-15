@@ -3,8 +3,10 @@
 The primary way to turn a captured benchmark trace into ranked hotspots and
 line-level attribution is the standalone
 [filtrace](https://github.com/JeremyKuhne/filtrace) analyzer - its MCP tools for
-an agent, or the `filtrace` CLI (`dotnet tool install -g KlutzyNinja.Filtrace`)
-when the MCP server is unavailable - see
+an agent, or the `filtrace` CLI (fresh install:
+`dotnet tool install -g KlutzyNinja.Filtrace --version 0.6.0`; existing install:
+`dotnet tool update -g KlutzyNinja.Filtrace --version 0.6.0`) when the MCP server
+is unavailable - see
 [performance-investigation.md](performance-investigation.md) sections 3a, 3f,
 and 6.
 
@@ -12,7 +14,7 @@ This document is the **last-resort fallback**: the committed PowerShell scripts
 that do the same trace aggregation with no filtrace install at all (for an
 environment where neither the filtrace CLI nor its MCP server is available, or
 when you want a flame-graph SVG, which filtrace does not render). The
-*conceptual* guidance - the JIT-helper folding traps and the `RootFrame` gotcha -
+*conceptual* guidance - the JIT-helper folding traps and scope ambiguity -
 lives in
 [performance-investigation.md](performance-investigation.md) section 3a and
 applies identically here; this doc only covers the script invocations.

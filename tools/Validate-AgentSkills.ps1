@@ -5,12 +5,13 @@
 .DESCRIPTION
     Runs the validator bundled with the vendored manage-skills core over all
     skills, then runs its strict portfolio mode over only the commons-vendored
-    portable cores. Also validates local overlay pins, relationship targets and
-    cycles, and the inventory/category labels in .agents/skills/README.md.
+    portable cores. Also validates local overlay pins and tool-package bindings,
+    relationship targets and cycles, and the inventory/category labels in
+    .agents/skills/README.md.
 
     Exact vendored payloads remain owned by their source repositories. This
-    wrapper adds Touki's consumer-side checks without modifying the bundled
-    validator.
+    wrapper adds Touki's overlay and tool-package binding checks without
+    modifying the bundled validator.
 
 .EXAMPLE
     pwsh tools/Validate-AgentSkills.ps1
@@ -29,7 +30,6 @@ $CatalogPath = Join-Path $SkillsRoot 'README.md'
 $McpPath = Join-Path $RepoRoot '.vscode/mcp.json'
 $BundledValidator = Join-Path $SkillsRoot 'manage-skills/scripts/Validate-Skills.ps1'
 $CommonsRepo = 'https://github.com/JeremyKuhne/agent-skills'
-$FiltraceRepo = 'https://github.com/JeremyKuhne/filtrace'
 $Errors = [System.Collections.Generic.List[string]]::new()
 
 function Add-Error([string] $Message) {
@@ -61,6 +61,95 @@ function Test-MetadataIndentation([string] $Text, [string] $SkillName) {
 
     if ($indents.Count -gt 1) {
         Add-Error ".agents/skills/$SkillName/SKILL.md metadata fields must use one indentation depth."
+    }
+}
+
+function Get-GitObjectHash([string] $Type, [byte[]] $Content) {
+    $header = [System.Text.Encoding]::ASCII.GetBytes("$Type $($Content.Length)`0")
+    $payload = [byte[]]::new($header.Length + $Content.Length)
+    [Array]::Copy($header, 0, $payload, 0, $header.Length)
+    [Array]::Copy($Content, 0, $payload, $header.Length, $Content.Length)
+    $hash = [System.Security.Cryptography.SHA1]::HashData($payload)
+    return [Convert]::ToHexString($hash).ToLowerInvariant()
+}
+
+function Get-GitBlobHash([string] $Path) {
+    $hash = (& git -C $RepoRoot hash-object -- $Path).Trim()
+    if ($LASTEXITCODE -ne 0 -or $hash -notmatch '^[0-9a-f]{40}$') {
+        throw "Could not compute the canonical Git blob hash for '$Path'."
+    }
+    return $hash
+}
+
+function Get-GitFileMode([string] $Path) {
+    if (-not $IsWindows) {
+        $unixMode = [System.IO.File]::GetUnixFileMode($Path)
+        $executeBits = [System.IO.UnixFileMode]::UserExecute -bor
+            [System.IO.UnixFileMode]::GroupExecute -bor
+            [System.IO.UnixFileMode]::OtherExecute
+        return if (($unixMode -band $executeBits) -ne 0) { '100755' } else { '100644' }
+    }
+
+    $relativePath = [System.IO.Path]::GetRelativePath($RepoRoot, $Path).Replace('\', '/')
+    $stageEntry = @(& git -C $RepoRoot ls-files --stage -- $relativePath)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not read the canonical Git mode for '$Path'."
+    }
+    if ($stageEntry.Count -eq 0) { return '100644' }
+    if ($stageEntry.Count -ne 1 -or $stageEntry[0] -notmatch '^(100644|100755) ') {
+        throw "Unsupported Git mode for tool payload file '$Path': $($stageEntry -join '; ')"
+    }
+    return $Matches[1]
+}
+
+function Get-GitTreeHash([string] $Directory, [switch] $ToolPayloadRoot) {
+    $entries = [System.Collections.Generic.List[object]]::new()
+    foreach ($child in Get-ChildItem -LiteralPath $Directory -Force) {
+        if ($ToolPayloadRoot -and $child.Name -eq 'overlay.md') { continue }
+        if ($child.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {
+            throw "Tool payload tree hashing does not support reparse points: $($child.FullName)"
+        }
+
+        if ($child.PSIsContainer) {
+            $mode = '40000'
+            $hash = Get-GitTreeHash -Directory $child.FullName
+            $sortName = "$($child.Name)/"
+        }
+        else {
+            $mode = Get-GitFileMode -Path $child.FullName
+            $hash = Get-GitBlobHash -Path $child.FullName
+            $sortName = $child.Name
+        }
+
+        $entries.Add([pscustomobject]@{
+                Mode = $mode
+                Name = $child.Name
+                SortName = $sortName
+                Hash = $hash
+            })
+    }
+
+    $sorted = $entries.ToArray()
+    [Array]::Sort(
+        $sorted,
+        [System.Comparison[object]]{
+            param($left, $right)
+            return [StringComparer]::Ordinal.Compare($left.SortName, $right.SortName)
+        })
+
+    $stream = [System.IO.MemoryStream]::new()
+    try {
+        foreach ($entry in $sorted) {
+            $prefix = [System.Text.Encoding]::UTF8.GetBytes("$($entry.Mode) $($entry.Name)")
+            $stream.Write($prefix, 0, $prefix.Length)
+            $stream.WriteByte(0)
+            $hashBytes = [Convert]::FromHexString($entry.Hash)
+            $stream.Write($hashBytes, 0, $hashBytes.Length)
+        }
+        return Get-GitObjectHash -Type tree -Content $stream.ToArray()
+    }
+    finally {
+        $stream.Dispose()
     }
 }
 
@@ -122,6 +211,9 @@ foreach ($dir in $skillDirs) {
     }
 
     if ($hasOverlay) {
+        if ($binding -notin @('optional-overlay', 'required-overlay')) {
+            Add-Error ".agents/skills/$($dir.Name)/overlay.md requires an overlay-capable metadata.binding."
+        }
         $overlay = Get-Content -Raw -LiteralPath $overlayPath
         if (-not $overlay.StartsWith("---`n") -and -not $overlay.StartsWith("---`r`n")) {
             Add-Error ".agents/skills/$($dir.Name)/overlay.md is missing YAML frontmatter."
@@ -145,6 +237,7 @@ foreach ($dir in $skillDirs) {
         Name = $dir.Name
         Repo = $repo
         Portability = $portability
+        Applicability = $applicability
         Requires = $requires
         Related = $related
         HasOverlay = $hasOverlay
@@ -233,11 +326,11 @@ foreach ($name in $skillData.Keys) {
     }
 
     $skill = $skillData[$name]
-    $expected = if ($skill.Repo -eq $CommonsRepo) {
-        if ($skill.HasOverlay) { 'vendored (portable core) + overlay' } else { 'vendored (portable core)' }
-    }
-    elseif ($skill.Repo -eq $FiltraceRepo) {
+    $expected = if ($skill.Applicability -eq 'tool-shipped') {
         if ($skill.HasOverlay) { 'vendored (tool repo) + overlay' } else { 'vendored (tool repo)' }
+    }
+    elseif ($skill.Repo -eq $CommonsRepo) {
+        if ($skill.HasOverlay) { 'vendored (portable core) + overlay' } else { 'vendored (portable core)' }
     }
     else {
         $skill.Portability
@@ -265,15 +358,48 @@ foreach ($name in $catalogEntries.Keys) {
 }
 
 if ($skillData.ContainsKey('filtrace') -and (Test-Path -LiteralPath $McpPath -PathType Leaf)) {
-    $filtraceSkill = Get-Content -Raw -LiteralPath (Join-Path $SkillsRoot 'filtrace/SKILL.md')
-    $filtracePin = (Get-Scalar $filtraceSkill 'github-pinned' $true).TrimStart('v')
     $mcp = Get-Content -Raw -LiteralPath $McpPath
     $packageMatch = [regex]::Match($mcp, 'KlutzyNinja\.Filtrace\.Mcp@([^"\s]+)')
     if (-not $packageMatch.Success) {
         Add-Error '.vscode/mcp.json must pin KlutzyNinja.Filtrace.Mcp explicitly.'
     }
-    elseif ($packageMatch.Groups[1].Value -ne $filtracePin) {
-        Add-Error "Filtrace MCP pin '$($packageMatch.Groups[1].Value)' must match skill pin '$filtracePin'."
+    else {
+        $filtraceOverlayPath = Join-Path $SkillsRoot 'filtrace/overlay.md'
+        if (-not (Test-Path -LiteralPath $filtraceOverlayPath -PathType Leaf)) {
+            Add-Error '.agents/skills/filtrace/overlay.md must bind the filtrace package.'
+        }
+        else {
+            $filtraceOverlay = Get-Content -Raw -LiteralPath $filtraceOverlayPath
+            $packageVersion = $packageMatch.Groups[1].Value
+            $corePin = Get-Scalar $filtraceOverlay 'core-pin'
+            $coreRepo = Get-Scalar $filtraceOverlay 'core-repo'
+            $coreTreeSha = Get-Scalar $filtraceOverlay 'core-tree-sha'
+            $runtimePin = Get-Scalar $filtraceOverlay 'runtime-pin'
+            if ($corePin -notmatch '^[0-9a-f]{40}$') {
+                Add-Error 'Filtrace overlay core-pin must be an exact 40-character source commit while overlay support is unpublished.'
+            }
+            if ($coreRepo -ne 'https://github.com/JeremyKuhne/filtrace') {
+                Add-Error "Filtrace overlay core-repo '$coreRepo' is not the canonical repository."
+            }
+            if ($coreTreeSha -notmatch '^[0-9a-f]{40}$') {
+                Add-Error 'Filtrace overlay core-tree-sha must be a 40-character lowercase SHA.'
+            }
+            else {
+                $actualTreeSha = Get-GitTreeHash -Directory (Join-Path $SkillsRoot 'filtrace') -ToolPayloadRoot
+                if ($actualTreeSha -ne $coreTreeSha) {
+                    Add-Error "Filtrace payload tree '$actualTreeSha' must match overlay core-tree-sha '$coreTreeSha'."
+                }
+            }
+            if ($runtimePin -ne $packageVersion) {
+                Add-Error "Filtrace overlay runtime-pin '$runtimePin' must match MCP package pin '$packageVersion'."
+            }
+            if (-not $filtraceOverlay.Contains("KlutzyNinja.Filtrace.Mcp@$packageVersion")) {
+                Add-Error "Filtrace overlay must bind the MCP package pin '$packageVersion'."
+            }
+            if (-not $filtraceOverlay.Contains("--version $packageVersion")) {
+                Add-Error "Filtrace overlay must bind the CLI package pin '$packageVersion'."
+            }
+        }
     }
 }
 

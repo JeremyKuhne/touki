@@ -68,6 +68,37 @@ The full field manual is [docs/performance-investigation.md](../../../docs/perfo
 (profiling sections 3a methods, 3f lines); the no-filtrace PowerShell fallback is
 [docs/performance-investigation-without-mcp.md](../../../docs/performance-investigation-without-mcp.md).
 
+## Candidate upstream improvements
+
+The generic parts of [profiling.md](profiling.md) added after the July 2026 NRBF
+investigation are intentionally being validated in Touki before promotion to
+[`JeremyKuhne/agent-skills`](https://github.com/JeremyKuhne/agent-skills).
+
+Implemented locally and candidates for promotion:
+
+- separate harness guidance for one-shot phase measurement versus adaptive phase
+  profiling;
+- an experiment ledger that retains rejected variants and allocation outcomes.
+
+Periodic CPU sample-quality, provider-state, source-resolution, BenchmarkDotNet
+scope, and trace-manifest contracts are now owned by the filtrace 0.6 tool-shipped
+skill. They remain cross-referenced from Touki's profiling page but are not
+`agent-skills` promotion candidates.
+
+Further portable candidates are specified in
+[performance-investigation-agent-tooling-retrospective.md](../../../docs/performance-investigation-agent-tooling-retrospective.md)
+but are not yet implemented as local skill guidance: exact-source comparison and
+reconstructable run-artifact provenance. Keep that distinction until the workflow
+has been exercised locally or promoted directly upstream.
+
+Do not copy these changes into the pinned core locally. Once the guidance has
+settled, uplevel the portable wording to `agent-skills`, publish a new commons
+version, and re-vendor/re-pin the performance-testing core here. Filtrace release
+[0.6.0](https://github.com/JeremyKuhne/filtrace/releases/tag/v0.6.0) completed the
+product, capture-script, and tool-shipped-skill work from
+[filtrace#42](https://github.com/JeremyKuhne/filtrace/issues/42); do not promote
+those tool-specific details to `agent-skills`.
+
 ## Tuple-swap on .NET Core hot paths (touki measurement)
 
 `IDE0180` ("use tuple to swap values") is disabled globally in

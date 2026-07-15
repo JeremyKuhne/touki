@@ -73,4 +73,10 @@
     <ProjectReference Include="..\touki\touki.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(PublishAot)' == 'true'">
+    <!-- MSTest discovers these methods by reflection. Root the assembly so ILC compiles the test bodies and their
+         Register<T> calls even though this project deliberately omits the experimental MSTest AOT runner. -->
+    <TrimmerRootAssembly Include="$(AssemblyName)" />
+  </ItemGroup>
+
 </Project>
