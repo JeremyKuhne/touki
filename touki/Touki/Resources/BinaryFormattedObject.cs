@@ -74,7 +74,11 @@ public sealed class BinaryFormattedObject
             RecordMap = recordMap;
         }
         catch (Exception exception)
-            when (exception is ArgumentException or InvalidCastException or ArithmeticException or IOException)
+            when (exception is ArgumentException
+                or InvalidCastException
+                or ArithmeticException
+                or IOException
+                or KeyNotFoundException)
         {
             throw exception.ConvertToSerializationException();
         }
@@ -113,7 +117,11 @@ public sealed class BinaryFormattedObject
                 s_streamingContext);
         }
         catch (Exception exception)
-            when (exception is ArgumentException or InvalidCastException or ArithmeticException or IOException)
+            when (exception is ArgumentException
+                or InvalidCastException
+                or ArithmeticException
+                or IOException
+                or KeyNotFoundException)
         {
             throw exception.ConvertToSerializationException();
         }
