@@ -196,6 +196,24 @@ internal sealed class NullObjectReference : IObjectReference, ISerializable
         => info.AddValue("Marker", Marker);
 }
 
+[Serializable]
+internal sealed class NullMemberObjectReference : IObjectReference
+{
+#pragma warning disable CS0649 // Field is populated by BinaryFormattedObject.
+    public object? Member;
+#pragma warning restore CS0649
+
+    internal static object Replacement { get; } = new();
+
+    public object GetRealObject(StreamingContext context) => Replacement;
+}
+
+[Serializable]
+internal sealed class NullObjectReferenceMember : IObjectReference
+{
+    public object GetRealObject(StreamingContext context) => null!;
+}
+
 #pragma warning restore CA5362
 
 [Serializable]

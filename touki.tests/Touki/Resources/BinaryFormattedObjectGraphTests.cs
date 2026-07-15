@@ -103,6 +103,21 @@ public class BinaryFormattedObjectGraphTests
     }
 
     [TestMethod]
+    public void Deserialize_IObjectReferenceContainingNullReplacement_ReturnsReplacement()
+    {
+        RegisteredTypeResolver resolver = new();
+        resolver.Register<NullMemberObjectReference>();
+        resolver.Register<NullObjectReferenceMember>();
+        BinaryFormattedObject formatted = BinaryFormattedObjectFixtures.Parse(
+            BinaryFormattedObjectFixtures.NullMemberObjectReference,
+            resolver);
+
+        object payload = formatted.Deserialize();
+
+        payload.Should().BeSameAs(NullMemberObjectReference.Replacement);
+    }
+
+    [TestMethod]
     public void Deserialize_NullNullableSerializationValue_ReturnsNull()
     {
         RegisteredTypeResolver resolver = new();

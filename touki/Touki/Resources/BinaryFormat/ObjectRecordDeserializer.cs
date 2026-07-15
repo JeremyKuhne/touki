@@ -64,7 +64,11 @@ internal abstract class ObjectRecordDeserializer
                 return (s_missingValueSentinel, id);
             }
 
-            ValidateNewMemberObjectValue(value);
+            if (value is not null)
+            {
+                ValidateNewMemberObjectValue(value);
+            }
+
             return (value, id);
         }
     }

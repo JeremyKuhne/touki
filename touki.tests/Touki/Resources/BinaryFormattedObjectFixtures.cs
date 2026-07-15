@@ -131,6 +131,13 @@ internal static class BinaryFormattedObjectFixtures
         AAAAI1RvdWtpLlJlc291cmNlcy5OdWxsT2JqZWN0UmVmZXJlbmNlAQAAAAZNYXJrZXIACAIAAAAqAAAACw==
         """;
 
+    internal const string NullMemberObjectReference = """
+        AAEAAAD/////AQAAAAAAAAAMAgAAAGBOdWxsTWVtYmVyT2JqZWN0UmVmZXJlbmNlRml4dHVyZUdlbmVyYXRvciwgVmVyc2lvbj0w
+        LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPW51bGwFAQAAAClUb3VraS5SZXNvdXJjZXMuTnVsbE1lbWJl
+        ck9iamVjdFJlZmVyZW5jZQEAAAAGTWVtYmVyAgIAAAAJAwAAAAUDAAAAKVRvdWtpLlJlc291cmNlcy5OdWxsT2JqZWN0UmVmZXJl
+        bmNlTWVtYmVyAAAAAAIAAAAL
+        """;
+
     internal const string NullableSerializablePayloadNull = """
         AAEAAAD/////AQAAAAAAAAAMAgAAAEdGaXh0dXJlR2VuZXJhdG9yLCBWZXJzaW9uPTAuMC4wLjAsIEN1bHR1cmU9bmV1dHJh
         bCwgUHVibGljS2V5VG9rZW49bnVsbAUBAAAAK1RvdWtpLlJlc291cmNlcy5OdWxsYWJsZVNlcmlhbGl6YWJsZVBheWxvYWQB
