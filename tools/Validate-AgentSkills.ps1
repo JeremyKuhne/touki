@@ -74,7 +74,8 @@ function Get-GitObjectHash([string] $Type, [byte[]] $Content) {
 }
 
 function Get-GitBlobHash([string] $Path) {
-    $hash = (& git -C $RepoRoot hash-object -- $Path).Trim()
+    $relativePath = [System.IO.Path]::GetRelativePath($RepoRoot, $Path).Replace('\', '/')
+    $hash = (& git -C $RepoRoot hash-object -- $relativePath).Trim()
     if ($LASTEXITCODE -ne 0 -or $hash -notmatch '^[0-9a-f]{40}$') {
         throw "Could not compute the canonical Git blob hash for '$Path'."
     }

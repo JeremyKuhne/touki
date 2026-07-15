@@ -24,6 +24,6 @@ internal static class SerializationInfoExtensions
 #endif
 
     [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, typeof(SerializationInfo))]
-    internal static void UpdateValue(this SerializationInfo info, string name, object value, Type type)
-        => s_updateValue(info, name, value, type);
+    internal static void UpdateValue(this SerializationInfo info, string name, object? value, Type type)
+        => s_updateValue(info, name, value!, type);
 }
