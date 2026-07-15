@@ -16,6 +16,9 @@ internal sealed class ClassRecordSerializationInfoDeserializer : ClassRecordDese
 {
     private readonly ClassRecord _classRecord;
     private readonly SerializationInfo _serializationInfo;
+
+    // MemberNames is exposed only as IEnumerable<string>. Retain one iterator so traversal can resume after resolving
+    // a dependency without copying the names or restarting enumeration.
     private readonly IEnumerator<string> _memberNamesIterator;
 
     [DynamicallyAccessedMembers(

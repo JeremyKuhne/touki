@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information
 
 using System.Formats.Nrbf;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -38,6 +39,29 @@ public class BinaryFormattedObjectTests
         Action action = () => _ = new BinaryFormattedObject(stream);
 
         action.Should().Throw<NotSupportedException>();
+    }
+
+    [TestMethod]
+    public void Constructor_StreamThrowsKeyNotFoundException_PropagatesException()
+    {
+        KeyNotFoundException exception = new("user stream failure");
+        using ThrowingReadStream stream = new(exception);
+
+        Action action = () => _ = new BinaryFormattedObject(stream);
+
+        action.Should().Throw<KeyNotFoundException>().Which.Should().BeSameAs(exception);
+    }
+
+    [TestMethod]
+    public void Constructor_TargetInvocationExceptionWithoutInner_ThrowsSerializationException()
+    {
+        TargetInvocationException exception = new("user stream failure", inner: null);
+        using ThrowingReadStream stream = new(exception);
+
+        Action action = () => _ = new BinaryFormattedObject(stream);
+
+        action.Should().Throw<SerializationException>()
+            .Which.InnerException.Should().BeSameAs(exception);
     }
 
     [TestMethod]
@@ -222,6 +246,31 @@ public class BinaryFormattedObjectTests
     }
 
     [TestMethod]
+    public void Deserialize_ResolverThrowsKeyNotFoundException_PropagatesException()
+    {
+        KeyNotFoundException exception = new("user resolver failure");
+        using MemoryStream stream = new(Convert.FromBase64String(BinaryFormattedObjectFixtures.RegisteredPayload));
+        BinaryFormattedObject formatted = new(stream, new ThrowingTypeResolver(exception));
+
+        Action action = () => formatted.Deserialize();
+
+        action.Should().Throw<KeyNotFoundException>().Which.Should().BeSameAs(exception);
+    }
+
+    [TestMethod]
+    public void Deserialize_TargetInvocationExceptionWithoutInner_ThrowsSerializationException()
+    {
+        TargetInvocationException exception = new("user resolver failure", inner: null);
+        using MemoryStream stream = new(Convert.FromBase64String(BinaryFormattedObjectFixtures.RegisteredPayload));
+        BinaryFormattedObject formatted = new(stream, new ThrowingTypeResolver(exception));
+
+        Action action = () => formatted.Deserialize();
+
+        action.Should().Throw<SerializationException>()
+            .Which.InnerException.Should().BeSameAs(exception);
+    }
+
+    [TestMethod]
     public void Deserialize_RegisteredISerializableType_InvokesSerializationConstructor()
     {
         RegisteredTypeResolver resolver = new();
@@ -294,5 +343,47 @@ public class BinaryFormattedObjectTests
                 : null;
             return type is not null;
         }
+    }
+
+    private sealed class ThrowingTypeResolver(Exception exception) : ITypeResolver
+    {
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        public Type BindToType(System.Reflection.Metadata.TypeName typeName) => throw exception;
+
+        public bool TryBindToType(
+            System.Reflection.Metadata.TypeName typeName,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All), NotNullWhen(true)] out Type? type)
+            => throw exception;
+    }
+
+    private sealed class ThrowingReadStream(Exception exception) : System.IO.Stream
+    {
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => throw exception;
+
+        public override int ReadByte() => throw exception;
+
+        public override long Seek(long offset, System.IO.SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }

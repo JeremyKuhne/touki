@@ -12,13 +12,13 @@ namespace Touki;
 public interface ITypeResolver
 {
     /// <summary>
-    ///  Resolves the given type name against the specified library. Throws if the type cannot be resolved.
+    ///  Resolves the given type name. Throws if the type cannot be resolved.
     /// </summary>
     [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     Type BindToType(TypeName typeName);
 
     /// <summary>
-    ///  Tries to resolve the given type name against the specified library.
+    ///  Tries to resolve the given type name.
     /// </summary>
     bool TryBindToType(
         TypeName typeName,

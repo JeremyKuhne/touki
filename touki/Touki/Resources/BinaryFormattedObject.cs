@@ -77,14 +77,13 @@ public sealed class BinaryFormattedObject
             when (exception is ArgumentException
                 or InvalidCastException
                 or ArithmeticException
-                or IOException
-                or KeyNotFoundException)
+                or IOException)
         {
             throw exception.ConvertToSerializationException();
         }
         catch (TargetInvocationException exception)
         {
-            throw ExceptionDispatchInfo.Capture(exception.InnerException!).SourceException
+            throw ExceptionDispatchInfo.Capture(exception.InnerException ?? exception).SourceException
                 .ConvertToSerializationException();
         }
     }
@@ -120,14 +119,13 @@ public sealed class BinaryFormattedObject
             when (exception is ArgumentException
                 or InvalidCastException
                 or ArithmeticException
-                or IOException
-                or KeyNotFoundException)
+                or IOException)
         {
             throw exception.ConvertToSerializationException();
         }
         catch (TargetInvocationException exception)
         {
-            throw ExceptionDispatchInfo.Capture(exception.InnerException!).SourceException
+            throw ExceptionDispatchInfo.Capture(exception.InnerException ?? exception).SourceException
                 .ConvertToSerializationException();
         }
     }
