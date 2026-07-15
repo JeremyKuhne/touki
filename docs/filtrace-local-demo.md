@@ -17,10 +17,10 @@ faster?" - not tool-by-tool instructions.
 ## Setup (one time)
 
 filtrace is published to NuGet (github.com/JeremyKuhne/filtrace). The MCP server
-entry in [.vscode/mcp.json](../.vscode/mcp.json) runs version 0.4.0 on demand via
+entry in [.vscode/mcp.json](../.vscode/mcp.json) runs version 0.6.0 on demand via
 `dnx` (the .NET 10 SDK tool runner) - no clone or build required. Start it from
 the Command Palette (*MCP: List Servers* -> `filtrace` -> *Start Server*) and
-confirm the 15 `trace_*` tools register in the chat tool picker.
+confirm the 17 `trace_*` tools register in the chat tool picker.
 
 ---
 
@@ -52,9 +52,12 @@ is one.
 > **Prompt:** Enumerating files with Touki's extended-glob matcher feels slow. Where's the time actually going?
 
 **Good:** the agent recognizes this needs a *profile*, not just a benchmark. It
-captures an EventPipe trace of the relevant `touki.perf` benchmark (`-p EP`),
-then drives **rank -> callers -> lines** scoped past the BenchmarkDotNet harness
-to the real work, and reports the hot method/line in plain language. Follow up:
+uses the bundled capture helper to capture the relevant `touki.perf` benchmark,
+retains its run manifest and exact generated-child symbols, then drives
+**rank -> callers -> lines** with `benchmark: true` on root-aware MCP tools and
+reports the hot method/line in plain language. It reads ambiguity, thin-scope,
+provider-state, and source-resolution warnings before interpreting percentages.
+Follow up:
 
 > **Prompt:** Show me that hot source file with the time marked on each line.
 
@@ -107,6 +110,17 @@ benchmark on both TFMs, (3) profile and drill to the hot line with evidence,
 `Allocated`) regressed, (6) offer the next drill. It should reuse the existing
 benchmark/trace rather than starting over.
 
+### 8. "Compare every scenario before and after" (manifest diff/batch)
+
+> **Prompt:** Compare the before and after traces for every parameterized benchmark case. Which targeted frame moved, and did any case regress?
+
+**Good:** the agent uses `trace_batch` for a compact ranking across each capture
+manifest and `trace_diff` to pair cases by exact benchmark + parameters. It keeps
+root/process/BenchmarkDotNet scope consistent, reports scope-share and normalized
+changes, and emits per-operation values only when both manifests have matching
+operation count and unit metadata. It drills individual cases only after the batch
+view identifies them.
+
 ---
 
 ## Warm-up: you already have a trace
@@ -130,6 +144,12 @@ checked out at `../filtrace`; substitute any `.nettrace` / `.speedscope.json`:
 - Reads a net481 hotspot off a net10 EventPipe trace (see step 4).
 - Pastes a raw table and stops, instead of answering the question and offering
   the next drill.
+- Uses a supported file format as proof that a provider was enabled instead of
+  checking `analyses.<name>.captureStatus` and `eventCount`.
+- Trusts a 1.0 frame-name resolution rate for source lines without checking
+  `sourceResolution` and exact PDB identity.
+- Ignores `contributingRecordCount`/line attribution warnings for a thin periodic
+  CPU scope, or applies periodic-sample thresholds to evented speedscope records.
 - On a machine-wide `.etl`, ranks without scoping to a process (see step 5).
 - Guesses at native runtime cost instead of opting into `--native-symbols` to
   resolve it (see step 6).

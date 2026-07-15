@@ -12,38 +12,103 @@ by method or by source `file:line`. filtrace is registered as an MCP server in
 [.vscode/mcp.json](../../../.vscode/mcp.json), so **an agent calls its tools
 directly** - `trace_info` first, then `trace_rank` / `trace_callers` /
 `trace_lines` / `trace_heatmap`. The equivalent CLI verbs (below) are the manual
-fallback. One capture serves every drill:
+fallback. Prefer the bundled isolated capture helper; one run emits every
+parameterized case, exact child symbols, provider-aware commands, and a manifest
+that `batch` and `diff` can consume:
 
 ```powershell
-# Capture once. --keepFiles preserves BDN's build so its PDB GUID survives for
-# the line ranking below.
-dotnet run -c Release -f net10.0 --project touki.perf -- `
-    --filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' -p EP --keepFiles
+$filtraceVersion = (& filtrace --version | Select-Object -First 1).Trim()
+if ($filtraceVersion -ne '0.6.0') {
+  throw "filtrace 0.6.0 is required; found '$filtraceVersion'."
+}
 
-$trace = (Get-ChildItem BenchmarkDotNet.Artifacts `
-    -Filter '*GlobEnumeratorExtGlobSingleWithRoot*.nettrace' |
-    Sort-Object LastWriteTime | Select-Object -Last 1).FullName
-# The exact build BDN profiled - its PDB GUID matches the trace:
-$sym = 'artifacts/x64/Release/touki.perf/net10.0/touki.perf-DefaultJob-1/bin/Release/net10.0'
+$handoff = & ./.agents/skills/filtrace/scripts/Capture-BenchmarkTrace.ps1 `
+  -Project touki.perf/touki.perf.csproj `
+  -Filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' `
+  -Tfm net10.0 -Format Json | ConvertFrom-Json
 
-# filtrace is the standalone analyzer (github.com/JeremyKuhne/filtrace), published
-# to NuGet. Install once with `dotnet tool install -g KlutzyNinja.Filtrace`, then
-# call `filtrace <verb>` directly. (The MCP tools above need no install.)
+$manifest = Get-Content $handoff.manifest -Raw | ConvertFrom-Json
+$manifest.cases | Select-Object benchmark, parameters, trace, symbolsDirectory, warnings
 
-# Method ranking, scoped to a workload frame (which method owns the self-time).
-filtrace cpu $trace --root 'RecordedDirectoryEnumerator.MoveNext' --top 25
+if ($manifest.cases.Where({ -not $_.benchmark -or -not $_.parameters }).Count -ne 0) {
+  throw 'Manifest case identity is incomplete; analyze direct trace paths instead.'
+}
 
-# Line ranking inside the dominant method (which lines of its hot loop dominate).
-filtrace lines $trace --method RunEngine --symbols $sym --top 30
-
-# Who calls a folded JIT-helper artifact, to confirm what it's attributable to.
-filtrace callers $trace 'BulkMoveWithWriteBarrier'
+# Rank all parameterized cases compactly, then drill one case with rank/callers/lines.
+filtrace batch $handoff.manifest --metric cpu --benchmark
+$manifest.cases[0].commands
 ```
 
 The MCP tools map onto those verbs one-to-one: `trace_rank` (with
 `measure: self|inclusive`) for the method ranking, `trace_lines` for the line
 ranking, `trace_callers` for the caller breakdown, and `trace_info` for the
 load-and-summarize the other tools do implicitly.
+
+## Agent protocol for phase investigations
+
+**Use different harnesses for measurement and profiling.** A mutable or
+consumable intermediate representation needs fresh state for every measured
+operation: prepare a bounded batch in `IterationSetup`, consume every item once,
+normalize with `OperationsPerInvoke`, and release the batch in
+`IterationCleanup`. Sweep one item, an intermediate batch, and a larger batch:
+the first exposes timer overhead, while the last exposes retained-live-set
+distortion. Keep the smallest batch that amortizes the harness without changing
+the workload.
+
+That one-shot shape is often a poor CPU-profiling harness. For profiling, prefer
+an adaptive end-to-end benchmark and root-scope filtrace to the phase method.
+Work before that call remains outside the selected subtree, while BenchmarkDotNet
+can execute enough operations to produce a denser profile. Profile the one-shot
+benchmark only when a compatible periodic CPU capture has enough contributing
+samples in the selected query.
+
+Validate a phase split before trusting it: phase allocations should add to the
+independently measured end-to-end allocation at reported precision, and phase
+means should approximately add to the end-to-end mean. A large gap usually means
+setup leaked into one measurement, mutable state was reused, or the batch changed
+GC/live-set behavior.
+
+**Use the filtrace 0.6 evidence contracts:**
+
+- Read `trace_info.analyses.<name>` before interpreting a metric.
+  `captureStatus: enabled` plus `eventCount: 0` is a valid empty analysis;
+  `disabled` is unavailable; `unknown` remains unknown. Preserve the capture
+  helper's `<trace>.filtrace.json` sidecar with the trace.
+- For Touki's BenchmarkDotNet 0.16.0-preview.1 logs, require nonempty
+  `benchmark` and `parameters` on every case before using manifest-aware
+  `batch`/`diff`; the 0.6 helper can leave identity incomplete. Split broad
+  captures before the helper's 20 KiB on-disk manifest limit. Treat `activity`
+  as unavailable unless the application EventSource provider was explicitly
+  enabled, regardless of the default helper sidecar.
+- Read `sourceResolution` separately from managed frame-name resolution. Require
+  the relevant module in `matchingPdbModules`; use `pdbIdentityMismatchModules`,
+  `highestUnmappedModules`, and `highestUnmappedMethods` to diagnose `<no source>`.
+  The capture manifest's `symbolsDirectory` is the verified generated-child path.
+- Root-aware tools accept either the BenchmarkDotNet preset (`benchmark: true` /
+  `--benchmark`) or an explicit frame root (`root` / `--root`), never both. Use
+  the preset for the whole measured workload and replace it with the phase method
+  root for phase-specific analysis. Read ambiguity warnings and selected frame
+  definitions instead of guessing a benchmark-method substring. `lines`/`heatmap`
+  remain whole-trace views narrowed by method/file rather than a stack root.
+- Rankings/callers expose `contributingRecordCount`; lines/heat maps expose
+  attributed and unattributed record counts. Keep those counts separate from
+  `scopeWeight`. Apply the 200/1,000 quality guidance only to periodic CPU samples,
+  never evented speedscope records.
+- Same-trace MCP calls may run in parallel: ETLX conversion is coordinated across
+  threads/processes and `trace_info.etlxCacheState` reports `hit`, `waited`,
+  `converted`, or `recovered`.
+- Use `trace_batch`/`batch` for parameter matrices and manifest-aware
+  `trace_diff`/`diff` for before/after scope shares. Per-operation values require
+  matching operation count and unit metadata in both manifests.
+
+Keep a compact experiment ledger while iterating:
+
+| Hypothesis | Small edit | Check | Time | Allocation | Target frame | Decision |
+| --- | --- | --- | ---: | ---: | --- | --- |
+
+Record rejected variants as well as retained changes. Rejections prevent a later
+agent from repeating attractive experiments that already lost on another TFM or
+on allocation.
 
 Things that bite, kept short - full rationale in
 [docs/performance-investigation.md](../../../docs/performance-investigation.md)
@@ -62,13 +127,15 @@ sections 3a (methods) and 3f (lines):
   JIT-helper thunks (`BulkMoveWithWriteBarrier`, `Thread.PollGCWorker`,
   `Buffer.Memmove`) as the hotspot. The analyzer folds both by default; a
   `BulkMoveWithWriteBarrier` over a GC-ref-free struct is always an artifact.
-- **`--root` must be a frame inside the workload**, not the benchmark method
-  name (that also matches BDN's `Activity Benchmark(...)` wrapper and pulls in
-  idle threadpool threads).
-- **Line ranking needs `--symbols` pointing at BDN's `...-DefaultJob-N/bin/...`
-  build** - `touki.dll` ships its PDB embedded, and the symbols build's GUID
-  must match the trace (hence `--keepFiles`). A wrong dir resolves frames to
-  `<no source>` or is rejected with a GUID mismatch.
+- **Scope root-aware analysis with `--benchmark` / `benchmark: true`.** For a
+  phase inside the benchmark, use its explicit library root *instead of* the
+  benchmark preset after inspecting ambiguity diagnostics. Do not substitute the
+  benchmark method name: it can also match an activity/harness wrapper. `lines`
+  and `heatmap` do not preserve stack-root scope; narrow them by method/file.
+- **Line ranking needs the exact generated-child symbols.** Use the capture
+  manifest's verified `symbolsDirectory` and inspect `trace_info.sourceResolution`.
+  A wrong/same-named PDB can leave `<no source>` even when frame-name resolution
+  is 1.0; `pdbIdentityMismatchModules` identifies an exact identity mismatch.
 - **Inlining attribution differs by profiler, and it corrupts the *method*
   ranking - not just the line view.** EventPipe's managed walker credits a
   fully-inlined callee's self-time to its *physical host* method (and, in the
@@ -137,16 +204,22 @@ to pin it. **Every analysis verb takes it** - `cpu`, `rank`, `threadtime`, `line
 processes <etl>` lists every process by weight so you can choose the right
 target. Quiesce other CPU consumers before capturing, or scope explicitly.
 
-**Default every BenchmarkDotNet analysis to `--benchmark`, not just `--process`.**
+**Default every root-aware BenchmarkDotNet analysis to `--benchmark`, not just
+`--process`, unless you are explicitly scoping to a phase root.**
 Process scoping only narrows *which OS process* the samples come from; a BDN
 process itself still interleaves the harness bootstrap, JIT/overhead warmup
 iterations, and the measured `[Benchmark]` workload in one call tree. `--benchmark`
 (preset root = the generated `WorkloadAction*` wrapper) is what isolates the
 measured code from that scaffolding, and it is **not optional for a BDN trace** -
-apply it by default to every verb that takes `--root`, including `export`. An
+apply it by default to every verb that offers it, including `export`; pass
+`benchmark: true` to the corresponding MCP tools. For a phase-specific query,
+replace the preset with `--root <phase-frame>` / `root: <phase-frame>`; the two
+scope selectors are mutually exclusive. An
 unscoped export is not just noisy, its *proportions* are wrong: a flame graph or
 line ranking that still includes warmup materially understates the workload's own
-share of time. Forgetting it on `export` specifically is an easy miss because the
+share of time. `lines` and `heatmap` cannot preserve root scope, so filter those
+by method/file and report their percentages as whole-trace. Forgetting benchmark
+scope on `export` specifically is an easy miss because the
 verb writes a file instead of rendering a ranking, so there is no immediate
 "scoped to X" line to notice is missing - check the command before running it,
 not the output after.
@@ -165,12 +238,12 @@ to trust it or escalate. Three cases, two different fixes:
 - **Density - are there enough samples?** EventPipe samples each managed thread at
   a fixed **~100 Hz**, so coverage is a function of *total* capture time (BDN
   repeats the op across many iterations), not single-op latency. Rules of thumb
-  from this machine: a frame needs roughly **>=200-300 samples** for a trustworthy
-  self-%, and **>=1,000 samples** - about **~10 s of cumulative time in that
-  frame** at 100 Hz - before its *line* view spreads usefully. `trace_info`
-  reports the total count; multiply by the frame's self-% to see whether it clears
-  the bar. Under BDN's repetition you almost always clear the *method* bar; for a
-  short hot path you usually miss the *line* bar.
+  from this machine: a frame needs roughly **>=200-300 periodic CPU samples** for
+  a trustworthy self-%, and **>=1,000 samples** - about **~10 s of cumulative time
+  in that frame** at 100 Hz - before its *line* view spreads usefully. Read
+  `contributingRecordCount` from rank/callers and attributed/unattributed counts
+  from lines/heat maps; never reinterpret `scopeWeight` as a count. Filtrace emits
+  thin-scope warnings. These thresholds do not apply to evented speedscope records.
 - **Sparse but *correct* - the tree points at the right method, just thin.**
   Lengthen the measured work (a larger input or the long-running scenario) or
   capture ETW for ~10x density. **Lengthening the scenario is the right lever

@@ -66,6 +66,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Formats.Nrbf" />
+
     <!--
       CsWin32 generates the Win32 interop needed by both Framework polyfills and shared
       Windows-only providers (e.g. Touki.Io.Clipboard). Referenced on both TFMs so the

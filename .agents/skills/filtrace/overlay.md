@@ -1,89 +1,88 @@
 ---
 core: filtrace
-core-pin: v0.4.0
+core-pin: a04fdd8cae33af5dd8fb5a25329c8c75eb7dea73
+core-repo: https://github.com/JeremyKuhne/filtrace
+core-tree-sha: 43e5f226a606a25da9917b68d29c828a9e95aa4c
+runtime-pin: 0.6.0
 ---
 
 # Touki overlay - filtrace
 
-Repo-specific companion to the vendored [filtrace](SKILL.md) skill. The `SKILL.md`
-is a **pinned copy** of the agent skill shipped by the standalone
-[JeremyKuhne/filtrace](https://github.com/JeremyKuhne/filtrace) trace analyzer (see
-the `metadata.github-*` provenance in `SKILL.md`'s frontmatter). filtrace is a
-*tool-shipped skill*: its canonical home is the tool's own repo (single-sourced
-from filtrace `docs/`), not the
-[agent-skills commons](https://github.com/JeremyKuhne/agent-skills). Do not
-hand-edit the core - re-vendor it from filtrace instead. Everything
-touki-specific lives here.
+Repository-specific bindings for the tool-shipped [filtrace](SKILL.md) core.
+The upstream-owned [skill](SKILL.md), [README](README.md), and [scripts](scripts/)
+match standalone
+[JeremyKuhne/filtrace](https://github.com/JeremyKuhne/filtrace) source commit
+`a04fdd8cae33af5dd8fb5a25329c8c75eb7dea73` (skill tree
+`43e5f226a606a25da9917b68d29c828a9e95aa4c`). That unreleased revision enables
+consumer overlays; the executable packages remain pinned to release `0.6.0`.
 
-## How touki consumes filtrace
+## Bindings
 
-filtrace ships as published NuGet packages; touki uses both heads:
+- **MCP server** - registered in [.vscode/mcp.json](../../../.vscode/mcp.json)
+  as `dnx KlutzyNinja.Filtrace.Mcp@0.6.0`, exposing the seventeen `trace_*`
+  tools an agent calls directly. No clone or build is required.
+- **CLI, fresh install** -
+  `dotnet tool install -g KlutzyNinja.Filtrace --version 0.6.0`.
+- **CLI, existing install** -
+  `dotnet tool update -g KlutzyNinja.Filtrace --version 0.6.0`.
+- Run `filtrace --version` and require `0.6.0` before passing that executable
+  to the capture helpers. Installing does not upgrade an older global tool.
+- Touki's [profiling](../performance-testing/profiling.md) and
+  [graphical-viewers](../performance-testing/graphical-viewers.md) pages drive
+  the vendored capture and viewer scripts.
+- [tools/Capture-EtwTrace.ps1](../../../tools/Capture-EtwTrace.ps1) remains
+  Touki-specific because it wraps the local net481 benchmark workflow.
 
-- **MCP server** - registered in [.vscode/mcp.json](../../../.vscode/mcp.json) as
-  `dnx KlutzyNinja.Filtrace.Mcp@0.4.0`, exposing the fifteen `trace_*` tools an agent
-  calls directly. No clone or build required.
-- **CLI** - `dotnet tool install -g KlutzyNinja.Filtrace`, then `filtrace <verb>`.
+## Upstream follow-up
 
-The skill body's "full reference" links point at filtrace's `docs/workflow.md`
-and `docs/traps.md` as absolute `https://github.com/JeremyKuhne/filtrace` URLs:
-the load-bearing verb and trap catalogs are embedded in the skill body, so those
-links are supplementary and resolve from anywhere.
+Release 0.6.0 completes
+[filtrace#42](https://github.com/JeremyKuhne/filtrace/issues/42): first-class
+BenchmarkDotNet scoping and ambiguity diagnostics, query-specific contributing
+record counts, ETLX conversion coordination, provider enablement/event state,
+source/PDB quality, isolated all-case capture manifests, normalized
+manifest-aware diff, and batch analysis.
 
-The skill body also links four bundled scripts by *relative* path
-(`scripts/Capture-BenchmarkTrace.ps1`, `scripts/Capture-ProjectTrace.ps1`,
-`scripts/Open-SpeedscopeTrace.ps1`, `scripts/Open-PerfettoTrace.ps1`), so
-[scripts/](scripts/) is vendored here verbatim alongside `SKILL.md` (and
-`README.md`) - these are filtrace's own generic capture-then-analyze and
-viewer-opener wrappers (any BenchmarkDotNet project or executable project).
-[profiling.md](../performance-testing/profiling.md) and
-[graphical-viewers.md](../performance-testing/graphical-viewers.md) link to these
-vendored scripts directly rather than keeping a touki-local fork - touki
-previously carried its own `tools/Open-SpeedscopeTrace.ps1` /
-`tools/Open-PerfettoTrace.ps1`, removed once filtrace started shipping (and
-improving on) the same scripts here. `tools/Capture-EtwTrace.ps1` remains
-touki-specific (a net481 ETW wrapper around a touki.perf benchmark run, kept
-separately below) since filtrace's `Capture-ProjectTrace.ps1` has no
-BenchmarkDotNet-specific knowledge.
+The implementation supports process and BenchmarkDotNet scoping for
+manifest-aware `diff` and `batch`, but the current core's scope inventories do
+not list those tools. Its process-scope inventory also omits `export`. Correct
+those generic reference lists in filtrace and re-vendor a later source revision;
+do not patch the pinned core here.
 
-## Cross-references (touki side)
+The 0.6 capture helper also accepts any discovered `filtrace` executable without
+checking its version or response schema. Add a helper-side compatibility
+preflight upstream; Touki's profiling workflow performs the version check before
+invoking the pinned payload.
 
-- [`performance-testing`](../performance-testing/SKILL.md) - the touki skill that
-  *delegates* trace-driving to filtrace. It owns the touki-specific half: how to
-  capture a benchmark trace (`-p EP --keepFiles`, where the symbols build is),
-  the EventPipe-vs-ETW attribution divergence, and reading the line ranking. For
-  the filtrace verb/tool reference and trap catalog it points here.
-- [profiling.md](../performance-testing/profiling.md) and
-  [graphical-viewers.md](../performance-testing/graphical-viewers.md) - the touki
-  capture recipes and viewer launchers that drive filtrace.
-- [tools/Capture-EtwTrace.ps1](../../../tools/Capture-EtwTrace.ps1) - the touki
-  net481 ETW capture wrapper that prints scoped `filtrace` next-step commands.
+Touki uses BenchmarkDotNet 0.16.0-preview.1. Its log escapes quotes inside
+`--benchmarkName`, writes parameter displays as `[Scenario=...]`, and emits
+`// Runtime=...` environment lines. The 0.6 helper's parser does not fully
+understand that shape, so verify every manifest case has nonempty `benchmark`
+and `parameters` before using manifest-aware `batch` or `diff`. Analyze direct
+trace paths when identity is incomplete; never guess case pairing.
 
-## Touki note - a concrete Trap #8 hit
+The 0.6 helper also caps the on-disk manifest at 20 KiB. Split broad filters
+before capture rather than relying on the compact-stdout fallback for a large
+case matrix. Treat `activity` as unavailable unless the application EventSource
+provider was explicitly enabled; the default BenchmarkDotNet EventPipe capture
+does not establish that provider merely because the helper sidecar says enabled.
 
-The core's **Trap #8** already covers this: filtrace folds JIT-helper thunks
-(`memmove`, write-barriers, GC-poll) into their managed caller **by default**, so
-its ranking does not surface the artifact below - only a *raw / unfolded*
-EventPipe view (or a third-party viewer) does. Recorded here as the touki data
-point behind that trap: a pre-filtrace `CpuSampling` trace of touki's extglob
-enumeration read `System.Buffer.BulkMoveWithWriteBarrier` at 93% inclusive - a
-sampling artifact that really belonged to the two engine loop bodies calling it.
-The sharp tell: a write-barrier variant over a **ref-free** struct is impossible
-(it needs `RuntimeHelpers.IsReferenceOrContainsReferences<T>()`), so it cannot be
-a real call; attribute it to the caller with `callers`. Full writeup:
-[docs/dotnet-perf-discoveries.md](../../../docs/dotnet-perf-discoveries.md)
-section 8.
+## Concrete fold-list hit
+
+filtrace folds JIT-helper thunks (`memmove`, write barriers, GC polls) into their
+managed caller by default. A pre-filtrace trace of Touki extglob enumeration put
+93% inclusive time on `System.Buffer.BulkMoveWithWriteBarrier`, even though the
+walked struct contained no GC references. The frame was an attribution artifact;
+`callers` identified the engine loops that owned the cost. The full writeup is in
+[dotnet-perf-discoveries.md](../../../docs/dotnet-perf-discoveries.md), section 8.
 
 ## Updating
 
-Re-vendor from filtrace when its skill changes: copy both
-`.agents/skills/filtrace/SKILL.md` **and** its `scripts/` subfolder from the
-filtrace repo (the relative links in the body only resolve if `scripts/` is
-present here too), re-add this provenance block (bump `github-pinned` /
-`github-tree-sha` to the new commit or tag), and keep touki-specific notes here,
-not in the core. When filtrace cuts a release whose package carries the updated
-skill, pin to that tag (`github-ref: refs/tags/vX.Y.Z`, `github-pinned: vX.Y.Z` -
-a tag pin uses the tag name, not a commit SHA) rather than a branch/commit. After
-re-vendoring, run `tools/Validate-AgentFiles.ps1` and
-`tools/Test-AgentFileLinks.ps1` - the latter catches a missed `scripts/` copy
-immediately (dangling relative links). Update the matching
-`KlutzyNinja.Filtrace.Mcp@<version>` pin in `.vscode/mcp.json` in the same change.
+Until overlay support is released, copy the complete upstream-owned payload from
+an exact filtrace source revision and record that revision in `core-pin`. When a
+published release contains the overlay contract, copy the payload from its exact
+tag, set `core-pin` to that version, and update the CLI/MCP package pins together.
+Never hand-edit the tool-shipped core; fix generic content upstream and re-vendor
+it.
+
+After updating, review these bindings and run `tools/Validate-AgentFiles.ps1`,
+`tools/Validate-AgentSkills.ps1`, and `tools/Test-AgentFileLinks.ps1`.

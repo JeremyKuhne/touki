@@ -36,6 +36,10 @@ Repo-specific companion to the vendored [agent-files-review](SKILL.md) skill. Th
   [Validate-AgentFiles.ps1](../../../tools/Validate-AgentFiles.ps1). The vendored
   [frontmatter reference](frontmatter.md) describes a broader portable rule; use
   Touki's stricter rule for files authored in this repository.
+- A tool-shipped overlay pinned to an unreleased source revision records
+  `core-repo` and `core-tree-sha`; verify the upstream-owned payload tree
+  separately from the consumer-owned overlay. Use a separate `runtime-pin` when
+  published executable packages intentionally trail the skill source.
 
 ## Cross-references
 

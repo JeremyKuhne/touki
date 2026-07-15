@@ -63,8 +63,8 @@ The catalog contains three categories:
 - **Commons core** - `metadata.portability: portable`, complete portfolio
   metadata, and `metadata.github-*` provenance pinned to an immutable release.
 - **Tool-shipped core** - copied from the tool's own repository (currently
-  `filtrace`); its source owns the core metadata and Touki records local bindings
-  in an overlay.
+  `filtrace`); its source owns the core metadata. When the core is overlay-capable,
+  Touki records package wiring, local paths, and update provenance in `overlay.md`.
 - **Touki-owned skill** - `metadata.portability: repo-specific` and complete
   local portfolio metadata, with no `metadata.github-*` provenance.
 
@@ -84,7 +84,12 @@ core-pin: v0.10.0
 ---
 ```
 
-`core` matches the directory; `core-pin` matches the core's `github-pinned` value.
+`core` matches the directory. For a commons core, `core-pin` matches the core's
+`github-pinned` value. For a tool-shipped core, use the installed package version
+or an exact source revision as `core-pin`; review the bindings whenever that pin
+changes. A tool-shipped source-revision overlay also records `core-repo` and
+`core-tree-sha` so the local payload can be verified, and may record a separate
+`runtime-pin` when the published executable version differs from the skill source.
 
 ## Thin core plus sibling files
 

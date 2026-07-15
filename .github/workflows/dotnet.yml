@@ -46,6 +46,7 @@ jobs:
       configuration: Release
       tfm: net10.0
       additional-tfm: net481
+      native-aot-rid: win-x64
 
   # Keep one native Windows ARM64 smoke leg, also limited to the supported net10.0 baseline.
   windows-arm64:

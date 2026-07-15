@@ -20,6 +20,12 @@ a tool; drop into them for the mechanics:
   [framework-span-performance.md](framework-span-performance.md) - the catalog
   of measured BCL behaviors. **Check these before measuring** - the answer may
   already be recorded.
+- [binary-formatted-object-performance.md](binary-formatted-object-performance.md) -
+  the persisted NRBF deserialization baseline against `BinaryFormatter` and exact
+  upstream `binaryformat`, including the decode/materialization split and optimization plan.
+- [performance-investigation-agent-tooling-retrospective.md](performance-investigation-agent-tooling-retrospective.md) -
+  lessons from the NRBF investigation and a prioritized backlog for making agent-led
+  benchmark and trace analysis faster and more reliable.
 - [arraypool-performance.md](../.agents/skills/scratch-buffer-strategy/references/arraypool-performance.md) and the
   [`scratch-buffer-strategy`](../.agents/skills/scratch-buffer-strategy/SKILL.md)
   skill - choosing a scratch buffer (zeroed `stackalloc` vs `[SkipLocalsInit]`
@@ -211,17 +217,12 @@ writes a `.speedscope.json` with no admin and no extra package.
 | `[DisassemblyDiagnoser]` | Works | Works (this is how the net481 codegen findings were captured) |
 | `[HardwareCounters]`, `InliningDiagnoser` | Works (Windows, admin) | Works (Windows, admin) |
 
-**Default to net10.0 for the call-tree question.** Its EventPipe path needs no
-admin, no extra package, and the structural answer (which method dominates,
-which subtree is hot) is almost always TFM-independent - the *shape* of the
-call tree is the algorithm, not the JIT. Use the net10.0 profile as the
-structural map, and confirm the magnitude of the win on net481 with the
-BenchmarkDotNet table (which **is** available on both TFMs).
-
-Only reach for the **net481 elevation path** when you need on-CPU attribution
-that the net10.0 shape cannot give you (e.g. you suspect the cost is
-net481-specific slow-span indexing inside one method, not a different call
-tree). That path is `[EtwProfiler]`:
+**Use net10.0 EventPipe for modern-runtime triage, not as a net481 map.** Its
+capture path needs no admin and quickly locates the modern hot region, but .NET
+Framework 4.8.1 RyuJIT inlines and lowers differently enough to move the dominant
+frame entirely. Any claim about the net481 hotspot requires a net481 ETW capture;
+the BenchmarkDotNet table alone confirms throughput/allocation, not attribution.
+The net481 elevation path is `[EtwProfiler]`:
 
 - add the `BenchmarkDotNet.Diagnostics.Windows` package and **consume one of its
   public types** so MSBuild copies it to the output (or set
@@ -258,31 +259,30 @@ graph. Cross-platform, works on Linux/macOS/Windows, **no admin required**.
 
 #### Capture a trace, then rank hotspots (filtrace)
 
-Capturing the trace and *reading* it are two steps. Capture is a plain
-`dotnet run`; the ranked, artifact-folded self/inclusive hotspots come from the
-standalone [filtrace](https://github.com/JeremyKuhne/filtrace) analyzer (section 6), which reads the
-trace BenchmarkDotNet just wrote - no GUI, no PerfView:
+Capturing the trace and *reading* it are two steps. Use filtrace's bundled helper
+to isolate the BenchmarkDotNet run, retain exact generated-child symbols, and emit
+an all-case manifest; the standalone
+[filtrace](https://github.com/JeremyKuhne/filtrace) analyzer (section 6) reads the
+manifest or its traces - no GUI, no PerfView:
 
 ```powershell
-# 1. Run the benchmark under EventPipe (--keepFiles preserves the build so its
-#    PDB GUID survives for line-level work in section 3f; harmless otherwise).
-dotnet run -c Release -f net10.0 --project touki.perf -- `
-    --filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' -p EP --keepFiles
+$handoff = & ./.agents/skills/filtrace/scripts/Capture-BenchmarkTrace.ps1 `
+  -Project touki.perf/touki.perf.csproj `
+  -Filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' `
+  -Tfm net10.0 -Format Json | ConvertFrom-Json
 
-$trace = (Get-ChildItem BenchmarkDotNet.Artifacts `
-    -Filter '*GlobEnumeratorExtGlobSingleWithRoot*.nettrace' |
-    Sort-Object LastWriteTime | Select-Object -Last 1).FullName
+$manifest = Get-Content $handoff.manifest -Raw | ConvertFrom-Json
+filtrace batch $handoff.manifest --metric cpu --measure self --benchmark
 
-# 2. Folded self-time + inclusive-time rankings, scoped to a workload frame.
-filtrace cpu $trace --root 'RecordedDirectoryEnumerator.MoveNext' --top 25
-
-# Confirm what a folded JIT-helper artifact is attributable to:
-filtrace callers $trace 'BulkMoveWithWriteBarrier'
+# Drill one case after the compact matrix view identifies it.
+$case = $manifest.cases[0]
+filtrace cpu $case.trace --benchmark --top 25
+filtrace callers $case.trace 'BulkMoveWithWriteBarrier' --benchmark
 ```
 
 An agent that speaks MCP calls `trace_rank` (with `measure: self|inclusive`) /
-`trace_callers` directly on the registered `filtrace` server (section 6) instead
-of shelling out.
+`trace_callers` with `benchmark: true`, or `trace_batch` for the manifest,
+directly on the registered `filtrace` server (section 6) instead of shelling out.
 
 > The committed PowerShell scripts (`Profile-Benchmark.ps1`,
 > `Get-TraceHotspots.ps1`) did this aggregation before filtrace existed and it
@@ -330,13 +330,15 @@ ranked method dominates - hand the `.nettrace` to `filtrace` with the `lines` ve
 > the folded view reattributed a "93% `BulkMoveWithWriteBarrier`" reading to its
 > true owners: the two engine loop bodies `RunEngine` (50.9%) and
 > `RunEngineDirectory` (42.2%), pure compute, no copies.
-
-> **`rootFrame` gotcha.** BenchmarkDotNet wraps the workload in an
+>
+> **Scope-selection gotcha.** BenchmarkDotNet wraps the workload in an
 > `Activity Benchmark(...benchmarkName=Foo...)` frame whose **name contains the
-> benchmark method name**. Scoping with the method name as `--root` / `rootFrame`
-> therefore also matches that wrapper and pulls idle threadpool threads into the
-> ranking. Scope to a frame *inside* the workload instead (an enumerator
-> `MoveNext`, or the first method unique to the system under test).
+> benchmark method name**. A substring root can therefore match both that wrapper
+> and the method. For the whole measured workload, use `--benchmark` /
+> `benchmark: true`, which selects the generated `WorkloadAction` wrapper. For a
+> phase-specific query, use a unique phase method as `--root` / `root` *instead*
+> of the benchmark preset, and inspect the ambiguity diagnostics before trusting
+> percentages.
 
 `EventPipeProfile` values worth knowing:
 
@@ -456,10 +458,13 @@ The profilers above rank *methods*. The standalone
 [filtrace](https://github.com/JeremyKuhne/filtrace) project takes the same trace one
 level deeper: it reads the `.nettrace`/`.etl` through TraceEvent and attributes
 each leaf sample to the **source `file:line` that was executing**, so you can
-see which lines of a hot loop dominate. It is net10-only and runs two ways:
+see which lines of a hot loop dominate. The analyzer runs on .NET 10 but can
+read modern `.nettrace` and net481 ETW `.etl` captures. It has two front ends:
 
-- **Console front end** - `filtrace <verb>` (install once with
-  `dotnet tool install -g KlutzyNinja.Filtrace`).
+- **Console front end** - `filtrace <verb>` (fresh install:
+  `dotnet tool install -g KlutzyNinja.Filtrace --version 0.6.0`; existing install:
+  `dotnet tool update -g KlutzyNinja.Filtrace --version 0.6.0`). Require
+  `filtrace --version` to print `0.6.0` before invoking the bundled capture helper.
 - **MCP server** - the same queries exposed as tools (`trace_info`,
   `trace_rank`, `trace_callers`, `trace_lines`, `trace_heatmap`) on the
   registered `filtrace` server for an agent that speaks MCP. See section 6.
@@ -467,21 +472,18 @@ see which lines of a hot loop dominate. It is net10-only and runs two ways:
 The top-down loop on a single captured trace:
 
 ```powershell
-# 0. Capture a CPU-sampled .nettrace AND keep BDN's build (so its PDB survives).
-dotnet run -c Release -f net10.0 --project touki.perf -- `
-    --filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' -p EP --keepFiles
+# 0. Capture every parameterized case and verify exact generated-child symbols.
+$handoff = & ./.agents/skills/filtrace/scripts/Capture-BenchmarkTrace.ps1 `
+  -Project touki.perf/touki.perf.csproj `
+  -Filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' `
+  -Tfm net10.0 -Format Json | ConvertFrom-Json
+$case = (Get-Content $handoff.manifest -Raw | ConvertFrom-Json).cases[0]
 
-$trace = (Get-ChildItem BenchmarkDotNet.Artifacts `
-    -Filter '*GlobEnumeratorExtGlobSingleWithRoot*.nettrace' |
-    Sort-Object LastWriteTime | Select-Object -Last 1).FullName
-# The exact build BDN profiled - its PDB GUID matches the trace:
-$sym = 'artifacts/x64/Release/touki.perf/net10.0/touki.perf-DefaultJob-1/bin/Release/net10.0'
-
-# 1. Method ranking (self + inclusive), JIT-helper artifacts folded.
-filtrace cpu $trace --symbols $sym --top 20
+# 1. Method ranking, scoped to BenchmarkDotNet workload; helpers folded.
+filtrace cpu $case.trace --benchmark --symbols $case.symbolsDirectory --top 20
 
 # 2. Line ranking inside the dominant method.
-filtrace lines $trace --method RunEngine --symbols $sym --top 30
+filtrace lines $case.trace --method RunEngine --symbols $case.symbolsDirectory --top 30
 ```
 
 Verbs and flags: `cpu`/`rank` rank methods (`--root <substr>` scopes to a
@@ -494,15 +496,14 @@ subtree), `callers <frame>` reports a frame's callers, `lines [--method
 > embedded PDB from the image. The analyzer extracts it to a temp standalone PDB
 > when you point `--symbols` (MCP arg `symbols`) at the build-output directory.
 > Without it every managed touki frame resolves to `<no source>`.
-
-> **The symbols build must match the traced build by PDB GUID.**
-> BenchmarkDotNet compiles its *own* isolated copy of `touki.dll` (its own
-> deterministic GUID) into an ephemeral `...-DefaultJob-N/bin/Release/net10.0/`
-> directory and **deletes it during "Artifacts cleanup"** unless you pass
-> `--keepFiles`. Point `--symbols` at *that* surviving directory - not the outer
-> `artifacts/.../touki.perf/net10.0` (a different build, different GUID, which
-> TraceEvent rejects with `FOUND PDB ... has Guid X != Desired Guid Y`).
-
+>
+> **The symbols build must match the traced build by PDB GUID.** The 0.6 capture
+> helper passes `--keepFiles`, discovers logged child outputs, verifies PDB identity
+> through `filtrace info`, and records the exact directory in each manifest case's
+> `symbolsDirectory`. Confirm the relevant module in
+> `trace_info.sourceResolution.matchingPdbModules`; a same-named wrong build appears
+> in `pdbIdentityMismatchModules` rather than silently supplying source lines.
+>
 > **Line attribution stops at inlined-method boundaries.** TraceEvent's
 > IL-offset->source-line map is **per-JITTED-method**; it cannot see inside an
 > inlined callee. A fully-inlined hot helper collapses *all* its samples onto
@@ -510,14 +511,12 @@ subtree), `callers <frame>` reports a frame's callers, `lines [--method
 > entirely on one or two call-site lines (in the extglob case, 93.6% piled onto
 > `ExtGlob.cs:385 return RunEngineCore(...)` and `:410 engine.Run(...)` because
 > the engine is inlined). Two ways through it: drill into the non-inlined tail
-> by scoping `--lines` to the callee (`--lines ExtGlobEngine` surfaced the real
-> internal lines - backtracking machinery ~half, forward walk ~half), or
+> by filtering the line query to the callee (`filtrace lines <trace> --method
+> ExtGlobEngine ...` surfaced the real internal lines - backtracking machinery
+> ~half, forward walk ~half), or
 > temporarily add `[MethodImpl(MethodImplOptions.NoInlining)]` to the callee and
 > re-profile to force a per-method line map (remove it afterwards - it perturbs
 > codegen, same caveat as section 3e).
-
-The TraceEvent embedded-PDB limitation and the proposed upstream fix are written
-up in [traceevent-embedded-pdb.md](traceevent-embedded-pdb.md).
 
 ---
 
@@ -617,20 +616,23 @@ answers method- and line-level questions over MCP - so an agent that speaks MCP
 can drive the whole Layer 2 / Layer 2b loop without shelling out to the
 PowerShell scripts. It also has a console front end (the CLI verbs, section 3f).
 
-Tools it exposes (all take a trace `path`; `trace_rank` selects the family with
-`metric` and the measure with `measure`):
+Tools it exposes (`trace_rank` selects the family with `metric` and the measure
+with `measure`):
 
 | Tool | Answers |
 | --- | --- |
-| `trace_info(path, symbols)` | format / total weight / sample count / symbol-resolution rate / per-thread counts / warnings. **Call first**; a rate below 0.8 means symbols are missing. Folds in the old per-thread listing. |
-| `trace_rank(path, metric, measure, root, fold, top, symbols)` | folded ranking by `metric` (cpu, alloc, exceptions, threadtime) and `measure` (self or inclusive). |
-| `trace_callers(path, frame, root, top)` | who calls a frame - confirms what a JIT-helper artifact is attributable to. |
-| `trace_lines(path, method, fold, top, symbols)` | **line-level** self-time, each leaf sample mapped to `file:line`. Needs `.nettrace`/`.etl` + `symbols`; speedscope yields nothing; `<no source>` = PDB not found. |
-| `trace_heatmap(path, file, fold, symbols)` | per-line self-time heat for one source file, ordered to overlay onto the source. |
-| `trace_diff(before, after, measure, root, fold, top)` | what got slower/faster between two traces. |
-| `trace_gc(path, top)` | GC counts, pauses, and heap summary (`.nettrace`). |
-| `trace_query_events(path, name, skip, take, maxPayload)` | raw event query by name, paged (`.nettrace`). |
-| `trace_export(path, output, format, name, symbols)` | write a speedscope / Chrome-trace flame-graph file. |
+| `trace_info` | Format, frame-name/source quality, analysis provider state/event counts, per-thread counts, warnings. **Call first.** |
+| `trace_rank` | Self/inclusive ranking by cpu, alloc, exceptions, threadtime, contention, wait, or activity. |
+| `trace_callers` | Immediate CPU callers, or callees when requested. |
+| `trace_lines` / `trace_heatmap` | CPU source-line ranking or file heat map with attributed/unattributed record counts. |
+| `trace_tree` | Top-down CPU call tree. |
+| `trace_processes` / `trace_classify` | ETW process inventory or runtime work categories. |
+| `trace_diff` | Normalized/scoped trace diff or exact benchmark+parameter manifest pairing. |
+| `trace_batch` | Compact ranking across every manifest case. |
+| `trace_export` / `trace_timeline` | Flame-graph export or per-bucket temporal activity. |
+| `trace_gc` / `trace_jit` / `trace_threadpool` | Structured runtime reports. |
+| `trace_diskio` | Physical disk I/O by file from an ETW disk capture. |
+| `trace_query_events` | Paged raw events filtered by name/payload/process/thread. |
 
 The `root` gotcha and symbol/`--keepFiles`/inlining caveats are the same as the
 console form - see sections 3a and 3f.
@@ -667,25 +669,25 @@ A concrete, token-efficient loop an agent should follow:
    the benchmark is well-formed (stable Mean/Median, sane direction).
 5. **Confirm** on both TFMs without `--job short`. Read
    `*-report-github.md`, quote only `Mean`/`Ratio`/`Allocated` for changed rows.
-6. **If the bottleneck is unclear**, attach `[EventPipeProfiler(CpuSampling)]`,
-   capture a trace (`dotnet run ... --filter *<Subject>* -p EP --keepFiles` on
-   **net10.0**), then rank it with the `filtrace` analyzer
-   (`filtrace cpu <trace> --root <workload-frame>`, or the `trace_rank` MCP tool; the
+6. **If the bottleneck is unclear**, capture the benchmark with
+  `Capture-BenchmarkTrace.ps1 -Format Json` on **net10.0**, then use
+  `trace_batch` for the manifest and rank a selected case with `benchmark: true`
+  (`filtrace cpu <trace> --benchmark`, or the `trace_rank` MCP tool; the
    PowerShell scripts in
    [performance-investigation-without-mcp.md](performance-investigation-without-mcp.md)
    are the no-filtrace fallback). **Fold the JIT-helper artifacts**
    (`BulkMoveWithWriteBarrier`, `PollGC`, the synthetic `CPU_TIME` leaf) before
    trusting any self-time number - the analyzer does this by default; see
    &sect;3a Trap 2. Profiling is part of the loop: capture a `before/` trace,
-   apply the fix, capture an `after/` trace with the identical filter, and diff.
+  apply the fix, capture an `after/` manifest with the identical filter, and use
+  manifest-aware `trace_diff` / `filtrace diff`.
    EventPipe is net10.0-only; for net481 on-CPU attribution use `[EtwProfiler]`
    (admin) - see the per-TFM table in &sect;3.
 7. **If you need the hot *line*, not just the hot method**, feed the same
    `.nettrace` to `filtrace`: `filtrace lines <trace> --method <method>
    --symbols <build-dir> --top 30` (or the
-   `trace_lines` MCP tool). Capture with `--keepFiles` and point `--symbols` at
-   BDN's surviving `...-DefaultJob-N/bin/Release/net10.0` so the PDB GUID
-   matches; if the ranking collapses onto one or two call-site lines the callee
+  `trace_lines` MCP tool). Use the selected manifest case's verified
+  `symbolsDirectory`; if the ranking collapses onto one or two call-site lines the callee
    is inlined - drill the non-inlined tail or add a temporary `NoInlining`. See
    &sect;3f.
 8. **If a specific loop is slow**, attach `[DisassemblyDiagnoser]` on both TFMs
@@ -717,16 +719,17 @@ A concrete, token-efficient loop an agent should follow:
 A/B + allocations ............ dotnet run -c Release -f <tfm> --project touki.perf -- --filter *X*
 Fast smoke ................... add --job short
 Read the result .............. BenchmarkDotNet.Artifacts/results/*-report-github.md
-Capture a trace .............. dotnet run -c Release -f net10.0 --project touki.perf -- --filter *X* -p EP --keepFiles
-Rank an existing trace ....... filtrace cpu <trace> --root <workload-frame>
+Capture a trace .............. ./.agents/skills/filtrace/scripts/Capture-BenchmarkTrace.ps1 -Project touki.perf/touki.perf.csproj -Filter *X* -Tfm net10.0 -Format Json
+Rank a capture manifest ...... filtrace batch <manifest.json> --metric cpu --benchmark
+Rank a whole BDN workload ..... filtrace cpu <trace> --benchmark
+Rank one phase instead ........ filtrace cpu <trace> --root <phase-frame>
                                folds JIT-helper artifacts + ranks self/inclusive. callers <frame> = who calls it.
 No-server fallback scripts ... ./tools/Profile-Benchmark.ps1 / Get-TraceHotspots.ps1 (see *-without-mcp.md)
 Flame-graph SVG .............. ./tools/speedscope-to-flamegraph.ps1   (or drag the speedscope into speedscope.app)
-Which source LINE? ........... filtrace lines <trace> --method <method> --symbols <build-dir>
-                               net10 .nettrace/.etl + embedded PDB. Capture with --keepFiles; point --symbols
-                               at BDN's ...-DefaultJob-N/bin/Release/net10.0 (PDB GUID must match the trace).
+Which source LINE? ........... filtrace lines <trace> --method <method> --symbols <manifest-case.symbolsDirectory>
+                               net10 .nettrace/.etl + embedded PDB. Confirm sourceResolution exact PDB match.
                                Inlined callee -> samples collapse on the call-site line; drill the tail. See 3f.
-filtrace as an MCP server .... tools: trace_info / trace_rank / trace_callers / trace_lines / trace_heatmap / trace_diff / trace_gc / trace_query_events / trace_export
+filtrace as an MCP server .... 17 tools: orient/rank/callers/lines/heatmap/tree/processes/classify/diff/batch/export/timeline/gc/jit/threadpool/diskio/events
 Where's the time? (in-harness) [EventPipeProfiler(EventPipeProfile.CpuSampling)] -> speedscope.app
                                net10.0 only (no admin); net481 needs [EtwProfiler] (admin) -> .etl
                                FOLD BulkMoveWithWriteBarrier/PollGC/CPU_TIME before reading self-time.
