@@ -21,8 +21,8 @@ namespace Touki.Resources;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   Constructing this type parses the payload without instantiating any reference type other than
-///   <see cref="string"/>. Call <see cref="Deserialize"/> to instantiate the graph.
+///   Constructing this type parses the payload into serialization records without instantiating payload-defined
+///   types. Call <see cref="Deserialize"/> to instantiate the graph.
 ///  </para>
 ///  <para>
 ///   Deserialization can invoke serialization constructors, <see cref="ISerializable"/> implementations,

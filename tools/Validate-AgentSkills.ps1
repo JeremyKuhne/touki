@@ -87,7 +87,11 @@ function Get-GitFileMode([string] $Path) {
         $executeBits = [System.IO.UnixFileMode]::UserExecute -bor
             [System.IO.UnixFileMode]::GroupExecute -bor
             [System.IO.UnixFileMode]::OtherExecute
-        return if (($unixMode -band $executeBits) -ne 0) { '100755' } else { '100644' }
+        if (($unixMode -band $executeBits) -ne 0) {
+            return '100755'
+        }
+
+        return '100644'
     }
 
     $relativePath = [System.IO.Path]::GetRelativePath($RepoRoot, $Path).Replace('\', '/')

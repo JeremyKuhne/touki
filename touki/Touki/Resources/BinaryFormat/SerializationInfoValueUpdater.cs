@@ -14,21 +14,24 @@ internal sealed class SerializationInfoValueUpdater : ValueUpdater
 {
     private readonly SerializationInfo _info;
     private readonly string _name;
+    private readonly Type _serializedType;
 
     internal SerializationInfoValueUpdater(
         SerializationRecordId objectId,
         SerializationRecordId valueId,
         SerializationInfo info,
-        string name)
+        string name,
+        Type serializedType)
         : base(objectId, valueId)
     {
         _info = info;
         _name = name;
+        _serializedType = serializedType;
     }
 
     internal override void UpdateValue(IDictionary<SerializationRecordId, object> objects)
     {
-        object newValue = objects[ValueId];
-        _info.UpdateValue(_name, newValue, newValue.GetType());
+        object? newValue = objects[ValueId];
+        _info.UpdateValue(_name, newValue, newValue?.GetType() ?? _serializedType);
     }
 }

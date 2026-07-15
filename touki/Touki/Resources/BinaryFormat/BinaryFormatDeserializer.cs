@@ -88,30 +88,33 @@ internal sealed class BinaryFormatDeserializer : IDeserializer
     {
         DeserializeRoot(_rootId);
 
-        int pendingCount = _pendingSerializationInfo?.Count ?? 0;
         while (_pendingSerializationInfo is not null && _pendingSerializationInfo.Count > 0)
         {
-            PendingSerializationInfo pending = _pendingSerializationInfo.Dequeue();
-
-            if (--pendingCount >= 0
-                && _pendingSerializationInfo.Count != 0
-                && _incompleteDependencies is not null
-                && _incompleteDependencies.TryGetValue(
-                    pending.ObjectId,
-                    out HashSet<SerializationRecordId>? dependencies))
+            int passCount = _pendingSerializationInfo.Count;
+            bool madeProgress = false;
+            for (int index = 0; index < passCount; index++)
             {
-                if (dependencies.Count > 0)
+                PendingSerializationInfo pending = _pendingSerializationInfo.Dequeue();
+                if (_incompleteDependencies is not null
+                    && _incompleteDependencies.TryGetValue(
+                        pending.ObjectId,
+                        out HashSet<SerializationRecordId>? dependencies)
+                    && dependencies.Count > 0)
                 {
                     _pendingSerializationInfo.Enqueue(pending);
                     continue;
                 }
 
-                Debug.Fail("Completed dependencies should have been removed from the dictionary.");
+                pending.Populate(_deserializedObjects, _streamingContext);
+                _pendingSerializationInfoIds?.Remove(pending.ObjectId);
+                ((IDeserializer)this).CompleteObject(pending.ObjectId);
+                madeProgress = true;
             }
 
-            pending.Populate(_deserializedObjects, _streamingContext);
-            _pendingSerializationInfoIds?.Remove(pending.ObjectId);
-            ((IDeserializer)this).CompleteObject(pending.ObjectId);
+            if (!madeProgress)
+            {
+                throw new SerializationException("The serialized object graph could not be completed.");
+            }
         }
 
         if (_incompleteObjects.Count > 0 || (_pendingUpdates is not null && _pendingUpdates.Count > 0))

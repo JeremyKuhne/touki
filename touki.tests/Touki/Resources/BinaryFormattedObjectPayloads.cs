@@ -161,6 +161,41 @@ internal sealed class ObjectReferenceSingleton : IObjectReference
     public object GetRealObject(StreamingContext context) => Value;
 }
 
+[Serializable]
+internal sealed class NullObjectReferenceContainer : ISerializable
+{
+    private NullObjectReferenceContainer(SerializationInfo info, StreamingContext context)
+    {
+        SerializationInfoEnumerator enumerator = info.GetEnumerator();
+        ValueType = enumerator.MoveNext() ? enumerator.ObjectType : null;
+        Value = info.GetValue("Value", typeof(object));
+    }
+
+    public object? Value;
+
+    [NonSerialized]
+    public Type? ValueType;
+
+    public void GetObjectData(SerializationInfo info, StreamingContext context)
+        => info.AddValue("Value", Value, typeof(object));
+}
+
+[Serializable]
+internal sealed class NullObjectReference : IObjectReference, ISerializable
+{
+    private NullObjectReference(SerializationInfo info, StreamingContext context)
+    {
+        Marker = info.GetInt32("Marker");
+    }
+
+    public int Marker;
+
+    public object GetRealObject(StreamingContext context) => null!;
+
+    public void GetObjectData(SerializationInfo info, StreamingContext context)
+        => info.AddValue("Marker", Marker);
+}
+
 #pragma warning restore CA5362
 
 [Serializable]
@@ -260,4 +295,20 @@ internal struct SelfReferencingStruct
 #pragma warning disable CS0649 // Field is populated by BinaryFormattedObject.
     public object? Value;
 #pragma warning restore CS0649
+}
+
+[Serializable]
+internal struct SelfReferencingSerializableStruct : ISerializable
+{
+    private SelfReferencingSerializableStruct(SerializationInfo info, StreamingContext context)
+    {
+        InvocationCount++;
+        Value = info.GetValue("Value", typeof(object));
+    }
+
+    internal static int InvocationCount { get; set; }
+    public object? Value;
+
+    public readonly void GetObjectData(SerializationInfo info, StreamingContext context)
+        => info.AddValue("Value", Value, typeof(object));
 }

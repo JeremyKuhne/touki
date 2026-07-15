@@ -61,7 +61,8 @@ internal sealed class ClassRecordSerializationInfoDeserializer : ClassRecordDese
                         _classRecord.Id,
                         reference,
                         _serializationInfo,
-                        memberName));
+                        memberName,
+                        memberValue.GetType()));
                 }
 
                 _serializationInfo.AddValue(memberName, memberValue);
