@@ -258,25 +258,31 @@ Run `filtrace <verb> --help` for the full option set of any verb.
 
 ## Scope and symbols
 
-- **Scope to one process.** The verbs that read a multi-process `.etl`
-  (`cpu`, `threadtime`, `rank`, `callers`, `lines`, `heatmap`, `tree`, `classify`,
-  `timeline`) auto-scope to the busiest process tree. Run `processes` first to see the
-   capture, then `--process <name>` to override. The CLI also accepts `--all-processes`
-   to widen; MCP tools support automatic or named-process scope, not an all-process
-   aggregate.
-  `alloc` / `exceptions` read a single-process `.nettrace` and have no process
-  options.
-- **Scope to the benchmark.** For every root-aware stack analysis of a
-   BenchmarkDotNet capture, scope to its `WorkloadAction` wrapper. In the CLI, pass
-   `--benchmark` to every verb that offers it. In MCP, pass
-   `benchmark: true` to `trace_rank`, `trace_callers`, `trace_tree`,
-   `trace_classify`, and `trace_export`. The wrapper includes warmup and actual
-   iterations and excludes harness/overhead scaffolding. Do not guess a benchmark
-   method substring: root/frame warnings report the total match count, then list up to
-   25 full definitions and 10 depths per definition with omitted-count markers, plus
-   which outermost/deepest definition was selected. Narrow an ambiguous selector before
-   trusting percentages. `lines` / `heatmap` have no root scope; narrow them by
-   method/file and treat percentages as whole-trace.
+<!-- filtrace:begin scopes -->
+**Implemented scope inventory:**
+
+- **Named process:** CLI `info`, `rank`, `cpu`, `threadtime`, `callers`, `lines`,
+  `heatmap`, `tree`, `classify`, `timeline`, `diff`, `batch`, and `export`; MCP
+  `trace_info`, `trace_rank`, `trace_callers`, `trace_lines`, `trace_heatmap`,
+  `trace_tree`, `trace_classify`, `trace_timeline`, `trace_diff`, `trace_batch`, and
+  `trace_export`. These auto-scope a multi-process `.etl` to the busiest process tree.
+  Run `processes` / `trace_processes` first to inspect the capture, then set
+  `--process <name>` / `process` to override. CLI verbs expose `--all-processes`
+  where an aggregate is supported; MCP has no all-process aggregate.
+- **Root subtree:** CLI `rank`, `cpu`, `alloc`, `exceptions`, `threadtime`, `callers`,
+  `tree`, `classify`, `diff`, `batch`, and `export`; MCP `trace_rank`,
+  `trace_callers`, `trace_tree`, `trace_classify`, `trace_diff`, `trace_batch`, and
+  `trace_export`. Set `--root <frame>` / `root` to keep the subtree under a frame.
+- **BenchmarkDotNet workload:** CLI `rank`, `cpu`, `alloc`, `exceptions`,
+  `threadtime`, `callers`, `tree`, `classify`, `diff`, `batch`, and `export` accept
+  `--benchmark`; MCP `trace_rank`, `trace_callers`, `trace_tree`, `trace_classify`,
+  `trace_diff`, `trace_batch`, and `trace_export` accept `benchmark: true`. The
+  preset isolates the `WorkloadAction` subtree from harness and overhead scaffolding;
+  it is mutually exclusive with an explicit root. `lines` / `heatmap` are not
+  root-aware, so narrow them by method/file and treat percentages as process-scoped
+  whole-trace values.
+<!-- filtrace:end scopes -->
+
 - **Scope to a time window.** `rank --time <start>,<end>` (milliseconds relative to
   the trace start, either bound optional: `1000,5000`, `1000,`, or `,5000`) keeps
   only the samples anchored in the window. It applies to every metric, so it zooms
@@ -374,12 +380,14 @@ The recurring ways a .NET trace investigation goes wrong:
 4. **BenchmarkDotNet captures include the harness - scope with `--benchmark` by
    default, not as an afterthought.** A raw ranking (or export) of a BDN trace is
    mixed with orchestrator and overhead scaffolding outside your `[Benchmark]`.
-   In the CLI, pass `--benchmark` to every verb that offers it; in MCP, pass
-   `benchmark: true` to `trace_rank`, `trace_callers`, `trace_tree`,
-   `trace_classify`, and `trace_export`. The wrapper includes warmup and actual
-   workload iterations; it excludes harness/overhead scaffolding, not warmup. This
-   applies especially to export - a flame graph with the harness left in is not just
-   noisy, its proportions are wrong. Do not substitute a benchmark method substring:
+   In the CLI, pass `--benchmark` to `rank`, `cpu`, `alloc`, `exceptions`,
+   `threadtime`, `callers`, `tree`, `classify`, `diff`, `batch`, and `export`; in
+   MCP, pass `benchmark: true` to `trace_rank`, `trace_callers`, `trace_tree`,
+   `trace_classify`, `trace_diff`, `trace_batch`, and `trace_export`. The wrapper
+   includes warmup and actual workload iterations; it excludes harness/overhead
+   scaffolding, not warmup. This applies especially to export - a flame graph with
+   the harness left in is not just noisy, its proportions are wrong. Do not
+   substitute a benchmark method substring:
    if root/frame warnings report multiple definitions or depths, narrow the selector
    before trusting the result. `lines` / `heatmap` cannot preserve root scope; narrow
    them with their method/file filter and treat percentages as whole-trace.

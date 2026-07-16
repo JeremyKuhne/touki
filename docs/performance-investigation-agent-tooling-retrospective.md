@@ -14,9 +14,11 @@ tool behavior manually.
 Filtrace release [0.6.0](https://github.com/JeremyKuhne/filtrace/releases/tag/v0.6.0)
 delivered the analyzer, MCP, capture-script, and tool-shipped-skill work tracked by
 [JeremyKuhne/filtrace#42](https://github.com/JeremyKuhne/filtrace/issues/42), which
-is closed as completed. Touki consumes that release. The portable performance-workflow
-guidance is still being validated in Touki's local performance-testing overlay before it
-is upleveled to `JeremyKuhne/agent-skills`.
+is closed as completed. Touki now consumes release
+[0.6.1](https://github.com/JeremyKuhne/filtrace/releases/tag/v0.6.1), which hardens
+that workflow for BenchmarkDotNet 0.16 captures. The portable performance-workflow
+guidance is still being validated in Touki's local performance-testing overlay before
+it is upleveled to `JeremyKuhne/agent-skills`.
 
 ## Executive summary
 
@@ -339,7 +341,8 @@ reconstructable dirty-source bundle remains a portable `agent-skills` candidate.
 
 These requirements are implemented in filtrace's bundled
 [`Capture-BenchmarkTrace.ps1`](../.agents/skills/filtrace/scripts/Capture-BenchmarkTrace.ps1),
-vendored here from release 0.6.0. Keep the acceptance checks as regression contracts.
+first delivered in release 0.6.0 and retained in the current vendored helper. Keep
+the acceptance checks as regression contracts.
 
 ### 1. Isolated runs and complete case manifests
 
@@ -424,8 +427,9 @@ availability cannot be established and does not present a command as known-valid
 JSON/stdout carries compact run status, manifest location, warnings, and next steps. This
 avoids routing tens of kilobytes through agent context merely to learn the trace path.
 
-**Regression check:** a successful parameterized capture returns a compact manifest under
-20 KiB regardless of BenchmarkDotNet's iteration log size.
+**Regression check:** a successful parameterized capture keeps the agent-facing JSON
+handoff under 20 KiB regardless of BenchmarkDotNet's iteration log size, while the
+complete durable manifest remains available under its separate 16 MiB safety limit.
 
 ## Filtrace product changes delivered in 0.6.0
 

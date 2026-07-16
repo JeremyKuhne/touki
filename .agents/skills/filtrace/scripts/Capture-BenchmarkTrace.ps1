@@ -8,7 +8,7 @@
     Wraps the "record a trace, then analyze it" loop for a BenchmarkDotNet perf
     project. Run it from the repository root. Each invocation passes a run-specific
     `--artifacts` directory and `--keepFiles`, enumerates every profiler output in
-    that run, and emits a compact manifest with parameterized benchmark identity,
+    that run, and emits a durable manifest with parameterized benchmark identity,
     trace pairs, runtime/source identity, and exact symbols when verified:
 
       - EventPipe (-Profiler EP, the default): cross-platform, no elevation, single
@@ -79,8 +79,10 @@
     Path or command name for the dotnet host. Defaults to dotnet from PATH.
 
 .PARAMETER FiltracePath
-    Path or command name for filtrace. Used after capture to verify which logged
-    BenchmarkDotNet child output has an exact PDB match for each trace.
+    Path or command name for filtrace. When it resolves, the helper verifies version
+    0.6.0 or newer and info JSON schema 8 before capture, then uses it to verify which
+    logged BenchmarkDotNet child output has an exact PDB match for each trace. When it
+    does not resolve, recorder-established analysis statuses remain the fallback.
 
 .PARAMETER Format
     Final result format: Text (default) or Json. BenchmarkDotNet output always stays
@@ -136,12 +138,17 @@ function Write-CaptureMetadata([string]$TracePath, [System.Collections.IDictiona
 }
 
 function Write-RunManifest([string]$Path, [System.Collections.IDictionary]$Manifest) {
-    $maxManifestBytes = 20KB
-    $json = $Manifest | ConvertTo-Json -Depth 8 -Compress
+    $maxManifestBytes = 16MB
+    try {
+        $json = $Manifest | ConvertTo-Json -Depth 8 -Compress
+    }
+    catch {
+        throw "Capture manifest could not be serialized at '$Path': $($_.Exception.Message)"
+    }
     $encoding = New-Object System.Text.UTF8Encoding($false)
     $manifestBytes = $encoding.GetByteCount($json)
     if ($manifestBytes -ge $maxManifestBytes) {
-        throw "Capture manifest is $manifestBytes UTF-8 bytes; it must stay under 20 KiB. Narrow the benchmark filter or split the capture into fewer cases."
+        throw "Capture manifest is $manifestBytes UTF-8 bytes; the durable manifest safety limit is 16 MiB. Narrow the benchmark filter or split the capture into fewer cases."
     }
 
     [System.IO.File]::WriteAllText($Path, $json, $encoding)
@@ -180,6 +187,7 @@ function Get-CaptureCases([string]$ArtifactsDirectory, [string]$CaptureProfiler)
                 benchmark = $null
                 parameters = $null
                 benchmarkDisplay = $null
+                runtime = $null
                 capturedUtc = $file.LastWriteTimeUtc.ToString('O')
                 trace = $null
                 speedscope = $null
@@ -245,38 +253,85 @@ function Get-LocalDirectoryCandidate([string]$Path) {
     }
 }
 
-function Set-BenchmarkIdentities([System.Collections.IDictionary[]]$CaptureCases, [string]$CaptureLog) {
-    $benchmarksById = @{}
+function Set-BenchmarkIdentities(
+    [System.Collections.IDictionary[]]$CaptureCases,
+    [string]$CaptureLog,
+    [string]$FiltraceCommand,
+    [bool]$CanInspectTraces) {
     $benchmarksInExecutionOrder = New-Object 'System.Collections.Generic.List[System.Collections.IDictionary]'
     $currentDisplay = $null
+    $pendingBenchmark = $null
     foreach ($line in Get-Content -LiteralPath $CaptureLog) {
         if ($line -match '^// Benchmark: (.+)$') {
             $currentDisplay = $Matches[1]
+            $pendingBenchmark = $null
+            continue
+        }
+
+        # Comment-prefixed runtime rows belong to the active Execute block. The
+        # unprefixed Runtime rows are the final report table and stay manifest-wide.
+        if ($null -ne $pendingBenchmark -and $line -match '^//\s*Runtime\s*=') {
+            $pendingBenchmark.runtime = [string]::new($line.ToCharArray())
+            $pendingBenchmark = $null
             continue
         }
 
         if ($null -ne $currentDisplay -and
-            $line -match '--benchmarkName\s+(?:"([^"]+)"|(\S+)).*--benchmarkId\s+(\d+)') {
-            $benchmarkId = [int]$Matches[3]
-            if (-not $benchmarksById.ContainsKey($benchmarkId)) {
-                $benchmarkName = if ($Matches[1]) { $Matches[1] } else { $Matches[2] }
-                $benchmarksById[$benchmarkId] = [ordered]@{
-                    benchmarkId = $benchmarkId
-                    benchmark = $benchmarkName
-                    parameters = Get-BenchmarkParameters $currentDisplay
-                    benchmarkDisplay = $currentDisplay
-                }
-                $benchmarksInExecutionOrder.Add($benchmarksById[$benchmarkId])
+            $line -match '--benchmarkName\s+(.+?)(?=\s+--[A-Za-z])') {
+            $benchmarkNameArgument = $Matches[1]
+            if ($line -notmatch '--benchmarkId\s+(\d+)') { continue }
+            $benchmarkId = [int]$Matches[1]
+            $fullBenchmarkName = ConvertFrom-BenchmarkNameArgumentFull $benchmarkNameArgument
+            $benchmark = [ordered]@{
+                benchmarkId = $benchmarkId
+                benchmark = Get-BenchmarkName $fullBenchmarkName
+                fullBenchmarkName = $fullBenchmarkName
+                parameters = Get-BenchmarkParameters $currentDisplay
+                benchmarkDisplay = $currentDisplay
+                runtime = $null
+                assigned = $false
             }
+            $benchmarksInExecutionOrder.Add($benchmark)
+            $pendingBenchmark = $benchmark
         }
     }
 
-    foreach ($benchmarkName in @($benchmarksInExecutionOrder.benchmark | Select-Object -Unique)) {
-        $benchmarks = @($benchmarksInExecutionOrder | Where-Object { $_.benchmark -eq $benchmarkName })
-        $prefix = "$benchmarkName-"
+    if ($CanInspectTraces) {
+        foreach ($captureCase in $CaptureCases) {
+            if (-not $captureCase.trace) { continue }
+            $traceBenchmarkName = Get-TraceBenchmarkName $captureCase.trace $FiltraceCommand
+            if ([string]::IsNullOrWhiteSpace($traceBenchmarkName)) { continue }
+            $matches = @(
+                $benchmarksInExecutionOrder |
+                    Where-Object {
+                        -not $_.assigned -and
+                        $_.fullBenchmarkName -ceq $traceBenchmarkName
+                    }
+            )
+            if ($matches.Count -ne 1) { continue }
+            Set-CaptureCaseIdentity $captureCase $matches[0]
+            $matches[0].assigned = $true
+        }
+    }
+
+    $benchmarkNames = @(
+        $benchmarksInExecutionOrder.benchmark |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+            Select-Object -Unique
+    )
+    foreach ($benchmarkName in $benchmarkNames) {
+        $benchmarks = @(
+            $benchmarksInExecutionOrder |
+                Where-Object { -not $_.assigned -and $_.benchmark -eq $benchmarkName }
+        )
         $cases = @(
             $CaptureCases |
-                Where-Object { $_.id.StartsWith($prefix, [StringComparison]::Ordinal) } |
+                Where-Object {
+                    $null -eq $_.benchmarkId -and
+                    $_.id -notmatch '-hash\d+(?:-|$)' -and
+                    ($_.id.StartsWith("$benchmarkName-", [StringComparison]::Ordinal) -or
+                        $_.id.StartsWith("$benchmarkName(", [StringComparison]::Ordinal))
+                } |
                 Sort-Object { $_.capturedUtc }, { $_.id }
         )
         if ($benchmarks.Count -ne $cases.Count) { continue }
@@ -290,15 +345,83 @@ function Set-BenchmarkIdentities([System.Collections.IDictionary[]]$CaptureCases
         }
 
         for ($index = 0; $index -lt $cases.Count; $index++) {
-            $cases[$index].benchmarkId = $benchmarks[$index].benchmarkId
-            $cases[$index].benchmark = $benchmarks[$index].benchmark
-            $cases[$index].parameters = $benchmarks[$index].parameters
-            $cases[$index].benchmarkDisplay = $benchmarks[$index].benchmarkDisplay
+            Set-CaptureCaseIdentity $cases[$index] $benchmarks[$index]
+            $benchmarks[$index].assigned = $true
         }
     }
 }
 
+function Set-CaptureCaseIdentity(
+    [System.Collections.IDictionary]$CaptureCase,
+    [System.Collections.IDictionary]$Benchmark) {
+    $CaptureCase.benchmarkId = $Benchmark.benchmarkId
+    $CaptureCase.benchmark = $Benchmark.benchmark
+    $CaptureCase.parameters = $Benchmark.parameters
+    $CaptureCase.benchmarkDisplay = $Benchmark.benchmarkDisplay
+    $CaptureCase.runtime = $Benchmark.runtime
+}
+
+function Get-TraceBenchmarkName([string]$TracePath, [string]$FiltraceCommand) {
+    try {
+        $global:LASTEXITCODE = 0
+        $json = & $FiltraceCommand events $TracePath `
+            --name 'BenchmarkDotNet.EngineEventSource/Benchmark/Start' `
+            --take 2 --max-payload 4096 --format json 2>$null | Out-String
+        if ($LASTEXITCODE -ne 0) { return $null }
+        $result = ($json | ConvertFrom-Json).result
+        $events = @(
+            $result.events |
+                Where-Object {
+                    $_.provider -ceq 'BenchmarkDotNet.EngineEventSource' -and
+                    $_.eventName -ceq 'Benchmark/Start'
+                }
+        )
+            if ([int]$result.totalMatched -ne 1 -or $events.Count -ne 1) { return $null }
+        $payload = [string]$events[0].payload
+        $prefix = 'benchmarkName='
+        if (-not $payload.StartsWith($prefix, [StringComparison]::Ordinal)) { return $null }
+        return $payload.Substring($prefix.Length)
+    }
+    catch {
+        return $null
+    }
+}
+
+function ConvertFrom-BenchmarkNameArgumentFull([string]$BenchmarkNameArgument) {
+    if ([string]::IsNullOrWhiteSpace($BenchmarkNameArgument)) { return $null }
+
+    $decoded = [regex]::Replace(
+        $BenchmarkNameArgument.Trim(),
+        '(?:\\+u0026#34;|&#34;|&quot;)',
+        '"').Trim('"').Replace('\"', '"')
+    if ([string]::IsNullOrWhiteSpace($decoded)) { return $null }
+    return $decoded
+}
+
+function ConvertFrom-BenchmarkNameArgument([string]$BenchmarkNameArgument) {
+    return Get-BenchmarkName (ConvertFrom-BenchmarkNameArgumentFull $BenchmarkNameArgument)
+}
+
+function Get-BenchmarkName([string]$FullBenchmarkName) {
+    if ([string]::IsNullOrWhiteSpace($FullBenchmarkName)) { return $null }
+    $parameters = $FullBenchmarkName.IndexOf('(')
+    if ($parameters -ge 0) {
+        return $FullBenchmarkName.Substring(0, $parameters)
+    }
+    return $FullBenchmarkName
+}
+
 function Get-BenchmarkParameters([string]$BenchmarkDisplay) {
+    $trimmedDisplay = $BenchmarkDisplay.TrimEnd()
+    if ($trimmedDisplay.EndsWith(']', [StringComparison]::Ordinal)) {
+        $openBracket = $trimmedDisplay.LastIndexOf('[')
+        if ($openBracket -ge 0) {
+            return $trimmedDisplay.Substring(
+                $openBracket + 1,
+                $trimmedDisplay.Length - $openBracket - 2)
+        }
+    }
+
     $close = $BenchmarkDisplay.LastIndexOf('): ', [StringComparison]::Ordinal)
     if ($close -lt 0) { return '' }
     $open = $BenchmarkDisplay.IndexOf('(')
@@ -339,7 +462,7 @@ function Get-DefaultCaptureStatuses([string]$CaptureProfiler, [bool]$HasRawTrace
 
     return [ordered]@{
         cpu = 'enabled'; alloc = 'disabled'; exceptions = 'enabled';
-        contention = 'enabled'; wait = 'disabled'; activity = 'enabled';
+        contention = 'enabled'; wait = 'disabled'; activity = 'unknown';
         gcstats = 'enabled'; jitstats = 'enabled'; threadpool = 'enabled';
         events = 'enabled'
     }
@@ -403,6 +526,95 @@ function Get-TraceInfoResult(
     }
     catch {
         return $null
+    }
+}
+
+function Get-ObjectPropertyInfo($Object, [string]$Name) {
+    if ($null -eq $Object) { return $null }
+    return $Object.PSObject.Properties[$Name]
+}
+
+function Assert-FiltraceCompatibility([string]$FiltraceCommand) {
+    $minimumVersion = [Version]'0.6.0'
+    $expectedSchemaVersion = 8
+    $upgradeGuidance = 'Upgrade with: dotnet tool update -g KlutzyNinja.Filtrace'
+
+    try {
+        $global:LASTEXITCODE = 0
+        $versionOutput = (& $FiltraceCommand --version 2>$null | Out-String).Trim()
+        $versionExitCode = $LASTEXITCODE
+        $versionMatch = [regex]::Match($versionOutput, '(?<!\d)(\d+\.\d+\.\d+)')
+        if ($versionExitCode -ne 0 -or -not $versionMatch.Success) {
+            throw 'the --version query did not return a semantic version'
+        }
+
+        $resolvedVersion = [Version]$versionMatch.Groups[1].Value
+        if ($resolvedVersion -lt $minimumVersion) {
+            throw "version $resolvedVersion is older than required version $minimumVersion"
+        }
+    }
+    catch {
+        throw "Resolved filtrace '$FiltraceCommand' is incompatible: $($_.Exception.Message). $upgradeGuidance"
+    }
+
+    $preflightTrace = Join-Path (
+        [System.IO.Path]::GetTempPath()) "filtrace-preflight-$([Guid]::NewGuid().ToString('N')).speedscope.json"
+    try {
+        $profile = [ordered]@{
+            '$schema' = 'https://www.speedscope.app/file-format-schema.json'
+            shared = [ordered]@{ frames = @([ordered]@{ name = 'preflight' }) }
+            profiles = @(
+                [ordered]@{
+                    type = 'sampled'
+                    name = 'preflight'
+                    unit = 'milliseconds'
+                    startValue = 0
+                    endValue = 1
+                    samples = ,([int[]]@(0))
+                    weights = @(1)
+                }
+            )
+            activeProfileIndex = 0
+            exporter = 'filtrace compatibility preflight'
+            name = 'filtrace compatibility preflight'
+        } | ConvertTo-Json -Depth 6 -Compress
+        $encoding = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($preflightTrace, $profile, $encoding)
+
+        $global:LASTEXITCODE = 0
+        $infoJson = & $FiltraceCommand info $preflightTrace --format json 2>$null | Out-String
+        if ($LASTEXITCODE -ne 0) {
+            throw 'info --format json returned a nonzero exit code'
+        }
+
+        $infoEnvelope = $infoJson | ConvertFrom-Json
+        $schemaVersionProperty = Get-ObjectPropertyInfo $infoEnvelope 'schemaVersion'
+        $resultProperty = Get-ObjectPropertyInfo $infoEnvelope 'result'
+        $infoResult = $null
+        if ($null -ne $resultProperty) { $infoResult = $resultProperty.Value }
+        $analysesProperty = Get-ObjectPropertyInfo $infoResult 'analyses'
+        $analyses = $null
+        if ($null -ne $analysesProperty) { $analyses = $analysesProperty.Value }
+        $cpuProperty = Get-ObjectPropertyInfo $analyses 'cpu'
+        $cpuAnalysis = $null
+        if ($null -ne $cpuProperty) { $cpuAnalysis = $cpuProperty.Value }
+        $captureStatusProperty = Get-ObjectPropertyInfo $cpuAnalysis 'captureStatus'
+        $eventCountProperty = Get-ObjectPropertyInfo $cpuAnalysis 'eventCount'
+        if ($null -eq $schemaVersionProperty -or
+            [int]$schemaVersionProperty.Value -ne $expectedSchemaVersion -or
+            $null -eq $resultProperty -or
+            $null -eq $analysesProperty -or
+            $null -eq $cpuProperty -or
+            $null -eq $captureStatusProperty -or
+            $null -eq $eventCountProperty) {
+            throw "info --format json did not match schema $expectedSchemaVersion"
+        }
+    }
+    catch {
+        throw "Resolved filtrace '$FiltraceCommand' is incompatible: $($_.Exception.Message). $upgradeGuidance"
+    }
+    finally {
+        Remove-Item -LiteralPath $preflightTrace -Force -ErrorAction SilentlyContinue
     }
 }
 
@@ -500,6 +712,12 @@ function Get-CaseCommands(
 
 function Get-CaseWarnings([System.Collections.IDictionary]$CaptureCase) {
     $warnings = New-Object 'System.Collections.Generic.List[string]'
+    if ($null -eq $CaptureCase.benchmarkId -or
+        [string]::IsNullOrWhiteSpace($CaptureCase.benchmark) -or
+        $null -eq $CaptureCase.parameters -or
+        [string]::IsNullOrWhiteSpace($CaptureCase.benchmarkDisplay)) {
+        $warnings.Add('benchmark identity unavailable or ambiguous; do not use this case with manifest batch/diff; analyze the trace directly')
+    }
     foreach ($name in $CaptureCase.analyses.Keys) {
         $status = $CaptureCase.analyses[$name].captureStatus
         if ($status -eq 'disabled') {
@@ -708,6 +926,11 @@ if ($ElevatedChild -and -not (Test-Elevated)) {
     exit 1
 }
 
+$filtraceAvailable = $null -ne (Get-Command $FiltracePath -ErrorAction SilentlyContinue)
+if ($filtraceAvailable) {
+    Assert-FiltraceCompatibility $FiltracePath
+}
+
 # ETW kernel sessions require Administrator. When not elevated, relaunch this script
 # in an elevated window, then wait for it.
 # -WorkingDirectory anchors the child at the repo root so BenchmarkDotNet.Artifacts
@@ -855,7 +1078,7 @@ if ($captureCases.Count -eq 0) {
     Write-Error "No capture files found in $artifacts. Did the capture run?" -ErrorAction Continue
     exit 1
 }
-Set-BenchmarkIdentities $captureCases $log
+Set-BenchmarkIdentities $captureCases $log $FiltracePath $filtraceAvailable
 if ($hasOperationCount) {
     foreach ($captureCase in $captureCases) {
         $captureCase.operationCount = $OperationCount
@@ -867,7 +1090,6 @@ if ($hasOperationCount) {
 # preserves BenchmarkDotNet's generated build output for manual follow-up.
 $symbols = Join-Path (Split-Path -Parent $projFile.FullName) "bin/Release/$Tfm"
 $symbolCandidates = @(Get-SymbolCandidates $log $symbols)
-$filtraceAvailable = $null -ne (Get-Command $FiltracePath -ErrorAction SilentlyContinue)
 foreach ($captureCase in $captureCases) {
     $captureCase.symbolCandidates = $symbolCandidates
     if ($captureCase.trace -and $filtraceAvailable) {
@@ -919,7 +1141,10 @@ $manifest = [ordered]@{
     source = Get-SourceIdentity $projFile.DirectoryName
     runtimes = @(
         Get-Content -LiteralPath $log |
-            Where-Object { $_ -match '^Runtime = ' } |
+            Where-Object { $_ -match '^(?://\s*)?Runtime\s*=' } |
+            # Strip Get-Content's provider ETS properties; the 5.1 JSON serializer
+            # otherwise recurses through PSProvider and can exhaust memory.
+            ForEach-Object { [string]::new($_.ToCharArray()) } |
             Sort-Object -Unique
     )
     paths = [ordered]@{

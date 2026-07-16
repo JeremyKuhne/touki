@@ -4,8 +4,8 @@ The primary way to turn a captured benchmark trace into ranked hotspots and
 line-level attribution is the standalone
 [filtrace](https://github.com/JeremyKuhne/filtrace) analyzer - its MCP tools for
 an agent, or the `filtrace` CLI (fresh install:
-`dotnet tool install -g KlutzyNinja.Filtrace --version 0.6.0`; existing install:
-`dotnet tool update -g KlutzyNinja.Filtrace --version 0.6.0`) when the MCP server
+`dotnet tool install -g KlutzyNinja.Filtrace --version 0.6.1`; existing install:
+`dotnet tool update -g KlutzyNinja.Filtrace --version 0.6.1`) when the MCP server
 is unavailable - see
 [performance-investigation.md](performance-investigation.md) sections 3a, 3f,
 and 6.
