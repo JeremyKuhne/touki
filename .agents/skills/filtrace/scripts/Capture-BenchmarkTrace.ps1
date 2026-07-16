@@ -154,18 +154,26 @@ function Write-RunManifest([string]$Path, [System.Collections.IDictionary]$Manif
     [System.IO.File]::WriteAllText($Path, $json, $encoding)
 }
 
+function ConvertTo-RuntimeSummary([string]$LogLine) {
+    # Strip Get-Content's provider ETS properties; the 5.1 JSON serializer
+    # otherwise recurses through PSProvider and can exhaust memory.
+    $line = [string]::new($LogLine.ToCharArray()).Trim()
+    if ($line -match '^(?://\s*)?Runtime\s*=\s*(.+)$') {
+        return "Runtime = $($Matches[1].Trim())"
+    }
+
+    return $null
+}
+
 function Get-RuntimeSummaries([string]$LogPath) {
     $finalSummaries = New-Object 'System.Collections.Generic.List[string]'
     $caseSummaries = New-Object 'System.Collections.Generic.List[string]'
     foreach ($logLine in Get-Content -LiteralPath $LogPath) {
-        # Strip Get-Content's provider ETS properties; the 5.1 JSON serializer
-        # otherwise recurses through PSProvider and can exhaust memory.
-        $line = [string]::new($logLine.ToCharArray()).Trim()
-        if ($line -match '^Runtime\s+=\s*(.+)$') {
-            $finalSummaries.Add("Runtime = $($Matches[1].Trim())")
+        if ($logLine -match '^\s*Runtime\s+=\s*(.+)$') {
+            $finalSummaries.Add((ConvertTo-RuntimeSummary $logLine))
         }
-        elseif ($line -match '^//\s*Runtime\s*=\s*(.+)$') {
-            $caseSummaries.Add("Runtime = $($Matches[1].Trim())")
+        elseif ($logLine -match '^\s*//\s*Runtime\s*=\s*(.+)$') {
+            $caseSummaries.Add((ConvertTo-RuntimeSummary $logLine))
         }
     }
 
@@ -307,10 +315,11 @@ function Set-BenchmarkIdentities(
             continue
         }
 
-        # Comment-prefixed runtime rows belong to the active Execute block. The
-        # unprefixed Runtime rows are the final report table and stay manifest-wide.
-        if ($null -ne $pendingBenchmark -and $line -match '^//\s*Runtime\s*=') {
-            $pendingBenchmark.runtime = [string]::new($line.ToCharArray())
+        # Comment-prefixed runtime rows belong to the active Execute block. Spaced
+        # unprefixed `Runtime =` rows are final summaries handled manifest-wide;
+        # compact `Runtime=` rows are job characteristics and are not summaries.
+        if ($null -ne $pendingBenchmark -and $line -match '^\s*//\s*Runtime\s*=') {
+            $pendingBenchmark.runtime = ConvertTo-RuntimeSummary $line
             $pendingBenchmark = $null
             continue
         }

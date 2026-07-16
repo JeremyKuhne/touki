@@ -18,8 +18,8 @@ that `batch` and `diff` can consume:
 
 ```powershell
 $filtraceVersion = (& filtrace --version | Select-Object -First 1).Trim()
-if ($filtraceVersion -ne '0.6.2') {
-  throw "filtrace 0.6.2 is required; found '$filtraceVersion'."
+if ($filtraceVersion -ne '0.6.3') {
+  throw "filtrace 0.6.3 is required; found '$filtraceVersion'."
 }
 
 $handoff = & ./.agents/skills/filtrace/scripts/Capture-BenchmarkTrace.ps1 `
@@ -64,7 +64,7 @@ means should approximately add to the end-to-end mean. A large gap usually means
 setup leaked into one measurement, mutable state was reused, or the batch changed
 GC/live-set behavior.
 
-**Use the filtrace 0.6.2 evidence contracts:**
+**Use the filtrace 0.6.3 evidence contracts:**
 
 - Read `trace_info.analyses.<name>` before interpreting a metric.
   `captureStatus: enabled` plus `eventCount: 0` is a valid empty analysis;

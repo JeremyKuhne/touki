@@ -41,7 +41,7 @@ a skill would need to change to be reused in another repo: `portable` (generic),
 that carries the touki-specific cross-references and example links.
 `vendored (tool repo) + overlay` is an exact skill payload from the tool's own
 repository plus a consumer-owned `overlay.md`. Filtrace is pinned to the exact
-`v0.6.2` tool release together with its executable packages. Do not
+`v0.6.3` tool release together with its executable packages. Do not
 hand-edit a vendored core; update it from an exact tool release or source
 revision.
 

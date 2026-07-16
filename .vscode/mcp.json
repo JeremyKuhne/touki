@@ -8,7 +8,7 @@
         },
         // filtrace trace-analysis MCP server, consumed from the published
         // KlutzyNinja.Filtrace.Mcp package (github.com/JeremyKuhne/filtrace),
-        // pinned to published release 0.6.2 with the vendored skill.
+        // pinned to published release 0.6.3 with the vendored skill.
         // `dnx` (the .NET 10 SDK tool runner) downloads and runs the package on
         // demand; `--yes` auto-confirms the one-time download. No local clone or
         // build required. Restart this server after changing the package pin.
@@ -16,7 +16,7 @@
             "type": "stdio",
             "command": "dnx",
             "args": [
-                "KlutzyNinja.Filtrace.Mcp@0.6.2",
+                "KlutzyNinja.Filtrace.Mcp@0.6.3",
                 "--yes"
             ]
         }
