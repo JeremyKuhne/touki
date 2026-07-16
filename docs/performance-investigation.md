@@ -462,9 +462,9 @@ see which lines of a hot loop dominate. The analyzer runs on .NET 10 but can
 read modern `.nettrace` and net481 ETW `.etl` captures. It has two front ends:
 
 - **Console front end** - `filtrace <verb>` (fresh install:
-  `dotnet tool install -g KlutzyNinja.Filtrace --version 0.6.0`; existing install:
-  `dotnet tool update -g KlutzyNinja.Filtrace --version 0.6.0`). Require
-  `filtrace --version` to print `0.6.0` before invoking the bundled capture helper.
+  `dotnet tool install -g KlutzyNinja.Filtrace --version 0.6.3`; existing install:
+  `dotnet tool update -g KlutzyNinja.Filtrace --version 0.6.3`). Require
+  `filtrace --version` to print `0.6.3` before invoking the bundled capture helper.
 - **MCP server** - the same queries exposed as tools (`trace_info`,
   `trace_rank`, `trace_callers`, `trace_lines`, `trace_heatmap`) on the
   registered `filtrace` server for an agent that speaks MCP. See section 6.

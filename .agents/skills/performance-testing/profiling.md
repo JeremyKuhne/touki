@@ -18,8 +18,8 @@ that `batch` and `diff` can consume:
 
 ```powershell
 $filtraceVersion = (& filtrace --version | Select-Object -First 1).Trim()
-if ($filtraceVersion -ne '0.6.0') {
-  throw "filtrace 0.6.0 is required; found '$filtraceVersion'."
+if ($filtraceVersion -ne '0.6.3') {
+  throw "filtrace 0.6.3 is required; found '$filtraceVersion'."
 }
 
 $handoff = & ./.agents/skills/filtrace/scripts/Capture-BenchmarkTrace.ps1 `
@@ -29,10 +29,6 @@ $handoff = & ./.agents/skills/filtrace/scripts/Capture-BenchmarkTrace.ps1 `
 
 $manifest = Get-Content $handoff.manifest -Raw | ConvertFrom-Json
 $manifest.cases | Select-Object benchmark, parameters, trace, symbolsDirectory, warnings
-
-if ($manifest.cases.Where({ -not $_.benchmark -or -not $_.parameters }).Count -ne 0) {
-  throw 'Manifest case identity is incomplete; analyze direct trace paths instead.'
-}
 
 # Rank all parameterized cases compactly, then drill one case with rank/callers/lines.
 filtrace batch $handoff.manifest --metric cpu --benchmark
@@ -68,18 +64,21 @@ means should approximately add to the end-to-end mean. A large gap usually means
 setup leaked into one measurement, mutable state was reused, or the batch changed
 GC/live-set behavior.
 
-**Use the filtrace 0.6 evidence contracts:**
+**Use the filtrace 0.6.3 evidence contracts:**
 
 - Read `trace_info.analyses.<name>` before interpreting a metric.
   `captureStatus: enabled` plus `eventCount: 0` is a valid empty analysis;
   `disabled` is unavailable; `unknown` remains unknown. Preserve the capture
   helper's `<trace>.filtrace.json` sidecar with the trace.
-- For Touki's BenchmarkDotNet 0.16.0-preview.1 logs, require nonempty
-  `benchmark` and `parameters` on every case before using manifest-aware
-  `batch`/`diff`; the 0.6 helper can leave identity incomplete. Split broad
-  captures before the helper's 20 KiB on-disk manifest limit. Treat `activity`
-  as unavailable unless the application EventSource provider was explicitly
-  enabled, regardless of the default helper sidecar.
+- For Touki's BenchmarkDotNet 0.16.0-preview.1 captures, the helper verifies hashed
+  parameterized artifacts against the benchmark identity embedded in each trace.
+  Ordinary filenames may use exact benchmark name plus execution order only when
+  case counts and distinct capture timestamps align. Any case left unidentified
+  stays out of manifest-aware `batch`/`diff` pairing; analyze that trace directly
+  rather than inferring an identity. Durable manifests have a 16 MiB safety limit;
+  only the agent-facing JSON handoff is capped at 20 KiB. Treat `activity` according
+  to its reported provider state; the default capture leaves it unknown without
+  provider evidence.
 - Read `sourceResolution` separately from managed frame-name resolution. Require
   the relevant module in `matchingPdbModules`; use `pdbIdentityMismatchModules`,
   `highestUnmappedModules`, and `highestUnmappedMethods` to diagnose `<no source>`.

@@ -380,8 +380,12 @@ if ($skillData.ContainsKey('filtrace') -and (Test-Path -LiteralPath $McpPath -Pa
             $coreRepo = Get-Scalar $filtraceOverlay 'core-repo'
             $coreTreeSha = Get-Scalar $filtraceOverlay 'core-tree-sha'
             $runtimePin = Get-Scalar $filtraceOverlay 'runtime-pin'
-            if ($corePin -notmatch '^[0-9a-f]{40}$') {
-                Add-Error 'Filtrace overlay core-pin must be an exact 40-character source commit while overlay support is unpublished.'
+            $releasePinMatch = [regex]::Match($corePin, '^v(\d+\.\d+\.\d+)$')
+            if ($corePin -notmatch '^[0-9a-f]{40}$' -and -not $releasePinMatch.Success) {
+                Add-Error 'Filtrace overlay core-pin must be an exact source commit or stable release tag.'
+            }
+            elseif ($releasePinMatch.Success -and $releasePinMatch.Groups[1].Value -ne $runtimePin) {
+                Add-Error "Filtrace overlay release pin '$corePin' must match runtime-pin '$runtimePin'."
             }
             if ($coreRepo -ne 'https://github.com/JeremyKuhne/filtrace') {
                 Add-Error "Filtrace overlay core-repo '$coreRepo' is not the canonical repository."
