@@ -1,9 +1,9 @@
 ---
 core: filtrace
-core-pin: v0.6.1
+core-pin: v0.6.2
 core-repo: https://github.com/JeremyKuhne/filtrace
-core-tree-sha: b9c89b9bd0a698356fe5c81984abf27a5875f87f
-runtime-pin: 0.6.1
+core-tree-sha: cfb836bcffc3c038b6bd00317db66007bd495b68
+runtime-pin: 0.6.2
 ---
 
 # Touki overlay - filtrace
@@ -11,20 +11,20 @@ runtime-pin: 0.6.1
 Repository-specific bindings for the tool-shipped [filtrace](SKILL.md) core.
 The upstream-owned [skill](SKILL.md), [README](README.md), and [scripts](scripts/)
 match standalone [JeremyKuhne/filtrace](https://github.com/JeremyKuhne/filtrace)
-tag `v0.6.1` (commit `e2fb75392576ca4a35bfe7e82dcefb511f1ded1e`,
-skill tree `b9c89b9bd0a698356fe5c81984abf27a5875f87f`). The executable
+tag `v0.6.2` (commit `df38c9977e02503917623163a577f57da7e0e296`,
+skill tree `cfb836bcffc3c038b6bd00317db66007bd495b68`). The executable
 packages and vendored skill are pinned to the same release.
 
 ## Bindings
 
 - **MCP server** - registered in [.vscode/mcp.json](../../../.vscode/mcp.json)
-  as `dnx KlutzyNinja.Filtrace.Mcp@0.6.1`, exposing the seventeen `trace_*`
+  as `dnx KlutzyNinja.Filtrace.Mcp@0.6.2`, exposing the seventeen `trace_*`
   tools an agent calls directly. No clone or build is required.
 - **CLI, fresh install** -
-  `dotnet tool install -g KlutzyNinja.Filtrace --version 0.6.1`.
+  `dotnet tool install -g KlutzyNinja.Filtrace --version 0.6.2`.
 - **CLI, existing install** -
-  `dotnet tool update -g KlutzyNinja.Filtrace --version 0.6.1`.
-- Run `filtrace --version` and require `0.6.1` before passing that executable
+  `dotnet tool update -g KlutzyNinja.Filtrace --version 0.6.2`.
+- Run `filtrace --version` and require `0.6.2` before passing that executable
   to the capture helpers. Installing does not upgrade an older global tool.
 - Touki's [profiling](../performance-testing/profiling.md) and
   [graphical-viewers](../performance-testing/graphical-viewers.md) pages drive
@@ -32,7 +32,7 @@ packages and vendored skill are pinned to the same release.
 - [tools/Capture-EtwTrace.ps1](../../../tools/Capture-EtwTrace.ps1) remains
   Touki-specific because it wraps the local net481 benchmark workflow.
 
-## Release 0.6.1
+## Releases 0.6.1 and 0.6.2
 
 Release 0.6.1 closes
 [filtrace#55](https://github.com/JeremyKuhne/filtrace/issues/55), which Touki
@@ -50,6 +50,11 @@ Touki no longer carries consumer-side workarounds for those issues. Preserve the
 helper's fail-closed behavior: when an unidentified case is excluded from
 manifest-aware batch or pairing, analyze that trace directly rather than guessing
 its benchmark or parameters.
+
+Release 0.6.2 fixes duplicate manifest-wide runtime summaries discovered while
+Touki consumed 0.6.1. The helper now prefers richer final summaries, preserves
+unmatched per-case runtimes from partial multi-runtime runs, and ignores
+BenchmarkDotNet job-characteristic rows that begin with `Runtime=`.
 
 ## Concrete fold-list hit
 

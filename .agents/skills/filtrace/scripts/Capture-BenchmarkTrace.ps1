@@ -154,6 +154,45 @@ function Write-RunManifest([string]$Path, [System.Collections.IDictionary]$Manif
     [System.IO.File]::WriteAllText($Path, $json, $encoding)
 }
 
+function Get-RuntimeSummaries([string]$LogPath) {
+    $finalSummaries = New-Object 'System.Collections.Generic.List[string]'
+    $caseSummaries = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($logLine in Get-Content -LiteralPath $LogPath) {
+        # Strip Get-Content's provider ETS properties; the 5.1 JSON serializer
+        # otherwise recurses through PSProvider and can exhaust memory.
+        $line = [string]::new($logLine.ToCharArray()).Trim()
+        if ($line -match '^Runtime\s+=\s*(.+)$') {
+            $finalSummaries.Add("Runtime = $($Matches[1].Trim())")
+        }
+        elseif ($line -match '^//\s*Runtime\s*=\s*(.+)$') {
+            $caseSummaries.Add("Runtime = $($Matches[1].Trim())")
+        }
+    }
+
+    # Final report rows carry configuration details such as GC mode. Replace only
+    # the per-case identity they enrich; preserve unmatched per-case rows when a
+    # failed or partial multi-runtime run omitted its final report row.
+    $summaries = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($finalSummary in $finalSummaries | Sort-Object -Unique) {
+        $summaries.Add($finalSummary)
+    }
+    foreach ($caseSummary in $caseSummaries | Sort-Object -Unique) {
+        $coveredByFinalSummary = $false
+        foreach ($finalSummary in $finalSummaries) {
+            if ($finalSummary -eq $caseSummary -or
+                $finalSummary.StartsWith("$caseSummary; ", [StringComparison]::Ordinal)) {
+                $coveredByFinalSummary = $true
+                break
+            }
+        }
+        if (-not $coveredByFinalSummary) {
+            $summaries.Add($caseSummary)
+        }
+    }
+
+    return @($summaries | Sort-Object -Unique)
+}
+
 function Get-CaptureCases([string]$ArtifactsDirectory, [string]$CaptureProfiler) {
     $maxCases = 256
     $casesByStem = @{}
@@ -1139,14 +1178,7 @@ $manifest = [ordered]@{
     profiler = $Profiler
     process = $Process
     source = Get-SourceIdentity $projFile.DirectoryName
-    runtimes = @(
-        Get-Content -LiteralPath $log |
-            Where-Object { $_ -match '^(?://\s*)?Runtime\s*=' } |
-            # Strip Get-Content's provider ETS properties; the 5.1 JSON serializer
-            # otherwise recurses through PSProvider and can exhaust memory.
-            ForEach-Object { [string]::new($_.ToCharArray()) } |
-            Sort-Object -Unique
-    )
+    runtimes = @(Get-RuntimeSummaries $log)
     paths = [ordered]@{
         runDirectory = $runDirectory
         artifactsDirectory = $artifacts

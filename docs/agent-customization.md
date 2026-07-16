@@ -42,7 +42,7 @@ Currently wired up:
 | Server | Purpose |
 | ------ | ------- |
 | `microsoft-learn` (`https://learn.microsoft.com/api/mcp`) | Current official .NET BCL docs and reference content. Used by the [`polyfill-dotnet-api`](../.agents/skills/polyfill-dotnet-api/SKILL.md) workflow when verifying modern API shapes before deciding whether to polyfill. |
-| `filtrace` (`KlutzyNinja.Filtrace.Mcp@0.6.1`) | Published .NET trace-analysis runtime used by the [`filtrace`](../.agents/skills/filtrace/SKILL.md) workflow. The [overlay](../.agents/skills/filtrace/overlay.md) pins the vendored skill and executable packages to the same release. |
+| `filtrace` (`KlutzyNinja.Filtrace.Mcp@0.6.2`) | Published .NET trace-analysis runtime used by the [`filtrace`](../.agents/skills/filtrace/SKILL.md) workflow. The [overlay](../.agents/skills/filtrace/overlay.md) pins the vendored skill and executable packages to the same release. |
 
 After changing a workspace MCP package pin, run **MCP: Restart Server** and choose
 the server (or reload the VS Code window) before relying on newly added tools or

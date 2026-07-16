@@ -15,10 +15,10 @@ Filtrace release [0.6.0](https://github.com/JeremyKuhne/filtrace/releases/tag/v0
 delivered the analyzer, MCP, capture-script, and tool-shipped-skill work tracked by
 [JeremyKuhne/filtrace#42](https://github.com/JeremyKuhne/filtrace/issues/42), which
 is closed as completed. Touki now consumes release
-[0.6.1](https://github.com/JeremyKuhne/filtrace/releases/tag/v0.6.1), which hardens
-that workflow for BenchmarkDotNet 0.16 captures. The portable performance-workflow
-guidance is still being validated in Touki's local performance-testing overlay before
-it is upleveled to `JeremyKuhne/agent-skills`.
+[0.6.2](https://github.com/JeremyKuhne/filtrace/releases/tag/v0.6.2), which includes
+the 0.6.1 BenchmarkDotNet 0.16 capture hardening and fixes duplicate runtime summaries.
+The portable performance-workflow guidance is still being validated in Touki's local
+performance-testing overlay before it is upleveled to `JeremyKuhne/agent-skills`.
 
 ## Executive summary
 
