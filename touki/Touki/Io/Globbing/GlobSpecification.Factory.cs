@@ -7,40 +7,6 @@ namespace Touki.Io.Globbing;
 public sealed partial class GlobSpecification
 {
     /// <summary>
-    ///  Maximum number of <c>|</c>-separated alternatives in a single extended-glob
-    ///  construct. Exceeding this raises
-    ///  <see cref="GlobCompileErrorCode.FeatureLimitExceeded"/>.
-    /// </summary>
-    /// <remarks>
-    ///  <para>
-    ///   This is the single source of truth for the alternative cap. The encoder
-    ///   enforces it and sizes the offset table it bakes into the
-    ///   <see cref="GlobOpCodes.AltStart"/> header by it; the matcher's
-    ///   fixed-size offset-read buffer in <see cref="CompiledGlobStrategy"/>
-    ///   references this same constant so the two sides can never drift.
-    ///  </para>
-    /// </remarks>
-    internal const int MaxExtGlobAlternatives = 32;
-
-    /// <summary>
-    ///  Maximum nesting depth of extended-glob constructs (<c>?(…)</c>, <c>*(…)</c>,
-    ///  <c>+(…)</c>, <c>@(…)</c>, <c>!(…)</c>). Exceeding this raises
-    ///  <see cref="GlobCompileErrorCode.FeatureLimitExceeded"/>. The cap exists so
-    ///  the interpreter's stack-allocated savepoint buffer stays bounded: with
-    ///  this depth and the per-construct alternative cap, simultaneous savepoints
-    ///  are guaranteed to fit in the fixed runtime budget.
-    /// </summary>
-    /// <remarks>
-    ///  <para>
-    ///   This is the single source of truth for the nesting cap. The encoder
-    ///   enforces it; the matcher derives its fixed range-list ceiling
-    ///   (<see cref="CompiledGlobStrategy"/>'s <c>MaxRangesDepth</c>) from it so the
-    ///   two sides can never drift.
-    ///  </para>
-    /// </remarks>
-    internal const int MaxExtGlobDepth = 8;
-
-    /// <summary>
     ///  Classifies a source pattern and constructs the cheapest <see cref="GlobStrategy"/>
     ///  implementation that can evaluate it.
     /// </summary>
@@ -2031,43 +1997,6 @@ public sealed partial class GlobSpecification
         }
 
         /// <summary>
-        ///  Records the in-progress position and length of the most recently emitted
-        ///  <see cref="GlobOpCodes.Literal"/> opcode within the encoder's
-        ///  <see cref="ValueStringBuilder"/>. <see cref="TryEncodeProgram"/> uses this so the
-        ///  <see cref="GlobOpCodes.GlobStar"/> emitter can retroactively strip the trailing
-        ///  separator from the prior Literal when a segment-bounded <c>**</c> absorbs it.
-        ///  <see cref="None"/> represents "no Literal currently at the tail of the buffer"
-        ///  (the most recent opcode is something else, or the buffer is empty).
-        ///  <see cref="GlobStar"/> tags the cursor as "most recent opcode is a GlobStar
-        ///  whose flag byte is at <c>Start</c>"; used by the GlobStar emitter to collapse
-        ///  adjacent `**/**` runs without relying on a fragile buffer-tail char peek.
-        /// </summary>
-        private struct LiteralCursor
-        {
-            public int Start;
-            public int Length;
-
-            public static LiteralCursor None => new() { Start = -1, Length = 0 };
-
-            /// <summary>
-            ///  Tags the cursor as "the most recently emitted opcode is a
-            ///  <see cref="GlobOpCodes.GlobStar"/> with its flag byte at
-            ///  <paramref name="flagIndex"/>". Read back via
-            ///  <see cref="IsGlobStar"/> and <see cref="GlobStarFlagIndex"/>.
-            ///  Uses <c>Length = -1</c> as the sentinel so the existing
-            ///  <see cref="IsValid"/> check (<c>Start &gt;= 0</c>) keeps reporting
-            ///  "not a Literal".
-            /// </summary>
-            public static LiteralCursor GlobStar(int flagIndex) => new() { Start = flagIndex, Length = -1 };
-
-            public readonly bool IsValid => Start >= 0 && Length >= 0;
-
-            public readonly bool IsGlobStar => Start >= 0 && Length == -1;
-
-            public readonly int GlobStarFlagIndex => Start;
-        }
-
-        /// <summary>
         ///  Tries to emit a segment-bounded <see cref="GlobOpCodes.GlobStar"/> for the run of
         ///  <c>*</c> characters at <c>pattern[i..runEnd]</c>. Returns <see langword="true"/>
         ///  and reports the next index to scan via <paramref name="next"/> when the run is
@@ -2284,18 +2213,6 @@ public sealed partial class GlobSpecification
             builder[literalStart + 1] = (char)literalLength;
             lastLiteral = new LiteralCursor { Start = literalStart, Length = literalLength };
             return true;
-        }
-
-        /// <summary>
-        ///  Outcome of <see cref="TryEmitClass"/>: a real bracket-class was emitted,
-        ///  the <c>[</c> was unterminated and should be treated as a literal, or the
-        ///  class body exceeded <see cref="MaxOpcodeBodyLength"/>.
-        /// </summary>
-        private enum ClassEmitResult
-        {
-            Emitted,
-            NotClass,
-            Overflow,
         }
 
         /// <summary>

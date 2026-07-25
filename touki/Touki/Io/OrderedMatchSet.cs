@@ -32,7 +32,7 @@ namespace Touki.Io;
 ///   <see cref="AddInclude"/> instead of <see cref="AddExclude"/>.
 ///  </para>
 /// </remarks>
-public sealed class OrderedMatchSet : DisposableBase, IEnumerationMatcher
+public sealed partial class OrderedMatchSet : DisposableBase, IEnumerationMatcher
 {
     private readonly SingleOptimizedList<Rule, ArrayPoolList<Rule>> _rules = [];
     private readonly bool _includeByDefault;
@@ -168,18 +168,5 @@ public sealed class OrderedMatchSet : DisposableBase, IEnumerationMatcher
 
             _rules.Dispose();
         }
-    }
-
-    private readonly struct Rule
-    {
-        public Rule(IEnumerationMatcher matcher, bool isExclude)
-        {
-            Matcher = matcher;
-            IsExclude = isExclude;
-        }
-
-        public IEnumerationMatcher Matcher { get; }
-
-        public bool IsExclude { get; }
     }
 }

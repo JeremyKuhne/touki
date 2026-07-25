@@ -7,7 +7,7 @@ namespace Touki.Text;
 /// <summary>
 ///  Comparer class for <see cref="StringSegment"/>.
 /// </summary>
-public abstract class StringSegmentComparer : IEqualityComparer<StringSegment>, IComparer<StringSegment>
+public abstract partial class StringSegmentComparer : IEqualityComparer<StringSegment>, IComparer<StringSegment>
 {
     /// <summary>
     ///  Returns the default <see cref="StringSegmentComparer"/> that compares segments using ordinal comparison.
@@ -27,18 +27,4 @@ public abstract class StringSegmentComparer : IEqualityComparer<StringSegment>, 
 
     /// <inheritdoc/>
     public abstract int GetHashCode(StringSegment obj);
-
-    private sealed class StringSegmentOrdinalComparer : StringSegmentComparer
-    {
-        public override int Compare(StringSegment x, StringSegment y) => x.CompareTo(y, StringComparison.Ordinal);
-        public override bool Equals(StringSegment x, StringSegment y) => x.Equals(y, StringComparison.Ordinal);
-        public override int GetHashCode(StringSegment obj) => obj.GetHashCode();
-    }
-
-    private sealed class StringSegmentOrdinalIgnoreCaseComparer : StringSegmentComparer
-    {
-        public override int Compare(StringSegment x, StringSegment y) => x.CompareTo(y, StringComparison.OrdinalIgnoreCase);
-        public override bool Equals(StringSegment x, StringSegment y) => x.Equals(y, StringComparison.OrdinalIgnoreCase);
-        public override int GetHashCode(StringSegment obj) => obj.GetHashCode();
-    }
 }

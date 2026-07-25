@@ -17,7 +17,7 @@ namespace Touki;
 ///   because the underlying reflection is fragile against BCL servicing changes.
 ///  </para>
 /// </remarks>
-internal static class EnumDataCache
+internal static partial class EnumDataCache
 {
     private static readonly ConcurrentDictionary<Type, EnumData> s_enumData = new();
 
@@ -71,46 +71,4 @@ internal static class EnumDataCache
     ///  Gets cached data for an enum type, including its values, names, and whether it is a flags enum.
     /// </summary>
     public static EnumData GetEnumData(Type type) => s_enumData.GetOrAdd(type, t => new EnumData(t));
-
-    /// <summary>
-    ///  Cached data for an enum type, including its values, names, and whether it is a flags enum.
-    /// </summary>
-    public class EnumData
-    {
-        /// <summary>
-        ///  Initializes a new instance of the <see cref="EnumData"/> class.
-        /// </summary>
-        public EnumData(Type type)
-        {
-            if (!type.IsEnum)
-            {
-                throw new ArgumentException("Type must be an enum.", nameof(type));
-            }
-
-            Type = type;
-            Data = GetEnumValuesAndNames(type);
-            IsFlags = type.IsDefined(typeof(FlagsAttribute), inherit: false);
-            UnderlyingType = type.GetEnumUnderlyingType();
-        }
-
-        /// <summary>
-        ///  Type of the enum.
-        /// </summary>
-        public Type Type { get; }
-
-        /// <summary>
-        ///  Data for the enum, including values and names.
-        /// </summary>
-        public (ulong[] Values, string[] Names) Data { get; }
-
-        /// <summary>
-        ///  Whether the enum is a flags enum.
-        /// </summary>
-        public bool IsFlags { get; }
-
-        /// <summary>
-        ///  Underlying type of the enum.
-        /// </summary>
-        public Type UnderlyingType { get; }
-    }
 }

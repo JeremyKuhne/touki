@@ -49,12 +49,5 @@ public readonly partial struct Value
             : throw new InvalidOperationException($"Type '{typeof(T).FullName}' must be an enum type to use {nameof(EnumTypeFlag<T>)}.");
 #endif
     }
-
-    private interface IEnumType
-    {
-        Type UnderlyingType { get; }
-        bool IsSigned { get; }
-        int Size { get; }
-        ulong AsUlong(in Value value);
-    }
 }
+

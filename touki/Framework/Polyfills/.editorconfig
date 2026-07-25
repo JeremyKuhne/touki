@@ -7,3 +7,7 @@
 
 # TOUKI0001: Use pattern matching for null checks
 dotnet_diagnostic.TOUKI0001.severity = none
+
+# TOUKI0020: Declare one type per file. Upstream keeps helper structs nested next to the
+# code that uses them; splitting them would make future ports harder to diff.
+dotnet_diagnostic.TOUKI0020.severity = none

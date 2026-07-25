@@ -873,25 +873,6 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
     }
 
     /// <summary>
-    ///  Mutable matcher state passed by reference into <see cref="Backtrack"/> instead of
-    ///  individual <c>ref int</c> parameters. Cuts <see cref="Backtrack"/>'s argument list
-    ///  from ten to three, which on net481 RyuJIT measurably reduces call-site overhead and
-    ///  improves inlining behavior. Holds the active program/input cursors plus both
-    ///  savepoint slots (AnyRun and GlobStar) and the per-GlobStar invariants.
-    /// </summary>
-    private ref struct BacktrackState
-    {
-        public int ProgramIndex;
-        public int InputIndex;
-        public int AnyRunProgramIndex;
-        public int AnyRunInputIndex;
-        public int GlobStarProgramIndex;
-        public int GlobStarInputIndex;
-        public int GlobStarInitialInput;
-        public int GlobStarFlags;
-    }
-
-    /// <summary>
     ///  Backtracks to whichever savepoint (AnyRun or GlobStar) is more recent in
     ///  program flow; on exhaustion, falls through to the other. Returns
     ///  <see langword="false"/> when both slots are exhausted.
