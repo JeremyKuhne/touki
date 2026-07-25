@@ -134,4 +134,48 @@ public class StringSegmentComparerTests
         StringSegmentComparer.OrdinalIgnoreCase.GetHashCode(first).Should().Be(
             StringSegmentComparer.OrdinalIgnoreCase.GetHashCode(second));
     }
+
+    [TestMethod]
+    public void OrdinalIgnoreCase_GetHashCode_DifferentCase_Same_Hash()
+    {
+        StringSegment first = new("Test", 0, 4);
+        StringSegment second = new("tEST", 0, 4);
+
+        StringSegmentComparer.OrdinalIgnoreCase.Equals(first, second).Should().BeTrue();
+        StringSegmentComparer.OrdinalIgnoreCase.GetHashCode(first).Should().Be(
+            StringSegmentComparer.OrdinalIgnoreCase.GetHashCode(second));
+    }
+
+    [TestMethod]
+    public void OrdinalIgnoreCase_GetHashCode_DifferentCaseNonAscii_Same_Hash()
+    {
+        StringSegment first = new("ÄÖÜ", 0, 3);
+        StringSegment second = new("äöü", 0, 3);
+
+        StringSegmentComparer.OrdinalIgnoreCase.Equals(first, second).Should().BeTrue();
+        StringSegmentComparer.OrdinalIgnoreCase.GetHashCode(first).Should().Be(
+            StringSegmentComparer.OrdinalIgnoreCase.GetHashCode(second));
+    }
+
+    [TestMethod]
+    public void OrdinalIgnoreCase_GetHashCode_EmptySegments_Same_Hash()
+    {
+        StringSegment first = new("test", 0, 0);
+        StringSegment second = new("other", 0, 0);
+
+        StringSegmentComparer.OrdinalIgnoreCase.GetHashCode(first).Should().Be(
+            StringSegmentComparer.OrdinalIgnoreCase.GetHashCode(second));
+    }
+
+    [TestMethod]
+    public void OrdinalIgnoreCase_AsDictionaryComparer_FindsKeyOfDifferentCase()
+    {
+        Dictionary<StringSegment, int> map = new(StringSegmentComparer.OrdinalIgnoreCase)
+        {
+            { new StringSegment("Alpha"), 1 }
+        };
+
+        map.TryGetValue(new StringSegment("ALPHA"), out int value).Should().BeTrue();
+        value.Should().Be(1);
+    }
 }
