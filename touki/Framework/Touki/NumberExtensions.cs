@@ -13,7 +13,7 @@ namespace Touki;
 /// <summary>
 ///  Numeric extensions for various types, including <see cref="decimal"/>, <see cref="float"/>, and <see cref="double"/>.
 /// </summary>
-public static unsafe class NumberExtensions
+public static unsafe partial class NumberExtensions
 {
     extension(decimal decimalValue)
     {
@@ -104,17 +104,6 @@ public static unsafe class NumberExtensions
             }
         }
     }
-
-#pragma warning disable CS0649 // Field 'DecimalFields._flags' is never assigned to, and will always have its default value 0
-    private struct DecimalFields
-    {
-        // Matching the layout of the decimal type in .NET Framework.
-        internal uint _flags;
-        internal uint _hi;
-        internal uint _lo;
-        internal uint _mid;
-    }
-#pragma warning restore CS0649
 
     // From here forward, code is from the .NET codebase, with minor modifications for clarity.
 

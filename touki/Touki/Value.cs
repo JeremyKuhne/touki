@@ -859,20 +859,6 @@ public readonly partial struct Value
         }
     }
 
-    [StructLayout(LayoutKind.Auto)]
-    private struct DateTimeOffsetAccessor
-    {
-        internal DateTimeAccessor _dateTime;
-        internal short _offsetMinutes;
-    }
-
-    [StructLayout(LayoutKind.Auto)]
-    private struct DateTimeAccessor
-    {
-        internal const ulong TicksMask = 0x3FFFFFFFFFFFFFFF;
-        internal ulong _dateTimeData;
-    }
-
     /// <summary>
     ///  Creates a new <see cref="Value"/> instance with the specified nullable <see cref="DateTimeOffset"/> value.
     /// </summary>

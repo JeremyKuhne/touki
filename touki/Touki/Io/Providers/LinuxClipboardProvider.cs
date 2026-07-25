@@ -135,14 +135,6 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
         _ => false,
     };
 
-    private enum Transport
-    {
-        None,
-        WaylandWlCopy,
-        X11Xclip,
-        X11Xsel,
-    }
-
     private static Transport DetectTransport()
     {
         // Wayland is preferred when present so the data is offered through the user's

@@ -62,23 +62,8 @@ namespace Touki.Collections;
 ///   <see cref="HashSet{T}"/> and Roslyn's <c>SegmentedHashSet&lt;T&gt;</c>.
 ///  </para>
 /// </remarks>
-public sealed class SequenceSet<T> : DisposableBase where T : unmanaged, IEquatable<T>
+public sealed partial class SequenceSet<T> : DisposableBase where T : unmanaged, IEquatable<T>
 {
-    private struct Entry
-    {
-        // Offset of this sequence's first element in the arena.
-        public int Offset;
-
-        // Number of elements this sequence occupies in the arena.
-        public int Length;
-
-        // Cached hash of the sequence, kept so rehashing never rereads the arena.
-        public int HashCode;
-
-        // One-based index of the next entry in the same bucket chain; 0 marks the end.
-        public int Next;
-    }
-
     private const int DefaultMinimumCapacity = 16;
     private const uint FnvOffsetBasis = 2166136261;
     private const uint FnvPrime = 16777619;
@@ -377,41 +362,5 @@ public sealed class SequenceSet<T> : DisposableBase where T : unmanaged, IEquata
         _arenaUsed = 0;
         _bucketCount = 0;
         _bucketMask = 0;
-    }
-
-    /// <summary>
-    ///  Enumerates the interned sequences of a <see cref="SequenceSet{T}"/> as <see cref="ReadOnlySpan{T}"/>
-    ///  views, in insertion order, without allocating.
-    /// </summary>
-    public ref struct Enumerator
-    {
-        private readonly SequenceSet<T> _set;
-        private int _index;
-
-        internal Enumerator(SequenceSet<T> set)
-        {
-            _set = set;
-            _index = -1;
-        }
-
-        /// <summary>
-        ///  The sequence at the current position as a view over the set's arena.
-        /// </summary>
-        public readonly ReadOnlySpan<T> Current => _set[_index];
-
-        /// <summary>
-        ///  Advances to the next interned sequence.
-        /// </summary>
-        public bool MoveNext()
-        {
-            int next = _index + 1;
-            if (next < _set._count)
-            {
-                _index = next;
-                return true;
-            }
-
-            return false;
-        }
     }
 }

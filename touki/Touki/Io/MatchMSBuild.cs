@@ -9,7 +9,7 @@ namespace Touki.Io;
 /// <summary>
 ///  Represents a specification for matching files and directories in an MSBuild project.
 /// </summary>
-public class MatchMSBuild : DisposableBase, IEnumerationMatcher
+public partial class MatchMSBuild : DisposableBase, IEnumerationMatcher
 {
     private readonly StringSegment _fixedPath;
     private readonly StringSegment _fileName;
@@ -205,26 +205,6 @@ public class MatchMSBuild : DisposableBase, IEnumerationMatcher
         // Remove the start directory prefix to get the relative path
         fullDirectory.Length <= _startDirectoryLength ? default : fullDirectory[(_startDirectoryLength)..];
 
-    private enum PathMatchState
-    {
-        /// <summary>
-        ///  The path does not match the specification, and there is no possibility of a match in a subdirectory.
-        /// </summary>
-        NoMatch,
-
-        /// <summary>
-        ///  The path partially matches the specification, meaning it could match in a subdirectory, but files within
-        ///  the specified path do not match.
-        /// </summary>
-        PartialMatch,
-
-        /// <summary>
-        ///  The path fully matches the specification, meaning it matches all segments and files within the
-        ///  specified path.
-        /// </summary>
-        FullMatch
-    }
-
     /// <summary>
     ///  Matches the given path segments against the specification segments.
     /// </summary>
@@ -324,25 +304,5 @@ public class MatchMSBuild : DisposableBase, IEnumerationMatcher
         {
             _specSegments.Dispose();
         }
-    }
-
-    private readonly struct SpecSegment
-    {
-        public StringSegment Spec { get; }
-        public bool IsAnyDirectory { get; }
-
-        /// <summary>
-        ///  Implicitly converts a <see cref="SpecSegment"/> to a <see cref="ReadOnlySpan{T}"/> of <see cref="char"/>.
-        /// </summary>
-        /// <param name="segment">The segment to convert.</param>
-        public static implicit operator ReadOnlySpan<char>(SpecSegment segment) => segment.Spec;
-
-        public SpecSegment(StringSegment spec)
-        {
-            Spec = spec;
-            IsAnyDirectory = spec.Equals("**");
-        }
-
-        public override string ToString() => Spec.ToString();
     }
 }

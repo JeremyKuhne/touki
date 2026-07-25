@@ -9,7 +9,7 @@ namespace Touki;
 /// <summary>
 ///  Base class for implementing <see cref="IDisposable"/> with double disposal protection.
 /// </summary>
-public abstract class DisposableBase : IDisposable
+public abstract partial class DisposableBase : IDisposable
 {
     private int _disposedValue;
 
@@ -48,17 +48,5 @@ public abstract class DisposableBase : IDisposable
     {
         DisposeInternal(disposing: true);
         GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    ///  A derived class of <see cref="DisposableBase"/> that includes a finalizer to ensure resources
-    ///  are released when the object is garbage collected if the consumer fails to call <see cref="Dispose()"/>.
-    /// </summary>
-    public abstract class Finalizable : DisposableBase
-    {
-        /// <summary>
-        ///  Finalizes an instance of the <see cref="Finalizable"/> class.
-        /// </summary>
-        ~Finalizable() => DisposeInternal(disposing: false);
     }
 }

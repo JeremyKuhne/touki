@@ -9,7 +9,6 @@
 
 using System.Collections;
 using System.Collections.Concurrent;
-using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Runtime.Serialization;
 using Touki.Resources.BinaryFormat;
@@ -32,7 +31,7 @@ namespace Touki;
 ///   The dependency-free framework types supported by Windows Forms binary format handling are registered by default.
 ///  </para>
 /// </remarks>
-public sealed class RegisteredTypeResolver : ITypeResolver
+public sealed partial class RegisteredTypeResolver : ITypeResolver
 {
     private readonly Dictionary<TypeName, Type> _types = [with(FullNameTypeNameComparer.Instance)];
     private readonly ConcurrentDictionary<Type, SerializationEvents> _serializationEvents = [];
@@ -168,81 +167,5 @@ public sealed class RegisteredTypeResolver : ITypeResolver
 
         Register<ArrayList>();
         Register<Hashtable>();
-    }
-
-    private sealed class FullNameTypeNameComparer : IEqualityComparer<TypeName>
-    {
-        internal static FullNameTypeNameComparer Instance { get; } = new();
-
-        public bool Equals(TypeName? left, TypeName? right)
-        {
-            if (left is null || right is null)
-            {
-                return left is null && right is null;
-            }
-
-            if (left.IsArray || right.IsArray)
-            {
-                return left.IsArray
-                    && right.IsArray
-                    && left.IsSZArray == right.IsSZArray
-                    && left.GetArrayRank() == right.GetArrayRank()
-                    && Equals(left.GetElementType(), right.GetElementType());
-            }
-
-            if (left.IsConstructedGenericType || right.IsConstructedGenericType)
-            {
-                if (!left.IsConstructedGenericType
-                    || !right.IsConstructedGenericType
-                    || !Equals(left.GetGenericTypeDefinition(), right.GetGenericTypeDefinition()))
-                {
-                    return false;
-                }
-
-                ImmutableArray<TypeName> leftArguments = left.GetGenericArguments();
-                ImmutableArray<TypeName> rightArguments = right.GetGenericArguments();
-                if (leftArguments.Length != rightArguments.Length)
-                {
-                    return false;
-                }
-
-                for (int index = 0; index < leftArguments.Length; index++)
-                {
-                    if (!Equals(leftArguments[index], rightArguments[index]))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            return string.Equals(left.FullName, right.FullName, StringComparison.Ordinal);
-        }
-
-        public int GetHashCode(TypeName typeName)
-        {
-            if (typeName.IsArray)
-            {
-                return HashCode.Combine(
-                    typeName.IsSZArray,
-                    typeName.GetArrayRank(),
-                    GetHashCode(typeName.GetElementType()));
-            }
-
-            if (typeName.IsConstructedGenericType)
-            {
-                HashCode hashCode = new();
-                hashCode.Add(GetHashCode(typeName.GetGenericTypeDefinition()));
-                foreach (TypeName argument in typeName.GetGenericArguments())
-                {
-                    hashCode.Add(GetHashCode(argument));
-                }
-
-                return hashCode.ToHashCode();
-            }
-
-            return StringComparer.Ordinal.GetHashCode(typeName.FullName);
-        }
     }
 }

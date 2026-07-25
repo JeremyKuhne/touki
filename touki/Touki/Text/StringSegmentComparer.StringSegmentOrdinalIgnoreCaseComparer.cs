@@ -1,0 +1,15 @@
+// Copyright (c) 2025 Jeremy W Kuhne
+// SPDX-License-Identifier: MIT
+// See LICENSE file in the project root for full license information
+
+namespace Touki.Text;
+
+public abstract partial class StringSegmentComparer
+{
+    private sealed class StringSegmentOrdinalIgnoreCaseComparer : StringSegmentComparer
+    {
+        public override int Compare(StringSegment x, StringSegment y) => x.CompareTo(y, StringComparison.OrdinalIgnoreCase);
+        public override bool Equals(StringSegment x, StringSegment y) => x.Equals(y, StringComparison.OrdinalIgnoreCase);
+        public override int GetHashCode(StringSegment obj) => obj.GetHashCode();
+    }
+}
