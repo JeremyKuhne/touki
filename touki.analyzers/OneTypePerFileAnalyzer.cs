@@ -39,7 +39,8 @@ namespace Touki.Analyzers;
 ///     <description>
 ///      A <see langword="partial"/> declaration whose members are all types is a hosting shell for the types
 ///      nested in it and is not itself counted. A <see langword="partial"/> declaration that adds any other
-///      member - a field, a method, a property - is contributing to its own type and does count.
+///      member - a field, a method, a property - is contributing to its own type and does count, as does an
+///      empty one, which hosts nothing.
 ///     </description>
 ///    </item>
 ///    <item>
@@ -160,12 +161,14 @@ public sealed class OneTypePerFileAnalyzer : DiagnosticAnalyzer
 
     /// <summary>
     ///  Returns <see langword="true"/> if <paramref name="type"/> is a <see langword="partial"/> declaration
-    ///  that declares nothing but types, making it a host for the types nested in it rather than one of the
-    ///  file's own types.
+    ///  that declares one or more types and nothing else, making it a host for the types nested in it rather
+    ///  than one of the file's own types.
     /// </summary>
     private static bool IsHostingShell(TypeDeclarationSyntax type)
     {
-        if (!type.Modifiers.Any(SyntaxKind.PartialKeyword))
+        // An empty partial declaration hosts nothing, so it is this file's declaration of that type rather
+        // than a container for another one.
+        if (type.Members.Count == 0 || !type.Modifiers.Any(SyntaxKind.PartialKeyword))
         {
             return false;
         }

@@ -9,4 +9,4 @@ TOUKI0002 | Reliability | Hidden | Defensive copy of a struct
 TOUKI0003 | Reliability | Warning | Defensive copy of a [NonCopyable] struct
 TOUKI0004 | Reliability | Warning | By-value copy of a [NonCopyable] struct
 TOUKI0010 | Reliability | Warning | [MustDispose] value is not deterministically disposed
-TOUKI0020 | Maintainability | Warning | More than one top-level type declared in a file
+TOUKI0020 | Maintainability | Warning | More than one type declared in a file, nested types included

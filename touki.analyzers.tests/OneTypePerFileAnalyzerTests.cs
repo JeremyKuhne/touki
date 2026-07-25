@@ -259,6 +259,27 @@ public class OneTypePerFileAnalyzerTests
     }
 
     [TestMethod]
+    public async Task AnalyzeSyntaxTree_EmptyPartialBesideAnotherType_ReportsSecond()
+    {
+        const string source = """
+            namespace Sample;
+
+            public partial class Empty
+            {
+            }
+
+            public class Other
+            {
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        Location location = diagnostics.Should().ContainSingle().Subject.Location;
+        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Other");
+    }
+
+    [TestMethod]
     public async Task AnalyzeSyntaxTree_PartialShellHostingTwoNestedTypes_ReportsSecond()
     {
         const string source = """
