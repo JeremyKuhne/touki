@@ -4,7 +4,7 @@
 
 namespace Touki.Io;
 
-public partial class OrderedMatchSet
+public sealed partial class OrderedMatchSet
 {
     private readonly struct Rule
     {
