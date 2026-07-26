@@ -253,6 +253,29 @@ public class StackAllocSizeAnalyzerTests
     }
 
     [TestMethod]
+    [DataRow(" 4096")]
+    [DataRow("4096 ")]
+    [DataRow("  4096  ")]
+    public async Task AnalyzeStackAlloc_ConfiguredMaxPadded_IsHonored(string maxBytes)
+    {
+        // Padding around the value must not silently drop the setting back to the default.
+        string source = Usings + """
+            class Sample
+            {
+                void Use()
+                {
+                    Span<byte> buffer = stackalloc byte[2048];
+                    buffer[0] = 1;
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, maxBytes).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
     [DataRow("not-a-number")]
     [DataRow("0")]
     [DataRow("-1")]

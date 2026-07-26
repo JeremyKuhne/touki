@@ -51,8 +51,9 @@ public sealed class StackAllocSizeAnalyzer : DiagnosticAnalyzer
     /// </summary>
     public const int DefaultMaxBytes = 1024;
 
-    // Native integers and pointers are 8 bytes in the 64-bit processes this library targets.
-    // Reporting the larger of the two possible widths keeps the rule from under-reporting on x64.
+    // A native integer or pointer is 4 bytes in a 32-bit process and 8 in a 64-bit one, and which of those
+    // runs is not knowable when the analyzer sees the code. Assume the larger so the rule reports a size at
+    // least as large as the allocation will really be rather than under-reporting it.
     private const long NativeIntegerSize = 8;
 
     private static readonly DiagnosticDescriptor s_rule = new(
@@ -237,7 +238,7 @@ public sealed class StackAllocSizeAnalyzer : DiagnosticAnalyzer
         AnalyzerConfigOptions options = context.Options.AnalyzerConfigOptionsProvider.GetOptions(context.Node.SyntaxTree);
 
         return options.TryGetValue(MaxBytesOption, out string? value)
-            && int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int maxBytes)
+            && int.TryParse(value.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int maxBytes)
             && maxBytes > 0
                 ? maxBytes
                 : DefaultMaxBytes;

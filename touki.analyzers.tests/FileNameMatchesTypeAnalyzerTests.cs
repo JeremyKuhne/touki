@@ -240,6 +240,16 @@ public class FileNameMatchesTypeAnalyzerTests
     }
 
     [TestMethod]
+    public async Task AnalyzeSyntaxTree_ConfiguredSeparatorsPadded_IsHonored()
+    {
+        // Padding around the set must not silently drop the setting back to the default.
+        ImmutableArray<Diagnostic> diagnostics =
+            await AnalyzeAsync(SimpleType, "Foo+Windows.cs", separators: "  +  ").ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
     [DataRow("")]
     [DataRow("   ")]
     public async Task AnalyzeSyntaxTree_UnusableConfiguredSeparators_FallsBackToDefault(string separators)
