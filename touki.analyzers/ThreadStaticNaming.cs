@@ -23,6 +23,10 @@ internal static class ThreadStaticNaming
 
     private const string AttributeSuffix = "Attribute";
 
+    // Stands in for a name part that cannot be derived, so a suggestion is always a name the rule accepts
+    // rather than one it would report again.
+    private const string PlaceholderCore = "value";
+
     /// <summary>
     ///  Returns the configured thread-static prefix, or <see cref="ThreadStaticNamingAnalyzer.DefaultPrefix"/>
     ///  when none is set.
@@ -117,14 +121,29 @@ internal static class ThreadStaticNaming
     ///  Returns what <paramref name="name"/> should be called: <paramref name="prefix"/> followed by the
     ///  name with any instance, static, or thread-static prefix it already carries replaced.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   The result always satisfies <see cref="IsConforming"/>, because the diagnostic message names it as
+    ///   the thing to rename to. A name with nothing to camel case - one that is only a prefix, or that
+    ///   continues with a digit or an underscore - would otherwise be handed back unchanged or turned into
+    ///   another name this rule reports, so those fall back to a placeholder the rule accepts.
+    ///  </para>
+    /// </remarks>
     internal static string SuggestedName(string name, string prefix)
     {
         string core = StripLeadingPrefix(name, prefix);
 
-        // A name that is nothing but a prefix leaves nothing to build on.
-        return core.Length == 0
-            ? prefix + name
-            : prefix + char.ToLowerInvariant(core[0]) + core.Substring(1);
+        if (core.Length > 0)
+        {
+            string suggested = prefix + char.ToLowerInvariant(core[0]) + core.Substring(1);
+
+            if (IsConforming(suggested, prefix))
+            {
+                return suggested;
+            }
+        }
+
+        return prefix + PlaceholderCore + core;
     }
 
     /// <summary>
@@ -171,31 +190,70 @@ internal static class ThreadStaticNaming
     ///  Returns <see langword="true"/> if <paramref name="attributeTypeName"/> is one of the comma-separated
     ///  names in <paramref name="configured"/>, written with or without the <c>Attribute</c> suffix.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   The list is walked in place rather than split, because this runs for every attribute on every
+    ///   candidate field once the option is configured, and splitting there would allocate an array and a
+    ///   string per entry each time.
+    ///  </para>
+    /// </remarks>
     private static bool MatchesByName(string attributeTypeName, string configured)
     {
-        foreach (string candidate in configured.Split(','))
+        int start = 0;
+
+        while (start <= configured.Length)
         {
-            string trimmed = candidate.Trim();
+            int end = configured.IndexOf(',', start);
 
-            if (trimmed.Length == 0)
+            if (end < 0)
             {
-                continue;
+                end = configured.Length;
             }
 
-            if (string.Equals(attributeTypeName, trimmed, StringComparison.Ordinal))
-            {
-                return true;
-            }
-
-            // Allow the attribute to be named the way it is written in source, without the suffix.
-            if (attributeTypeName.Length == trimmed.Length + AttributeSuffix.Length
-                && attributeTypeName.StartsWith(trimmed, StringComparison.Ordinal)
-                && attributeTypeName.EndsWith(AttributeSuffix, StringComparison.Ordinal))
+            if (MatchesEntry(attributeTypeName, configured, start, end))
             {
                 return true;
             }
+
+            start = end + 1;
         }
 
         return false;
+    }
+
+    /// <summary>
+    ///  Returns <see langword="true"/> if <paramref name="attributeTypeName"/> is the entry of
+    ///  <paramref name="configured"/> between <paramref name="start"/> and <paramref name="end"/>, ignoring
+    ///  surrounding whitespace and an optional <c>Attribute</c> suffix on the type name.
+    /// </summary>
+    private static bool MatchesEntry(string attributeTypeName, string configured, int start, int end)
+    {
+        while (start < end && char.IsWhiteSpace(configured[start]))
+        {
+            start++;
+        }
+
+        while (end > start && char.IsWhiteSpace(configured[end - 1]))
+        {
+            end--;
+        }
+
+        int length = end - start;
+
+        if (length == 0)
+        {
+            return false;
+        }
+
+        // The type name is either the entry exactly, or the entry plus the suffix that the declaration
+        // carries and the use site does not.
+        if (attributeTypeName.Length != length
+            && (attributeTypeName.Length != length + AttributeSuffix.Length
+                || !attributeTypeName.EndsWith(AttributeSuffix, StringComparison.Ordinal)))
+        {
+            return false;
+        }
+
+        return string.CompareOrdinal(attributeTypeName, 0, configured, start, length) == 0;
     }
 }

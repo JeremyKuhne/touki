@@ -138,24 +138,6 @@ public class ThreadStaticNamingAnalyzerTests
     }
 
     [TestMethod]
-    public async Task AnalyzeField_ThreadStaticUnderscoreOnly_ReportsDiagnostic()
-    {
-        // A name that is nothing but the prefix has no core to camel case.
-        string source = Usings + """
-            class Sample
-            {
-                [ThreadStatic]
-                private static int t_;
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
-
-        diagnostics.Should().ContainSingle()
-            .Which.Id.Should().Be(ThreadStaticNamingAnalyzer.DiagnosticId);
-    }
-
-    [TestMethod]
     public async Task AnalyzeField_ThreadStaticWithUnrelatedUnderscoreName_KeepsBothParts()
     {
         // 'x_' is not a prefix this rule knows, so it is part of the name rather than something to replace.
@@ -361,6 +343,61 @@ public class ThreadStaticNamingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeField_ThreadStaticUnderscoreOnly_SuggestsAConformingName()
+    {
+        // A name that is nothing but the prefix has no core to camel case, so the suggestion falls back to
+        // a placeholder rather than doubling the prefix.
+        string source = Usings + """
+            class Sample
+            {
+                [ThreadStatic]
+                private static int t_;
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle()
+            .Which.GetMessage().Should().Contain("'t_value'").And.NotContain("'t_t_'");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeField_ThreadStaticDigitAfterPrefix_DoesNotSuggestTheSameName()
+    {
+        // 't_1' is not conforming, so it is reported - but the suggestion must not be 't_1' again.
+        string source = Usings + """
+            class Sample
+            {
+                [ThreadStatic]
+                private static int t_1;
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle()
+            .Which.GetMessage().Should().Contain("'t_value1'");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeField_StaticDigitName_DoesNotSuggestANameItWouldReport()
+    {
+        // Stripping 's_' leaves '1', which would produce 't_1' - a name this same rule reports.
+        string source = Usings + """
+            class Sample
+            {
+                [ThreadStatic]
+                private static int s_1;
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle()
+            .Which.GetMessage().Should().Contain("'t_value1'");
     }
 
     [TestMethod]
