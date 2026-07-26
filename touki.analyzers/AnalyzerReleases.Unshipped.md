@@ -10,3 +10,4 @@ TOUKI0003 | Reliability | Warning | Defensive copy of a [NonCopyable] struct
 TOUKI0004 | Reliability | Warning | By-value copy of a [NonCopyable] struct
 TOUKI0010 | Reliability | Warning | [MustDispose] value is not deterministically disposed
 TOUKI0020 | Maintainability | Warning | More than one type declared in a file, nested types included
+TOUKI0030 | Performance | Warning | StringBuilder allocated to build a string that ValueStringBuilder could build
