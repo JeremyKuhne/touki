@@ -315,8 +315,8 @@ dotnet_diagnostic.TOUKISUPPRESS0001.severity = none
 
 ## Release history
 
-| Release | Rules added |
-|---------|-------------|
+| Release | Rules and suppressions added |
+|---------|------------------------------|
 | 0.4.0 | TOUKI0001, TOUKI0002, TOUKI0003, TOUKI0004, TOUKI0010 |
 | 0.5.0 | TOUKI0020, TOUKI0030 |
 | unreleased | TOUKI0011, TOUKI0021, TOUKI0040, TOUKISUPPRESS0001 |

@@ -74,6 +74,11 @@ public sealed class ThreadStaticNamingSuppressor : DiagnosticSuppressor
         INamedTypeSymbol? threadStaticAttribute =
             context.Compilation.GetTypeByMetadataName(ThreadStaticNaming.ThreadStaticAttributeMetadataName);
 
+        // Configuration is per tree, so it is read once per tree rather than once per diagnostic. The root is
+        // not cached alongside it: GetRoot returns a stored field on a parsed tree, and a lazy tree caches the
+        // parse on first call, so repeating it costs a field read.
+        Dictionary<SyntaxTree, (AnalyzerConfigOptions Options, string Prefix)>? configurations = null;
+
         // A semantic model is only built for a field that already looks thread static, and only once per
         // tree. Suppressors run concurrently with each other, but each runs on one thread, so a plain
         // dictionary is enough.
@@ -100,12 +105,18 @@ public sealed class ThreadStaticNamingSuppressor : DiagnosticSuppressor
                 continue;
             }
 
-            AnalyzerConfigOptions options = context.Options.AnalyzerConfigOptionsProvider.GetOptions(tree);
-            string prefix = ThreadStaticNaming.GetPrefix(options);
+            configurations ??= [];
+
+            if (!configurations.TryGetValue(tree, out (AnalyzerConfigOptions Options, string Prefix) configuration))
+            {
+                AnalyzerConfigOptions options = context.Options.AnalyzerConfigOptionsProvider.GetOptions(tree);
+                configuration = (options, ThreadStaticNaming.GetPrefix(options));
+                configurations.Add(tree, configuration);
+            }
 
             // Check the name before doing any semantic work. A field that is not named as a thread static
             // keeps its report either way.
-            if (!ThreadStaticNaming.IsConforming(declarator.Identifier.ValueText, prefix))
+            if (!ThreadStaticNaming.IsConforming(declarator.Identifier.ValueText, configuration.Prefix))
             {
                 continue;
             }
@@ -119,7 +130,7 @@ public sealed class ThreadStaticNamingSuppressor : DiagnosticSuppressor
             }
 
             if (semanticModel.GetDeclaredSymbol(declarator, context.CancellationToken) is not IFieldSymbol field
-                || !ThreadStaticNaming.IsThreadStatic(field, threadStaticAttribute, options))
+                || !ThreadStaticNaming.IsThreadStatic(field, threadStaticAttribute, configuration.Options))
             {
                 continue;
             }

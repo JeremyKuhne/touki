@@ -51,16 +51,18 @@ internal static class AnalyzerTestHarness
     /// <remarks>
     ///  <para>
     ///   Suppressed diagnostics are reported rather than dropped, so a test can tell the difference between
-    ///   a diagnostic that was suppressed and one that was never produced.
+    ///   a diagnostic that was suppressed and one that was never produced. The compilation is returned as
+    ///   well because <see cref="Diagnostic.GetSuppressionInfo"/> needs it to reach the suppression id.
     ///  </para>
     /// </remarks>
-    public static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsWithSuppressorAsync(
-        DiagnosticAnalyzer analyzer,
-        DiagnosticSuppressor suppressor,
-        string source,
-        IReadOnlyDictionary<string, string>? options = null,
-        string? suppressedDiagnosticId = null,
-        ReportDiagnostic? severity = null)
+    public static async Task<(ImmutableArray<Diagnostic> Diagnostics, Compilation Compilation)>
+        GetDiagnosticsWithSuppressorAsync(
+            DiagnosticAnalyzer analyzer,
+            DiagnosticSuppressor suppressor,
+            string source,
+            IReadOnlyDictionary<string, string>? options = null,
+            string? suppressedDiagnosticId = null,
+            ReportDiagnostic? severity = null)
     {
         CSharpCompilation compilation = CreateCompilation(source, fileName: null);
 
@@ -81,7 +83,10 @@ internal static class AnalyzerTestHarness
         CompilationWithAnalyzers compilationWithAnalyzers =
             compilation.WithAnalyzers([analyzer, suppressor], analysisOptions);
 
-        return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics =
+            await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false);
+
+        return (diagnostics, compilation);
     }
 
     private static CSharpCompilation CreateCompilation(string source, string? fileName)

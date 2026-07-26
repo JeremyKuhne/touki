@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Microsoft.CodeAnalysis.Diagnostics;
+
 namespace Touki.Analyzers;
 
 [TestClass]
@@ -10,7 +12,14 @@ public class ThreadStaticNamingSuppressorTests
     private static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(
         string source,
         string? prefix = null,
-        ReportDiagnostic? severity = null)
+        ReportDiagnostic? severity = null) =>
+        (await AnalyzeWithCompilationAsync(source, prefix, severity).ConfigureAwait(false)).Diagnostics;
+
+    private static async Task<(ImmutableArray<Diagnostic> Diagnostics, Compilation Compilation)>
+        AnalyzeWithCompilationAsync(
+            string source,
+            string? prefix = null,
+            ReportDiagnostic? severity = null)
     {
         Dictionary<string, string> options = new();
 
@@ -61,11 +70,15 @@ public class ThreadStaticNamingSuppressorTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        (ImmutableArray<Diagnostic> diagnostics, Compilation compilation) =
+            await AnalyzeWithCompilationAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
+        SuppressionInfo? suppressionInfo = diagnostic.GetSuppressionInfo(compilation);
 
-        diagnostic.Descriptor.Id.Should().Be(ThreadStaticNamingSuppressor.SuppressedDiagnosticId);
+        suppressionInfo.Should().NotBeNull();
+        suppressionInfo!.ProgrammaticSuppressions.Should().ContainSingle()
+            .Which.Descriptor.Id.Should().Be(ThreadStaticNamingSuppressor.SuppressionId);
     }
 
     [TestMethod]
