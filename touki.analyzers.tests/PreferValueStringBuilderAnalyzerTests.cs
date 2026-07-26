@@ -160,6 +160,94 @@ public class PreferValueStringBuilderAnalyzerTests
     }
 
     [TestMethod]
+    public async Task AnalyzeOperationBlock_FluentResultReturned_ReportsNothing()
+    {
+        string source = Usings + """
+            class Sample
+            {
+                StringBuilder Build(string value) => new StringBuilder().Append(value);
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeOperationBlock_FluentResultPassedAsArgument_ReportsNothing()
+    {
+        string source = Usings + """
+            class Sample
+            {
+                void Build(string value, List<StringBuilder> builders)
+                {
+                    builders.Add(new StringBuilder().Append(value));
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeOperationBlock_FluentResultStoredInEscapingLocal_ReportsNothing()
+    {
+        string source = Usings + """
+            class Sample
+            {
+                StringBuilder Build(string value)
+                {
+                    StringBuilder builder = new StringBuilder().Append(value);
+                    return builder;
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeOperationBlock_FluentResultStoredInLocalBuild_ReportsDiagnostic()
+    {
+        string source = Usings + """
+            class Sample
+            {
+                string Build(string value)
+                {
+                    StringBuilder builder = new StringBuilder().Append(value);
+                    return builder.ToString();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle()
+            .Which.Id.Should().Be(PreferValueStringBuilderAnalyzer.DiagnosticId);
+    }
+
+    [TestMethod]
+    public async Task AnalyzeOperationBlock_FluentChainToProperty_ReportsDiagnostic()
+    {
+        string source = Usings + """
+            class Sample
+            {
+                int Build(string value) => new StringBuilder().Append(value).Length;
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle()
+            .Which.Id.Should().Be(PreferValueStringBuilderAnalyzer.DiagnosticId);
+    }
+
+    [TestMethod]
     public async Task AnalyzeOperationBlock_TwoLocalBuilders_ReportsEach()
     {
         string source = Usings + """

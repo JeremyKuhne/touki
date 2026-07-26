@@ -27,9 +27,11 @@ namespace Touki.Analyzers;
 ///   <list type="bullet">
 ///    <item>
 ///     <description>
-///      A creation is reported when it initializes or is assigned to a local that never escapes, or when it is the
-///      receiver of a fluent chain such as <c>new StringBuilder().Append(x).ToString()</c>. Every other shape is
-///      left alone.
+///      A creation is reported when it initializes or is assigned to a local that never escapes, or when it is
+///      the start of a fluent chain that ends in something other than a builder, such as
+///      <c>new StringBuilder().Append(x).ToString()</c>. A chain that still yields a builder is classified by
+///      where that builder lands, so <c>StringBuilder b = new StringBuilder().Append(x)</c> is judged by whether
+///      <c>b</c> escapes. Every other shape is left alone.
 ///     </description>
 ///    </item>
 ///    <item>
@@ -120,10 +122,11 @@ public sealed class PreferValueStringBuilderAnalyzer : DiagnosticAnalyzer
         // Creations bound to a local, paired with that local so later uses can rule them out.
         List<(ISymbol Local, IOperation Creation)> candidates = [];
 
-        // Locals whose builder leaves the method, where a ref struct cannot be substituted.
+        // Locals whose builder leaves the method, where a ref struct cannot be substituted. Only builder locals
+        // are tracked, since those are the only ones ever looked up.
         HashSet<ISymbol> escaped = new(SymbolEqualityComparer.Default);
 
-        // Creations that never bind to a local - the receiver of a fluent chain.
+        // Creations left behind by an expression that yields something other than the builder.
         List<IOperation> temporaries = [];
 
         // A ref struct local cannot live across a 'yield' either, but there is no symbol flag for an iterator,
@@ -143,15 +146,18 @@ public sealed class PreferValueStringBuilderAnalyzer : DiagnosticAnalyzer
                         when SymbolEqualityComparer.Default.Equals(creation.Type, stringBuilder):
                         Classify(creation, stringBuilder, candidates, temporaries);
                         break;
-                    case ILocalReferenceOperation reference when !IsSafeUse(reference):
+                    case ILocalReferenceOperation reference
+                        when SymbolEqualityComparer.Default.Equals(reference.Local.Type, stringBuilder)
+                            && !IsSafeUse(reference):
                         escaped.Add(reference.Local);
                         break;
                     case IAnonymousFunctionOperation or ILocalFunctionOperation:
-                        // A ref struct cannot be captured, so every local a lambda or local function touches is
-                        // out of reach, including the uses that would otherwise look safe.
+                        // A ref struct cannot be captured, so every builder local a lambda or local function
+                        // touches is out of reach, including the uses that would otherwise look safe.
                         foreach (IOperation nested in Descend(operation))
                         {
-                            if (nested is ILocalReferenceOperation captured)
+                            if (nested is ILocalReferenceOperation captured
+                                && SymbolEqualityComparer.Default.Equals(captured.Local.Type, stringBuilder))
                             {
                                 escaped.Add(captured.Local);
                             }
@@ -182,9 +188,10 @@ public sealed class PreferValueStringBuilderAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    ///  Records <paramref name="creation"/> as a reportable candidate when it binds to a local or is a fluent
-    ///  receiver. Any other position hands the instance somewhere a <see langword="ref"/> <see langword="struct"/>
-    ///  cannot go, so it is deliberately dropped rather than guessed at.
+    ///  Records <paramref name="creation"/> as a reportable candidate when the expression containing it leaves
+    ///  the builder behind or binds it to a local. Any other position hands the instance somewhere a
+    ///  <see langword="ref"/> <see langword="struct"/> cannot go, so it is deliberately dropped rather than
+    ///  guessed at.
     /// </summary>
     private static void Classify(
         IObjectCreationOperation creation,
@@ -192,7 +199,30 @@ public sealed class PreferValueStringBuilderAnalyzer : DiagnosticAnalyzer
         List<(ISymbol Local, IOperation Creation)> candidates,
         List<IOperation> temporaries)
     {
-        switch (GetEffectiveParent(creation))
+        // Follow a fluent chain for as long as it keeps producing a builder, so the classification is driven by
+        // what the chain finally yields rather than by the first call in it. 'new StringBuilder().Append(x)' is
+        // itself a builder that may still be stored, returned, or passed on; only a chain ending in something
+        // else - a 'ToString()' or a 'Length' - leaves the builder behind for good.
+        IOperation value = creation;
+
+        while (true)
+        {
+            IOperation? consumer = GetEffectiveParent(value);
+            if (!IsFluentReceiver(consumer, value))
+            {
+                break;
+            }
+
+            if (!SymbolEqualityComparer.Default.Equals(consumer!.Type, stringBuilder))
+            {
+                temporaries.Add(creation);
+                return;
+            }
+
+            value = consumer;
+        }
+
+        switch (GetEffectiveParent(value))
         {
             // 'StringBuilder builder = new(...)'. A ref local aliases another location rather than owning a
             // value, and a local of a wider type (an 'object' or an interface) is not something a ref struct
@@ -208,14 +238,19 @@ public sealed class PreferValueStringBuilderAnalyzer : DiagnosticAnalyzer
                 when SymbolEqualityComparer.Default.Equals(target.Local.Type, stringBuilder):
                 candidates.Add((target.Local, creation));
                 break;
-
-            // Receiver of a fluent chain: 'new StringBuilder().Append(x).ToString()'. The instance is an unnamed
-            // temporary that never leaves the expression.
-            case IInvocationOperation or IPropertyReferenceOperation:
-                temporaries.Add(creation);
-                break;
         }
     }
+
+    /// <summary>
+    ///  Returns <see langword="true"/> if <paramref name="value"/> is the receiver that <paramref name="consumer"/>
+    ///  calls a member on, which is the link a fluent chain is built from.
+    /// </summary>
+    private static bool IsFluentReceiver(IOperation? consumer, IOperation value) => consumer switch
+    {
+        IInvocationOperation invocation => ReferenceEquals(invocation.Instance, value),
+        IPropertyReferenceOperation property => ReferenceEquals(property.Instance, value),
+        _ => false
+    };
 
     /// <summary>
     ///  Gets the operation that consumes <paramref name="operation"/>, looking through the parentheses and the
