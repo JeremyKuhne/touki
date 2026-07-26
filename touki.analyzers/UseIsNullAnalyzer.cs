@@ -37,7 +37,7 @@ public sealed class UseIsNullAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "Comparisons against the null literal should use the 'is null' and 'is not null' patterns.",
-        helpLinkUri: "https://github.com/JeremyKuhne/touki");
+        helpLinkUri: HelpLinks.ForRule(DiagnosticId));
 
     // Cache the supported-diagnostics array so the property does not allocate a new array on every access.
     private static readonly ImmutableArray<DiagnosticDescriptor> s_supportedDiagnostics = ImmutableArray.Create(s_rule);

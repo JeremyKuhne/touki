@@ -19,17 +19,33 @@ internal static class AnalyzerTestHarness
     ///  Runs <paramref name="analyzer"/> against <paramref name="source"/> and returns the
     ///  analyzer-produced diagnostics.
     /// </summary>
-    public static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(DiagnosticAnalyzer analyzer, string source)
+    /// <param name="options">
+    ///  Optional <c>.editorconfig</c> values made visible to the analyzer.
+    /// </param>
+    /// <param name="fileName">
+    ///  Optional path for the parsed tree. Analyzers that inspect the file name need one; the default leaves
+    ///  the tree pathless, matching an in-memory compilation.
+    /// </param>
+    public static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(
+        DiagnosticAnalyzer analyzer,
+        string source,
+        IReadOnlyDictionary<string, string>? options = null,
+        string? fileName = null)
     {
-        SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source);
+        SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source, path: fileName ?? string.Empty);
 
         CSharpCompilation compilation = CSharpCompilation.Create(
             assemblyName: "Touki.Analyzers.TestCompilation",
             syntaxTrees: [syntaxTree],
             references: s_references.Value,
-            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
 
-        CompilationWithAnalyzers compilationWithAnalyzers = compilation.WithAnalyzers([analyzer]);
+        AnalyzerOptions analyzerOptions = new(
+            additionalFiles: [],
+            optionsProvider: new TestAnalyzerConfigOptionsProvider(
+                options is null ? TestAnalyzerConfigOptions.Empty : new TestAnalyzerConfigOptions(options)));
+
+        CompilationWithAnalyzers compilationWithAnalyzers = compilation.WithAnalyzers([analyzer], analyzerOptions);
 
         return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false);
     }
