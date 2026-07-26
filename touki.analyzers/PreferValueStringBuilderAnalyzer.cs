@@ -41,7 +41,8 @@ namespace Touki.Analyzers;
 ///      into another local, storing it in a field or an array element, casting it, or referencing it inside a
 ///      lambda or local function all count. Whole blocks are skipped for <see langword="async"/> methods and
 ///      for iterators, the latter recognized by a <see langword="yield"/> in the member's own body rather than
-///      in a nested local function.
+///      in a nested local function. A creation inside a lambda or local function is skipped outright, since
+///      that function may be <see langword="async"/> or an iterator of its own.
 ///     </description>
 ///    </item>
 ///    <item>
@@ -115,6 +116,8 @@ public sealed class PreferValueStringBuilderAnalyzer : DiagnosticAnalyzer
     private static void AnalyzeOperationBlock(OperationBlockAnalysisContext context, INamedTypeSymbol stringBuilder)
     {
         // A ref struct local cannot live across an 'await', so no creation in an async method has a valid fix.
+        // The lambdas and local functions nested inside a member carry their own async and iterator nature that
+        // this pass does not model, so creations inside them are skipped rather than guessed at.
         if (context.OwningSymbol is IMethodSymbol { IsAsync: true })
         {
             return;
@@ -146,7 +149,8 @@ public sealed class PreferValueStringBuilderAnalyzer : DiagnosticAnalyzer
                         isIterator = true;
                         break;
                     case IObjectCreationOperation creation
-                        when SymbolEqualityComparer.Default.Equals(creation.Type, stringBuilder):
+                        when SymbolEqualityComparer.Default.Equals(creation.Type, stringBuilder)
+                            && !IsInsideNestedFunction(creation):
                         Classify(creation, stringBuilder, candidates, temporaries);
                         break;
                     case ILocalReferenceOperation reference

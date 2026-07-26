@@ -485,6 +485,55 @@ public class PreferValueStringBuilderAnalyzerTests
     }
 
     [TestMethod]
+    public async Task AnalyzeOperationBlock_FluentTemporaryInAsyncLambda_ReportsNothing()
+    {
+        string source = Usings + """
+            using System;
+
+            class Sample
+            {
+                void Build(string value)
+                {
+                    Func<Task<string>> build = async () =>
+                    {
+                        await Task.Yield();
+                        return new StringBuilder().Append(value).ToString();
+                    };
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeOperationBlock_BuilderInLocalFunction_ReportsNothing()
+    {
+        string source = Usings + """
+            class Sample
+            {
+                string Build(string value)
+                {
+                    return Make();
+
+                    string Make()
+                    {
+                        StringBuilder builder = new();
+                        builder.Append(value);
+                        return builder.ToString();
+                    }
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
     public async Task AnalyzeOperationBlock_BuilderFromParameter_ReportsNothing()
     {
         string source = Usings + """
