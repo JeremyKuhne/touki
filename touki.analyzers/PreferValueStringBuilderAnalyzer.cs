@@ -34,9 +34,11 @@ namespace Touki.Analyzers;
 ///    </item>
 ///    <item>
 ///     <description>
-///      A local escapes if it is returned, passed as an argument, assigned to a field, property, parameter, or
-///      another local, or referenced inside a lambda or local function. Whole blocks are skipped for
-///      <see langword="async"/> methods and iterators.
+///      A local escapes on any use other than calling one of the builder's members, reading one of its
+///      properties, or writing a new value into the local - so returning it, passing it anywhere, aliasing it
+///      into another local, storing it in a field or an array element, casting it, or referencing it inside a
+///      lambda or local function all count. Whole blocks are skipped for <see langword="async"/> methods and
+///      iterators.
 ///     </description>
 ///    </item>
 ///    <item>
@@ -141,25 +143,12 @@ public sealed class PreferValueStringBuilderAnalyzer : DiagnosticAnalyzer
                         when SymbolEqualityComparer.Default.Equals(creation.Type, stringBuilder):
                         Classify(creation, stringBuilder, candidates, temporaries);
                         break;
-                    case IReturnOperation { ReturnedValue: { } returned }:
-                        MarkEscape(returned, escaped);
-                        break;
-                    case IArgumentOperation argument:
-                        MarkEscape(argument.Value, escaped);
-                        break;
-                    case ISimpleAssignmentOperation assignment:
-                        // Storing into a field, property, or parameter escapes the method; aliasing into another
-                        // local is treated the same way, since this pass does not follow the alias.
-                        if (assignment.Target is IFieldReferenceOperation or IPropertyReferenceOperation
-                            or IParameterReferenceOperation or ILocalReferenceOperation)
-                        {
-                            MarkEscape(assignment.Value, escaped);
-                        }
-
+                    case ILocalReferenceOperation reference when !IsSafeUse(reference):
+                        escaped.Add(reference.Local);
                         break;
                     case IAnonymousFunctionOperation or ILocalFunctionOperation:
                         // A ref struct cannot be captured, so every local a lambda or local function touches is
-                        // out of reach.
+                        // out of reach, including the uses that would otherwise look safe.
                         foreach (IOperation nested in Descend(operation))
                         {
                             if (nested is ILocalReferenceOperation captured)
@@ -245,29 +234,31 @@ public sealed class PreferValueStringBuilderAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    ///  Records the local referenced by <paramref name="value"/> as escaping, looking through the implicit
-    ///  conversions and parentheses that hand off the same instance.
+    ///  Returns <see langword="true"/> if <paramref name="reference"/> is a use that keeps the builder where it
+    ///  is: calling one of its members, reading one of its properties, or writing a new value into the local
+    ///  itself. Every other use is treated as an escape.
     /// </summary>
-    private static void MarkEscape(IOperation? value, HashSet<ISymbol> escaped)
+    /// <remarks>
+    ///  <para>
+    ///   Safe uses are whitelisted rather than escapes blacklisted, so a shape this pass has not been taught -
+    ///   an array element, a collection expression, a cast, a tuple, an interpolation - counts as an escape and
+    ///   silences the diagnostic. That is the direction that cannot produce a warning with no valid fix.
+    ///  </para>
+    /// </remarks>
+    private static bool IsSafeUse(ILocalReferenceOperation reference) => reference.Parent switch
     {
-        while (true)
-        {
-            switch (value)
-            {
-                case IConversionOperation { IsImplicit: true, OperatorMethod: null } conversion:
-                    value = conversion.Operand;
-                    break;
-                case IParenthesizedOperation parenthesized:
-                    value = parenthesized.Operand;
-                    break;
-                case ILocalReferenceOperation local:
-                    escaped.Add(local.Local);
-                    return;
-                default:
-                    return;
-            }
-        }
-    }
+        // 'builder.Append(x)' - the builder is the receiver. An extension method puts the builder in an
+        // argument instead, which deliberately falls through to the escape case.
+        IInvocationOperation invocation => ReferenceEquals(invocation.Instance, reference),
+
+        // 'builder.Length' or 'builder[i]' - the builder is the receiver.
+        IPropertyReferenceOperation property => ReferenceEquals(property.Instance, reference),
+
+        // 'builder = ...' - writing into the local, not handing the instance anywhere.
+        ISimpleAssignmentOperation assignment => ReferenceEquals(assignment.Target, reference),
+
+        _ => false
+    };
 
     private static IEnumerable<IOperation> Descend(IOperation root)
     {
