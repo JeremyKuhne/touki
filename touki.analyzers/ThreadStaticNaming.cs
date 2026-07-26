@@ -201,7 +201,7 @@ internal static class ThreadStaticNaming
     {
         int start = 0;
 
-        while (start <= configured.Length)
+        while (start < configured.Length)
         {
             int end = configured.IndexOf(',', start);
 
@@ -224,8 +224,15 @@ internal static class ThreadStaticNaming
     /// <summary>
     ///  Returns <see langword="true"/> if <paramref name="attributeTypeName"/> is the entry of
     ///  <paramref name="configured"/> between <paramref name="start"/> and <paramref name="end"/>, ignoring
-    ///  surrounding whitespace and an optional <c>Attribute</c> suffix on the type name.
+    ///  surrounding whitespace and an <c>Attribute</c> suffix on either side.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   The suffix is optional on both sides because an attribute class does not have to carry it - the
+    ///   compiler resolves <c>[Foo]</c> to either <c>Foo</c> or <c>FooAttribute</c> - so neither the entry
+    ///   nor the declaration can be assumed to be the spelling that has it.
+    ///  </para>
+    /// </remarks>
     private static bool MatchesEntry(string attributeTypeName, string configured, int start, int end)
     {
         while (start < end && char.IsWhiteSpace(configured[start]))
@@ -245,15 +252,28 @@ internal static class ThreadStaticNaming
             return false;
         }
 
-        // The type name is either the entry exactly, or the entry plus the suffix that the declaration
-        // carries and the use site does not.
-        if (attributeTypeName.Length != length
-            && (attributeTypeName.Length != length + AttributeSuffix.Length
-                || !attributeTypeName.EndsWith(AttributeSuffix, StringComparison.Ordinal)))
-        {
-            return false;
-        }
+        int nameLength = LengthWithoutAttributeSuffix(attributeTypeName, 0, attributeTypeName.Length);
+        int entryLength = LengthWithoutAttributeSuffix(configured, start, length);
 
-        return string.CompareOrdinal(attributeTypeName, 0, configured, start, length) == 0;
+        return nameLength == entryLength
+            && string.CompareOrdinal(attributeTypeName, 0, configured, start, nameLength) == 0;
     }
+
+    /// <summary>
+    ///  Returns the length of the <paramref name="length"/> characters of <paramref name="value"/> at
+    ///  <paramref name="start"/> with a trailing <c>Attribute</c> suffix removed, or
+    ///  <paramref name="length"/> when there is none.
+    /// </summary>
+    private static int LengthWithoutAttributeSuffix(string value, int start, int length) =>
+
+        // A type named exactly 'Attribute' keeps its name rather than becoming empty.
+        length > AttributeSuffix.Length
+        && string.CompareOrdinal(
+            value,
+            start + length - AttributeSuffix.Length,
+            AttributeSuffix,
+            0,
+            AttributeSuffix.Length) == 0
+            ? length - AttributeSuffix.Length
+            : length;
 }

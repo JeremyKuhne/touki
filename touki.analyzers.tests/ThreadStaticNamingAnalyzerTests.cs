@@ -328,6 +328,87 @@ public class ThreadStaticNamingAnalyzerTests
         diagnostics.Should().BeEmpty();
     }
 
+    private const string SuffixlessAttribute = """
+        class ThreadBound : Attribute
+        {
+        }
+
+        """;
+
+    [TestMethod]
+    public async Task AnalyzeField_AdditionalAttributeConfiguredWithSuffixTypeWithout_ReportsDiagnostic()
+    {
+        // An attribute class does not have to carry the 'Attribute' suffix, so the suffix has to be
+        // optional on the configured side too.
+        string source = Usings + SuffixlessAttribute + """
+            class Sample
+            {
+                [ThreadBound]
+                private static int s_value;
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics =
+            await AnalyzeAsync(source, additionalAttributes: "ThreadBoundAttribute").ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle()
+            .Which.GetMessage().Should().Contain("'t_value'");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeField_AdditionalAttributeSuffixOnNeitherSide_ReportsDiagnostic()
+    {
+        string source = Usings + SuffixlessAttribute + """
+            class Sample
+            {
+                [ThreadBound]
+                private static int s_value;
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics =
+            await AnalyzeAsync(source, additionalAttributes: "ThreadBound").ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle()
+            .Which.Id.Should().Be(ThreadStaticNamingAnalyzer.DiagnosticId);
+    }
+
+    [TestMethod]
+    public async Task AnalyzeField_AdditionalAttributeDifferentName_ReportsNothing()
+    {
+        // Comparing on the suffix-stripped core must not make unrelated names match.
+        string source = Usings + CustomAttribute + """
+            class Sample
+            {
+                [MyThreadLocal]
+                private static int s_value;
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics =
+            await AnalyzeAsync(source, additionalAttributes: "OtherAttribute, Third").ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeField_AdditionalAttributesTrailingComma_ReportsDiagnostic()
+    {
+        string source = Usings + CustomAttribute + """
+            class Sample
+            {
+                [MyThreadLocal]
+                private static int s_value;
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics =
+            await AnalyzeAsync(source, additionalAttributes: "MyThreadLocal,").ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle()
+            .Which.Id.Should().Be(ThreadStaticNamingAnalyzer.DiagnosticId);
+    }
+
     [TestMethod]
     public async Task AnalyzeField_ThreadStaticConst_ReportsNothing()
     {
