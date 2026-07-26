@@ -40,7 +40,8 @@ namespace Touki.Analyzers;
 ///      properties, or writing a new value into the local - so returning it, passing it anywhere, aliasing it
 ///      into another local, storing it in a field or an array element, casting it, or referencing it inside a
 ///      lambda or local function all count. Whole blocks are skipped for <see langword="async"/> methods and
-///      iterators.
+///      for iterators, the latter recognized by a <see langword="yield"/> in the member's own body rather than
+///      in a nested local function.
 ///     </description>
 ///    </item>
 ///    <item>
@@ -130,7 +131,8 @@ public sealed class PreferValueStringBuilderAnalyzer : DiagnosticAnalyzer
         List<IOperation> temporaries = [];
 
         // A ref struct local cannot live across a 'yield' either, but there is no symbol flag for an iterator,
-        // so the block is recognized by the yield operations it contains.
+        // so the block is recognized by the yield operations in the member's own body. A local function can be
+        // an iterator of its own without making its container one, so those are not counted.
         bool isIterator = false;
 
         foreach (IOperation root in context.OperationBlocks)
@@ -139,7 +141,8 @@ public sealed class PreferValueStringBuilderAnalyzer : DiagnosticAnalyzer
             {
                 switch (operation)
                 {
-                    case IReturnOperation { Kind: OperationKind.YieldReturn or OperationKind.YieldBreak }:
+                    case IReturnOperation { Kind: OperationKind.YieldReturn or OperationKind.YieldBreak }
+                        when !IsInsideNestedFunction(operation):
                         isIterator = true;
                         break;
                     case IObjectCreationOperation creation
@@ -239,6 +242,23 @@ public sealed class PreferValueStringBuilderAnalyzer : DiagnosticAnalyzer
                 candidates.Add((target.Local, creation));
                 break;
         }
+    }
+
+    /// <summary>
+    ///  Returns <see langword="true"/> if <paramref name="operation"/> sits inside a lambda or a local function
+    ///  rather than directly in the body of the member being analyzed.
+    /// </summary>
+    private static bool IsInsideNestedFunction(IOperation operation)
+    {
+        for (IOperation? parent = operation.Parent; parent is not null; parent = parent.Parent)
+        {
+            if (parent is IAnonymousFunctionOperation or ILocalFunctionOperation)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

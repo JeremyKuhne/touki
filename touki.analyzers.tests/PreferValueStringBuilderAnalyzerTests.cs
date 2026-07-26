@@ -458,6 +458,33 @@ public class PreferValueStringBuilderAnalyzerTests
     }
 
     [TestMethod]
+    public async Task AnalyzeOperationBlock_IteratorLocalFunction_ReportsDiagnostic()
+    {
+        string source = Usings + """
+            class Sample
+            {
+                string Build(string value)
+                {
+                    StringBuilder builder = new();
+                    builder.Append(value);
+                    builder.Append(string.Join(",", Numbers()));
+                    return builder.ToString();
+
+                    IEnumerable<int> Numbers()
+                    {
+                        yield return 1;
+                    }
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle()
+            .Which.Id.Should().Be(PreferValueStringBuilderAnalyzer.DiagnosticId);
+    }
+
+    [TestMethod]
     public async Task AnalyzeOperationBlock_BuilderFromParameter_ReportsNothing()
     {
         string source = Usings + """
