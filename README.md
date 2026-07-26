@@ -32,11 +32,14 @@ Some of the design goals include:
   [polyfill layout doc](.agents/skills/polyfill-dotnet-api/references/polyfill-layout.md) for the full list)
 - A `DisposableBase` with double-disposal protection and disposal
   tracking helpers for diagnosing leaks
+- [Roslyn analyzers](docs/analyzers.md) that ship in the package and run
+  automatically - no separate analyzer package to install
 - Much more!
 
 ## Overviews
 
 - [Configuring Your Project for Touki](sample/README.md)
+- [Analyzers Shipped in the Package](docs/analyzers.md)
 - [Reducing String Allocations with Touki](docs/strings.md)
 - [Low-Allocation Collections](docs/collections.md)
 - [Buffers, Span Readers, and Span Writers](docs/buffers.md)
@@ -63,6 +66,43 @@ PM> Install-Package KlutzyNinja.Touki
 
 
 [View on NuGet.org](https://www.nuget.org/packages/KlutzyNinja.Touki/)
+
+## Analyzers
+
+The package includes Roslyn analyzers. They are delivered inside
+`KlutzyNinja.Touki` itself, so referencing the package is all it takes - there
+is nothing extra to install and nothing to switch on.
+
+They encode the conventions the library is built on: avoid hidden struct
+copies, release resources deterministically, keep large scratch buffers off the
+stack, and keep types easy to find by file name.
+
+| ID | Rule | Default severity |
+|----|------|------------------|
+| TOUKI0001 | Use pattern matching for null checks | Warning |
+| TOUKI0002 | Defensive copy of a struct | Hidden |
+| TOUKI0003 | Defensive copy of a non-copyable struct | Warning |
+| TOUKI0004 | By-value copy of a non-copyable struct | Warning |
+| TOUKI0010 | Dispose a `[MustDispose]` value deterministically | Warning |
+| TOUKI0011 | Avoid large `stackalloc` allocations | Warning |
+| TOUKI0020 | Declare one type per file | Warning |
+| TOUKI0021 | File name should match the type it declares | Warning |
+| TOUKI0030 | Use `ValueStringBuilder` to build strings | Warning |
+
+Every rule can be re-scoped or turned off per directory through
+`.editorconfig`, and TOUKI0011 and TOUKI0021 take options of their own:
+
+```ini
+# Severity, available on every rule
+dotnet_diagnostic.TOUKI0030.severity = none
+
+# Rule-specific options
+dotnet_code_quality.TOUKI0011.max_stackalloc_bytes = 512
+dotnet_code_quality.TOUKI0021.file_name_detail_separators = .-
+```
+
+See [Analyzers Shipped in the Package](docs/analyzers.md) for what each rule
+flags, why, and how to configure it.
 
 ## Requirements
 

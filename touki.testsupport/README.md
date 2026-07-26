@@ -11,6 +11,7 @@ extensions used by the touki test suite.
 ## Targets
 
 - `net10.0`
+- `net11.0`
 - `net472`
 
 Like `KlutzyNinja.Touki`, this package ships architecture-neutral

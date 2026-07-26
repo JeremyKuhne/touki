@@ -62,8 +62,6 @@ public sealed class DefensiveCopyAnalyzer : DiagnosticAnalyzer
     /// <summary>The diagnostic id for a defensive copy of a <c>[NonCopyable]</c> struct.</summary>
     public const string NonCopyableDefensiveCopyId = "TOUKI0003";
 
-    private const string HelpLinkUri = "https://github.com/JeremyKuhne/touki";
-
     private static readonly DiagnosticDescriptor s_defensiveCopy = new(
         id: DefensiveCopyId,
         title: "Defensive copy of a struct",
@@ -72,7 +70,7 @@ public sealed class DefensiveCopyAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Hidden,
         isEnabledByDefault: true,
         description: "Accessing a non-readonly instance member through a read-only location copies the struct, runs the member against the copy, then discards it.",
-        helpLinkUri: HelpLinkUri);
+        helpLinkUri: HelpLinks.ForRule(DefensiveCopyId));
 
     private static readonly DiagnosticDescriptor s_nonCopyableDefensiveCopy = new(
         id: NonCopyableDefensiveCopyId,
@@ -82,7 +80,7 @@ public sealed class DefensiveCopyAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "A type marked [NonCopyable] must not be copied. Accessing a non-readonly member through a read-only location creates a discarded defensive copy.",
-        helpLinkUri: HelpLinkUri);
+        helpLinkUri: HelpLinks.ForRule(NonCopyableDefensiveCopyId));
 
     private static readonly ImmutableArray<DiagnosticDescriptor> s_supportedDiagnostics =
         ImmutableArray.Create(s_defensiveCopy, s_nonCopyableDefensiveCopy);

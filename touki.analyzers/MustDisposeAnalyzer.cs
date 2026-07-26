@@ -76,7 +76,7 @@ public sealed class MustDisposeAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "A type marked [MustDispose] owns a resource that must be released on every path. Consume the value with a 'using' declaration or statement, or dispose it in a 'try'/'finally'.",
-        helpLinkUri: "https://github.com/JeremyKuhne/touki");
+        helpLinkUri: HelpLinks.ForRule(DiagnosticId));
 
     private static readonly ImmutableArray<DiagnosticDescriptor> s_supportedDiagnostics = [s_rule];
 

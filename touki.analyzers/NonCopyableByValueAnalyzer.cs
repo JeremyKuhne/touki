@@ -66,7 +66,7 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "A type marked [NonCopyable] owns a resource that must not be duplicated. Where feasible pass or alias it by reference ('ref'/'in'/'ref readonly'); otherwise redesign so the value is not copied by value.",
-        helpLinkUri: "https://github.com/JeremyKuhne/touki");
+        helpLinkUri: HelpLinks.ForRule(DiagnosticId));
 
     private static readonly ImmutableArray<DiagnosticDescriptor> s_supportedDiagnostics = [s_rule];
 

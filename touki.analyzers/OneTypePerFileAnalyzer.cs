@@ -70,7 +70,7 @@ public sealed class OneTypePerFileAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "A file should declare a single type, nested types included, so that types are easy to find by file name. A 'partial' declaration that only hosts nested types and repeated 'partial' declarations of the same type do not count as additional types.",
-        helpLinkUri: "https://github.com/JeremyKuhne/touki");
+        helpLinkUri: HelpLinks.ForRule(DiagnosticId));
 
     // Cache the supported-diagnostics array so the property does not allocate a new array on every access.
     private static readonly ImmutableArray<DiagnosticDescriptor> s_supportedDiagnostics = [s_rule];
