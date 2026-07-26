@@ -90,11 +90,15 @@ stack, and keep types easy to find by file name.
 | TOUKI0030 | Use `ValueStringBuilder` to build strings | Warning |
 
 Every rule can be re-scoped or turned off per directory through
-`.editorconfig`, and two of them take configuration of their own:
+`.editorconfig`, and TOUKI0011 and TOUKI0021 take options of their own:
 
 ```ini
+# Severity, available on every rule
 dotnet_diagnostic.TOUKI0030.severity = none
+
+# Rule-specific options
 dotnet_code_quality.TOUKI0011.max_stackalloc_bytes = 512
+dotnet_code_quality.TOUKI0021.file_name_detail_separators = .-
 ```
 
 See [Analyzers Shipped in the Package](docs/analyzers.md) for what each rule
