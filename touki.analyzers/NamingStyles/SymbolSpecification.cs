@@ -235,6 +235,16 @@ internal sealed class SymbolSpecification(
         return lastSeparator < 0 || NamespaceMatches(attributeClass.ContainingNamespace, name, lastSeparator);
     }
 
+    /// <summary>
+    ///  Compares the attribute class's own simple name against the simple name written in
+    ///  <paramref name="name"/>, allowing either side to carry an <c>Attribute</c> suffix the other omits.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   The suffix is a convention rather than a requirement, so a class may be declared as
+    ///   <c>MyThreadLocal : Attribute</c> and configured as <c>MyThreadLocalAttribute</c>, or the reverse.
+    ///  </para>
+    /// </remarks>
     private static bool SimpleNameMatches(string candidate, string name, int start, int length)
     {
         if (length == 0)
@@ -242,15 +252,32 @@ internal sealed class SymbolSpecification(
             return false;
         }
 
-        // The configured name may omit the Attribute suffix that the class itself carries.
-        if (candidate.Length != length
-            && (candidate.Length != length + AttributeSuffix.Length
-                || !candidate.EndsWith(AttributeSuffix, StringComparison.Ordinal)))
+        // Same length: the two are either equal or unrelated.
+        if (candidate.Length == length)
         {
-            return false;
+            return string.CompareOrdinal(candidate, 0, name, start, length) == 0;
         }
 
-        return string.CompareOrdinal(candidate, 0, name, start, length) == 0;
+        // The configured name omits the suffix the class carries.
+        if (candidate.Length == length + AttributeSuffix.Length
+            && candidate.EndsWith(AttributeSuffix, StringComparison.Ordinal))
+        {
+            return string.CompareOrdinal(candidate, 0, name, start, length) == 0;
+        }
+
+        // The configured name carries a suffix the class omits.
+        if (length == candidate.Length + AttributeSuffix.Length
+            && string.CompareOrdinal(
+                name,
+                start + candidate.Length,
+                AttributeSuffix,
+                0,
+                AttributeSuffix.Length) == 0)
+        {
+            return string.CompareOrdinal(candidate, 0, name, start, candidate.Length) == 0;
+        }
+
+        return false;
     }
 
     /// <summary>

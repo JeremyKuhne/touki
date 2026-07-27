@@ -233,9 +233,11 @@ touki_naming_style.<style>.capitalization = pascal_case | camel_case | first_wor
 ```
 
 An omitted `applicable_kinds`, `applicable_accessibilities` or modifier list matches
-everything, as does `*`. Attribute names may be written with or without the namespace and
-with or without the `Attribute` suffix, so `System.ThreadStaticAttribute`,
-`ThreadStaticAttribute` and `ThreadStatic` all select the same thing.
+everything, as does `*`. Attribute names may be written with or without the namespace, and
+the `Attribute` suffix is optional on either side - so `System.ThreadStaticAttribute`,
+`ThreadStaticAttribute` and `ThreadStatic` all select the same attribute, and a class
+declared as `MyThreadLocal : Attribute` is equally selected by `MyThreadLocal` or
+`MyThreadLocalAttribute`.
 
 Rules are consulted narrowest first: a group that matches on attributes beats one that
 matches on modifiers, which beats one that matches only on kind. Where two rules are

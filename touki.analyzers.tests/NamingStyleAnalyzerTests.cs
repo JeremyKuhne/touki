@@ -199,6 +199,86 @@ public class NamingStyleAnalyzerTests
             .Which.GetMessage().Should().Contain("Missing prefix: 't_'");
     }
 
+    [TestMethod]
+    public async Task Analyze_AttributeTypeWithoutSuffixConfiguredWithSuffix_StillMatches()
+    {
+        // The Attribute suffix is a convention, not a requirement, so the class may omit the suffix the
+        // configured name carries. The match has to work in both directions.
+        Dictionary<string, string> options = ThreadStaticAndStaticRules();
+        options["touki_naming_symbols.thread_static_fields.required_attributes"] = "MyThreadLocalAttribute";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            """
+            class MyThreadLocal : System.Attribute
+            {
+            }
+
+            class Thing
+            {
+                [MyThreadLocal]
+                private static int values;
+            }
+            """,
+            options).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle()
+            .Which.GetMessage().Should().Contain("Missing prefix: 't_'");
+    }
+
+    [TestMethod]
+    public async Task Analyze_NamespacedAttributeTypeWithoutSuffixConfiguredWithSuffix_StillMatches()
+    {
+        Dictionary<string, string> options = ThreadStaticAndStaticRules();
+        options["touki_naming_symbols.thread_static_fields.required_attributes"] =
+            "Custom.Markers.MyThreadLocalAttribute";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            """
+            namespace Custom.Markers
+            {
+                class MyThreadLocal : System.Attribute
+                {
+                }
+            }
+
+            class Thing
+            {
+                [Custom.Markers.MyThreadLocal]
+                private static int values;
+            }
+            """,
+            options).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle()
+            .Which.GetMessage().Should().Contain("Missing prefix: 't_'");
+    }
+
+    [TestMethod]
+    public async Task Analyze_AttributeNameThatOnlySharesAPrefix_DoesNotMatch()
+    {
+        Dictionary<string, string> options = ThreadStaticAndStaticRules();
+        options["touki_naming_symbols.thread_static_fields.required_attributes"] = "MyThreadLocal";
+
+        // MyThreadLocalMarker shares a prefix with the configured name but is a different attribute, so the
+        // thread-static rule must not claim this field. It falls to the static rule instead.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            """
+            class MyThreadLocalMarker : System.Attribute
+            {
+            }
+
+            class Thing
+            {
+                [MyThreadLocalMarker]
+                private static int values;
+            }
+            """,
+            options).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle()
+            .Which.GetMessage().Should().Contain("Missing prefix: 's_'");
+    }
+
     // const does not satisfy a `static` requirement even though the language treats it as static.
     // See dotnet/roslyn#23884, dotnet/roslyn#15428 and dotnet/roslyn#23391.
 
