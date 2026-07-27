@@ -43,9 +43,7 @@ internal unsafe struct ThreadBlockingInfo
     // blocking info for the thread, or null if there are no more. Blocking can be reentrant in some cases, such as on UI
     // threads where reentrant waits are used, or if a SynchronizationContext wait override is set.
     [ThreadStatic]
-#pragma warning disable IDE1006 // Naming Styles
     private static ThreadBlockingInfo* t_first; // may be used by debuggers
-#pragma warning restore IDE1006
 
     // This pointer can be used to obtain the object relevant to the blocking. For native object kinds, it points to the
     // native object (for Monitor object kinds in CoreCLR, it points to a native AwareLock object). For managed object

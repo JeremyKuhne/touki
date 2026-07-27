@@ -7,7 +7,8 @@ and in the IDE.
 
 The analyzers encode the conventions this library is built on: avoid hidden struct
 copies, release resources deterministically, keep scratch buffers off the stack once
-they get large, and keep types easy to find by file name.
+they get large, keep types easy to find by file name, and name a field for what it
+actually is.
 
 ## Rules
 
@@ -22,6 +23,7 @@ they get large, and keep types easy to find by file name.
 | [TOUKI0020](#touki0020) | Declare one type per file | Maintainability | Warning | - | - |
 | [TOUKI0021](#touki0021) | File name should match the type it declares | Maintainability | Warning | Yes | - |
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
+| [TOUKI0040](#touki0040) | Thread-static field should carry the thread-static prefix | Naming | Warning | Yes | `[ThreadStatic]` |
 
 Rules that list a requirement only fire on code that opts in by applying the named
 attribute. The rest apply to any C# the compiler hands them.
@@ -188,6 +190,52 @@ captured by a lambda, put in an array, assigned to a wider local, or used in an 
 method or iterator. A warning you cannot act on is worse than no warning, so anything the
 rule cannot prove is safe to convert is left alone.
 
+## TOUKI0040
+
+**Thread-static field should carry the thread-static prefix.** A `[ThreadStatic]` field
+holds one value per thread rather than one per process, so code that reads it on a thread
+that never wrote it sees a different slot. That belongs in the name, where every use site
+can see it, not only at the declaration where the attribute sits.
+
+```csharp
+[ThreadStatic]
+private static Value[]? t_values;   // fine
+
+[ThreadStatic]
+private static Value[]? s_values;   // TOUKI0040 - should be named 't_values'
+```
+
+The message names the field it wants, so the fix is a rename. The suggested name replaces
+a leading `_`, `s_`, or thread-static prefix and camel cases what is left; an underscore
+the rule does not recognize is kept, so `x_ray` becomes `t_x_ray` rather than `t_ray`.
+
+The rule only looks at non-constant static fields. `[ThreadStatic]` on an instance field
+does nothing - CA2259 reports that - and such a field is still named `_value`.
+
+Configure the prefix:
+
+```ini
+dotnet_code_quality.TOUKI0040.thread_static_prefix = t_
+```
+
+And, if your codebase marks per-thread state with its own attribute, name it. The list is
+comma-separated and each entry may be written with or without the `Attribute` suffix; the
+namespace is not considered:
+
+```ini
+dotnet_code_quality.TOUKI0040.additional_thread_static_attributes = MyThreadLocal
+```
+
+### Why this is not a built-in naming rule
+
+`.editorconfig` naming rules match a symbol group by kind, accessibility, and modifier.
+`[ThreadStatic]` is an attribute, not a modifier, so no symbol group can select thread
+statics - they fall into whatever rule covers ordinary statics, and IDE1006 asks for that
+rule's prefix instead. The gap is tracked by
+[dotnet/roslyn#32955](https://github.com/dotnet/roslyn/issues/32955), open since 2019.
+TOUKI0040 fills it, and the TOUKISUPPRESS0001 suppression below keeps IDE1006 from
+disagreeing.
+
 ---
 
 ## Configuring severity
@@ -226,13 +274,52 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 - `[MustDispose]` - the type owns a resource that must be released on every path. Drives
   TOUKI0010.
 
+## Suppressions
+
+A suppression is not a rule. It removes a report another analyzer produced, and it has its
+own id so it can be traced and turned off.
+
+| ID | Suppresses | When |
+|----|------------|------|
+| TOUKISUPPRESS0001 | IDE1006 | A thread-static field already named the way TOUKI0040 wants |
+
+**Ids are `TOUKISUPPRESS####`, numbered from 0001 independently of the rules.** A suppression
+id is not a rule id, but the two share a namespace - an end user turns either off with the
+same `dotnet_diagnostic` key or `NoWarn` entry - so the `SUPPRESS` infix keeps a suppression
+out of reach of any future `TOUKI####` rule. This is the shape dotnet/runtime uses for
+`SYSLIBSUPPRESS0001`. An id names the *reason*, so one id may cover several suppressed rules.
+
+It is tracked in
+[AnalyzerReleases.Unshipped.md](../touki.analyzers/AnalyzerReleases.Unshipped.md) as a
+`Suppression`-category row, commented out. A suppression id is not a supported diagnostic
+of any analyzer, so a live row fails the build with RS2002 and a `### Suppressions` heading
+fails with RS2007. The row is maintained by hand.
+
+**TOUKISUPPRESS0001** exists because a thread-static field matches the built-in naming rule
+for ordinary statics, so without it every `t_` field draws "Missing prefix: 's_'". This is
+what the hand-written `#pragma warning disable IDE1006` and `[SuppressMessage]` entries
+around thread statics were for; the suppression replaces them.
+
+Only a conforming field is suppressed. A misnamed thread static keeps its IDE1006 report
+alongside TOUKI0040, so turning TOUKI0040 off cannot leave thread statics with no naming
+enforcement at all.
+
+This works even where IDE1006 is raised to `error`, because a diagnostic is suppressible
+when its *default* severity is below error - which IDE1006's is - not its configured one.
+
+Turn the suppression off to get the unsuppressed reports back:
+
+```ini
+dotnet_diagnostic.TOUKISUPPRESS0001.severity = none
+```
+
 ## Release history
 
-| Release | Rules added |
-|---------|-------------|
+| Release | Rules and suppressions added |
+|---------|------------------------------|
 | 0.4.0 | TOUKI0001, TOUKI0002, TOUKI0003, TOUKI0004, TOUKI0010 |
 | 0.5.0 | TOUKI0020, TOUKI0030 |
-| unreleased | TOUKI0011, TOUKI0021 |
+| unreleased | TOUKI0011, TOUKI0021, TOUKI0040, TOUKISUPPRESS0001 |
 
 The authoritative list lives in
 [AnalyzerReleases.Shipped.md](../touki.analyzers/AnalyzerReleases.Shipped.md) and

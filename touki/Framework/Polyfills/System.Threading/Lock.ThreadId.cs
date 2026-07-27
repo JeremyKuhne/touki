@@ -14,9 +14,7 @@ public sealed partial class Lock
     internal partial struct ThreadId
     {
         [ThreadStatic]
-#pragma warning disable IDE1006 // Naming Styles
         private static uint t_threadId;
-#pragma warning restore IDE1006
 
         private uint _id;
 
