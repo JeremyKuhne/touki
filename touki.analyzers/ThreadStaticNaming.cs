@@ -69,18 +69,28 @@ internal static class ThreadStaticNaming
     ///   an instance field, which CA2259 already reports, and such a field is still named as an ordinary
     ///   instance field.
     ///  </para>
+    ///  <para>
+    ///   This repeats the <see cref="CouldBeThreadStatic"/> checks rather than calling it, so that the
+    ///   attributes are fetched once. Callers that filter first, such as the analyzer, still pay a second
+    ///   fetch, but that one hits the symbol's sealed attribute bag rather than binding again.
+    ///  </para>
     /// </remarks>
     internal static bool IsThreadStatic(
         IFieldSymbol field,
         INamedTypeSymbol? threadStaticAttribute,
         AnalyzerConfigOptions options)
     {
-        if (!CouldBeThreadStatic(field))
+        if (!field.IsStatic || field.IsConst)
         {
             return false;
         }
 
         ImmutableArray<AttributeData> attributes = field.GetAttributes();
+
+        if (attributes.IsEmpty)
+        {
+            return false;
+        }
 
         foreach (AttributeData attribute in attributes)
         {
