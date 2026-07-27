@@ -6,10 +6,10 @@ metadata:
     applicability: dotnet-project-gated
     binding: optional-overlay
     github-path: skills/roslyn-analyzers
-    github-pinned: v0.10.0
-    github-ref: refs/tags/v0.10.0
+    github-pinned: v0.12.0
+    github-ref: refs/tags/v0.12.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 0456189352ca224c2a9323e44eb883da455027dd
+    github-tree-sha: 7e531df787947535823396d4faada24713a834c9
     maturity: canary
     portability: portable
     related: performance-testing, security-review, pre-pr-self-review, il-copy-inspection
@@ -50,6 +50,10 @@ The short version, in priority order:
 3. **A third-party suite already in the graph or worth adding** - Roslynator,
    StyleCop, Meziantou, SonarAnalyzer.
 4. **Only if none fit** - author a custom analyzer. Continue below.
+
+If the answer is "an existing rule is right except in one context", you may be
+looking at a `DiagnosticSuppressor` rather than an analyzer - but read Rule 0 of
+[suppressors.md](suppressors.md) first, because most suppressors should not exist.
 
 ## Where analyzers live (the project layout)
 
@@ -110,6 +114,9 @@ library it guards (`<root>` is the library project name):
 - [performance.md](performance.md) - the in-IDE performance budget, the cheap-first
   rule, per-compilation symbol caching, concurrency, allocation hygiene, and how to
   measure with `ReportAnalyzer`.
+- [suppressors.md](suppressors.md) - `DiagnosticSuppressor`: when owning the domain
+  beats suppressing, what is suppressible at all, the id convention, why suppressions
+  cannot be release-tracked, and how to prove one is load-bearing.
 
 ## Cross-skill
 

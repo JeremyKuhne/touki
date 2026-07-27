@@ -1,20 +1,19 @@
 ---
 core: roslyn-analyzers
-core-pin: v0.10.0
+core-pin: v0.12.0
 ---
 
 # Touki overlay - roslyn-analyzers
 
 Repo-specific companion to the vendored [roslyn-analyzers](SKILL.md) skill. The
-`SKILL.md` and its four sibling pages (`design.md`, `validation.md`,
-`existing-analyzers.md`, `performance.md`) are a **pinned copy of the portable
-core** from
+`SKILL.md` and its five sibling pages (`design.md`, `validation.md`,
+`existing-analyzers.md`, `performance.md`, `suppressors.md`) are a **pinned copy of
+the portable core** from
 [JeremyKuhne/agent-skills](https://github.com/JeremyKuhne/agent-skills) (see the
 `metadata.github-*` provenance in `SKILL.md`). Do not hand-edit the core -
-`gh skill update` would flag the drift. Everything touki-specific lives here, plus
-the overlay siblings listed below.
+`gh skill update` would flag the drift. Everything touki-specific lives here.
 
-> **Pinned to a release.** The core is pinned to the commons **v0.10.0** tag. Pull
+> **Pinned to a release.** The core is pinned to the commons **v0.12.0** tag. Pull
 > later upstream changes with `gh skill update roslyn-analyzers` (review the diff,
 > re-pin to the new tag).
 
@@ -111,20 +110,6 @@ Two consequences to document wherever the rule is configured:
   `Diagnostic.Create(..., effectiveSeverity, ...)`. If sub-rules need their own
   strictness, the only level that still works is "off", which the analyzer must honor
   itself by not reporting.
-
-## Overlay siblings
-
-Files in this directory that are **not** part of the vendored core, so an inventory
-check after `gh skill update` classifies them rather than flagging them:
-
-- [suppressors.md](suppressors.md) - authoring `DiagnosticSuppressor`s. The core
-  covers `DiagnosticAnalyzer` and `CodeFixProvider` only.
-
-> **Pending-upstream divergence.** `suppressors.md` is portable, not touki-specific,
-> so by the `manage-skills` golden rule it belongs in the commons core rather than an
-> overlay. It is recorded here as an intentional divergence until someone decides
-> whether to upstream it; do not treat it as a local deviation and do not open a
-> commons PR for it unprompted.
 
 ## Release tracking (`AnalyzerReleases.*.md`)
 
