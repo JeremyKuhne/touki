@@ -15,3 +15,8 @@ dotnet_diagnostic.TOUKI0020.severity = none
 # TOUKI0030: Use ValueStringBuilder to build strings. Upstream builds these strings with
 # StringBuilder; rewriting them would make future ports harder to diff.
 dotnet_diagnostic.TOUKI0030.severity = none
+
+# TOUKI0041: Naming rule violation. Upstream names these members to its own conventions -
+# camelCase enum members in ExceptionArgument, unprefixed private fields, embedded underscores -
+# and renaming them would make future ports harder to diff.
+dotnet_diagnostic.TOUKI0041.severity = none

@@ -23,11 +23,20 @@ internal static class CodeFixTestHarness
     ///  the first diagnostic with id <paramref name="diagnosticId"/>, and returns the fixed source. Returns the
     ///  original source unchanged when no such diagnostic or fix is produced.
     /// </summary>
+    /// <param name="options">
+    ///  Optional <c>.editorconfig</c> values made visible to the analyzer.
+    /// </param>
+    /// <param name="diagnosticOptions">
+    ///  Optional per-diagnostic severities. A rule that ships disabled produces nothing until it is enabled
+    ///  this way.
+    /// </param>
     public static async Task<string> ApplyFixAsync(
         DiagnosticAnalyzer analyzer,
         CodeFixProvider codeFix,
         string source,
-        string diagnosticId)
+        string diagnosticId,
+        IReadOnlyDictionary<string, string>? options = null,
+        IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions = null)
     {
         using AdhocWorkspace workspace = new();
         Project project = workspace
@@ -37,7 +46,19 @@ internal static class CodeFixTestHarness
         Document document = project.AddDocument("Test.cs", source);
 
         Compilation compilation = (await document.Project.GetCompilationAsync().ConfigureAwait(false))!;
-        CompilationWithAnalyzers withAnalyzers = compilation.WithAnalyzers([analyzer]);
+
+        if (diagnosticOptions is not null)
+        {
+            compilation = compilation.WithOptions(
+                compilation.Options.WithSpecificDiagnosticOptions(diagnosticOptions));
+        }
+
+        AnalyzerOptions analyzerOptions = new(
+            additionalFiles: [],
+            optionsProvider: new TestAnalyzerConfigOptionsProvider(
+                options is null ? TestAnalyzerConfigOptions.Empty : new TestAnalyzerConfigOptions(options)));
+
+        CompilationWithAnalyzers withAnalyzers = compilation.WithAnalyzers([analyzer], analyzerOptions);
         ImmutableArray<Diagnostic> diagnostics = await withAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false);
 
         Diagnostic? target = diagnostics.FirstOrDefault(diagnostic => diagnostic.Id == diagnosticId);

@@ -26,67 +26,29 @@ internal static class AnalyzerTestHarness
     ///  Optional path for the parsed tree. Analyzers that inspect the file name need one; the default leaves
     ///  the tree pathless, matching an in-memory compilation.
     /// </param>
+    /// <param name="diagnosticOptions">
+    ///  Optional per-diagnostic severities, standing in for <c>dotnet_diagnostic.&lt;id&gt;.severity</c>
+    ///  entries. A rule that ships disabled produces nothing until it is enabled this way.
+    /// </param>
     public static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(
         DiagnosticAnalyzer analyzer,
         string source,
         IReadOnlyDictionary<string, string>? options = null,
-        string? fileName = null)
+        string? fileName = null,
+        IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions = null)
     {
         CSharpCompilation compilation = CreateCompilation(source, fileName);
+
+        if (diagnosticOptions is not null)
+        {
+            compilation = compilation.WithOptions(
+                compilation.Options.WithSpecificDiagnosticOptions(diagnosticOptions));
+        }
 
         CompilationWithAnalyzers compilationWithAnalyzers =
             compilation.WithAnalyzers([analyzer], CreateAnalyzerOptions(options));
 
         return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false);
-    }
-
-    /// <summary>
-    ///  Runs <paramref name="analyzer"/> and <paramref name="suppressor"/> together against
-    ///  <paramref name="source"/> and returns the diagnostics, including suppressed ones.
-    /// </summary>
-    /// <param name="severity">
-    ///  Optional effective severity to configure for <paramref name="suppressedDiagnosticId"/>, standing in
-    ///  for a <c>dotnet_diagnostic.&lt;id&gt;.severity</c> entry.
-    /// </param>
-    /// <remarks>
-    ///  <para>
-    ///   Suppressed diagnostics are reported rather than dropped, so a test can tell the difference between
-    ///   a diagnostic that was suppressed and one that was never produced. The compilation is returned as
-    ///   well because <see cref="Diagnostic.GetSuppressionInfo"/> needs it to reach the suppression id.
-    ///  </para>
-    /// </remarks>
-    public static async Task<(ImmutableArray<Diagnostic> Diagnostics, Compilation Compilation)>
-        GetDiagnosticsWithSuppressorAsync(
-            DiagnosticAnalyzer analyzer,
-            DiagnosticSuppressor suppressor,
-            string source,
-            IReadOnlyDictionary<string, string>? options = null,
-            string? suppressedDiagnosticId = null,
-            ReportDiagnostic? severity = null)
-    {
-        CSharpCompilation compilation = CreateCompilation(source, fileName: null);
-
-        if (severity is { } reportDiagnostic && suppressedDiagnosticId is not null)
-        {
-            compilation = compilation.WithOptions(
-                compilation.Options.WithSpecificDiagnosticOptions(
-                    ImmutableDictionary<string, ReportDiagnostic>.Empty.Add(suppressedDiagnosticId, reportDiagnostic)));
-        }
-
-        CompilationWithAnalyzersOptions analysisOptions = new(
-            options: CreateAnalyzerOptions(options),
-            onAnalyzerException: null,
-            concurrentAnalysis: false,
-            logAnalyzerExecutionTime: false,
-            reportSuppressedDiagnostics: true);
-
-        CompilationWithAnalyzers compilationWithAnalyzers =
-            compilation.WithAnalyzers([analyzer, suppressor], analysisOptions);
-
-        ImmutableArray<Diagnostic> diagnostics =
-            await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false);
-
-        return (diagnostics, compilation);
     }
 
     private static CSharpCompilation CreateCompilation(string source, string? fileName)

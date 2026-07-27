@@ -28,8 +28,6 @@ public ref partial struct ValueStringBuilder
 
     private static Value[] Values => t_values ??= new Value[4];
 
-    private static char[] s_brackets { get; } = ['{', '}'];
-
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
     public unsafe void AppendFormat(ReadOnlySpan<char> format, ReadOnlySpan<Value> args)
         => AppendFormat<Value>(format, args);
@@ -81,6 +79,8 @@ public ref partial struct ValueStringBuilder
 #if false
     // This is much easier to read, but the performance isn't too great on .NET Framework as it isn't able to
     // optimize quite as well. Leaving the code for reference.
+
+    private static readonly char[] s_brackets = ['{', '}'];
 
     /// <summary>
     ///  Appends a formatted string to the current instance using the specified format and arguments.

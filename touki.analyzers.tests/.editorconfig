@@ -7,9 +7,9 @@ dotnet_diagnostic.CS1591.severity = none
 # CA1852: Seal internal types
 dotnet_diagnostic.CA1852.severity = none
 
-# The analyzer authoring rules describe an assembly that ships as an analyzer. This project only hosts test
-# doubles (NamingRuleStubAnalyzer) that are handed to CompilationWithAnalyzers directly, so the packaging and
-# release-tracking requirements do not apply. The real analyzer project, touki.analyzers, keeps them all on.
+# The analyzer authoring rules describe an assembly that ships as an analyzer. This project only hosts tests
+# that hand analyzers to CompilationWithAnalyzers directly, so the packaging and release-tracking
+# requirements do not apply. The real analyzer project, touki.analyzers, keeps them all on.
 
 # RS1036: Specify EnforceExtendedAnalyzerRules
 dotnet_diagnostic.RS1036.severity = none
