@@ -23,7 +23,7 @@ actually is.
 | [TOUKI0020](#touki0020) | Declare one type per file | Maintainability | Warning | - | - |
 | [TOUKI0021](#touki0021) | File name should match the type it declares | Maintainability | Warning | Yes | - |
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
-| [TOUKI0040](#touki0040) | Thread-static field should carry the thread-static prefix | Naming | Warning | Yes | `[ThreadStatic]` |
+| [TOUKI0041](#touki0041) | Name does not follow the configured naming rules | Naming | **Disabled** | Yes | - |
 
 Rules that list a requirement only fire on code that opts in by applying the named
 attribute. The rest apply to any C# the compiler hands them.
@@ -190,51 +190,169 @@ captured by a lambda, put in an array, assigned to a wider local, or used in an 
 method or iterator. A warning you cannot act on is worse than no warning, so anything the
 rule cannot prove is safe to convert is left alone.
 
-## TOUKI0040
+## TOUKI0041
 
-**Thread-static field should carry the thread-static prefix.** A `[ThreadStatic]` field
-holds one value per thread rather than one per process, so code that reads it on a thread
-that never wrote it sees a different slot. That belongs in the name, where every use site
-can see it, not only at the declaration where the attribute sits.
+**Name does not follow the configured naming rules.** A replacement for the built-in
+IDE1006, configured with `touki_naming_*` keys instead of `dotnet_naming_*` so the two do
+not read each other's configuration.
+
+The rule ships **disabled**. Naming is a house style, so a project asks for it:
+
+```ini
+dotnet_diagnostic.TOUKI0041.severity = warning
+```
+
+With nothing else configured it enforces the same conventions the compiler assumes by
+default: types, properties, methods and events are `PascalCase`, interfaces start with
+`I`, and type parameters start with `T`. Fields are not covered until you say so.
+
+### Configuration
+
+The three key families mirror the `dotnet_naming_*` shape:
+
+```ini
+touki_naming_rule.<rule>.symbols = <group>[, <group>...]
+touki_naming_rule.<rule>.style = <style>
+touki_naming_rule.<rule>.severity = none | silent | suggestion | warning | error
+
+touki_naming_symbols.<group>.applicable_kinds = namespace, class, struct, interface, enum,
+    delegate, property, method, local_function, field, event, parameter, type_parameter, local
+touki_naming_symbols.<group>.applicable_accessibilities = public, internal, private,
+    protected, protected_internal, private_protected, local
+touki_naming_symbols.<group>.required_modifiers = abstract, async, const, readonly, static,
+    sealed, virtual, override, extern, volatile, required
+touki_naming_symbols.<group>.excluded_modifiers = <same list>
+touki_naming_symbols.<group>.required_attributes = <attribute names>
+touki_naming_symbols.<group>.excluded_attributes = <attribute names>
+
+touki_naming_style.<style>.required_prefix = _
+touki_naming_style.<style>.required_suffix =
+touki_naming_style.<style>.word_separator =
+touki_naming_style.<style>.capitalization = pascal_case | camel_case | first_word_upper |
+    all_upper | all_lower
+```
+
+An omitted `applicable_kinds`, `applicable_accessibilities` or modifier list matches
+everything, as does `*`. Attribute names may be written with or without the namespace, and
+the `Attribute` suffix is optional on either side - so `System.ThreadStaticAttribute`,
+`ThreadStaticAttribute` and `ThreadStatic` all select the same attribute, and a class
+declared as `MyThreadLocal : Attribute` is equally selected by `MyThreadLocal` or
+`MyThreadLocalAttribute`.
+
+Rules are consulted narrowest first: a group that matches on attributes beats one that
+matches on modifiers, which beats one that matches only on kind. Where two rules are
+equally narrow, a configured rule beats a built-in one, and beyond that the rule whose
+name sorts first wins - so renaming a rule can change which of two equally narrow rules
+governs a symbol.
+
+### When a rule is ignored
+
+An analyzer cannot report a diagnostic against an `.editorconfig`, and failing the build
+over a typo in a naming preference would be worse than ignoring it. So a rule that cannot
+be understood is dropped, and the built-in rules continue to apply. A rule is dropped when:
+
+- any of `symbols`, `style` or `severity` is missing;
+- `severity` is not one of the five accepted values;
+- the named style has no `touki_naming_style.<style>.*` keys, or has no `capitalization`
+  (the only mandatory key on a style - prefix, suffix and word separator all default to
+  empty);
+- a named symbol group has no `touki_naming_symbols.<group>.*` keys at all. This case
+  matters: every list on such a group would be empty, and an empty list matches
+  everything, so a misspelled group name would otherwise turn the rule into a catch-all
+  governing every symbol in the compilation;
+- any single token in `applicable_kinds`, `applicable_accessibilities`,
+  `required_modifiers` or `excluded_modifiers` is unrecognized. The whole rule is dropped,
+  not just the token, so a stray `record` or `operator` costs the entire rule.
+
+A `*` in `applicable_kinds` or `applicable_accessibilities` means "everything" and stops
+parsing that list, so any tokens beside it are neither honored nor validated.
+
+### What it fixes
+
+Each of these is a long-standing gap in IDE1006 that the touki codebase ran into.
+
+**Attributes can select a symbol group**
+([dotnet/roslyn#32955](https://github.com/dotnet/roslyn/issues/32955)). A symbol group can
+only match on kind, accessibility and modifier, and `[ThreadStatic]` is an attribute. So a
+`t_` prefix for thread statics is inexpressible, and thread statics fall into whatever rule
+covers ordinary statics and get told to use `s_`:
+
+```ini
+touki_naming_symbols.thread_static_fields.applicable_kinds = field
+touki_naming_symbols.thread_static_fields.required_modifiers = static
+touki_naming_symbols.thread_static_fields.required_attributes = System.ThreadStaticAttribute
+
+touki_naming_style.thread_static_prefix.required_prefix = t_
+touki_naming_style.thread_static_prefix.capitalization = camel_case
+```
+
+**Built-in conventions survive a custom rule**
+([dotnet/roslyn#71414](https://github.com/dotnet/roslyn/issues/71414)). Defining a single
+`dotnet_naming_rule` makes IDE1006 drop *all* of its defaults, so a project that only wanted
+to add a field convention silently stops checking types, methods, properties, events and
+interfaces. Here the defaults are always appended after the configured rules. Override one
+by configuring an equally or more specific rule, including one with `severity = none`.
+
+**`const` is not `static`**
+([dotnet/roslyn#23884](https://github.com/dotnet/roslyn/issues/23884),
+[#15428](https://github.com/dotnet/roslyn/issues/15428),
+[#23391](https://github.com/dotnet/roslyn/issues/23391)). A const field reports `IsStatic`
+as true because const implies static in the language, so `required_modifiers = static`
+silently demands `s_` on constants. Here `const` is only matched by `const`.
+
+**Modifiers can be excluded, not only required**
+([dotnet/roslyn#18354](https://github.com/dotnet/roslyn/issues/18354)). `excluded_modifiers`
+expresses "instance fields" as `excluded_modifiers = static` rather than needing a second
+rule to shadow the first.
+
+**More modifiers** ([dotnet/roslyn#13250](https://github.com/dotnet/roslyn/issues/13250),
+closed as not planned). `sealed`, `virtual`, `override`, `extern`, `volatile` and `required`
+join the five upstream supports.
+
+**`pascal_case` checks the whole name**
+([dotnet/roslyn#70709](https://github.com/dotnet/roslyn/issues/70709)). Upstream treats a
+name with no configured word separator as a single word, so `pascal_case` only validates
+the first character and `Do_Work` passes. A style that did not ask for a word separator now
+rejects an embedded underscore.
+
+**A leading `s_` is not invented as an error**
+([dotnet/roslyn#57706](https://github.com/dotnet/roslyn/issues/57706),
+[#55845](https://github.com/dotnet/roslyn/issues/55845)). Upstream strips the well known
+`m_`, `s_`, `t_` and `_` prefixes case-insensitively and fails when it finds one, even for a
+style that requires no prefix - so `S_MAX` fails an `all_upper` rule. That check now only
+runs when a prefix was actually required.
+
+**One rule can name several symbol groups**
+([dotnet/roslyn#20891](https://github.com/dotnet/roslyn/issues/20891)). This is how you get
+"either attribute" matching, which a single `required_attributes` list cannot express:
+
+```ini
+touki_naming_rule.native_methods.symbols = library_import_methods, dll_import_methods
+```
+
+### Severity
+
+`dotnet_diagnostic.TOUKI0041.severity` both enables the rule and, once set, governs the
+severity of every report. A rule's own `severity` still decides whether the group is checked
+at all: `severity = none` opts a group out entirely, which is how a project exempts symbols
+that must keep a name it did not choose.
+
+Prefer a rule when the symbols have something to match on. touki exempts its P/Invoke
+declarations that way, keyed on `[LibraryImport]` and `[DllImport]`. Where there is nothing
+to match on - a bare `const` transcribed from a C header, say - waive it one symbol at a
+time instead, so the exemption names the symbol rather than a whole file:
 
 ```csharp
-[ThreadStatic]
-private static Value[]? t_values;   // fine
-
-[ThreadStatic]
-private static Value[]? s_values;   // TOUKI0040 - should be named 't_values'
+[assembly: SuppressMessage(
+    "Naming",
+    "TOUKI0041:Naming rule violation",
+    Justification = "Mirrors RTLD_LAZY from <dlfcn.h>.",
+    Scope = "member",
+    Target = "~F:Touki.Io.Providers.MacClipboardProvider.RTLD_LAZY")]
 ```
 
-The message names the field it wants, so the fix is a rename. The suggested name replaces
-a leading `_`, `s_`, or thread-static prefix and camel cases what is left; an underscore
-the rule does not recognize is kept, so `x_ray` becomes `t_x_ray` rather than `t_ray`.
-
-The rule only looks at non-constant static fields. `[ThreadStatic]` on an instance field
-does nothing - CA2259 reports that - and such a field is still named `_value`.
-
-Configure the prefix:
-
-```ini
-dotnet_code_quality.TOUKI0040.thread_static_prefix = t_
-```
-
-And, if your codebase marks per-thread state with its own attribute, name it. The list is
-comma-separated and each entry may be written with or without the `Attribute` suffix; the
-namespace is not considered:
-
-```ini
-dotnet_code_quality.TOUKI0040.additional_thread_static_attributes = MyThreadLocal
-```
-
-### Why this is not a built-in naming rule
-
-`.editorconfig` naming rules match a symbol group by kind, accessibility, and modifier.
-`[ThreadStatic]` is an attribute, not a modifier, so no symbol group can select thread
-statics - they fall into whatever rule covers ordinary statics, and IDE1006 asks for that
-rule's prefix instead. The gap is tracked by
-[dotnet/roslyn#32955](https://github.com/dotnet/roslyn/issues/32955), open since 2019.
-TOUKI0040 fills it, and the TOUKISUPPRESS0001 suppression below keeps IDE1006 from
-disagreeing.
+If the target only exists under a conditional compilation symbol, guard the suppression
+with the same `#if`. A target that does not resolve is reported as IDE0076.
 
 ---
 
@@ -265,6 +383,11 @@ the copy. It supports Fix All. The fix is only offered when the member is declar
 source; if the member really does mutate, marking it `readonly` produces a compiler error
 you can act on.
 
+`RenameToMatchNamingStyleCodeFixProvider` fixes TOUKI0041 by renaming the symbol to the
+name the analyzer suggests, updating every reference across the solution. It does not
+support Fix All, because applying several renames at once would have them fight over the
+same documents.
+
 ## Marker attributes
 
 Two rules are opt-in through public attributes in the `Touki` namespace:
@@ -274,52 +397,13 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 - `[MustDispose]` - the type owns a resource that must be released on every path. Drives
   TOUKI0010.
 
-## Suppressions
-
-A suppression is not a rule. It removes a report another analyzer produced, and it has its
-own id so it can be traced and turned off.
-
-| ID | Suppresses | When |
-|----|------------|------|
-| TOUKISUPPRESS0001 | IDE1006 | A thread-static field already named the way TOUKI0040 wants |
-
-**Ids are `TOUKISUPPRESS####`, numbered from 0001 independently of the rules.** A suppression
-id is not a rule id, but the two share a namespace - an end user turns either off with the
-same `dotnet_diagnostic` key or `NoWarn` entry - so the `SUPPRESS` infix keeps a suppression
-out of reach of any future `TOUKI####` rule. This is the shape dotnet/runtime uses for
-`SYSLIBSUPPRESS0001`. An id names the *reason*, so one id may cover several suppressed rules.
-
-It is tracked in
-[AnalyzerReleases.Unshipped.md](../touki.analyzers/AnalyzerReleases.Unshipped.md) as a
-`Suppression`-category row, commented out. A suppression id is not a supported diagnostic
-of any analyzer, so a live row fails the build with RS2002 and a `### Suppressions` heading
-fails with RS2007. The row is maintained by hand.
-
-**TOUKISUPPRESS0001** exists because a thread-static field matches the built-in naming rule
-for ordinary statics, so without it every `t_` field draws "Missing prefix: 's_'". This is
-what the hand-written `#pragma warning disable IDE1006` and `[SuppressMessage]` entries
-around thread statics were for; the suppression replaces them.
-
-Only a conforming field is suppressed. A misnamed thread static keeps its IDE1006 report
-alongside TOUKI0040, so turning TOUKI0040 off cannot leave thread statics with no naming
-enforcement at all.
-
-This works even where IDE1006 is raised to `error`, because a diagnostic is suppressible
-when its *default* severity is below error - which IDE1006's is - not its configured one.
-
-Turn the suppression off to get the unsuppressed reports back:
-
-```ini
-dotnet_diagnostic.TOUKISUPPRESS0001.severity = none
-```
-
 ## Release history
 
-| Release | Rules and suppressions added |
-|---------|------------------------------|
+| Release | Rules added |
+|---------|-------------|
 | 0.4.0 | TOUKI0001, TOUKI0002, TOUKI0003, TOUKI0004, TOUKI0010 |
 | 0.5.0 | TOUKI0020, TOUKI0030 |
-| unreleased | TOUKI0011, TOUKI0021, TOUKI0040, TOUKISUPPRESS0001 |
+| unreleased | TOUKI0011, TOUKI0021, TOUKI0041 |
 
 The authoritative list lives in
 [AnalyzerReleases.Shipped.md](../touki.analyzers/AnalyzerReleases.Shipped.md) and

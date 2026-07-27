@@ -45,37 +45,77 @@ dotnet_style_qualification_for_event = false:error
 dotnet_style_predefined_type_for_locals_parameters_members = true:warning
 dotnet_style_predefined_type_for_member_access = true:warning
 
+# Naming is enforced by TOUKI0041 rather than IDE1006. IDE1006 drops all of its built-in
+# conventions the moment a single dotnet_naming_rule is defined (dotnet/roslyn#71414), cannot
+# match on attributes so a t_ prefix for [ThreadStatic] is inexpressible (dotnet/roslyn#32955),
+# and treats const fields as static (dotnet/roslyn#23884). See docs/analyzers.md#touki0041.
+dotnet_diagnostic.IDE1006.severity = none
+
+# TOUKI0041 ships disabled, so this key is what turns naming enforcement on. When it is set it
+# also governs the severity of every rule below; a rule's own severity still decides whether it
+# is checked at all (severity = none opts a group out entirely). This is a warning because that
+# is the strictness IDE1006 was configured at before it was replaced.
+dotnet_diagnostic.TOUKI0041.severity = warning
+
+# P/Invoke declarations keep the spelling of the native symbol they bind to, which is what makes
+# them greppable against the native header. Naming a rule two symbol groups gives the "either
+# attribute" match that a single required_attributes list cannot express.
+touki_naming_rule.native_methods_keep_native_names.severity = none
+touki_naming_rule.native_methods_keep_native_names.symbols = library_import_methods, dll_import_methods
+touki_naming_rule.native_methods_keep_native_names.style = pascal_case_style
+
+touki_naming_symbols.library_import_methods.applicable_kinds = method
+touki_naming_symbols.library_import_methods.required_attributes = System.Runtime.InteropServices.LibraryImportAttribute
+
+touki_naming_symbols.dll_import_methods.applicable_kinds = method
+touki_naming_symbols.dll_import_methods.required_attributes = System.Runtime.InteropServices.DllImportAttribute
+
 # name all constant fields using PascalCase
-dotnet_naming_rule.constant_fields_should_be_pascal_case.severity = suggestion
-dotnet_naming_rule.constant_fields_should_be_pascal_case.symbols  = constant_fields
-dotnet_naming_rule.constant_fields_should_be_pascal_case.style = pascal_case_style
+touki_naming_rule.constant_fields_should_be_pascal_case.severity = suggestion
+touki_naming_rule.constant_fields_should_be_pascal_case.symbols = constant_fields
+touki_naming_rule.constant_fields_should_be_pascal_case.style = pascal_case_style
 
-dotnet_naming_symbols.constant_fields.applicable_kinds   = field
-dotnet_naming_symbols.constant_fields.required_modifiers = const
+touki_naming_symbols.constant_fields.applicable_kinds = field
+touki_naming_symbols.constant_fields.required_modifiers = const
 
-dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+touki_naming_style.pascal_case_style.capitalization = pascal_case
 
-# static fields should have s_ prefix
-dotnet_naming_rule.static_fields_should_have_prefix.severity = suggestion
-dotnet_naming_rule.static_fields_should_have_prefix.symbols  = static_fields
-dotnet_naming_rule.static_fields_should_have_prefix.style = static_prefix_style
+# thread-static fields should have a t_ prefix. This rule is the reason the analyzer exists:
+# required_attributes has no dotnet_naming_symbols equivalent.
+touki_naming_rule.thread_static_fields_should_have_prefix.severity = suggestion
+touki_naming_rule.thread_static_fields_should_have_prefix.symbols = thread_static_fields
+touki_naming_rule.thread_static_fields_should_have_prefix.style = thread_static_prefix_style
 
-dotnet_naming_symbols.static_fields.applicable_kinds   = field
-dotnet_naming_symbols.static_fields.required_modifiers = static
+touki_naming_symbols.thread_static_fields.applicable_kinds = field
+touki_naming_symbols.thread_static_fields.required_modifiers = static
+touki_naming_symbols.thread_static_fields.required_attributes = System.ThreadStaticAttribute
 
-dotnet_naming_style.static_prefix_style.required_prefix = s_
-dotnet_naming_style.static_prefix_style.capitalization = camel_case
+touki_naming_style.thread_static_prefix_style.required_prefix = t_
+touki_naming_style.thread_static_prefix_style.capitalization = camel_case
+
+# static fields should have s_ prefix. const fields are excluded by the engine rather than by
+# this configuration: const implies static in the language, which is what makes IDE1006 demand
+# s_ on constants.
+touki_naming_rule.static_fields_should_have_prefix.severity = suggestion
+touki_naming_rule.static_fields_should_have_prefix.symbols = static_fields
+touki_naming_rule.static_fields_should_have_prefix.style = static_prefix_style
+
+touki_naming_symbols.static_fields.applicable_kinds = field
+touki_naming_symbols.static_fields.required_modifiers = static
+
+touki_naming_style.static_prefix_style.required_prefix = s_
+touki_naming_style.static_prefix_style.capitalization = camel_case
 
 # internal and private fields should be _camelCase
-dotnet_naming_rule.camel_case_for_private_internal_fields.severity = suggestion
-dotnet_naming_rule.camel_case_for_private_internal_fields.symbols  = private_internal_fields
-dotnet_naming_rule.camel_case_for_private_internal_fields.style = camel_case_underscore_style
+touki_naming_rule.camel_case_for_private_internal_fields.severity = suggestion
+touki_naming_rule.camel_case_for_private_internal_fields.symbols = private_internal_fields
+touki_naming_rule.camel_case_for_private_internal_fields.style = camel_case_underscore_style
 
-dotnet_naming_symbols.private_internal_fields.applicable_kinds = field
-dotnet_naming_symbols.private_internal_fields.applicable_accessibilities = private, internal
+touki_naming_symbols.private_internal_fields.applicable_kinds = field
+touki_naming_symbols.private_internal_fields.applicable_accessibilities = private, internal
 
-dotnet_naming_style.camel_case_underscore_style.required_prefix = _
-dotnet_naming_style.camel_case_underscore_style.capitalization = camel_case
+touki_naming_style.camel_case_underscore_style.required_prefix = _
+touki_naming_style.camel_case_underscore_style.capitalization = camel_case
 
 # Code style defaults
 dotnet_sort_system_directives_first = true
@@ -1458,9 +1498,6 @@ dotnet_diagnostic.IDE0270.severity = warning
 
 # IDE0300: Simplify collection initialization
 dotnet_diagnostic.IDE0300.severity = warning
-
-# IDE1006: Naming Styles
-dotnet_diagnostic.IDE1006.severity = error
 
 # CA1070: Do not declare event fields as virtual
 dotnet_diagnostic.CA1070.severity = error

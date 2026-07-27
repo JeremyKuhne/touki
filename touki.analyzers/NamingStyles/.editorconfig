@@ -1,0 +1,19 @@
+# Ported Roslyn naming-style engine
+#
+# Code under this folder is ported as faithfully as possible from dotnet/roslyn
+# (src/Workspaces/SharedUtilitiesAndExtensions/Compiler/Core/NamingStyles) to ease
+# future updates from upstream, the same way touki/Framework/Polyfills/ is handled.
+# Touki's own opinionated analyzers should not force idiomatic rewrites of ported code.
+[*.cs]
+
+# TOUKI0001: Use pattern matching for null checks. Upstream uses `== null`/`!= null`
+# throughout; rewriting them would make future ports harder to diff.
+dotnet_diagnostic.TOUKI0001.severity = none
+
+# TOUKI0020: Declare one type per file. Upstream nests the word-span enumerator types
+# inside NamingStyle; splitting them would make future ports harder to diff.
+dotnet_diagnostic.TOUKI0020.severity = none
+
+# TOUKI0030: Use ValueStringBuilder to build strings. Not available in an analyzer
+# assembly (netstandard2.0, no dependency on the touki library itself).
+dotnet_diagnostic.TOUKI0030.severity = none

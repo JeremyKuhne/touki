@@ -17,4 +17,10 @@ internal sealed class TestAnalyzerConfigOptions(IReadOnlyDictionary<string, stri
 
     public override bool TryGetValue(string key, [NotNullWhen(true)] out string? value) =>
         options.TryGetValue(key, out value);
+
+    /// <summary>
+    ///  The base implementation throws. Analyzers that discover configuration by walking the keys, rather than
+    ///  asking for a known one, need this.
+    /// </summary>
+    public override IEnumerable<string> Keys => options.Keys;
 }
