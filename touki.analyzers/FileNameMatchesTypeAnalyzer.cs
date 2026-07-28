@@ -158,6 +158,18 @@ public sealed class FileNameMatchesTypeAnalyzer : DiagnosticAnalyzer
                 candidates.Add(qualified);
             }
 
+            string? bracedGenericSuffix = GetBracedGenericSuffix(member);
+
+            if (bracedGenericSuffix is not null)
+            {
+                candidates.Add(name + bracedGenericSuffix);
+
+                if (prefix is not null)
+                {
+                    candidates.Add(qualified + bracedGenericSuffix);
+                }
+            }
+
             // Only class, struct, interface, and record bodies can hold a nested type.
             if (member is TypeDeclarationSyntax typeDeclaration)
             {
@@ -177,6 +189,30 @@ public sealed class FileNameMatchesTypeAnalyzer : DiagnosticAnalyzer
         DelegateDeclarationSyntax declaration => declaration.Identifier,
         _ => default
     };
+
+    private static string? GetBracedGenericSuffix(MemberDeclarationSyntax member)
+    {
+        TypeParameterListSyntax? typeParameterList = member switch
+        {
+            TypeDeclarationSyntax typeDeclaration => typeDeclaration.TypeParameterList,
+            DelegateDeclarationSyntax delegateDeclaration => delegateDeclaration.TypeParameterList,
+            _ => null
+        };
+
+        if (typeParameterList is null || typeParameterList.Parameters.Count == 0)
+        {
+            return null;
+        }
+
+        string[] typeParameterNames = new string[typeParameterList.Parameters.Count];
+
+        for (int i = 0; i < typeParameterNames.Length; i++)
+        {
+            typeParameterNames[i] = typeParameterList.Parameters[i].Identifier.ValueText;
+        }
+
+        return "{" + string.Join(",", typeParameterNames) + "}";
+    }
 
     /// <summary>
     ///  Returns <see langword="true"/> if <paramref name="fileName"/> is <paramref name="candidate"/>, either
