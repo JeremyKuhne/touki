@@ -71,38 +71,21 @@ PM> Install-Package KlutzyNinja.Touki
 
 The package includes Roslyn analyzers. They are delivered inside
 `KlutzyNinja.Touki` itself, so referencing the package is all it takes - there
-is nothing extra to install and nothing to switch on.
+is nothing extra to install.
 
-They encode the conventions the library is built on: avoid hidden struct
-copies, release resources deterministically, keep large scratch buffers off the
-stack, and keep types easy to find by file name.
+They encode the conventions the library is built on, across a few areas:
 
-| ID | Rule | Default severity |
-|----|------|------------------|
-| TOUKI0001 | Use pattern matching for null checks | Warning |
-| TOUKI0002 | Defensive copy of a struct | Hidden |
-| TOUKI0003 | Defensive copy of a non-copyable struct | Warning |
-| TOUKI0004 | By-value copy of a non-copyable struct | Warning |
-| TOUKI0010 | Dispose a `[MustDispose]` value deterministically | Warning |
-| TOUKI0011 | Avoid large `stackalloc` allocations | Warning |
-| TOUKI0020 | Declare one type per file | Warning |
-| TOUKI0021 | File name should match the type it declares | Warning |
-| TOUKI0030 | Use `ValueStringBuilder` to build strings | Warning |
+- **Reliability** - hidden struct copies, values that must be disposed
+  deterministically, and `stackalloc` requests large enough to threaten the
+  stack.
+- **Maintainability** - one type per file, and file names that say which type
+  a file holds.
+- **Performance** - building strings without the `StringBuilder` allocation.
+- **Usage and naming** - pattern matching for null checks, and an opt-in
+  naming engine that replaces IDE1006.
 
-Every rule can be re-scoped or turned off per directory through
-`.editorconfig`, and TOUKI0011 and TOUKI0021 take options of their own:
-
-```ini
-# Severity, available on every rule
-dotnet_diagnostic.TOUKI0030.severity = none
-
-# Rule-specific options
-dotnet_code_quality.TOUKI0011.max_stackalloc_bytes = 512
-dotnet_code_quality.TOUKI0021.file_name_detail_separators = .-
-```
-
-See [Analyzers Shipped in the Package](docs/analyzers.md) for what each rule
-flags, why, and how to configure it.
+See [Analyzers Shipped in the Package](docs/analyzers.md) for the full rule
+list, what each one flags, and how to configure it.
 
 ## Requirements
 

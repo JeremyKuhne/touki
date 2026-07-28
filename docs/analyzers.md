@@ -1,9 +1,9 @@
 # Touki Analyzers
 
 `KlutzyNinja.Touki` ships a set of Roslyn analyzers **inside the package**. There is no
-separate analyzer package to install and no configuration required to turn them on -
-adding the package reference is enough, and the rules start running on the next build
-and in the IDE.
+separate analyzer package to install - adding the package reference is enough, and the
+rules start running on the next build and in the IDE. One rule, [TOUKI0041](#touki0041),
+ships disabled and is opted into per project.
 
 The analyzers encode the conventions this library is built on: avoid hidden struct
 copies, release resources deterministically, keep scratch buffers off the stack once
@@ -23,7 +23,7 @@ actually is.
 | [TOUKI0020](#touki0020) | Declare one type per file | Maintainability | Warning | - | - |
 | [TOUKI0021](#touki0021) | File name should match the type it declares | Maintainability | Warning | Yes | - |
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
-| [TOUKI0041](#touki0041) | Name does not follow the configured naming rules | Naming | **Disabled** | Yes | - |
+| [TOUKI0041](#touki0041) | Naming rule violation | Naming | **Disabled** | Yes | - |
 
 Rules that list a requirement only fire on code that opts in by applying the named
 attribute. The rest apply to any C# the compiler hands them.
@@ -192,9 +192,9 @@ rule cannot prove is safe to convert is left alone.
 
 ## TOUKI0041
 
-**Name does not follow the configured naming rules.** A replacement for the built-in
-IDE1006, configured with `touki_naming_*` keys instead of `dotnet_naming_*` so the two do
-not read each other's configuration.
+**Naming rule violation** - a name does not follow the configured naming rules. A
+replacement for the built-in IDE1006, configured with `touki_naming_*` keys instead of
+`dotnet_naming_*` so the two do not read each other's configuration.
 
 The rule ships **disabled**. Naming is a house style, so a project asks for it:
 
