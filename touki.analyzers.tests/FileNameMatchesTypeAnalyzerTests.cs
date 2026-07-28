@@ -163,6 +163,58 @@ public class FileNameMatchesTypeAnalyzerTests
     }
 
     [TestMethod]
+    [DataRow("Foo{T}.cs")]
+    [DataRow("Foo{T}.Windows.cs")]
+    public async Task AnalyzeSyntaxTree_GenericType_BracedTypeParameterSuffix_Matches(string fileName)
+    {
+        string source = """
+            class Foo<T>
+            {
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, fileName).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_GenericType_MultipleTypeParametersBracedSuffix_Matches()
+    {
+        string source = """
+            class Pair<TKey, TValue>
+            {
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Pair{TKey,TValue}.cs").ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_GenericType_BracedTypeParameterSuffixDiffers_ReportsDiagnostic()
+    {
+        string source = """
+            class Foo<T>
+            {
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Foo{U}.cs").ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_NonGenericType_BracedTypeParameterSuffix_ReportsDiagnostic()
+    {
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "Foo{T}.cs").ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
     public async Task AnalyzeSyntaxTree_Enum_ReportsNothing()
     {
         string source = """
