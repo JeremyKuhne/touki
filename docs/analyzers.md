@@ -2,13 +2,13 @@
 
 `KlutzyNinja.Touki` ships a set of Roslyn analyzers **inside the package**. There is no
 separate analyzer package to install - adding the package reference is enough, and the
-rules start running on the next build and in the IDE. One rule, [TOUKI0041](#touki0041),
-ships disabled and is opted into per project.
+rules start running on the next build and in the IDE. Two rules, [TOUKI0022](#touki0022)
+and [TOUKI0041](#touki0041), ship disabled and are opted into per project.
 
 The analyzers encode the conventions this library is built on: avoid hidden struct
 copies, release resources deterministically, keep scratch buffers off the stack once
-they get large, keep types easy to find by file name, and name a field for what it
-actually is.
+they get large, keep types easy to find by file name, keep whitespace out of the way, and
+name a field for what it actually is.
 
 ## Rules
 
@@ -22,6 +22,8 @@ actually is.
 | [TOUKI0011](#touki0011) | Avoid large `stackalloc` allocations | Reliability | Warning | Yes | - |
 | [TOUKI0020](#touki0020) | Declare one type per file | Maintainability | Warning | - | - |
 | [TOUKI0021](#touki0021) | File name should match the type it declares | Maintainability | Warning | Yes | - |
+| [TOUKI0022](#touki0022) | Avoid tab characters | Maintainability | **Disabled** | Yes | - |
+| [TOUKI0023](#touki0023) | Remove trailing whitespace | Maintainability | Warning | - | - |
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
 | [TOUKI0041](#touki0041) | Naming rule violation | Naming | **Disabled** | Yes | - |
 
@@ -171,6 +173,69 @@ dotnet_code_quality.TOUKI0021.file_name_detail_separators = .-
 Comparison is ordinal, so `foo.cs` is reported for type `Foo` even on a case-insensitive
 file system. Files that declare no types - global usings, assembly-level attributes - are
 not reported.
+
+## TOUKI0022
+
+**Avoid tab characters.** A tab renders at whatever width the reader's editor is set to, so
+a file containing tabs lines up for its author and not for anyone else.
+
+The rule ships **disabled**. Indentation is a house style, so a project asks for it:
+
+```ini
+dotnet_diagnostic.TOUKI0022.severity = warning
+```
+
+The fix expands each tab to the **next tab stop** rather than to a fixed number of spaces,
+so a tab used to align something mid-line keeps its alignment. The width comes from the
+first of these that is present and parses as a positive integer:
+
+1. `dotnet_code_quality.TOUKI0022.spaces_per_tab`
+2. `tab_width` - the standard EditorConfig property
+3. `indent_size` - EditorConfig's own fallback for `tab_width`
+4. 4
+
+Because these are read per file, one width can apply broadly and another to C#:
+
+```ini
+[*]
+tab_width = 2
+
+[*.cs]
+tab_width = 4
+```
+
+A non-numeric value is skipped rather than treated as an error, so the legal
+`indent_size = tab` falls through to the next source instead of failing the build.
+
+## TOUKI0023
+
+**Remove trailing whitespace.** Whitespace between the last visible character of a line and
+its line break is invisible in review and becomes diff noise the next time the line is
+edited. A line consisting only of whitespace is reported in full.
+
+This is not the same as the `trim_trailing_whitespace` EditorConfig property, which is an
+editor-on-save setting: it does nothing for a file written by a tool, a merge, or an editor
+that does not honor it. This rule is checked on every build.
+
+### Whitespace that is not reported
+
+Whitespace whose exact bytes are part of the program is never reported, because deleting it
+would change what the program does:
+
+```csharp
+string value = """
+    trailing space here is part of the string   
+    """;
+```
+
+That covers verbatim, raw, and interpolated string literals, and character literals. It
+also covers text excluded by conditional compilation, which the parser never interprets -
+a raw string could be sitting inside an `#if` block that is currently false.
+
+A combining mark needs no special handling. The scan walks backwards from the end of the
+line and stops at the first character that is not whitespace; a combining mark is not
+whitespace, so a space that carries a following mark is never the last character on the
+line and is never reported.
 
 ## TOUKI0030
 
@@ -388,6 +453,25 @@ name the analyzer suggests, updating every reference across the solution. It doe
 support Fix All, because applying several renames at once would have them fight over the
 same documents.
 
+`ReplaceTabsWithSpacesCodeFixProvider` fixes TOUKI0022, and
+`RemoveTrailingWhitespaceCodeFixProvider` fixes TOUKI0023. Both edit text rather than
+syntax and both support Fix All. The tab fix computes each run's spaces from the original
+columns, so several fixes on one line compose without having to be applied in order.
+
+## Relationship to IDE0055
+
+The .NET SDK's `IDE0055` ([Fix formatting](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055))
+also reports tabs and trailing whitespace when `indent_style` and `trim_trailing_whitespace`
+are configured and `EnforceCodeStyleInBuild` is on. TOUKI0022 and TOUKI0023 are not novel
+detection.
+
+What they add is **granularity**. `IDE0055` is a single rule covering every formatting
+option there is, so its severity is all-or-nothing: raising it to `warning` to catch tabs
+also demands that every hand-aligned table and deliberate line break match the formatter's
+output. Enabling it at `warning` across this repository's own test project produced 306
+reports, two of which were tabs or trailing whitespace. Two narrow rules can each be set to
+`warning` or `error` on their own.
+
 ## Marker attributes
 
 Two rules are opt-in through public attributes in the `Touki` namespace:
@@ -404,6 +488,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 | 0.4.0 | TOUKI0001, TOUKI0002, TOUKI0003, TOUKI0004, TOUKI0010 |
 | 0.5.0 | TOUKI0020, TOUKI0030 |
 | 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |
+| unreleased | TOUKI0022, TOUKI0023 |
 
 The authoritative list lives in
 [AnalyzerReleases.Shipped.md](../touki.analyzers/AnalyzerReleases.Shipped.md) and
