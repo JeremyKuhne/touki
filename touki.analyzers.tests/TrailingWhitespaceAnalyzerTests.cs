@@ -117,6 +117,28 @@ public class TrailingWhitespaceAnalyzerTests
     }
 
     [TestMethod]
+    public async Task AnalyzeSyntaxTree_InsideInterpolatedRawString_ReportsNothing()
+    {
+        string source =
+            "class Sample\n{\n    string Name = \"n\";\n    string Value => $\"\"\"\n        {Name}   \n        b\n        \"\"\";\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_InsideUtf8RawString_ReportsNothing()
+    {
+        string source =
+            "class Sample\n{\n    static System.ReadOnlySpan<byte> Value => \"\"\"\n        a   \n        b\n        \"\"\"u8;\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
     public async Task AnalyzeSyntaxTree_InsideDisabledText_ReportsNothing()
     {
         // The parser never interprets excluded text, so a raw string could be hiding in there.

@@ -109,6 +109,68 @@ public class NoTabsAnalyzerTests
     }
 
     [TestMethod]
+    public async Task AnalyzeSyntaxTree_TabInSingleLineRawStringLiteral_ReportsNothing()
+    {
+        string source = "class Sample\n{\n    string Value = \"\"\"a\tb\"\"\";\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_TabInUtf8StringLiteral_ReportsNothing()
+    {
+        string source = "class Sample\n{\n    static System.ReadOnlySpan<byte> Value => \"a\tb\"u8;\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_TabInUtf8SingleLineRawStringLiteral_ReportsNothing()
+    {
+        string source = "class Sample\n{\n    static System.ReadOnlySpan<byte> Value => \"\"\"a\tb\"\"\"u8;\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_TabInUtf8MultiLineRawStringLiteral_ReportsNothing()
+    {
+        string source =
+            "class Sample\n{\n    static System.ReadOnlySpan<byte> Value => \"\"\"\n        a\tb\n        \"\"\"u8;\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_TabInCharacterLiteral_ReportsNothing()
+    {
+        string source = "class Sample\n{\n    char Value = '\t';\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_TabInInterpolatedRawStringLiteral_ReportsNothing()
+    {
+        string source =
+            "class Sample\n{\n    string Name = \"n\";\n    string Value => $\"\"\"a\tb{Name}\"\"\";\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
     public async Task AnalyzeSyntaxTree_TabInDisabledText_ReportsNothing()
     {
         string source = "class Sample\n{\n#if UNDEFINED_SYMBOL\n\tint Value;\n#endif\n}\n";
