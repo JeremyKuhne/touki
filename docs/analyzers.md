@@ -403,7 +403,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 |---------|-------------|
 | 0.4.0 | TOUKI0001, TOUKI0002, TOUKI0003, TOUKI0004, TOUKI0010 |
 | 0.5.0 | TOUKI0020, TOUKI0030 |
-| unreleased | TOUKI0011, TOUKI0021, TOUKI0041 |
+| 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |
 
 The authoritative list lives in
 [AnalyzerReleases.Shipped.md](../touki.analyzers/AnalyzerReleases.Shipped.md) and

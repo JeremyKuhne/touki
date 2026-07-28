@@ -113,8 +113,11 @@ Notes on the template:
   should advance. The sample dog-foods the released package; leaving it
   stale defeats the purpose. (Open as a follow-up PR - not part of the
   release commit/tag.)
-- If you bumped `Major` (binary break), also bump `Major` of TestSupport
-  on its next release. They don't have to march in lockstep but TestSupport
-  cannot consume an incompatible Touki.
+- If you bumped `Major` (binary break), TestSupport needs a release too -
+  it cannot consume an incompatible Touki. Otherwise check whether
+  `touki.testsupport/` code changed at all; if it did not, skip it. The
+  criteria and the version-matching rule are in
+  [versioning.md](versioning.md) "TestSupport releases: when and what
+  version".
 - Update [touki.testsupport/README.md](../../../touki.testsupport/README.md)
   if the supported targets or AOT story changed.
