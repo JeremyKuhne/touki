@@ -34,11 +34,13 @@ overlay narrows it:
 
 - `git commit` requires an explicit commit instruction in the user's most recent
   message.
-- `push`, `ship it`, or `send it` authorizes only pushing existing commits.
+- `push`, `ship it`, or `send it` authorizes only pushing existing commits, plus
+  the reply-and-resolve follow-through described below.
 - `update the PR` authorizes only the named remote PR action; it does not
   authorize a prerequisite commit or push.
 - Commit, push, and PR-operation approval do not imply one another. Every action
-  performed must be explicit in the same most recent message.
+  performed must be explicit in the same most recent message, with one exception:
+  replying to and resolving an addressed review thread, which is standing.
 
 The latest [AGENTS.md](../../../AGENTS.md#working-with-the-user-on-changes)
 always wins over examples in the vendored core.
