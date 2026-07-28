@@ -26,10 +26,9 @@ but choosing a duplicate is almost always a mistake):
 
 Record the prior version (e.g. `0.1.0-alpha.12` for the main package).
 
-If TestSupport has **no** `ts-v*` tags yet, the next published version becomes
-the bootstrap of that stream. The previously-published version on nuget.org
-under the old scheme was `0.1.0-alpha.8.11`; pick a `ts-v` tag that sorts
-strictly higher (e.g. `ts-v0.1.0-alpha.9` or higher).
+For TestSupport, stop and read "TestSupport releases: when and what version"
+at the end of this page **before** picking a version - most Touki releases
+need no TestSupport release at all.
 
 ## 2. Decide the prerelease channel (alpha / beta / rc / stable)
 
@@ -145,3 +144,40 @@ The regex used by the workflow guards (must match):
 ^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$
 ^ts-v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$
 ```
+
+## TestSupport releases: when and what version
+
+`KlutzyNinja.Touki.TestSupport` is **not** released in lockstep with
+`KlutzyNinja.Touki`. Cut a `ts-v*` tag only when at least one of these is
+true:
+
+- **Code in `touki.testsupport/` changed** since the last `ts-v*` tag.
+  Markdown, README, and comment-only edits do not qualify.
+- **The Touki release carries a binary breaking change** - it bumped
+  `Major`, so `AssemblyVersion` moved and every consumer has to rebind.
+
+An additive or bug-fix Touki release needs no TestSupport release:
+`AssemblyVersion` is unchanged, so the already-published TestSupport keeps
+binding to the new Touki without a rebuild. Check with:
+
+```pwsh
+git diff --stat ts-v<prior>..HEAD -- touki.testsupport/
+```
+
+If every hit is markdown, skip it and say so in the release notes rather
+than shipping a no-op package.
+
+### Which version TestSupport gets
+
+When TestSupport does ship, **match the `KlutzyNinja.Touki` version it
+depends on**, prerelease label included: Touki `v0.6.0` -> `ts-v0.6.0`,
+Touki `v0.7.0-alpha.1` -> `ts-v0.7.0-alpha.1`. The pair then reads as a
+matched set on nuget.org.
+
+When TestSupport needs another iteration against a Touki version whose
+number is already taken on the `ts-v` stream, the iteration goes in the
+**build component** - the third position (`Patch` in SemVer terms, the
+*Build* field of .NET's four-part `Version`). A second TestSupport release
+still targeting Touki `0.6.0` is `ts-v0.6.1`. The tag guard above accepts
+only `Major.Minor.Patch[-prerelease]`, so there is no fourth component to
+put an iteration in.

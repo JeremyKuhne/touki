@@ -65,8 +65,10 @@ Read-only checks:
 Ask the user **which package** if not already obvious from the request:
 
 - `KlutzyNinja.Touki` - the main library.
-- `KlutzyNinja.Touki.TestSupport` - test helpers (rarely shipped; see
-  [docs/release-strategy](../../../touki.testsupport/README.md)).
+- `KlutzyNinja.Touki.TestSupport` - test helpers. Released only when
+  `touki.testsupport/` code changed or the Touki release is a binary break;
+  see [versioning.md](versioning.md) "TestSupport releases: when and what
+  version".
 
 Use `vscode_askQuestions` only if ambiguous; if the user said "publish
 TestSupport" or similar, skip the prompt.
@@ -97,7 +99,8 @@ watch the workflow, and create the GitHub release.
 
 - [versioning.md](versioning.md) - establishing the prior version, the
   prerelease channel decision, the `Major.Minor.Patch` bump table, the
-  `AssemblyVersion` gotcha, and the exact tag format with its regex guard.
+  `AssemblyVersion` gotcha, the exact tag format with its regex guard, and
+  when TestSupport warrants a release of its own.
 - [release-steps.md](release-steps.md) - creating and pushing the annotated
   tag, `workflow_dispatch` recovery, the GitHub release notes template, and
   aftercare.

@@ -24,3 +24,12 @@ Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
 TOUKI0020 | Maintainability | Warning | More than one type declared in a file, nested types included
 TOUKI0030 | Performance | Warning | StringBuilder allocated to build a string that ValueStringBuilder could build
+
+## Release 0.6.0
+
+### New Rules
+Rule ID | Category | Severity | Notes
+--------|----------|----------|-------
+TOUKI0011 | Reliability | Warning | stackalloc larger than the configured maximum byte size
+TOUKI0021 | Maintainability | Warning | File name does not match a type declared in the file
+TOUKI0041 | Naming | Disabled | Name does not follow the configured naming rules
