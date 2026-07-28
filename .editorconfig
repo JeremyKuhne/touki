@@ -57,6 +57,11 @@ dotnet_diagnostic.IDE1006.severity = none
 # is the strictness IDE1006 was configured at before it was replaced.
 dotnet_diagnostic.TOUKI0041.severity = warning
 
+# TOUKI0022 also ships disabled, because indentation is a house style. This repo indents with
+# spaces (indent_style above), so turn it on. The width the fix expands a tab to comes from
+# tab_width below; no rule-specific key is needed.
+dotnet_diagnostic.TOUKI0022.severity = warning
+
 # P/Invoke declarations keep the spelling of the native symbol they bind to, which is what makes
 # them greppable against the native header. Naming a rule two symbol groups gives the "either
 # attribute" match that a single required_attributes list cannot express.

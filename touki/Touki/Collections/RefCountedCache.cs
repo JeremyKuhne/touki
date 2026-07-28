@@ -31,7 +31,7 @@ namespace Touki.Collections;
 /// {
 ///   protected override CacheEntry CreateEntry(Color key, bool cached) => new PenCacheEntry(key, cached);
 ///   protected override bool IsMatch(Color key, CacheEntry entry) => key == entry.Data;
-/// 
+///
 ///   private sealed class PenCacheEntry : CacheEntry
 ///   {
 ///       private readonly Pen _pen;
