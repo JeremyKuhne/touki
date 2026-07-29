@@ -255,6 +255,25 @@ captured by a lambda, put in an array, assigned to a wider local, or used in an 
 method or iterator. A warning you cannot act on is worse than no warning, so anything the
 rule cannot prove is safe to convert is left alone.
 
+### The type needs `using Touki.Text;`
+
+The snippet above assumes that directive is in scope. Adding it is the whole fix, and it
+coexists with `using System.Text;` - the two do not collide, so no alias is needed.
+
+Leaving it out produces different errors on the two targets, and the .NET Framework one
+is misleading:
+
+- .NET: `CS0246: The type or namespace name 'ValueStringBuilder' could not be found`,
+  which points straight at the missing using.
+- .NET Framework: `CS0122: 'ValueStringBuilder' is inaccessible due to its protection
+  level`. `Microsoft.IO.Redist` carries an internal `System.Text.ValueStringBuilder`, and
+  Touki references that package on .NET Framework, so it reaches consumers. A file that
+  imports `System.Text` finds that type, and "inaccessible" reads like a broken package
+  reference rather than a missing using.
+
+Once `Touki.Text` is imported the accessible type wins and the internal one is ignored,
+including when `using System.Text;` sits in an inner scope.
+
 ## TOUKI0041
 
 **Naming rule violation** - a name does not follow the configured naming rules. A
