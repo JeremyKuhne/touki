@@ -75,7 +75,7 @@ Always put this on the generic entry method when you specialize:
 - The `net481` JIT's default heuristics are conservative. Without the attribute,
   the wrapper method itself is a JIT-time call, defeating the whole point.
 - Measured impact on a tight scalar `ref T` loop at length 16:
-  `1.82&times; &rarr; 1.07&times;` vs the dedicated-overload baseline. The
+  `1.82× → 1.07×` vs the dedicated-overload baseline. The
   attribute is doing real work, not just hinting.
 
 The inlining attribute is also why we don't need separate `extension(Span<char>)`
@@ -109,7 +109,7 @@ ushort oldShort = (ushort)(Unsafe.As<T, ushort>(ref oldValue) & 0xFFFF);
 Without the mask, `[AggressiveInlining]` plus a literal signed argument
 (`(sbyte)-1`, `(short)-1`) on net481 RyuJIT produces wrong results in
 **Release** (Debug passes). The caller's int-promoted constant
-(`-1` &rarr; `0xFFFFFFFF`) propagates through `Unsafe.As<T, byte>` into the
+(`-1` → `0xFFFFFFFF`) propagates through `Unsafe.As<T, byte>` into the
 loop's `cmp` immediate as a 32-bit value. The `movzx`-loaded byte is in
 `[0, 0xFF]`, so `cmp ecx, 0FFFFFFFF` is unconditionally false - the loop
 runs, finds nothing, returns silently.

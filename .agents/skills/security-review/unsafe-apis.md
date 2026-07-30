@@ -1,6 +1,6 @@
 # Caller-validated APIs (`unsafe`, `Unsafe.*`, `MemoryMarshal.*`)
 
-Detail for &sect;7 of the [security-review](SKILL.md) audit
+Detail for section 7 of the [security-review](SKILL.md) audit
 [checklist.md](checklist.md). Mandatory whenever a PR touches one of these.
 The compiler offloads safety to you; the review *is* the safety check.
 
@@ -23,7 +23,7 @@ Walk every use site against this table; rows are independent.
 | `Unsafe.As<TFrom, TTo>(ref TFrom)` / `Unsafe.As<T>(object)` | `sizeof(TTo) <= sizeof(TFrom)`; GC reference layout matches. | Reads garbage past source; corrupts GC heap if reference layout differs. **Older-JIT pitfall:** on .NET Framework RyuJIT, an `[AggressiveInlining]` method that reinterprets a signed-primitive parameter via `Unsafe.As<T, byte>(ref param)` can propagate the caller's int-promoted negative value into the comparison immediate; mask explicitly. | One test per primitive width including signed/negative values; mask with `& 0xFF` / `& 0xFFFF` if needed. |
 | `Unsafe.SkipInit<T>(out T)` | Caller fully initializes every reachable field before any read. | Stale-pointer foot-gun for ref fields; uninitialized read otherwise. | Test every code path that reads from the skip-init local. |
 | `MemoryMarshal.Cast<TFrom, TTo>` / `AsBytes` | Result length is `source.Length * sizeof(TFrom) / sizeof(TTo)`; partial elements vanish silently. | Caller treats a truncated result as the full payload. | Partial-element case (source length doesn't divide evenly). |
-| `MemoryMarshal.CreateSpan` / `CreateReadOnlySpan` | Returned span lifetime &le; referenced storage lifetime. | Use-after-free when the storage was a stack local or short rental. | Audit every caller for lifetime escape; no automated test catches this. |
+| `MemoryMarshal.CreateSpan` / `CreateReadOnlySpan` | Returned span lifetime <= referenced storage lifetime. | Use-after-free when the storage was a stack local or short rental. | Audit every caller for lifetime escape; no automated test catches this. |
 | `fixed (T* p = ...)` | `p` valid only inside the `fixed` block. | Dangling pointer after GC relocates. | Manual review: `p` not stashed in a field, passed to `async`/iterator continuations, or returned. |
 | `stackalloc T[n]` | `n` small and bounded. | Stack-overflow DoS if `n` comes from input. | Max-allowed size succeeds; one element more is rejected before `stackalloc` runs. Use a pooled / growable scratch-buffer helper when the input could exceed the stack budget. |
 | `[DllImport]` / `LibraryImport` | Marshaller attrs (`[MarshalAs]`, `SizeConst`, `string` vs `IntPtr`) silently change buffer sizes / ownership. | Buffer overrun, double-free, type confusion across the managed/native boundary. | Cross-check signature against native docs; re-verify on every TFM. |

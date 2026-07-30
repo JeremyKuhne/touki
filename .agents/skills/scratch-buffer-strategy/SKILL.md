@@ -6,8 +6,8 @@ metadata:
     applicability: dotnet-framework
     binding: optional-overlay
     github-path: skills/scratch-buffer-strategy
-    github-pinned: v0.10.0
-    github-ref: refs/tags/v0.10.0
+    github-pinned: v0.13.0
+    github-ref: refs/tags/v0.13.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
     github-tree-sha: 3ae67f801e33d4b55730633f22e27c0fa941ea99
     maturity: canary

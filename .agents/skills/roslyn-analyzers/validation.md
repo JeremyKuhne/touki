@@ -47,6 +47,22 @@ Either way, if your repo treats warnings as errors or enforces XML-doc comments,
 the test project may need a local `.editorconfig` to relax rules that fire on the
 inline test snippets - for example disabling `CS1591` (missing XML docs).
 
+### Lightweight-harness traps
+
+- **Reject accidental compiler errors.** A harness that returns only analyzer
+  diagnostics makes an invalid snippet look like a successful "reports nothing"
+  test. Unless a test intentionally covers erroneous code, fail when
+  `compilation.GetDiagnostics()` contains an error. For intentional errors,
+  assert the expected compiler diagnostic explicitly.
+- **Implement every option member the analyzer uses.** A dictionary-backed
+  `AnalyzerConfigOptions` double must override `Keys` when the analyzer enumerates
+  configuration; the base implementation throws. Its provider must return the
+  intended options for the tested syntax tree.
+- **Enable disabled rules in the compilation.** An analyzer whose descriptor has
+  `isEnabledByDefault: false` produces nothing until the test sets its ID through
+  `CompilationOptions.WithSpecificDiagnosticOptions`, for example to
+  `ReportDiagnostic.Warn`. Otherwise every negative test passes vacuously.
+
 ### Testing a code fix without the official harness
 
 If you skip `Microsoft.CodeAnalysis.CSharp.CodeFix.Testing`, a code fix can still be
@@ -116,6 +132,11 @@ cheapest proof is a temporary violation:
 This is more reliable than reading the analyzer-execution report from build output,
 which is easily buried (see [performance.md](performance.md)). Do not leave the
 probe behind.
+
+For a configurable rule, add a second temporary probe that changes the relevant
+`.editorconfig` option and proves the real build changes behavior. In-memory option
+doubles test analyzer logic; they do not prove the compiler is supplying the
+repository's configuration as intended.
 
 ## When the analyzer should not apply everywhere
 

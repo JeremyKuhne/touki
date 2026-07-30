@@ -65,6 +65,10 @@ walking, which is where slow analyzers come from. Never call
 `SyntaxNode.DescendantNodes()` to hunt for nodes a registration filter would have
 delivered directly.
 
+For rules that walk declarations, [symbol-actions.md](symbol-actions.md) covers
+parameters/type parameters, locals, synthetic names, overrides, and explicit
+interface implementations.
+
 ## Rule 3: prefer `IOperation` over raw syntax when semantics matter
 
 Raw syntax is a literal transcription of the source - it cannot tell you what a
@@ -106,6 +110,8 @@ private static readonly DiagnosticDescriptor s_rule = new(
 - `messageFormat` is a format string; pass arguments at `Diagnostic.Create`. Do not
   pre-format with interpolation - it defeats localization and allocates.
 - Set a real `helpLinkUri`.
+- Verify the link for every new diagnostic ID. If its fragment is derived from the
+  ID, the matching documentation anchor must exist before the rule ships.
 - For an analyzer you intend to *ship and localize*, move `title`/`messageFormat`/
   `description` into a `.resx` and use `LocalizableResourceString`. For an
   internal, English-only repo rule the inline strings above are acceptable.
@@ -119,21 +125,23 @@ should land exactly on what the user must change. Pass the precise
 
 ## Rule 6: honor configuration; do not hardcode severity behavior
 
-Report the diagnostic unconditionally and let the host's `.editorconfig` severity
-mapping decide whether it is an error, warning, suggestion, or suppressed. Do not
-read severities yourself or branch on configuration; the descriptor's
-`defaultSeverity` plus user `.editorconfig` lines are the entire mechanism.
+Report the diagnostic unconditionally and let the host's configuration decide
+whether it is an error, warning, suggestion, or suppressed. Do not read severity
+configuration yourself. The descriptor's `defaultSeverity` and
+`isEnabledByDefault` establish the initial state; host configuration determines
+the effective severity.
+
+A rule that enforces house style should usually set `isEnabledByDefault: false`.
+Consumers enable it with `dotnet_diagnostic.<id>.severity`, which also controls
+the effective severity of every report under that ID. Do not rely on per-report
+severity to preserve independent sub-rule levels once the consumer sets the
+ID-wide severity; use analyzer-specific options to turn sub-rules off instead.
 
 ## Rule 7: release tracking is part of the change
 
-Every new or changed rule updates the analyzer release files in the same commit:
-
-- New rule -> add a row under `### New Rules` in
-  `AnalyzerReleases.Unshipped.md`.
-- On release, entries move from `Unshipped` to `Shipped` under a version heading.
-
-RS2000/RS2002 fail the build if the unshipped file and `SupportedDiagnostics`
-disagree, so this cannot be forgotten if you build before committing.
+Every new, removed, or changed rule updates the analyzer release files in the same
+commit. Follow [release-tracking.md](release-tracking.md); `RS20xx` diagnostics
+enforce the file format and agreement with `SupportedDiagnostics`.
 
 ## Code-fix providers (optional)
 

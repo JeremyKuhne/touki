@@ -1,15 +1,20 @@
 ---
 core: address-pr-feedback
-core-pin: v0.10.0
+core-pin: v0.13.0
 ---
 
 # Touki overlay - address-pr-feedback
 
 Repo-specific companion to the vendored [address-pr-feedback](SKILL.md) skill. The
-`SKILL.md` is a **pinned copy of the portable core** from
+`SKILL.md` and its sibling page [thread-workflow.md](thread-workflow.md) are a
+**pinned copy of the portable core** from
 [JeremyKuhne/agent-skills](https://github.com/JeremyKuhne/agent-skills) (see the
 `metadata.github-*` provenance in its frontmatter). Do not hand-edit the core -
 `gh skill update` would flag the drift. Everything touki-specific lives here.
+
+> **Pinned to a release.** The core is pinned to the commons **v0.13.0** tag. Pull
+> later upstream changes with `gh skill update address-pr-feedback` (review the
+> diff, re-pin to the new tag).
 
 ## Cross-references (the core names these skills generically)
 
@@ -47,27 +52,31 @@ always wins over examples in the vendored core.
 
 ## Standing approval: always resolve an addressed thread
 
-Resolving review threads needs no per-message approval. `push` on a review round
-infers reply-and-resolve; the push itself still needs its own verb.
-
-Reply in the thread, not on the main conversation, and check that it threaded:
-
-```pwsh
-gh api repos/JeremyKuhne/touki/pulls/<n>/comments/<COMMENT_ID>/replies -f body="..."
-gh api repos/JeremyKuhne/touki/pulls/<n>/comments --jq '.[] | {id, in_reply_to_id}'
-```
-
-Replying is not resolving. The thread node id is GraphQL-only:
-
-```pwsh
-gh api graphql -f query='query { repository(owner: "JeremyKuhne", name: "touki") {
-  pullRequest(number: <n>) { reviewThreads(first: 20) { nodes {
-    id isResolved comments(first: 1) { nodes { databaseId } } } } } } }'
-```
-
-Resolve with the PR tool's resolve action, then confirm `isResolved` is `true`.
+The core's step 7 defers reply-and-resolve approval to repository guidance. In
+touki that approval is **standing**: resolving review threads needs no
+per-message approval, and `push` on a review round infers reply-and-resolve. The
+push itself still needs its own verb.
 
 A declined comment gets an in-thread reply and stays open.
+
+## Getting the next review (the core's step 8)
+
+**Copilot auto-review is always on for this repo.** A review posts automatically
+a minute or two after the PR opens and after every subsequent push, so the core's
+"repository automatically reviews pushes" branch is the one that applies: never
+request or re-request a review, and do not poll for the automatic one. Say that a
+review will land on its own, and expect a fresh round of comments on each new
+commit.
+
+Later rounds drift toward nits and false positives. Verify every claim against
+the code before acting.
+
+## Thread mechanics
+
+The core's [thread-workflow.md](thread-workflow.md) is the `gh` fallback for
+listing, replying to, and resolving threads when the PR tool cannot. The only
+touki bindings it needs are the repository coordinates: owner `JeremyKuhne`, name
+`touki`. There is no `upstream` remote, so the PR always lives on `origin`.
 
 ## Updating
 

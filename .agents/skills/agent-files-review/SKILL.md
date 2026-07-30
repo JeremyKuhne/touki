@@ -6,8 +6,8 @@ metadata:
     applicability: agent-customization
     binding: optional-overlay
     github-path: skills/agent-files-review
-    github-pinned: v0.10.0
-    github-ref: refs/tags/v0.10.0
+    github-pinned: v0.13.0
+    github-ref: refs/tags/v0.13.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
     github-tree-sha: 64a00d548909d8f84fb8ac6f6e3db77deceab270
     maturity: canary

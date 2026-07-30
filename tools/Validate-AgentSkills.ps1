@@ -268,9 +268,16 @@ foreach ($skill in $skillData.Values) {
         $value = [string]$skill.$relationship
         if ([string]::IsNullOrWhiteSpace($value) -or $value -eq 'none') { continue }
         foreach ($target in ($value -split ',' | ForEach-Object { $_.Trim() })) {
-            if (-not $skillData.ContainsKey($target)) {
-                Add-Error "$($skill.Name) metadata.$($relationship.ToLowerInvariant()) references missing skill '$target'."
+            if ($skillData.ContainsKey($target)) { continue }
+
+            # A vendored core's metadata is owned upstream and may name a sibling from the
+            # source portfolio that this repository deliberately does not vendor. That is
+            # only tolerable for 'related'; a 'requires' target is a hard dependency.
+            if ($relationship -eq 'Related' -and -not [string]::IsNullOrWhiteSpace([string]$skill.Repo)) {
+                continue
             }
+
+            Add-Error "$($skill.Name) metadata.$($relationship.ToLowerInvariant()) references missing skill '$target'."
         }
     }
 }

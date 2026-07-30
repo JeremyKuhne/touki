@@ -1,6 +1,6 @@
 ---
 core: pre-pr-self-review
-core-pin: v0.10.0
+core-pin: v0.13.0
 ---
 
 # Touki overlay - pre-pr-self-review

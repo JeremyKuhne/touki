@@ -1,6 +1,6 @@
 ---
 core: security-review
-core-pin: v0.10.0
+core-pin: v0.13.0
 ---
 
 # Touki overlay - security-review

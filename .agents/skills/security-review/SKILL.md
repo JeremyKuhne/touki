@@ -6,10 +6,10 @@ metadata:
     applicability: universal
     binding: optional-overlay
     github-path: skills/security-review
-    github-pinned: v0.10.0
-    github-ref: refs/tags/v0.10.0
+    github-pinned: v0.13.0
+    github-ref: refs/tags/v0.13.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: b5f145ccbc662182f38554418b5c8b7057c16baa
+    github-tree-sha: 8f2b820c678065733b6582b6dcb1685bd49854f3
     maturity: canary
     portability: portable
     related: pre-pr-self-review, performance-testing, fuzz-testing

@@ -42,27 +42,12 @@ load-and-summarize the other tools do implicitly.
 
 ## Agent protocol for phase investigations
 
-**Use different harnesses for measurement and profiling.** A mutable or
-consumable intermediate representation needs fresh state for every measured
-operation: prepare a bounded batch in `IterationSetup`, consume every item once,
-normalize with `OperationsPerInvoke`, and release the batch in
-`IterationCleanup`. Sweep one item, an intermediate batch, and a larger batch:
-the first exposes timer overhead, while the last exposes retained-live-set
-distortion. Keep the smallest batch that amortizes the harness without changing
-the workload.
-
-That one-shot shape is often a poor CPU-profiling harness. For profiling, prefer
-an adaptive end-to-end benchmark and root-scope filtrace to the phase method.
-Work before that call remains outside the selected subtree, while BenchmarkDotNet
-can execute enough operations to produce a denser profile. Profile the one-shot
-benchmark only when a compatible periodic CPU capture has enough contributing
-samples in the selected query.
-
-Validate a phase split before trusting it: phase allocations should add to the
-independently measured end-to-end allocation at reported precision, and phase
-means should approximately add to the end-to-end mean. A large gap usually means
-setup leaked into one measurement, mutable state was reused, or the batch changed
-GC/live-set behavior.
+The portable half of this protocol - fresh-state phase harnesses, the separate
+adaptive harness for CPU profiling, phase-versus-end-to-end cross-checks, the
+experiment ledger that retains rejected variants, exact-source oracles, and
+reconstructable run provenance - lives in the core's
+[investigation-workflow.md](investigation-workflow.md). Follow it first; what
+follows is only the touki/filtrace-specific part.
 
 **Use the filtrace 0.6.3 evidence contracts:**
 
@@ -99,15 +84,6 @@ GC/live-set behavior.
 - Use `trace_batch`/`batch` for parameter matrices and manifest-aware
   `trace_diff`/`diff` for before/after scope shares. Per-operation values require
   matching operation count and unit metadata in both manifests.
-
-Keep a compact experiment ledger while iterating:
-
-| Hypothesis | Small edit | Check | Time | Allocation | Target frame | Decision |
-| --- | --- | --- | ---: | ---: | --- | --- |
-
-Record rejected variants as well as retained changes. Rejections prevent a later
-agent from repeating attractive experiments that already lost on another TFM or
-on allocation.
 
 Things that bite, kept short - full rationale in
 [docs/performance-investigation.md](../../../docs/performance-investigation.md)
