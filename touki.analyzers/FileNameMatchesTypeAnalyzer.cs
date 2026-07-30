@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -31,7 +32,13 @@ namespace Touki.Analyzers;
 ///  </para>
 ///  <para>
 ///   Comparison is ordinal, so casing must match even on a case-insensitive file system. A file that
-///   declares no types is not reported, and neither is a tree with no path.
+///   declares no types is not reported, and neither is a tree with no path. An empty partial declaration whose
+///   body contains conditional directives is also omitted: after preprocessing it is only a shell for a type
+///   declared in another build configuration.
+///  </para>
+///  <para>
+///   Diagnostics include a collision-aware suggested file name. A nested declaration prefers its containing
+///   type path, and one part of a type split across files keeps the current stem as detail.
 ///  </para>
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -41,6 +48,16 @@ public sealed class FileNameMatchesTypeAnalyzer : DiagnosticAnalyzer
     ///  The diagnostic identifier reported by this analyzer.
     /// </summary>
     public const string DiagnosticId = "TOUKI0021";
+
+    /// <summary>
+    ///  The diagnostic property containing the suggested destination file name.
+    /// </summary>
+    public const string SuggestedFileNameProperty = "SuggestedFileName";
+
+    /// <summary>
+    ///  The diagnostic property containing the separator used to add distinguishing detail.
+    /// </summary>
+    public const string SuggestedDetailSeparatorProperty = "SuggestedDetailSeparator";
 
     /// <summary>
     ///  The <c>.editorconfig</c> key that overrides the characters allowed to introduce trailing detail in a
@@ -57,7 +74,7 @@ public sealed class FileNameMatchesTypeAnalyzer : DiagnosticAnalyzer
     private static readonly DiagnosticDescriptor s_rule = new(
         id: DiagnosticId,
         title: "File name should match the type it declares",
-        messageFormat: "File name '{0}' does not match type '{1}'",
+        messageFormat: "Rename file '{0}' to '{2}' to match type '{1}'",
         category: "Maintainability",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -76,23 +93,31 @@ public sealed class FileNameMatchesTypeAnalyzer : DiagnosticAnalyzer
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
 
-        // The rule is about the file as a whole. Only member lists are walked, which keeps the walk
-        // proportional to the number of declarations rather than to the size of the file.
-        context.RegisterSyntaxTreeAction(AnalyzeSyntaxTree);
+        // The rule is about the file as a whole. Only member lists are walked. A symbol is bound only after a
+        // mismatch, when deciding whether a partial type needs the current file stem as distinguishing detail.
+        context.RegisterSemanticModelAction(AnalyzeSemanticModel);
     }
 
-    private static void AnalyzeSyntaxTree(SyntaxTreeAnalysisContext context)
+    private static void AnalyzeSemanticModel(SemanticModelAnalysisContext context)
     {
+        SyntaxTree tree = context.SemanticModel.SyntaxTree;
+
         // An in-memory tree has no path to match against.
-        if (string.IsNullOrEmpty(context.Tree.FilePath)
-            || context.Tree.GetRoot(context.CancellationToken) is not CompilationUnitSyntax compilationUnit)
+        if (string.IsNullOrEmpty(tree.FilePath)
+            || tree.GetRoot(context.CancellationToken) is not CompilationUnitSyntax compilationUnit)
         {
             return;
         }
 
         List<string> candidates = [];
-        SyntaxToken firstIdentifier = default;
-        CollectNames(compilationUnit.Members, prefix: null, candidates, ref firstIdentifier);
+        MemberDeclarationSyntax? preferredDeclaration = null;
+        string? preferredStem = null;
+        CollectNames(
+            compilationUnit.Members,
+            prefix: null,
+            candidates,
+            ref preferredDeclaration,
+            ref preferredStem);
 
         if (candidates.Count == 0)
         {
@@ -100,7 +125,7 @@ public sealed class FileNameMatchesTypeAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        string fileName = Path.GetFileNameWithoutExtension(context.Tree.FilePath);
+        string fileName = Path.GetFileNameWithoutExtension(tree.FilePath);
         string separators = GetDetailSeparators(context);
 
         foreach (string candidate in candidates)
@@ -111,26 +136,55 @@ public sealed class FileNameMatchesTypeAnalyzer : DiagnosticAnalyzer
             }
         }
 
+        if (preferredDeclaration is null || preferredStem is null)
+        {
+            return;
+        }
+
+        SyntaxToken preferredIdentifier = GetIdentifier(preferredDeclaration);
+        char detailSeparator = GetPreferredDetailSeparator(separators);
+        string suggestedFileName = GetSuggestedFileName(
+            context,
+            preferredDeclaration,
+            preferredStem,
+            detailSeparator);
+        ImmutableDictionary<string, string?> properties = ImmutableDictionary<string, string?>.Empty
+            .Add(SuggestedFileNameProperty, suggestedFileName)
+            .Add(SuggestedDetailSeparatorProperty, detailSeparator.ToString());
+
         context.ReportDiagnostic(
-            Diagnostic.Create(s_rule, firstIdentifier.GetLocation(), fileName, firstIdentifier.ValueText));
+            Diagnostic.Create(
+                s_rule,
+                preferredIdentifier.GetLocation(),
+                properties,
+                fileName,
+                preferredIdentifier.ValueText,
+                suggestedFileName));
     }
 
     /// <summary>
     ///  Adds every name a file declaring <paramref name="members"/> may be called to
-    ///  <paramref name="candidates"/>, and records the first type's identifier in
-    ///  <paramref name="firstIdentifier"/>. A nested type contributes both its own name and its dotted path.
+    ///  <paramref name="candidates"/>, and records the first non-hosting declaration and qualified stem in
+    ///  <paramref name="preferredDeclaration"/> and <paramref name="preferredStem"/>. A nested type contributes
+    ///  both its own name and its dotted path.
     /// </summary>
     private static void CollectNames(
         SyntaxList<MemberDeclarationSyntax> members,
         string? prefix,
         List<string> candidates,
-        ref SyntaxToken firstIdentifier)
+        ref MemberDeclarationSyntax? preferredDeclaration,
+        ref string? preferredStem)
     {
         foreach (MemberDeclarationSyntax member in members)
         {
             if (member is BaseNamespaceDeclarationSyntax namespaceDeclaration)
             {
-                CollectNames(namespaceDeclaration.Members, prefix, candidates, ref firstIdentifier);
+                CollectNames(
+                    namespaceDeclaration.Members,
+                    prefix,
+                    candidates,
+                    ref preferredDeclaration,
+                    ref preferredStem);
                 continue;
             }
 
@@ -143,13 +197,21 @@ public sealed class FileNameMatchesTypeAnalyzer : DiagnosticAnalyzer
                 continue;
             }
 
-            if (firstIdentifier.IsKind(SyntaxKind.None))
+            if (member is TypeDeclarationSyntax conditionalShell
+                && IsConditionallyEmptyPartial(conditionalShell))
             {
-                firstIdentifier = identifier;
+                continue;
             }
 
             string name = identifier.ValueText;
             string qualified = prefix is null ? name : $"{prefix}.{name}";
+
+            if (preferredDeclaration is null
+                && (member is not TypeDeclarationSyntax candidate || !IsHostingShell(candidate)))
+            {
+                preferredDeclaration = member;
+                preferredStem = qualified;
+            }
 
             candidates.Add(name);
 
@@ -173,9 +235,154 @@ public sealed class FileNameMatchesTypeAnalyzer : DiagnosticAnalyzer
             // Only class, struct, interface, and record bodies can hold a nested type.
             if (member is TypeDeclarationSyntax typeDeclaration)
             {
-                CollectNames(typeDeclaration.Members, qualified, candidates, ref firstIdentifier);
+                CollectNames(
+                    typeDeclaration.Members,
+                    qualified,
+                    candidates,
+                    ref preferredDeclaration,
+                    ref preferredStem);
             }
         }
+    }
+
+    private static bool IsHostingShell(TypeDeclarationSyntax typeDeclaration)
+    {
+        if (typeDeclaration.Members.Count == 0
+            || !typeDeclaration.Modifiers.Any(SyntaxKind.PartialKeyword))
+        {
+            return false;
+        }
+
+        foreach (MemberDeclarationSyntax member in typeDeclaration.Members)
+        {
+            if (GetIdentifier(member).IsKind(SyntaxKind.None))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsConditionallyEmptyPartial(TypeDeclarationSyntax typeDeclaration)
+    {
+        if (typeDeclaration.Members.Count != 0
+            || !typeDeclaration.Modifiers.Any(SyntaxKind.PartialKeyword)
+            || typeDeclaration.OpenBraceToken.IsKind(SyntaxKind.None)
+            || typeDeclaration.CloseBraceToken.IsKind(SyntaxKind.None))
+        {
+            return false;
+        }
+
+        int bodyStart = typeDeclaration.OpenBraceToken.Span.End;
+        int bodyEnd = typeDeclaration.CloseBraceToken.SpanStart;
+
+        foreach (SyntaxTrivia trivia in typeDeclaration.DescendantTrivia(descendIntoTrivia: true))
+        {
+            if (trivia.SpanStart < bodyStart || trivia.Span.End > bodyEnd)
+            {
+                continue;
+            }
+
+            if (trivia.IsKind(SyntaxKind.IfDirectiveTrivia)
+                || trivia.IsKind(SyntaxKind.ElifDirectiveTrivia)
+                || trivia.IsKind(SyntaxKind.ElseDirectiveTrivia)
+                || trivia.IsKind(SyntaxKind.EndIfDirectiveTrivia))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string GetSuggestedFileName(
+        SemanticModelAnalysisContext context,
+        MemberDeclarationSyntax preferredDeclaration,
+        string preferredStem,
+        char detailSeparator)
+    {
+        SyntaxTree tree = context.SemanticModel.SyntaxTree;
+        Compilation compilation = context.SemanticModel.Compilation;
+        string extension = Path.GetExtension(tree.FilePath);
+        string currentStem = Path.GetFileNameWithoutExtension(tree.FilePath);
+        bool isSplitPartial = preferredDeclaration is TypeDeclarationSyntax typeDeclaration
+            && typeDeclaration.Modifiers.Any(SyntaxKind.PartialKeyword)
+            && IsDeclaredInAnotherTree(context.SemanticModel, tree, typeDeclaration, context.CancellationToken);
+
+        string firstStem = isSplitPartial ? $"{preferredStem}{detailSeparator}{currentStem}" : preferredStem;
+        string firstCandidate = firstStem + extension;
+        if (IsAvailableFileName(compilation, tree, firstCandidate))
+        {
+            return firstCandidate;
+        }
+
+        string detailStem = $"{preferredStem}{detailSeparator}{currentStem}";
+        string detailCandidate = detailStem + extension;
+        if (!string.Equals(firstCandidate, detailCandidate, StringComparison.OrdinalIgnoreCase)
+            && IsAvailableFileName(compilation, tree, detailCandidate))
+        {
+            return detailCandidate;
+        }
+
+        for (int suffix = 2; ; suffix++)
+        {
+            context.CancellationToken.ThrowIfCancellationRequested();
+            string candidate = $"{detailStem}{detailSeparator}{suffix}{extension}";
+            if (IsAvailableFileName(compilation, tree, candidate))
+            {
+                return candidate;
+            }
+        }
+    }
+
+    private static char GetPreferredDetailSeparator(string separators)
+        => separators[0];
+
+    private static bool IsDeclaredInAnotherTree(
+        SemanticModel semanticModel,
+        SyntaxTree currentTree,
+        TypeDeclarationSyntax declaration,
+        CancellationToken cancellationToken)
+    {
+        ISymbol? symbol = semanticModel.GetDeclaredSymbol(declaration, cancellationToken);
+
+        if (symbol is null)
+        {
+            return false;
+        }
+
+        foreach (SyntaxReference reference in symbol.DeclaringSyntaxReferences)
+        {
+            if (reference.SyntaxTree != currentTree)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsAvailableFileName(Compilation compilation, SyntaxTree currentTree, string candidate)
+    {
+        string currentDirectory = Path.GetDirectoryName(currentTree.FilePath) ?? string.Empty;
+
+        foreach (SyntaxTree tree in compilation.SyntaxTrees)
+        {
+            if (tree == currentTree || string.IsNullOrEmpty(tree.FilePath))
+            {
+                continue;
+            }
+
+            string directory = Path.GetDirectoryName(tree.FilePath) ?? string.Empty;
+            if (string.Equals(directory, currentDirectory, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(Path.GetFileName(tree.FilePath), candidate, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -233,13 +440,14 @@ public sealed class FileNameMatchesTypeAnalyzer : DiagnosticAnalyzer
         return separators.IndexOf(fileName[candidate.Length]) >= 0;
     }
 
-    private static string GetDetailSeparators(SyntaxTreeAnalysisContext context)
+    private static string GetDetailSeparators(SemanticModelAnalysisContext context)
     {
-        AnalyzerConfigOptions options = context.Options.AnalyzerConfigOptionsProvider.GetOptions(context.Tree);
+        AnalyzerConfigOptions options =
+            context.Options.AnalyzerConfigOptionsProvider.GetOptions(context.SemanticModel.SyntaxTree);
 
         if (options.TryGetValue(DetailSeparatorsOption, out string? value))
         {
-            string separators = value.Trim();
+            string separators = GetValidDetailSeparators(value.Trim());
 
             // An empty value is far more likely to be a mistake than a deliberate "allow no detail".
             if (separators.Length > 0)
@@ -249,5 +457,21 @@ public sealed class FileNameMatchesTypeAnalyzer : DiagnosticAnalyzer
         }
 
         return DefaultDetailSeparators;
+    }
+
+    private static string GetValidDetailSeparators(string separators)
+    {
+        char[] validSeparators = new char[separators.Length];
+        int count = 0;
+
+        foreach (char separator in separators)
+        {
+            if (Array.IndexOf(Path.GetInvalidFileNameChars(), separator) < 0)
+            {
+                validSeparators[count++] = separator;
+            }
+        }
+
+        return count == 0 ? string.Empty : new string(validSeparators, 0, count);
     }
 }

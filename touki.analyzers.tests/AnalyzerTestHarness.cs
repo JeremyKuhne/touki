@@ -39,6 +39,31 @@ internal static class AnalyzerTestHarness
     {
         CSharpCompilation compilation = CreateCompilation(source, fileName);
 
+        return await GetDiagnosticsAsync(analyzer, compilation, options, diagnosticOptions).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    ///  Runs <paramref name="analyzer"/> against several named source files in one compilation and returns the
+    ///  analyzer-produced diagnostics.
+    /// </summary>
+    public static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(
+        DiagnosticAnalyzer analyzer,
+        IReadOnlyList<(string Source, string FileName)> sources,
+        IReadOnlyDictionary<string, string>? options = null,
+        IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions = null)
+    {
+        CSharpCompilation compilation = CreateCompilation(sources);
+
+        return await GetDiagnosticsAsync(analyzer, compilation, options, diagnosticOptions).ConfigureAwait(false);
+    }
+
+    private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(
+        DiagnosticAnalyzer analyzer,
+        CSharpCompilation compilation,
+        IReadOnlyDictionary<string, string>? options,
+        IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions)
+    {
+
         if (diagnosticOptions is not null)
         {
             compilation = compilation.WithOptions(
@@ -52,12 +77,20 @@ internal static class AnalyzerTestHarness
     }
 
     private static CSharpCompilation CreateCompilation(string source, string? fileName)
+        => CreateCompilation([(source, fileName ?? string.Empty)]);
+
+    private static CSharpCompilation CreateCompilation(IReadOnlyList<(string Source, string FileName)> sources)
     {
-        SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source, path: fileName ?? string.Empty);
+        SyntaxTree[] syntaxTrees = new SyntaxTree[sources.Count];
+
+        for (int i = 0; i < sources.Count; i++)
+        {
+            syntaxTrees[i] = CSharpSyntaxTree.ParseText(sources[i].Source, path: sources[i].FileName);
+        }
 
         return CSharpCompilation.Create(
             assemblyName: "Touki.Analyzers.TestCompilation",
-            syntaxTrees: [syntaxTree],
+            syntaxTrees: syntaxTrees,
             references: s_references.Value,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
     }
