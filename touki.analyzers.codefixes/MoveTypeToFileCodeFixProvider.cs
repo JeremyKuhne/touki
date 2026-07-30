@@ -342,7 +342,9 @@ public sealed class MoveTypeToFileCodeFixProvider : CodeFixProvider
         }
 
         string currentStem = Path.GetFileNameWithoutExtension(document.FilePath!);
-        string detailStem = $"{qualifiedStem}{detailSeparator}{currentStem}";
+        string detailStem = string.Equals(qualifiedStem, currentStem, StringComparison.OrdinalIgnoreCase)
+            ? qualifiedStem
+            : $"{qualifiedStem}{detailSeparator}{currentStem}";
         string detailCandidate = detailStem + extension;
         if (IsDestinationAvailable(solution, document, detailCandidate))
         {

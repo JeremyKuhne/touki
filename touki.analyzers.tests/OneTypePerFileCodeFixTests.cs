@@ -63,6 +63,19 @@ public class OneTypePerFileCodeFixTests
     }
 
     [TestMethod]
+    public async Task ApplyFix_TypeNameMatchesCurrentStem_UsesNumericSuffix()
+    {
+        const string Source = "class First { } class Bar { }";
+        string directory = Path.Combine(Path.GetTempPath(), $"touki-duplicate-stem-{Guid.NewGuid():N}");
+        string sourcePath = Path.Combine(directory, "Bar.cs");
+
+        CodeFixTestResult result = await ApplyFixAsync(
+            [("Bar.cs", sourcePath, Source)]).ConfigureAwait(false);
+
+        result.Documents.Select(document => document.Name).Should().Contain("Bar.2.cs");
+    }
+
+    [TestMethod]
     public async Task ApplyFix_DirectoryOccupiesDestination_UsesDetailName()
     {
         const string Source = "class First { } class Second { }";

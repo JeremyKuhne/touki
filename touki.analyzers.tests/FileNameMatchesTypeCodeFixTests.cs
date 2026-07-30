@@ -32,25 +32,47 @@ public class FileNameMatchesTypeCodeFixTests
     public async Task ApplyFix_NameDiffers_RenamesFileAndPreservesSource()
     {
         const string Source = "class Foo { }";
+        string directory = Path.Combine(Path.GetTempPath(), $"touki-rename-{Guid.NewGuid():N}");
+        string sourcePath = Path.Combine(directory, "Other.cs");
 
         CodeFixTestResult result = await ApplyFixAsync(
-            [("Other.cs", "C:\\src\\Other.cs", Source)]).ConfigureAwait(false);
+            [("Other.cs", sourcePath, Source)]).ConfigureAwait(false);
 
         CodeFixTestDocument document = result.Documents.Should().ContainSingle().Subject;
         document.Name.Should().Be("Foo.cs");
-        document.FilePath.Should().Be("C:\\src\\Foo.cs");
+        document.FilePath.Should().Be(Path.Combine(directory, "Foo.cs"));
         document.Source.Should().Be(Source);
     }
 
     [TestMethod]
     public async Task ApplyFix_CaseDiffers_PerformsCaseOnlyRename()
     {
+        string directory = Path.Combine(Path.GetTempPath(), $"touki-case-rename-{Guid.NewGuid():N}");
+        string sourcePath = Path.Combine(directory, "foo.cs");
+
         CodeFixTestResult result = await ApplyFixAsync(
-            [("foo.cs", "C:\\src\\foo.cs", "class Foo { }")]).ConfigureAwait(false);
+            [("foo.cs", sourcePath, "class Foo { }")]).ConfigureAwait(false);
 
         CodeFixTestDocument document = result.Documents.Should().ContainSingle().Subject;
         document.Name.Should().Be("Foo.cs");
-        document.FilePath.Should().Be("C:\\src\\Foo.cs");
+        document.FilePath.Should().Be(Path.Combine(directory, "Foo.cs"));
+    }
+
+    [TestMethod]
+    public async Task ApplyFix_UnrootedPath_NormalizesToIsolatedAbsolutePath()
+    {
+        CodeFixTestResult result = await ApplyFixAsync(
+            [("Other.cs", Path.Combine("relative", "Other.cs"), "class Foo { }")]).ConfigureAwait(false);
+
+        CodeFixTestDocument document = result.Documents.Should().ContainSingle().Subject;
+        document.FilePath.Should().NotBeNull();
+        Path.IsPathFullyQualified(document.FilePath!).Should().BeTrue();
+        document.FilePath!.EndsWith(
+            Path.Combine("relative", "Foo.cs"),
+            StringComparison.Ordinal).Should().BeTrue();
+        document.FilePath.StartsWith(
+            Path.GetTempPath(),
+            StringComparison.OrdinalIgnoreCase).Should().BeTrue();
     }
 
     [TestMethod]

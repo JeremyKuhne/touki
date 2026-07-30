@@ -111,10 +111,14 @@ internal static class CodeFixTestHarness
             .WithCompilationOptions(new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,
                 allowUnsafe: true));
+        string temporaryRoot = Path.Combine(Path.GetTempPath(), $"touki-code-fix-{Guid.NewGuid():N}");
 
         foreach ((string name, string filePath, string source) in sources)
         {
-            Document document = project.AddDocument(name, source, filePath: filePath);
+            Document document = project.AddDocument(
+                name,
+                source,
+                filePath: GetAbsoluteTestPath(filePath, temporaryRoot));
             project = document.Project;
         }
 
@@ -265,6 +269,20 @@ internal static class CodeFixTestHarness
             compilerErrors.ToImmutable(),
             analyzerDiagnostics.ToImmutable(),
             fixAllActionOffered);
+    }
+
+    private static string GetAbsoluteTestPath(string filePath, string temporaryRoot)
+    {
+        if (Path.IsPathFullyQualified(filePath))
+        {
+            return filePath;
+        }
+
+        string relativePath = filePath
+            .Replace('\\', Path.DirectorySeparatorChar)
+            .Replace('/', Path.DirectorySeparatorChar)
+            .Replace(':', '_');
+        return Path.GetFullPath(Path.Combine(temporaryRoot, relativePath));
     }
 
     private sealed class TestDiagnosticProvider(ImmutableArray<Diagnostic> diagnostics)
