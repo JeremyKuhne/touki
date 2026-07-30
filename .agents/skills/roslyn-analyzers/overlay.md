@@ -1,19 +1,19 @@
 ---
 core: roslyn-analyzers
-core-pin: v0.12.0
+core-pin: v0.13.0
 ---
 
 # Touki overlay - roslyn-analyzers
 
 Repo-specific companion to the vendored [roslyn-analyzers](SKILL.md) skill. The
-`SKILL.md` and its five sibling pages (`design.md`, `validation.md`,
-`existing-analyzers.md`, `performance.md`, `suppressors.md`) are a **pinned copy of
-the portable core** from
+`SKILL.md` and its seven sibling pages (`design.md`, `symbol-actions.md`,
+`release-tracking.md`, `validation.md`, `existing-analyzers.md`, `performance.md`,
+`suppressors.md`) are a **pinned copy of the portable core** from
 [JeremyKuhne/agent-skills](https://github.com/JeremyKuhne/agent-skills) (see the
 `metadata.github-*` provenance in `SKILL.md`). Do not hand-edit the core -
 `gh skill update` would flag the drift. Everything touki-specific lives here.
 
-> **Pinned to a release.** The core is pinned to the commons **v0.12.0** tag. Pull
+> **Pinned to a release.** The core is pinned to the commons **v0.13.0** tag. Pull
 > later upstream changes with `gh skill update roslyn-analyzers` (review the diff,
 > re-pin to the new tag).
 
@@ -63,28 +63,14 @@ starting `DEVIATION from dotnet/roslyn:` with the issue number that motivated th
 
 ## Symbol-walking analyzers
 
-Hard-won specifics from writing [NamingStyleAnalyzer](../../../touki.analyzers/NamingStyleAnalyzer.cs),
-which visits every declared symbol in a compilation:
+The portable rules - covering each declaration shape once, reporting only names
+owned at the report site (indexers, overrides, explicit implementations), and
+diagnosing `AD0001` and static-initializer ordering - were upstreamed and now ship
+in the core's [symbol-actions.md](symbol-actions.md) as of commons **v0.13.0**.
 
-- **An indexer's `ISymbol.Name` is the synthetic `this[]`.** Any analyzer that reasons
-  about names has to filter `IPropertySymbol { IsIndexer: true }` or it reports on a
-  name nobody wrote and no code fix can change.
-- **Filter what cannot be fixed at the report site**: `symbol.IsOverride` and non-empty
-  `ExplicitInterfaceImplementations` both mean the name is dictated elsewhere. Report
-  the declaration, not the copy.
-- **`RegisterSymbolAction` does not cover parameters or type parameters.** Visit them
-  from the declaring symbol's action (`INamedTypeSymbol.TypeParameters`,
-  `IMethodSymbol.Parameters`), and reach locals and local functions with
-  `RegisterOperationAction(OperationKind.VariableDeclarator, OperationKind.LocalFunction)`.
-- **An unhandled exception in an analyzer surfaces as `AD0001`, not as a stack trace**,
-  and under `TreatWarningsAsErrors` it fails the build with only the exception type and
-  message. `ArgumentNullException` with `Parameter 'value'` from a symbol-walking
-  analyzer is almost always `string.StartsWith(null)` reached through a `default` struct.
-- **Static initializers run in declaration order.** A `static readonly`/`{ get; } =`
-  member whose initializer reads another static member declared *below* it gets that
-  member's zero value. For a struct with `string` fields that is a fully null instance
-  that only explodes later, inside the analyzer, as `AD0001`. Declare the dependency
-  first.
+Touki's worked example of that page is
+[NamingStyleAnalyzer](../../../touki.analyzers/NamingStyleAnalyzer.cs), which
+visits every declared symbol in a compilation.
 
 ## Test harness gotchas
 
@@ -113,29 +99,13 @@ Two consequences to document wherever the rule is configured:
 
 ## Release tracking (`AnalyzerReleases.*.md`)
 
-The core's design.md Rule 7 covers the happy path. Touki specifics and the traps:
-
-- Release headings must be **numeric** (`## Release 0.4.0`). A prerelease label such
-  as `0.4.0-alpha.1` does not parse, so record the exact shipped version in a `;`
-  comment above the heading instead.
-- Once a rule is listed under a shipped release its id, category, and severity are
-  frozen; changing one needs a `### Changed Rules` entry. Renumbering is free only
-  while the rule is still unshipped.
-- The only valid headings are `### New Rules`, `### Removed Rules`, and
-  `### Changed Rules`. Anything else fails with **RS2007**.
-- A suppression id cannot be a live row - **RS2002**. See
-  [suppressors.md](suppressors.md) Rule 5 for the commented-row convention this repo
-  uses instead.
-
-Which rule fires when:
-
-| Code | Means |
-| --- | --- |
-| RS2000 | A declared diagnostic id is missing from the unshipped file |
-| RS2001 | A listed entry's category/severity disagrees with the descriptor |
-| RS2002 | A listed id is not a supported diagnostic of any analyzer |
-| RS2007 | Invalid or unknown heading in a release file |
-| RS2008 | Release tracking not enabled (files missing from `AdditionalFiles`) |
+The file format, the numeric release heading, the frozen-once-shipped rule, the
+`;`-comment for an exact prerelease package version, and the RS2000-RS2008 guide
+were upstreamed and now ship in the core's
+[release-tracking.md](release-tracking.md) as of commons **v0.13.0**. It binds to
+the two `AnalyzerReleases.*.md` files listed under "Concrete bindings" above; the
+repo's commented-row convention for suppression ids is in
+[suppressors.md](suppressors.md) Rule 5.
 
 ## Documentation and help links
 

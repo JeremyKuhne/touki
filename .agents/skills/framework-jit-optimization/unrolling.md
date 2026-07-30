@@ -56,7 +56,7 @@ if (*ptr == oldShort) *ptr = newShort; ptr++;
 ```
 
 Every load now depends on the previous `ptr++`. The JIT does not recover the
-parallelism by recognizing the pattern. Measured: 0.84&times; vs 1.12&times;
+parallelism by recognizing the pattern. Measured: 0.84× vs 1.12×
 ratio at length 256 on `net481` - the `ptr++` form is actually slower
 than the un-unrolled scalar baseline.
 
@@ -75,7 +75,7 @@ for (int i = 0; i < unrollEnd; i += 4)
 
 The `net481` JIT does not hoist the `ptr + i` calculation. Each `ptr[i + k]`
 becomes `lea` + `mov`. **Worse than the scalar baseline at length 4096
-(1.22&times;).** Always advance the pointer instead.
+(1.22×).** Always advance the pointer instead.
 
 ### Unroll-by-8
 
@@ -89,7 +89,7 @@ while (ptr < unrollEnd)
 }
 ```
 
-Wins at length 16 (small loop, fewer iterations). **Regresses 1.3-1.6&times;
+Wins at length 16 (small loop, fewer iterations). **Regresses 1.3-1.6×
 at length 256+** on `net481`. Most likely the larger method body trips a
 register-allocation or loop-alignment threshold. The .NET 10 JIT recovers but
 `net481` does not.

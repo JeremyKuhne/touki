@@ -23,8 +23,8 @@ slightly less aggressive unrolling lose to a hand-written `ushort*` /
 
 | Method | Realistic input | Win factor (length 4096) |
 | --- | --- | --- |
-| `Span<T>.Replace(T, T)` | mutate every match in place | 2.18-3.08&times; faster than `IndexOf`-walking |
-| `IndexOfAnyExcept(T)` | typically scans most of the buffer (e.g. trim, parse) | 0.34&times; vs scalar = 3&times; faster |
+| `Span<T>.Replace(T, T)` | mutate every match in place | 2.18-3.08× faster than `IndexOf`-walking |
+| `IndexOfAnyExcept(T)` | typically scans most of the buffer (e.g. trim, parse) | 0.34× vs scalar = 3× faster |
 
 These are the methods that already have `typeof(T)` specialization in the
 Framework-only tree.
@@ -56,9 +56,9 @@ Measured ratios vs a full-scan `ushort*` unroll-4 specialization on `net481`:
 
 | Match density (1 in N) | BCL `IndexOf`-walk vs specialized |
 | ---: | --- |
-| 1   | **9&times; slower** (specialization wins) |
-| 7   | 1.85&times; slower (specialization still wins) |
-| 64  | **0.45&times; slower** (BCL wins) |
+| 1   | **9× slower** (specialization wins) |
+| 7   | 1.85× slower (specialization still wins) |
+| 64  | **0.45× slower** (BCL wins) |
 
 Realistic `Count` calls are sparse (counting newlines in source, separators in a
 path, error markers in a log line). The BCL form is correct.
@@ -84,10 +84,10 @@ return length;
 ```
 
 `O(log n)` BCL calls instead of `O(n)` element compares. At length 4096 with a
-full match this beats any scalar loop by **3.3&times;** even on `net481`.
+full match this beats any scalar loop by **3.3×** even on `net481`.
 
 The early-divergence case (mismatch at index 8) is roughly tied with a scalar
-specialization - absolute saving is ~8 ns - not worth a 3.3&times;
+specialization - absolute saving is ~8 ns - not worth a 3.3×
 regression on the long-prefix case (path normalization, string interning,
 sorted-key compression are the realistic callers).
 

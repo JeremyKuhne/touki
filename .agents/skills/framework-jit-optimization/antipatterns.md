@@ -14,7 +14,7 @@ your specific call pattern.
 The `net481` JIT does not lower the ternary into a `cmov` for `ushort` / `byte`
 stores. You get a guaranteed store every iteration regardless of whether the
 value changed. For a sparse-match `Replace` workload (the realistic case), the
-extra writes cost 1.5-3&times; vs the branchful form below.
+extra writes cost 1.5-3× vs the branchful form below.
 
 ```c#
 // GOOD on net481.
@@ -77,7 +77,7 @@ The bit-trick (`(x - Lo16) & ~x & Hi16`) adds a dependent-chain of 3 arithmetic
 ops per chunk, plus a load and an XOR, plus the broadcast computation. **Whenever
 any lane matches, the code falls through to the four scalar checks** - you
 pay the SWAR overhead **on top of** the mutation cost. On dense matches this
-regresses by 3&times;.
+regresses by 3×.
 
 The classic strchr-style SWAR optimization makes sense in C without true SIMD;
 on `net481` it does not pay back its overhead even for sparse data, because the
@@ -102,7 +102,7 @@ The attribute looks like a non-functional hint, but on `net481` it's load-bearin
 A small specialized loop that doesn't get inlined into its caller becomes a
 JIT-time call, defeating the entire `typeof(T)` specialization (because the
 caller now invokes a generic stub through a virtual dispatch mechanism the
-specialization was meant to elide). Measured: 1.82&times; &rarr; 1.07&times; on
+specialization was meant to elide). Measured: 1.82× → 1.07× on
 a tight scalar loop at length 16 just from adding the attribute back.
 
 If you really must remove it (e.g. method body becomes too large), measure

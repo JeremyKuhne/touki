@@ -1,6 +1,6 @@
 ---
 core: create-pr
-core-pin: v0.10.0
+core-pin: v0.13.0
 ---
 
 # Touki overlay - create-pr
@@ -44,6 +44,14 @@ overlay narrows it:
 
 The latest [AGENTS.md](../../../AGENTS.md#working-with-the-user-on-changes)
 always wins over examples in the vendored core.
+
+## Automated review (the core's step 7)
+
+**Copilot auto-review is always on for this repo.** A review posts automatically
+a minute or two after the PR opens and after every push, so the core's "if
+nothing auto-reviews, offer to request a reviewer" branch never applies here: do
+not offer to request a reviewer, and do not poll. Say a review will land on its
+own, then hand off to [`address-pr-feedback`](../address-pr-feedback/SKILL.md).
 
 ## Updating
 

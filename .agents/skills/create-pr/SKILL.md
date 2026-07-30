@@ -6,10 +6,10 @@ metadata:
     applicability: git-github
     binding: optional-overlay
     github-path: skills/create-pr
-    github-pinned: v0.10.0
-    github-ref: refs/tags/v0.10.0
+    github-pinned: v0.13.0
+    github-ref: refs/tags/v0.13.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: dcdd58e7cad32b4907ce6a8bf0fe6bf01cb14f59
+    github-tree-sha: 6fef038602c67d66b0c8278e8f7681b56803a95f
     maturity: canary
     portability: portable
     related: pre-pr-self-review, address-pr-feedback
@@ -34,6 +34,12 @@ once the user supplies an explicit publishing verb - `commit`, `push`,
 `ship it`, or equivalent. See your repo's agent guidance (the "Working with
 the user on changes" rules in `AGENTS.md`) for the canonical rule and the
 recurring not-approval phrasings.
+
+Branch-name confirmation is a separate prerequisite, not part of publish
+approval. If the current branch is `main`, do not choose or create a branch
+until the user confirms its name. In a non-interactive run where confirmation
+cannot be requested, stop and report the proposed name; never infer confirmation
+from the request to open a PR.
 
 Before running this workflow, walk through the `pre-pr-self-review` checklist -
 it catches the test, allocation, overflow-arithmetic, and TFM-phrasing mistakes
@@ -67,6 +73,9 @@ Decide the PR base:
   before creating it. Offer the suggested kebab-case name and a way to enter a
   different name. If the host has no structured question tool, ask in chat.
   Known client adapters are in [host-adapters.md](host-adapters.md).
+- **Do not run `git switch -c`, `git checkout -b`, or `git branch <name>` until
+  that confirmation is received.** If the host cannot ask in the current mode,
+  stop with the proposed branch name.
 - Use `git switch -c <branch>` to move uncommitted changes onto the new
   branch.
 - If already on a non-`main` branch, keep using it.

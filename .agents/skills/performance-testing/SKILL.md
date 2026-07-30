@@ -6,10 +6,10 @@ metadata:
     applicability: dotnet-project-gated
     binding: optional-overlay
     github-path: skills/performance-testing
-    github-pinned: v0.10.0
-    github-ref: refs/tags/v0.10.0
+    github-pinned: v0.13.0
+    github-ref: refs/tags/v0.13.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 5a20e5995ee9e6d6d6a24131e1522f0084761e79
+    github-tree-sha: 9cdddfa386a045ddc14a9799126929da23341e89
     maturity: canary
     portability: portable
     related: framework-jit-optimization, scratch-buffer-strategy, pre-pr-self-review
@@ -141,6 +141,9 @@ inspection.
   method, the interactive picker, and useful switches.
 - [interpreting-results.md](interpreting-results.md) - before/after discipline on
   both TFMs and reading the memory columns.
+- [investigation-workflow.md](investigation-workflow.md) - fresh-state phase
+   measurement versus profiling, experiment ledgers, exact-source oracles, and
+   reconstructable run provenance for multi-step investigations.
 - [reading-codegen.md](reading-codegen.md) - seeing the C# lowering, IL, and JIT
   asm behind a number: sharplab, `[DisassemblyDiagnoser]`, `[HardwareCounters]`,
   the `DOTNET_JitDisasm*` knobs, and the tiering/PGO inspection traps.

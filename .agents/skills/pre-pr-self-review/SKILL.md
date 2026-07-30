@@ -6,10 +6,10 @@ metadata:
     applicability: universal
     binding: optional-overlay
     github-path: skills/pre-pr-self-review
-    github-pinned: v0.10.0
-    github-ref: refs/tags/v0.10.0
+    github-pinned: v0.13.0
+    github-ref: refs/tags/v0.13.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 880e117910c69bb909f59a3dfea81cbbf33ac047
+    github-tree-sha: c172ca7a01a7368bb4fee88b4d0b756442d38976
     maturity: canary
     portability: portable
     related: create-pr, address-pr-feedback, security-review, performance-testing
@@ -109,7 +109,7 @@ patterns in a `polyfill-correctness` overlay companion):
 - Performance claims name the JIT (net481 RyuJIT vs modern .NET RyuJIT)
   and are measured or explicitly marked unmeasured.
 
-If the change is not in the Framework-only tree, skip to &sect;3.
+If the change is not in the Framework-only tree, skip to section 3.
 
 ## 3. PR description matches reality
 

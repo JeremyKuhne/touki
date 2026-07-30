@@ -49,7 +49,10 @@ This repo also uses:
 - Portfolio metadata - string-valued `portability`, `applicability`, `binding`,
   `risk`, `maturity`, `requires`, and `related`. The vocabularies are enforced by
   the bundled strict validator; relationship values are `none` or comma-separated
-  skill names.
+  skill names. A `requires` target must be present in this repo. A `related`
+  target must be too, except on a vendored core, whose metadata is owned upstream
+  and may name a portfolio sibling this repo deliberately does not vendor; record
+  that decision in the core's overlay and in the catalog.
 
 Touki uses the ASCII skill-name subset `^[a-z0-9-]{1,64}$`, matching current
 VS Code discovery. Exact vendored payloads can retain upstream punctuation and
@@ -80,7 +83,7 @@ sentence. The overlay starts with:
 ```yaml
 ---
 core: skill-name
-core-pin: v0.10.0
+core-pin: v0.13.0
 ---
 ```
 

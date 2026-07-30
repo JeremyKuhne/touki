@@ -1,21 +1,21 @@
 ---
 core: performance-testing
-core-pin: v0.10.0
+core-pin: v0.13.0
 ---
 
 # Touki overlay - performance-testing
 
 Repo-specific companion to the vendored [performance-testing](SKILL.md) skill.
-The `SKILL.md` and its five sibling pages (`authoring.md`, `running.md`,
-`interpreting-requests.md`, `interpreting-results.md`, `reading-codegen.md`) are
-a **pinned copy of the portable core** from
+The `SKILL.md` and its six sibling pages (`authoring.md`, `running.md`,
+`interpreting-requests.md`, `interpreting-results.md`, `investigation-workflow.md`,
+`reading-codegen.md`) are a **pinned copy of the portable core** from
 [JeremyKuhne/agent-skills](https://github.com/JeremyKuhne/agent-skills) (see the
 `metadata.github-*` provenance in `SKILL.md`'s frontmatter). Do not hand-edit the
 core - `gh skill update` would flag the drift. Everything touki-specific lives
 here, plus the two profiling pages below, which are a touki overlay (they drive
 the repo's trace analyzer).
 
-> **Pinned to a release.** The core is pinned to the commons **v0.10.0** tag. Pull
+> **Pinned to a release.** The core is pinned to the commons **v0.13.0** tag. Pull
 > later upstream changes with `gh skill update performance-testing` (review the
 > diff, re-pin to the new tag).
 
@@ -70,30 +70,22 @@ The full field manual is [docs/performance-investigation.md](../../../docs/perfo
 
 ## Candidate upstream improvements
 
-The generic parts of [profiling.md](profiling.md) added after the July 2026 NRBF
-investigation are intentionally being validated in Touki before promotion to
-[`JeremyKuhne/agent-skills`](https://github.com/JeremyKuhne/agent-skills).
-
-Implemented locally and candidates for promotion:
-
-- separate harness guidance for one-shot phase measurement versus adaptive phase
-  profiling;
-- an experiment ledger that retains rejected variants and allocation outcomes.
+None pending. The multi-phase investigation guidance that was being validated
+here - one-shot phase measurement versus adaptive phase profiling, the experiment
+ledger that retains rejected variants, exact-source comparison, and
+reconstructable run-artifact provenance - was upstreamed and now ships in the
+core's [investigation-workflow.md](investigation-workflow.md) as of commons
+**v0.13.0**. The touki [profiling.md](profiling.md) page defers to it instead of
+restating it.
 
 Periodic CPU sample-quality, provider-state, source-resolution, BenchmarkDotNet
-scope, and trace-manifest contracts are now owned by the filtrace 0.6 tool-shipped
+scope, and trace-manifest contracts are owned by the filtrace 0.6 tool-shipped
 skill. They remain cross-referenced from Touki's profiling page but are not
 `agent-skills` promotion candidates.
 
-Further portable candidates are specified in
-[performance-investigation-agent-tooling-retrospective.md](../../../docs/performance-investigation-agent-tooling-retrospective.md)
-but are not yet implemented as local skill guidance: exact-source comparison and
-reconstructable run-artifact provenance. Keep that distinction until the workflow
-has been exercised locally or promoted directly upstream.
-
-Do not copy these changes into the pinned core locally. Once the guidance has
-settled, uplevel the portable wording to `agent-skills`, publish a new commons
-version, and re-vendor/re-pin the performance-testing core here. Filtrace release
+Do not copy new guidance into the pinned core locally. Once wording has settled,
+uplevel the portable part to `agent-skills`, publish a new commons version, and
+re-vendor/re-pin the performance-testing core here. Filtrace release
 [0.6.0](https://github.com/JeremyKuhne/filtrace/releases/tag/v0.6.0) completed the
 product, capture-script, and tool-shipped-skill work from
 [filtrace#42](https://github.com/JeremyKuhne/filtrace/issues/42); do not promote
