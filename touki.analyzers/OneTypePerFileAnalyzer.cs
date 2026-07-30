@@ -23,8 +23,12 @@ namespace Touki.Analyzers;
 ///   so it is not counted.
 ///  </para>
 ///  <para>
-///   The diagnostic is reported on the identifier of the extra type, which is where the built-in
-///   "Move type to <c>&lt;TypeName&gt;.cs</c>" refactoring is offered - accept it to split the file.
+///   The diagnostic is reported on the identifier of the extra type. The companion code fix moves the
+///   declaration to a new file and supports solution-wide Fix All, including delegates and nested types.
+///  </para>
+///  <para>
+///   Set <c>dotnet_code_quality.TOUKI0020.exclude_nested_types = true</c> to enforce top-level types while
+///   deferring nested-type adoption.
 ///  </para>
 ///  <para>
 ///   <b>Constraints and limitations.</b> The rule is purely syntactic; it never binds a symbol.
@@ -62,6 +66,11 @@ public sealed class OneTypePerFileAnalyzer : DiagnosticAnalyzer
     /// </summary>
     public const string DiagnosticId = "TOUKI0020";
 
+    /// <summary>
+    ///  The <c>.editorconfig</c> key that excludes nested types while retaining top-level type enforcement.
+    /// </summary>
+    public const string ExcludeNestedTypesOption = "dotnet_code_quality.TOUKI0020.exclude_nested_types";
+
     private static readonly DiagnosticDescriptor s_rule = new(
         id: DiagnosticId,
         title: "Declare one type per file",
@@ -96,8 +105,13 @@ public sealed class OneTypePerFileAnalyzer : DiagnosticAnalyzer
             return;
         }
 
+        AnalyzerConfigOptions options = context.Options.AnalyzerConfigOptionsProvider.GetOptions(context.Tree);
+        bool excludeNestedTypes = options.TryGetValue(ExcludeNestedTypesOption, out string? configuredValue)
+            && bool.TryParse(configuredValue.Trim(), out bool configuredExcludeNestedTypes)
+            && configuredExcludeNestedTypes;
+
         List<MemberDeclarationSyntax> types = [];
-        CollectTypes(compilationUnit.Members, types);
+        CollectTypes(compilationUnit.Members, types, includeNestedTypes: !excludeNestedTypes);
 
         if (types.Count < 2)
         {
@@ -119,14 +133,17 @@ public sealed class OneTypePerFileAnalyzer : DiagnosticAnalyzer
     ///  Adds every type declared in <paramref name="members"/> to <paramref name="types"/> in source order,
     ///  descending through namespace declarations and type bodies alike.
     /// </summary>
-    private static void CollectTypes(SyntaxList<MemberDeclarationSyntax> members, List<MemberDeclarationSyntax> types)
+    private static void CollectTypes(
+        SyntaxList<MemberDeclarationSyntax> members,
+        List<MemberDeclarationSyntax> types,
+        bool includeNestedTypes)
     {
         foreach (MemberDeclarationSyntax member in members)
         {
             switch (member)
             {
                 case BaseNamespaceDeclarationSyntax namespaceDeclaration:
-                    CollectTypes(namespaceDeclaration.Members, types);
+                    CollectTypes(namespaceDeclaration.Members, types, includeNestedTypes);
                     break;
                 case TypeDeclarationSyntax typeDeclaration:
                     if (IsNamedType(typeDeclaration)
@@ -136,7 +153,11 @@ public sealed class OneTypePerFileAnalyzer : DiagnosticAnalyzer
                         types.Add(typeDeclaration);
                     }
 
-                    CollectTypes(typeDeclaration.Members, types);
+                    if (includeNestedTypes)
+                    {
+                        CollectTypes(typeDeclaration.Members, types, includeNestedTypes);
+                    }
+
                     break;
                 case EnumDeclarationSyntax or DelegateDeclarationSyntax:
                     // Neither can be partial or contain a nested type, so they are always a plain leaf.

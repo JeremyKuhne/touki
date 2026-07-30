@@ -20,7 +20,7 @@ name a field for what it actually is.
 | [TOUKI0004](#touki0004) | By-value copy of a non-copyable struct | Reliability | Warning | - | `[NonCopyable]` |
 | [TOUKI0010](#touki0010) | Dispose a `[MustDispose]` value deterministically | Reliability | Warning | - | `[MustDispose]` |
 | [TOUKI0011](#touki0011) | Avoid large `stackalloc` allocations | Reliability | Warning | Yes | - |
-| [TOUKI0020](#touki0020) | Declare one type per file | Maintainability | Warning | - | - |
+| [TOUKI0020](#touki0020) | Declare one type per file | Maintainability | Warning | Yes | - |
 | [TOUKI0021](#touki0021) | File name should match the type it declares | Maintainability | Warning | Yes | - |
 | [TOUKI0022](#touki0022) | Avoid tab characters | Maintainability | **Disabled** | Yes | - |
 | [TOUKI0023](#touki0023) | Remove trailing whitespace | Maintainability | Warning | - | - |
@@ -142,9 +142,24 @@ Value.cs                 // partial struct Value - its own members
 Value.TypeFlagOfT.cs     // partial struct Value { class TypeFlag<T> }
 ```
 
-There is no code fix, because Roslyn's built-in **Move type to `<Name>.cs`** refactoring
-already does the job. The diagnostic is reported on the type identifier, which is exactly
-where that refactoring is offered.
+The code fix moves the declaration to a new file and supports IDE solution Fix All. Nested
+types remain nested inside `partial` shells that preserve the containing types' modifiers and
+type parameters. Delegates are supported too. If `Type.cs` already exists, the fix tries the
+qualified nested name (`Container.Type.cs`) and then an approved detail separator; it never
+overwrites an existing document or file.
+
+The fix is deliberately withheld for source files containing preprocessor directives,
+file-local types, declarations that reference file-local types, and linked source files. Those
+shapes cannot be moved independently without changing preprocessing or identity, editing
+several projects at once, or breaking symbol binding.
+
+To enforce top-level types now and defer nested types, set:
+
+```ini
+dotnet_code_quality.TOUKI0020.exclude_nested_types = true
+```
+
+The default is `false`.
 
 ## TOUKI0021
 
@@ -172,7 +187,44 @@ dotnet_code_quality.TOUKI0021.file_name_detail_separators = .-
 
 Comparison is ordinal, so `foo.cs` is reported for type `Foo` even on a case-insensitive
 file system. Files that declare no types - global usings, assembly-level attributes - are
-not reported.
+not reported. An empty partial shell containing conditional directives is also omitted, so a
+file for a conditionally compiled nested type does not disagree between build configurations.
+
+The diagnostic suggests an accepted name that is unoccupied in the current compilation. The
+code fix revalidates that name against the complete solution and filesystem before applying it.
+Nested types prefer `Container.Type.cs`. When a partial type has declarations in several files,
+the current stem is retained as detail, for example `Parser.SecurityTests.cs`, instead of
+colliding on `Parser.cs`. IDE solution Fix All allocates names across the complete solution
+before applying each rename. Linked source files are left unchanged because one physical rename
+would have to update every project that includes the file.
+
+### Adopting TOUKI0020 and TOUKI0021
+
+Adopt TOUKI0020 first with IDE solution Fix All. Splitting declarations is what makes most
+file names satisfy TOUKI0021, so renaming first creates throwaway work. Both severities can be
+scoped by path in `.editorconfig`; keep unconverted directories at `none` and raise completed
+directories to `warning` when staging a large repository.
+
+After splitting, clean up imports through the built-in style lane, then use IDE solution Fix
+All for TOUKI0021:
+
+```powershell
+dotnet format style <project> --diagnostics IDE0005 --severity warn
+```
+
+`dotnet format analyzers` cannot safely apply either structural fix. Its `MSBuildWorkspace`
+persists added source documents as explicit `Compile` items that collide with SDK default
+globs, and it does not support document-info renames. The providers therefore decline Fix All
+and individual actions in that host instead of leaving a broken project. Rerun the IDE0005
+command until it produces no changes. When moving a nested type by hand, repeat the container's
+exact modifiers and type parameters on every `partial` shell; the TOUKI0020 fix does this
+automatically.
+
+For a large migration, compare the author-written metadata type names before and after in
+addition to building and testing. `PEReader` and `MetadataReader.TypeDefinitions` can produce
+the list; walk `GetDeclaringType()` for nested names and exclude compiler-generated names
+containing `<` or `>`. This catches a missing declaration even when the remaining assembly
+still builds and its tests pass.
 
 ## TOUKI0022
 

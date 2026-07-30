@@ -7,8 +7,21 @@ namespace Touki.Analyzers;
 [TestClass]
 public class OneTypePerFileAnalyzerTests
 {
-    private static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(string source) =>
-        await AnalyzerTestHarness.GetDiagnosticsAsync(new OneTypePerFileAnalyzer(), source).ConfigureAwait(false);
+    private static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(
+        string source,
+        string? excludeNestedTypes = null)
+    {
+        Dictionary<string, string>? options = excludeNestedTypes is null
+            ? null
+            : new Dictionary<string, string>
+            {
+                [OneTypePerFileAnalyzer.ExcludeNestedTypesOption] = excludeNestedTypes
+            };
+
+        return await AnalyzerTestHarness
+            .GetDiagnosticsAsync(new OneTypePerFileAnalyzer(), source, options)
+            .ConfigureAwait(false);
+    }
 
     [TestMethod]
     public async Task AnalyzeSyntaxTree_SingleType_ReportsNothing()
@@ -140,6 +153,56 @@ public class OneTypePerFileAnalyzerTests
 
         diagnostics.Should().HaveCount(3);
         diagnostics.Should().OnlyContain(diagnostic => diagnostic.Id == OneTypePerFileAnalyzer.DiagnosticId);
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_NestedTypesExcluded_ReportsNothing()
+    {
+        const string source = """
+            namespace Sample;
+
+            public class Outer
+            {
+                private struct Nested
+                {
+                }
+
+                public enum Kind
+                {
+                    None
+                }
+
+                public delegate void Handler();
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "true").ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_NestedTypesExcluded_StillReportsSecondTopLevelType()
+    {
+        const string source = """
+            namespace Sample;
+
+            public class First
+            {
+                private struct Nested
+                {
+                }
+            }
+
+            public class Second
+            {
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "true").ConfigureAwait(false);
+
+        Location location = diagnostics.Should().ContainSingle().Subject.Location;
+        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Second");
     }
 
     [TestMethod]

@@ -59,7 +59,80 @@ public class FileNameMatchesTypeAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "Other.cs").ConfigureAwait(false);
 
         diagnostics.Should().ContainSingle()
-            .Which.GetMessage().Should().Contain("Other").And.Contain("Foo");
+            .Which.GetMessage().Should().Be("Rename file 'Other' to 'Foo.cs' to match type 'Foo'");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_NameDiffers_ProvidesSuggestedFileName()
+    {
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "Other.cs").ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle()
+            .Which.Properties[FileNameMatchesTypeAnalyzer.SuggestedFileNameProperty].Should().Be("Foo.cs");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_NestedNameDiffers_SuggestsQualifiedFileName()
+    {
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(NestedType, "Unrelated.cs").ConfigureAwait(false);
+
+        Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
+        diagnostic.GetMessage().Should().Be("Rename file 'Unrelated' to 'Foo.Bar.cs' to match type 'Bar'");
+        diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedFileNameProperty].Should().Be("Foo.Bar.cs");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSemanticModel_SplitPartialType_SuggestsCurrentStemAsDetail()
+    {
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new FileNameMatchesTypeAnalyzer(),
+            [
+                ("partial class Foo { int First; }", "/src/FirstPart.cs"),
+                ("partial class Foo { int Second; }", "/src/SecondPart.cs")
+            ]).ConfigureAwait(false);
+
+        Diagnostic diagnostic = diagnostics.Single(
+            candidate => candidate.Location.SourceTree!.FilePath == "/src/FirstPart.cs");
+        diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedFileNameProperty]
+            .Should().Be("Foo.FirstPart.cs");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSemanticModel_SplitPartialType_UsesConfiguredDetailSeparator()
+    {
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new FileNameMatchesTypeAnalyzer(),
+            [
+                ("partial class Foo { int First; }", "/src/FirstPart.cs"),
+                ("partial class Foo { int Second; }", "/src/SecondPart.cs")
+            ],
+            new Dictionary<string, string>
+            {
+                [FileNameMatchesTypeAnalyzer.DetailSeparatorsOption] = "-"
+            }).ConfigureAwait(false);
+
+        Diagnostic diagnostic = diagnostics.Single(
+            candidate => candidate.Location.SourceTree!.FilePath == "/src/FirstPart.cs");
+        diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedFileNameProperty]
+            .Should().Be("Foo-FirstPart.cs");
+        diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedDetailSeparatorProperty]
+            .Should().Be("-");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSemanticModel_PreferredFileNameOccupied_SuggestsCurrentStemAsDetail()
+    {
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new FileNameMatchesTypeAnalyzer(),
+            [
+                ("class Foo { }", "/src/Unrelated.cs"),
+                ("class Occupant { }", "/src/Foo.cs")
+            ]).ConfigureAwait(false);
+
+        Diagnostic diagnostic = diagnostics.Single(
+            candidate => candidate.Location.SourceTree!.FilePath == "/src/Unrelated.cs");
+        diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedFileNameProperty]
+            .Should().Be("Foo.Unrelated.cs");
     }
 
     [TestMethod]
@@ -254,6 +327,78 @@ public class FileNameMatchesTypeAnalyzerTests
     }
 
     [TestMethod]
+    public async Task AnalyzeSyntaxTree_ConditionallyEmptyPartialShell_ReportsNothing()
+    {
+        string source = """
+            public sealed partial class ETWTraceEventSource
+            {
+            #if TARGET_WINDOWS
+                private readonly record struct ClassicTemplateCacheEntry;
+            #endif
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics =
+            await AnalyzeAsync(source, "ClassicTemplateCacheEntry.cs").ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_UnconditionallyEmptyPartialType_ReportsDiagnostic()
+    {
+        string source = """
+            partial class Foo
+            {
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Other.cs").ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_ConditionallyEmptyContributingPartialType_ReportsNothing()
+    {
+        string source = """
+            [System.Obsolete]
+            public partial class Foo
+            {
+            #if TARGET_WINDOWS
+                private class Nested
+                {
+                }
+            #endif
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Other.cs").ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_ConditionallyEmptyDocumentedPartialType_ReportsNothing()
+    {
+        string source = """
+            /// <summary>Owns nested types.</summary>
+            public partial class Foo
+            {
+            #if TARGET_WINDOWS
+                private class Nested
+                {
+                }
+            #endif
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Other.cs").ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
     public async Task AnalyzeSyntaxTree_NoFilePath_ReportsNothing()
     {
         // An in-memory tree has no name to match against.
@@ -308,6 +453,15 @@ public class FileNameMatchesTypeAnalyzerTests
     {
         ImmutableArray<Diagnostic> diagnostics =
             await AnalyzeAsync(SimpleType, "Foo.Windows.cs", separators).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_ConfiguredInvalidSeparators_FallsBackToDefault()
+    {
+        ImmutableArray<Diagnostic> diagnostics =
+            await AnalyzeAsync(SimpleType, "Foo.Windows.cs", separators: "/").ConfigureAwait(false);
 
         diagnostics.Should().BeEmpty();
     }
