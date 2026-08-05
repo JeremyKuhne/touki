@@ -3,7 +3,7 @@
 Reference for the extended-glob feature surface in
 [`Touki.Io.Globbing`](../touki/Touki/Io/Globbing/). Covers the five extglob
 constructs, how they relate to the "normal" glob metacharacters
-(`*`, `?`, `[...]`), how to turn the feature on, and where touki agrees with
+(`*`, `?`, `[...]`), how to turn the feature on, and where Touki agrees with
 - or deliberately diverges from - bash.
 
 If you only need the surface-level API contract, the
@@ -213,10 +213,10 @@ short-circuits to `null` there).
 
 ### Documented divergence
 
-Bash and touki have a known negation divergence outside the current oracle row
+Bash and Touki have a known negation divergence outside the current oracle row
 set:
 
-| Pattern | Input | bash 5.x | touki |
+| Pattern | Input | bash 5.x | Touki |
 | ------- | ----- | -------- | ----- |
 | `!(*)`  | `""`  | match    | no match |
 

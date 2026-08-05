@@ -83,6 +83,7 @@ cultures, and falls back to the assembly's embedded neutral resources.
 
 ```csharp
 using System.Globalization;
+using System.IO;
 using Touki.Resources;
 
 SatelliteStringResourceManager resources = new(

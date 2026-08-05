@@ -1,7 +1,7 @@
 # Touki Analyzers
 
 `KlutzyNinja.Touki` ships a set of Roslyn analyzers **inside the package**. There is no
-separate analyzer package to install - adding the package reference is enough, and shipped
+separate analyzer package to install - adding the package reference is enough. The shipped
 rules start running on the next build and in the IDE. This page also documents
 [TOUKI0022](#touki0022) and [TOUKI0023](#touki0023), which are present on the main branch
 but have not been released in the package. TOUKI0041 ships disabled, and the upcoming
