@@ -9,15 +9,18 @@ namespace Touki.Io.Globbing;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   Each dialect targets the documented behavior of an existing matcher. See
-///   <c>docs/globbing.md</c> for the dialect matrix and intentional deviations.
+///   Each dialect models the syntax and core behavior of an existing matcher.
+///   Defaults and edge cases are not always drop-in compatible. See
+///   <c>docs/globbing.md</c> for the dialect matrix and intentional differences.
 ///  </para>
 /// </remarks>
 public enum GlobDialect
 {
     /// <summary>
     ///  POSIX <c>fnmatch</c> without <c>FNM_PATHNAME</c>. Wildcards match across
-    ///  any character including <c>/</c>.
+    ///  any character including <c>/</c>. Touki applies <c>FNM_PERIOD</c>-style
+    ///  leading-dot protection by default; use <see cref="GlobOptions.MatchLeadingDot"/>
+    ///  to model a call without that flag.
     /// </summary>
     /// <remarks>
     ///  <para>
@@ -30,7 +33,8 @@ public enum GlobDialect
 
     /// <summary>
     ///  <see cref="Posix"/> with path-mode semantics (<c>FNM_PATHNAME</c>). Wildcards
-    ///  do not cross separator characters.
+    ///  do not cross separator characters. Leading-dot protection currently applies
+    ///  only at the start of the complete input, not after every separator.
     /// </summary>
     PosixPath,
 
@@ -47,7 +51,9 @@ public enum GlobDialect
     Bash,
 
     /// <summary>
-    ///  Git <c>wildmatch</c> / <c>.gitignore</c> semantics.
+    ///  Git <c>wildmatch</c> / <c>.gitignore</c> semantics. Touki protects a
+    ///  leading dot by default; use <see cref="GlobOptions.MatchLeadingDot"/> to
+    ///  align with ordinary Git <c>wildmatch</c> behavior.
     /// </summary>
     /// <remarks>
     ///  <para>
@@ -69,7 +75,8 @@ public enum GlobDialect
 
     /// <summary>
     ///  <c>Microsoft.Extensions.FileSystemGlobbing.Matcher</c> semantics. May diverge
-    ///  from <see cref="MSBuild"/> on edge cases; see <c>docs/globbing.md</c>.
+    ///  from <see cref="MSBuild"/> on edge cases. Touki is case-sensitive by default,
+    ///  unlike the parameterless <c>Matcher</c>; see <c>docs/globbing.md</c>.
     /// </summary>
     /// <remarks>
     ///  <para>
@@ -80,7 +87,9 @@ public enum GlobDialect
     FileSystemGlobbing,
 
     /// <summary>
-    ///  Simple file-name expression matching (<c>*</c> and <c>?</c> only).
+    ///  Simple file-name expression matching (<c>*</c> and <c>?</c> only). Touki
+    ///  defaults to case-sensitive matching and treats backslash literally, unlike
+    ///  the defaults of <c>FileSystemName.MatchesSimpleExpression</c>.
     /// </summary>
     /// <remarks>
     ///  <para>
@@ -91,7 +100,10 @@ public enum GlobDialect
     Simple,
 
     /// <summary>
-    ///  PowerShell <c>-like</c> / <c>WildcardPattern</c> semantics.
+    ///  PowerShell <c>WildcardPattern</c>-style semantics. Touki defaults to
+    ///  case-sensitive matching; use <see cref="GlobOptions.IgnoreCase"/> for
+    ///  <c>-like</c>-style casing. Bracket-expression extensions differ; see
+    ///  <c>docs/globbing.md</c>.
     /// </summary>
     /// <remarks>
     ///  <para>

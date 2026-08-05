@@ -14,9 +14,7 @@ points are:
   via `<TargetFrameworks>`.
 - Set `<ImplicitUsings>disable</ImplicitUsings>` so you can redirect
   `System.IO` to `Microsoft.IO` on .NET Framework without ambiguity.
-- Reference `KlutzyNinja.Touki`. On .NET Framework, also reference
-  `Microsoft.Bcl.Memory` (Touki's transitive dependency surfaces a
-  security advisory until the Touki package is updated).
+- Reference `KlutzyNinja.Touki`.
 - On .NET (non-framework), opt into `<IsAotCompatible>true</IsAotCompatible>`
   to get the AOT analyzer. Touki itself is written to be AOT-friendly.
 
@@ -34,16 +32,14 @@ of the BCL in your code:
   `Touki.Interop`, `Touki.Io`, and `Touki.Text` so extension members
   light up on the BCL types you already use (`Convert`, `Random`,
   `string`, `Stream`, ...).
-- On .NET Framework, adds `Framework.Touki` for the small amount of
-  Touki-specific framework-only code.
 
 ## What the example demonstrates
 
 [ExampleClass.cs](ExampleClass.cs) calls a handful of APIs that "just
 work" on both targets thanks to Touki:
 
-- `DefaultInterpolatedStringHandler` (interpolated strings without
-  allocations on .NET Framework).
+- `DefaultInterpolatedStringHandler` (low-allocation interpolation on .NET
+  Framework without boxing or intermediate formatting strings).
 - `System.Numerics.BitOperations` (`LeadingZeroCount`, `TrailingZeroCount`,
   `PopCount`, `IsPow2`).
 - `System.Threading.Lock` and `lock(Lock)` syntax.

@@ -63,12 +63,13 @@ internal static class GlobDialectExtensions
     /// </summary>
     /// <remarks>
     ///  <para>
-    ///   POSIX-family, MSBuild, and FileSystemGlobbing dialects use backslash
-    ///   (<c>\</c>) as the escape character. PowerShell <c>WildcardPattern</c> /
+    ///   POSIX, PosixPath, Bash, and Git dialects use backslash (<c>\</c>) as
+    ///   the escape character. PowerShell <c>WildcardPattern</c> /
     ///   <c>-like</c> uses backtick (<c>`</c>) per
     ///   <see href="https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_wildcards">
-    ///   about_Wildcards</see>. The <see cref="GlobDialect.Simple"/> dialect (matching
-    ///   <c>FileSystemName.MatchesSimpleExpression</c>) has no escape character.
+    ///   about_Wildcards</see>. <see cref="GlobDialect.Simple"/>,
+    ///   <see cref="GlobDialect.MSBuild"/>, and
+    ///   <see cref="GlobDialect.FileSystemGlobbing"/> have no escape character.
     ///  </para>
     ///  <para>
     ///   When <see cref="GlobOptions.NoEscape"/> is set the method returns <c>'\0'</c>
@@ -89,19 +90,19 @@ internal static class GlobDialectExtensions
     }
 
     /// <summary>
-    ///  Returns <see langword="true"/> when the dialect's documented default allows a
+    ///  Returns <see langword="true"/> when the dialect's current default allows a
     ///  leading <c>.</c> in the input to be matched by a wildcard (<c>?</c>, <c>*</c>,
     ///  or a character class), without the caller having to set
     ///  <see cref="GlobOptions.MatchLeadingDot"/> explicitly.
     /// </summary>
     /// <remarks>
     ///  <para>
-    ///   POSIX-family dialects (<see cref="GlobDialect.Posix"/>,
-    ///   <see cref="GlobDialect.PosixPath"/>, <see cref="GlobDialect.Bash"/>,
-    ///   <see cref="GlobDialect.Git"/>) treat a leading <c>.</c> as a "hidden" marker
-    ///   per <c>fnmatch</c>'s <c>FNM_PERIOD</c> rule, requiring a literal <c>.</c>
-    ///   in the pattern. All other dialects - including PowerShell,
-    ///   Simple, MSBuild, FileSystemGlobbing - do not.
+    ///   POSIX, PosixPath, Bash, and Git currently require a literal leading
+    ///   <c>.</c>; all other dialects allow wildcard matches. The POSIX-family
+    ///   behavior models <c>FNM_PERIOD</c> only at the start of the complete input,
+    ///   not after each path separator. Git <c>wildmatch</c> normally allows a
+    ///   wildcard to match a leading dot, so use <see cref="GlobOptions.MatchLeadingDot"/>
+    ///   when that compatibility is required.
     ///  </para>
     /// </remarks>
     public static bool MatchesLeadingDotByDefault(this GlobDialect dialect) => dialect switch
