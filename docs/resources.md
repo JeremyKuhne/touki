@@ -83,13 +83,11 @@ cultures, and falls back to the assembly's embedded neutral resources.
 
 ```csharp
 using System.Globalization;
-using System.IO;
 using Touki.Resources;
 
 SatelliteStringResourceManager resources = new(
     baseName: "MyApp.Resources.Strings",
-    assembly: typeof(Program).Assembly,
-    probeRoot: Path.Combine(AppContext.BaseDirectory, "resources"));
+    assembly: typeof(Program).Assembly);
 
 string? greeting = resources.GetString("Greeting", new CultureInfo("de-DE"));
 ```
