@@ -1,9 +1,9 @@
 # Buffers, Span Readers, and Span Writers
 
 Touki's buffer-related types in [`touki/Touki/Buffers/`](../touki/Touki/Buffers/)
-are declared in the `Touki` namespace and provide a small set of
-stack-friendly APIs for working with `Span<T>` and `ReadOnlySpan<T>`.
-They're available on .NET 10 and .NET Framework 4.7.2.
+and reader/writer types in [`touki/Touki/Io/`](../touki/Touki/Io/) provide a
+small set of stack-friendly APIs for working with `Span<T>` and
+`ReadOnlySpan<T>`. They're available on .NET 10 and .NET Framework 4.7.2.
 
 ## `BufferScope<T>`
 
@@ -35,48 +35,56 @@ Call `EnsureCapacity(int, bool copy)` to grow the buffer; it switches to
 
 ## `SpanReader<T>`
 
-[`SpanReader<T>`](../touki/Touki/Buffers/SpanReader.cs) is a
+[`SpanReader<T>`](../touki/Touki/Io/SpanReader.cs) is a
 `ref struct` over a `ReadOnlySpan<T>` modeled on `SequenceReader<T>`. It
 constrains `T : unmanaged, IEquatable<T>`, which lets it read primitives,
 chars, bytes, and small structs:
 
 ```csharp
+using Touki.Io;
+
+ReadOnlySpan<byte> payload = [0x01, 0x03, 0x00, 0x00, 0x00, 0xAA, 0xBB, 0xCC];
 SpanReader<byte> reader = new(payload);
 
-if (reader.TryRead(out byte tag) && reader.TryRead<int>(out int length))
+if (reader.TryRead(out byte tag)
+    && reader.TryRead<int>(out int length)
+    && length >= 0)
 {
-    if (reader.TryReadCount(length, out ReadOnlySpan<byte> body))
+    if (reader.TryRead(length, out ReadOnlySpan<byte> body))
     {
-        Process(tag, body);
+        Console.WriteLine($"Tag {tag}: {body.Length} bytes");
     }
 }
 ```
 
 Highlights:
 
-* `TryRead`, `TryReadCount`, `TryReadTo`, `TryPeek`, `Advance`,
+* `TryRead`, `TryReadTo`, `TryPeek`, `Advance`,
   `AdvancePast` - the standard reader surface.
 * `Position`, `Length`, `Unread`, `End` for inspection.
 * `TryRead<TValue>(out TValue)` reads any other unmanaged value type
   out of a `byte` reader via a checked reinterpret.
-* [`SpanReaderExtensions`](../touki/Touki/Buffers/SpanReaderExtensions.cs)
+* [`SpanReaderExtensions`](../touki/Touki/Io/SpanReaderExtensions.cs)
   adds higher-level helpers (e.g. `TryReadPositiveInteger` on a
   `SpanReader<char>`).
 
 ## `SpanWriter<T>`
 
-[`SpanWriter<T>`](../touki/Touki/Buffers/SpanWriter.cs) is the symmetric
+[`SpanWriter<T>`](../touki/Touki/Io/SpanWriter.cs) is the symmetric
 type for writing into a `Span<T>` with `T : unmanaged`:
 
 ```csharp
+using Touki.Io;
+
+ReadOnlySpan<byte> payload = [0x02, 0x03];
 Span<byte> destination = stackalloc byte[64];
 SpanWriter<byte> writer = new(destination);
 
 if (writer.TryWrite((byte)0x01)
-    && writer.TryWrite<int>(payload.Length)
     && writer.TryWrite(payload))
 {
-    Send(destination[..writer.Position]);
+    ReadOnlySpan<byte> written = destination[..writer.Position];
+    Console.WriteLine($"Wrote {written.Length} bytes");
 }
 ```
 
@@ -87,9 +95,21 @@ without exception overhead.
 ## `SpanExtensions`
 
 [`SpanExtensions`](../touki/Touki/Buffers/SpanExtensions.cs) adds
-allocation-free helpers on top of `Span<T>` and `ReadOnlySpan<T>`. For
-downlevel targets, the `Split(...)` / `SpanSplitEnumerator<T>` polyfill
-lives in
+helpers for searching, ordinal comparison, replacement, sorting, line
+enumeration, null-terminated slicing, and other common operations on
+`Span<T>` and `ReadOnlySpan<T>`. For downlevel targets, the `Split(...)` /
+`SpanSplitEnumerator<T>` polyfill lives in
 [`System.SpanExtensions`](../touki/Framework/Polyfills/System/SpanExtensions.SpanSplitEnumerator.cs),
 so the same `foreach (Range range in span.Split(...))` code compiles on
 .NET 10 and .NET Framework 4.7.2.
+
+## `RunLengthEncoder`
+
+[`RunLengthEncoder`](../touki/Touki/Buffers/RunLengthEncoder.cs) provides a
+simple span-based byte run-length codec. The format stores each run as a
+one-byte count followed by the repeated byte; runs longer than 255 bytes are
+split across pairs.
+
+Use `GetEncodedLength` or `GetDecodedLength` to size a destination, then call
+`TryEncode` or `TryDecode`. The `Try` methods return `false` when the destination
+is too small, and `TryDecode` also rejects an odd-length count/value stream.

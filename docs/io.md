@@ -3,13 +3,28 @@
 [`Touki.Io`](../touki/Touki/Io/) collects file-system, path, and stream
 helpers that are useful on both .NET 10 and .NET Framework 4.7.2.
 
-## `MSBuildEnumerator`: glob-style file matching
+## Glob matching and enumeration
+
+Touki supports reusable compiled matching and file-system enumeration across
+POSIX, Bash/extglob, Git/gitignore, MSBuild,
+`Microsoft.Extensions.FileSystemGlobbing`, PowerShell, and simple wildcard
+dialects.
+
+[`GlobSpecification`](../touki/Touki/Io/Globbing/GlobSpecification.cs) compiles
+an immutable pattern for repeated `IsMatch` calls.
+[`GlobEnumerator`](../touki/Touki/Io/GlobEnumerator.cs) applies one include and
+zero or more exclude patterns to a directory tree. See
+[Compiled Glob Matching and File-System Enumeration](globbing.md) for the
+dialect matrix, options, examples, and the distinction between these APIs and
+MSBuild item enumeration.
+
+## `MSBuildEnumerator`: MSBuild item specifications
 
 [`MSBuildEnumerator`](../touki/Touki/Io/MSBuildEnumerator.cs) walks the
-file system using the same wildcard semantics MSBuild uses for items
-like `<Compile Include="src/**/*.cs" Exclude="**/obj/**"/>`. It builds
-on `Microsoft.IO.Enumeration` (or `System.IO.Enumeration` on .NET) and
-is allocation-free until it produces a match.
+file system using MSBuild-style item include and exclude specifications such as
+`<Compile Include="src/**/*.cs" Exclude="**/obj/**"/>`. It builds on
+`Microsoft.IO.Enumeration` (or `System.IO.Enumeration` on .NET). After setup,
+enumeration is lazy and matched paths are materialized as strings.
 
 Supported wildcards:
 
@@ -24,19 +39,73 @@ using Touki.Io;
 
 string projectDirectory = @"C:\repos\my-project";
 
-foreach (string path in MSBuildEnumerator.Create(
+using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(
     fileSpec: @"src\**\*.cs",
     excludeSpecs: @"**\obj\**;**\bin\**",
-    projectDirectory: projectDirectory))
+  projectDirectory: projectDirectory);
+
+while (enumerator.MoveNext())
 {
-    Console.WriteLine(path);
+  Console.WriteLine(enumerator.Current);
 }
 ```
 
 By default, paths are returned relative to `projectDirectory` when the
-spec is not fully qualified, matching MSBuild's behavior. Casing follows
-the OS (case-insensitive on Windows / macOS / iOS, case-sensitive on
-Linux); pass an `EnumerationOptions` to override.
+spec is not fully qualified. A null project directory produces fully qualified
+results. Casing follows the OS (case-insensitive on Windows / macOS / iOS,
+case-sensitive on Linux); pass an `EnumerationOptions` to override.
+
+Use `MSBuildEnumerator.CreateResult` when the caller needs to distinguish a
+normal search from an invalid specification returned verbatim, an empty result,
+or a recursive drive/share search rejected by the default safety guard.
+[`MSBuildSearchAction`](../touki/Touki/Io/MSBuildSearchAction.cs) reports the
+outcome. Set
+[`MSBuildEnumerationOptions.AllowDriveEnumeration`](../touki/Touki/Io/MSBuildEnumerationOptions.cs)
+only when whole-drive or whole-share recursion is intentional.
+When the action is `RunSearch`, the caller owns and must dispose the result's
+`Enumerator`.
+
+The drive/share policy check is specific to `CreateResult`. The ordinary
+`Create` overloads do not reject a recursive drive-root specification; prefer
+`CreateResult` for externally supplied specifications.
+
+This API targets MSBuild item semantics but intentionally differs from a few
+`FileMatcher` shortcuts and edge cases. It should not be treated as a byte-for-byte
+replacement for every internal MSBuild outcome.
+
+## Gitignore rules and matcher composition
+
+[`GitIgnore`](../touki/Touki/Io/GitIgnore.cs) parses `.gitignore` text with the
+`Git` glob dialect. Blank lines and comments are skipped, `!` re-includes a
+previously excluded path, and rule order is preserved. `Parse` returns an owned
+[`OrderedMatchSet`](../touki/Touki/Io/OrderedMatchSet.cs), so dispose the set when
+matching is complete.
+
+`OrderedMatchSet` uses last-matching-rule-wins semantics. Its
+`includeByDefault: true` mode models gitignore behavior; the default `false` mode
+acts as an ordered allow list. Directory-only excludes claim their subtree during
+file-system traversal, so a later file-level include below a pruned directory is
+not reached.
+
+Touki currently strips all trailing spaces and tabs from rules. Unlike Git, an
+escaped trailing space is not preserved as part of the pattern.
+
+[`MatchSet`](../touki/Touki/Io/MatchSet.cs) provides a different composition
+model: any matching exclude overrides all includes. Both set types implement
+`IEnumerationMatcher` for use with `MatchEnumerator<TResult>` or a custom walker.
+
+## Clipboard
+
+[`Clipboard`](../touki/Touki/Io/Clipboard.cs) is a best-effort plain-text
+clipboard API. Check `IsAvailable`, then use `TryGetText`, `TrySetText`, or
+`TryClear`; transport failures and clipboard contention are reported as `false`
+rather than thrown exceptions.
+
+On .NET, Touki supports the Windows clipboard, macOS AppKit when available, and
+Linux Wayland/X11 when a supported helper (`wl-copy` / `wl-paste`, `xclip`, or
+`xsel`) is present. The .NET Framework build uses the Windows provider. Headless
+or unsupported environments fall back to an unavailable provider whose
+operations return `false`.
 
 ## `Paths`
 
@@ -48,6 +117,13 @@ Linux); pass an `EnumerationOptions` to override.
   and .NET Framework.
 * `MatchesExpression(name, expression, matchCasing, matchType)` for
   one-off glob matching without spinning up an enumerator.
+* `IsSameOrSubdirectory(firstDirectory, secondDirectory, ignoreCase)` for
+  normalized, fully qualified string-path comparisons. It does not resolve
+  symbolic links or junctions.
+* `RemoveRelativeSegments(...)` for collapsing separator runs and `.` / `..`
+  segments without first combining with a root.
+* `ChangeAlternateDirectorySeparators(string)` for normalizing separator
+  characters to the platform primary separator.
 
 ## `TempFolder`
 
@@ -69,7 +145,13 @@ Failures during deletion (e.g. files held open by another process) are
 swallowed so `Dispose` is safe to call from `finally` blocks and test
 teardown.
 
-## `WriteFormatted` on `Stream` and `TextWriter`
+## `Stream` and `TextWriter` extensions
+
+[`StreamExtensions`](../touki/Touki/Io/StreamExtensions.cs) adds synchronous and
+asynchronous `Read` / `Write` overloads for `ArraySegment<byte>`, including
+cancellation-token support for the asynchronous forms.
+
+### `WriteFormatted`
 
 [`TextWriterExtensions`](../touki/Touki/Io/TextWriterExtensions.cs) (and
 its `Stream`-targeted partial in
@@ -80,6 +162,13 @@ target without an intermediate `string` allocation. See
 [strings.md](strings.md) for the full picture.
 
 ```csharp
-using FileStream stream = File.Create("log.txt");
-stream.WriteFormatted($"Started at {DateTime.UtcNow:O} for user {userId}");
+using Touki.Io;
+
+int userId = 42;
+using StreamWriter writer = File.CreateText("log.txt");
+writer.WriteFormatted($"Started at {DateTime.UtcNow:O} for user {userId}");
 ```
+
+`Stream.WriteFormatted` is a lower-level overload that writes the builder's raw
+UTF-16 code-unit bytes without a text encoding or byte-order mark. Use a
+`TextWriter` such as `StreamWriter` for encoded text files and protocols.

@@ -82,7 +82,10 @@ public class MSBuildEnumerator : MatchEnumerator<string>
     ///  The specification of files to enumerate, which can include wildcards.
     /// </param>
     /// <param name="projectDirectory">
-    ///  The project directory. Returns paths relative to this directory.
+    ///  The project directory used to resolve the specification. Relative
+    ///  specifications return paths relative to this directory. When
+    ///  <see langword="null"/>, <see cref="Environment.CurrentDirectory"/> is used
+    ///  for resolution and results are fully qualified.
     /// </param>
     /// <param name="options">
     ///  Enumeration options that control matching behavior and recursion. If <see langword="null"/>,

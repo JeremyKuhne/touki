@@ -11,8 +11,10 @@ namespace Touki.Io.Globbing;
 ///  <para>
 ///   <see cref="GlobSpecification"/> is the output of
 ///   <see cref="Compile(StringSegment, GlobDialect, GlobOptions, GlobPathSeparator, int)"/>:
-///   a thread-safe, allocation-free-to-evaluate parse result that holds the encoded
-///   pattern (literal table, opcode program, etc.) and the pattern-level flags.
+///   a thread-safe parse result that holds the encoded pattern (literal table,
+///   opcode program, etc.) and the pattern-level flags. Common evaluation paths
+///   allocate no managed objects; separator coalescing and complex extglob matching
+///   may rent or allocate temporary storage.
 ///   The specification is not bound to any enumeration root and may be reused
 ///   concurrently against many different roots via <see cref="CreateMatcher(string?)"/>.
 ///  </para>

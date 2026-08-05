@@ -2,28 +2,39 @@
 
 Touki ships a small family of collection types under
 [Touki.Collections](../touki/Touki/Collections/) aimed at scenarios where
-the BCL `List<T>`, `LinkedList<T>` or `ConcurrentBag<T>` either allocate
-more than necessary or don't fit the access pattern. They all live on
-.NET 10 and .NET Framework 4.7.2.
+the caller can avoid backing storage, reuse pooled storage, or use a more
+specialized access pattern than the general BCL collections provide. They all
+live on .NET 10 and .NET Framework 4.7.2.
 
 ## Overview
 
-| Type | When to reach for it |
-| --- | --- |
-| [`ListBase<T>`](../touki/Touki/Collections/ListBase.cs) | Abstract base that implements `IList<T>`, `IReadOnlyList<T>`, and non-generic `IList` once so concrete lists only implement the interesting members. |
-| [`ContiguousList<T>`](../touki/Touki/Collections/ContiguousList.cs) | `ListBase<T>` for lists backed by contiguous storage (exposes `AsSpan`-style access for derived types). |
-| [`ArrayBackedList<T>`](../touki/Touki/Collections/ArrayBackedList.cs) | Concrete base for lists backed by a `T[]`; subclasses override how the array is rented and returned. |
-| [`ArrayList<T>`](../touki/Touki/Collections/ArrayList.cs) | Plain `T[]`-backed list (no pooling). |
-| [`ArrayPoolList<T>`](../touki/Touki/Collections/ArrayPoolList.cs) | `T[]`-backed list that rents from `ArrayPool<T>.Shared` and returns the buffer on `Dispose`. |
-| [`SingleOptimizedList<TItem, TList>`](../touki/Touki/Collections/SingleOptimizedList.cs) | Stores a single item inline; promotes to `TList` (e.g. `ArrayPoolList<T>`) only when a second item is added. |
-| [`SinglyLinkedList<T>`](../touki/Touki/Collections/SinglyLinkedList.cs) | Minimal singly-linked list used internally by `RefCountedCache<,,>`; useful when you need cheap front/back inserts without a doubly-linked layout. |
-| [`SequenceSet<T>`](../touki/Touki/Collections/SequenceSet.cs) | Hash set of variable-length `ReadOnlySpan<T>` sequences of unmanaged values, interned into one pooled arena with no per-sequence allocation. For deduplicating or memoizing short value-type sequences. See [sequence-set.md](sequence-set.md). |
-| [`Cache<T>`](../touki/Touki/Collections/Cache.cs) | Fixed-size, thread-safe object pool with a per-thread fast slot. For pooling reusable workers, parsers, builders, etc. |
-| [`RefCountedCache<TValue, TCacheEntryData, TKey>`](../touki/Touki/Collections/RefCountedCache.cs) | Cache that hands out scoped, ref-counted handles to expensive resources (GDI objects, native handles, `Pen`/`Brush`/`Font`-style objects). |
-| [`EmptyList<T>`](../touki/Touki/Collections/EmptyList.cs) | Singleton empty `IList<T>`/`IReadOnlyList<T>`. |
+* [`ListBase<T>`](../touki/Touki/Collections/ListBase.cs) implements `IList<T>`,
+    `IReadOnlyList<T>`, and non-generic `IList` for derived list types.
+* [`ContiguousList<T>`](../touki/Touki/Collections/ContiguousList.cs) adds
+    contiguous, span-style storage access for derived lists.
+* [`ArrayBackedList<T>`](../touki/Touki/Collections/ArrayBackedList.cs) is the
+    base for `T[]`-backed lists whose subclasses control renting and returning.
+* [`ArrayList<T>`](../touki/Touki/Collections/ArrayList.cs) is a non-pooled,
+    array-backed list.
+* [`ArrayPoolList<T>`](../touki/Touki/Collections/ArrayPoolList.cs) rents its
+    backing array from `ArrayPool<T>.Shared` and returns it on `Dispose`.
+* [`SingleOptimizedList<TItem, TList>`](../touki/Touki/Collections/SingleOptimizedList.cs)
+    stores one item inline and promotes to `TList` when a second item is added.
+* [`SinglyLinkedList<T>`](../touki/Touki/Collections/SinglyLinkedList.cs) is a
+    minimal singly linked list with inexpensive front and back insertion.
+* [`SequenceSet<T>`](../touki/Touki/Collections/SequenceSet.cs) interns unmanaged
+    value sequences into one pooled arena. See [sequence-set.md](sequence-set.md).
+* [`Cache<T>`](../touki/Touki/Collections/Cache.cs) is a fixed-size, thread-safe
+    object pool with a per-thread fast slot.
+* [`RefCountedCache<TValue, TCacheEntryData, TKey>`](../touki/Touki/Collections/RefCountedCache.cs)
+    hands out scoped, ref-counted access to expensive or constrained resources.
+* [`EmptyList<T>`](../touki/Touki/Collections/EmptyList.cs) is a singleton empty
+    `IList<T>` / `IReadOnlyList<T>`.
 
-`ListBase<T>` and friends require `T : notnull`; nulls are rejected at the
-boundary. Pooled lists such as `ArrayPoolList<T>` (and
+`ListBase<T>` and friends declare `T : notnull`, so nullable analysis warns when
+callers use nullable item types. Many mutation methods also reject null at run
+time, but the constraint is not a universal runtime check on every mutation
+path. Pooled lists such as `ArrayPoolList<T>` (and
 `SingleOptimizedList<TItem, TList>` once it has promoted to a pooled
 `TList`) return rented buffers to `ArrayPool<T>.Shared` on `Dispose`;
 non-pooled lists such as `ArrayList<T>` simply drop their references and
@@ -31,8 +42,9 @@ let the GC reclaim the backing array.
 
 ## `ArrayPoolList<T>`
 
-A drop-in replacement for `List<T>` whose backing array is rented from
-`ArrayPool<T>.Shared`:
+An `IList<T>`-compatible collection whose backing array is rented from
+`ArrayPool<T>.Shared`. Use it when the caller can own and deterministically
+dispose the list:
 
 ```csharp
 using ArrayPoolList<int> values = new(minimumCapacity: 256);
@@ -73,6 +85,11 @@ if (alsoMatchesSecond)
 }
 ```
 
+On .NET Framework, accessing `Values` or `UnsafeValues` also promotes an inline
+item to the backing `TList`, because the downlevel implementation cannot safely
+expose a span over the inline field. Modern .NET keeps the item inline for those
+accessors.
+
 ## `Cache<T>`
 
 `Cache<T>` is a small, fixed-size pool with a `[ThreadStatic]` fast slot,
@@ -98,8 +115,16 @@ finally
 ```
 
 `cacheSpace: 0` (or any value `< 1`) defaults to
-`Environment.ProcessorCount * 4`. `T` must have a public parameterless
-constructor; `Acquire` falls back to `new T()` when the cache is empty.
+`Environment.ProcessorCount * 4`. `T` must be a reference type with a public
+parameterless constructor; `Acquire` falls back to `new T()` when the cache is
+empty.
+
+When every cache slot is occupied, `Release` disposes the displaced item if it
+implements `IDisposable`. Disposing the cache disposes items in its array-backed
+slots and the calling thread's fast slot, then rejects subsequent releases. Fast
+slots populated on other threads are thread-local and cannot be drained by that
+call. The fast slot is static for each closed `Cache<T>` type, so cache instances
+on the same thread share it rather than having per-instance isolation.
 
 ## `RefCountedCache<TValue, TCacheEntryData, TKey>`
 
@@ -108,29 +133,34 @@ objects, large buffers). Consumers get a `Scope` that ref-counts the
 underlying entry and releases it on `Dispose`:
 
 ```csharp
-public sealed class PenCache : RefCountedCache<Pen, Color, Color>
+using System.IO;
+using Touki.Collections;
+
+using StreamCache streams = new();
+
+RefCountedCache<MemoryStream, int, int>.CacheEntry entry = streams.GetEntry(256);
+using RefCountedCache<MemoryStream, int, int>.Scope scope = entry.CreateScope();
+
+MemoryStream stream = scope;
+stream.WriteByte(0x2A);
+
+public sealed class StreamCache : RefCountedCache<MemoryStream, int, int>
 {
-    protected override CacheEntry CreateEntry(Color key, bool cached)
-        => new PenCacheEntry(key, cached);
+    protected override CacheEntry CreateEntry(int capacity, bool cached)
+        => new StreamCacheEntry(capacity, cached);
 
-    protected override bool IsMatch(Color key, CacheEntry entry)
-        => key == entry.Data;
+    protected override bool IsMatch(int capacity, CacheEntry entry)
+        => capacity == entry.Data;
 
-    private sealed class PenCacheEntry : CacheEntry
+    private sealed class StreamCacheEntry : CacheEntry
     {
-        private readonly Pen _pen;
-        public PenCacheEntry(Color color, bool cached) : base(color, cached)
-            => _pen = new Pen(color);
-        public override Pen Object => _pen;
+        private readonly MemoryStream _stream;
+
+        public StreamCacheEntry(int capacity, bool cached) : base(capacity, cached)
+            => _stream = new MemoryStream(capacity);
+
+        public override MemoryStream Object => _stream;
     }
-}
-
-PenCache pens = new();
-
-using (RefCountedCache<Pen, Color, Color>.Scope scope = pens.GetEntry(Color.Red))
-{
-    Pen pen = scope; // implicit conversion
-    DrawWith(pen);
 }
 ```
 

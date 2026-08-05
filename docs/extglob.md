@@ -2,7 +2,7 @@
 
 Reference for the extended-glob feature surface in
 [`Touki.Io.Globbing`](../touki/Touki/Io/Globbing/). Covers the five extglob
-constructs, how they relate to the &quot;normal&quot; glob metacharacters
+constructs, how they relate to the "normal" glob metacharacters
 (`*`, `?`, `[...]`), how to turn the feature on, and where touki agrees with
 - or deliberately diverges from - bash.
 
@@ -13,18 +13,19 @@ the **gotchas**.
 
 ## Normal glob (the baseline)
 
-Without `AllowExtGlob` set, every dialect that touki ships understands the
-classic three metacharacters, with per-dialect tweaks for path semantics and
-escape characters:
+Without `AllowExtGlob` set, every dialect supports `*` and `?`; the remaining
+syntax varies by dialect:
 
-| Token   | Meaning                                                              |
-| ------- | -------------------------------------------------------------------- |
-| `?`     | match exactly one character (path-aware dialects: not the separator) |
-| `*`     | match zero or more characters (path-aware: not the separator)        |
-| `**`    | globstar: match zero or more path segments - only when `AllowGlobStar` is set or the dialect has implicit globstar (`MSBuild`, `FileSystemGlobbing`, `Git`) |
-| `[...]` | character class - only on dialects with `HasCharacterClasses()` (POSIX family, Bash, Git, FSG) |
-| `[!...]` / `[^...]` | negated character class (same dialects)                    |
-| `\<c>`  | escape `<c>` to its literal form - only on dialects with an escape character (POSIX family, Bash, Git use `\\`; PowerShell uses `` ` ``) |
+* `?` matches exactly one character, excluding the separator in path-aware
+  dialects.
+* `*` matches zero or more characters, excluding the separator in path-aware
+  dialects.
+* `**` matches zero or more path segments when `AllowGlobStar` is set or the
+  dialect enables it implicitly (`MSBuild`, `FileSystemGlobbing`, and `Git`).
+* `[...]` and its `[!...]` / `[^...]` negated forms are character classes in the
+  POSIX-family, Bash, Git, and PowerShell dialects.
+* `\<c>` escapes a character in POSIX-family, Bash, and Git patterns.
+  PowerShell uses backtick instead.
 
 Each `?` consumes exactly one character. `*` is greedy at the matcher's NFA
 level. Neither `*` nor `?` crosses the path separator on path-aware
@@ -36,7 +37,7 @@ described below are silently treated as ordinary text unless you opt in via
 
 ## Extended glob (what `AllowExtGlob` adds)
 
-Extended glob (extglob in bash, `FNM_EXTMATCH` in POSIX, `extendedglob` in
+Extended glob (extglob in bash, GNU/glibc `fnmatch(FNM_EXTMATCH)`, `extendedglob` in
 ksh / zsh) layers five **alternation constructs** over the normal glob
 grammar. Each consists of one of `?`, `*`, `+`, `@`, `!`, followed
 immediately by `(`, a `|`-separated list of inner patterns, and a closing
@@ -77,9 +78,9 @@ falling back to a character class or post-filtering.
 ### The negation form
 
 `!(...)` is the only construct without a direct equivalent in the
-normal-glob grammar. Read it as &quot;the surrounding pattern matches when
+normal-glob grammar. Read it as "the surrounding pattern matches when
 the input slice taken by this construct is **not** one of the listed
-alternatives, taken as a whole consumed slice.&quot;
+alternatives, taken as a whole consumed slice."
 
 For `!(foo)bar`:
 
@@ -98,9 +99,9 @@ multiple constructs joined with explicit separators (e.g., `!(foo)/!(bar)`).
 ### Nesting and recursion
 
 Constructs nest freely up to the
-[`MaxExtGlobDepth`](../touki/Touki/Io/Globbing/GlobSpecification.Factory.cs)
+[`MaxExtGlobDepth`](../touki/Touki/Io/Globbing/GlobSpecification.Limits.cs)
 cap of 8 levels. Example: `*(a|@(b|c))d` matches any sequence built from
-the &quot;literal `a`&quot; and &quot;exactly one of `b` or `c`&quot;
+the "literal `a`" and "exactly one of `b` or `c`"
 alternatives, followed by `d`. So `d`, `ad`, `bd`, `cd`, `abcd`, etc., all
 match; `abxd` doesn't (the inner `@(b|c)` doesn't accept `x`).
 
@@ -113,20 +114,19 @@ The option is opt-in on every dialect:
 ```csharp
 using Touki.Io.Globbing;
 
-GlobSpecification spec = GlobSpecification.Compile(
+using GlobSpecification specification = GlobSpecification.Compile(
     pattern: "@(*.cs|*.txt)",
     dialect: GlobDialect.Bash,
-    options: GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
+    options: GlobOptions.AllowExtGlob);
 
-bool matched = spec.IsMatch("foo.cs");      // true
-bool ignored = spec.IsMatch("foo.json");    // false
+bool matched = specification.IsMatch("foo.cs");      // true
+bool ignored = specification.IsMatch("foo.json");    // false
 ```
 
 When `AllowExtGlob` is omitted, the pattern `@(*.cs|*.txt)` is interpreted
-as the literal characters `@(*.cs|*.txt)` and matches no real-world file
-name - the parser does not warn, so the silent no-match can be
-surprising. If your pattern is user-supplied, prefer to pass the flag
-unconditionally.
+without extglob alternation - the parser does not warn, so the resulting match
+behavior can be surprising. If your pattern language permits extglob, pass the
+flag explicitly.
 
 The same flag lights the feature up regardless of dialect - it is
 honored by every dialect that uses the bytecode interpreter
@@ -136,29 +136,33 @@ in-code equivalent of `shopt -s extglob`.
 
 ## Limits and error cases
 
-To keep the interpreter's recursion bounded and prevent pathological
-backtracking, the compile pipeline enforces a small set of hard limits:
+To bound pattern structure and alternation work, the compile pipeline enforces a
+small set of hard limits:
 
 | Limit                                    | Default | Failure mode                                         |
 | ---------------------------------------- | ------- | ---------------------------------------------------- |
 | Nesting depth                            | 8       | `GlobFormatException(FeatureLimitExceeded)`          |
 | Alternatives per construct               | 32      | `GlobFormatException(FeatureLimitExceeded)`          |
 | Alternation block bytecode length        | 65535   | `GlobFormatException(PatternTooLarge)`               |
-| Total `AltStart` opcodes in one program  | bounded by block length |                                       |
 
-These caps are enforced **at compile time**, so a runtime match never
-spins on a pathological pattern.
+These caps are enforced **at compile time**. The iterative matcher engages a
+failure memo after 1,000 choice visits, records at most $2^{20}$ failed states,
+and bounds native recursion by the compiled nesting limit. Its temporary frame
+and range buffers can still grow through `ArrayPool<T>`. Matching cost and memory
+therefore vary with the pattern and input, so applications accepting both from
+untrusted sources should also pass an application-specific `maxPatternLength`
+and enforce input length and time limits.
 
 Compile-time errors specific to extglob:
 
 | Error code                                       | Triggered by                                  |
 | ------------------------------------------------ | --------------------------------------------- |
-| `GlobCompileErrorCode.UnterminatedExtGlob`       | `?(foo`, `*(a|b`, &hellip;                    |
+| `GlobCompileErrorCode.UnterminatedExtGlob`       | `?(foo`, `*(a|b`, ...                         |
 | `GlobCompileErrorCode.InvalidExtGlobBody`        | Empty body `?()`. Allowed: `?(|)` (explicit empty alternative). |
 | `GlobCompileErrorCode.FeatureLimitExceeded`      | Nesting or alternative count exceeds the cap. |
 
-`DanglingEscape` and `UnterminatedClass` continue to apply when an
-extglob body contains malformed escapes or classes.
+`DanglingEscape` continues to apply when an extglob body contains a malformed
+escape. An unterminated character class is treated as literal text.
 
 ## Path-aware semantics
 
@@ -178,15 +182,14 @@ On path-aware dialects (`PosixPath`, `Bash`, `Git`, `MSBuild`,
 ## Performance notes
 
 - When `AllowExtGlob` is **off** or the pattern contains no extglob
-  construct, the encoder emits byte-identical bytecode and the matcher
-  uses the same iterative two-slot loop as today. There is one extra
-  branch per pattern character (the scanner check for the `kind` chars
-  followed by `(`) in the compile path, and one extra branch in the
-  matcher dispatch.
-- When extglob is in use, the matcher takes a recursive path
+  construct, the encoder emits the ordinary glob bytecode and matching uses the
+  ordinary iterative engine. Extglob detection adds a scanner check during
+  compilation and a dispatch check during matching.
+- When extglob is in use, the iterative extglob engine
   ([`CompiledGlobStrategy.ExtGlob.cs`](../touki/Touki/Io/Globbing/CompiledGlobStrategy.ExtGlob.cs))
-  with a stack-allocated `Span<ProgramRange>` of 32 entries. No heap
-  allocations on the match path.
+  starts with stack-backed work buffers sized from the extglob depth. More
+  complex matches can grow through pooled buffers and engage failure-memo
+  storage.
 - Specialized strategies (`Literal`, `Prefix`, `Suffix`, `Contains`,
   `PrefixSuffix`, `Any`, `GlobStarFileName`) disqualify themselves on
   extglob patterns and route to the general bytecode path. This is
@@ -202,7 +205,7 @@ On path-aware dialects (`PosixPath`, `Bash`, `Git`, `MSBuild`,
 The `Bash` dialect with `AllowGlobStar | AllowExtGlob` set is compared
 row-by-row against `bash -O extglob -O globstar` in
 [`ExtGlobOracleTests.Bash`](../touki.tests/Touki/Io/Globbing/ExtGlobOracleTests.Bash.cs)
-(~552 rows of 24 patterns &times; 23 inputs). The oracle runs on Linux
+(~552 rows of 24 patterns x 23 inputs). The oracle runs on Linux
 and Windows Git Bash; macOS is skipped because Apple ships GNU bash 3.2,
 which predates several of the cases the oracle relies on
 ([`BashInterop.cs`](../touki.tests/Touki/Io/Globbing/BashInterop.cs)
@@ -210,15 +213,26 @@ short-circuits to `null` there).
 
 ### Documented divergence
 
-Bash and touki agree on every oracle row in the suite **except one**:
+Bash and touki have a known negation divergence outside the current oracle row
+set:
 
-| Pattern | Input | bash 5.x | touki | Notes                                                                                                       |
-| ------- | ----- | -------- | ----- | ----------------------------------------------------------------------------------------------------------- |
-| `!(*)`  | `""`  | match    | no match | Touki reads negation as &quot;no alternative matches the slice exactly.&quot; The inner `*` matches the empty slice exactly, so `L = 0` is rejected. Bash short-circuits this case. |
+| Pattern | Input | bash 5.x | touki |
+| ------- | ----- | -------- | ----- |
+| `!(*)`  | `""`  | match    | no match |
 
-The row is skipped in the oracle so any other future drift surfaces as a
-hard failure. If you write a pattern of the form `!(*)X`, prefer
-`?(X)` or `+(X)` to express the intent more directly.
+Touki reads negation as "no alternative matches the slice exactly." The inner
+`*` matches the empty slice exactly, so `L = 0` is rejected. Bash short-circuits
+this case.
+
+The case is tracked separately from the oracle matrix. If you write a pattern
+of the form `!(*)X`, prefer `?(X)` or `+(X)` to express the intent more directly.
+
+There is also a leading-dot limitation in extglob alternations. If any
+alternative starts with a literal dot, a sibling alternative led by `*`, `?`, a
+character class, or globstar can consume a leading dot even when
+`MatchLeadingDot` is not set. Avoid mixing literal-dot and wildcard-led
+alternatives when hidden-name exclusion matters, or set `MatchLeadingDot` when
+leading-dot matching is intentional.
 
 ## When to reach for extglob
 
@@ -228,9 +242,9 @@ hard failure. If you write a pattern of the form `!(*)X`, prefer
 - Useful with `GlobDialect.Bash` to round-trip shell scripts that already
   use extglob.
 - Useful inside `.gitignore`-style rule sets when you want to ignore
-  &quot;everything but `keep.log`&quot; in a single rule: `!(keep).log`.
+  "everything but `keep.log`" in a single rule: `!(keep).log`.
 
-If your only goal is &quot;match either of these literal filenames,&quot;
+If your only goal is "match either of these literal filenames,"
 the un-extended `[abc]` character class is still the cheapest answer:
 `[ab]c` matches `ac` or `bc` without the alternation machinery.
 
@@ -240,7 +254,5 @@ the un-extended `[abc]` character class is still the cheapest answer:
   per-flag reference.
 - [`GlobDialect.cs`](../touki/Touki/Io/Globbing/GlobDialect.cs) -
   per-dialect defaults.
-- [`globbing-feature-plan.md`](globbing-feature-plan.md) - internal
-  planning, including the F1.3 / F1.4 rollout history.
 - [bash Pattern Matching](https://www.gnu.org/software/bash/manual/html_node/Pattern-Matching.html)
 - [fnmatch(3) FNM_EXTMATCH](https://man7.org/linux/man-pages/man3/fnmatch.3.html)

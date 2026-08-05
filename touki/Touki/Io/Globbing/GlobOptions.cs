@@ -41,7 +41,7 @@ public enum GlobOptions
     ///     <description>
     ///      <b>Globstar</b> (<c>**</c>): implicitly enabled for
     ///      <see cref="GlobDialect.MSBuild"/>, <see cref="GlobDialect.FileSystemGlobbing"/>,
-    ///      <see cref="GlobDialect.Bash"/>, and <see cref="GlobDialect.Git"/>. Other
+    ///      and <see cref="GlobDialect.Git"/>. <see cref="GlobDialect.Bash"/> and other
     ///      path-aware dialects require <see cref="AllowGlobStar"/>.
     ///     </description>
     ///    </item>
@@ -109,19 +109,21 @@ public enum GlobOptions
 
     /// <summary>
     ///  When set, wildcards (<c>?</c>, <c>*</c>, character classes) may match a leading
-    ///  <c>.</c>. Equivalent to <c>fnmatch</c> being called without <c>FNM_PERIOD</c>.
+    ///  <c>.</c>, overriding dialects that otherwise require a literal dot.
     /// </summary>
     /// <remarks>
     ///  <para>
-    ///   The default (flag cleared) matches POSIX behavior: a leading <c>.</c> must be
-    ///   matched by a literal <c>.</c> in the pattern.
+    ///   Defaults vary by dialect. POSIX-family dialects and the current Git dialect
+    ///   require a literal leading dot; other dialects allow wildcard matches. The
+    ///   current path-aware implementation applies this restriction only at the start
+    ///   of the complete input, not after each separator.
     ///  </para>
     /// </remarks>
     MatchLeadingDot = 1 << 1,
 
     /// <summary>
-    ///  Treat the backslash character as a literal rather than as an escape character.
-    ///  Equivalent to <c>FNM_NOESCAPE</c>.
+    ///  Disable the dialect's escape character, treating it as a literal. This is
+    ///  backslash for POSIX-family, Bash, and Git patterns, and backtick for PowerShell.
     /// </summary>
     NoEscape = 1 << 2,
 
@@ -134,13 +136,13 @@ public enum GlobOptions
     AllowGlobStar = 1 << 3,
 
     /// <summary>
-    ///  Enable extended-glob constructs: <c>?(…)</c>, <c>*(…)</c>, <c>+(…)</c>,
-    ///  <c>@(…)</c>, <c>!(…)</c>.
+    ///  Enable extended-glob constructs: <c>?(...)</c>, <c>*(...)</c>, <c>+(...)</c>,
+    ///  <c>@(...)</c>, <c>!(...)</c>.
     /// </summary>
     /// <remarks>
     ///  <para>
-    ///   Models bash extglob (<c>shopt -s extglob</c>) and POSIX
-    ///   <c>fnmatch(FNM_EXTMATCH)</c>. Each construct is a
+    ///   Models bash extglob (<c>shopt -s extglob</c>) and the GNU/glibc
+    ///   <c>fnmatch(FNM_EXTMATCH)</c> extension. Each construct is a
     ///   <c>|</c>-separated list of inner glob patterns. Inner wildcards still
     ///   respect path semantics - <c>*</c> and <c>?</c> inside an
     ///   alternative do not cross the path separator on path-aware dialects.
