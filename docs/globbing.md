@@ -43,7 +43,7 @@ that the compiler models:
 | `Bash` | Bash pattern matching, with opt-in globstar and extglob constructs. |
 | `Git` | Git `wildmatch` / `.gitignore`, including negation and path anchors. |
 | `MSBuild` | MSBuild item-wildcard matching. |
-| `FileSystemGlobbing` | `Microsoft.Extensions.FileSystemGlobbing.Matcher` behavior. |
+| `FileSystemGlobbing` | `Microsoft.Extensions.FileSystemGlobbing.Matcher` behavior; ordinary `?` is literal. |
 | `Simple` | `System.IO.Enumeration.FileSystemName` simple `*` and `?` matching. |
 | `PowerShell` | PowerShell `-like` / `WildcardPattern` behavior. |
 
@@ -66,7 +66,8 @@ or edge case.
     casing; there is no Simple-dialect escape mode today.
 * **`FileSystemGlobbing`** - Touki defaults to case-sensitive matching. The
     parameterless `Matcher` defaults to case-insensitive matching; use
-    `IgnoreCase` to align it.
+    `IgnoreCase` to align it. As in `Matcher`, ordinary `?` characters are
+    literals rather than single-character wildcards.
 * **`PowerShell`** - Touki defaults to case-sensitive matching like a bare
     `WildcardPattern`; PowerShell `-like` is case-insensitive, so use
     `IgnoreCase` for that casing. Touki additionally accepts POSIX-style bracket

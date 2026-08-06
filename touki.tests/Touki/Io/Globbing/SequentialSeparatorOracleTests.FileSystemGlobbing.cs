@@ -14,11 +14,11 @@ namespace Touki.Io.Globbing;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   <c>Microsoft.Extensions.FileSystemGlobbing.Matcher</c> tokenizes its include /
-///   exclude patterns by splitting on <c>/</c> and discards empty segments, which
-///   effectively coalesces any run of separators down to one. The compiled
-///   <see cref="GlobSpecification"/> for <see cref="GlobDialect.FileSystemGlobbing"/> performs
-///   the same compile-time collapse so the two implementations agree on every input.
+///   <c>Microsoft.Extensions.FileSystemGlobbing.Matcher</c> removes leading empty
+///   segments, turns each internal empty segment into a one-component wildcard,
+///   and treats trailing separators as a recursive-directory selector. The compiled
+///   <see cref="GlobSpecification"/> for <see cref="GlobDialect.FileSystemGlobbing"/>
+///   performs equivalent compile-time rewrites.
 ///  </para>
 ///  <para>
 ///   If a row here fails, either touki's FileSystemGlobbing dialect drifted or
@@ -49,7 +49,14 @@ public class SequentialSeparatorFileSystemGlobbingOracleTests
     // --- Tripled / quadrupled separator runs ---
     [DataRow("a///b", "a/b")]
     [DataRow("a///b", "a//b")]
+    [DataRow("a///b", "a/x/b")]
+    [DataRow("a///b", "a/x/y/b")]
     [DataRow("a////b", "a/b")]
+    [DataRow("a////b", "a/x/y/b")]
+    [DataRow("a////b", "a/x/y/z/b")]
+    // --- Empty segment followed by a current-directory segment ---
+    [DataRow("a//.", "a/x")]
+    [DataRow("a//.", "a")]
     // --- Leading separator runs (rooted by Matcher) ---
     [DataRow("//a", "a")]
     [DataRow("//a", "/a")]

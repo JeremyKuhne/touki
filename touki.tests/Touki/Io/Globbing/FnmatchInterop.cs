@@ -19,6 +19,12 @@ internal static class FnmatchInterop
     // macOS:        FNM_PATHNAME = 0x02
     public static int FnmPathname => OperatingSystem.IsMacOS() ? 0x02 : 0x01;
 
+    // glibc: FNM_EXTMATCH = 0x20. This GNU extension is not available on macOS.
+    public const int FnmExtMatch = 0x20;
+
+    public static bool SupportsExtMatch =>
+        OperatingSystem.IsLinux() && Matches("@(a)", "a", FnmExtMatch);
+
     [DllImport("libc", EntryPoint = "fnmatch", CharSet = CharSet.Ansi, ExactSpelling = true)]
     private static extern int fnmatch(
         [MarshalAs(UnmanagedType.LPStr)] string pattern,

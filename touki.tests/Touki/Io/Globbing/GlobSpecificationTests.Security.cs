@@ -276,6 +276,40 @@ public partial class GlobSpecificationTests
     }
 
     [TestMethod]
+    public void TryCompile_TransformedPatternEncoderOverflow_HasNoSourcePosition()
+    {
+        string giantLiteral = new('a', char.MaxValue + 1);
+        string normalizedPattern = $"***?{giantLiteral}?";
+        string prefixedPattern = $"?{giantLiteral}?";
+
+        bool normalized = GlobSpecification.TryCompile(
+            normalizedPattern,
+            GlobDialect.Posix,
+            GlobOptions.None,
+            GlobPathSeparator.DialectDefault,
+            normalizedPattern.Length,
+            out GlobSpecification? normalizedResult,
+            out GlobCompileError normalizedError);
+        bool prefixed = GlobSpecification.TryCompile(
+            prefixedPattern,
+            GlobDialect.Git,
+            GlobOptions.None,
+            GlobPathSeparator.DialectDefault,
+            prefixedPattern.Length,
+            out GlobSpecification? prefixedResult,
+            out GlobCompileError prefixedError);
+
+        normalized.Should().BeFalse();
+        normalizedResult.Should().BeNull();
+        normalizedError.Code.Should().Be(GlobCompileErrorCode.PatternTooLarge);
+        normalizedError.Position.Should().Be(-1);
+        prefixed.Should().BeFalse();
+        prefixedResult.Should().BeNull();
+        prefixedError.Code.Should().Be(GlobCompileErrorCode.PatternTooLarge);
+        prefixedError.Position.Should().Be(-1);
+    }
+
+    [TestMethod]
     public void Compile_MaxPatternLengthExceeded_ReturnsPatternTooLarge()
     {
         // 5B: caller-supplied upper bound on pattern length. Patterns longer than the
@@ -313,6 +347,44 @@ public partial class GlobSpecificationTests
 
         ok.Should().BeTrue();
         result.Should().NotBeNull();
+    }
+
+    [TestMethod]
+    public void TryCompile_FileSystemGlobbingRecursiveSuffixExpansion_RespectsSourceLengthLimit()
+    {
+        string pattern = string.Join("/", Enumerable.Repeat("**.x", 512));
+
+        bool atLimit = GlobSpecification.TryCompile(
+            pattern,
+            GlobDialect.FileSystemGlobbing,
+            GlobOptions.None,
+            GlobPathSeparator.DialectDefault,
+            maxPatternLength: pattern.Length,
+            out GlobSpecification? result,
+            out _);
+
+        try
+        {
+            atLimit.Should().BeTrue();
+            result.Should().NotBeNull();
+        }
+        finally
+        {
+            result?.Dispose();
+        }
+
+        bool overLimit = GlobSpecification.TryCompile(
+            pattern,
+            GlobDialect.FileSystemGlobbing,
+            GlobOptions.None,
+            GlobPathSeparator.DialectDefault,
+            maxPatternLength: pattern.Length - 1,
+            out result,
+            out GlobCompileError error);
+
+        overLimit.Should().BeFalse();
+        result.Should().BeNull();
+        error.Code.Should().Be(GlobCompileErrorCode.PatternTooLarge);
     }
 
     [TestMethod]
