@@ -154,6 +154,27 @@ public class MultiSuffixGlobStrategyTests
             .MatchCore(prefix.AsSpan(), fileName.AsSpan()).Should().Be(expected);
 
     [TestMethod]
+    [DataRow("**/@(*foo?|*bar?)", "src/", "xfoo?", true)]
+    [DataRow("**/@(*foo?|*bar?)", "src/", "xbar?", true)]
+    [DataRow("**/@(*foo?|*bar?)", "src/", "xfooa", false)]
+    public void MatchCore_FileSystemGlobbing_LiteralQuestionMarkSuffixes(
+        string pattern,
+        string prefix,
+        string fileName,
+        bool expected)
+    {
+        using GlobSpecification specification = GlobSpecification.Compile(
+            pattern,
+            GlobDialect.FileSystemGlobbing,
+            GlobOptions.AllowExtGlob);
+
+        specification.Strategy.Should().BeOfType<GlobStarFileNameStrategy>();
+        object segmentMatcher = specification.Strategy.TestAccessor.Dynamic._segmentMatcher;
+        segmentMatcher.Should().BeOfType<MultiSuffixGlobStrategy>();
+        specification.MatchCore(prefix.AsSpan(), fileName.AsSpan()).Should().Be(expected);
+    }
+
+    [TestMethod]
     // Shapes that fall outside `TryCreateMultiSuffixSegmentMatcher`'s selection
     // criteria must still compile and match correctly through the recursive
     // walker. Pins the rejection arms so the factory paths stay covered.

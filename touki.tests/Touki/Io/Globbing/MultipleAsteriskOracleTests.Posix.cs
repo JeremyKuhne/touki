@@ -32,6 +32,28 @@ public class MultipleAsteriskPosixOracleTests
             oracle,
             because: $"GlobSpecification(Posix) and fnmatch(3) (no flags) must agree on pattern '{pattern}' vs input '{input}'");
     }
+
+    [TestMethod]
+    public void IsMatch_PosixDialect_EscapedAsteriskBeforeExtGlob_AgreesWithFnmatchExtMatch()
+    {
+        if (!FnmatchInterop.SupportsExtMatch)
+        {
+            Assert.Inconclusive("fnmatch(3) FNM_EXTMATCH oracle requires GNU fnmatch.");
+            return;
+        }
+
+        const string pattern = @"\****(a)";
+        const string input = "*x";
+        bool oracle = FnmatchInterop.Matches(pattern, input, FnmatchInterop.FnmExtMatch);
+        oracle.Should().BeTrue("the fixture must distinguish an escaped star from the ordinary wildcard run");
+
+        using GlobSpecification matcher = GlobSpecification.Compile(
+            pattern,
+            GlobDialect.Posix,
+            GlobOptions.AllowExtGlob);
+
+        matcher.IsMatch(input).Should().Be(oracle);
+    }
 }
 
 #endif

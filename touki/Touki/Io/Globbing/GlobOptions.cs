@@ -144,8 +144,12 @@ public enum GlobOptions
     ///   Models bash extglob (<c>shopt -s extglob</c>) and the GNU/glibc
     ///   <c>fnmatch(FNM_EXTMATCH)</c> extension. Each construct is a
     ///   <c>|</c>-separated list of inner glob patterns. Inner wildcards still
-    ///   respect path semantics - <c>*</c> and <c>?</c> inside an
-    ///   alternative do not cross the path separator on path-aware dialects.
+    ///   respect path semantics - wildcard tokens inside an alternative do not
+    ///   cross the path separator on path-aware dialects. FileSystemGlobbing
+    ///   continues to treat an ordinary <c>?</c> inside the body as a literal.
+    ///   When a FileSystemGlobbing pattern contains extglob, its whole-pattern
+    ///   compatibility rewrites (<c>*.*</c>, leading <c>**.</c>, separator
+    ///   runs, trailing separators, and parent placement) are not applied.
     ///  </para>
     ///  <para>
     ///   The compile pipeline enforces hard limits to bound worst-case

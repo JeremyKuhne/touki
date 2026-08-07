@@ -76,7 +76,8 @@ public enum GlobDialect
     /// <summary>
     ///  <c>Microsoft.Extensions.FileSystemGlobbing.Matcher</c> semantics. May diverge
     ///  from <see cref="MSBuild"/> on edge cases. Touki is case-sensitive by default,
-    ///  unlike the parameterless <c>Matcher</c>; see <c>docs/globbing.md</c>.
+    ///  unlike the parameterless <c>Matcher</c>. Ordinary <c>?</c> characters are
+    ///  literals, not single-character wildcards; see <c>docs/globbing.md</c>.
     /// </summary>
     /// <remarks>
     ///  <para>

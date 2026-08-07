@@ -200,6 +200,113 @@ public class ExtGlobScannerTests
     }
 
     [TestMethod]
+    public void Compile_AllowExtGlobOn_AdjacentEmptyBody_ReportsSecondConstructPosition()
+    {
+        Action act = () => GlobSpecification.Compile(
+            "@(a)@()",
+            GlobDialect.Bash,
+            GlobOptions.AllowExtGlob);
+
+        GlobFormatException exception = act.Should().Throw<GlobFormatException>().Which;
+        exception.Error.Code.Should().Be(GlobCompileErrorCode.InvalidExtGlobBody);
+        exception.Error.Position.Should().Be(4);
+    }
+
+    [TestMethod]
+    public void Compile_AllowExtGlobOn_AdjacentUnterminatedBody_ReportsSecondConstructPosition()
+    {
+        Action act = () => GlobSpecification.Compile(
+            "@(a)@(b",
+            GlobDialect.Bash,
+            GlobOptions.AllowExtGlob);
+
+        GlobFormatException exception = act.Should().Throw<GlobFormatException>().Which;
+        exception.Error.Code.Should().Be(GlobCompileErrorCode.UnterminatedExtGlob);
+        exception.Error.Position.Should().Be(4);
+    }
+
+    [TestMethod]
+    public void Compile_MSBuild_TripleStarBeforeExtGlob_PreservesWildcardAndOperator()
+    {
+        using GlobSpecification matcher = GlobSpecification.Compile(
+            "ab***(e|f)g",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+
+        matcher.IsMatch("abXYZeg").Should().BeTrue();
+        matcher.IsMatch("abfg").Should().BeTrue();
+        matcher.IsMatch("abXYZeh").Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void Compile_MSBuild_FourStarsBeforeExtGlob_RemainsNeverMatch()
+    {
+        using GlobSpecification matcher = GlobSpecification.Compile(
+            "ab****(e|f)g",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+
+        matcher.IsMatch("abXYZeg").Should().BeFalse();
+        matcher.IsMatch("abfg").Should().BeFalse();
+    }
+
+    [TestMethod]
+    [DataRow(GlobDialect.MSBuild)]
+    [DataRow(GlobDialect.Posix)]
+    [DataRow(GlobDialect.Bash)]
+    public void Compile_UnterminatedExtGlobAfterAsteriskRun_ReportsSourcePosition(GlobDialect dialect)
+    {
+        Action act = () => GlobSpecification.Compile(
+            "ab****(",
+            dialect,
+            GlobOptions.AllowExtGlob);
+
+        GlobFormatException exception = act.Should().Throw<GlobFormatException>().Which;
+        exception.Error.Code.Should().Be(GlobCompileErrorCode.UnterminatedExtGlob);
+        exception.Error.Position.Should().Be(5);
+    }
+
+    [TestMethod]
+    public void Compile_Posix_EscapedAsteriskBeforeExtGlob_PreservesOrdinaryWildcard()
+    {
+        using GlobSpecification matcher = GlobSpecification.Compile(
+            @"\****(a)",
+            GlobDialect.Posix,
+            GlobOptions.AllowExtGlob);
+
+        matcher.IsMatch("*x").Should().BeTrue();
+        matcher.IsMatch("x").Should().BeFalse();
+    }
+
+    [TestMethod]
+    [DataRow("!@(a", 1)]
+    [DataRow("/@(a", 1)]
+    [DataRow("!/@(a", 2)]
+    public void Compile_GitMarkedUnterminatedExtGlob_ReportsSourcePosition(
+        string pattern,
+        int expectedPosition)
+    {
+        Action act = () => GlobSpecification.Compile(
+            pattern,
+            GlobDialect.Git,
+            GlobOptions.AllowExtGlob);
+
+        GlobFormatException exception = act.Should().Throw<GlobFormatException>().Which;
+        exception.Error.Code.Should().Be(GlobCompileErrorCode.UnterminatedExtGlob);
+        exception.Error.Position.Should().Be(expectedPosition);
+    }
+
+    [TestMethod]
+    public void Compile_PosixDanglingEscapeAfterAsteriskRun_ReportsSourcePosition()
+    {
+        Action act = () => GlobSpecification.Compile("***\\", GlobDialect.Posix);
+
+        GlobFormatException exception = act.Should().Throw<GlobFormatException>().Which;
+        exception.Error.Code.Should().Be(GlobCompileErrorCode.DanglingEscape);
+        exception.Error.Position.Should().Be(3);
+    }
+
+    [TestMethod]
     [DataRow("?(foo")]
     [DataRow("*(a|b")]
     [DataRow("@(a|b|c")]

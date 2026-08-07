@@ -85,6 +85,7 @@ public sealed partial class GlobSpecification
             out GlobCompileError error)
         {
             result = null;
+            error = default;
 
             if (maxPatternLength >= 0 && pattern.Length > maxPatternLength)
             {
@@ -98,6 +99,8 @@ public sealed partial class GlobSpecification
 
             char escape = dialect.GetEscapeChar(options);
             bool allowClasses = dialect.HasCharacterClasses();
+            bool questionMarkIsWildcard = dialect != GlobDialect.FileSystemGlobbing;
+            bool allowExtGlob = (options & GlobOptions.AllowExtGlob) != 0;
             bool pathAware = dialect.IsPathAware();
             char resolvedSeparator = pathAware ? ResolveSeparator(dialect, separator) : '\0';
 
@@ -122,27 +125,98 @@ public sealed partial class GlobSpecification
             bool negated = false;
             bool rootAnchored = false;
             bool directoryOnly = false;
+            bool hasFileSystemGlobbingExtGlob = false;
+            bool fileSystemGlobbingPatternRewritten = false;
+            bool sourcePositionsPreserved = true;
+            int sourcePositionOffset = 0;
+            PatternShape sourceShape = default;
+            bool hasSourceShape = false;
+            int fileSystemGlobbingStarCount = 0;
+            int fileSystemGlobbingFirstStarPosition = -1;
+            bool fileSystemGlobbingHasAsteriskRun = false;
 
             if (dialect == GlobDialect.Git)
             {
                 // Gitignore-specific preprocessing: strip leading '!' and '/' and trailing '/'
                 // markers and report via flags. The matcher exposes the flags as init
                 // properties; <see cref="GlobSpecification.IsMatch"/> wraps with
-                (negated, rootAnchored, directoryOnly) = StripGitignoreMarkers(ref pattern);
+                (negated, rootAnchored, directoryOnly, sourcePositionOffset) =
+                    StripGitignoreMarkers(ref pattern);
+            }
+
+            // Validate escape and opt-in extglob syntax before length-changing
+            // normalization so diagnostics retain their source positions. Reuse this
+            // shape below when normalization leaves the pattern unchanged.
+            if (allowExtGlob || escape != '\0')
+            {
+                if (!Scan(
+                        pattern,
+                        escape,
+                        allowClasses,
+                        questionMarkIsWildcard,
+                        allowExtGlob,
+                        out sourceShape,
+                        out error))
+                {
+                    RemapCompileError(ref error, sourcePositionsPreserved, sourcePositionOffset);
+                    return false;
+                }
+
+                hasSourceShape = true;
             }
 
             if (dialect == GlobDialect.FileSystemGlobbing && resolvedSeparator != '\0')
             {
+                hasFileSystemGlobbingExtGlob = allowExtGlob && sourceShape.HasExtGlob;
+
                 // FSG-specific compile-time rewrites that mirror Matcher's own behavior
                 // captured by the upstream PatternMatchingTests in dotnet/runtime:
                 //
                 //  - Leading "/" anchors to the implicit root and is stripped.
                 //  - Leading "./" and embedded "/./" dot-segments are normalized away.
                 //  - A segment that is exactly "*.*" is equivalent to "*" (StarDotStarIsSameAsStar).
+                //  - A segment beginning with "**." is split into recursive and file-name segments.
+                //  - A trailing separator selects the directory subtree.
+                //  - Parent segments are accepted only before every non-parent segment.
                 //  - Trailing "/**" requires at least one path component beyond the prior
                 //    literal; rewrite to "/*/**" so the engine enforces the same rule
                 //    without a new opcode flag.
-                Normalization.FileSystemGlobbing(ref pattern, resolvedSeparator);
+                if (!hasFileSystemGlobbingExtGlob
+                    && !Normalization.TryFileSystemGlobbing(
+                        ref pattern,
+                        resolvedSeparator,
+                        out fileSystemGlobbingPatternRewritten,
+                        out fileSystemGlobbingStarCount,
+                        out fileSystemGlobbingFirstStarPosition,
+                        out fileSystemGlobbingHasAsteriskRun,
+                        out error))
+                {
+                    return false;
+                }
+
+                if (fileSystemGlobbingPatternRewritten)
+                {
+                    sourcePositionsPreserved = false;
+                    hasSourceShape = false;
+                }
+                else if (!hasSourceShape)
+                {
+                    sourceShape.StarCount = fileSystemGlobbingStarCount;
+                    sourceShape.LeadsWithStar =
+                        fileSystemGlobbingStarCount > 0 && pattern[0] == '*';
+                    sourceShape.EndsWithStar =
+                        fileSystemGlobbingStarCount > 0 && pattern[^1] == '*';
+                    sourceShape.IsAllStars =
+                        fileSystemGlobbingStarCount > 0
+                        && fileSystemGlobbingStarCount == pattern.Length;
+                    sourceShape.HasNoMetacharacters =
+                        fileSystemGlobbingStarCount == 0;
+                    sourceShape.SingleStarSourceIndex =
+                        fileSystemGlobbingStarCount == 1
+                            ? fileSystemGlobbingFirstStarPosition
+                            : 0;
+                    hasSourceShape = true;
+                }
             }
 
             // Dialect-specific normalization of runs of `*` and runs of `/`. The rules
@@ -180,23 +254,41 @@ public sealed partial class GlobSpecification
                 or GlobDialect.FileSystemGlobbing
                 or GlobDialect.Git;
 
-            if (TryNormalizeRuns(ref pattern, dialect, resolvedSeparator, out bool neverMatch, out bool coalesceInputSeparators))
-            {
-                if (neverMatch)
-                {
-                    result = new NeverMatchGlobStrategy(dialect, options)
-                    {
-                        Negated = negated,
-                        RootAnchored = rootAnchored,
-                        DirectoryOnly = directoryOnly,
-                        Separator = resolvedSeparator,
-                        CoalesceInputSeparators = coalesceInputSeparators,
-                        DisallowEmptyInput = disallowEmptyInput,
-                    };
+            bool coalesceInputSeparators;
+            bool normalizedRuns = TryNormalizeRuns(
+                ref pattern,
+                dialect,
+                resolvedSeparator,
+                escape,
+                allowExtGlob,
+                asteriskRunKnown:
+                    dialect == GlobDialect.FileSystemGlobbing
+                    && !fileSystemGlobbingPatternRewritten
+                    && !hasFileSystemGlobbingExtGlob,
+                knownHasAsteriskRun: fileSystemGlobbingHasAsteriskRun,
+                out bool neverMatch,
+                out coalesceInputSeparators);
 
-                    error = default;
-                    return true;
-                }
+            if (normalizedRuns && neverMatch)
+            {
+                result = new NeverMatchGlobStrategy(dialect, options)
+                {
+                    Negated = negated,
+                    RootAnchored = rootAnchored,
+                    DirectoryOnly = directoryOnly,
+                    Separator = resolvedSeparator,
+                    CoalesceInputSeparators = coalesceInputSeparators,
+                    DisallowEmptyInput = disallowEmptyInput,
+                };
+
+                error = default;
+                return true;
+            }
+
+            if (normalizedRuns)
+            {
+                sourcePositionsPreserved = false;
+                hasSourceShape = false;
             }
 
             // Gitignore non-anchored match-anywhere rule. A Git pattern with no leading `/`
@@ -230,6 +322,8 @@ public sealed partial class GlobSpecification
                     {
                         // Compile-path string allocation; not on the match hot path.
                         pattern = $"**{resolvedSeparator}{pattern}";
+                        sourcePositionsPreserved = false;
+                        hasSourceShape = false;
                     }
                 }
             }
@@ -237,9 +331,21 @@ public sealed partial class GlobSpecification
             // First pass: validate the pattern, count metacharacters, and locate the single
             // '*' for the PrefixSuffix shape. The scan also fails fast on malformed input
             // (dangling escape, unterminated class) so the encoder can assume well-formed.
-            bool allowExtGlob = (options & GlobOptions.AllowExtGlob) != 0;
-            if (!Scan(pattern, escape, allowClasses, allowExtGlob, out PatternShape shape, out error))
+            PatternShape shape;
+            if (hasSourceShape)
             {
+                shape = sourceShape;
+            }
+            else if (!Scan(
+                pattern,
+                escape,
+                allowClasses,
+                questionMarkIsWildcard,
+                allowExtGlob,
+                out shape,
+                out error))
+            {
+                RemapCompileError(ref error, sourcePositionsPreserved, sourcePositionOffset);
                 return false;
             }
 
@@ -324,6 +430,8 @@ public sealed partial class GlobSpecification
                 return true;
             }
 
+            RemapCompileError(ref error, sourcePositionsPreserved, sourcePositionOffset);
+
             return false;
         }
 
@@ -370,7 +478,14 @@ public sealed partial class GlobSpecification
             // to <see cref="MultiSuffixGlobStrategy"/>; other extglob shapes flow back
             // to the general bytecode path.
             bool allowExtGlobScan = (options & GlobOptions.AllowExtGlob) != 0;
-            if (!Scan(segment, escape, allowClasses, allowExtGlobScan, out PatternShape segmentShape, out _))
+            if (!Scan(
+                    segment,
+                    escape,
+                    allowClasses,
+                    dialect != GlobDialect.FileSystemGlobbing,
+                    allowExtGlobScan,
+                    out PatternShape segmentShape,
+                    out _))
             {
                 return false;
             }
@@ -412,8 +527,8 @@ public sealed partial class GlobSpecification
         /// <summary>
         ///  Tries to recognize <c>&#x40;(*lit1|*lit2|...)</c> as a segment matcher.
         ///  When every alternative is a pure <c>*</c> followed by literal characters
-        ///  (no nested extglob, no classes, no question marks, no escaping inside the
-        ///  alternative), lowers the segment to a <see cref="MultiSuffixGlobStrategy"/>
+        ///  (no nested extglob, classes, or unescaped wildcard metacharacters), lowers
+        ///  the segment to a <see cref="MultiSuffixGlobStrategy"/>
         ///  that runs a tight <c>EndsWith</c> sweep per file.
         /// </summary>
         /// <remarks>
@@ -530,7 +645,8 @@ public sealed partial class GlobSpecification
                         continue;
                     }
 
-                    if (c is '*' or '?' or '[' or ']' or '(' or ')' or '|')
+                    if (c is '*' or '[' or ']' or '(' or ')' or '|'
+                        || (c == '?' && dialect != GlobDialect.FileSystemGlobbing))
                     {
                         return false;
                     }
@@ -546,16 +662,18 @@ public sealed partial class GlobSpecification
         /// <summary>
         ///  Strips the gitignore-specific metadata markers from <paramref name="pattern"/>
         /// </summary>
-        private static (bool Negated, bool RootAnchored, bool DirectoryOnly) StripGitignoreMarkers(
+        private static (bool Negated, bool RootAnchored, bool DirectoryOnly, int SourcePositionOffset)
+            StripGitignoreMarkers(
             ref StringSegment pattern)
         {
             bool negated = false;
             bool rootAnchored = false;
             bool directoryOnly = false;
+            int sourcePositionOffset = 0;
 
             if (pattern.IsEmpty)
             {
-                return (negated, rootAnchored, directoryOnly);
+                return (negated, rootAnchored, directoryOnly, sourcePositionOffset);
             }
 
             if (pattern[0] == '!')
@@ -563,10 +681,11 @@ public sealed partial class GlobSpecification
                 // Leading '!' negates the match; the '!' is stripped and the flag is reported
                 negated = true;
                 pattern = pattern[1..];
+                sourcePositionOffset++;
 
                 if (pattern.IsEmpty)
                 {
-                    return (negated, rootAnchored, directoryOnly);
+                    return (negated, rootAnchored, directoryOnly, sourcePositionOffset);
                 }
             }
 
@@ -576,10 +695,11 @@ public sealed partial class GlobSpecification
                 // stripped but the pattern is no longer subject to the "match anywhere" rule.
                 rootAnchored = true;
                 pattern = pattern[1..];
+                sourcePositionOffset++;
 
                 if (pattern.IsEmpty)
                 {
-                    return (negated, rootAnchored, directoryOnly);
+                    return (negated, rootAnchored, directoryOnly, sourcePositionOffset);
                 }
             }
 
@@ -590,7 +710,26 @@ public sealed partial class GlobSpecification
                 pattern = pattern[..^1];
             }
 
-            return (negated, rootAnchored, directoryOnly);
+            return (negated, rootAnchored, directoryOnly, sourcePositionOffset);
+        }
+
+        private static void RemapCompileError(
+            ref GlobCompileError error,
+            bool sourcePositionsPreserved,
+            int sourcePositionOffset)
+        {
+            if (error.Position < 0)
+            {
+                return;
+            }
+
+            int position = sourcePositionsPreserved
+                ? error.Position + sourcePositionOffset
+                : -1;
+            if (position != error.Position)
+            {
+                error = new GlobCompileError(error.Code, position, error.Message);
+            }
         }
 
         /// <summary>
@@ -613,6 +752,10 @@ public sealed partial class GlobSpecification
             ref StringSegment pattern,
             GlobDialect dialect,
             char separator,
+            char escape,
+            bool allowExtGlob,
+            bool asteriskRunKnown,
+            bool knownHasAsteriskRun,
             out bool neverMatch,
             out bool coalesceInputSeparators)
         {
@@ -626,12 +769,40 @@ public sealed partial class GlobSpecification
 
             // The asterisk-run scan is consumed by every dialect except PowerShell (which
             // treats repeated `*` literally and never collapses). Skip the scan there.
-            bool hasAsteriskRun = false;
-            if (dialect != GlobDialect.PowerShell)
+            bool hasAsteriskRun = knownHasAsteriskRun;
+            if (!asteriskRunKnown && dialect != GlobDialect.PowerShell)
             {
-                for (int i = 0; i + 2 < pattern.Length; i++)
+                int i = 0;
+                while (i < pattern.Length)
                 {
-                    if (pattern[i] == '*' && pattern[i + 1] == '*' && pattern[i + 2] == '*')
+                    if (escape != '\0' && pattern[i] == escape)
+                    {
+                        i += 2;
+                        continue;
+                    }
+
+                    if (pattern[i] != '*')
+                    {
+                        i++;
+                        continue;
+                    }
+
+                    int runStart = i;
+                    while (i < pattern.Length && pattern[i] == '*')
+                    {
+                        i++;
+                    }
+
+                    int effectiveRunLength = i - runStart;
+                    if (allowExtGlob
+                        && effectiveRunLength >= 2
+                        && i < pattern.Length
+                        && pattern[i] == '(')
+                    {
+                        effectiveRunLength--;
+                    }
+
+                    if (effectiveRunLength >= 3)
                     {
                         hasAsteriskRun = true;
                         break;
@@ -647,14 +818,13 @@ public sealed partial class GlobSpecification
                 return true;
             }
 
-            // The separator-run scan is consumed only by MSBuild's collapse-runs rule and
-            // FSG's drop-leading-and-rewrite-internal rule. Everything else preserves the
-            // pattern bytes verbatim so the scan is pure overhead.
+            // FSG separator runs were already canonicalized by its dedicated normalization
+            // pass. This scan is consumed only by MSBuild's collapse-runs rule.
             bool hasLeadingSeparatorRun = false;
             bool hasInternalSeparatorRun = false;
             if (separator != '\0'
                 && pattern.Length >= 2
-                && dialect is GlobDialect.MSBuild or GlobDialect.FileSystemGlobbing)
+                && dialect == GlobDialect.MSBuild)
             {
                 if (pattern[0] == separator && pattern[1] == separator)
                 {
@@ -680,15 +850,12 @@ public sealed partial class GlobSpecification
                 or GlobDialect.PosixPath
                 or GlobDialect.Git
                 or GlobDialect.Bash;
-            bool needsFsgSepTransform =
-                dialect == GlobDialect.FileSystemGlobbing
-                && (hasLeadingSeparatorRun || hasInternalSeparatorRun);
             bool needsMsbuildSepTransform =
                 dialect == GlobDialect.MSBuild
                 && (hasInternalSeparatorRun
                     || (hasLeadingSeparatorRun && Path.DirectorySeparatorChar != '\\'));
 
-            if (!needsAsteriskCollapse && !needsFsgSepTransform && !needsMsbuildSepTransform)
+            if (!needsAsteriskCollapse && !needsMsbuildSepTransform)
             {
                 return false;
             }
@@ -701,15 +868,7 @@ public sealed partial class GlobSpecification
             int k = 0;
             if (hasLeadingSeparatorRun)
             {
-                if (needsFsgSepTransform)
-                {
-                    // FSG drops leading empty segments entirely.
-                    while (k < pattern.Length && pattern[k] == separator)
-                    {
-                        k++;
-                    }
-                }
-                else if (needsMsbuildSepTransform)
+                if (needsMsbuildSepTransform)
                 {
                     if (Path.DirectorySeparatorChar == '\\')
                     {
@@ -740,6 +899,19 @@ public sealed partial class GlobSpecification
             {
                 char current = pattern[k];
 
+                if (escape != '\0' && current == escape)
+                {
+                    builder.Append(current);
+                    k++;
+                    if (k < pattern.Length)
+                    {
+                        builder.Append(pattern[k]);
+                        k++;
+                    }
+
+                    continue;
+                }
+
                 if (current == '*' && needsAsteriskCollapse)
                 {
                     int runStart = k;
@@ -748,7 +920,26 @@ public sealed partial class GlobSpecification
                         k++;
                     }
                     int runLength = k - runStart;
-                    if (runLength >= 3)
+                    if (allowExtGlob
+                        && runLength >= 2
+                        && k < pattern.Length
+                        && pattern[k] == '(')
+                    {
+                        // The final star opens `*(...)`; collapse only the preceding
+                        // ordinary wildcard run and preserve the operator star.
+                        int ordinaryRunLength = runLength - 1;
+                        if (ordinaryRunLength >= 3)
+                        {
+                            builder.Append(asteriskReplacement);
+                        }
+                        else
+                        {
+                            builder.Append(pattern.Slice(runStart, ordinaryRunLength));
+                        }
+
+                        builder.Append('*');
+                    }
+                    else if (runLength >= 3)
                     {
                         builder.Append(asteriskReplacement);
                     }
@@ -759,7 +950,7 @@ public sealed partial class GlobSpecification
                     continue;
                 }
 
-                if (current == separator && separator != '\0' && (needsFsgSepTransform || needsMsbuildSepTransform))
+                if (current == separator && separator != '\0' && needsMsbuildSepTransform)
                 {
                     int runStart = k;
                     while (k < pattern.Length && pattern[k] == separator)
@@ -769,30 +960,8 @@ public sealed partial class GlobSpecification
                     int runLength = k - runStart;
                     if (runLength >= 2)
                     {
-                        if (needsFsgSepTransform)
-                        {
-                            if (k >= pattern.Length)
-                            {
-                                // Trailing-only run: collapse to a single `/`. FSG's
-                                // input-side normalization makes `a//` equivalent to
-                                // `a/` (and `a//` itself matches via the same trailing
-                                // normalization).
-                                builder.Append(separator);
-                            }
-                            else
-                            {
-                                // Internal empty segment becomes a single-`*` segment.
-                                // e.g. `a//b` -> `a/*/b`, `a///b` -> `a/*/b`.
-                                builder.Append(separator);
-                                builder.Append('*');
-                                builder.Append(separator);
-                            }
-                        }
-                        else
-                        {
-                            // MSBuild: collapse runs of `/` to one.
-                            builder.Append(separator);
-                        }
+                        // MSBuild: collapse runs of `/` to one.
+                        builder.Append(separator);
                     }
                     else
                     {
@@ -916,6 +1085,7 @@ public sealed partial class GlobSpecification
                 pattern,
                 escape,
                 allowClasses,
+                dialect != GlobDialect.FileSystemGlobbing,
                 allowGlobStar && pathAware,
                 allowExtGlob,
                 separator,
@@ -1299,6 +1469,7 @@ public sealed partial class GlobSpecification
             ReadOnlySpan<char> pattern,
             char escape,
             bool allowClasses,
+            bool questionMarkIsWildcard,
             bool allowExtGlob,
             out PatternShape shape,
             out GlobCompileError error)
@@ -1329,6 +1500,10 @@ public sealed partial class GlobSpecification
                     {
                         return false;
                     }
+
+                    // TryScanExtGlob leaves i immediately after ')'; compensate for
+                    // the outer for-loop increment so an adjacent construct is scanned.
+                    i--;
                     continue;
                 }
 
@@ -1355,7 +1530,7 @@ public sealed partial class GlobSpecification
 
                 sawNonStar = true;
 
-                if (current == '?')
+                if (questionMarkIsWildcard && current == '?')
                 {
                     shape.HasQuestionMarks = true;
                     continue;
@@ -1618,6 +1793,7 @@ public sealed partial class GlobSpecification
             ReadOnlySpan<char> pattern,
             char escape,
             bool allowClasses,
+            bool questionMarkIsWildcard,
             bool allowGlobStar,
             bool allowExtGlob,
             char separator,
@@ -1661,6 +1837,7 @@ public sealed partial class GlobSpecification
                             ref i,
                             escape,
                             allowClasses,
+                            questionMarkIsWildcard,
                             allowGlobStar,
                             separator,
                             ref builder,
@@ -1676,7 +1853,7 @@ public sealed partial class GlobSpecification
                     continue;
                 }
 
-                if (current == '?')
+                if (questionMarkIsWildcard && current == '?')
                 {
                     builder.Append(GlobOpCodes.Any);
                     lastLiteral = LiteralCursor.None;
@@ -1743,7 +1920,16 @@ public sealed partial class GlobSpecification
                 }
 
                 int literalStart = i;
-                if (!TryEmitLiteralRun(pattern, ref i, escape, allowClasses, allowExtGlob, insideExtGlob: false, ref builder, out lastLiteral))
+                if (!TryEmitLiteralRun(
+                    pattern,
+                    ref i,
+                    escape,
+                    allowClasses,
+                    questionMarkIsWildcard,
+                    allowExtGlob,
+                    insideExtGlob: false,
+                    ref builder,
+                    out lastLiteral))
                 {
                     overflowPosition = literalStart;
                     break;
@@ -1796,6 +1982,7 @@ public sealed partial class GlobSpecification
             ref int i,
             char escape,
             bool allowClasses,
+            bool questionMarkIsWildcard,
             bool allowGlobStar,
             char separator,
             ref ValueStringBuilder builder,
@@ -1905,6 +2092,7 @@ public sealed partial class GlobSpecification
                             ref i,
                             escape,
                             allowClasses,
+                            questionMarkIsWildcard,
                             allowGlobStar,
                             separator,
                             ref builder,
@@ -1918,7 +2106,7 @@ public sealed partial class GlobSpecification
                     continue;
                 }
 
-                if (current == '?')
+                if (questionMarkIsWildcard && current == '?')
                 {
                     builder.Append(GlobOpCodes.Any);
                     lastLiteral = LiteralCursor.None;
@@ -1982,7 +2170,16 @@ public sealed partial class GlobSpecification
                 }
 
                 int literalStart = i;
-                if (!TryEmitLiteralRun(pattern, ref i, escape, allowClasses, allowExtGlob: true, insideExtGlob: true, ref builder, out lastLiteral))
+                if (!TryEmitLiteralRun(
+                    pattern,
+                    ref i,
+                    escape,
+                    allowClasses,
+                    questionMarkIsWildcard,
+                    allowExtGlob: true,
+                    insideExtGlob: true,
+                    ref builder,
+                    out lastLiteral))
                 {
                     overflowPosition = literalStart;
                     return false;
@@ -2149,6 +2346,7 @@ public sealed partial class GlobSpecification
             ref int i,
             char escape,
             bool allowClasses,
+            bool questionMarkIsWildcard,
             bool allowExtGlob,
             bool insideExtGlob,
             ref ValueStringBuilder builder,
@@ -2162,7 +2360,7 @@ public sealed partial class GlobSpecification
             while (i < pattern.Length)
             {
                 char current = pattern[i];
-                if (current == '*' || current == '?'
+                if (current == '*' || (questionMarkIsWildcard && current == '?')
                     || (allowClasses && current == '['))
                 {
                     break;
@@ -2176,12 +2374,12 @@ public sealed partial class GlobSpecification
                 }
 
                 // Extglob constructs start with one of '?'/'*'/'+'/'@'/'!' followed
-                // by '('. The '?' / '*' cases already break out above; the remaining
-                // three need an explicit check here because they would otherwise be
-                // ordinary literal characters. The lookahead is gated on
+                // by '('. '*' always breaks out above; '?' also does for dialects where
+                // it is a wildcard. The explicit check is still required for literal '?'
+                // dialects and for '+'/'@'/'!'. The lookahead is gated on
                 // <paramref name="allowExtGlob"/> so unrelated patterns pay nothing.
                 if (allowExtGlob
-                    && (current == '+' || current == '@' || current == '!')
+                    && (current == '?' || current == '+' || current == '@' || current == '!')
                     && i + 1 < pattern.Length
                     && pattern[i + 1] == '(')
                 {

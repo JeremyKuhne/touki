@@ -13,8 +13,9 @@ the **gotchas**.
 
 ## Normal glob (the baseline)
 
-Without `AllowExtGlob` set, every dialect supports `*` and `?`; the remaining
-syntax varies by dialect:
+Without `AllowExtGlob` set, every dialect supports `*`; the remaining syntax
+varies by dialect. FileSystemGlobbing treats ordinary `?` characters as
+literals, while the other dialects use `?` as a single-character wildcard:
 
 * `?` matches exactly one character, excluding the separator in path-aware
   dialects.
@@ -27,9 +28,9 @@ syntax varies by dialect:
 * `\<c>` escapes a character in POSIX-family, Bash, and Git patterns.
   PowerShell uses backtick instead.
 
-Each `?` consumes exactly one character. `*` is greedy at the matcher's NFA
-level. Neither `*` nor `?` crosses the path separator on path-aware
-dialects, which is what keeps `*.cs` from matching `src/foo.cs`.
+Where supported as a wildcard, each `?` consumes exactly one character. `*` is
+greedy at the matcher's NFA level. Neither wildcard crosses the path separator
+on path-aware dialects, which is what keeps `*.cs` from matching `src/foo.cs`.
 
 `(` and `)` are **literal characters** here. The bash-extglob constructs
 described below are silently treated as ordinary text unless you opt in via
@@ -51,8 +52,15 @@ immediately by `(`, a `|`-separated list of inner patterns, and a closing
 | `@(p1\|p2\|...)`   | match **exactly one** occurrence of any alternative                                 |
 | `!(p1\|p2\|...)`   | match **any string that is not** one of the alternatives, as a single consumed slice |
 
-Each inner pattern is itself a full glob - it may contain `*`, `?`,
-character classes, escapes, and other extglob constructs recursively.
+Each inner pattern is itself a full dialect-specific glob - it may contain
+wildcards, classes, escapes, and other extglob constructs according to that
+dialect's rules.
+
+When a FileSystemGlobbing pattern contains Touki-only extglob syntax, its
+whole-pattern compatibility rewrites (`*.*`, leading `**.`, separator runs,
+trailing separators, and parent-segment placement) are not applied. The
+reference `Microsoft.Extensions.FileSystemGlobbing.Matcher` has no extglob
+syntax to define that composition.
 
 ### Side-by-side examples
 
@@ -169,7 +177,7 @@ escape. An unterminated character class is treated as literal text.
 On path-aware dialects (`PosixPath`, `Bash`, `Git`, `MSBuild`,
 `FileSystemGlobbing`):
 
-- Inner wildcards (`*`, `?`, char classes) inside an extglob alternative do
+- Inner wildcards inside an extglob alternative do
   not cross `/`. `@(*.cs|*.txt)` against `src/foo.cs` is **no match**
   - the inner `*` can't consume `src/`.
 - `!(...)` similarly cannot consume past `/`. Use explicit separators in the
@@ -190,15 +198,14 @@ On path-aware dialects (`PosixPath`, `Bash`, `Git`, `MSBuild`,
   starts with stack-backed work buffers sized from the extglob depth. More
   complex matches can grow through pooled buffers and engage failure-memo
   storage.
-- Specialized strategies (`Literal`, `Prefix`, `Suffix`, `Contains`,
-  `PrefixSuffix`, `Any`, `GlobStarFileName`) disqualify themselves on
-  extglob patterns and route to the general bytecode path. This is
-  correctness-essential and trades off some specialization speed for
-  alternation semantics.
-- The compile-time tail-anchor optimization
-  (`EndsWith` fast-fail on a literal suffix) is also suppressed for
-  extglob programs - an alternative may consume what looks like a
-  trailing literal.
+- The ordinary path-unaware specializations (`Literal`, `Prefix`, `Suffix`,
+  `Contains`, `PrefixSuffix`, `Any`) disqualify themselves on extglob patterns.
+  The canonical `**/@(*suffix1|*suffix2|...)` shape can still use
+  `GlobStarFileName` with a `MultiSuffixGlobStrategy`; other extglob shapes
+  route to the general bytecode path.
+- Extglob programs use an `EndsWith` fast-fail when every top-level alternative
+  has a common literal suffix. The engine does not trim that suffix before
+  matching because the alternation walker still needs the complete input.
 
 ## Bash parity
 

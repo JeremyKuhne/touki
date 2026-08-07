@@ -958,37 +958,40 @@ currently does.
 | Dialect | Sequential separators in the pattern | Notes |
 |---|---|---|
 | `MSBuild` | **Coalesced**: a run of `/` after the first character collapses to a single `/`, both at pattern-parse time and at input-match time. A *leading* `//` is preserved as a UNC-style root anchor. | `a//b` &equiv; `a///b` &equiv; `a/b` (matches inputs `a/b`, `a//b`, `a///b`). `**//*.cs` &equiv; `**/*.cs`. `a//**//b` &equiv; `a/**/b`. `//a` only matches `//a` - the leading double-separator is not collapsed. |
-| `FileSystemGlobbing` | **Not coalesced**: an internal empty pattern segment between two `/` is a one-non-empty-segment wildcard (i.e. `*`). Leading empty segments are dropped; trailing empty segments are tolerated via input-side normalization. | `a//b` &equiv; `a/*/b` (matches `a/x/b`, *not* `a/b` and *not* `a//b`). `**//*.cs` &equiv; `**/*/*.cs` (does *not* match `Foo.cs`; requires at least one intermediate component). `//a` &equiv; `a`. `a//` matches `a/` and `a//`. |
+| `FileSystemGlobbing` | **Not coalesced**: each internal empty pattern segment is a one-non-empty-segment wildcard (i.e. `*`). Leading empty segments are dropped; trailing separators select the directory subtree. | `a//b` &equiv; `a/*/b`; `a///b` &equiv; `a/*/*/b`. `**//*.cs` &equiv; `**/*/*.cs` (does *not* match `Foo.cs`; requires at least one intermediate component). `//a` &equiv; `a`. `a/` &equiv; `a/**`. |
 | `Simple` | **Not coalesced**: `/` is a plain literal character with no separator role. Runs are preserved verbatim on both sides. | `a//b` matches *only* `a//b`. No special handling of leading or trailing `/`. Validated against [`FileSystemName.MatchesSimpleExpression`](https://learn.microsoft.com/dotnet/api/system.io.enumeration.filesystemname.matchessimpleexpression). |
 | `Git` | **Touki already agrees with `LibGit2Sharp`** - all 21 sequential-separator rows pass. Empirically, the gitignore evaluator treats embedded `//` as a literal empty segment that fails to match any normal path component, so most `a//b` / `**//*.cs` / `a//**//b` patterns simply never match real files. Touki produces the same verdicts. | Pinned via [`LibGit2Sharp.Repository.Ignore.IsPathIgnored`](https://github.com/libgit2/libgit2sharp). Cross-platform; oracle runs on every CI runner. |
 | `Posix`, `PosixPath` | **Not coalesced**: runs of `/` are preserved verbatim in the pattern; `fnmatch(3)` (with or without `FNM_PATHNAME`) treats each `/` as a literal. Validated against P/Invoke <c>fnmatch(3)</c> on Linux. | All rows green on Linux. Encapsulated in [`FnmatchInterop`](../touki.tests/Touki/Io/Globbing/FnmatchInterop.cs); the glibc/macOS `FNM_PATHNAME` bit difference is the only platform-specific detail. |
 | `Bash` (with `extglob` + `globstar`) | **Not coalesced**: bash's `[[ str == pat ]]` preserves runs of `/` in the pattern. Validated against <c>bash -O extglob -O globstar -c '[[ "$INPUT" == $PATTERN ]]'</c>, with pattern/input passed through env vars to side-step shell quoting. | All rows green on Linux native bash and Windows Git Bash. |
 | `PowerShell` | _TBD._ `PowerShell` requires `System.Management.Automation` (Windows-only in net481, `Microsoft.PowerShell.SDK` cross-platform on net10) - deferred to avoid bloating the test project until needed. | &nbsp; |
 
-**Implementation status vs. the contract above.** All compile-time
-normalization landed in `GlobMatcherFactory.TryNormalizeRuns` plus
-matching runtime helpers on `GlobMatcher` (`CoalesceInputSeparators`,
-`DisallowEmptyInput`). All four sequential-separator dialect suites are
-green on Windows:
+**Implementation status vs. the contract above.** Compile-time normalization
+lives in
+[`GlobSpecification.Factory.TryNormalizeRuns`](../touki/Touki/Io/Globbing/GlobSpecification.Factory.cs)
+and
+[`GlobSpecification.Normalization`](../touki/Touki/Io/Globbing/GlobSpecification.Normalization.cs),
+with input normalization in
+[`GlobSpecification.IsMatch`](../touki/Touki/Io/Globbing/GlobSpecification.cs).
+The Windows-capable sequential-separator dialect suites are green:
 
-- **MSBuild**: 25 of 25 rows green. The compile pass collapses
+- **MSBuild**: 24 of 24 rows green. The compile pass collapses
   internal/trailing runs of `/` to a single `/` (preserving any leading
   double-separator), and `IsMatch` folds runs in the input the same way
   via `CoalesceInputSeparators = true`.
-- **FileSystemGlobbing**: 25 of 25 rows green. The compile pass drops
-  leading empty segments and replaces each internal empty segment with a
-  `*` token; `CoalesceInputSeparators = true` mirrors `Matcher`'s
-  input-side drop-empty-segments rule.
+- **FileSystemGlobbing**: all rows green. The compile pass drops leading
+  empty segments, replaces each internal empty segment with a `*` token,
+  and expands a trailing separator to the recursive subtree form;
+  `CoalesceInputSeparators = true` mirrors `Matcher`'s input-side
+  drop-empty-segments rule.
 - **Simple**: 20 of 20 rows green. Touki already matched the BCL contract;
   the oracle pins down the regression baseline.
 - **Git**: 21 of 21 rows green. Touki already matched LibGit2Sharp's
   gitignore semantics for sequential separators; the oracle pins this
   down so any future engine change that drifts will fail fast.
 
-The Posix-family (Linux/macOS oracles via P/Invoke `fnmatch` and `bash`
-subprocess) and `PowerShell` rules will be added to the table
-above once their oracle runs produce data - the Posix/PosixPath/Bash
-suites are checked in and ready, just skipped on Windows hosts.
+The Posix/PosixPath suites run against `fnmatch` on Linux and macOS. The Bash
+suite runs on Linux and on Windows when Git Bash is available. PowerShell
+remains deferred as described in the table above.
 
 ### Multiple-asterisk-run behavior - findings (in-progress)
 
@@ -1000,10 +1003,10 @@ with the 26 shared rows in [MultipleAsteriskRows.cs](../touki.tests/Touki/Io/Glo
 
 | Dialect | Multi-asterisk-run rule | Touki status |
 |---|---|---|
-| `MSBuild` | **A pattern containing 3 or more consecutive `*` matches nothing.** `MSBuildGlob.Parse` parses the pattern but the resulting glob rejects every input (true for `***`, `a***b`, `a/***/b`, `***/foo`, etc.). The parser only recognizes `*` and `**` as wildcard tokens; anything longer poisons the match. | **26 / 26 green.** Compile-time normalization routes any pattern with a 3+ `*` run to `NeverMatchGlobMatcher`. |
+| `MSBuild` | **A pattern containing 3 or more consecutive `*` matches nothing.** `MSBuildGlob.Parse` parses the pattern but the resulting glob rejects every input (true for `***`, `a***b`, `a/***/b`, `***/foo`, etc.). The parser only recognizes `*` and `**` as wildcard tokens; anything longer poisons the match. | **26 / 26 green.** Compile-time normalization routes any pattern with a 3+ `*` run to `NeverMatchGlobStrategy`. |
 | `FileSystemGlobbing` | **`***`+ collapses to a single `*` (one path component, does not cross `/`).** `a***b` &equiv; `a*b`, `***/foo` &equiv; `*/foo`, `a/***/b` &equiv; `a/*/b`. Notably *not* equivalent to `**` - a run of `*` never gains globstar semantics. | **26 / 26 green.** Compile-time `***`+ &rarr; `*` plus `DisallowEmptyInput = true` to match `Matcher`'s empty-input rejection. |
 | `Simple` | **`***`+ behaves like `*` for any non-empty input.** Path-unaware. One outlier: `***` does not match the empty string in the BCL while touki currently matches it. | **26 / 26 green.** Compile-time `***`+ &rarr; `*` plus `DisallowEmptyInput = true` to match `MatchesSimpleExpression`'s blanket empty-input rejection. |
-| `Git` | **`***`+ behaves like `**` (globstar across path components)** in `wildmatch`. `***` matches every file in the tree; `a/***` matches `a/b` and `a/b/c` but not `a/` alone; `a/***/b` matches every depth `a/.../b`. | **25 / 26 green, 1 documented divergence.** Compile-time `***`+ &rarr; `**` plus `DisallowEmptyInput = true`. The remaining row (`a/***` vs `a/`) is gitignore's "trailing globstar requires &ge;1 input segment" rule, which our engine's `GlobStar` opcode doesn't enforce. Skipped with reason; trivial engine fix when needed. |
+| `Git` | **`***`+ behaves like `**` (globstar across path components)** in `wildmatch`. `***` matches every file in the tree; `a/***` matches `a/b` and `a/b/c` but not `a/` alone; `a/***/b` matches every depth `a/.../b`. | **25 / 26 green, 1 documented divergence.** Compile-time `***`+ &rarr; `**` plus `DisallowEmptyInput = true`. The remaining row (`a/***` vs `a/`) is gitignore's "trailing globstar requires &ge;1 input segment" rule, which our engine's `GlobStar` opcode doesn't enforce. Marked inconclusive with a reason; trivial engine fix when needed. |
 | `Bash` (with `extglob` + `globstar`) | **`***`+ behaves like `**` (globstar)** under `globstar`. Crosses path separators, with the standard globstar carve-out that a `**` enclosed by separators (e.g. `***/foo`) requires at least one path component on its globstar side. | **22 / 26 green, 4 documented divergences.** Compile-time `***`+ &rarr; `**`. The remaining four rows are the shell-glob vs `[[ == ]]` semantic split - touki models bash's *shell-glob* `**` (segment-bounded; `*` doesn't cross `/`); the oracle uses bash's *string-match* `[[ ]]` semantics. Closing these needs a per-context flag; deferred until a real user need. |
 | `Posix`, `PosixPath` | All 26 rows green on Linux against `fnmatch(3)` with and without `FNM_PATHNAME`. Compile-time `***`+ &rarr; `*` matches `fnmatch` exactly. Suites skip on Windows. | **26 / 26 green** (Linux). |
 | `PowerShell` | TBD - oracle not implemented (see notes above). | &nbsp; |
@@ -1019,25 +1022,25 @@ implemented compile-time normalization is dialect-specific:
 
 ### Normalization implementation - landed, with documented gaps
 
-The dialect-specific rules above are implemented as a compile-time pass
-in [`GlobMatcherFactory.TryNormalizeRuns`](../touki/Touki/Io/Globbing/GlobMatcherFactory.cs)
-plus two runtime helpers in [`GlobMatcher.IsMatch`](../touki/Touki/Io/Globbing/GlobMatcher.cs):
-`CoalesceInputSeparators` (collapses runs of separator in the input
-before matching) and `DisallowEmptyInput` (short-circuits empty inputs to
-no-match for dialects whose reference rejects them).
+The dialect-specific rules above are implemented by
+[`GlobSpecification.Factory.TryNormalizeRuns`](../touki/Touki/Io/Globbing/GlobSpecification.Factory.cs)
+and
+[`GlobSpecification.Normalization`](../touki/Touki/Io/Globbing/GlobSpecification.Normalization.cs).
+[`GlobSpecification.IsMatch`](../touki/Touki/Io/Globbing/GlobSpecification.cs)
+uses `CoalesceInputSeparators` to collapse input separator runs and
+`DisallowEmptyInput` to reject empty inputs for dialects whose references do.
 
 What landed:
 
-- **MSBuild**: any pattern with a run of 3+ `*` compiles to a new
-  [`NeverMatchGlobMatcher`](../touki/Touki/Io/Globbing/NeverMatchGlobMatcher.cs);
+- **MSBuild**: any pattern with a run of 3+ `*` compiles to a
+  [`NeverMatchGlobStrategy`](../touki/Touki/Io/Globbing/NeverMatchGlobStrategy.cs);
   pattern-side runs of `/` collapse to a single `/` (leading double
   preserved); the matcher exposes `CoalesceInputSeparators = true` and
-  `IsMatch` walks the input collapsing runs before calling `MatchCore`;
-  `DisallowEmptyInput = true`.
+  `IsMatch` walks the input collapsing runs before calling `MatchCore`.
 - **FileSystemGlobbing**: runs of 3+ `*` collapse to one `*`; leading
   empty pattern segments are dropped; internal empty segments become a
-  single-`*` segment (`a//b` &rarr; `a/*/b`); trailing-only `//`
-  collapses to a single `/`; `CoalesceInputSeparators = true` and
+  single-`*` segment (`a//b` &rarr; `a/*/b`); trailing separators select
+  the directory subtree; `CoalesceInputSeparators = true` and
   `DisallowEmptyInput = true` to match `Microsoft.Extensions.FileSystemGlobbing.Matcher`'s
   input-side normalization (it drops empty input path segments).
 - **Simple**: runs of 3+ `*` collapse to one `*`;
@@ -1054,7 +1057,7 @@ What landed:
 
 What's left on Windows. **5 of the original 65 oracle-test rows remain
 divergent.** All 5 are real engine-level semantics that don't yield to
-compile-time normalization; each is marked with `Assert.Skip` and a
+compile-time normalization; each is marked with `Assert.Inconclusive` and a
 documented reason so the test suite goes fully green while the
 divergence stays catalogued:
 
@@ -1086,9 +1089,8 @@ flagging for anyone touching the Bash oracle on Windows:
   `LibGit2Sharp.Ignore.IsPathIgnored("")`, which throws
   `ArgumentException`.
 
-Total state on Windows after the change: **4971 / 4971 tests pass**
-(0 oracle rows red; 5 divergences explicitly skipped; 0 regressions
-outside the new oracle suites).
+The Windows suites pass with the five divergences above explicitly skipped
+and no oracle rows failing.
 
 ---
 
