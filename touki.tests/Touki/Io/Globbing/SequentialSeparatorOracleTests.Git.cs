@@ -43,6 +43,9 @@ public sealed class SequentialSeparatorGitOracleTests
         }
 
         public bool IsIgnored(string pattern, string path)
+            => IsIgnored([pattern], path);
+
+        public bool IsIgnored(IReadOnlyList<string> patterns, string path)
         {
             // LibGit2Sharp throws on an empty relative path; gitignore semantics
             // for "no file" are vacuously "not ignored", so report False directly.
@@ -52,7 +55,7 @@ public sealed class SequentialSeparatorGitOracleTests
             }
 
             Repository.Ignore.ResetAllTemporaryRules();
-            Repository.Ignore.AddTemporaryRules([pattern]);
+            Repository.Ignore.AddTemporaryRules(patterns);
             return Repository.Ignore.IsPathIgnored(path);
         }
 

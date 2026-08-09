@@ -165,6 +165,478 @@ public class ExtGlobPositiveMatchTests
     public void Match_PathAware(string pattern, string input, bool expected) =>
         Match(pattern, input, GlobDialect.Bash).Should().Be(expected);
 
+    [TestMethod]
+    [DataRow("@(a|b).", "a.", "b.")]
+    [DataRow("@(a?|b).", "a?.", "b.")]
+    [DataRow("@(*|a).", "*.", "a.")]
+    [DataRow("@(|a).", ".", "a.")]
+    [DataRow("@(*|a**b).", "*.", "a**b.")]
+    public void Match_MSBuildTrailingDotExtGlob_EqualsAlternativeUnion(
+        string combinedPattern,
+        string firstPattern,
+        string secondPattern)
+    {
+        string[] candidates = ["", "a", "b", "c", "ab", "abc", "a.", "b.", "a..", "...", "a.b", "a.xb."];
+        GlobSpecification combined = GlobSpecification.Compile(
+            combinedPattern,
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification first = GlobSpecification.Compile(firstPattern, GlobDialect.MSBuild);
+        GlobSpecification second = GlobSpecification.Compile(secondPattern, GlobDialect.MSBuild);
+
+        foreach (string candidate in candidates)
+        {
+            bool expected = first.IsMatch(candidate) || second.IsMatch(candidate);
+            combined.IsMatch(candidate).Should().Be(
+                expected,
+                because: $"the extglob alternatives must preserve trailing-dot semantics for '{candidate}'");
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildTrailingDotExtGlobOpenerAfterStar_EqualsPlainStar()
+    {
+        string[] candidates = ["", "x", "xa", "xbbb", "xaaaa", "x.", "x..", "x.b"];
+        GlobSpecification combined = GlobSpecification.Compile(
+            "x**(a).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification expected = GlobSpecification.Compile("x*.", GlobDialect.MSBuild);
+
+        foreach (string candidate in candidates)
+        {
+            combined.IsMatch(candidate).Should().Be(
+                expected.IsMatch(candidate),
+                because: $"the optional repeated extglob can be absorbed by the preceding star for '{candidate}'");
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildTrailingDotExtGlobNegation_AllDotInputUsesCompositionRule()
+    {
+        GlobSpecification negation = GlobSpecification.Compile(
+            "!(a).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification negationThenStar = GlobSpecification.Compile(
+            "!(a)*.",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification alternative = GlobSpecification.Compile("a.", GlobDialect.MSBuild);
+        GlobSpecification star = GlobSpecification.Compile("*.", GlobDialect.MSBuild);
+
+        negation.IsMatch("...").Should().Be(!alternative.IsMatch("..."));
+        negationThenStar.IsMatch("...").Should().Be(star.IsMatch("..."));
+    }
+
+    [TestMethod]
+    public void Match_MSBuildStarDotStarExtGlob_PreservesLiteralDotAndOperator()
+    {
+        GlobSpecification specification = GlobSpecification.Compile(
+            "*.*(a)",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+
+        specification.IsMatch(".").Should().BeTrue();
+        specification.IsMatch(".a").Should().BeTrue();
+        specification.IsMatch(string.Empty).Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void Match_MSBuildStarExtGlobBeforeStarDotStar_RewritesOnlyOrdinarySequence()
+    {
+        string[] candidates = ["x", "xa", "xb", "xab", "x.a", "x.b"];
+        GlobSpecification combined = GlobSpecification.Compile(
+            "x**(a)*.*",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification expected = GlobSpecification.Compile(
+            "x**(a)*",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+
+        foreach (string candidate in candidates)
+        {
+            combined.IsMatch(candidate).Should().Be(expected.IsMatch(candidate));
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildNestedDoubleStarDoesNotSuppressOuterStarDotStarRewrite()
+    {
+        string[] candidates = ["x", "xa", "xb", "xab", "x.a", "x.b"];
+        GlobSpecification combined = GlobSpecification.Compile(
+            "x**(a**b)*.*",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification expected = GlobSpecification.Compile(
+            "x**(a**b)*",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+
+        foreach (string candidate in candidates)
+        {
+            combined.IsMatch(candidate).Should().Be(expected.IsMatch(candidate));
+        }
+    }
+
+    [TestMethod]
+    [DataRow('@', 1, 1)]
+    [DataRow('?', 0, 1)]
+    [DataRow('+', 1, 3)]
+    [DataRow('*', 0, 3)]
+    public void Match_MSBuildMixedTrailingDotExtGlob_EqualsBoundedExpansions(
+        char kind,
+        int minimumRepetitions,
+        int maximumRepetitions)
+    {
+        string[] candidates =
+        [
+            "", "x", "xx", "xxx", "a.xb.", "xa.xb.", "a.xb.x.", "xxa.xb.", "a.xb.a.xb."
+        ];
+        GlobSpecification combined = GlobSpecification.Compile(
+            $"{kind}(x|a**b).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        List<GlobSpecification> expansions = [];
+        for (int repetitions = minimumRepetitions; repetitions <= maximumRepetitions; repetitions++)
+        {
+            int sequenceCount = 1 << repetitions;
+            for (int sequence = 0; sequence < sequenceCount; sequence++)
+            {
+                string[] parts = new string[repetitions + 1];
+                for (int index = 0; index < repetitions; index++)
+                {
+                    parts[index] = (sequence & (1 << index)) == 0 ? "x" : "a**b";
+                }
+
+                parts[^1] = ".";
+                expansions.Add(GlobSpecification.Compile(string.Concat(parts), GlobDialect.MSBuild));
+            }
+        }
+
+        foreach (string candidate in candidates)
+        {
+            bool expected = expansions.Any(expansion => expansion.IsMatch(candidate));
+            combined.IsMatch(candidate).Should().Be(
+                expected,
+                because: $"{kind}(x|a**b). must preserve per-expansion MSBuild semantics for '{candidate}'");
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildMixedTrailingDotNegation_ComplementsAlternativeUnion()
+    {
+        string[] candidates = ["", "x", "y", "ab", "a.xb.", "a.yb.", "c.y.", "x."];
+        GlobSpecification combined = GlobSpecification.Compile(
+            "!(x|a**b).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification first = GlobSpecification.Compile("x.", GlobDialect.MSBuild);
+        GlobSpecification second = GlobSpecification.Compile("a**b.", GlobDialect.MSBuild);
+
+        foreach (string candidate in candidates)
+        {
+            bool expected = !first.IsMatch(candidate) && !second.IsMatch(candidate);
+            combined.IsMatch(candidate).Should().Be(
+                expected,
+                because: $"the negation must complement both policy-specific alternatives for '{candidate}'");
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildMixedTrailingDotNegation_NestedAlternativeComplementsUnion()
+    {
+        string[] candidates = ["x", "y", "z", "ab", "a.xb.", "other"];
+        GlobSpecification combined = GlobSpecification.Compile(
+            "!(x|@(y|z)|a**b).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification first = GlobSpecification.Compile("x.", GlobDialect.MSBuild);
+        GlobSpecification second = GlobSpecification.Compile(
+            "@(y|z).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification third = GlobSpecification.Compile("a**b.", GlobDialect.MSBuild);
+
+        foreach (string candidate in candidates)
+        {
+            bool expected = !first.IsMatch(candidate)
+                && !second.IsMatch(candidate)
+                && !third.IsMatch(candidate);
+            combined.IsMatch(candidate).Should().Be(expected);
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildTrailingDotNegationAtWrapper_EqualsDirectNegation()
+    {
+        string[] candidates = ["ab", "aZZb.", "a.yb.", "other"];
+        GlobSpecification wrapped = GlobSpecification.Compile(
+            "@(@(!(a**b))).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification direct = GlobSpecification.Compile(
+            "!(a**b).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+
+        foreach (string candidate in candidates)
+        {
+            wrapped.IsMatch(candidate).Should().Be(direct.IsMatch(candidate));
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildTrailingDotNegationInMultiAlternativeWrapper_RetainsUnionSemantics()
+    {
+        string[] candidates = ["aZZb.", "keep", "other"];
+        GlobSpecification combined = GlobSpecification.Compile(
+            "@(!(a**b)|keep).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification negation = GlobSpecification.Compile(
+            "!(a**b).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification keep = GlobSpecification.Compile("keep.", GlobDialect.MSBuild);
+
+        foreach (string candidate in candidates)
+        {
+            combined.IsMatch(candidate).Should().Be(
+                negation.IsMatch(candidate) || keep.IsMatch(candidate));
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildTrailingDotEmbeddedNegation_PreservesAlternativeMembership()
+    {
+        GlobSpecification specification = GlobSpecification.Compile(
+            "x!(a**b)y.",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+
+        specification.IsMatch("xaby").Should().BeFalse();
+        specification.IsMatch("xother-y").Should().BeTrue();
+    }
+
+    [TestMethod]
+    public void Match_MSBuildTrailingDotExactUnion_DeadArmDoesNotPoisonLiveArm()
+    {
+        GlobSpecification specification = GlobSpecification.Compile(
+            "@(***|a).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+
+        specification.IsMatch("a").Should().BeTrue();
+        specification.IsMatch("other").Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void Match_MSBuildTrailingDotNegation_DeadArmDoesNotPoisonComplement()
+    {
+        GlobSpecification specification = GlobSpecification.Compile(
+            "!(***|a).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+
+        specification.IsMatch("a").Should().BeFalse();
+        specification.IsMatch("other").Should().BeTrue();
+    }
+
+    [TestMethod]
+    [DataRow('@')]
+    [DataRow('?')]
+    [DataRow('+')]
+    [DataRow('*')]
+    public void Match_MSBuildTrailingDotPositiveExtGlob_DeadArmDoesNotPoisonLiveArm(char kind)
+    {
+        GlobSpecification specification = GlobSpecification.Compile(
+            $"{kind}(***|a).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+
+        specification.IsMatch("a").Should().BeTrue();
+    }
+
+    [TestMethod]
+    public void Match_MSBuildExtGlob_DeadArmDoesNotPoisonLiveArmOrNegation()
+    {
+        GlobSpecification positive = GlobSpecification.Compile(
+            "+(***|a)",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification negative = GlobSpecification.Compile(
+            "!(***|a)",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+
+        positive.IsMatch("a").Should().BeTrue();
+        negative.IsMatch("a").Should().BeFalse();
+        negative.IsMatch("other").Should().BeTrue();
+    }
+
+    [TestMethod]
+    public void Match_MSBuildExtGlobSeparators_DoNotChangeFilenameRewriteScope()
+    {
+        string[] candidates = ["README", "dir/README", "dir/file.txt", "other/file.txt"];
+        GlobSpecification combined = GlobSpecification.Compile(
+            "@(*.*|dir/*.*)",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification first = GlobSpecification.Compile("*.*", GlobDialect.MSBuild);
+        GlobSpecification second = GlobSpecification.Compile("dir/*.*", GlobDialect.MSBuild);
+
+        foreach (string candidate in candidates)
+        {
+            combined.IsMatch(candidate).Should().Be(
+                first.IsMatch(candidate) || second.IsMatch(candidate),
+                because: $"the embedded separator alternatives must agree for '{candidate}'");
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildTrailingDotExtGlobSeparators_EqualsAlternativeUnion()
+    {
+        string[] candidates = ["a/b", "a/b.", "c", "c.", "other"];
+        GlobSpecification combined = GlobSpecification.Compile(
+            "@(a/b|c).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification first = GlobSpecification.Compile("a/b.", GlobDialect.MSBuild);
+        GlobSpecification second = GlobSpecification.Compile("c.", GlobDialect.MSBuild);
+
+        foreach (string candidate in candidates)
+        {
+            combined.IsMatch(candidate).Should().Be(
+                first.IsMatch(candidate) || second.IsMatch(candidate));
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildTrailingDotNegation_RequiresOuterPathDomain()
+    {
+        GlobSpecification specification = GlobSpecification.Compile(
+            "dir/!(a|b).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+
+        specification.IsMatch("dir/a").Should().BeFalse();
+        specification.IsMatch("dir/c").Should().BeTrue();
+        specification.IsMatch("other/c").Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void Match_MSBuildTrailingDotEmbeddedExtGlobSeparator_EqualsAlternativeUnion()
+    {
+        string[] candidates = ["xa/b", "xc", "xa/c", "other"];
+        GlobSpecification combined = GlobSpecification.Compile(
+            "x@(a/b|c).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification first = GlobSpecification.Compile("xa/b.", GlobDialect.MSBuild);
+        GlobSpecification second = GlobSpecification.Compile("xc.", GlobDialect.MSBuild);
+
+        foreach (string candidate in candidates)
+        {
+            combined.IsMatch(candidate).Should().Be(
+                first.IsMatch(candidate) || second.IsMatch(candidate),
+                because: $"the embedded separator alternatives must agree for '{candidate}'");
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildTrailingDotFullPrefix_PreservesDirectoryQuestionMarkSemantics()
+    {
+        string[] candidates = ["q/xa", "q/xb", "qq/xa", "q/xc"];
+        GlobSpecification combined = GlobSpecification.Compile(
+            "?/x@(a|b).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification first = GlobSpecification.Compile("?/xa.", GlobDialect.MSBuild);
+        GlobSpecification second = GlobSpecification.Compile("?/xb.", GlobDialect.MSBuild);
+
+        foreach (string candidate in candidates)
+        {
+            combined.IsMatch(candidate).Should().Be(
+                first.IsMatch(candidate) || second.IsMatch(candidate));
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildTrailingDotFullPrefix_PreservesDirectoryGlobStarSemantics()
+    {
+        string[] candidates = ["xa", "xb", "d1/d2/xa", "d1/d2/xb", "d1/d2/xc"];
+        GlobSpecification combined = GlobSpecification.Compile(
+            "**/x@(a|b).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification first = GlobSpecification.Compile("**/xa.", GlobDialect.MSBuild);
+        GlobSpecification second = GlobSpecification.Compile("**/xb.", GlobDialect.MSBuild);
+
+        foreach (string candidate in candidates)
+        {
+            combined.IsMatch(candidate).Should().Be(
+                first.IsMatch(candidate) || second.IsMatch(candidate));
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildExtGlobAlternative_RewritesOnlyFinalSegment()
+    {
+        string[] candidates = ["README/file", "README.txt/file", "other"];
+        GlobSpecification combined = GlobSpecification.Compile(
+            "@(*.*/file|other)",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+        GlobSpecification first = GlobSpecification.Compile("*.*/file", GlobDialect.MSBuild);
+        GlobSpecification second = GlobSpecification.Compile("other", GlobDialect.MSBuild);
+
+        foreach (string candidate in candidates)
+        {
+            combined.IsMatch(candidate).Should().Be(
+                first.IsMatch(candidate) || second.IsMatch(candidate));
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildMixedTrailingDotExtGlob_HonorsBackslashSeparator()
+    {
+        string[] candidates = ["x", "a/yb.", "a\\yb."];
+        GlobSpecification combined = GlobSpecification.Compile(
+            "@(x|a**b).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob,
+            GlobPathSeparator.Backslash);
+        GlobSpecification first = GlobSpecification.Compile(
+            "x.",
+            GlobDialect.MSBuild,
+            separator: GlobPathSeparator.Backslash);
+        GlobSpecification second = GlobSpecification.Compile(
+            "a**b.",
+            GlobDialect.MSBuild,
+            separator: GlobPathSeparator.Backslash);
+
+        foreach (string candidate in candidates)
+        {
+            bool expected = first.IsMatch(candidate) || second.IsMatch(candidate);
+            combined.IsMatch(candidate).Should().Be(expected);
+        }
+    }
+
+    [TestMethod]
+    public void Match_MSBuildTrailingDotNeverMatchAlternative_CompilesAndNeverMatches()
+    {
+        GlobSpecification specification = GlobSpecification.Compile(
+            "@(***).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+
+        specification.IsMatch(string.Empty).Should().BeFalse();
+        specification.IsMatch("anything").Should().BeFalse();
+        specification.IsMatch("anything.").Should().BeFalse();
+    }
+
     // -- IgnoreCase ------------------------------------------------------------------
 
     [TestMethod]

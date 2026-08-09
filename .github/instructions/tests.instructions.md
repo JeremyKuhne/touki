@@ -48,12 +48,12 @@ ever drift, AGENTS.md wins; update this file to match.
 ## Disposables in test bodies
 
 Anything that allocates a real resource - `TempFolder`,
-`IEnumerationMatcher`, `MSBuildMatchBuilder.FromSpecification`,
+`IFileSystemMatcherSession`, `MSBuildMatchBuildResult.Session`,
 `ArrayPoolList<T>`, etc. - must be cleaned up even when assertions
 fail. Default to `using` declarations.
 
 - For "happy path" tests, write `using TempFolder folder = new();` and
-  `using IEnumerationMatcher matcher = ...;`. Do not assign to a bare
+  `using IFileSystemMatcherSession session = matcher.CreateSession(root);`. Do not assign to a bare
   local; the resource leaks on failure.
 - When the test itself exercises explicit `Dispose()` semantics (e.g.
   double-dispose, dispose-after-external-deletion), `using` would call

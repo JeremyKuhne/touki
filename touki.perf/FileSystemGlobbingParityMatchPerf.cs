@@ -50,9 +50,6 @@ public partial class FileSystemGlobbingParityMatchPerf
         }
     }
 
-    [GlobalCleanup]
-    public void Cleanup() => _touki.Dispose();
-
     [Benchmark(Baseline = true)]
     public bool Touki() => _touki.IsMatch(_input);
 

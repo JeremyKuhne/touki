@@ -37,13 +37,6 @@ public class FileSystemGlobbingLiteralQuestionSuffixPerf
         }
     }
 
-    [GlobalCleanup]
-    public void Cleanup()
-    {
-        _specialized.Dispose();
-        _generic.Dispose();
-    }
-
     [Benchmark(Baseline = true)]
     public bool Specialized() => _specialized.IsMatch(Input);
 

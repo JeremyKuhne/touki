@@ -31,8 +31,7 @@ public sealed class MultipleAsteriskGitOracleTests
         // Documented Git dialect divergence. After `***`+ &rarr; `**` normalization
         // touki compiles `a/**` as a trailing globstar that matches zero or more
         // segments - including the empty case `a/` - while gitignore
-        // requires at least one path component after the prefix. Tracked in
-        // docs/globbing-feature-plan.md "Multiple-asterisk-run behavior" findings.
+        // requires at least one path component after the prefix.
         if ((pattern, input) == ("a/***", "a/"))
         {
             Assert.Inconclusive("Documented Git trailing-globstar must-consume-one-segment divergence.");
@@ -41,6 +40,25 @@ public sealed class MultipleAsteriskGitOracleTests
 
         bool oracle = s_fixture.IsIgnored(pattern, input);
         bool actual = GlobSpecification.Compile(pattern, GlobDialect.Git).IsMatch(input);
+        actual.Should().Be(
+            oracle,
+            because: $"GlobSpecification(Git) and LibGit2Sharp gitignore must agree on pattern '{pattern}' vs input '{input}'");
+    }
+
+    [TestMethod]
+    [DataRow("**/a/b/*.cs", "a/a/b/source.cs")]
+    [DataRow("**/a/a/*.cs", "a/a/a/source.cs")]
+    [DataRow("**/a/**/a/*.cs", "a/a/source.cs")]
+    [DataRow("**/a/**/a/*.cs", "x/a/x/y/a/source.cs")]
+    [DataRow("*.*", "README")]
+    public void IsMatch_GitDialect_CompatibilityShapes_AgreeWithLibGit2(
+        string pattern,
+        string input)
+    {
+        bool oracle = s_fixture.IsIgnored(pattern, input);
+        GlobSpecification specification = GlobSpecification.Compile(pattern, GlobDialect.Git);
+        bool actual = specification.IsMatch(input);
+
         actual.Should().Be(
             oracle,
             because: $"GlobSpecification(Git) and LibGit2Sharp gitignore must agree on pattern '{pattern}' vs input '{input}'");

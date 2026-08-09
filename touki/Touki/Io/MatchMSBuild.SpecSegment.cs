@@ -4,12 +4,13 @@
 
 namespace Touki.Io;
 
-public partial class MatchMSBuild
+internal sealed partial class MatchMSBuild
 {
     private readonly struct SpecSegment
     {
         public StringSegment Spec { get; }
         public bool IsAnyDirectory { get; }
+        public bool IgnoreCase { get; }
 
         /// <summary>
         ///  Implicitly converts a <see cref="SpecSegment"/> to a <see cref="ReadOnlySpan{T}"/> of <see cref="char"/>.
@@ -17,10 +18,11 @@ public partial class MatchMSBuild
         /// <param name="segment">The segment to convert.</param>
         public static implicit operator ReadOnlySpan<char>(SpecSegment segment) => segment.Spec;
 
-        public SpecSegment(StringSegment spec)
+        public SpecSegment(StringSegment spec, bool ignoreCase)
         {
             Spec = spec;
             IsAnyDirectory = spec.Equals("**");
+            IgnoreCase = ignoreCase;
         }
 
         public override string ToString() => Spec.ToString();

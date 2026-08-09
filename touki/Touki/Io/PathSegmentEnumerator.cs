@@ -145,6 +145,10 @@ public ref struct PathSegmentEnumerator
     /// </summary>
     public readonly ReadOnlySpan<char> Current => _currentSegment;
 
+    internal readonly ReadOnlySpan<char> FirstPath => _firstPath;
+
+    internal readonly ReadOnlySpan<char> SecondPath => _secondPath;
+
     /// <summary>
     ///  <see langword="true"/> if there are no more segments to process.
     /// </summary>

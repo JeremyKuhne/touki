@@ -23,7 +23,7 @@ public class MsBuildEnumeratePerf
     [Benchmark]
     public IReadOnlyList<string> MsBuildEnumerator()
     {
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(Filespec, Directory);
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(new(Filespec, Directory));
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -36,8 +36,8 @@ public class MsBuildEnumeratePerf
     [Benchmark]
     public IReadOnlyList<string> MsBuildEnumeratorResult()
     {
-        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(Filespec, projectDirectory: Directory);
-        using MSBuildEnumerator enumerator = result.Enumerator!;
+        MSBuildSearchResult result = (MSBuildSearchResult)MSBuildEnumerator.CreateResult(new(Filespec, Directory));
+        using MSBuildEnumerator enumerator = result.Enumerator;
         List<string> results = [];
         while (enumerator.MoveNext())
         {

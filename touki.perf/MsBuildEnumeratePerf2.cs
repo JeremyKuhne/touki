@@ -145,7 +145,8 @@ public class MsBuildEnumeratePerf2
     [Benchmark]
     public IReadOnlyList<string> MsBuildEnumerator()
     {
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(Filespec, UnsplitExcludes, _directory);
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(
+            new(Filespec, _directory, UnsplitExcludes));
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -158,11 +159,9 @@ public class MsBuildEnumeratePerf2
     [Benchmark]
     public IReadOnlyList<string> MsBuildEnumeratorResult()
     {
-        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(
-            Filespec,
-            excludeSpecs: UnsplitExcludes,
-            projectDirectory: _directory);
-        using MSBuildEnumerator enumerator = result.Enumerator!;
+        MSBuildSearchResult result = (MSBuildSearchResult)MSBuildEnumerator.CreateResult(
+            new(Filespec, _directory, UnsplitExcludes));
+        using MSBuildEnumerator enumerator = result.Enumerator;
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -177,9 +176,12 @@ public class MsBuildEnumeratePerf2
     {
         using GlobEnumerator enumerator = Touki.Io.GlobEnumerator.Create(
             Filespec,
-            s_excludes,
             _directory,
-            GlobDialect.MSBuild);
+            new()
+            {
+                ExcludePatterns = s_excludes,
+                Dialect = GlobDialect.MSBuild
+            });
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -199,9 +201,12 @@ public class MsBuildEnumeratePerf2
         // versus the matcher engine itself.
         using GlobEnumerator enumerator = Touki.Io.GlobEnumerator.Create(
             Filespec,
-            s_reducedExcludes,
             _directory,
-            GlobDialect.MSBuild);
+            new()
+            {
+                ExcludePatterns = s_reducedExcludes,
+                Dialect = GlobDialect.MSBuild
+            });
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -213,7 +218,7 @@ public class MsBuildEnumeratePerf2
 
     /// <summary>
     ///  Single extglob alternation as the exclude pattern. Compiles the two
-    ///  subtrees into one specification; <see cref="MatchSet"/> still wraps it
+    ///  subtrees into one specification; matcher composition still wraps it
     ///  for the include + 1-exclude shape.
     /// </summary>
     [Benchmark]
@@ -221,10 +226,13 @@ public class MsBuildEnumeratePerf2
     {
         using GlobEnumerator enumerator = Touki.Io.GlobEnumerator.Create(
             Filespec,
-            s_extGlobExclude,
             _directory,
-            GlobDialect.MSBuild,
-            GlobOptions.AllowExtGlob);
+            new()
+            {
+                ExcludePatterns = s_extGlobExclude,
+                Dialect = GlobDialect.MSBuild,
+                GlobOptions = GlobOptions.AllowExtGlob
+            });
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -236,7 +244,7 @@ public class MsBuildEnumeratePerf2
 
     /// <summary>
     ///  Single extglob include that collapses the include and excludes into one
-    ///  specification: <c>!(bin|obj)/**/*.cs</c>. No <see cref="MatchSet"/>
+    ///  specification: <c>!(bin|obj)/**/*.cs</c>. No matcher composition
     ///  involvement; the include matcher answers per-file directly.
     /// </summary>
     [Benchmark]
@@ -244,10 +252,12 @@ public class MsBuildEnumeratePerf2
     {
         using GlobEnumerator enumerator = Touki.Io.GlobEnumerator.Create(
             ExtGlobSingleInclude,
-            excludePattern: null,
             _directory,
-            GlobDialect.MSBuild,
-            GlobOptions.AllowExtGlob);
+            new()
+            {
+                Dialect = GlobDialect.MSBuild,
+                GlobOptions = GlobOptions.AllowExtGlob
+            });
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -270,10 +280,12 @@ public class MsBuildEnumeratePerf2
     {
         using GlobEnumerator enumerator = Touki.Io.GlobEnumerator.Create(
             ExtGlobSingleIncludeWithRoot,
-            excludePattern: null,
             _directory,
-            GlobDialect.MSBuild,
-            GlobOptions.AllowExtGlob);
+            new()
+            {
+                Dialect = GlobDialect.MSBuild,
+                GlobOptions = GlobOptions.AllowExtGlob
+            });
         List<string> results = [];
         while (enumerator.MoveNext())
         {

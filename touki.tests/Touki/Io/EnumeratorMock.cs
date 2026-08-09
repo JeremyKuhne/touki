@@ -76,13 +76,14 @@ internal sealed class EnumeratorMock
             {
                 string name = pair.Key;
                 DirectoryNode child = pair.Value;
-                if (_spec.MatchesDirectory(currentPath.AsSpan(), name.AsSpan(), false))
+                if (_spec.MatchesDirectory(currentPath.AsSpan(), name.AsSpan())
+                    != DirectoryMatchType.NoDescendantFilesMatch)
                 {
                     directoryQueue.Enqueue((child, Path.Join(currentPath, name)));
                 }
             }
 
-            _spec.DirectoryFinished();
+            _spec.DirectoryFinished(currentPath);
         }
 
         return _included;

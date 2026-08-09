@@ -44,7 +44,8 @@ public class RecordedDirectoryEnumeratorTests
         string root = folder.TempPath;
 
         HashSet<string> expected = [];
-        using (MSBuildEnumerator real = MSBuildEnumerator.Create("**/*.cs", MSBuildExcludes, root))
+        using (MSBuildEnumerator real = MSBuildEnumerator.Create(
+            new("**/*.cs", root, MSBuildExcludes)))
         {
             while (real.MoveNext())
             {
@@ -54,14 +55,14 @@ public class RecordedDirectoryEnumeratorTests
 
         RecordedFileSystem fileSystem = RecordRoundTrip(root);
 
-        IEnumerationMatcher matcher = EnumerationMatcherFactory.CreateMSBuild(
+        IFileSystemMatcherSession matcher = EnumerationMatcherFactory.CreateMSBuild(
             "**/*.cs",
             MSBuildExcludes,
             root,
             out string startDirectory);
 
         HashSet<string> actual = [];
-        using (RecordedDirectoryEnumerator mock = new(fileSystem, matcher, startDirectory, excludeDirectories: true))
+        using (RecordedDirectoryEnumerator mock = new(fileSystem, matcher, startDirectory))
         {
             while (mock.MoveNext())
             {
@@ -81,7 +82,14 @@ public class RecordedDirectoryEnumeratorTests
         string root = folder.TempPath;
 
         HashSet<string> expected = [];
-        using (GlobEnumerator real = GlobEnumerator.Create("**/*.cs", s_globExcludes, root, GlobDialect.MSBuild))
+        using (GlobEnumerator real = GlobEnumerator.Create(
+            "**/*.cs",
+            root,
+            new()
+            {
+                ExcludePatterns = s_globExcludes,
+                Dialect = GlobDialect.MSBuild
+            }))
         {
             while (real.MoveNext())
             {
@@ -91,7 +99,7 @@ public class RecordedDirectoryEnumeratorTests
 
         RecordedFileSystem fileSystem = RecordRoundTrip(root);
 
-        IEnumerationMatcher matcher = EnumerationMatcherFactory.CreateGlob(
+        IFileSystemMatcherSession matcher = EnumerationMatcherFactory.CreateGlob(
             "**/*.cs",
             s_globExcludes,
             root,
@@ -107,6 +115,62 @@ public class RecordedDirectoryEnumeratorTests
         }
 
         actual.Should().BeEquivalentTo(expected);
+    }
+
+    [TestMethod]
+    [DataRow("**/obj/**")]
+    [DataRow("obj/**")]
+    public void Replay_MSBuildTerminalGlobstarExclude_DoesNotEnterExcludedSubtree(string exclude)
+    {
+        using TempFolder folder = CreateFixture();
+        string root = folder.TempPath;
+        RecordedFileSystem fileSystem = RecordRoundTrip(root);
+
+        IFileSystemMatcherSession matcher = EnumerationMatcherFactory.CreateMSBuild(
+            "**/*",
+            exclude,
+            root,
+            out string startDirectory);
+        TrackingMatcher trackingMatcher = new(matcher);
+
+        HashSet<string> actual = [];
+        using (RecordedDirectoryEnumerator mock = new(
+            fileSystem,
+            trackingMatcher,
+            startDirectory))
+        {
+            while (mock.MoveNext())
+            {
+                actual.Add(mock.Current);
+            }
+        }
+
+        actual.Should().Contain(Path.Combine("src", "a.cs"));
+        actual.Should().NotContain(Path.Combine("obj", "Debug", "obj.cs"));
+        trackingMatcher.FileMatchDirectories.Should().NotContain(
+            directory => directory.StartsWith(
+                Path.Combine(root, "obj"),
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    [TestMethod]
+    public void MoveNext_MatchingDirectory_ReturnsFilesOnly()
+    {
+        using TempFolder folder = CreateFixture();
+        RecordedFileSystem fileSystem = RecordRoundTrip(folder.TempPath);
+        IFileSystemMatcher matcher = FileSystemMatcher.Create((_, _) => true);
+        using IFileSystemMatcherSession session = matcher.CreateSession(folder.TempPath);
+        using RecordedDirectoryEnumerator enumerator = new(fileSystem, session, folder.TempPath);
+
+        List<string> results = [];
+        while (enumerator.MoveNext())
+        {
+            results.Add(enumerator.Current);
+        }
+
+        results.Should().Contain("top.cs");
+        results.Should().NotContain("src");
+        results.Should().NotContain(Path.Combine("src", "nested"));
     }
 
     [TestMethod]
@@ -146,5 +210,32 @@ public class RecordedDirectoryEnumeratorTests
         System.IO.StringWriter writer = new();
         DirectoryEnumerationRecorder.Record(root, writer);
         return RecordedFileSystem.Load(new System.IO.StringReader(writer.ToString()));
+    }
+
+    private sealed class TrackingMatcher : IFileSystemMatcherSession
+    {
+        private readonly IFileSystemMatcherSession _inner;
+
+        public TrackingMatcher(IFileSystemMatcherSession inner)
+        {
+            _inner = inner;
+        }
+
+        public HashSet<string> FileMatchDirectories { get; } = [];
+
+        public void DirectoryFinished(ReadOnlySpan<char> directory) => _inner.DirectoryFinished(directory);
+
+        public DirectoryMatchType MatchesDirectory(
+            ReadOnlySpan<char> currentDirectory,
+            ReadOnlySpan<char> directoryName) =>
+            _inner.MatchesDirectory(currentDirectory, directoryName);
+
+        public bool MatchesFile(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> fileName)
+        {
+            FileMatchDirectories.Add(currentDirectory.ToString());
+            return _inner.MatchesFile(currentDirectory, fileName);
+        }
+
+        public void Dispose() => _inner.Dispose();
     }
 }

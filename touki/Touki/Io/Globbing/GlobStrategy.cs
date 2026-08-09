@@ -63,7 +63,7 @@ internal abstract class GlobStrategy : DisposableBase
     ///  The path separator character for path-aware matching, or <c>'\0'</c> when the
     ///  dialect is path-unaware.
     /// </summary>
-    public char Separator { get; init; }
+    public char Separator { get; internal set; }
 
     /// <summary>
     ///  <see langword="true"/> when the compiled pattern began with a <c>!</c> negation

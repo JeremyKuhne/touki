@@ -18,7 +18,7 @@ separators may rent a temporary buffer.
 ```csharp
 using Touki.Io.Globbing;
 
-using GlobSpecification specification = GlobSpecification.Compile(
+GlobSpecification specification = GlobSpecification.Compile(
     pattern: "**/*.cs",
     dialect: GlobDialect.PosixPath,
     options: GlobOptions.AllowGlobStar);
@@ -68,6 +68,11 @@ or edge case.
     parameterless `Matcher` defaults to case-insensitive matching; use
     `IgnoreCase` to align it. As in `Matcher`, ordinary `?` characters are
     literals rather than single-character wildcards.
+* **`MSBuild`** - `GlobSpecification` models `MSBuildGlob`'s in-memory logical
+    matcher, including recursive repeated anchors, `*.*`, and trailing-dot
+    patterns. Physical `FileMatcher.GetFiles` also inherits platform filesystem
+    wildcard behavior; use `MSBuildEnumerator` when that enumeration behavior is
+    required.
 * **`PowerShell`** - Touki defaults to case-sensitive matching like a bare
     `WildcardPattern`; PowerShell `-like` is case-insensitive, so use
     `IgnoreCase` for that casing. Touki additionally accepts POSIX-style bracket
@@ -94,9 +99,10 @@ intentional differences between supported dialects.
 
 ## Enumerate a directory tree
 
-`GlobEnumerator` accepts one include and zero or more exclude patterns. Its default
-dialect is `PosixPath`; select another dialect explicitly when the pattern comes
-from another ecosystem.
+`GlobEnumerator` accepts one include and a `GlobEnumerationOptions` object containing
+zero or more excludes, the dialect, glob options, and optional traversal options. Its
+default dialect is `PosixPath`; select another dialect explicitly when the pattern
+comes from another ecosystem.
 
 ```csharp
 using Touki.Io;
@@ -106,10 +112,13 @@ string projectDirectory = @"C:\repos\my-project";
 
 using GlobEnumerator enumerator = GlobEnumerator.Create(
     includePattern: "**/*.cs",
-    excludePattern: "**/obj/**",
     rootDirectory: projectDirectory,
-    dialect: GlobDialect.PosixPath,
-    globOptions: GlobOptions.AllowGlobStar);
+    options: new GlobEnumerationOptions
+    {
+        ExcludePatterns = ["**/obj/**"],
+        Dialect = GlobDialect.PosixPath,
+        GlobOptions = GlobOptions.AllowGlobStar
+    });
 
 while (enumerator.MoveNext())
 {
@@ -118,8 +127,37 @@ while (enumerator.MoveNext())
 ```
 
 Results are relative to `rootDirectory`. Use `GlobOptions.IgnoreCase` to select
-case-insensitive matching. Pass `EnumerationOptions` to customize recursion,
-inaccessible-directory handling, and other file-system traversal behavior.
+case-insensitive matching. Set `GlobEnumerationOptions.EnumerationOptions` to customize
+recursion, inaccessible-directory handling, and other file-system traversal behavior.
+
+## Compose custom matchers
+
+`GlobSpecification.CreateFileSystemMatcher()` returns a reusable definition whose
+sessions keep callback-native split spans. `FileSystemMatcher.CreatePath` adapts a
+canonical root-relative `/` path predicate, making regular expressions straightforward:
+
+```csharp
+using System.Text.RegularExpressions;
+using Touki.Io;
+using Touki.Io.Globbing;
+
+GlobSpecification sources = GlobSpecification.Compile(
+    "src/**/*.cs",
+    GlobDialect.PosixPath,
+    GlobOptions.AllowGlobStar);
+Regex generated = new("(?:^|/)Generated[^/]*\\.cs$", RegexOptions.CultureInvariant);
+IFileSystemMatcher matcher = FileSystemMatcher.CreateExclusionWins(
+    [sources.CreateFileSystemMatcher()],
+    [FileSystemMatcher.CreatePath(path => generated.IsMatch(path.ToString()))]);
+
+using FileSystemPathEnumerator enumerator = FileSystemPathEnumerator.Create(projectDirectory, matcher);
+```
+
+Definitions are immutable and borrowed. Each enumerator creates and owns an independent
+session. Direct path-predicate children in one framework composition share canonical
+path construction; callback-native graphs do not construct paths.
+On modern .NET, regex callers can use the span-based `Regex.IsMatch` overload to avoid
+the `string` conversion shown for .NET Framework compatibility.
 
 ## MSBuild item specifications
 
@@ -129,21 +167,36 @@ forms. When `projectDirectory` is supplied, relative specifications produce
 paths relative to that directory; with a null project directory, results are
 fully qualified.
 
-Use `MSBuildEnumerator.CreateResult` when the distinction between a search, an
-invalid specification returned verbatim, an empty result, and a rejected
-drive-root search matters. Its
-[`MSBuildSearchAction`](../touki/Touki/Io/MSBuildSearchAction.cs) reports that
-disposition without collapsing every outcome into an empty sequence.
-For `RunSearch`, the caller owns `result.Enumerator` and must dispose it after
-enumeration.
+Create an [`MSBuildEnumerationRequest`](../touki/Touki/Io/MSBuildEnumerationRequest.cs)
+and use `MSBuildEnumerator.CreateResult` when the distinction between a search, an
+invalid specification returned verbatim, an empty result, and a rejected drive-root
+search matters. The closed result types are `MSBuildSearchResult`,
+`MSBuildReturnLiteralResult`, `MSBuildEmptyResult`, and `MSBuildRejectedResult`.
+The caller owns `MSBuildSearchResult.Enumerator` and must dispose it after enumeration.
+Invalid exclude specifications do not fail a wildcard search: valid excludes
+still apply, while invalid originals are retained as exact literal result filters
+in source order through `MSBuildSearchResult.InvalidExcludeSpecifications`.
 Recursive drive or share enumeration is rejected by default; opt in with
-[`MSBuildEnumerationOptions.AllowDriveEnumeration`](../touki/Touki/Io/MSBuildEnumerationOptions.cs)
+`MSBuildEnumerationRequest.AllowDriveEnumeration`
 only when the caller deliberately permits that scope.
 
-The drive/share policy check is specific to `CreateResult`. The ordinary
-`Create` overloads do not reject a recursive drive-root specification; prefer
-`CreateResult` when a specification comes from an external source.
+Recursive `**` matching keeps a bounded set of active pattern states, so repeated
+anchors such as `**/a/b/*.cs` can retry later `a` segments without recursive or
+exponential backtracking. File-only excludes such as `**/obj/*.txt` filter files
+without pruning `obj`; terminal subtree excludes such as `**/obj/**` can prune it.
+Parent traversal after a wildcard segment is rejected before relative-segment
+normalization can erase it. `SplitWithErrors` preserves source order after duplicate
+and recursive-superset elimination.
 
 The implementation targets MSBuild item semantics, but it is not a drop-in copy of
-every `FileMatcher` shortcut and edge case. Callers that require exact oracle parity
-for unusual literal or trailing-separator inputs should validate those cases.
+every internal `FileMatcher` path. Intentional boundaries include:
+
+* No-wildcard includes are enumerated normally instead of being returned verbatim
+    without checking the filesystem.
+* `CreateResult` rejects recursive drive/share searches by default, while MSBuild's
+    action depends on its process traits.
+* Some historical invalid-character, colon-position, 8.3 short-name, lexical path,
+    enumeration-order, symlink, and I/O-failure tuple details are not reproduced.
+
+Callers that require exact oracle parity at one of these boundaries should validate
+that scenario against their pinned `Microsoft.Build` version.

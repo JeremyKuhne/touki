@@ -17,6 +17,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace />
 
+    <!-- Not a security boundary, the strong name is for friend access to internal hot paths. -->
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+
     <!-- Turn off Microsoft Testing Platform's transitive test-app behavior -->
     <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
     <GenerateTestingPlatformEntryPoint>false</GenerateTestingPlatformEntryPoint>

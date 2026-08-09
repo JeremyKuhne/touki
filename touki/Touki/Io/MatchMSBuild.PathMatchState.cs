@@ -4,7 +4,7 @@
 
 namespace Touki.Io;
 
-public partial class MatchMSBuild
+internal sealed partial class MatchMSBuild
 {
     private enum PathMatchState
     {

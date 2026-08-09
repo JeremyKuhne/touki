@@ -297,8 +297,8 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///   MSBuild's <c>FileMatcher</c> treats this as a forbidden pattern by default
     ///   (<c>SearchAction.FailBecauseDriveEnumerationIsForbidden</c>) because it would walk an entire
     ///   drive or share. <see cref="MSBuildEnumerator.CreateResult"/>
-    ///   surfaces it as <see cref="MSBuildSearchAction.FailBecauseDriveEnumerationIsForbidden"/> unless
-    ///   the caller opts in via <see cref="MSBuildEnumerationOptions.AllowDriveEnumeration"/>.
+    ///   returns an <see cref="MSBuildRejectedResult"/> unless the caller opts in via
+    ///   <see cref="MSBuildEnumerationRequest.AllowDriveEnumeration"/>.
     ///  </para>
     /// </remarks>
     public bool IsDriveRootRecursion
@@ -390,9 +390,9 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     /// </summary>
     /// <remarks>
     ///  <para>
-    ///   Internal because this method assumes its input has already been normalized via
-    ///   <see cref="Normalize"/> (so directory separators are the platform's
-    ///   <see cref="Path.DirectorySeparatorChar"/>). Public callers should use
+    ///   Internal because this method assumes directory separators have been canonicalized to the platform's
+    ///   <see cref="Path.DirectorySeparatorChar"/>. It must run before relative-segment normalization,
+    ///   which can erase illegal wildcard-relative traversal. Public callers should use
     ///   <see cref="NormalizeAndValidate"/>, which combines normalization and validation in a single
     ///   precondition-free entry point. The checks below mirror MSBuild's
     ///   <c>FileMatcher.RawFileSpecIsValid</c> and <c>FileMatcher.IsLegalFileSpec</c>, restricted to
@@ -405,6 +405,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///   <item><description>A <c>**</c> recursive wildcard that is not a standalone path segment
     ///    (e.g. <c>a**b</c>, <c>*.cs**</c>); standalone <c>**</c> at either end of the spec or between
     ///    separators is legal.</description></item>
+    ///   <item><description>A <c>..</c> substring in the wildcard-directory portion.</description></item>
     ///  </list>
     ///  <para>
     ///   Not validated (intentionally): MSBuild&#39;s "colon not at position 1" rule (breaks Unix
@@ -428,6 +429,18 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
         if (HasMisplacedDoubleStar(span))
         {
             return "Specification contains a '**' that is not a standalone path segment.";
+        }
+
+        int firstWildcard = span.IndexOfAny('*', '?');
+        int lastSeparator = span.LastIndexOf(Path.DirectorySeparatorChar);
+        if (firstWildcard >= 0 && firstWildcard < lastSeparator)
+        {
+            int separatorBeforeWildcard = span[..firstWildcard].LastIndexOf(Path.DirectorySeparatorChar);
+            ReadOnlySpan<char> wildcardDirectory = span[(separatorBeforeWildcard + 1)..lastSeparator];
+            if (wildcardDirectory.IndexOf("..".AsSpan(), StringComparison.Ordinal) >= 0)
+            {
+                return "Specification contains '..' in the wildcard-directory portion.";
+            }
         }
 
         return null;
@@ -464,10 +477,9 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     /// <param name="errorReason">
     ///  On success, <see langword="null"/>. On failure, a short reason such as
     ///  <c>"Specification contains an embedded null character."</c> suitable for surfacing in
-    ///  <see cref="MSBuildEnumerationResult.GlobFailure"/> or log output. When non-<see langword="null"/>
-    ///  the returned <see cref="StringSegment"/> is the partially normalized form (or
-    ///  <see langword="default"/> if normalization itself produced an empty result) and should not be
-    ///  used as a glob pattern.
+    ///  <see cref="MSBuildReturnLiteralResult.Reason"/> or log output. When non-<see langword="null"/>
+    ///  the returned <see cref="StringSegment"/> is the original specification (or
+    ///  <see langword="default"/> if trimming produced an empty result) and should not be used as a glob pattern.
     /// </param>
     /// <returns>
     ///  The normalized form of <paramref name="specification"/>. Inspect <paramref name="errorReason"/>
@@ -478,27 +490,56 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///   Error classes mirror MSBuild's <c>FileMatcher.RawFileSpecIsValid</c> +
     ///   <c>FileMatcher.IsLegalFileSpec</c>, restricted to the subset meaningful for this library:
     ///   spec that normalizes to empty (e.g. whitespace-only segment), embedded null character,
-    ///   literal <c>"..."</c> substring, and misplaced <c>**</c> (not a standalone path segment).
+    ///   literal <c>"..."</c> substring, misplaced <c>**</c> (not a standalone path segment), and
+    ///   a <c>..</c> substring in the wildcard-directory portion.
     ///  </para>
     /// </remarks>
     public static StringSegment NormalizeAndValidate(StringSegment specification, out string? errorReason)
     {
-        StringSegment normalized = Normalize(specification);
+        StringSegment canonical = CanonicalizeSeparators(specification);
 
+        if (canonical.IsEmpty)
+        {
+            errorReason = "Specification normalizes to empty.";
+            return canonical;
+        }
+
+        errorReason = Validate(canonical);
+        if (errorReason is not null)
+        {
+            return specification;
+        }
+
+        StringSegment normalized = Normalize(canonical);
         if (normalized.IsEmpty)
         {
             errorReason = "Specification normalizes to empty.";
-            return normalized;
+            return specification;
         }
 
-        errorReason = Validate(normalized);
         return normalized;
+    }
+
+    private static StringSegment CanonicalizeSeparators(StringSegment specification)
+    {
+        specification = specification.Trim();
+        char separatorToReplace = Path.DirectorySeparatorChar == '\\' ? '/' : '\\';
+        if (!specification.Contains(separatorToReplace))
+        {
+            return specification;
+        }
+
+        using ValueStringBuilder builder = new(stackalloc char[Paths.MaxShortPath]);
+        builder.Append(specification);
+        builder.Replace(separatorToReplace, Path.DirectorySeparatorChar);
+        return builder.ToString();
     }
 
     /// <summary>
     ///  Simplify a path by converting backslashes to forward slashes on Unix systems, collapsing
-    ///  consecutive directory separators into a single separator, trimming whitespace, and removing any
-    ///  redundant path segments (".", "..", and duplicate "**").
+    ///  consecutive directory separators into a single separator, trimming whitespace, and removing
+    ///  redundant directory segments (".", "..", and duplicate "**"). Terminal "." and ".." segments
+    ///  are preserved as filename components.
     /// </summary>
     /// <param name="specification">The path specification to normalize.</param>
     /// <remarks>
@@ -523,7 +564,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
         // shortcut that returns the spec verbatim without consulting the filesystem, so e.g.
         // GetFiles("Foo/") returns ["Foo/"] regardless of whether the path exists. Touki's
         // MSBuildEnumerator has no such shortcut; MSBuildEnumerator.CreateResult returns
-        // MSBuildSearchAction.ReturnEmptyList when the spec's fixed directory does not exist on disk.
+        // MSBuild returns an empty result when the spec's fixed directory does not exist on disk.
 
         specification = specification.Trim();
 
@@ -537,7 +578,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
             replaceBuilder.Replace(separatorToReplace, Path.DirectorySeparatorChar);
             ReadOnlySpan<char> currentState = replaceBuilder;
             replaceBuilder.Length = 0;
-            Paths.RemoveRelativeSegments(currentState, ref replaceBuilder);
+            RemoveRelativeSegmentsPreservingFileName(currentState, ref replaceBuilder);
             RemoveDuplicateMatchAnyDirectory(ref replaceBuilder);
             string normalized = replaceBuilder.ToString();
             replaceBuilder.Dispose();
@@ -552,7 +593,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
                 return specification;
             }
 
-            bool modified = Paths.RemoveRelativeSegments(specification, ref replaceBuilder);
+            bool modified = RemoveRelativeSegmentsPreservingFileName(specification, ref replaceBuilder);
             modified |= RemoveDuplicateMatchAnyDirectory(ref replaceBuilder);
 
             if (modified)
@@ -622,6 +663,27 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
             replaceBuilder.Dispose();
             return true;
         }
+
+        static bool RemoveRelativeSegmentsPreservingFileName(
+            ReadOnlySpan<char> path,
+            ref ValueStringBuilder builder)
+        {
+            int lastSeparator = path.LastIndexOf(Path.DirectorySeparatorChar);
+            if (lastSeparator >= 0)
+            {
+                ReadOnlySpan<char> fileName = path[(lastSeparator + 1)..];
+                if (fileName.SequenceEqual(".".AsSpan()) || fileName.SequenceEqual("..".AsSpan()))
+                {
+                    bool modified = Paths.RemoveRelativeSegments(
+                        path[..(lastSeparator + 1)],
+                        ref builder);
+                    builder.Append(fileName);
+                    return modified;
+                }
+            }
+
+            return Paths.RemoveRelativeSegments(path, ref builder);
+        }
     }
 
     /// <summary>
@@ -657,8 +719,14 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///   Unlike <see cref="Split(StringSegment, bool)"/>, this overload preserves error specs in the
     ///   returned list rather than silently dropping or throwing on them. The classified error classes
     ///   match the checks performed by <see cref="Validate"/> (embedded null character, <c>...</c>
-    ///   substring, misplaced <c>**</c>) plus the "spec normalizes to empty" class produced by
-    ///   <see cref="Normalize"/>.
+    ///   substring, misplaced <c>**</c>, and <c>..</c> in the wildcard-directory portion) plus
+    ///   the "spec normalizes to empty" class produced by <see cref="Normalize"/>.
+    ///  </para>
+    ///  <para>
+    ///   Results retain source order after duplicate and recursive-superset elimination. The first
+    ///   exact duplicate owns the surviving position. When a later broad recursive specification
+    ///   subsumes one or more earlier narrow specifications, the later source position owns the
+    ///   surviving result.
     ///  </para>
     /// </remarks>
     public static ListBase<MSBuildSpecificationResult> SplitWithErrors(
@@ -669,11 +737,6 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
         SingleOptimizedList<MSBuildSpecificationResult, ArrayPoolList<MSBuildSpecificationResult>> results = [];
 
         SplitCore(specs, ignoreCase, splitSpecs, errorResults: results);
-
-        for (int i = 0; i < splitSpecs.Count; i++)
-        {
-            results.Add(MSBuildSpecificationResult.FromSpecification(splitSpecs[i]));
-        }
 
         splitSpecs.Dispose();
         return results;
@@ -686,8 +749,8 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
         ListBase<MSBuildSpecificationResult>? errorResults)
     {
         // MSBuild validates specifications after splitting each one into fixed, wildcard, and file parts.
-        // For touki, validation is applied to the normalized spec via the static Validate helper and the
-        // results are tracked when an error sink is provided.
+        // Touki canonicalizes separators, validates before relative-segment normalization can erase an
+        // invalid shape, and tracks errors when a sink is provided.
         //
         // What's validated (mirrors MSBuild's FileMatcher.RawFileSpecIsValid + IsLegalFileSpec, restricted
         // to the subset that's meaningful here):
@@ -696,6 +759,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
         //  - Embedded null character ('\0').
         //  - Literal "..." substring.
         //  - Misplaced "**" (not a standalone path segment).
+        //  - ".." in the wildcard-directory portion.
         //
         // Intentionally not validated: MSBuild's "colon not at position 1" rule (breaks Unix absolute
         // paths) and the deprecated InvalidPathChars set beyond null.
@@ -710,10 +774,9 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
                 continue;
             }
 
-            // Normalize and validate the spec in one shot. NormalizeAndValidate collapses consecutive
-            // separators, reduces "." and ".." segments, dedupes "**" runs, and then classifies the
-            // result against MSBuild's "legal file spec" rules. On failure the error reason is
-            // surfaced through the optional error sink and the spec is dropped.
+            // Canonicalize separators and validate before destructive relative-segment collapse.
+            // Legal specs are then normalized (separator runs, "." / "..", duplicate "**").
+            // On failure the original text and error reason are preserved through the optional sink.
 
             StringSegment normalized = NormalizeAndValidate(left, out string? errorReason);
             if (errorReason is not null)
@@ -744,10 +807,11 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
             if (!newSpec.IsSimpleRecursiveMatch)
             {
                 splitSpecs.Add(newSpec);
+                errorResults?.Add(MSBuildSpecificationResult.FromSpecification(newSpec));
                 continue;
             }
 
-            // Looking for duplicates akin to "bin\Debug\/**" and "bin\/**"
+            // Looking for duplicates akin to "bin\Debug\/**" and "bin\/**".
             for (int i = 0; i < splitSpecs.Count; i++)
             {
                 MSBuildSpecification current = splitSpecs[i];
@@ -757,17 +821,8 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
                     continue;
                 }
 
-                if (current.FixedPath.Length > newSpec.FixedPath.Length)
-                {
-                    if (Paths.IsSameOrSubdirectory(newSpec.FixedPath, current.FixedPath, ignoreCase))
-                    {
-                        // Current is a subdirectory of the new, replace it.
-                        splitSpecs[i] = newSpec;
-                        found = true;
-                        break;
-                    }
-                }
-                else if (Paths.IsSameOrSubdirectory(current.FixedPath, newSpec.FixedPath, ignoreCase))
+                if (current.FixedPath.Length <= newSpec.FixedPath.Length
+                    && Paths.IsSameOrSubdirectory(current.FixedPath, newSpec.FixedPath, ignoreCase))
                 {
                     // New is a subdirectory of the current, we can skip this.
                     // We already have a simple recursive match for this fixed path.
@@ -778,7 +833,51 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
 
             if (!found)
             {
-                splitSpecs.Add(newSpec);
+                int insertionIndex = splitSpecs.Count;
+                for (int i = splitSpecs.Count - 1; i >= 0; i--)
+                {
+                    MSBuildSpecification current = splitSpecs[i];
+                    if (!current.IsSimpleRecursiveMatch
+                        || !current.FileName.Equals(newSpec.FileName, ignoreCase)
+                        || !Paths.IsSameOrSubdirectory(newSpec.FixedPath, current.FixedPath, ignoreCase))
+                    {
+                        continue;
+                    }
+
+                    insertionIndex = i;
+                    splitSpecs.RemoveAt(i);
+                    RemoveResult(errorResults, current);
+                }
+
+                if (insertionIndex < splitSpecs.Count)
+                {
+                    splitSpecs.Insert(insertionIndex, newSpec);
+                }
+                else
+                {
+                    splitSpecs.Add(newSpec);
+                }
+
+                errorResults?.Add(MSBuildSpecificationResult.FromSpecification(newSpec));
+            }
+        }
+
+        static void RemoveResult(
+            ListBase<MSBuildSpecificationResult>? results,
+            MSBuildSpecification specification)
+        {
+            if (results is null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < results.Count; i++)
+            {
+                if (ReferenceEquals(results[i].Specification, specification))
+                {
+                    results.RemoveAt(i);
+                    return;
+                }
             }
         }
     }

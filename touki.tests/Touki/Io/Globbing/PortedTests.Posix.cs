@@ -242,10 +242,9 @@ public class PortedTests_Posix
     // "/.b." after another segment) require per-segment FNM_PERIOD enforcement:
     // the rule must fire at the start of every path segment, not only at
     // input[0]. Touki's current implementation only consults input[0]; the
-    // per-segment work is tracked in docs/globbing-feature-plan.md
-    // (F2.1 "Known follow-up - per-segment leading-dot") and folded into the
-    // F2.2 globstar follow-up. Affected rows are marked with Assert.Skip so the
-    // suite stays green; remove the skip when the per-segment behavior lands.
+    // limitation is documented in docs/globbing.md. Affected rows are marked
+    // inconclusive so the suite stays green; remove the guard when per-segment
+    // behavior lands.
     [TestMethod]
     [DataRow("/.", "/.", true, false)]
     [DataRow("/.a./.b.", "/.*/.*", true, false)]
@@ -264,7 +263,7 @@ public class PortedTests_Posix
     {
         if (requiresPerSegmentDotRule)
         {
-            Assert.Inconclusive("Per-segment FNM_PERIOD enforcement (leading '.' restricted at every path segment, not only input[0]) is deferred; see docs/globbing-feature-plan.md F2.1 'Known follow-up - per-segment leading-dot'.");
+            Assert.Inconclusive("Per-segment FNM_PERIOD enforcement (leading '.' restricted at every path segment, not only input[0]) is deferred; see docs/globbing.md compatibility notes.");
         }
 
         GlobSpecification.Compile(pattern, GlobDialect.PosixPath).IsMatch(input).Should().Be(expected);

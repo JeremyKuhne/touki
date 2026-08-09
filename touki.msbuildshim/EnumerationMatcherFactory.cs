@@ -3,12 +3,11 @@
 // See LICENSE file in the project root for full license information
 
 using Touki.Io.Globbing;
-using Touki.Text;
 
 namespace Touki.Io;
 
 /// <summary>
-///  Builds the same <see cref="IEnumerationMatcher"/> instances that <see cref="GlobEnumerator"/>
+///  Builds the same <see cref="IFileSystemMatcherSession"/> instances that <see cref="GlobEnumerator"/>
 ///  and <see cref="MSBuildEnumerator"/> drive, without constructing a file-system-bound enumerator.
 /// </summary>
 /// <remarks>
@@ -23,33 +22,37 @@ public static class EnumerationMatcherFactory
     /// <summary>
     ///  Builds the matcher used by <see cref="GlobEnumerator"/> for the given include and excludes.
     /// </summary>
-    public static IEnumerationMatcher CreateGlob(
+    public static IFileSystemMatcherSession CreateGlob(
         string includePattern,
         IReadOnlyList<string>? excludePatterns,
         string rootDirectory,
         GlobDialect dialect = GlobDialect.PosixPath,
         GlobOptions globOptions = GlobOptions.None) =>
-        GlobEnumerator.BuildMatcher(includePattern, excludePatterns, rootDirectory, dialect, globOptions);
+        GlobEnumerator.BuildSession(
+            includePattern,
+            excludePatterns,
+            rootDirectory,
+            dialect,
+            globOptions);
 
     /// <summary>
     ///  Builds the matcher used by <see cref="MSBuildEnumerator"/> for the given file specification
     ///  and exclude specifications, returning the resolved start directory.
     /// </summary>
-    public static IEnumerationMatcher CreateMSBuild(
+    public static IFileSystemMatcherSession CreateMSBuild(
         string fileSpec,
         string excludeSpecs,
         string projectDirectory,
         out string startDirectory)
     {
-        IEnumerationMatcher matcher = MSBuildMatchBuilder.FromSpecification(
+        MSBuildMatchBuildResult buildResult = MSBuildMatchBuilder.FromSpecification(
             fileSpec,
             excludeSpecs,
             MatchType.Simple,
             MatchCasing.PlatformDefault,
-            projectDirectory,
-            out StringSegment start);
+            projectDirectory);
 
-        startDirectory = start.ToString();
-        return matcher;
+        startDirectory = buildResult.StartDirectory.ToString();
+        return buildResult.Session;
     }
 }

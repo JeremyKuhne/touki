@@ -10,8 +10,7 @@ namespace Touki.Io.Globbing;
 /// <remarks>
 ///  <para>
 ///   The matcher accepts exactly one separator character at match time; inputs that
-///   mix separators must be normalized by the caller. See design decision D2 in
-///   <c>docs/globbing-feature-plan.md</c>.
+///   mix separators must be normalized by the caller.
 ///  </para>
 ///  <para>
 ///   Each path-aware dialect documents a default separator

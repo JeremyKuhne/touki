@@ -49,7 +49,7 @@ public sealed partial class GlobSpecification
         ///  <para>
         ///   Callers that need to compile patterns larger than this (e.g. machine-generated
         ///   exclusion lists) should call the
-        ///   <see cref="TryCreate(StringSegment, GlobDialect, GlobOptions, GlobPathSeparator, int, out GlobStrategy?, out GlobCompileError)"/>
+        ///   <see cref="TryCreate(StringSegment, GlobDialect, GlobOptions, GlobPathSeparator, int, out GlobStrategy?, out GlobCompileError, bool)"/>
         ///   overload directly with a larger limit, or pass <c>-1</c> to disable the check.
         ///  </para>
         /// </remarks>
@@ -82,7 +82,8 @@ public sealed partial class GlobSpecification
             GlobPathSeparator separator,
             int maxPatternLength,
             [NotNullWhen(true)] out GlobStrategy? result,
-            out GlobCompileError error)
+            out GlobCompileError error,
+            bool markEffectiveDoubleStarRuns = false)
         {
             result = null;
             error = default;
@@ -236,10 +237,8 @@ public sealed partial class GlobSpecification
             //                      treat embedded empty path segments as literal)
             //
             // The MSBuild path also flags `CoalesceInputSeparators = true` so the
-            // matcher coalesces runs in inputs at IsMatch time. See the
-            // "Sequential-separator behavior" and "Multiple-asterisk-run behavior"
-            // sections of docs/globbing-feature-plan.md for the empirical findings
-            // that drive each rule.
+            // matcher coalesces runs in inputs at IsMatch time. Oracle tests under
+            // touki.tests/Touki/Io/Globbing pin the per-dialect rules.
             //
             // `DisallowEmptyInput` mirrors the documented "empty input never matches"
             // behavior of `FileSystemName.MatchesSimpleExpression`,
@@ -269,7 +268,7 @@ public sealed partial class GlobSpecification
                 out bool neverMatch,
                 out coalesceInputSeparators);
 
-            if (normalizedRuns && neverMatch)
+            if (neverMatch)
             {
                 result = new NeverMatchGlobStrategy(dialect, options)
                 {
@@ -391,6 +390,7 @@ public sealed partial class GlobSpecification
             // general bytecode path.
             bool allowGlobStar = (options & GlobOptions.AllowGlobStar) != 0 || dialect.GlobStarIsImplicit();
             if (pathAware
+                && !markEffectiveDoubleStarRuns
                 && allowGlobStar
                 && TryCreateGlobStarFileNameStrategy(
                     pattern,
@@ -423,6 +423,7 @@ public sealed partial class GlobSpecification
                 rootAnchored,
                 directoryOnly,
                 coalesceInputSeparators,
+                markEffectiveDoubleStarRuns,
                 out result,
                 out error))
             {
@@ -535,7 +536,7 @@ public sealed partial class GlobSpecification
         ///  <para>
         ///   This is the canonical "match any of these extensions" shape produced by
         ///   user code that wants a single compiled spec instead of an N-include
-        ///   <c>MatchSet</c>. Specializing it removes the recursive bytecode walker
+        ///   one matcher definition per suffix. Specializing it removes the recursive bytecode walker
         ///   from the per-file hot path, which is the dominant cost on
         ///   .NET Framework 4.8.1 RyuJIT (no tail calls for span-bearing helpers, slow
         ///   span indexer). See <see cref="MultiSuffixGlobStrategy"/> for the per-TFM
@@ -742,10 +743,8 @@ public sealed partial class GlobSpecification
         /// </summary>
         /// <remarks>
         ///  <para>
-        ///   See the &quot;Sequential-separator behavior&quot; and &quot;Multiple-asterisk-run
-        ///   behavior&quot; sections of <c>docs/globbing-feature-plan.md</c> for the
-        ///   per-dialect rule each branch implements, and the oracle tests under
-        ///   <c>touki.tests/Touki/Io/Globbing/</c> that pin the rules down.
+        ///   Oracle tests under <c>touki.tests/Touki/Io/Globbing/</c> pin the
+        ///   per-dialect rule each branch implements.
         ///  </para>
         /// </remarks>
         private static bool TryNormalizeRuns(
@@ -775,6 +774,18 @@ public sealed partial class GlobSpecification
                 int i = 0;
                 while (i < pattern.Length)
                 {
+                    if (dialect == GlobDialect.MSBuild
+                        && allowExtGlob
+                        && IsExtGlobOpenerAt(pattern, i))
+                    {
+                        int close = FindExtGlobClose(pattern, i);
+                        if (close >= 0)
+                        {
+                            i = close + 1;
+                            continue;
+                        }
+                    }
+
                     if (escape != '\0' && pattern[i] == escape)
                     {
                         i += 2;
@@ -794,10 +805,12 @@ public sealed partial class GlobSpecification
                     }
 
                     int effectiveRunLength = i - runStart;
-                    if (allowExtGlob
+                    bool opensExtGlob = dialect == GlobDialect.MSBuild
+                        && allowExtGlob
                         && effectiveRunLength >= 2
                         && i < pattern.Length
-                        && pattern[i] == '(')
+                        && pattern[i] == '(';
+                    if (opensExtGlob)
                     {
                         effectiveRunLength--;
                     }
@@ -806,6 +819,15 @@ public sealed partial class GlobSpecification
                     {
                         hasAsteriskRun = true;
                         break;
+                    }
+
+                    if (opensExtGlob)
+                    {
+                        int close = FindExtGlobClose(pattern, i - 1);
+                        if (close >= 0)
+                        {
+                            i = close + 1;
+                        }
                     }
                 }
             }
@@ -1073,6 +1095,7 @@ public sealed partial class GlobSpecification
             bool rootAnchored,
             bool directoryOnly,
             bool coalesceInputSeparators,
+            bool markEffectiveDoubleStarRuns,
             [NotNullWhen(true)] out GlobStrategy? result,
             out GlobCompileError error)
         {
@@ -1089,6 +1112,8 @@ public sealed partial class GlobSpecification
                 allowGlobStar && pathAware,
                 allowExtGlob,
                 separator,
+                markEffectiveDoubleStarRuns,
+                dialect == GlobDialect.MSBuild,
                 out string program,
                 out GlobTraits traits,
                 out error))
@@ -1175,7 +1200,7 @@ public sealed partial class GlobSpecification
                 lastOpcodeStart = i;
                 lastOpcode = opcode;
 
-                if (opcode is GlobOpCodes.AnyRun or GlobOpCodes.Any)
+                if (opcode is GlobOpCodes.AnyRun or GlobOpCodes.EffectiveDoubleStarRun or GlobOpCodes.Any)
                 {
                     i++;
                 }
@@ -1318,6 +1343,8 @@ public sealed partial class GlobSpecification
                         break;
                     case GlobOpCodes.Any:
                     case GlobOpCodes.AnyRun:
+                    case GlobOpCodes.EffectiveDoubleStarRun:
+                    case GlobOpCodes.Never:
                         lastTopStart = i;
                         lastTopOp = opcode;
                         i++;
@@ -1797,6 +1824,8 @@ public sealed partial class GlobSpecification
             bool allowGlobStar,
             bool allowExtGlob,
             char separator,
+            bool markEffectiveDoubleStarRuns,
+            bool msbuildNeverRuns,
             out string program,
             out GlobTraits traits,
             out GlobCompileError error)
@@ -1817,6 +1846,9 @@ public sealed partial class GlobSpecification
             traits = GlobTraits.None;
             error = default;
             int overflowPosition = -1;
+            int markerFileNameStart = markEffectiveDoubleStarRuns
+                ? FindScopeFileNameStart(pattern, start: 0, pattern.Length, separator)
+                : pattern.Length;
 
             int i = 0;
             while (i < pattern.Length)
@@ -1840,6 +1872,8 @@ public sealed partial class GlobSpecification
                             questionMarkIsWildcard,
                             allowGlobStar,
                             separator,
+                            markEffectiveDoubleStarRuns,
+                            msbuildNeverRuns,
                             ref builder,
                             ref lastLiteral,
                             ref traits,
@@ -1903,6 +1937,16 @@ public sealed partial class GlobSpecification
                         && pattern[runEnd] == '(')
                     {
                         runEnd--;
+                    }
+
+                    if (markEffectiveDoubleStarRuns
+                        && i >= markerFileNameStart
+                        && runEnd - i >= 2)
+                    {
+                        builder.Append(GlobOpCodes.EffectiveDoubleStarRun);
+                        lastLiteral = LiteralCursor.None;
+                        i = runEnd;
+                        continue;
                     }
 
                     if (TryEmitGlobStar(pattern, i, runEnd, allowGlobStar, separator, ref builder, ref lastLiteral, out int next))
@@ -1985,6 +2029,8 @@ public sealed partial class GlobSpecification
             bool questionMarkIsWildcard,
             bool allowGlobStar,
             char separator,
+            bool markEffectiveDoubleStarRuns,
+            bool msbuildNeverRuns,
             ref ValueStringBuilder builder,
             ref LiteralCursor lastLiteral,
             ref GlobTraits traits,
@@ -2025,9 +2071,27 @@ public sealed partial class GlobSpecification
 
             i += 2;
             lastLiteral = LiteralCursor.None;
+            bool atAlternativeStart = true;
+            int markerFileNameStart = pattern.Length;
 
             while (i < pattern.Length)
             {
+                if (atAlternativeStart)
+                {
+                    int alternativeEnd = FindAlternativeEnd(pattern, i);
+                    markerFileNameStart = markEffectiveDoubleStarRuns
+                        ? FindScopeFileNameStart(pattern, i, alternativeEnd, separator)
+                        : alternativeEnd;
+                    if (msbuildNeverRuns && ContainsMSBuildNeverRun(pattern, i, alternativeEnd))
+                    {
+                        builder.Append(GlobOpCodes.Never);
+                        lastLiteral = LiteralCursor.None;
+                        i = alternativeEnd;
+                    }
+
+                    atAlternativeStart = false;
+                }
+
                 char current = pattern[i];
 
                 if (current == ')')
@@ -2079,6 +2143,7 @@ public sealed partial class GlobSpecification
                     altBodyPositions[altBodyCount++] = builder.Length;
                     lastLiteral = LiteralCursor.None;
                     i++;
+                    atAlternativeStart = true;
                     continue;
                 }
 
@@ -2095,6 +2160,8 @@ public sealed partial class GlobSpecification
                             questionMarkIsWildcard,
                             allowGlobStar,
                             separator,
+                            markEffectiveDoubleStarRuns,
+                            msbuildNeverRuns,
                             ref builder,
                             ref lastLiteral,
                             ref traits,
@@ -2156,6 +2223,16 @@ public sealed partial class GlobSpecification
                         runEnd--;
                     }
 
+                    if (markEffectiveDoubleStarRuns
+                        && i >= markerFileNameStart
+                        && runEnd - i >= 2)
+                    {
+                        builder.Append(GlobOpCodes.EffectiveDoubleStarRun);
+                        lastLiteral = LiteralCursor.None;
+                        i = runEnd;
+                        continue;
+                    }
+
                     if (TryEmitGlobStar(pattern, i, runEnd, allowGlobStar, separator, ref builder, ref lastLiteral, out int next))
                     {
                         traits.SetFlags(GlobTraits.GlobStar);
@@ -2191,6 +2268,125 @@ public sealed partial class GlobSpecification
             Debug.Fail("Extglob encoder ran off the end of the pattern; scanner should have rejected this.");
             overflowPosition = kindIndex;
             return false;
+        }
+
+        private static int FindAlternativeEnd(ReadOnlySpan<char> pattern, int start)
+        {
+            int index = start;
+            while (index < pattern.Length)
+            {
+                if (IsExtGlobOpenerAt(pattern, index))
+                {
+                    int close = FindExtGlobClose(pattern, index);
+                    if (close < 0)
+                    {
+                        return pattern.Length;
+                    }
+
+                    index = close + 1;
+                    continue;
+                }
+
+                if (pattern[index] is '|' or ')')
+                {
+                    return index;
+                }
+
+                index++;
+            }
+
+            return pattern.Length;
+        }
+
+        private static bool ContainsMSBuildNeverRun(ReadOnlySpan<char> pattern, int start, int end)
+        {
+            int index = start;
+            while (index < end)
+            {
+                if (IsExtGlobOpenerAt(pattern, index))
+                {
+                    int close = FindExtGlobClose(pattern, index);
+                    if (close < 0)
+                    {
+                        return false;
+                    }
+
+                    index = close + 1;
+                    continue;
+                }
+
+                if (pattern[index] != '*')
+                {
+                    index++;
+                    continue;
+                }
+
+                int runStart = index;
+                while (index < end && pattern[index] == '*')
+                {
+                    index++;
+                }
+
+                int effectiveRunLength = index - runStart;
+                bool opensExtGlob = effectiveRunLength >= 2
+                    && index < end
+                    && pattern[index] == '(';
+                if (opensExtGlob)
+                {
+                    effectiveRunLength--;
+                }
+
+                if (effectiveRunLength >= 3)
+                {
+                    return true;
+                }
+
+                if (opensExtGlob)
+                {
+                    int close = FindExtGlobClose(pattern, index - 1);
+                    if (close < 0)
+                    {
+                        return false;
+                    }
+
+                    index = close + 1;
+                }
+            }
+
+            return false;
+        }
+
+        private static int FindScopeFileNameStart(
+            ReadOnlySpan<char> pattern,
+            int start,
+            int end,
+            char separator)
+        {
+            int fileNameStart = start;
+            int index = start;
+            while (index < end)
+            {
+                if (IsExtGlobOpenerAt(pattern, index))
+                {
+                    int close = FindExtGlobClose(pattern, index);
+                    if (close < 0)
+                    {
+                        break;
+                    }
+
+                    index = close + 1;
+                    continue;
+                }
+
+                if (separator != '\0' && pattern[index] == separator)
+                {
+                    fileNameStart = index + 1;
+                }
+
+                index++;
+            }
+
+            return fileNameStart;
         }
 
         /// <summary>

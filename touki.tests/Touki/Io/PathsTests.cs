@@ -49,6 +49,23 @@ public class PathsTests
         Paths.AreExpressionsExclusive("*.cs", "*.*", MatchType.Win32, MatchCasing.CaseSensitive).Should().BeFalse();
         Paths.AreExpressionsExclusive("*.*", "*.cs", MatchType.Win32, MatchCasing.CaseSensitive).Should().BeFalse();
         Paths.AreExpressionsExclusive("*.*", "*.*", MatchType.Win32, MatchCasing.CaseSensitive).Should().BeFalse();
+        Paths.AreExpressionsExclusive("*.", "*x", MatchType.Win32, MatchCasing.CaseSensitive).Should().BeFalse();
+        Paths.AreExpressionsExclusive("*x", "*.", MatchType.Win32, MatchCasing.CaseSensitive).Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void AreExpressionsExclusive_Win32InternalTokenAndLiteral_NeverClaimsExclusive()
+    {
+        Paths.AreExpressionsExclusive(
+            "file>.txt",
+            "fileA.txt",
+            MatchType.Win32,
+            MatchCasing.CaseSensitive).Should().BeFalse();
+        Paths.AreExpressionsExclusive(
+            "fileA.txt",
+            "file>.txt",
+            MatchType.Win32,
+            MatchCasing.CaseSensitive).Should().BeFalse();
     }
 
     [TestMethod]
@@ -66,10 +83,53 @@ public class PathsTests
     [DataRow("*abc*", "*def*")] // could overlap (e.g., "abcdef")
     [DataRow("*a*c*", "*b*d*")] // uncertain overlap; should not claim exclusive
     [DataRow("pre*mid*suf", "pre*X*suf")] // same fixed prefix/suffix; not provably exclusive
+    [DataRow("*.txt", "*x.txt")]
+    [DataRow("a*.txt", "ab*.txt")]
     public void ArePatternsExclusive_BothWildcards_OnlyProveObviousCases(string p1, string p2)
     {
         Paths.AreExpressionsExclusive(p1, p2, MatchType.Simple, MatchCasing.CaseSensitive).Should().BeFalse();
         Paths.AreExpressionsExclusive(p2, p1, MatchType.Simple, MatchCasing.CaseSensitive).Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void ArePatternsExclusive_WhenTrue_HasNoBoundedCounterexample()
+    {
+        string[] patterns = [.. GenerateStrings("ab*?", maximumLength: 3)];
+        string[] candidates = [.. GenerateStrings("ab", maximumLength: 6)];
+
+        for (int firstIndex = 0; firstIndex < patterns.Length; firstIndex++)
+        {
+            for (int secondIndex = firstIndex; secondIndex < patterns.Length; secondIndex++)
+            {
+                string firstPattern = patterns[firstIndex];
+                string secondPattern = patterns[secondIndex];
+                if (!Paths.AreExpressionsExclusive(
+                    firstPattern,
+                    secondPattern,
+                    MatchType.Simple,
+                    MatchCasing.CaseSensitive))
+                {
+                    continue;
+                }
+
+                foreach (string candidate in candidates)
+                {
+                    bool overlaps = Paths.MatchesExpression(
+                            candidate,
+                            firstPattern,
+                            MatchCasing.CaseSensitive,
+                            MatchType.Simple)
+                        && Paths.MatchesExpression(
+                            candidate,
+                            secondPattern,
+                            MatchCasing.CaseSensitive,
+                            MatchType.Simple);
+
+                    overlaps.Should().BeFalse(
+                        $"'{candidate}' matches both '{firstPattern}' and '{secondPattern}'");
+                }
+            }
+        }
     }
 
     [TestMethod]
@@ -79,6 +139,33 @@ public class PathsTests
     {
         Paths.AreExpressionsExclusive(p1, p2, MatchType.Simple, casing).Should().Be(expected);
         Paths.AreExpressionsExclusive(p2, p1, MatchType.Simple, casing).Should().Be(expected);
+    }
+
+    private static IEnumerable<string> GenerateStrings(string alphabet, int maximumLength)
+    {
+        yield return string.Empty;
+
+        for (int length = 1; length <= maximumLength; length++)
+        {
+            int valueCount = 1;
+            for (int index = 0; index < length; index++)
+            {
+                valueCount *= alphabet.Length;
+            }
+
+            for (int value = 0; value < valueCount; value++)
+            {
+                char[] characters = new char[length];
+                int remaining = value;
+                for (int index = 0; index < length; index++)
+                {
+                    characters[index] = alphabet[remaining % alphabet.Length];
+                    remaining /= alphabet.Length;
+                }
+
+                yield return new string(characters);
+            }
+        }
     }
 
     [TestMethod]

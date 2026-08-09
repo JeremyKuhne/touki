@@ -104,9 +104,12 @@ public class GlobEnumerateFsgPerf
     {
         using GlobEnumerator enumerator = Touki.Io.GlobEnumerator.Create(
             Filespec,
-            s_excludes,
             _directory,
-            Touki.Io.Globbing.GlobDialect.FileSystemGlobbing);
+            new()
+            {
+                ExcludePatterns = s_excludes,
+                Dialect = Touki.Io.Globbing.GlobDialect.FileSystemGlobbing
+            });
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -125,9 +128,12 @@ public class GlobEnumerateFsgPerf
         // exclude-list size vs the underlying matcher engine.
         using GlobEnumerator enumerator = Touki.Io.GlobEnumerator.Create(
             Filespec,
-            s_reducedExcludes,
             _directory,
-            Touki.Io.Globbing.GlobDialect.FileSystemGlobbing);
+            new()
+            {
+                ExcludePatterns = s_reducedExcludes,
+                Dialect = Touki.Io.Globbing.GlobDialect.FileSystemGlobbing
+            });
         List<string> results = [];
         while (enumerator.MoveNext())
         {

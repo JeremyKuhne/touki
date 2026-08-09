@@ -5,7 +5,7 @@
 namespace Touki.Io.Globbing;
 
 /// <summary>
-///  An <see cref="IEnumerationMatcher"/> binding of a <see cref="GlobSpecification"/>
+///  An <see cref="IFileSystemMatcherSession"/> binding of a <see cref="GlobSpecification"/>
 ///  to an enumeration root.
 /// </summary>
 /// <remarks>
@@ -16,11 +16,10 @@ namespace Touki.Io.Globbing;
 ///  </para>
 ///  <para>
 ///   Single-threaded against <see cref="MatchesFile"/>, <see cref="MatchesDirectory"/>,
-///   and <see cref="DirectoryFinished"/>. Compose multi-pattern enumerations via
-///   <see cref="MatchSet"/> / <see cref="OrderedMatchSet"/>.
+///   and <see cref="DirectoryFinished"/>.
 ///  </para>
 /// </remarks>
-public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
+internal sealed partial class GlobMatch : FileSystemMatcherSession
 {
     // Stack budget for the translated-prefix scratch buffer used by
     // MatchesFile / MatchesDirectory. 256 chars (512 bytes) covers the vast
@@ -33,111 +32,72 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
     // Per-directory cache. Mirrors MatchMSBuild: invalidated by DirectoryFinished,
     // refreshed by the next MatchesFile/MatchesDirectory call. Holds the alignment
     // classification only - no buffers, no rentals, no copies of the directory
-    // span. The IEnumerationMatcher hot path stays allocation-free.
+    // span. The file-system session hot path stays allocation-free.
     private readonly GlobSpecification _specification;
     private readonly string? _rootDirectory;
+    private readonly bool _matchesDirectoryAncestors;
     private bool _cacheValid;
     private PrefixAlignment _alignment;
+    private bool _directoryAncestorMatched;
     private int _rootPrefixLength;
     private bool _rootPrefixComputed;
 
-    internal GlobMatch(GlobSpecification specification, string? rootDirectory)
+    internal GlobMatch(
+        GlobSpecification specification,
+        string? rootDirectory)
     {
         _specification = specification;
         _rootDirectory = rootDirectory;
+        _matchesDirectoryAncestors = specification.DirectoryOnly
+            || specification.Dialect == GlobDialect.Git;
     }
 
     /// <summary>
     ///  The compiled specification driving this matcher.
     /// </summary>
-    public GlobSpecification Specification => _specification;
+    internal GlobSpecification Specification => _specification;
 
     /// <summary>
     ///  The enumeration root the matcher is bound to, or <see langword="null"/> when
     ///  matching is path-unaware.
     /// </summary>
-    public string? RootDirectory => _rootDirectory;
+    internal string? RootDirectory => _rootDirectory;
+
+    internal bool CanMatchWholeSubtree =>
+        !_specification.Negated
+        && _matchesDirectoryAncestors;
 
     /// <inheritdoc/>
-    public void DirectoryFinished() => _cacheValid = false;
+    public override void DirectoryFinished(ReadOnlySpan<char> directory) => _cacheValid = false;
 
     /// <inheritdoc/>
     /// <remarks>
     ///  <para>
-    ///   For path-unaware specifications, or when <see cref="RootDirectory"/> is
-    ///   <see langword="null"/>, the matcher has no path context to prune with
-    ///   and returns <c>!matchForExclusion</c>: inclusion calls always recurse,
-    ///   exclusion calls never claim the subtree.
+    ///   Matching directory-only patterns return <see cref="DirectoryMatchType.AllDescendantFilesMatch"/>.
+    ///   A diverged literal prefix or an anchored extglob negation that cannot match below the candidate returns
+    ///   <see cref="DirectoryMatchType.NoDescendantFilesMatch"/>. All uncertain cases return
+    ///   <see cref="DirectoryMatchType.MayContainMatchingFiles"/>.
     ///  </para>
     ///  <para>
-    ///   Exclusion calls (<paramref name="matchForExclusion"/> = <see langword="true"/>)
-    ///   return <see langword="false"/> for most patterns; the matcher cannot
-    ///   definitively claim a whole subtree for exclusion at the directory level
-    ///   - that decision is deferred to per-file checks.
-    ///  </para>
-    ///  <para>
-    ///   When <see cref="GlobSpecification.DirectoryOnly"/> is set (gitignore
-    ///   trailing <c>/</c>) the exclusion path runs the pattern against the
-    ///   candidate directory's relative path (parent + name, without trailing
-    ///   separator) and, on a match, returns <see langword="true"/> so the
-    ///   enumerator skips the entire subtree. The candidate path is stitched
-    ///   onto a small stack buffer; if the relative directory exceeds the stack
-    ///   budget the buffer is satisfied from <see cref="ArrayPool{T}"/> so the
-    ///   hot path never allocates on the managed heap and never silently
-    ///   rejects an oversized input.
-    ///  </para>
-    ///  <para>
-    ///   Inclusion calls classify the candidate (parent + name) against
-    ///   <see cref="GlobSpecification.LiteralPathPrefix"/> via a fresh
-    ///   <see cref="PrefixAlignment"/> computation that walks the relative
-    ///   directory span on the fly without copying or renting buffer space.
-    ///   The per-directory cache populated by <see cref="MatchesFile"/> is
-    ///   intentionally <em>not</em> consulted here because the two methods
-    ///   classify different paths: <see cref="MatchesFile"/> classifies the
-    ///   parent currently being walked, while <see cref="MatchesDirectory"/>
-    ///   classifies a prospective parent + child join. The call returns
-    ///   <see langword="true"/> when the candidate is on or beyond the literal
-    ///   prefix and <see langword="false"/> when it has diverged; specifications
-    ///   with an empty literal prefix always return <see langword="true"/>.
-    ///  </para>
-    ///  <para>
-    ///   Before the literal-prefix check, inclusion calls for a pattern that
-    ///   carries an extglob negation (<see cref="GlobSpecification.HasNegation"/>)
-    ///   ask <see cref="GlobSpecification.MatchDirectory"/> whether the candidate
-    ///   subtree can be pruned. An anchored negation
-    ///   (<c>!(bin|obj)/...</c>, <c>src/!(bin)/**/*.cs</c>) that no backtracking
-    ///   path can satisfy yields <see cref="MatchOutcome.Negative"/>, so the whole
-    ///   subtree is skipped instead of being descended and rejected file by file.
-    ///   The check is conservative: a directory with any matching descendant is
-    ///   never pruned. The gitignore-style <see cref="GlobSpecification.Negated"/>
-    ///   wrapper is excluded because it would invert the conclusion.
+    ///   Candidate paths are evaluated as split spans. A short stack buffer, with pooled fallback, is used only
+    ///   when a directory-only or extglob check requires separator translation.
     ///  </para>
     /// </remarks>
     [SkipLocalsInit]
-    public bool MatchesDirectory(
+    public override DirectoryMatchType MatchesDirectory(
         ReadOnlySpan<char> currentDirectory,
-        ReadOnlySpan<char> directoryName,
-        bool matchForExclusion)
+        ReadOnlySpan<char> directoryName)
     {
         if (!_specification.IsPathAware || _rootDirectory is null)
         {
-            return !matchForExclusion;
+            return DirectoryMatchType.MayContainMatchingFiles;
         }
 
         EnsureRootPrefixComputed();
         ReadOnlySpan<char> relativeDirectory = GetRelativeDirectory(currentDirectory);
 
-        if (matchForExclusion)
+        if (_matchesDirectoryAncestors)
         {
-            // The matcher only claims a whole subtree for DirectoryOnly patterns
-            // (gitignore trailing `/`). For other patterns we defer to per-file
-            // decisions, so return false here and let MatchSet / OrderedMatchSet
-            // keep recursing.
-            if (!_specification.DirectoryOnly)
-            {
-                return false;
-            }
-
             // DirectoryOnly: run the pattern against the candidate directory's
             // relative path (parent + name, without trailing separator). The
             // translated prefix is stitched onto the stack (with an ArrayPool
@@ -157,7 +117,14 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
                 matched = _specification.MatchCore(prefix, directoryName);
             }
 
-            return _specification.Negated ? !matched : matched;
+            if (matched)
+            {
+                return _specification.Negated
+                    ? DirectoryMatchType.NoDescendantFilesMatch
+                    : DirectoryMatchType.AllDescendantFilesMatch;
+            }
+
+            return DirectoryMatchType.MayContainMatchingFiles;
         }
 
         // Directory-mode negation pruning. A pattern carrying an extglob negation
@@ -187,14 +154,14 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
 
             if (outcome == MatchOutcome.Negative)
             {
-                return false;
+                return DirectoryMatchType.NoDescendantFilesMatch;
             }
         }
 
         string literalPrefix = _specification.Strategy.LiteralPathPrefix;
         if (literalPrefix.Length == 0)
         {
-            return true;
+            return DirectoryMatchType.MayContainMatchingFiles;
         }
 
         // Classify the candidate directory (parent + name) against the literal
@@ -205,7 +172,9 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
             directoryName,
             literalPrefix,
             _specification.Separator,
-            _specification.IgnoreCaseKind) is not PrefixAlignment.Diverged;
+            _specification.IgnoreCaseKind) is PrefixAlignment.Diverged
+                ? DirectoryMatchType.NoDescendantFilesMatch
+                : DirectoryMatchType.MayContainMatchingFiles;
     }
 
     /// <inheritdoc/>
@@ -226,12 +195,38 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
     ///  </para>
     /// </remarks>
     [SkipLocalsInit]
-    public bool MatchesFile(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> fileName)
+    public override bool MatchesFile(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> fileName)
     {
-        // DirectoryOnly patterns (gitignore trailing '/') never match files.
-        if (_specification.DirectoryOnly)
+        // Git directory matches apply to every descendant file. DirectoryOnly patterns never
+        // match a file directly, so they also rely exclusively on ancestor membership.
+        if (_matchesDirectoryAncestors)
         {
-            return _specification.Negated;
+            if (!_specification.IsPathAware || _rootDirectory is null)
+            {
+                return _specification.Negated;
+            }
+
+            EnsureRootPrefixComputed();
+            if (!_cacheValid)
+            {
+                _directoryAncestorMatched = MatchesDirectoryAncestor(
+                    GetRelativeDirectory(currentDirectory));
+                if (_specification.DirectoryOnly)
+                {
+                    _cacheValid = true;
+                }
+            }
+
+            if (_directoryAncestorMatched)
+            {
+                _cacheValid = true;
+                return !_specification.Negated;
+            }
+
+            if (_specification.DirectoryOnly)
+            {
+                return _specification.Negated;
+            }
         }
 
         if (!_specification.IsPathAware || _rootDirectory is null)
@@ -270,7 +265,7 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
             // Stitch the translated relative-directory prefix (with trailing
             // separator) into a small stack buffer; BufferScope rents from
             // ArrayPool for the rare relative-directory path that overflows
-            // the stack budget, so the IEnumerationMatcher hot path never
+            // the stack budget, so the file-system session hot path never
             // allocates on the managed heap and never silently fails for
             // long paths.
             int prefixLength = relativeDirectory.Length + 1;
@@ -300,6 +295,44 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
             ? currentDirectory[_rootPrefixLength..]
             : default;
 
+    [SkipLocalsInit]
+    private bool MatchesDirectoryAncestor(ReadOnlySpan<char> relativeDirectory)
+    {
+        if (relativeDirectory.IsEmpty)
+        {
+            return false;
+        }
+
+        using BufferScope<char> buffer = new(
+            stackalloc char[StackBufferSize],
+            relativeDirectory.Length);
+        Span<char> path = buffer[..relativeDirectory.Length];
+        BuildTranslatedPath(relativeDirectory, path, _specification.Separator);
+
+        int segmentStart = 0;
+        while (segmentStart < path.Length)
+        {
+            int relativeSeparator = path[segmentStart..].IndexOf(_specification.Separator);
+            int segmentEnd = relativeSeparator < 0
+                ? path.Length
+                : segmentStart + relativeSeparator;
+            if (segmentEnd > segmentStart
+                && _specification.MatchCore(path[..segmentStart], path[segmentStart..segmentEnd]))
+            {
+                return true;
+            }
+
+            if (relativeSeparator < 0)
+            {
+                return false;
+            }
+
+            segmentStart = segmentEnd + 1;
+        }
+
+        return false;
+    }
+
     /// <summary>
     ///  Copies <paramref name="source"/> into <paramref name="destination"/> while
     ///  normalizing any native path separator to <paramref name="separator"/>, then
@@ -307,6 +340,15 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
     ///  the directory/file-name boundary.
     /// </summary>
     private static void BuildTranslatedPrefix(
+        ReadOnlySpan<char> source,
+        Span<char> destination,
+        char separator)
+    {
+        BuildTranslatedPath(source, destination, separator);
+        destination[source.Length] = separator;
+    }
+
+    private static void BuildTranslatedPath(
         ReadOnlySpan<char> source,
         Span<char> destination,
         char separator)
@@ -321,8 +363,6 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
             char c = Unsafe.Add(ref sourceRef, i);
             Unsafe.Add(ref destinationRef, i) = (c == primary || c == alt) ? separator : c;
         }
-
-        Unsafe.Add(ref destinationRef, source.Length) = separator;
     }
 
     /// <summary>
@@ -402,9 +442,4 @@ public sealed partial class GlobMatch : DisposableBase, IEnumerationMatcher
             : PrefixAlignment.OnPrefix;
     }
 
-    /// <inheritdoc/>
-    protected override void Dispose(bool disposing)
-    {
-        // The specification owns the strategy lifetime; nothing to release here.
-    }
 }

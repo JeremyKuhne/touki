@@ -6,7 +6,7 @@ namespace Touki.Io.Globbing;
 
 /// <summary>
 ///  Opcode markers used by <see cref="CompiledGlobStrategy"/>'s bytecode-in-a-string
-///  encoding. Values are Unicode noncharacters (<c>U+FDD0..U+FDD8</c>), which are
+///  encoding. Values are Unicode noncharacters (<c>U+FDD0..U+FDDA</c>), which are
 ///  reserved by the Unicode standard for application-internal use and never appear
 ///  in conforming text.
 /// </summary>
@@ -104,4 +104,17 @@ internal static class GlobOpCodes
     ///  recent unmatched <see cref="AltStart"/>.
     /// </summary>
     public const char AltEnd = '\uFDD8';
+
+    /// <summary>
+    ///  Match zero or more characters like <see cref="AnyRun"/>, while recording that
+    ///  the selected execution path contained an effective multi-star source run.
+    ///  Emitted only by the internal MSBuild trailing-dot partitioning pass.
+    /// </summary>
+    public const char EffectiveDoubleStarRun = '\uFDD9';
+
+    /// <summary>
+    ///  A deterministic dead branch. Used when one MSBuild extglob alternative contains
+    ///  a direct effective run of three or more stars and therefore never matches.
+    /// </summary>
+    public const char Never = '\uFDDA';
 }

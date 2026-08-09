@@ -39,7 +39,7 @@ public partial class FileSystemGlobbingCompilePerf
     [Benchmark]
     public int Compile()
     {
-        using GlobSpecification specification = GlobSpecification.Compile(
+        GlobSpecification specification = GlobSpecification.Compile(
             _pattern,
             GlobDialect.FileSystemGlobbing,
             Kind is PatternKind.ExtGlobNoRewrite or PatternKind.ExtGlobStarRun
