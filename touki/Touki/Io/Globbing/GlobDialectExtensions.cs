@@ -11,32 +11,33 @@ namespace Touki.Io.Globbing;
 internal static class GlobDialectExtensions
 {
     /// <summary>
-    ///  Returns the case-fold rule a given dialect applies when
-    ///  <see cref="GlobOptions.IgnoreCase"/> is set. See
+    ///  Returns the case-fold rule for a dialect and its options. See
     ///  <see cref="GlobDialect"/> for the per-dialect source citations.
     /// </summary>
     /// <remarks>
     ///  <para>
     ///   POSIX-family dialects (<see cref="GlobDialect.Posix"/>,
     ///   <see cref="GlobDialect.PosixPath"/>, <see cref="GlobDialect.Bash"/>,
-    ///   <see cref="GlobDialect.Git"/>) default to <see cref="IgnoreCaseKind.Ascii"/> because
-    ///   the documented reference implementations fold only the ASCII letter range in their
-    ///   POSIX/C locale.
+    ///   <see cref="GlobDialect.Git"/>) use <see cref="IgnoreCaseKind.Ascii"/> when
+    ///   <see cref="GlobOptions.IgnoreCase"/> is set because the documented reference
+    ///   implementations fold only the ASCII letter range in their POSIX/C locale.
     ///  </para>
     ///  <para>
     ///   .NET-native dialects
     ///   (<see cref="GlobDialect.MSBuild"/>, <see cref="GlobDialect.FileSystemGlobbing"/>,
     ///   <see cref="GlobDialect.Simple"/>,
-    ///   <see cref="GlobDialect.PowerShell"/>) default to <see cref="IgnoreCaseKind.Unicode"/>
+    ///   <see cref="GlobDialect.PowerShell"/>) use <see cref="IgnoreCaseKind.Unicode"/>
     ///   because their documented implementations use
     ///   <see cref="StringComparison.OrdinalIgnoreCase"/> or the Windows kernel
-    ///   <c>RtlUpcaseUnicodeChar</c> case table.
+    ///   <c>RtlUpcaseUnicodeChar</c> case table. MSBuild uses this mode by default;
+    ///   the other dialects require <see cref="GlobOptions.IgnoreCase"/>.
     ///  </para>
     /// </remarks>
     public static IgnoreCaseKind DefaultIgnoreCaseKind(this GlobDialect dialect, GlobOptions options)
     {
-        // MSBuild matches case-insensitively by default; the IgnoreCase flag is
-        // implicit. All other dialects require the flag to be set explicitly.
+        // Current MSBuildGlob and FileMatcher.IsMatch are case-insensitive and do
+        // not expose a case-sensitive mode, so IgnoreCase is implicit for MSBuild.
+        // Every other dialect requires the option explicitly.
         if (dialect == GlobDialect.MSBuild)
         {
             return IgnoreCaseKind.Unicode;

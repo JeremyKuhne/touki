@@ -228,6 +228,13 @@ public partial class GlobSpecificationTests
             .IsMatch(input).Should().Be(expected);
 
     [TestMethod]
+    [DataRow(GlobOptions.None)]
+    [DataRow(GlobOptions.IgnoreCase)]
+    public void IsMatch_MSBuildDialect_IsCaseInsensitiveByDefault(GlobOptions options) =>
+        GlobSpecification.Compile("*.CS", GlobDialect.MSBuild, options)
+            .IsMatch("source.cs").Should().BeTrue();
+
+    [TestMethod]
     [DataRow(".hidden", ".hidden", true)]
     [DataRow("*hidden", ".hidden", false)]
     [DataRow("?hidden", ".hidden", false)]

@@ -22,9 +22,11 @@ public enum GlobOptions
     ///   <list type="bullet">
     ///    <item>
     ///     <description>
-    ///      <b>Case folding</b>: <see cref="GlobDialect.MSBuild"/> is
-    ///      case-insensitive (Unicode) even without <see cref="IgnoreCase"/>; every
-    ///      other dialect is case-sensitive by default.
+    ///      <b>Case folding</b>: <see cref="GlobDialect.MSBuild"/> is Unicode ordinal
+    ///      case-insensitive by default; every other dialect is case-sensitive by
+    ///      default and requires <see cref="IgnoreCase"/> for case-insensitive matching.
+    ///      Current <c>MSBuildGlob</c> and <c>FileMatcher.IsMatch</c> APIs do not expose
+    ///      case-sensitive matching.
     ///     </description>
     ///    </item>
     ///    <item>

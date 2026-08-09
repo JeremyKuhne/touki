@@ -1,7 +1,7 @@
 # IO Helpers
 
 [`Touki.Io`](../touki/Touki/Io/) collects file-system, path, and stream
-helpers that are useful on both .NET 10 and .NET Framework 4.7.2.
+helpers that are useful on .NET 10, .NET 11, and .NET Framework 4.7.2.
 
 ## Glob matching and enumeration
 
@@ -56,7 +56,9 @@ spec is not fully qualified. A null project directory produces fully qualified
 results. Physical filesystem traversal follows platform casing (case-insensitive
 on Windows / macOS / iOS, case-sensitive on Linux); MSBuild's logical wildcard
 post-filter phases remain case-insensitive. Pass an `EnumerationOptions` to
-override the physical matching options.
+override the physical matching options. Current `MSBuildGlob` and
+`FileMatcher.IsMatch` APIs do not expose case-sensitive matching;
+`GlobDialect.MSBuild` likewise uses case-insensitive matching by default.
 
 Use `MSBuildEnumerator.CreateResult(request)` when the caller needs to distinguish a
 normal [`MSBuildSearchResult`](../touki/Touki/Io/MSBuildSearchResult.cs), an invalid

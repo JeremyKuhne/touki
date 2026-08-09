@@ -25,7 +25,6 @@ public class IgnoreCaseKindTests
         dialect.DefaultIgnoreCaseKind(GlobOptions.None).Should().Be(IgnoreCaseKind.Off);
 
     [TestMethod]
-    // MSBuild matches case-insensitively regardless of the IgnoreCase option.
     [DataRow(GlobOptions.None)]
     [DataRow(GlobOptions.IgnoreCase)]
     [DataRow(GlobOptions.NoEscape)]
@@ -33,7 +32,7 @@ public class IgnoreCaseKindTests
         GlobDialect.MSBuild.DefaultIgnoreCaseKind(options).Should().Be(IgnoreCaseKind.Unicode);
 
     [TestMethod]
-    // POSIX-family dialects default to strict ASCII case folding.
+    // POSIX-family dialects use strict ASCII folding when IgnoreCase is set.
     [DataRow(GlobDialect.Posix)]
     [DataRow(GlobDialect.PosixPath)]
     [DataRow(GlobDialect.Bash)]
@@ -42,7 +41,7 @@ public class IgnoreCaseKindTests
         dialect.DefaultIgnoreCaseKind(GlobOptions.IgnoreCase).Should().Be(IgnoreCaseKind.Ascii);
 
     [TestMethod]
-    // .NET-native dialects default to full Unicode ordinal case folding.
+    // .NET-native dialects use full Unicode ordinal folding when IgnoreCase is set.
     [DataRow(GlobDialect.MSBuild)]
     [DataRow(GlobDialect.FileSystemGlobbing)]
     [DataRow(GlobDialect.Simple)]
@@ -67,6 +66,8 @@ public class IgnoreCaseKindTests
     // verify the dialect's default flowed through to the runtime path.
     [DataRow(GlobDialect.Posix, GlobOptions.None, (int)IgnoreCaseKind.Off)]
     [DataRow(GlobDialect.Posix, GlobOptions.IgnoreCase, (int)IgnoreCaseKind.Ascii)]
+    [DataRow(GlobDialect.MSBuild, GlobOptions.None, (int)IgnoreCaseKind.Unicode)]
+    [DataRow(GlobDialect.MSBuild, GlobOptions.IgnoreCase, (int)IgnoreCaseKind.Unicode)]
     [DataRow(GlobDialect.Simple, GlobOptions.None, (int)IgnoreCaseKind.Off)]
     [DataRow(GlobDialect.Simple, GlobOptions.IgnoreCase, (int)IgnoreCaseKind.Unicode)]
     [DataRow(GlobDialect.PowerShell, GlobOptions.None, (int)IgnoreCaseKind.Off)]
