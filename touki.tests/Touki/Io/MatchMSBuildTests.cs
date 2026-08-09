@@ -133,6 +133,48 @@ public class MatchMSBuildTests
     }
 
     [TestMethod]
+    public void MatchesDirectory_CandidateApproachesFixedRoot_RemainsViable()
+    {
+        string root = Path.Join(Path.GetTempPath(), "FixedRootApproachTests");
+        using MatchMSBuild match = CreateSpec("src/f*/**/generated/*.cs", root);
+
+        match.MatchesDirectory(root, "src")
+            .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+        match.MatchesDirectory(root, "other")
+            .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+        match.MatchesFile(root, "source.cs").Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void MatchesFile_MiddleGlobstar_HandlesFullPartialAndMismatchedPaths()
+    {
+        string root = Path.Join(Path.GetTempPath(), "MiddleGlobstarTests");
+        using MatchMSBuild match = CreateSpec("s*/**/generated/*.cs", root);
+
+        match.MatchesFile(Path.Join(root, "src", "generated"), "direct.cs").Should().BeTrue();
+        match.DirectoryFinished(Path.Join(root, "src", "generated"));
+        match.MatchesFile(Path.Join(root, "src", "deep", "generated"), "nested.cs").Should().BeTrue();
+        match.DirectoryFinished(Path.Join(root, "src", "deep", "generated"));
+        match.MatchesFile(Path.Join(root, "src"), "short.cs").Should().BeFalse();
+        match.DirectoryFinished(Path.Join(root, "src"));
+        match.MatchesFile(Path.Join(root, "other", "generated"), "prefix.cs").Should().BeFalse();
+        match.DirectoryFinished(Path.Join(root, "other", "generated"));
+        match.MatchesFile(Path.Join(root, "src", "deep", "other"), "suffix.cs").Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void MatchesDirectory_MultipleGlobstars_DistinguishesDeadAndIncompleteStates()
+    {
+        string root = Path.Join(Path.GetTempPath(), "MultipleGlobstarFailureTests");
+        using MatchMSBuild match = CreateSpec("s*/**/a/**/b/*.cs", root);
+
+        match.MatchesDirectory(root, "other")
+            .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+        match.MatchesDirectory(root, "src")
+            .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+    }
+
+    [TestMethod]
     [DataRow("C:/temp/*.txt", "C:/temp", MatchType.Simple, MatchCasing.CaseInsensitive, MatchType.Simple)]
     [DataRow("C:/projects/**/*.cs", "C:/projects", MatchType.Simple, MatchCasing.CaseSensitive, MatchType.Simple)]
     [DataRow("C:/src/test/**/bin/*.dll", "C:/src/test", MatchType.Win32, MatchCasing.CaseInsensitive, MatchType.Simple)]

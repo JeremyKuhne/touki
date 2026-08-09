@@ -76,6 +76,47 @@ public class GlobMatchEnumerationTests
     }
 
     [TestMethod]
+    public void MatchesDirectory_ComposedSubtreeAndFileExcludes_UsesSubtreeEvidence()
+    {
+        GlobMatch include = GlobSpecification.Compile(
+            "**/*.cs",
+            GlobDialect.PosixPath,
+            GlobOptions.AllowGlobStar).CreateSession(Root);
+        GlobMatch subtreeExclude = GlobSpecification.Compile("obj/", GlobDialect.Git).CreateSession(Root);
+        GlobMatch fileExclude = GlobSpecification.Compile("generated.cs", GlobDialect.Posix).CreateSession(Root);
+        using IFileSystemMatcherSession boundary = new GlobEnumeratorFileSystemMatcherSession(
+            include,
+            [subtreeExclude, fileExclude]);
+
+        subtreeExclude.CanMatchWholeSubtree.Should().BeTrue();
+        fileExclude.CanMatchWholeSubtree.Should().BeFalse();
+
+        boundary.MatchesDirectory(Root, "obj")
+            .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+        boundary.MatchesDirectory(Root, "src")
+            .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+        string sourceDirectory = Path.Combine(Root, "src");
+        boundary.MatchesFile(sourceDirectory, "generated.cs").Should().BeFalse();
+        boundary.MatchesFile(sourceDirectory, "source.cs").Should().BeTrue();
+    }
+
+    [TestMethod]
+    public void MatchesDirectory_ComposedSession_DivergedIncludeStillPrunes()
+    {
+        GlobMatch include = GlobSpecification.Compile(
+            "src/**/*.cs",
+            GlobDialect.PosixPath,
+            GlobOptions.AllowGlobStar).CreateSession(Root);
+        GlobMatch exclude = GlobSpecification.Compile("obj/", GlobDialect.Git).CreateSession(Root);
+        using IFileSystemMatcherSession boundary = new GlobEnumeratorFileSystemMatcherSession(
+            include,
+            [exclude]);
+
+        boundary.MatchesDirectory(Root, "other")
+            .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+    }
+
+    [TestMethod]
     public void MatchesDirectory_NoLiteralPrefix_AlwaysRecursesOnInclusion()
     {
         using IFileSystemMatcherSession boundary = Create("**/*.cs");

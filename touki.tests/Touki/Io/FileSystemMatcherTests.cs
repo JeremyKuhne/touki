@@ -14,7 +14,6 @@ public class FileSystemMatcherTests
 
         session.MatchesDirectory("root", "child").Should().Be(DirectoryMatchType.MayContainMatchingFiles);
         session.DirectoryFinished("root");
-        session.Dispose();
     }
 
     [TestMethod]

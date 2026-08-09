@@ -75,6 +75,17 @@ public sealed class GitIgnoreRulesTests
     }
 
     [TestMethod]
+    [DataRow("src/./generated")]
+    [DataRow("src/../generated")]
+    [DataRow("src//generated")]
+    public void Constructor_NonCanonicalSegment_Throws(string basePath)
+    {
+        Action action = () => new GitIgnoreRuleSource("*.log", basePath);
+
+        action.Should().Throw<ArgumentException>();
+    }
+
+    [TestMethod]
     public void IsIgnoredFile_ExcludeThenInclude_UsesLastMatchingRule()
     {
         GitIgnoreRules rules = GitIgnoreRules.Parse("*.log\n!keep.log");
@@ -118,6 +129,16 @@ public sealed class GitIgnoreRulesTests
         GitIgnoreRules rules = GitIgnoreRules.Parse("bin/\n!bin/\n!bin/keep.txt");
 
         rules.IsIgnoredFile("bin/keep.txt").Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void IsIgnoredFile_EmptyPath_Throws()
+    {
+        GitIgnoreRules rules = GitIgnoreRules.Parse("*.log");
+
+        Action action = () => rules.IsIgnoredFile(string.Empty);
+
+        action.Should().Throw<ArgumentException>();
     }
 
     [TestMethod]
@@ -177,6 +198,39 @@ public sealed class GitIgnoreRulesTests
             .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
         included.MatchesDirectory(Root, "src")
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+    }
+
+    [TestMethod]
+    public void CreateIncludedMatcher_NestedFiles_UsesCanonicalRelativePath()
+    {
+        GitIgnoreRules rules = GitIgnoreRules.Parse("src/generated/\n*.log");
+        using IFileSystemMatcherSession included = rules.CreateIncludedMatcher().CreateSession(Root);
+        using IFileSystemMatcherSession ignored = rules.CreateIgnoredMatcher().CreateSession(Root);
+        string sourceDirectory = Path.Combine(Root, "src");
+        string generatedDirectory = Path.Combine(sourceDirectory, "generated");
+
+        included.MatchesFile(sourceDirectory, "trace.log").Should().BeFalse();
+        ignored.MatchesFile(sourceDirectory, "trace.log").Should().BeTrue();
+        included.MatchesFile(sourceDirectory, "source.cs").Should().BeTrue();
+        included.MatchesDirectory(sourceDirectory, "generated")
+            .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+        ignored.MatchesDirectory(sourceDirectory, "generated")
+            .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+        included.MatchesDirectory(generatedDirectory, "nested")
+            .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+    }
+
+    [TestMethod]
+    public void CreateIncludedMatcher_EmptyRules_ClassifiesWholeTree()
+    {
+        GitIgnoreRules rules = GitIgnoreRules.Parse(string.Empty);
+        using IFileSystemMatcherSession included = rules.CreateIncludedMatcher().CreateSession(Root);
+        using IFileSystemMatcherSession ignored = rules.CreateIgnoredMatcher().CreateSession(Root);
+
+        included.MatchesDirectory(Root, "src")
+            .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+        ignored.MatchesDirectory(Root, "src")
+            .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
     }
 
     public static IEnumerable<(string[], string)> OracleRows()
