@@ -2,10 +2,8 @@
 
 `KlutzyNinja.Touki` ships a set of Roslyn analyzers **inside the package**. There is no
 separate analyzer package to install - adding the package reference is enough. The shipped
-rules start running on the next build and in the IDE. This page also documents
-[TOUKI0022](#touki0022) and [TOUKI0023](#touki0023), which are present on the main branch
-but have not been released in the package. TOUKI0041 ships disabled, and the upcoming
-TOUKI0022 is also disabled unless a project opts in.
+rules start running on the next build and in the IDE. TOUKI0041 and TOUKI0022 ship disabled
+unless a project opts in.
 
 The analyzers encode the conventions this library is built on: avoid hidden struct
 copies, release resources deterministically, keep scratch buffers off the stack once
@@ -24,8 +22,8 @@ name a field for what it actually is.
 | [TOUKI0011](#touki0011) | Avoid large `stackalloc` allocations | Reliability | Warning | Yes | - |
 | [TOUKI0020](#touki0020) | Declare one type per file | Maintainability | Warning | Yes | - |
 | [TOUKI0021](#touki0021) | File name should match the type it declares | Maintainability | Warning | Yes | - |
-| [TOUKI0022](#touki0022) (unreleased) | Avoid tab characters | Maintainability | **Disabled** | Yes | - |
-| [TOUKI0023](#touki0023) (unreleased) | Remove trailing whitespace | Maintainability | Warning | - | - |
+| [TOUKI0022](#touki0022) | Avoid tab characters | Maintainability | **Disabled** | Yes | - |
+| [TOUKI0023](#touki0023) | Remove trailing whitespace | Maintainability | Warning | - | - |
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
 | [TOUKI0041](#touki0041) | Naming rule violation | Naming | **Disabled** | Yes | - |
 
@@ -237,8 +235,6 @@ still builds and its tests pass.
 
 ## TOUKI0022
 
-**Availability: unreleased.**
-
 **Avoid tab characters.** A tab renders at whatever width the reader's editor is set to, so
 a file containing tabs lines up for its author and not for anyone else.
 
@@ -271,8 +267,6 @@ A non-numeric value is skipped rather than treated as an error, so the legal
 `indent_size = tab` falls through to the next source instead of failing the build.
 
 ## TOUKI0023
-
-**Availability: unreleased.**
 
 **Remove trailing whitespace.** Whitespace between the last visible character of a line and
 its line break is invisible in review and becomes diff noise the next time the line is
@@ -572,7 +566,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 | 0.4.0 | TOUKI0001, TOUKI0002, TOUKI0003, TOUKI0004, TOUKI0010 |
 | 0.5.0 | TOUKI0020, TOUKI0030 |
 | 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |
-| unreleased | TOUKI0022, TOUKI0023 |
+| 0.7.0 | TOUKI0022, TOUKI0023 |
 
 The authoritative list lives in
 [AnalyzerReleases.Shipped.md](../touki.analyzers/AnalyzerReleases.Shipped.md) and
