@@ -74,6 +74,20 @@ public class FileSystemGlobbingParityOracleTests
             because: $"FileSystemGlobbing recursive-suffix semantics must agree for '{pattern}' against '{input}'");
 
     [TestMethod]
+    [DataRow("**/a/b/*.cs", "a/a/b/source.cs")]
+    [DataRow("**/a/a/*.cs", "a/a/a/source.cs")]
+    [DataRow("**/a/**/a/*.cs", "a/a/source.cs")]
+    [DataRow("**/a/**/a/*.cs", "x/a/x/y/a/source.cs")]
+    public void IsMatch_RepeatedGlobstarAnchor_AgreesWithMatcher(string pattern, string input) =>
+        ToukiMatches(pattern, input).Should().Be(
+            OracleMatches(pattern, input),
+            because: $"FileSystemGlobbing repeated-anchor semantics must agree for '{pattern}' against '{input}'");
+
+    [TestMethod]
+    public void IsMatch_StarDotStarExtensionless_AgreesWithMatcher() =>
+        ToukiMatches("*.*", "README").Should().Be(OracleMatches("*.*", "README"));
+
+    [TestMethod]
     [DataRow("../b", true)]
     [DataRow("../../b", true)]
     [DataRow("a/../b", false)]
@@ -101,7 +115,7 @@ public class FileSystemGlobbingParityOracleTests
 
         Exception? toukiException = CaptureException(() =>
         {
-            using GlobSpecification specification =
+            GlobSpecification specification =
                 GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing);
         });
 
@@ -126,7 +140,7 @@ public class FileSystemGlobbingParityOracleTests
 
     private static bool ToukiMatches(string pattern, string input)
     {
-        using GlobSpecification specification =
+        GlobSpecification specification =
             GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing);
 
         return specification.IsMatch(input);

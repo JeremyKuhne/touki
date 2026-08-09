@@ -4,7 +4,7 @@
 
 namespace Touki.Io.Globbing;
 
-public sealed partial class GlobMatch
+internal sealed partial class GlobMatch
 {
     /// <summary>
     ///  Three-valued classification of how a relative directory aligns with the

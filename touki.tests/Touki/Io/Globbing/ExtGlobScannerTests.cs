@@ -200,6 +200,70 @@ public class ExtGlobScannerTests
     }
 
     [TestMethod]
+    public void TryCompile_MSBuildTrailingDotEmptyExtGlob_ReportsOriginalPosition()
+    {
+        bool success = GlobSpecification.TryCompile(
+            "dir/@().",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob,
+            out GlobSpecification? specification,
+            out GlobCompileError error);
+
+        success.Should().BeFalse();
+        specification.Should().BeNull();
+        error.Code.Should().Be(GlobCompileErrorCode.InvalidExtGlobBody);
+        error.Position.Should().Be(4);
+    }
+
+    [TestMethod]
+    public void TryCompile_MSBuildRewrittenFileNameEmptyExtGlob_ReportsOriginalPosition()
+    {
+        bool success = GlobSpecification.TryCompile(
+            "*.*@()",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob,
+            out GlobSpecification? specification,
+            out GlobCompileError error);
+
+        success.Should().BeFalse();
+        specification.Should().BeNull();
+        error.Code.Should().Be(GlobCompileErrorCode.InvalidExtGlobBody);
+        error.Position.Should().Be(3);
+    }
+
+    [TestMethod]
+    public void TryCompile_MSBuildStarDotStarEmptyExtGlob_ReportsOperatorPosition()
+    {
+        bool success = GlobSpecification.TryCompile(
+            "*.*()",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob,
+            out GlobSpecification? specification,
+            out GlobCompileError error);
+
+        success.Should().BeFalse();
+        specification.Should().BeNull();
+        error.Code.Should().Be(GlobCompileErrorCode.InvalidExtGlobBody);
+        error.Position.Should().Be(2);
+    }
+
+    [TestMethod]
+    public void TryCompile_MSBuildMixedStarDotStarEmptyExtGlob_ReportsOperatorPosition()
+    {
+        bool success = GlobSpecification.TryCompile(
+            "*.*()x*.*",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob,
+            out GlobSpecification? specification,
+            out GlobCompileError error);
+
+        success.Should().BeFalse();
+        specification.Should().BeNull();
+        error.Code.Should().Be(GlobCompileErrorCode.InvalidExtGlobBody);
+        error.Position.Should().Be(2);
+    }
+
+    [TestMethod]
     public void Compile_AllowExtGlobOn_AdjacentEmptyBody_ReportsSecondConstructPosition()
     {
         Action act = () => GlobSpecification.Compile(
@@ -228,7 +292,7 @@ public class ExtGlobScannerTests
     [TestMethod]
     public void Compile_MSBuild_TripleStarBeforeExtGlob_PreservesWildcardAndOperator()
     {
-        using GlobSpecification matcher = GlobSpecification.Compile(
+        GlobSpecification matcher = GlobSpecification.Compile(
             "ab***(e|f)g",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
@@ -241,7 +305,7 @@ public class ExtGlobScannerTests
     [TestMethod]
     public void Compile_MSBuild_FourStarsBeforeExtGlob_RemainsNeverMatch()
     {
-        using GlobSpecification matcher = GlobSpecification.Compile(
+        GlobSpecification matcher = GlobSpecification.Compile(
             "ab****(e|f)g",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
@@ -269,7 +333,7 @@ public class ExtGlobScannerTests
     [TestMethod]
     public void Compile_Posix_EscapedAsteriskBeforeExtGlob_PreservesOrdinaryWildcard()
     {
-        using GlobSpecification matcher = GlobSpecification.Compile(
+        GlobSpecification matcher = GlobSpecification.Compile(
             @"\****(a)",
             GlobDialect.Posix,
             GlobOptions.AllowExtGlob);

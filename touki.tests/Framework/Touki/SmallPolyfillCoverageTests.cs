@@ -549,60 +549,6 @@ public class SmallPolyfillCoverageTests
         action.Should().NotThrow();
     }
 
-    // ---------- EnumerationMatcherExtensions ----------
-
-    [TestMethod]
-    public void EnumerationMatcherExtensions_MatchesDirectory_ForwardsToInterface()
-    {
-        TestMatcher matcher = new() { DirectoryResult = true };
-        // Call the extension method explicitly: instance methods (including interface
-        // methods that accept ReadOnlySpan<char> which absorbs string via implicit
-        // conversion) win during overload resolution otherwise.
-        bool actual = EnumerationMatcherExtensions.MatchesDirectory(matcher, "C:\\root", "sub", matchForExclusion: true);
-        actual.Should().BeTrue();
-        matcher.LastMatchForExclusion.Should().BeTrue();
-    }
-
-    [TestMethod]
-    public void EnumerationMatcherExtensions_MatchesDirectory_DefaultsToInclusion()
-    {
-        TestMatcher matcher = new() { DirectoryResult = false };
-        bool actual = EnumerationMatcherExtensions.MatchesDirectory(matcher, "C:\\root", "sub");
-        actual.Should().BeFalse();
-        matcher.LastMatchForExclusion.Should().BeFalse();
-    }
-
-    [TestMethod]
-    public void EnumerationMatcherExtensions_MatchesFile_ForwardsToInterface()
-    {
-        TestMatcher matcher = new() { FileResult = true };
-        bool actual = EnumerationMatcherExtensions.MatchesFile(matcher, "C:\\root", "file.txt");
-        actual.Should().BeTrue();
-    }
-
-    private sealed class TestMatcher : IEnumerationMatcher
-    {
-        public bool DirectoryResult { get; set; }
-        public bool FileResult { get; set; }
-        public bool LastMatchForExclusion { get; private set; }
-
-        public void DirectoryFinished()
-        {
-        }
-
-        public void Dispose()
-        {
-        }
-
-        public bool MatchesDirectory(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> directoryName, bool matchForExclusion)
-        {
-            LastMatchForExclusion = matchForExclusion;
-            return DirectoryResult;
-        }
-
-        public bool MatchesFile(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> fileName) => FileResult;
-    }
-
     // ---------- EnumDataCache.EnumData ----------
 
     [Flags]

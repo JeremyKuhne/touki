@@ -7,41 +7,32 @@ using Touki.Io.Globbing;
 namespace Touki.Io;
 
 /// <summary>
-///  Tests for <see cref="GlobMatch"/>'s direct <see cref="IEnumerationMatcher"/>
-///  implementation. Multi-pattern composition uses <see cref="MatchSet"/>; this
-///  mirrors how <see cref="GlobEnumerator"/> wires real enumerations.
+///  Tests for the optimized glob file-system session and its exclusion composition.
 /// </summary>
 [TestClass]
 public class GlobMatchEnumerationTests
 {
     private static string Root => Path.Combine(Path.GetTempPath(), "glob-enum-root");
 
-    private static GlobMatch Create(string includePattern, string? root = null) =>
+    private static IFileSystemMatcherSession Create(string includePattern, string? root = null) =>
         GlobSpecification.Compile(includePattern, GlobDialect.PosixPath, GlobOptions.AllowGlobStar)
-            .CreateMatcher(root ?? Root);
+            .CreateSession(root ?? Root);
 
     /// <summary>
-    ///  Builds a <see cref="MatchSet"/> wrapping one include matcher plus an exclude
-    ///  matcher per supplied pattern. Mirrors how <see cref="GlobEnumerator"/> composes
-    ///  multi-pattern enumeration.
+    ///  Builds the same owned include/exclude session used by replay enumeration.
     /// </summary>
-    private static MatchSet CreateSet(string includePattern, params string[] excludePatterns)
-    {
-        GlobMatch include = Create(includePattern);
-        MatchSet set = new(include);
-        foreach (string excludePattern in excludePatterns)
-        {
-            set.AddExclude(Create(excludePattern));
-        }
-
-        return set;
-    }
+    private static IFileSystemMatcherSession CreateSet(string includePattern, params string[] excludePatterns) =>
+        GlobEnumerator.BuildSession(
+            includePattern,
+            excludePatterns,
+            Root,
+            GlobDialect.PosixPath,
+            GlobOptions.AllowGlobStar);
 
     [TestMethod]
     public void MatchesFile_RootDirectory_TopLevel()
     {
-        using GlobMatch matcher = Create("*.cs");
-        IEnumerationMatcher boundary = matcher;
+        using IFileSystemMatcherSession boundary = Create("*.cs");
 
         boundary.MatchesFile(Root, "file.cs".AsSpan()).Should().BeTrue();
         boundary.MatchesFile(Root, "file.txt".AsSpan()).Should().BeFalse();
@@ -50,8 +41,7 @@ public class GlobMatchEnumerationTests
     [TestMethod]
     public void MatchesFile_SubdirectoryPathIncluded()
     {
-        using GlobMatch matcher = Create("**/*.cs");
-        IEnumerationMatcher boundary = matcher;
+        using IFileSystemMatcherSession boundary = Create("**/*.cs");
 
         string subDir = Path.Combine(Root, "bin", "Debug");
         boundary.MatchesFile(subDir, "file.cs".AsSpan()).Should().BeTrue();
@@ -59,86 +49,91 @@ public class GlobMatchEnumerationTests
     }
 
     [TestMethod]
-    public void MatchSet_ExcludeBlocksInclude()
+    public void MatchesFile_ComposedSession_ExcludeBlocksInclude()
     {
-        using MatchSet set = CreateSet("**/*.cs", "**/obj/**");
-        IEnumerationMatcher boundary = set;
+        using IFileSystemMatcherSession boundary = CreateSet("**/*.cs", "**/obj/**");
 
         string objDir = Path.Combine(Root, "obj", "Debug");
         boundary.MatchesFile(objDir, "file.cs".AsSpan()).Should().BeFalse();
-        boundary.DirectoryFinished();
+        boundary.DirectoryFinished(objDir);
 
         string srcDir = Path.Combine(Root, "src");
         boundary.MatchesFile(srcDir, "file.cs".AsSpan()).Should().BeTrue();
     }
 
     [TestMethod]
-    public void MatchSet_MultipleExcludes_AnyExcludeBlocks()
+    public void MatchesFile_ComposedSession_MultipleExcludes_AnyExcludeBlocks()
     {
-        using MatchSet set = CreateSet("**/*.cs", "**/obj/**", "**/bin/**");
-        IEnumerationMatcher boundary = set;
+        using IFileSystemMatcherSession boundary = CreateSet("**/*.cs", "**/obj/**", "**/bin/**");
 
-        boundary.MatchesFile(Path.Combine(Root, "obj"), "x.cs".AsSpan()).Should().BeFalse();
-        boundary.DirectoryFinished();
-        boundary.MatchesFile(Path.Combine(Root, "bin"), "x.cs".AsSpan()).Should().BeFalse();
-        boundary.DirectoryFinished();
+        string objDirectory = Path.Combine(Root, "obj");
+        string binDirectory = Path.Combine(Root, "bin");
+        boundary.MatchesFile(objDirectory, "x.cs".AsSpan()).Should().BeFalse();
+        boundary.DirectoryFinished(objDirectory);
+        boundary.MatchesFile(binDirectory, "x.cs".AsSpan()).Should().BeFalse();
+        boundary.DirectoryFinished(binDirectory);
         boundary.MatchesFile(Path.Combine(Root, "src"), "x.cs".AsSpan()).Should().BeTrue();
     }
 
     [TestMethod]
     public void MatchesDirectory_NoLiteralPrefix_AlwaysRecursesOnInclusion()
     {
-        using GlobMatch matcher = Create("**/*.cs");
-        IEnumerationMatcher boundary = matcher;
+        using IFileSystemMatcherSession boundary = Create("**/*.cs");
 
-        boundary.MatchesDirectory(Root, "obj".AsSpan(), matchForExclusion: false).Should().BeTrue();
-        boundary.MatchesDirectory(Root, "src".AsSpan(), matchForExclusion: false).Should().BeTrue();
+        boundary.MatchesDirectory(Root, "obj".AsSpan())
+            .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+        boundary.MatchesDirectory(Root, "src".AsSpan())
+            .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
     }
 
     [TestMethod]
     public void MatchesDirectory_LiteralPrefix_PrunesDivergedSubtree()
     {
-        using GlobMatch matcher = Create("bin/Debug/**/*.cs");
-        IEnumerationMatcher boundary = matcher;
+        using IFileSystemMatcherSession boundary = Create("bin/Debug/**/*.cs");
 
-        boundary.MatchesDirectory(Root, "bin".AsSpan(), matchForExclusion: false).Should().BeTrue();
-        boundary.DirectoryFinished();
-        boundary.MatchesDirectory(Root, "src".AsSpan(), matchForExclusion: false).Should().BeFalse();
-        boundary.DirectoryFinished();
-        boundary.MatchesDirectory(Root, "lib".AsSpan(), matchForExclusion: false).Should().BeFalse();
+        boundary.MatchesDirectory(Root, "bin".AsSpan())
+            .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+        boundary.DirectoryFinished(Root);
+        boundary.MatchesDirectory(Root, "src".AsSpan())
+            .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+        boundary.DirectoryFinished(Root);
+        boundary.MatchesDirectory(Root, "lib".AsSpan())
+            .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
     }
 
     [TestMethod]
     public void MatchesDirectory_LiteralPrefix_RecursesIntoAlignedSubtree()
     {
-        using GlobMatch matcher = Create("bin/Debug/**/*.cs");
-        IEnumerationMatcher boundary = matcher;
+        using IFileSystemMatcherSession boundary = Create("bin/Debug/**/*.cs");
 
-        boundary.MatchesDirectory(Root, "bin".AsSpan(), matchForExclusion: false).Should().BeTrue();
-        boundary.DirectoryFinished();
-        boundary.MatchesDirectory(Path.Combine(Root, "bin"), "Debug".AsSpan(), matchForExclusion: false).Should().BeTrue();
-        boundary.DirectoryFinished();
-        boundary.MatchesDirectory(Path.Combine(Root, "bin"), "Other".AsSpan(), matchForExclusion: false).Should().BeFalse();
+        string binDirectory = Path.Combine(Root, "bin");
+        boundary.MatchesDirectory(Root, "bin".AsSpan())
+            .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+        boundary.DirectoryFinished(Root);
+        boundary.MatchesDirectory(binDirectory, "Debug".AsSpan())
+            .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+        boundary.DirectoryFinished(binDirectory);
+        boundary.MatchesDirectory(binDirectory, "Other".AsSpan())
+            .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
     }
 
     [TestMethod]
     public void MatchesFile_LiteralPrefix_OnPrefix_DirRejectsFiles()
     {
-        using GlobMatch matcher = Create("bin/Debug/**/*.cs");
-        IEnumerationMatcher boundary = matcher;
+        using IFileSystemMatcherSession boundary = Create("bin/Debug/**/*.cs");
 
         boundary.MatchesFile(Root, "stray.cs".AsSpan()).Should().BeFalse();
-        boundary.DirectoryFinished();
-        boundary.MatchesFile(Path.Combine(Root, "bin"), "stray.cs".AsSpan()).Should().BeFalse();
-        boundary.DirectoryFinished();
+        boundary.DirectoryFinished(Root);
+        string binDirectory = Path.Combine(Root, "bin");
+        boundary.MatchesFile(binDirectory, "stray.cs".AsSpan()).Should().BeFalse();
+        boundary.DirectoryFinished(binDirectory);
         boundary.MatchesFile(Path.Combine(Root, "bin", "Debug"), "ok.cs".AsSpan()).Should().BeTrue();
     }
 
     [TestMethod]
     public void MatchesFile_LiteralPrefix_DivergedDir_RejectsAllFiles()
     {
-        using GlobMatch matcher = Create("bin/Debug/**/*.cs");
-        IEnumerationMatcher boundary = matcher;
+        using IFileSystemMatcherSession boundary = Create("bin/Debug/**/*.cs");
 
         string divergedDir = Path.Combine(Root, "src");
         boundary.MatchesFile(divergedDir, "file.cs".AsSpan()).Should().BeFalse();
@@ -146,21 +141,20 @@ public class GlobMatchEnumerationTests
     }
 
     [TestMethod]
-    public void MatchSet_ExcludeWithLiteralPrefix_IsSkippedInUnrelatedDir()
+    public void MatchesFile_ComposedSession_ExcludeWithLiteralPrefix_IsSkippedInUnrelatedDir()
     {
-        using MatchSet set = CreateSet("**/*.cs", "obj/Debug/**");
-        IEnumerationMatcher boundary = set;
+        using IFileSystemMatcherSession boundary = CreateSet("**/*.cs", "obj/Debug/**");
 
-        boundary.MatchesFile(Path.Combine(Root, "src"), "file.cs".AsSpan()).Should().BeTrue();
-        boundary.DirectoryFinished();
+        string sourceDirectory = Path.Combine(Root, "src");
+        boundary.MatchesFile(sourceDirectory, "file.cs".AsSpan()).Should().BeTrue();
+        boundary.DirectoryFinished(sourceDirectory);
         boundary.MatchesFile(Path.Combine(Root, "obj", "Debug"), "blocked.cs".AsSpan()).Should().BeFalse();
     }
 
     [TestMethod]
     public void MatchesFile_NoLiteralPrefix_BehavesAsBefore()
     {
-        using GlobMatch matcher = Create("**/*.cs");
-        IEnumerationMatcher boundary = matcher;
+        using IFileSystemMatcherSession boundary = Create("**/*.cs");
 
         for (int depth = 0; depth < 5; depth++)
         {
@@ -168,70 +162,116 @@ public class GlobMatchEnumerationTests
                 ? Root
                 : Path.Combine([Root, .. Enumerable.Range(0, depth).Select(i => $"d{i}")]);
             boundary.MatchesFile(dir, "x.cs".AsSpan()).Should().BeTrue();
-            boundary.DirectoryFinished();
+            boundary.DirectoryFinished(dir);
         }
     }
 
     [TestMethod]
-    public void MatchesDirectory_NeverClaimsForExclusion()
+    public void MatchesDirectory_FilePattern_ReturnsMayContainMatchingFiles()
     {
-        using GlobMatch matcher = Create("**/*.cs");
-        IEnumerationMatcher boundary = matcher;
+        using IFileSystemMatcherSession boundary = Create("**/*.cs");
 
-        boundary.MatchesDirectory(Root, "obj".AsSpan(), matchForExclusion: true).Should().BeFalse();
+        boundary.MatchesDirectory(Root, "obj".AsSpan())
+            .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
     }
 
     [TestMethod]
-    public void MatchesDirectory_DirectoryOnly_ClaimsForExclusion()
+    public void MatchesDirectory_DirectoryOnly_ReturnsAllDescendantFilesMatch()
     {
         // gitignore `bin/` (trailing '/') sets DirectoryOnly; the factory also
         // prepends `**/` to the non-anchored slash-free remainder so it matches at
         // any depth. As an exclude, the matcher should claim the whole subtree.
-        GlobMatch matcher = GlobSpecification.Compile("bin/", GlobDialect.Git).CreateMatcher(Root);
+        using GlobMatch matcher = GlobSpecification.Compile("bin/", GlobDialect.Git).CreateSession(Root);
         matcher.Specification.DirectoryOnly.Should().BeTrue();
-        IEnumerationMatcher boundary = matcher;
 
         // Top-level `bin` directory is excluded.
-        boundary.MatchesDirectory(Root, "bin".AsSpan(), matchForExclusion: true).Should().BeTrue();
-        boundary.DirectoryFinished();
+        matcher.MatchesDirectory(Root, "bin".AsSpan())
+            .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+        matcher.DirectoryFinished(Root);
         // Nested `bin` directory is also excluded (match-anywhere).
-        boundary.MatchesDirectory(Path.Combine(Root, "src"), "bin".AsSpan(), matchForExclusion: true).Should().BeTrue();
-        boundary.DirectoryFinished();
+        string sourceDirectory = Path.Combine(Root, "src");
+        matcher.MatchesDirectory(sourceDirectory, "bin".AsSpan())
+            .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+        matcher.DirectoryFinished(sourceDirectory);
         // Unrelated directory is not excluded.
-        boundary.MatchesDirectory(Root, "src".AsSpan(), matchForExclusion: true).Should().BeFalse();
-        matcher.Dispose();
+        matcher.MatchesDirectory(Root, "src".AsSpan())
+            .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
     }
 
     [TestMethod]
     public void MatchesFile_DirectoryOnly_NeverMatchesFiles()
     {
         // `bin/` (DirectoryOnly) never matches files, even files named `bin`.
-        GlobMatch matcher = GlobSpecification.Compile("bin/", GlobDialect.Git).CreateMatcher(Root);
-        IEnumerationMatcher boundary = matcher;
+        using GlobMatch matcher = GlobSpecification.Compile("bin/", GlobDialect.Git).CreateSession(Root);
 
-        boundary.MatchesFile(Root, "bin".AsSpan()).Should().BeFalse();
-        boundary.MatchesFile(Root, "anything".AsSpan()).Should().BeFalse();
-        matcher.Dispose();
+        matcher.MatchesFile(Root, "bin".AsSpan()).Should().BeFalse();
+        matcher.MatchesFile(Root, "anything".AsSpan()).Should().BeFalse();
     }
 
     [TestMethod]
     public void MatchesDirectory_DirectoryOnly_DoesNotClaimUnmatchedDirs()
     {
         // `logs/` does not match `bin` etc.; only `logs` directories.
-        GlobMatch matcher = GlobSpecification.Compile("logs/", GlobDialect.Git).CreateMatcher(Root);
-        IEnumerationMatcher boundary = matcher;
+        using GlobMatch matcher = GlobSpecification.Compile("logs/", GlobDialect.Git).CreateSession(Root);
 
-        boundary.MatchesDirectory(Root, "logs".AsSpan(), matchForExclusion: true).Should().BeTrue();
-        boundary.DirectoryFinished();
-        boundary.MatchesDirectory(Root, "bin".AsSpan(), matchForExclusion: true).Should().BeFalse();
-        matcher.Dispose();
+        matcher.MatchesDirectory(Root, "logs".AsSpan())
+            .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+        matcher.DirectoryFinished(Root);
+        matcher.MatchesDirectory(Root, "bin".AsSpan())
+            .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+    }
+
+    [TestMethod]
+    public void MatchesDirectory_OrdinaryGitDirectory_ProofMatchesDescendantFiles()
+    {
+        using GlobMatch matcher = GlobSpecification.Compile(
+            "/node_modules",
+            GlobDialect.Git).CreateSession(Root);
+
+        matcher.MatchesDirectory(Root, "node_modules")
+            .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+        matcher.DirectoryFinished(Root);
+        string packageDirectory = Path.Combine(Root, "node_modules", "package");
+        matcher.MatchesFile(packageDirectory, "index.js").Should().BeTrue();
+    }
+
+    [TestMethod]
+    public void MatchesFile_OrdinaryGitMatchedAncestor_CachesUntilDirectoryFinished()
+    {
+        using GlobMatch matcher = GlobSpecification.Compile(
+            "/node_modules",
+            GlobDialect.Git).CreateSession(Root);
+
+        string packageDirectory = Path.Combine(Root, "node_modules", "package");
+        matcher.MatchesFile(packageDirectory, "index.js").Should().BeTrue();
+        ((bool)matcher.TestAccessor.Dynamic._cacheValid).Should().BeTrue();
+        ((bool)matcher.TestAccessor.Dynamic._directoryAncestorMatched).Should().BeTrue();
+
+        matcher.MatchesFile(packageDirectory, "other.js").Should().BeTrue();
+        matcher.DirectoryFinished(packageDirectory);
+        ((bool)matcher.TestAccessor.Dynamic._cacheValid).Should().BeFalse();
+        matcher.MatchesFile(Path.Combine(Root, "src"), "index.js").Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void MatchesDirectory_NegatedDirectoryOnly_ProofMatchesDescendantFiles()
+    {
+        using GlobMatch matcher = GlobSpecification.Compile(
+            "!bin/",
+            GlobDialect.Git).CreateSession(Root);
+
+        matcher.MatchesDirectory(Root, "bin")
+            .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+        matcher.DirectoryFinished(Root);
+        matcher.MatchesFile(Path.Combine(Root, "bin"), "file.txt").Should().BeFalse();
+        matcher.DirectoryFinished(Path.Combine(Root, "bin"));
+        matcher.MatchesFile(Path.Combine(Root, "src"), "file.txt").Should().BeTrue();
     }
 
     [TestMethod]
     public void MatchesFile_ReusesCachedPrefix_AcrossSameDirectory()
     {
-        using GlobMatch matcher = Create("**/*.cs");
-        IEnumerationMatcher boundary = matcher;
+        using IFileSystemMatcherSession boundary = Create("**/*.cs");
 
         string subDir = Path.Combine(Root, "a", "b", "c");
         for (int i = 0; i < 100; i++)
@@ -244,24 +284,22 @@ public class GlobMatchEnumerationTests
     [TestMethod]
     public void DirectoryFinished_InvalidatesCache_NewDirectoryRespected()
     {
-        using GlobMatch matcher = Create("a/*.cs");
-        IEnumerationMatcher boundary = matcher;
+        using IFileSystemMatcherSession boundary = Create("a/*.cs");
 
         string aDir = Path.Combine(Root, "a");
         string bDir = Path.Combine(Root, "b");
 
         boundary.MatchesFile(aDir, "x.cs".AsSpan()).Should().BeTrue();
-        boundary.DirectoryFinished();
+        boundary.DirectoryFinished(aDir);
         boundary.MatchesFile(bDir, "x.cs".AsSpan()).Should().BeFalse();
-        boundary.DirectoryFinished();
+        boundary.DirectoryFinished(bDir);
         boundary.MatchesFile(aDir, "y.cs".AsSpan()).Should().BeTrue();
     }
 
     [TestMethod]
     public void MatchesFile_LongRelativeDirectory_GrowsCacheBuffer()
     {
-        using GlobMatch matcher = Create("**/*.cs");
-        IEnumerationMatcher boundary = matcher;
+        using IFileSystemMatcherSession boundary = Create("**/*.cs");
 
         string[] segments = new string[40];
         for (int i = 0; i < segments.Length; i++)
@@ -271,7 +309,7 @@ public class GlobMatchEnumerationTests
 
         string deepDir = Path.Combine([Root, .. segments]);
         boundary.MatchesFile(deepDir, "file.cs".AsSpan()).Should().BeTrue();
-        boundary.DirectoryFinished();
+        boundary.DirectoryFinished(deepDir);
 
         boundary.MatchesFile(Root, "shallow.cs".AsSpan()).Should().BeTrue();
     }
@@ -279,8 +317,7 @@ public class GlobMatchEnumerationTests
     [TestMethod]
     public void MatchesFile_TranslatesNativeSeparator_ToMatcherSeparator()
     {
-        using GlobMatch matcher = Create("a/b/*.cs");
-        IEnumerationMatcher boundary = matcher;
+        using IFileSystemMatcherSession boundary = Create("a/b/*.cs");
 
         string subDir = Path.Combine(Root, "a", "b");
         boundary.MatchesFile(subDir, "file.cs".AsSpan()).Should().BeTrue();
@@ -289,13 +326,11 @@ public class GlobMatchEnumerationTests
     [TestMethod]
     public void MatchesFile_Negated_InvertsResult()
     {
-        GlobMatch matcher = GlobSpecification.Compile("!*.cs", GlobDialect.Git).CreateMatcher(Root);
+        using GlobMatch matcher = GlobSpecification.Compile("!*.cs", GlobDialect.Git).CreateSession(Root);
         matcher.Specification.Negated.Should().BeTrue();
-        IEnumerationMatcher boundary = matcher;
 
-        boundary.MatchesFile(Root, "file.cs".AsSpan()).Should().BeFalse();
-        boundary.MatchesFile(Root, "file.txt".AsSpan()).Should().BeTrue();
-        matcher.Dispose();
+        matcher.MatchesFile(Root, "file.cs".AsSpan()).Should().BeFalse();
+        matcher.MatchesFile(Root, "file.txt".AsSpan()).Should().BeTrue();
     }
 
     [TestMethod]
@@ -303,30 +338,35 @@ public class GlobMatchEnumerationTests
     {
         // When RootDirectory is not set the matcher cannot resolve a relative path; it
         // must behave as a flat-string matcher over the file name itself.
-        GlobMatch matcher = GlobSpecification.Compile("*.cs", GlobDialect.PosixPath).CreateMatcher();
-        IEnumerationMatcher boundary = matcher;
+        using GlobMatch matcher = new(
+            GlobSpecification.Compile("*.cs", GlobDialect.PosixPath),
+            rootDirectory: null);
 
-        boundary.MatchesFile(Root, "file.cs".AsSpan()).Should().BeTrue();
-        boundary.MatchesFile(Root, "file.txt".AsSpan()).Should().BeFalse();
-        matcher.Dispose();
+        matcher.MatchesFile(Root, "file.cs".AsSpan()).Should().BeTrue();
+        matcher.MatchesFile(Root, "file.txt".AsSpan()).Should().BeFalse();
     }
 
     [TestMethod]
     public void Dispose_ReturnsRentedBuffer_NoThrow()
     {
-        GlobMatch matcher = Create("**/*.cs");
-        IEnumerationMatcher boundary = matcher;
-
-        string[] segments = new string[40];
-        for (int i = 0; i < segments.Length; i++)
+        IFileSystemMatcherSession matcher = Create("**/*.cs");
+        try
         {
-            segments[i] = $"segment{i:D2}";
+            string[] segments = new string[40];
+            for (int i = 0; i < segments.Length; i++)
+            {
+                segments[i] = $"segment{i:D2}";
+            }
+
+            string deepDir = Path.Combine([Root, .. segments]);
+            matcher.MatchesFile(deepDir, "file.cs".AsSpan());
+
+            matcher.Dispose();
+            matcher.Dispose();
         }
-
-        string deepDir = Path.Combine([Root, .. segments]);
-        boundary.MatchesFile(deepDir, "file.cs".AsSpan());
-
-        matcher.Dispose();
-        matcher.Dispose();
+        finally
+        {
+            matcher.Dispose();
+        }
     }
 }

@@ -85,6 +85,112 @@ public class FileMatcherValidationOracleTests
         result.FileList.Should().ContainSingle().Which.Should().Be(spec);
     }
 
+    [TestMethod]
+    [DataRow("**/../bar/*.cs")]
+    [DataRow("a*/../bar/*.cs")]
+    public void GetFiles_ParentAfterWildcard_ReturnsSpecVerbatimAsReturnFileSpec(string spec)
+    {
+        using TempFolder tempFolder = new();
+        CreateFixture(tempFolder.TempPath);
+
+        FileMatcherWrapper.GetFilesResult result = FileMatcherWrapper.GetFiles(tempFolder.TempPath, spec);
+
+        result.Action.Should().Be(FileMatcherWrapper.SearchAction.ReturnFileSpec);
+        result.FileList.Should().ContainSingle().Which.Should().Be(spec);
+    }
+
+    [TestMethod]
+    [DataRow("a*/name..part/*.cs")]
+    [DataRow("**/foo..bar/*.cs")]
+    public void GetFiles_DoubleDotInWildcardDirectory_ReturnsSpecVerbatimAsReturnFileSpec(string spec)
+    {
+        using TempFolder tempFolder = new();
+        CreateFixture(tempFolder.TempPath);
+
+        FileMatcherWrapper.GetFilesResult result = FileMatcherWrapper.GetFiles(tempFolder.TempPath, spec);
+
+        result.Action.Should().Be(FileMatcherWrapper.SearchAction.ReturnFileSpec);
+        result.FileList.Should().ContainSingle().Which.Should().Be(spec);
+    }
+
+    [TestMethod]
+    public void GetFiles_DoubleDotInFileName_RunsSearch()
+    {
+        using TempFolder tempFolder = new();
+        CreateFixture(tempFolder.TempPath);
+
+        FileMatcherWrapper.GetFilesResult result = FileMatcherWrapper.GetFiles(
+            tempFolder.TempPath,
+            "a*/name..part.cs");
+
+        result.Action.Should().Be(FileMatcherWrapper.SearchAction.RunSearch);
+    }
+
+    [TestMethod]
+    [DataRow("**/bar/..")]
+    [DataRow("**/..")]
+    public void GetFiles_WildcardTerminalParent_RunsEmptySearch(string spec)
+    {
+        using TempFolder tempFolder = new();
+        CreateFixture(tempFolder.TempPath);
+
+        FileMatcherWrapper.GetFilesResult result = FileMatcherWrapper.GetFiles(tempFolder.TempPath, spec);
+
+        result.Action.Should().Be(FileMatcherWrapper.SearchAction.RunSearch);
+        result.FileList.Should().BeEmpty();
+        result.GlobFailure.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    [DataRow(".")]
+    [DataRow("a/..")]
+    public void GetFiles_NoWildcardTerminalRelativeSegment_ReturnsVerbatim(string spec)
+    {
+        using TempFolder tempFolder = new();
+        CreateFixture(tempFolder.TempPath);
+
+        FileMatcherWrapper.GetFilesResult result = FileMatcherWrapper.GetFiles(tempFolder.TempPath, spec);
+
+        result.Action.Should().Be(FileMatcherWrapper.SearchAction.None);
+        result.FileList.Should().ContainSingle().Which.Should().Be(spec);
+    }
+
+    [TestMethod]
+    public void GetFiles_FullyQualifiedIncludeWithRelativeInvalidExclude_ReturnsAbsoluteResult()
+    {
+        using TempFolder tempFolder = new();
+        string fileName = "bad...txt";
+        string filePath = Path.Combine(tempFolder.TempPath, fileName);
+        File.WriteAllText(filePath, string.Empty);
+
+        FileMatcherWrapper.GetFilesResult result = FileMatcherWrapper.GetFiles(
+            tempFolder.TempPath,
+            Path.Combine(tempFolder.TempPath, "**", "*.txt"),
+            [fileName]);
+
+        result.Action.Should().Be(FileMatcherWrapper.SearchAction.RunSearch);
+        result.FileList.Should().ContainSingle().Which.Should().Be(filePath);
+        result.ExcludeFileSpec.Should().BeEmpty();
+        result.GlobFailure.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public void GetFiles_ParentBeforeWildcard_RunsNormalizedSearch()
+    {
+        using TempFolder tempFolder = new();
+        string barDirectory = Path.Combine(tempFolder.TempPath, "bar");
+        Directory.CreateDirectory(barDirectory);
+        File.WriteAllText(Path.Combine(barDirectory, "source.cs"), string.Empty);
+
+        FileMatcherWrapper.GetFilesResult result = FileMatcherWrapper.GetFiles(
+            tempFolder.TempPath,
+            "a/../bar/*.cs");
+
+        result.Action.Should().Be(FileMatcherWrapper.SearchAction.RunSearch);
+        result.FileList.Should().ContainSingle().Which.Should().EndWith(
+            "bar/source.cs".Replace('/', Path.DirectorySeparatorChar));
+    }
+
     // 4. Legal "**" specs (standalone, between separators, end-anchored to a separator) reach the
     //    full search path. RunSearch confirms MSBuild treats these as legal globs.
 
@@ -127,10 +233,101 @@ public class FileMatcherValidationOracleTests
 
         FileMatcherWrapper.GetFilesResult oracle = FileMatcherWrapper.GetFiles(tempFolder.TempPath, spec);
         MSBuildEnumerationResult touki = MSBuildEnumerator.CreateResult(
-            fileSpec: spec,
-            projectDirectory: tempFolder.TempPath);
+            new(spec, tempFolder.TempPath));
 
         oracle.Action.Should().Be(FileMatcherWrapper.SearchAction.ReturnFileSpec);
-        touki.Action.Should().Be(MSBuildSearchAction.ReturnFileSpec);
+        touki.Should().BeOfType<MSBuildReturnLiteralResult>();
+    }
+
+    [TestMethod]
+    [DataRow("bad.../*.txt")]
+    [DataRow("a**b")]
+    [DataRow("literal...txt")]
+    public void GetFiles_WildcardSearchWithInvalidExclude_IgnoresExclude(string excludeSpec)
+    {
+        using TempFolder tempFolder = new();
+        CreateFixture(tempFolder.TempPath);
+
+        FileMatcherWrapper.GetFilesResult result = FileMatcherWrapper.GetFiles(
+            tempFolder.TempPath,
+            "**/*.txt",
+            [excludeSpec]);
+
+        result.Action.Should().Be(FileMatcherWrapper.SearchAction.RunSearch);
+        result.ExcludeFileSpec.Should().BeEmpty();
+        result.GlobFailure.Should().BeEmpty();
+        result.FileList.Should().HaveCount(2);
+    }
+
+    [TestMethod]
+    [DataRow("literal...txt", "literal...txt", false)]
+    [DataRow("literal.txt", "literal.txt", false)]
+    [DataRow("literal...txt", "other...txt", true)]
+    public void GetFiles_LiteralInclude_ExcludeComparisonPrecedesValidation(
+        string includeSpec,
+        string excludeSpec,
+        bool returnsInclude)
+    {
+        using TempFolder tempFolder = new();
+        CreateFixture(tempFolder.TempPath);
+
+        FileMatcherWrapper.GetFilesResult result = FileMatcherWrapper.GetFiles(
+            tempFolder.TempPath,
+            includeSpec,
+            [excludeSpec]);
+
+        result.Action.Should().Be(FileMatcherWrapper.SearchAction.None);
+        result.ExcludeFileSpec.Should().BeEmpty();
+        result.GlobFailure.Should().BeEmpty();
+        if (returnsInclude)
+        {
+            result.FileList.Should().ContainSingle().Which.Should().Be(includeSpec);
+        }
+        else
+        {
+            result.FileList.Should().BeEmpty();
+        }
+    }
+
+    [TestMethod]
+    public void GetFiles_ValidAndInvalidExcludes_AppliesValidExcludeInEitherOrder()
+    {
+        using TempFolder tempFolder = new();
+        CreateFixture(tempFolder.TempPath);
+
+        FileMatcherWrapper.GetFilesResult invalidFirst = FileMatcherWrapper.GetFiles(
+            tempFolder.TempPath,
+            "**/*.txt",
+            ["bad.../*.txt", "**/Foo/*.txt"]);
+        FileMatcherWrapper.GetFilesResult invalidLast = FileMatcherWrapper.GetFiles(
+            tempFolder.TempPath,
+            "**/*.txt",
+            ["**/Foo/*.txt", "bad.../*.txt"]);
+
+        invalidFirst.Action.Should().Be(FileMatcherWrapper.SearchAction.RunSearch);
+        invalidLast.Action.Should().Be(FileMatcherWrapper.SearchAction.RunSearch);
+        invalidFirst.FileList.Should().ContainSingle().Which.Should().EndWith("a.txt");
+        invalidLast.FileList.Should().BeEquivalentTo(invalidFirst.FileList);
+        invalidFirst.ExcludeFileSpec.Should().BeEmpty();
+        invalidLast.ExcludeFileSpec.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public void GetFiles_RootedExcludeOutsideIncludeRoot_DoesNotFilterResults()
+    {
+        using TempFolder includeFolder = new();
+        using TempFolder outsideFolder = new();
+        CreateFixture(includeFolder.TempPath);
+
+        string outsideExclude = Path.Combine(outsideFolder.TempPath, "**", "*.txt");
+        FileMatcherWrapper.GetFilesResult result = FileMatcherWrapper.GetFiles(
+            includeFolder.TempPath,
+            "**/*.txt",
+            [outsideExclude]);
+
+        result.Action.Should().Be(FileMatcherWrapper.SearchAction.RunSearch);
+        result.FileList.Should().HaveCount(2);
+        result.ExcludeFileSpec.Should().BeEmpty();
+        result.GlobFailure.Should().BeEmpty();
     }
 }

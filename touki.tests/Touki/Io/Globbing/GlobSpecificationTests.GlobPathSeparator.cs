@@ -101,6 +101,18 @@ public partial class GlobSpecificationTests
     }
 
     [TestMethod]
+    public void Compile_MSBuildTrailingDot_BackslashNormalizesCrossSeparator()
+    {
+        GlobSpecification matcher = GlobSpecification.Compile(
+            "a/b*.",
+            GlobDialect.MSBuild,
+            separator: GlobPathSeparator.Backslash);
+
+        matcher.IsMatch(@"a\bx").Should().BeTrue();
+        matcher.IsMatch("a/bx").Should().BeFalse();
+    }
+
+    [TestMethod]
     public void Compile_GlobPathSeparator_EscapeDialect_LeavesCrossSeparatorAlone()
     {
         // For dialects with `\` as escape (POSIX-family, Bash, Git), the compile-time

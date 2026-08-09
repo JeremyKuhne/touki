@@ -84,9 +84,9 @@ internal sealed partial class CompiledGlobStrategy
     /// </remarks>
     private const int MaxRangesDepth = (GlobSpecification.MaxExtGlobDepth * 2) + 2;
 
-    // Failure-memo key layout: [inputIndex, totalLength, rangeCount] followed by
+    // Failure-memo key layout: [inputIndex, totalLength, markerSeen, markerMode, rangeCount] followed by
     // (Start, End, KindOverride) for each range.
-    private const int KeyHeaderLength = 3;
+    private const int KeyHeaderLength = 5;
     private const int RangeKeyLength = 3;
 
     // Seed sizes for the explicit backtrack stack and the range-snapshot arena.
@@ -110,10 +110,21 @@ internal sealed partial class CompiledGlobStrategy
         ReadOnlySpan<char> second,
         ReadOnlySpan<char> program,
         char separator,
-        IgnoreCaseKind kind)
+        IgnoreCaseKind kind,
+        bool useMSBuildTrailingDotAny,
+        bool useMSBuildAllDotInput,
+        EffectiveDoubleStarMode effectiveDoubleStarMode)
     {
         int totalLength = first.Length + second.Length;
-        EngineInputs inputs = new(first, second, program, separator, kind);
+        EngineInputs inputs = new(
+            first,
+            second,
+            program,
+            separator,
+            kind,
+            useMSBuildTrailingDotAny,
+            useMSBuildAllDotInput,
+            effectiveDoubleStarMode);
         ExtGlobMatchState state = default;
         try
         {
@@ -232,7 +243,14 @@ internal sealed partial class CompiledGlobStrategy
         Span<int> key = stackalloc int[KeyHeaderLength + (MaxRangesDepth * RangeKeyLength)];
         EngineScratch scratch = new(frames, arena, work, rest, key);
 
-        return RunEngineCore(in inputs, startRanges, inputIndex, totalLength, in scratch, ref state);
+        return RunEngineCore(
+            in inputs,
+            startRanges,
+            inputIndex,
+            totalLength,
+            sawEffectiveDoubleStar: false,
+            in scratch,
+            ref state);
     }
 
     /// <summary>
@@ -289,6 +307,7 @@ internal sealed partial class CompiledGlobStrategy
         ReadOnlySpan<ProgramRange> startRanges,
         int inputIndex,
         int totalLength,
+        bool sawEffectiveDoubleStar,
         in EngineScratch scratch,
         ref ExtGlobMatchState state)
     {
@@ -300,6 +319,7 @@ internal sealed partial class CompiledGlobStrategy
         startRanges.CopyTo(scratch.Work);
         engine.WorkCount = startRanges.Length;
         engine.WorkInput = inputIndex;
+        engine.WorkSawEffectiveDoubleStar = sawEffectiveDoubleStar;
 
         try
         {
@@ -423,12 +443,20 @@ internal sealed partial class CompiledGlobStrategy
     ///  <paramref name="destination"/> as the key used by the failure memo.
     ///  Returns the number of <see cref="int"/> elements written.
     /// </summary>
-    private static int SerializeState(ReadOnlySpan<ProgramRange> ranges, int inputIndex, int totalLength, Span<int> destination)
+    private static int SerializeState(
+        ReadOnlySpan<ProgramRange> ranges,
+        int inputIndex,
+        int totalLength,
+        bool sawEffectiveDoubleStar,
+        EffectiveDoubleStarMode effectiveDoubleStarMode,
+        Span<int> destination)
     {
         destination[0] = inputIndex;
         destination[1] = totalLength;
-        destination[2] = ranges.Length;
-        int written = 3;
+        destination[2] = sawEffectiveDoubleStar ? 1 : 0;
+        destination[3] = (int)effectiveDoubleStarMode;
+        destination[4] = ranges.Length;
+        int written = 5;
         for (int i = 0; i < ranges.Length; i++)
         {
             destination[written++] = ranges[i].Start;

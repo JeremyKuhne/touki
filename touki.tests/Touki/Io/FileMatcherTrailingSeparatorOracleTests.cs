@@ -92,7 +92,7 @@ public class FileMatcherTrailingSeparatorOracleTests
 
     // 3. Wildcard specs whose fixed directory does not exist on disk: FileMatcher returns an
     //    empty list (the SearchAction.ReturnEmptyList branch in GetFileSearchData). This is the
-    //    behavior MatchEnumerator now mirrors for both wildcard and non-wildcard cases.
+    //    behavior MSBuildEnumerator mirrors for both wildcard and non-wildcard cases.
 
     [TestMethod]
     [DataRow("Missing/**")]

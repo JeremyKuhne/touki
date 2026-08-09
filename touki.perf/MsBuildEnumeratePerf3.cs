@@ -5,7 +5,6 @@
 using Touki.Io;
 using Touki.Io.Globbing;
 
-using File = System.IO.File;
 using Path = System.IO.Path;
 
 namespace touki.perf;
@@ -72,16 +71,6 @@ public class MsBuildEnumeratePerf3
     [GlobalSetup]
     public void GlobalSetup()
     {
-        // Walk up from the perf assembly's location until we find the repo root (touki.slnx anchor).
-        string? dir = AppContext.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "touki.slnx")))
-        {
-            dir = Path.GetDirectoryName(dir);
-        }
-
-        _directory = dir ?? throw new InvalidOperationException(
-            "Could not locate touki.slnx walking up from " + AppContext.BaseDirectory);
-
         // The snapshots are recorded once, committed as compressed archives, and extracted to
         // the build output by CompressedContent.targets. They are the single source of truth for
         // the replay: we always load them from next to the assembly and never re-record against
@@ -91,19 +80,25 @@ public class MsBuildEnumeratePerf3
         string msbuildCsv = Path.Combine(recordedDataDirectory, "msbuild-filesystem.csv");
 
         _fileSystem = RecordedFileSystem.Load(enumerationCsv);
-        _msbuildPlayback = new MSBuildFileSystemPlayback(RecordedMSBuildFileSystem.Load(msbuildCsv));
+        RecordedMSBuildFileSystem msbuildFileSystem = RecordedMSBuildFileSystem.Load(msbuildCsv);
+        if (string.IsNullOrEmpty(_fileSystem.Root)
+            || !string.Equals(_fileSystem.Root, msbuildFileSystem.Root, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("The deterministic replay recordings have inconsistent roots.");
+        }
+
+        _directory = _fileSystem.Root;
+        _msbuildPlayback = new MSBuildFileSystemPlayback(msbuildFileSystem);
     }
 
     private List<string> Replay(
-        IEnumerationMatcher matcher,
-        string rootDirectory,
-        bool excludeDirectories)
+        IFileSystemMatcherSession matcher,
+        string rootDirectory)
     {
         using RecordedDirectoryEnumerator enumerator = new(
             _fileSystem,
             matcher,
-            rootDirectory,
-            excludeDirectories: excludeDirectories);
+            rootDirectory);
 
         List<string> results = [];
         while (enumerator.MoveNext())
@@ -119,14 +114,14 @@ public class MsBuildEnumeratePerf3
         IReadOnlyList<string>? excludePatterns,
         GlobOptions globOptions)
     {
-        IEnumerationMatcher matcher = EnumerationMatcherFactory.CreateGlob(
+        IFileSystemMatcherSession matcher = EnumerationMatcherFactory.CreateGlob(
             includePattern,
             excludePatterns,
             _directory,
             GlobDialect.MSBuild,
             globOptions);
 
-        return Replay(matcher, _directory, excludeDirectories: false);
+        return Replay(matcher, _directory);
     }
 
     // The MSBuild FileMatcher baseline replays MSBuild's internal IFileSystem queries captured
@@ -143,13 +138,13 @@ public class MsBuildEnumeratePerf3
     [Benchmark]
     public IReadOnlyList<string> MsBuildEnumerator()
     {
-        IEnumerationMatcher matcher = EnumerationMatcherFactory.CreateMSBuild(
+        IFileSystemMatcherSession matcher = EnumerationMatcherFactory.CreateMSBuild(
             Filespec,
             UnsplitExcludes,
             _directory,
             out string startDirectory);
 
-        return Replay(matcher, startDirectory, excludeDirectories: true);
+        return Replay(matcher, startDirectory);
     }
 
     [Benchmark]

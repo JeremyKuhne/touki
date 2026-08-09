@@ -7,9 +7,9 @@ using Touki.Collections;
 namespace Touki.Io;
 
 /// <summary>
-///  Builds an <see cref="IEnumerationMatcher"/> from MSBuild-style include and exclude specifications.
+///  Builds an <see cref="IFileSystemMatcherSession"/> from MSBuild-style include and exclude specifications.
 /// </summary>
-public static class MSBuildMatchBuilder
+internal static class MSBuildMatchBuilder
 {
     // In a default .NET library project, here are the default ItemExcludes that are applied to the project.
     // When looking for all *.cs files only TWO of these are relevant (exclude bin and obj).
@@ -27,24 +27,26 @@ public static class MSBuildMatchBuilder
     //  **/*.vssscc;
     //  **/.DS_Store
 
-    /// <inheritdoc cref="FromSpecification(MSBuildSpecification, ListBase{MSBuildSpecification}, MatchType, MatchCasing, string?, out StringSegment)"/>
-    public static IEnumerationMatcher FromSpecification(
+    /// <inheritdoc
+    ///  cref="FromSpecification(MSBuildSpecification, ListBase{MSBuildSpecification}, MatchType, MatchCasing, string?)"/>
+    public static MSBuildMatchBuildResult FromSpecification(
         string includeSpecification,
         string excludeSpecifications,
         MatchType matchType,
         MatchCasing matchCasing,
-        string? rootDirectory,
-        out StringSegment startDirectory)
+        string? rootDirectory)
     {
         matchCasing = Paths.GetFinalCasing(matchCasing);
 
         MSBuildSpecification include = new(includeSpecification);
-        using var excludes = MSBuildSpecification.Split(excludeSpecifications, ignoreCase: matchCasing == MatchCasing.CaseInsensitive);
-        return FromSpecification(include, excludes, matchType, matchCasing, rootDirectory, out startDirectory);
+        using ListBase<MSBuildSpecification> excludes = MSBuildSpecification.Split(
+            excludeSpecifications,
+            ignoreCase: matchCasing == MatchCasing.CaseInsensitive);
+        return FromSpecification(include, excludes, matchType, matchCasing, rootDirectory);
     }
 
     /// <summary>
-    ///  Generates an <see cref="IEnumerationMatcher"/> that encapsulates include and exclude MSBuild specifications
+    ///  Generates an <see cref="IFileSystemMatcherSession"/> that encapsulates include and exclude MSBuild specifications
     ///  and determines the starting directory to enumerate from.
     /// </summary>
     /// <param name="includeSpecification">
@@ -54,7 +56,8 @@ public static class MSBuildMatchBuilder
     ///  A collection of exclude specifications. Non-applicable excludes are filtered out for efficiency.
     /// </param>
     /// <param name="matchType">
-    ///  The pattern match type to use when evaluating file and directory names.
+    ///  The pattern match type to use for physical filename matching. Logical MSBuild directory and exclude phases
+    ///  use simple wildcard semantics.
     /// </param>
     /// <param name="matchCasing">
     ///  The casing behavior to use when matching. The final casing is normalized for the current platform.
@@ -63,11 +66,8 @@ public static class MSBuildMatchBuilder
     ///  The root directory used to fully qualify non-rooted specifications. If <see langword="null"/>,
     ///  the <see cref="Environment.CurrentDirectory"/> is used.
     /// </param>
-    /// <param name="startDirectory">
-    ///  When this method returns, contains the fixed directory portion that should be used as the enumeration root.
-    /// </param>
     /// <returns>
-    ///  An <see cref="IEnumerationMatcher"/> that applies the include and applicable exclude rules.
+    ///  The owned matcher session and resolved enumeration start directory.
     /// </returns>
     /// <remarks>
     ///  <para>
@@ -76,38 +76,41 @@ public static class MSBuildMatchBuilder
     ///  </para>
     ///  <para>
     ///   - File name expression exclusivity compared to the include.<br/>
-    ///   - Whether the exclude falls under the include's fixed path.<br/>
+    ///   - Whether the include and exclude fixed paths overlap in either direction.<br/>
     ///   - Whether a relative exclude can escape the include root.
     ///  </para>
     ///  <para>
-    ///   Simple excludes are mapped to either a <c>MatchAnyFile</c> or a <c>MatchAnyDirectory</c> depending on
-    ///   whether the file expression is a wildcard for all files.
+    ///   Simple file excludes use <c>MSBuildMatchAnyFile</c>. Proven terminal-globstar subtree excludes use
+    ///   <c>MatchMSBuildSubtree</c>; remaining patterns use <c>MatchMSBuild</c>.
     ///  </para>
     /// </remarks>
-    public static IEnumerationMatcher FromSpecification(
+    public static MSBuildMatchBuildResult FromSpecification(
         MSBuildSpecification includeSpecification,
         ListBase<MSBuildSpecification> excludeSpecifications,
         MatchType matchType,
         MatchCasing matchCasing,
-        string? rootDirectory,
-        out StringSegment startDirectory)
+        string? rootDirectory)
     {
         rootDirectory ??= Environment.CurrentDirectory;
 
         includeSpecification = includeSpecification.FullyQualify(rootDirectory);
         Debug.Assert(includeSpecification.IsFullyQualified);
 
-        startDirectory = includeSpecification.FixedPath;
+        StringSegment startDirectory = includeSpecification.FixedPath;
 
         matchCasing = Paths.GetFinalCasing(matchCasing);
 
-        IEnumerationMatcher include = includeSpecification.IsSimpleRecursiveMatch
+        IFileSystemMatcherSession include = includeSpecification.IsSimpleRecursiveMatch
             // The simplest wild match there is, namely something like `**\*.cs`.
-            ? new MatchAnyFile(
+            ? new MSBuildMatchAnyFile(
                 expression: includeSpecification.FileName,
                 rootPath: startDirectory,
                 matchType: matchType,
-                matchCasing: matchCasing)
+                matchCasing: matchCasing,
+                rootMatchCasing: matchCasing,
+                useMSBuildFileNameSemantics: MSBuildFileNamePattern.RequiresPolicy(
+                    includeSpecification.FileName,
+                    matchType))
             // More complicated case, need to build a full MSBuild matcher.
             : new MatchMSBuild(
                 includeSpecification,
@@ -117,7 +120,7 @@ public static class MSBuildMatchBuilder
         if (excludeSpecifications.Count == 0)
         {
             // No excludes, the include is all we have
-            return include;
+            return new(include, startDirectory);
         }
 
         // Excludes need to be processed.
@@ -125,63 +128,111 @@ public static class MSBuildMatchBuilder
         bool ignoreCase = matchCasing == MatchCasing.CaseInsensitive;
 
         // The startDirectory is our root for all excludes.
-        MatchSet matchSet = new(include);
-        foreach (MSBuildSpecification excludeSpecification in excludeSpecifications)
+        MSBuildMatchSetSession matchSet = new(include);
+        try
         {
-            // We can ignore excludes that:
-            //
-            //  - Do not fall under the start directory
-            //  - Do not align with the filename spec
-            //    - This is things like excluding *.cs when we're including *.txt
-
-            // Check to see if the filenames are exclusive
-            if (Paths.AreExpressionsExclusive(
-                includeSpecification.FileName,
-                excludeSpecification.FileName,
-                matchType,
-                matchCasing))
+            foreach (MSBuildSpecification excludeSpecification in excludeSpecifications)
             {
-                // The filenames cannot possibly match the same names, ignore it.
-                continue;
-            }
+                // We can ignore excludes that:
+                //
+                //  - Do not fall under the start directory
+                //  - Do not align with the filename spec
+                //    - This is things like excluding *.cs when we're including *.txt
 
-            if (excludeSpecification.IsFullyQualified)
-            {
-                if (!Paths.IsSameOrSubdirectory(excludeSpecification.FixedPath, startDirectory, ignoreCase))
+                // Check to see if the filenames are exclusive
+                if (!MSBuildFileNamePattern.RequiresPolicy(includeSpecification.FileName, matchType)
+                    && !MSBuildFileNamePattern.RequiresPolicy(excludeSpecification.FileName, matchType)
+                    && Paths.AreExpressionsExclusive(
+                        includeSpecification.FileName,
+                        excludeSpecification.FileName,
+                        matchType,
+                        MatchCasing.CaseInsensitive))
                 {
-                    // Not part of the include path, ignore it.
+                    // The filenames cannot possibly match the same names, ignore it.
                     continue;
                 }
-            }
-            else if (!excludeSpecification.IsNestedRelative)
-            {
-                // Not fully qualified and it can escape the root, ignore it.
-                continue;
+
+                if (excludeSpecification.IsFullyQualified)
+                {
+                    if (!Paths.IsSameOrSubdirectory(startDirectory, excludeSpecification.FixedPath, ignoreCase)
+                        && !Paths.IsSameOrSubdirectory(excludeSpecification.FixedPath, startDirectory, ignoreCase))
+                    {
+                        // Not part of the include path, ignore it.
+                        continue;
+                    }
+                }
+                else if (!excludeSpecification.IsNestedRelative)
+                {
+                    // Not fully qualified and it can escape the root, ignore it.
+                    continue;
+                }
+
+                MSBuildSpecification qualifiedExclude = excludeSpecification.FullyQualify(rootDirectory);
+                StringSegment matchStartPath = Paths.IsSameOrSubdirectory(
+                    qualifiedExclude.FixedPath,
+                    startDirectory,
+                    ignoreCase)
+                        ? startDirectory
+                        : qualifiedExclude.FixedPath;
+
+                matchSet.AddExclude(!excludeSpecification.IsSimpleRecursiveMatch
+                    ? TryGetAnyDirectoryExpression(excludeSpecification, out StringSegment directoryExpression)
+                        ? new MatchMSBuildSubtree(
+                            rootPath: qualifiedExclude.FixedPath,
+                            matchStartPath: matchStartPath,
+                            directoryPattern: directoryExpression,
+                            matchType: MatchType.Simple,
+                            matchCasing: matchCasing)
+                        // More complicated case, need to build a full MSBuild matcher.
+                        : new MatchMSBuild(
+                            qualifiedExclude,
+                            matchType: matchType,
+                            matchCasing: matchCasing,
+                            forceLogicalSemantics: true)
+                    // The simplest wild match there is, namely something like `**\*.cs`
+                    : excludeSpecification.FileName != "*" && excludeSpecification.FileName != "*.*"
+                        ? new MSBuildMatchAnyFile(
+                            expression: excludeSpecification.FileName,
+                            rootPath: qualifiedExclude.FixedPath,
+                            matchType: MatchType.Simple,
+                            matchCasing: MatchCasing.CaseInsensitive,
+                            rootMatchCasing: matchCasing,
+                            useMSBuildFileNameSemantics: false)
+                        // Just skip the entire directory, all files will match.
+                        : new MatchMSBuildSubtree(
+                            rootPath: qualifiedExclude.FixedPath,
+                            matchCasing: matchCasing));
             }
 
-            var qualifiedExclude = excludeSpecification.FullyQualify(rootDirectory);
+            return new(matchSet, startDirectory);
+        }
+        catch
+        {
+            matchSet.Dispose();
+            throw;
+        }
+    }
 
-            matchSet.AddExclude(!excludeSpecification.IsSimpleRecursiveMatch
-                // More complicated case, need to build a full MSBuild matcher.
-                ? new MatchMSBuild(
-                    qualifiedExclude,
-                    matchType: matchType,
-                    matchCasing: matchCasing)
-                // The simplest wild match there is, namely something like `**\*.cs`
-                : excludeSpecification.FileName != "*"
-                    ? new MatchAnyFile(
-                        expression: excludeSpecification.FileName,
-                        rootPath: qualifiedExclude.FixedPath,
-                        matchType: matchType,
-                        matchCasing: matchCasing)
-                    // Just skip the entire directory, all files will match.
-                    : new MatchAnyDirectory(
-                        expression: excludeSpecification.FileName,
-                        rootPath: qualifiedExclude.FixedPath,
-                        matchType: matchType,
-                        matchCasing: matchCasing));
+    private static bool TryGetAnyDirectoryExpression(
+        MSBuildSpecification specification,
+        out StringSegment expression)
+    {
+        StringSegment wildPath = specification.WildPath;
+        char separator = Path.DirectorySeparatorChar;
+        if (specification.FileName != "*"
+            || wildPath.Length < 7
+            || wildPath[0] != '*'
+            || wildPath[1] != '*'
+            || wildPath[2] != separator
+            || wildPath[^3] != separator
+            || wildPath[^2] != '*'
+            || wildPath[^1] != '*')
+        {
+            expression = default;
+            return false;
         }
 
-        return matchSet;
+        expression = wildPath[3..^3];
+        return !expression.IsEmpty && expression.IndexOf(separator) < 0;
     }
 }

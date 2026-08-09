@@ -4,12 +4,7 @@
 
 using Touki.Io;
 using Touki.Io.Globbing;
-
-#if NETFRAMEWORK
-using Microsoft.IO.Enumeration;
-#else
-using System.IO.Enumeration;
-#endif
+using Touki.Text;
 
 using File = System.IO.File;
 using Path = System.IO.Path;
@@ -24,7 +19,7 @@ namespace touki.perf;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   <b>Baseline:</b> a <see cref="MatchSet"/> with one <see cref="GlobMatch"/>
+///   <b>Baseline:</b> immutable matcher composition with one compiled glob
 ///   include per extension. Each include compiles to the
 ///   <see cref="GlobStarFileNameStrategy"/> specialization (cheap per-file
 ///   suffix match). At enumeration time the walker queries every file against
@@ -49,7 +44,7 @@ namespace touki.perf;
 ///  </para>
 ///  <para>
 ///   <b>Sweep:</b> <see cref="PatternCount"/> runs through
-///   <c>{ 1, 2, 4, 8 }</c>. The MatchSet path scales linearly in
+///   <c>{ 1, 2, 4, 8 }</c>. The composed path scales linearly in
 ///   <see cref="PatternCount"/> on per-file matching and allocation; the
 ///   extglob path stays at one compiled specification regardless of N.
 ///  </para>
@@ -96,51 +91,55 @@ public class GlobEnumerateExtGlobPerf
             "Could not locate touki.slnx walking up from " + AppContext.BaseDirectory);
 
         _patterns = new string[PatternCount];
-        System.Text.StringBuilder sb = new();
-        sb.Append("**/@(");
+        using ValueStringBuilder builder = new(stackalloc char[256]);
+        builder.Append("**/@(");
         for (int i = 0; i < PatternCount; i++)
         {
             _patterns[i] = "**/*." + s_extensions[i];
             if (i > 0)
             {
-                sb.Append('|');
+                builder.Append('|');
             }
 
-            sb.Append("*.");
-            sb.Append(s_extensions[i]);
+            builder.Append("*.");
+            builder.Append(s_extensions[i]);
         }
 
-        sb.Append(')');
-        _extGlobPattern = sb.ToString();
+        builder.Append(')');
+        _extGlobPattern = builder.ToString();
     }
 
     /// <summary>
-    ///  N-include <see cref="MatchSet"/>, one <see cref="GlobMatch"/> per
-    ///  extension.
+    ///  Immutable composition with one compiled include per extension.
     /// </summary>
     [Benchmark(Baseline = true)]
-    public int MatchSet_NIncludes()
+    public int ImmutableComposition_NIncludes()
     {
-        GlobMatch first = GlobSpecification
-            .Compile(_patterns[0], GlobDialect.Bash, GlobOptions.AllowGlobStar)
-            .CreateMatcher(_directory);
-        using MatchSet matchSet = new(first);
-        for (int i = 1; i < _patterns.Length; i++)
+        IFileSystemMatcher[] includes = new IFileSystemMatcher[_patterns.Length];
+        try
         {
-            GlobMatch extra = GlobSpecification
-                .Compile(_patterns[i], GlobDialect.Bash, GlobOptions.AllowGlobStar)
-                .CreateMatcher(_directory);
-            matchSet.AddInclude(extra);
-        }
+            for (int index = 0; index < _patterns.Length; index++)
+            {
+                includes[index] = GlobSpecification.Compile(
+                    _patterns[index],
+                    GlobDialect.Bash,
+                    GlobOptions.AllowGlobStar);
+            }
 
-        using PerfMatchEnumerator enumerator = new(_directory, matchSet, s_options);
-        int count = 0;
-        while (enumerator.MoveNext())
+            IFileSystemMatcher matcher = FileSystemMatcher.CreateExclusionWins(includes);
+            using FileSystemPathEnumerator enumerator = FileSystemPathEnumerator.Create(
+                _directory,
+                matcher,
+                s_options);
+            return Count(enumerator);
+        }
+        finally
         {
-            count++;
+            for (int index = 0; index < includes.Length; index++)
+            {
+                (includes[index] as IDisposable)?.Dispose();
+            }
         }
-
-        return count;
     }
 
     /// <summary>
@@ -149,11 +148,19 @@ public class GlobEnumerateExtGlobPerf
     [Benchmark]
     public int ExtGlob_SingleInclude()
     {
-        using GlobMatch include = GlobSpecification
-            .Compile(_extGlobPattern, GlobDialect.Bash, GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob)
-            .CreateMatcher(_directory);
+        GlobSpecification include = GlobSpecification.Compile(
+            _extGlobPattern,
+            GlobDialect.Bash,
+            GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
+        using FileSystemPathEnumerator enumerator = FileSystemPathEnumerator.Create(
+            _directory,
+            include.CreateFileSystemMatcher(),
+            s_options);
+        return Count(enumerator);
+    }
 
-        using PerfMatchEnumerator enumerator = new(_directory, include, s_options);
+    private static int Count(FileSystemPathEnumerator enumerator)
+    {
         int count = 0;
         while (enumerator.MoveNext())
         {
@@ -161,20 +168,5 @@ public class GlobEnumerateExtGlobPerf
         }
 
         return count;
-    }
-
-    /// <summary>
-    ///  Test-internal concrete <see cref="MatchEnumerator{TResult}"/> that
-    ///  yields full paths.
-    /// </summary>
-    private sealed class PerfMatchEnumerator : MatchEnumerator<string>
-    {
-        public PerfMatchEnumerator(string directory, IEnumerationMatcher matcher, EnumerationOptions options)
-            : base(directory, matcher, options)
-        {
-        }
-
-        protected override string TransformEntry(ref FileSystemEntry entry) =>
-            entry.ToFullPath();
     }
 }

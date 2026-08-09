@@ -718,11 +718,11 @@ public class MSBuildSpecificationTests
             results[0].ErrorReason.Should().NotBeNullOrEmpty();
             results[0].Specification.Should().BeNull();
 
-            results[1].IsError.Should().BeTrue();
-            results[1].Original.ToString().Should().Be("\t");
+            results[1].IsError.Should().BeFalse();
+            results[1].Specification!.Normalized.ToString().Should().Be("file.txt");
 
-            results[2].IsError.Should().BeFalse();
-            results[2].Specification!.Normalized.ToString().Should().Be("file.txt");
+            results[2].IsError.Should().BeTrue();
+            results[2].Original.ToString().Should().Be("\t");
 
             results[3].IsError.Should().BeFalse();
             results[3].Specification!.Normalized.ToString().Should().Be("*.cs");
@@ -748,6 +748,48 @@ public class MSBuildSpecificationTests
                 "file.txt",
                 "*.cs",
                 Sep("docs/**"));
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [TestMethod]
+    public void SplitWithErrors_MixedResults_PreservesSourceOrder()
+    {
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(
+            "valid.txt;bad.../*.txt;other.txt",
+            ignoreCase: false);
+
+        try
+        {
+            results.Count.Should().Be(3);
+            results[0].IsError.Should().BeFalse();
+            results[0].Original.ToString().Should().Be("valid.txt");
+            results[1].IsError.Should().BeTrue();
+            results[1].Original.ToString().Should().Be("bad.../*.txt");
+            results[2].IsError.Should().BeFalse();
+            results[2].Original.ToString().Should().Be("other.txt");
+        }
+        finally
+        {
+            results.Dispose();
+        }
+    }
+
+    [TestMethod]
+    public void SplitWithErrors_LaterRecursiveSuperset_OwnsLaterSourcePosition()
+    {
+        ListBase<MSBuildSpecificationResult> results = MSBuildSpecification.SplitWithErrors(
+            "bin/Debug/**;middle.txt;bin/Release/**;bin/**",
+            ignoreCase: false);
+
+        try
+        {
+            results.Count.Should().Be(2);
+            results[0].Original.ToString().Should().Be("middle.txt");
+            results[1].Original.ToString().Should().Be("bin/**");
         }
         finally
         {
@@ -883,11 +925,63 @@ public class MSBuildSpecificationTests
     [DataRow("foo/**/bar")]
     [DataRow("./foo/bar")]
     [DataRow("../foo/bar")]
+    [DataRow("a/../b/*.cs")]
     public void NormalizeAndValidate_LegalSpec_ReturnsNullReason(string spec)
     {
         StringSegment normalized = MSBuildSpecification.NormalizeAndValidate(spec, out string? error);
         error.Should().BeNull();
         normalized.IsEmpty.Should().BeFalse();
+    }
+
+    [TestMethod]
+    [DataRow("**/../bar/*.cs")]
+    [DataRow("a*/../b/*.cs")]
+    [DataRow(@"**\..\bar\*.cs")]
+    [DataRow(@"a*/..\b/*.cs")]
+    [DataRow("a*/name..part/*.cs")]
+    [DataRow("**/foo..bar/*.cs")]
+    public void NormalizeAndValidate_ParentAfterWildcard_ReturnsOriginalWithError(string spec)
+    {
+        StringSegment normalized = MSBuildSpecification.NormalizeAndValidate(spec, out string? error);
+
+        error.Should().NotBeNullOrEmpty();
+        normalized.ToString().Should().Be(spec);
+    }
+
+    [TestMethod]
+    public void NormalizeAndValidate_ParentBeforeWildcard_NormalizesFixedPrefix()
+    {
+        StringSegment normalized = MSBuildSpecification.NormalizeAndValidate(
+            "a/../b/*.cs",
+            out string? error);
+
+        error.Should().BeNull();
+        normalized.ToString().Should().Be(Sep("b/*.cs"));
+    }
+
+    [TestMethod]
+    public void NormalizeAndValidate_DoubleDotInFileName_RemainsLegal()
+    {
+        StringSegment normalized = MSBuildSpecification.NormalizeAndValidate(
+            "a*/name..part.cs",
+            out string? error);
+
+        error.Should().BeNull();
+        normalized.ToString().Should().Be(Sep("a*/name..part.cs"));
+    }
+
+    [TestMethod]
+    [DataRow("**/bar/..")]
+    [DataRow("**/..")]
+    [DataRow(".")]
+    [DataRow("a/..")]
+    [DataRow("a/.")]
+    public void NormalizeAndValidate_TerminalRelativeSegment_PreservesFileName(string spec)
+    {
+        StringSegment normalized = MSBuildSpecification.NormalizeAndValidate(spec, out string? error);
+
+        error.Should().BeNull();
+        normalized.ToString().Should().Be(Sep(spec));
     }
 
     [TestMethod]

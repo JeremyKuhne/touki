@@ -33,6 +33,22 @@ public class MultipleAsteriskPosixPathOracleTests
             oracle,
             because: $"GlobSpecification(PosixPath) and fnmatch(3) with FNM_PATHNAME must agree on pattern '{pattern}' vs input '{input}'");
     }
+
+    [TestMethod]
+    public void IsMatch_PosixPathDialect_StarDotStarExtensionless_AgreesWithFnmatch()
+    {
+        if (!FnmatchInterop.IsSupported)
+        {
+            Assert.Inconclusive("fnmatch(3) oracle requires Linux or macOS.");
+            return;
+        }
+
+        bool oracle = FnmatchInterop.Matches("*.*", "README", FnmatchInterop.FnmPathname);
+        GlobSpecification specification = GlobSpecification.Compile("*.*", GlobDialect.PosixPath);
+        bool actual = specification.IsMatch("README");
+
+        actual.Should().Be(oracle);
+    }
 }
 
 #endif

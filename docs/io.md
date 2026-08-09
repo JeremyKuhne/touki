@@ -40,9 +40,10 @@ using Touki.Io;
 string projectDirectory = @"C:\repos\my-project";
 
 using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(
-    fileSpec: @"src\**\*.cs",
-    excludeSpecs: @"**\obj\**;**\bin\**",
-  projectDirectory: projectDirectory);
+  new(
+    include: @"src\**\*.cs",
+    projectDirectory,
+    excludes: @"**\obj\**;**\bin\**"));
 
 while (enumerator.MoveNext())
 {
@@ -52,47 +53,57 @@ while (enumerator.MoveNext())
 
 By default, paths are returned relative to `projectDirectory` when the
 spec is not fully qualified. A null project directory produces fully qualified
-results. Casing follows the OS (case-insensitive on Windows / macOS / iOS,
-case-sensitive on Linux); pass an `EnumerationOptions` to override.
+results. Physical filesystem traversal follows platform casing (case-insensitive
+on Windows / macOS / iOS, case-sensitive on Linux); MSBuild's logical wildcard
+post-filter phases remain case-insensitive. Pass an `EnumerationOptions` to
+override the physical matching options.
 
-Use `MSBuildEnumerator.CreateResult` when the caller needs to distinguish a
-normal search from an invalid specification returned verbatim, an empty result,
-or a recursive drive/share search rejected by the default safety guard.
-[`MSBuildSearchAction`](../touki/Touki/Io/MSBuildSearchAction.cs) reports the
-outcome. Set
-[`MSBuildEnumerationOptions.AllowDriveEnumeration`](../touki/Touki/Io/MSBuildEnumerationOptions.cs)
-only when whole-drive or whole-share recursion is intentional.
-When the action is `RunSearch`, the caller owns and must dispose the result's
-`Enumerator`.
+Use `MSBuildEnumerator.CreateResult(request)` when the caller needs to distinguish a
+normal [`MSBuildSearchResult`](../touki/Touki/Io/MSBuildSearchResult.cs), an invalid
+specification returned as [`MSBuildReturnLiteralResult`](../touki/Touki/Io/MSBuildReturnLiteralResult.cs),
+an [`MSBuildEmptyResult`](../touki/Touki/Io/MSBuildEmptyResult.cs), or an
+[`MSBuildRejectedResult`](../touki/Touki/Io/MSBuildRejectedResult.cs). Set
+`MSBuildEnumerationRequest.AllowDriveEnumeration` only when whole-drive or whole-share
+recursion is intentional. The caller owns and must dispose
+`MSBuildSearchResult.Enumerator`.
+Invalid excludes do not abort a wildcard search, matching `FileMatcher`; they are
+retained as exact literal result filters in source order through
+`MSBuildSearchResult.InvalidExcludeSpecifications`.
 
-The drive/share policy check is specific to `CreateResult`. The ordinary
-`Create` overloads do not reject a recursive drive-root specification; prefer
-`CreateResult` for externally supplied specifications.
+The matcher retries repeated anchors after `**` with bounded, nonrecursive state.
+File-only excludes filter matching files without suppressing traversal, while a
+terminal `**` exclude can prune a proven complete subtree. Wildcard-relative parent
+segments are rejected before path collapsing, and error-preserving split results
+retain source order.
 
-This API targets MSBuild item semantics but intentionally differs from a few
-`FileMatcher` shortcuts and edge cases. It should not be treated as a byte-for-byte
-replacement for every internal MSBuild outcome.
+Filename enumeration follows characterized `FileMatcher` behavior, including
+extensionless DOS-dot patterns (`*.*`, `name.*`, `*.`), platform casing, and MSBuild's
+logical post-filter for loose `?` / three-character-extension filesystem matches.
+This API still intentionally differs from no-wildcard literal shortcuts, process-trait
+drive handling, 8.3/lexical path identity, raw ordering, symlink traversal, and some
+I/O-failure tuple details. It should not be treated as a byte-for-byte replacement for
+every internal MSBuild outcome.
 
 ## Gitignore rules and matcher composition
 
-[`GitIgnore`](../touki/Touki/Io/GitIgnore.cs) parses `.gitignore` text with the
-`Git` glob dialect. Blank lines and comments are skipped, `!` re-includes a
-previously excluded path, and rule order is preserved. `Parse` returns an owned
-[`OrderedMatchSet`](../touki/Touki/Io/OrderedMatchSet.cs), so dispose the set when
-matching is complete.
-
-`OrderedMatchSet` uses last-matching-rule-wins semantics. Its
-`includeByDefault: true` mode models gitignore behavior; the default `false` mode
-acts as an ordered allow list. Directory-only excludes claim their subtree during
-file-system traversal, so a later file-level include below a pruned directory is
-not reached.
+[`GitIgnoreRules`](../touki/Touki/Io/GitIgnoreRules.cs) compiles `.gitignore` text into
+immutable ordered rules. `IsIgnoredFile` evaluates canonical root-relative `/` paths;
+`CreateIncludedMatcher` and `CreateIgnoredMatcher` expose definitions with explicit
+polarity for enumeration. Ancestors are evaluated before descendants, so a child
+cannot rescue itself through an ignored parent; re-including the parent reopens its
+subtree.
 
 Touki currently strips all trailing spaces and tabs from rules. Unlike Git, an
 escaped trailing space is not preserved as part of the pattern.
 
-[`MatchSet`](../touki/Touki/Io/MatchSet.cs) provides a different composition
-model: any matching exclude overrides all includes. Both set types implement
-`IEnumerationMatcher` for use with `MatchEnumerator<TResult>` or a custom walker.
+[`FileSystemMatcher`](../touki/Touki/Io/FileSystemMatcher.cs) creates callback-native
+or canonical-path definitions and immutable exclusion-wins / ordered compositions.
+Definitions are borrowed and reusable; each enumeration owns only its session. Use
+[`FileSystemPathEnumerator`](../touki/Touki/Io/FileSystemPathEnumerator.cs) for a
+ready-made canonical relative-path enumerator, or derive
+`FileSystemMatchEnumerator<TResult>` for custom results. `CreatePath` makes regex and
+other contiguous-path predicates easy to mix with compiled globs without forcing path
+construction onto callback-native matchers.
 
 ## Clipboard
 

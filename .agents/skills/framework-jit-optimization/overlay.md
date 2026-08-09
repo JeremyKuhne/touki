@@ -76,8 +76,7 @@ applies them.
   [touki.perf/ReplaceUnsafeAsPerf.cs](../../../touki.perf/ReplaceUnsafeAsPerf.cs).
 - **BCL-first on `net10`** ([modern-net.md](modern-net.md)) - the `SearchValues<char>`
   class-membership matcher is tracked in
-  [docs/dotnet-perf-discoveries.md](../../../docs/dotnet-perf-discoveries.md) and the
-  [globbing feature plan](../../../docs/globbing-feature-plan.md).
+  [docs/dotnet-perf-discoveries.md](../../../docs/dotnet-perf-discoveries.md).
 
 ## The span field manual and the touki worked example
 

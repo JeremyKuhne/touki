@@ -40,6 +40,9 @@ internal sealed partial class CompiledGlobStrategy
         private readonly ReadOnlySpan<char> _program;
         private readonly char _separator;
         private readonly IgnoreCaseKind _kind;
+        private readonly bool _useMSBuildTrailingDotAny;
+        private readonly bool _useMSBuildAllDotInput;
+        private readonly EffectiveDoubleStarMode _effectiveDoubleStarMode;
         private readonly int _totalLength;
         private readonly int _firstLength;
         private readonly bool _directoryMode;
@@ -61,6 +64,7 @@ internal sealed partial class CompiledGlobStrategy
         public int WorkCount;
         public int Head;
         public int WorkInput;
+        public bool WorkSawEffectiveDoubleStar;
 
         // Directory-mode output: set when the accepting state in directory mode was
         // also a complete match of the candidate (program fully consumed), so the
@@ -78,6 +82,9 @@ internal sealed partial class CompiledGlobStrategy
             _program = inputs.Program;
             _separator = inputs.Separator;
             _kind = inputs.Kind;
+            _useMSBuildTrailingDotAny = inputs.UseMSBuildTrailingDotAny;
+            _useMSBuildAllDotInput = inputs.UseMSBuildAllDotInput;
+            _effectiveDoubleStarMode = inputs.EffectiveDoubleStarMode;
             _totalLength = totalLength;
             _firstLength = inputs.First.Length;
             _directoryMode = directoryMode;
@@ -93,6 +100,7 @@ internal sealed partial class CompiledGlobStrategy
             WorkCount = 0;
             Head = 0;
             WorkInput = 0;
+            WorkSawEffectiveDoubleStar = false;
             DirectoryFullMatch = false;
         }
 
@@ -158,7 +166,11 @@ internal sealed partial class CompiledGlobStrategy
                         if (Head == WorkCount)
                         {
                             terminal = true;
-                            accepted = WorkInput == _totalLength;
+                            accepted = WorkInput == _totalLength
+                                && (_effectiveDoubleStarMode != EffectiveDoubleStarMode.RequireAbsent
+                                    || !WorkSawEffectiveDoubleStar)
+                                && (_effectiveDoubleStarMode != EffectiveDoubleStarMode.RequirePresent
+                                    || WorkSawEffectiveDoubleStar);
                             break;
                         }
 
@@ -172,6 +184,11 @@ internal sealed partial class CompiledGlobStrategy
 
                         int programIndex = head.Start;
                         char opcode = _program[programIndex];
+
+                        if (opcode == GlobOpCodes.Never)
+                        {
+                            break;
+                        }
 
                         if (opcode == GlobOpCodes.AltStart
                             && head.KindOverride != '\0'
@@ -190,7 +207,9 @@ internal sealed partial class CompiledGlobStrategy
                         if (opcode == GlobOpCodes.Literal)
                         {
                             int literalLength = _program[programIndex + 1];
-                            if (WorkInput + literalLength > _totalLength
+                            if (_useMSBuildAllDotInput
+                                && WorkInput + literalLength > _firstLength
+                                || WorkInput + literalLength > _totalLength
                                 || !LiteralMatchesAt(_first, _second, WorkInput, _program.Slice(programIndex + 2, literalLength), _kind))
                             {
                                 break;
@@ -203,32 +222,37 @@ internal sealed partial class CompiledGlobStrategy
 
                         if (opcode == GlobOpCodes.Any)
                         {
-                            if (WorkInput >= _totalLength)
+                            int width = _useMSBuildTrailingDotAny && WorkInput >= _firstLength ? 2 : 1;
+                            if (_useMSBuildAllDotInput && WorkInput + width > _firstLength
+                                || WorkInput + width > _totalLength)
                             {
                                 break;
                             }
 
                             char inputChar = CharAt(_first, _second, _firstLength, WorkInput);
-                            if (_separator != '\0' && inputChar == _separator)
+                            char separator = GetSeparator(WorkInput);
+                            if (separator != '\0' && inputChar == separator)
                             {
                                 break;
                             }
 
                             head.Start = programIndex + 1;
-                            WorkInput++;
+                            WorkInput += width;
                             continue;
                         }
 
                         if (opcode is GlobOpCodes.Class or GlobOpCodes.NegClass)
                         {
                             int classLength = _program[programIndex + 1];
-                            if (WorkInput >= _totalLength)
+                            if (_useMSBuildAllDotInput && WorkInput >= _firstLength
+                                || WorkInput >= _totalLength)
                             {
                                 break;
                             }
 
                             char inputChar = CharAt(_first, _second, _firstLength, WorkInput);
-                            if (_separator != '\0' && inputChar == _separator)
+                            char separator = GetSeparator(WorkInput);
+                            if (separator != '\0' && inputChar == separator)
                             {
                                 break;
                             }
@@ -284,7 +308,7 @@ internal sealed partial class CompiledGlobStrategy
                     // Resolve the frame kind and any push-time scratch.
                     char frameKind;
                     int auxValue = 0;
-                    if (choiceOp == GlobOpCodes.AnyRun)
+                    if (choiceOp is GlobOpCodes.AnyRun or GlobOpCodes.EffectiveDoubleStarRun)
                     {
                         frameKind = choiceOp;
 
@@ -317,7 +341,13 @@ internal sealed partial class CompiledGlobStrategy
                             state.Engage();
                         }
 
-                        int keyLength = SerializeState(_work[Head..WorkCount], WorkInput, _totalLength, _key);
+                        int keyLength = SerializeState(
+                            _work[Head..WorkCount],
+                            WorkInput,
+                            _totalLength,
+                            WorkSawEffectiveDoubleStar,
+                            _effectiveDoubleStarMode,
+                            _key);
                         if (state.IsKnownFailure(_key[..keyLength]))
                         {
                             forward = false;
@@ -336,6 +366,7 @@ internal sealed partial class CompiledGlobStrategy
                         Kind = frameKind,
                         ProgramIndex = choiceProgramIndex,
                         SavedInput = WorkInput,
+                        SavedEffectiveDoubleStar = WorkSawEffectiveDoubleStar,
                         SnapshotOffset = _arenaTop,
                         SnapshotCount = snapshotCount,
                         Cursor = 0,
@@ -490,52 +521,76 @@ internal sealed partial class CompiledGlobStrategy
         // it rather than by the raw span lengths.
         private readonly int IndexOfSeparator(int start)
         {
-            int total = _totalLength;
-            char separator = _separator;
-
-            if (start < _firstLength)
+            if (!_useMSBuildTrailingDotAny)
             {
-                int firstEnd = Math.Min(_firstLength, total);
-                if (start < firstEnd)
+                int total = _totalLength;
+                char separator = _separator;
+
+                if (start < _firstLength)
                 {
-                    int relative = _first[start..firstEnd].IndexOf(separator);
-                    if (relative >= 0)
+                    int firstEnd = Math.Min(_firstLength, total);
+                    if (start < firstEnd)
                     {
-                        return start + relative;
+                        int relative = _first[start..firstEnd].IndexOf(separator);
+                        if (relative >= 0)
+                        {
+                            return start + relative;
+                        }
                     }
+
+                    if (total > _firstLength)
+                    {
+                        int found = _second[..(total - _firstLength)].IndexOf(separator);
+                        if (found >= 0)
+                        {
+                            return _firstLength + found;
+                        }
+                    }
+
+                    return total;
                 }
 
-                if (total > _firstLength)
+                int secondCount = total - start;
+                if (secondCount > 0)
                 {
-                    int found = _second[..(total - _firstLength)].IndexOf(separator);
+                    int found = _second.Slice(start - _firstLength, secondCount).IndexOf(separator);
                     if (found >= 0)
                     {
-                        return _firstLength + found;
+                        return start + found;
                     }
                 }
 
                 return total;
             }
 
-            int secondCount = total - start;
-            if (secondCount > 0)
+            for (int index = start; index < _totalLength; index++)
             {
-                int found = _second.Slice(start - _firstLength, secondCount).IndexOf(separator);
-                if (found >= 0)
+                char separator = GetSeparator(index);
+                if (separator != '\0'
+                    && CharAt(_first, _second, _firstLength, index) == separator)
                 {
-                    return start + found;
+                    return index;
                 }
             }
 
-            return total;
+            return _totalLength;
         }
+
+        private readonly char GetSeparator(int inputIndex) =>
+            _useMSBuildTrailingDotAny && inputIndex >= _firstLength ? '.' : _separator;
 
         // Records the choice configuration captured by the given frame as a
         // proven failure.
         private readonly void RecordFrameFailure(int frameIdx, ref ExtGlobMatchState state)
         {
             ReadOnlySpan<ProgramRange> snapshot = _arena.Slice(_frames[frameIdx].SnapshotOffset, _frames[frameIdx].SnapshotCount);
-            int keyLength = SerializeState(snapshot, _frames[frameIdx].SavedInput, _totalLength, _key);
+            int keyLength = SerializeState(
+                snapshot,
+                _frames[frameIdx].SavedInput,
+                _totalLength,
+                _frames[frameIdx].SavedEffectiveDoubleStar,
+                _effectiveDoubleStarMode,
+                _key);
             state.RecordFailure(_key[..keyLength]);
         }
 
@@ -555,7 +610,7 @@ internal sealed partial class CompiledGlobStrategy
             int programIndex = frame.ProgramIndex;
             ReadOnlySpan<ProgramRange> snap = _arena.Slice(snapOffset, snapCount);
 
-            if (k == GlobOpCodes.AnyRun)
+            if (k is GlobOpCodes.AnyRun or GlobOpCodes.EffectiveDoubleStarRun)
             {
                 // Alternatives are consumed lengths 0, 1, ... up to the cached
                 // separator-bounded limit.
@@ -571,9 +626,13 @@ internal sealed partial class CompiledGlobStrategy
                 Head = 0;
                 _work[0].Start = programIndex + 1;
                 WorkInput = savedInput + consumed;
+                WorkSawEffectiveDoubleStar = frame.SavedEffectiveDoubleStar
+                    || k == GlobOpCodes.EffectiveDoubleStarRun;
                 frame.Cursor = consumed + 1;
                 return true;
             }
+
+            WorkSawEffectiveDoubleStar = frame.SavedEffectiveDoubleStar;
 
             if (k == GlobOpCodes.GlobStar)
             {
@@ -757,12 +816,14 @@ internal sealed partial class CompiledGlobStrategy
                     // Negation accepts the first candidate length L for which no
                     // alternative matches exactly L characters; the continuation
                     // (rest at savedInput + L) is the produced alternative.
-                    int maxL = _totalLength - savedInput;
-                    if (_separator != '\0')
+                    int maxL = _useMSBuildAllDotInput
+                        ? Math.Max(0, _firstLength - savedInput)
+                        : _totalLength - savedInput;
+                    if (_separator != '\0' || _useMSBuildTrailingDotAny)
                     {
                         for (int j = savedInput; j < _totalLength; j++)
                         {
-                            if (CharAt(_first, _second, _firstLength, j) == _separator)
+                            if (CharAt(_first, _second, _firstLength, j) == GetSeparator(j))
                             {
                                 maxL = j - savedInput;
                                 break;
@@ -821,7 +882,9 @@ internal sealed partial class CompiledGlobStrategy
                             if (IsSingleLiteralAlternative(_program, altBodyStart, altBodyEnd))
                             {
                                 int litLen = _program[altBodyStart + 1];
-                                if (litLen == candidate
+                                if ((!_useMSBuildAllDotInput
+                                    || savedInput + litLen <= _firstLength)
+                                    && litLen == candidate
                                     && LiteralMatchesAt(_first, _second, savedInput, _program.Slice(altBodyStart + 2, litLen), _kind))
                                 {
                                     anyAltMatches = true;
@@ -857,7 +920,15 @@ internal sealed partial class CompiledGlobStrategy
                                     probeWorkScope.AsSpan()[..MaxRangesDepth],
                                     probeRestScope.AsSpan()[..MaxRangesDepth],
                                     probeKeyScope.AsSpan()[..keyLength]);
-                                probeInputs = new(_first, _second, _program, _separator, _kind);
+                                probeInputs = new(
+                                    _first,
+                                    _second,
+                                    _program,
+                                    _separator,
+                                    _kind,
+                                    _useMSBuildTrailingDotAny,
+                                    _useMSBuildAllDotInput,
+                                    EffectiveDoubleStarMode.Ignore);
                                 probeReady = true;
                             }
 
@@ -870,6 +941,7 @@ internal sealed partial class CompiledGlobStrategy
                                 altRange,
                                 savedInput,
                                 savedInput + candidate,
+                                frame.SavedEffectiveDoubleStar,
                                 in probeScratch,
                                 ref state))
                             {

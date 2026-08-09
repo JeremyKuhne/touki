@@ -71,6 +71,22 @@ public class MatchMSBuildTests
             "**/src/**/*.cs",
             ["src/tests/tracing/runtimeeventsource/NativeRuntimeEventSourceTest.cs"],
             ["src/tests/tracing/runtimeeventsource/NativeRuntimeEventSourceTest.cs"]);
+        yield return (
+            "**/a/b/*.cs",
+            ["a/a/b/source.cs", "a/b/source.cs", "a/a/b/source.txt"],
+            ["a/a/b/source.cs", "a/b/source.cs"]);
+        yield return (
+            "**/a/a/*.cs",
+            ["a/a/source.cs", "a/a/a/source.cs", "a/b/a/source.cs"],
+            ["a/a/source.cs", "a/a/a/source.cs"]);
+        yield return (
+            "**/a/**/a/*.cs",
+            ["a/a/zero.cs", "a/x/a/one.cs", "x/a/x/y/a/many.cs", "a/x/b/no.cs"],
+            ["a/a/zero.cs", "a/x/a/one.cs", "x/a/x/y/a/many.cs"]);
+        yield return (
+            "**/**/a/*.cs",
+            ["a/zero.cs", "x/a/one.cs", "other/b/no.cs"],
+            ["a/zero.cs", "x/a/one.cs"]);
     }
 
     [TestMethod]
@@ -83,20 +99,59 @@ public class MatchMSBuildTests
     }
 
     [TestMethod]
-    [DataRow("C:/temp/*.txt", "C:/temp", MatchType.Simple, MatchCasing.CaseInsensitive)]
-    [DataRow("C:/projects/**/*.cs", "C:/projects", MatchType.Simple, MatchCasing.CaseSensitive)]
-    [DataRow("C:/src/test/**/bin/*.dll", "C:/src/test", MatchType.Win32, MatchCasing.CaseInsensitive)]
-    public void Constructor_InitializesCorrectFields(string fullPathSpec, string startDirectory, MatchType matchType, MatchCasing matchCasing)
+    public void MatchesFile_LongRepeatedAnchorPath_MatchesWithoutRecursion()
+    {
+        string root = Path.Join(Path.GetTempPath(), "LongRepeatedAnchorTests");
+        string repeated = string.Join(
+            Path.DirectorySeparatorChar.ToString(),
+            Enumerable.Repeat("a", 2048));
+        string currentDirectory = Path.Join(root, repeated, "a", "b");
+
+        using MatchMSBuild match = CreateSpec("**/a/b/*.cs", root);
+
+        match.MatchesFile(currentDirectory, "source.cs").Should().BeTrue();
+    }
+
+    [TestMethod]
+    public void MatchesDirectory_FilePattern_ReturnsMayContainMatchingFiles()
+    {
+        string root = Path.Join(Path.GetTempPath(), "FileExcludeDirectoryTests");
+        using MatchMSBuild match = CreateSpec("**/obj/*.txt", root);
+        DirectoryMatchType result = match.MatchesDirectory(root, "obj");
+
+        result.Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+    }
+
+    [TestMethod]
+    public void MatchesDirectory_TerminalGlobstar_ReturnsAllDescendantFilesMatch()
+    {
+        string root = Path.Join(Path.GetTempPath(), "SubtreeExcludeDirectoryTests");
+        using MatchMSBuild match = CreateSpec("**/obj/**", root);
+        DirectoryMatchType result = match.MatchesDirectory(root, "obj");
+
+        result.Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+    }
+
+    [TestMethod]
+    [DataRow("C:/temp/*.txt", "C:/temp", MatchType.Simple, MatchCasing.CaseInsensitive, MatchType.Simple)]
+    [DataRow("C:/projects/**/*.cs", "C:/projects", MatchType.Simple, MatchCasing.CaseSensitive, MatchType.Simple)]
+    [DataRow("C:/src/test/**/bin/*.dll", "C:/src/test", MatchType.Win32, MatchCasing.CaseInsensitive, MatchType.Simple)]
+    public void Constructor_InitializesCorrectFields(
+        string fullPathSpec,
+        string startDirectory,
+        MatchType matchType,
+        MatchCasing matchCasing,
+        MatchType expectedDirectoryMatchType)
     {
         // Create the spec with the provided parameters
         MSBuildSpecification specification = new(fullPathSpec.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
-        MatchMSBuild match = new(specification, matchType, matchCasing);
+        using MatchMSBuild match = new(specification, matchType, matchCasing);
 
         // Access internal state through TestAccessor
         dynamic accessor = match.TestAccessor.Dynamic;
 
         // Verify the internal state
-        ((MatchType)accessor._matchType).Should().Be(matchType);
+        ((MatchType)accessor._directoryMatchType).Should().Be(expectedDirectoryMatchType);
         ((MatchCasing)accessor._matchCasing).Should().Be(matchCasing);
         ((int)accessor._startDirectoryLength).Should().Be(startDirectory.Length);
     }
@@ -134,7 +189,7 @@ public class MatchMSBuildTests
         accessor._cachedFullyMatches = true;
 
         // Invalidate the cache
-        match.DirectoryFinished();
+        match.DirectoryFinished("C:/temp");
 
         // Verify cache is invalidated
         ((bool)accessor._cacheValid).Should().BeFalse();

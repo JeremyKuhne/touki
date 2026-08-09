@@ -68,6 +68,7 @@ public static class FileMatcherWrapper
     // Cache the reflected members for performance
     private static readonly FieldInfo s_defaultFieldInfo;
     private static readonly MethodInfo s_getFilesMethodInfo;
+    private static readonly MethodInfo s_isMatchMethodInfo;
     private static readonly object s_defaultInstance;
 
     // Used to build a FileMatcher over an injected file system.
@@ -126,6 +127,15 @@ public static class FileMatcherWrapper
                 null)
                 ?? throw new InvalidOperationException(
                     "Could not find GetFiles(string, string, List<string>) method on FileMatcher");
+
+            s_isMatchMethodInfo = fileMatcherType.GetMethod(
+                "IsMatch",
+                BindingFlags.NonPublic | BindingFlags.Static,
+                null,
+                [typeof(string), typeof(string)],
+                null)
+                ?? throw new InvalidOperationException(
+                    "Could not find IsMatch(string, string) method on FileMatcher");
 
             // Cache the return type information
             s_returnTupleType = s_getFilesMethodInfo.ReturnType;
@@ -240,6 +250,16 @@ public static class FileMatcherWrapper
         GetFiles(directoryPath, filespec, excludeSpecs).FileList;
 
     /// <summary>
+    ///  Invokes MSBuild's internal in-memory filename matcher.
+    /// </summary>
+    public static bool IsMatch(string input, string pattern)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(pattern);
+        return (bool)s_isMatchMethodInfo.Invoke(null, [input, pattern])!;
+    }
+
+    /// <summary>
     ///  Simplified version that returns just the file list, using an injected file system.
     /// </summary>
     /// <inheritdoc cref="GetFiles(string, string, List{string}?, MSBuildFileSystemBase)"/>
@@ -253,5 +273,8 @@ public static class FileMatcherWrapper
     /// <summary>
     ///  Checks if FileMatcher reflection initialization was successful.
     /// </summary>
-    public static bool IsAvailable => s_getFilesMethodInfo is not null && s_defaultInstance is not null;
+    public static bool IsAvailable =>
+        s_getFilesMethodInfo is not null
+        && s_isMatchMethodInfo is not null
+        && s_defaultInstance is not null;
 }

@@ -5,9 +5,9 @@
 namespace Touki.Io;
 
 /// <summary>
-///  Replays a <see cref="RecordedFileSystem"/> through an <see cref="IEnumerationMatcher"/>,
+///  Replays a <see cref="RecordedFileSystem"/> through an <see cref="IFileSystemMatcherSession"/>,
 ///  mirroring the breadth-first scheduling and callback order of a real
-///  <see cref="FileSystemEnumerator{TResult}"/> driven by a <see cref="MatchEnumerator{TResult}"/>,
+///  <see cref="FileSystemEnumerator{TResult}"/> driven by a matcher session,
 ///  but without any file system interaction.
 /// </summary>
 /// <remarks>
@@ -15,9 +15,9 @@ namespace Touki.Io;
 ///   This makes it possible to test and performance-evaluate the matching engine over large data
 ///   sets captured by <see cref="DirectoryEnumerationRecorder"/> deterministically and without I/O.
 ///   For each directory the matcher receives the same calls a real enumeration would produce:
-///   <see cref="IEnumerationMatcher.MatchesDirectory"/> (recursion decision) and
-///   <see cref="IEnumerationMatcher.MatchesFile"/> (inclusion decision) per entry, followed by a
-///   single <see cref="IEnumerationMatcher.DirectoryFinished"/> when the directory is exhausted.
+///   <see cref="IFileSystemMatcherSession.MatchesDirectory"/> (recursion decision) and
+///   <see cref="IFileSystemMatcherSession.MatchesFile"/> (inclusion decision) per file, followed by a
+///   single <see cref="IFileSystemMatcherSession.DirectoryFinished"/> when the directory is exhausted.
 ///  </para>
 ///  <para>
 ///   Results are returned as relative paths in the same shape as
@@ -27,9 +27,8 @@ namespace Touki.Io;
 public sealed class RecordedDirectoryEnumerator : IDisposable
 {
     private readonly RecordedFileSystem _fileSystem;
-    private readonly IEnumerationMatcher _matcher;
+    private readonly IFileSystemMatcherSession _matcher;
     private readonly bool _recurseSubdirectories;
-    private readonly bool _excludeDirectories;
     private readonly bool _stripRootDirectory;
     private readonly string _rootDirectory;
     private readonly int _rootDirectoryLength;
@@ -54,21 +53,15 @@ public sealed class RecordedDirectoryEnumerator : IDisposable
     /// <param name="recurseSubdirectories">
     ///  When <see langword="true"/> (default), subdirectories the matcher accepts are recursed into.
     /// </param>
-    /// <param name="excludeDirectories">
-    ///  When <see langword="true"/>, directory entries are never returned as results (MSBuild
-    ///  semantics). When <see langword="false"/> (default), directory entries can be returned when
-    ///  the matcher includes them (plain <see cref="MatchEnumerator{TResult}"/> semantics).
-    /// </param>
     /// <param name="stripRootDirectory">
     ///  When <see langword="true"/> (default), results are returned relative to
     ///  <paramref name="rootDirectory"/>.
     /// </param>
     public RecordedDirectoryEnumerator(
         RecordedFileSystem fileSystem,
-        IEnumerationMatcher matcher,
+        IFileSystemMatcherSession matcher,
         string? rootDirectory = null,
         bool recurseSubdirectories = true,
-        bool excludeDirectories = false,
         bool stripRootDirectory = true)
     {
         ArgumentNullException.ThrowIfNull(fileSystem);
@@ -77,7 +70,6 @@ public sealed class RecordedDirectoryEnumerator : IDisposable
         _fileSystem = fileSystem;
         _matcher = matcher;
         _recurseSubdirectories = recurseSubdirectories;
-        _excludeDirectories = excludeDirectories;
         _stripRootDirectory = stripRootDirectory;
 
         _rootDirectory = RecordedFileSystem.Normalize(
@@ -121,16 +113,12 @@ public sealed class RecordedDirectoryEnumerator : IDisposable
                 if (entry.IsDirectory)
                 {
                     if (_recurseSubdirectories
-                        && _matcher.MatchesDirectory(_currentDirectory, entry.Name, matchForExclusion: false))
+                        && _matcher.MatchesDirectory(_currentDirectory, entry.Name)
+                            != DirectoryMatchType.NoDescendantFilesMatch)
                     {
                         _pending.Enqueue(Combine(_currentDirectory, entry.Name));
                     }
 
-                    if (!_excludeDirectories && _matcher.MatchesFile(_currentDirectory, entry.Name))
-                    {
-                        _current = TransformEntry(_currentDirectory, entry.Name);
-                        return true;
-                    }
                 }
                 else if (_matcher.MatchesFile(_currentDirectory, entry.Name))
                 {
@@ -139,7 +127,7 @@ public sealed class RecordedDirectoryEnumerator : IDisposable
                 }
             }
 
-            _matcher.DirectoryFinished();
+            _matcher.DirectoryFinished(_currentDirectory);
             _scanning = false;
         }
     }

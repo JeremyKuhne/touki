@@ -25,6 +25,9 @@ internal sealed partial class CompiledGlobStrategy
         // inputIndex at the choice point; every alternative restarts from here.
         public int SavedInput;
 
+        // Whether an effective double-star marker was selected before this choice point.
+        public bool SavedEffectiveDoubleStar;
+
         // Range-snapshot location in the arena: the configuration head..count
         // captured at entry.
         public int SnapshotOffset;

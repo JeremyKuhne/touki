@@ -107,6 +107,45 @@ public static class Paths
                 || secondDirectory[firstDirectory.Length] == Path.DirectorySeparatorChar);
     }
 
+    internal static bool CandidateIsSameOrAncestorOf(
+        ReadOnlySpan<char> targetDirectory,
+        ReadOnlySpan<char> currentDirectory,
+        ReadOnlySpan<char> directoryName,
+        bool ignoreCase)
+    {
+        bool needsSeparator = !currentDirectory.IsEmpty
+            && currentDirectory[^1] != Path.DirectorySeparatorChar;
+        int candidateLength = currentDirectory.Length + directoryName.Length + (needsSeparator ? 1 : 0);
+        if (candidateLength > targetDirectory.Length)
+        {
+            return false;
+        }
+
+        StringComparison comparison = ignoreCase
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+        if (!targetDirectory.StartsWith(currentDirectory, comparison))
+        {
+            return false;
+        }
+
+        int nameOffset = currentDirectory.Length;
+        if (needsSeparator)
+        {
+            if (targetDirectory.Length <= nameOffset
+                || targetDirectory[nameOffset] != Path.DirectorySeparatorChar)
+            {
+                return false;
+            }
+
+            nameOffset++;
+        }
+
+        return targetDirectory[nameOffset..].StartsWith(directoryName, comparison)
+            && (candidateLength == targetDirectory.Length
+                || targetDirectory[candidateLength] == Path.DirectorySeparatorChar);
+    }
+
     /// <inheritdoc cref="RemoveRelativeSegments(ReadOnlySpan{char}, ref ValueStringBuilder)"/>
     public static StringSegment RemoveRelativeSegments(StringSegment path)
     {
@@ -275,8 +314,8 @@ public static class Paths
         int firstFirstWild = pattern1.IndexOfAny('*', '?');
 
         // Check if pattern1 is universal wildcard
-        if ((firstFirstWild == 0 && pattern1.Length == 1 && pattern1[0] == '*') ||
-            (matchType == MatchType.Win32 && pattern1 == "*.*"))
+        if ((firstFirstWild == 0 && pattern1.Length == 1 && pattern1[0] == '*')
+            || (matchType == MatchType.Win32 && pattern1 == "*.*"))
         {
             return false;
         }
@@ -285,9 +324,16 @@ public static class Paths
         int secondFirstWild = pattern2.IndexOfAny('*', '?');
 
         // Check if pattern2 is universal wildcard
-        if ((secondFirstWild == 0 && pattern2.Length == 1 && pattern2[0] == '*') ||
-            (matchType == MatchType.Win32 && pattern2 == "*.*"))
+        if ((secondFirstWild == 0 && pattern2.Length == 1 && pattern2[0] == '*')
+            || (matchType == MatchType.Win32 && pattern2 == "*.*"))
         {
+            return false;
+        }
+
+        if (matchType == MatchType.Win32)
+        {
+            // Win32 expressions can contain DOS wildcard tokens other than '*' and '?'.
+            // Literal and fixed prefix/suffix classification is therefore not safe.
             return false;
         }
 
@@ -315,9 +361,10 @@ public static class Paths
         // Check prefixes first (no additional scanning needed)
         if (firstFirstWild > 0 && secondFirstWild > 0)
         {
-            var prefix1 = pattern1[..firstFirstWild];
-            var prefix2 = pattern2[..secondFirstWild];
-            if (!prefix1.Equals(prefix2, ignoreCase))
+            int commonPrefixLength = Math.Min(firstFirstWild, secondFirstWild);
+            StringSegment firstPrefix = pattern1[..commonPrefixLength];
+            StringSegment secondPrefix = pattern2[..commonPrefixLength];
+            if (!firstPrefix.Equals(secondPrefix, ignoreCase))
             {
                 // Exclusive based on prefixes - no need to check suffixes
                 return true;
@@ -332,9 +379,12 @@ public static class Paths
         // Check suffixes if both patterns have them
         if (firstLastWild < pattern1.Length - 1 && secondLastWild < pattern2.Length - 1)
         {
-            var suffix1 = pattern1[(firstLastWild + 1)..];
-            var suffix2 = pattern2[(secondLastWild + 1)..];
-            if (!suffix1.Equals(suffix2, ignoreCase))
+            int firstSuffixLength = pattern1.Length - firstLastWild - 1;
+            int secondSuffixLength = pattern2.Length - secondLastWild - 1;
+            int commonSuffixLength = Math.Min(firstSuffixLength, secondSuffixLength);
+            StringSegment firstSuffix = pattern1[(pattern1.Length - commonSuffixLength)..];
+            StringSegment secondSuffix = pattern2[(pattern2.Length - commonSuffixLength)..];
+            if (!firstSuffix.Equals(secondSuffix, ignoreCase))
             {
                 return true;
             }

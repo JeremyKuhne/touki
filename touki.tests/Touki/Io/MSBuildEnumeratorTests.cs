@@ -9,6 +9,75 @@ public class MSBuildEnumeratorTests
 {
     private static readonly string s_projectRoot = Path.GetFullPath(Path.Join(Environment.CurrentDirectory, "../../../../.."));
 
+    private static MSBuildEnumerator CreateEnumerator(
+        string fileSpec,
+        string? projectDirectory,
+        EnumerationOptions? options = null) =>
+        MSBuildEnumerator.Create(new(fileSpec, projectDirectory, enumerationOptions: options));
+
+    private static MSBuildEnumerator CreateEnumerator(
+        string fileSpec,
+        string excludeSpecs,
+        string? projectDirectory,
+        EnumerationOptions? options = null) =>
+        MSBuildEnumerator.Create(new(fileSpec, projectDirectory, excludeSpecs, options));
+
+    [TestMethod]
+    public void Create_ParentAfterWildcard_ThrowsArgumentException()
+    {
+        using TempFolder tempFolder = new();
+        MSBuildEnumerator? enumerator = null;
+        try
+        {
+            Action action = () => enumerator = CreateEnumerator(
+                "a*/../bar/*.cs",
+                tempFolder);
+
+            action.Should().Throw<ArgumentException>().WithParameterName("request");
+        }
+        finally
+        {
+            enumerator?.Dispose();
+        }
+    }
+
+    [TestMethod]
+    public void CreateWithExcludes_ParentAfterWildcard_ThrowsArgumentException()
+    {
+        using TempFolder tempFolder = new();
+        MSBuildEnumerator? enumerator = null;
+        try
+        {
+            Action action = () => enumerator = CreateEnumerator(
+                "a*/../bar/*.cs",
+                "**/obj/**",
+                tempFolder);
+
+            action.Should().Throw<ArgumentException>().WithParameterName("request");
+        }
+        finally
+        {
+            enumerator?.Dispose();
+        }
+    }
+
+    [TestMethod]
+    public void MatchesResultPath_RootedAndRelativePaths_HandleSeparators()
+    {
+        MSBuildEnumerator.MatchesResultPath(
+            Path.GetPathRoot(Environment.CurrentDirectory),
+            "bad...txt",
+            Path.Join(Path.GetPathRoot(Environment.CurrentDirectory), "bad...txt")).Should().BeTrue();
+        MSBuildEnumerator.MatchesResultPath(
+            "src",
+            "bad...txt",
+            Path.Join("src", "bad...txt")).Should().BeTrue();
+        MSBuildEnumerator.MatchesResultPath(
+            "src",
+            "bad...txt",
+            Path.Join("other", "bad...txt")).Should().BeFalse();
+    }
+
     [TestMethod]
     public void EnumerateFiles_WithGlobPattern_ReturnsMatchingFiles()
     {
@@ -19,7 +88,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "file3.md"), "Content 3");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("*.txt", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("*.txt", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -31,6 +100,31 @@ public class MSBuildEnumeratorTests
 
         IReadOnlyList<string> expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "*.txt");
         files.Should().BeEquivalentTo(expected);
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_ParentRelativeInclude_MatchesFileMatcher()
+    {
+        using TempFolder tempFolder = new();
+        string projectDirectory = Path.Join(tempFolder, "project");
+        string sharedDirectory = Path.Join(tempFolder, "shared");
+        Directory.CreateDirectory(projectDirectory);
+        Directory.CreateDirectory(sharedDirectory);
+        File.WriteAllText(Path.Join(sharedDirectory, "source.cs"), string.Empty);
+        string fileSpec = Path.Join("..", "shared", "*.cs");
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(fileSpec, projectDirectory);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(projectDirectory, fileSpec);
+
+        files.Should().Equal(expected);
+        files.Should().ContainSingle().Which.Should().Be(
+            Path.Join("..", "shared", "source.cs"));
     }
 
     [TestMethod]
@@ -55,7 +149,7 @@ public class MSBuildEnumeratorTests
         IReadOnlyList<string> expected = FileMatcherWrapper.GetFilesSimple(directory, "*.cs");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("*.cs", directory);
+        using MSBuildEnumerator enumerator = CreateEnumerator("*.cs", directory);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -82,7 +176,7 @@ public class MSBuildEnumeratorTests
         string[] expected = FileMatcherWrapper.GetFilesSimple(directory, "**/*.cs");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/*.cs", directory);
+        using MSBuildEnumerator enumerator = CreateEnumerator("**/*.cs", directory);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -103,7 +197,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "abc.txt"), "Content 4");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("?.txt", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("?.txt", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -128,7 +222,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "a.txt"), "Content 4");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("???.txt", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("???.txt", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -153,7 +247,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "test.txt"), "Content 5");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("test*.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("test*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -181,7 +275,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(subDir, "file3.txt"), "Content 3");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("subdir/*.txt", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("subdir/*.txt", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -213,7 +307,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(level2, "other.txt"), "Other");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/*.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("**/*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -247,7 +341,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tests, "test.cs"), "Test");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("src/**/*.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("src/**/*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -278,7 +372,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(subDir, "Dialog.tsx"), "React");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("components/*.test.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("components/*.test.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -301,7 +395,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "file2.md"), "Content 2");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("*.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -323,7 +417,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "Other.cs"), "Content 3");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("Program.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("Program.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -349,7 +443,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(Path.Join(tempFolder, "a"), "intermediate.txt"), "Intermediate");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/deep.txt", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("**/deep.txt", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -363,6 +457,31 @@ public class MSBuildEnumeratorTests
     }
 
     [TestMethod]
+    public void EnumerateFiles_WithRepeatedGlobstarAnchor_MatchesFileMatcher()
+    {
+        using TempFolder tempFolder = new();
+
+        string firstMatch = Path.Join(tempFolder, "a", "b");
+        string repeatedAnchorMatch = Path.Join(tempFolder, "a", "a", "b");
+        Directory.CreateDirectory(firstMatch);
+        Directory.CreateDirectory(repeatedAnchorMatch);
+        File.WriteAllText(Path.Join(firstMatch, "first.cs"), string.Empty);
+        File.WriteAllText(Path.Join(repeatedAnchorMatch, "repeated.cs"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator("**/a/b/*.cs", tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "**/a/b/*.cs");
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().Contain("a/a/b/repeated.cs".Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    [TestMethod]
     public void EnumerateFiles_WithMultipleExtensionPattern_MatchesVariousExtensions()
     {
         using TempFolder tempFolder = new();
@@ -373,7 +492,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "file.txt"), "Text");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("file.?", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("file.?", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -405,7 +524,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(otherDir, "file.cs"), "Other File");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("Test*/*.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("Test*/*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -426,7 +545,7 @@ public class MSBuildEnumeratorTests
         using TempFolder tempFolder = new();
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("*.*", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("*.*", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -450,7 +569,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(subDir, "nested.txt"), "Nested");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("**", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -474,7 +593,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "FILE.TXT"), "Upper");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("file.txt", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("file.txt", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -512,7 +631,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(level2, "other.txt"), "Other file");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/target.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("**/target.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -550,7 +669,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(testsUnit, "unit.cs"), "Unit test");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("src/main/**/*.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("src/main/**/*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -583,7 +702,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "api.cs"), "Root API");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("lib/**/v*/api.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("lib/**/v*/api.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -623,7 +742,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(srcMainTests, "test4.cs"), "Main test");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("src/**/tests/**/*.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("src/**/tests/**/*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -658,14 +777,14 @@ public class MSBuildEnumeratorTests
 
         // Test that consecutive ** are treated as a single **
         List<string> files1 = [];
-        using MSBuildEnumerator enumerator1 = MSBuildEnumerator.Create("**/**/file.txt", tempFolder);
+        using MSBuildEnumerator enumerator1 = CreateEnumerator("**/**/file.txt", tempFolder);
         while (enumerator1.MoveNext())
         {
             files1.Add(enumerator1.Current);
         }
 
         List<string> files2 = [];
-        using MSBuildEnumerator enumerator2 = MSBuildEnumerator.Create("**/file.txt", tempFolder);
+        using MSBuildEnumerator enumerator2 = CreateEnumerator("**/file.txt", tempFolder);
         while (enumerator2.MoveNext())
         {
             files2.Add(enumerator2.Current);
@@ -695,14 +814,14 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(deep, "target.cs"), "Deep");
 
         List<string> files1 = [];
-        using MSBuildEnumerator enumerator1 = MSBuildEnumerator.Create("**/**/**/target.cs", tempFolder);
+        using MSBuildEnumerator enumerator1 = CreateEnumerator("**/**/**/target.cs", tempFolder);
         while (enumerator1.MoveNext())
         {
             files1.Add(enumerator1.Current);
         }
 
         List<string> files2 = [];
-        using MSBuildEnumerator enumerator2 = MSBuildEnumerator.Create("**/target.cs", tempFolder);
+        using MSBuildEnumerator enumerator2 = CreateEnumerator("**/target.cs", tempFolder);
         while (enumerator2.MoveNext())
         {
             files2.Add(enumerator2.Current);
@@ -738,7 +857,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "bin.exe"), "Root binary");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/bin/*.exe", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("**/bin/*.exe", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -770,7 +889,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(otherDebug, "other.dll"), "Other DLL");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("build/**/*.dll", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("build/**/*.dll", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -803,7 +922,7 @@ public class MSBuildEnumeratorTests
 
         // Pattern: any 3-char directory, then v1, then ** for any subdirs, then single-char filename + .cs
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("???/v1/**/?*.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("???/v1/**/?*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -823,7 +942,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(srcV1, "a.cs"), "Source A v1");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("???/v1/**/?*.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("???/v1/**/?*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -840,7 +959,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(tempFolder, "a.cs"), "A");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("?*.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("?*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -861,7 +980,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(srcDir, "a.cs"), "A");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("???/*.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("???/*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -881,7 +1000,7 @@ public class MSBuildEnumeratorTests
         File.WriteAllText(Path.Join(srcV1Dir, "a.cs"), "A");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("???/v1/*.cs", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("???/v1/*.cs", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -899,7 +1018,7 @@ public class MSBuildEnumeratorTests
 
         // Test if root file bin.exe matches pattern **/bin/*.exe
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/bin/*.exe", tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("**/bin/*.exe", tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -914,7 +1033,7 @@ public class MSBuildEnumeratorTests
     {
         string toukiFolder = Path.Join(s_projectRoot, "touki");
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/*.cs", toukiFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("**/*.cs", toukiFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -929,7 +1048,7 @@ public class MSBuildEnumeratorTests
     {
         string toukiFolder = Path.Join(s_projectRoot, "touki");
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create("**/*.cs", "bin/Debug/**;", toukiFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator("**/*.cs", "bin/Debug/**;", toukiFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -940,12 +1059,853 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
     }
 
+    [TestMethod]
+    public void EnumerateFiles_FileOnlyExclude_DoesNotPruneMatchingDirectory()
+    {
+        using TempFolder tempFolder = new();
+
+        string objDirectory = Path.Join(tempFolder, "obj");
+        Directory.CreateDirectory(objDirectory);
+        File.WriteAllText(Path.Join(objDirectory, "excluded.txt"), string.Empty);
+        File.WriteAllText(Path.Join(objDirectory, "included.cs"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "**/*",
+            "**/obj/*.txt",
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        List<string> excludes = ["**/obj/*.txt"];
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "**/*", excludes);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be(
+            "obj/included.cs".Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_InvalidLiteralExclude_MatchesFileMatcher()
+    {
+        using TempFolder tempFolder = new();
+
+        File.WriteAllText(Path.Join(tempFolder, "bad...txt"), string.Empty);
+        File.WriteAllText(Path.Join(tempFolder, "keep.txt"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "**/*.txt",
+            "bad...txt",
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(
+            tempFolder,
+            "**/*.txt",
+            ["bad...txt"]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be("keep.txt");
+    }
+
+    [TestMethod]
+    public void CreateResult_FullyQualifiedInclude_RelativeInvalidExcludeDoesNotFilterAbsoluteResult()
+    {
+        using TempFolder tempFolder = new();
+        string fileName = "bad...txt";
+        string filePath = Path.Combine(tempFolder.TempPath, fileName);
+        File.WriteAllText(filePath, string.Empty);
+
+        string include = Path.Combine(tempFolder.TempPath, "**", "*.txt");
+        MSBuildSearchResult result = MSBuildEnumerator.CreateResult(
+            new(
+                include,
+                projectDirectory: null,
+                excludes: fileName)).Should().BeOfType<MSBuildSearchResult>().Which;
+
+        using MSBuildEnumerator enumerator = result.Enumerator;
+        List<string> matches = [];
+        while (enumerator.MoveNext())
+        {
+            matches.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(
+            tempFolder.TempPath,
+            include,
+            [fileName]);
+
+        matches.Should().BeEquivalentTo(expected);
+        matches.Should().ContainSingle().Which.Should().Be(filePath);
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_WildcardedSubtreeExclude_MatchesFileMatcher()
+    {
+        using TempFolder tempFolder = new();
+
+        string sourceDirectory = Path.Join(tempFolder, "src");
+        string topLevelObj = Path.Join(tempFolder, "obj-one");
+        string nestedObj = Path.Join(sourceDirectory, "obj-two");
+        Directory.CreateDirectory(sourceDirectory);
+        Directory.CreateDirectory(topLevelObj);
+        Directory.CreateDirectory(nestedObj);
+        File.WriteAllText(Path.Join(sourceDirectory, "included.cs"), string.Empty);
+        File.WriteAllText(Path.Join(topLevelObj, "top.cs"), string.Empty);
+        File.WriteAllText(Path.Join(nestedObj, "nested.cs"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "**/*.cs",
+            "**/obj*/**",
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        List<string> excludes = ["**/obj*/**"];
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "**/*.cs", excludes);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be(
+            "src/included.cs".Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_NestedWildcardedSubtreeExclude_MatchesFileMatcher()
+    {
+        using TempFolder tempFolder = new();
+
+        string outerObj = Path.Join(tempFolder, "obj");
+        string nestedDirectory = Path.Join(outerObj, "nested");
+        string nestedObj = Path.Join(nestedDirectory, "obj");
+        string sourceObj = Path.Join(tempFolder, "src", "obj");
+        Directory.CreateDirectory(nestedObj);
+        Directory.CreateDirectory(sourceObj);
+        File.WriteAllText(Path.Join(outerObj, "outer.cs"), string.Empty);
+        File.WriteAllText(Path.Join(nestedDirectory, "nested.cs"), string.Empty);
+        File.WriteAllText(Path.Join(nestedObj, "excluded.cs"), string.Empty);
+        File.WriteAllText(Path.Join(sourceObj, "included.cs"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "**/*.cs",
+            "obj/**/obj/**",
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        List<string> excludes = ["obj/**/obj/**"];
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "**/*.cs", excludes);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().HaveCount(3);
+        files.Should().NotContain(
+            "obj/nested/obj/excluded.cs".Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    [TestMethod]
+    [DataRow("obj/**", true)]
+    [DataRow("**/obj/**", false)]
+    [DataRow("**/obj*/**", false)]
+    public void EnumerateFiles_SubtreeExcludeAtEnumerationStart_MatchesFileMatcher(
+        string exclude,
+        bool excludesCurrentRoot)
+    {
+        using TempFolder tempFolder = new();
+
+        string objDirectory = Path.Join(tempFolder, "obj");
+        Directory.CreateDirectory(objDirectory);
+        File.WriteAllText(Path.Join(objDirectory, "excluded.cs"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "obj/**/*.cs",
+            exclude,
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "obj/**/*.cs", [exclude]);
+
+        files.Should().BeEquivalentTo(expected);
+        if (excludesCurrentRoot)
+        {
+            files.Should().BeEmpty();
+        }
+        else
+        {
+            files.Should().ContainSingle().Which.Should().Be(
+                "obj/excluded.cs".Replace('/', Path.DirectorySeparatorChar));
+        }
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_SubtreeDirectoryPattern_UsesMSBuildFileSystemSemantics()
+    {
+        using TempFolder tempFolder = new();
+
+        string extensionless = Path.Join(tempFolder, "README");
+        string dotted = Path.Join(tempFolder, "with.dot");
+        Directory.CreateDirectory(extensionless);
+        Directory.CreateDirectory(dotted);
+        File.WriteAllText(Path.Join(extensionless, "extensionless.cs"), string.Empty);
+        File.WriteAllText(Path.Join(dotted, "dotted.cs"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "**/*.cs",
+            "**/*.*/**",
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "**/*.cs", ["**/*.*/**"]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be(
+            "README/extensionless.cs".Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_FloatingSubtreePattern_UsesCaseInsensitiveLogicalMatching()
+    {
+        using TempFolder tempFolder = new();
+
+        string directory = Path.Join(tempFolder, "obj");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Join(directory, "excluded.cs"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "**/*.cs",
+            "**/OBJ/**",
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "**/*.cs", ["**/OBJ/**"]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_RecursiveExcludeFileName_UsesCaseInsensitiveLogicalMatching()
+    {
+        using TempFolder tempFolder = new();
+        File.WriteAllText(Path.Join(tempFolder, "source.CS"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "**/*.CS",
+            "**/*.cs",
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "**/*.CS", ["**/*.cs"]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_DirectorySegmentAfterGlobstar_UsesCaseInsensitiveLogicalMatching()
+    {
+        using TempFolder tempFolder = new();
+        string directory = Path.Join(tempFolder, "src");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Join(directory, "source.cs"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "**/SRC/*.cs",
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "**/SRC/*.cs");
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_OptimizedDirectoryPattern_UsesCaseInsensitiveLogicalFileNameMatching()
+    {
+        using TempFolder tempFolder = new();
+        string directory = Path.Join(tempFolder, "obj");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Join(directory, "source.cs"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "**/obj*/**/*.CS",
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "**/obj*/**/*.CS");
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_OptimizedPhysicalPattern_HonorsCaseSensitiveOption()
+    {
+        if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+        {
+            Assert.Inconclusive("The optimized pattern uses physical filename semantics only on non-Linux hosts.");
+        }
+
+        using TempFolder tempFolder = new();
+        string directory = Path.Join(tempFolder, "obj-one");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Join(directory, "lower.touki"), string.Empty);
+        File.WriteAllText(Path.Join(directory, "upper.TOUKI"), string.Empty);
+        EnumerationOptions options = new()
+        {
+            MatchType = MatchType.Simple,
+            MatchCasing = MatchCasing.CaseSensitive,
+            RecurseSubdirectories = true
+        };
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "**/obj*/**/*.TOUKI",
+            tempFolder,
+            options);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        files.Should().ContainSingle().Which.Should().Be(
+            "obj-one/upper.TOUKI".Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_OptimizedDirectoryPatternWithWin32Tokens_MatchesFileMatcher()
+    {
+#if NETFRAMEWORK
+        Assert.Inconclusive("FileMatcher rejects the Win32 token as an invalid file-spec character before matching.");
+#endif
+
+        using TempFolder tempFolder = new();
+        string directory = Path.Join(tempFolder, "objA");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Join(directory, "source.cs"), string.Empty);
+        EnumerationOptions options = new()
+        {
+            MatchType = MatchType.Win32,
+            MatchCasing = MatchCasing.PlatformDefault,
+            RecurseSubdirectories = true
+        };
+
+        const string Pattern = "**/obj>/**/*.cs";
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            Pattern,
+            tempFolder,
+            options);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, Pattern);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_OptimizedDirectoryPattern_UsesPlatformFileNamePolicy()
+    {
+        using TempFolder tempFolder = new();
+        string directory = Path.Join(tempFolder, "obj-one");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Join(directory, "LICENSE"), string.Empty);
+        File.WriteAllText(Path.Join(directory, "LICENSE.txt"), string.Empty);
+
+        const string Pattern = "**/obj*/**/LICENSE.*";
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(Pattern, tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, Pattern);
+
+        files.Should().BeEquivalentTo(expected);
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_FixedRootSubtreeExclude_MatchesFileMatcher()
+    {
+        using TempFolder tempFolder = new();
+
+        string topLevelObj = Path.Join(tempFolder, "obj");
+        string nestedObj = Path.Join(tempFolder, "src", "obj");
+        Directory.CreateDirectory(topLevelObj);
+        Directory.CreateDirectory(nestedObj);
+        File.WriteAllText(Path.Join(topLevelObj, "excluded.cs"), string.Empty);
+        File.WriteAllText(Path.Join(nestedObj, "included.cs"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "**/*.cs",
+            "obj/**",
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        List<string> excludes = ["obj/**"];
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "**/*.cs", excludes);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be(
+            "src/obj/included.cs".Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_FullyQualifiedChildExclude_MatchesFileMatcher()
+    {
+        using TempFolder tempFolder = new();
+
+        string objDirectory = Path.Join(tempFolder, "obj");
+        string sourceDirectory = Path.Join(tempFolder, "src");
+        Directory.CreateDirectory(objDirectory);
+        Directory.CreateDirectory(sourceDirectory);
+        File.WriteAllText(Path.Join(objDirectory, "excluded.cs"), string.Empty);
+        File.WriteAllText(Path.Join(sourceDirectory, "included.cs"), string.Empty);
+
+        string exclude = Path.Join(objDirectory, "**");
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "**/*.cs",
+            exclude,
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "**/*.cs", [exclude]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be(
+            "src/included.cs".Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_FullyQualifiedOutsideExclude_DoesNotFilterResults()
+    {
+        using TempFolder includeFolder = new();
+        using TempFolder outsideFolder = new();
+
+        File.WriteAllText(Path.Join(includeFolder, "included.cs"), string.Empty);
+        string outsideExclude = Path.Join(outsideFolder, "**", "*.cs");
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "**/*.cs",
+            outsideExclude,
+            includeFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(
+            includeFolder,
+            "**/*.cs",
+            [outsideExclude]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be("included.cs");
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_OverlappingExpressions_DoesNotDropExclude()
+    {
+        using TempFolder tempFolder = new();
+
+        File.WriteAllText(Path.Join(tempFolder, "x.txt"), string.Empty);
+        File.WriteAllText(Path.Join(tempFolder, "other.txt"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "*.txt",
+            "*x.txt",
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        List<string> excludes = ["*x.txt"];
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "*.txt", excludes);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be("other.txt");
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_MSBuildPolicyOverlap_DoesNotDropExclude()
+    {
+        using TempFolder tempFolder = new();
+
+        File.WriteAllText(Path.Join(tempFolder, "README"), string.Empty);
+        File.WriteAllText(Path.Join(tempFolder, "other.txt"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "*.*",
+            "README",
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "*.*", ["README"]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().NotContain("README");
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_RecursivePolicyExclude_UsesLogicalFileNameSemantics()
+    {
+        using TempFolder tempFolder = new();
+
+        File.WriteAllText(Path.Join(tempFolder, "LICENSE"), string.Empty);
+        File.WriteAllText(Path.Join(tempFolder, "LICENSE.txt"), string.Empty);
+
+        const string Include = "**/*";
+        const string Exclude = "**/LICENSE.*";
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            Include,
+            Exclude,
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, Include, [Exclude]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be("LICENSE");
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_RecursiveStarDotStarExclude_UsesAllFilesShortcut()
+    {
+        using TempFolder tempFolder = new();
+        File.WriteAllText(Path.Join(tempFolder, "README"), string.Empty);
+        File.WriteAllText(Path.Join(tempFolder, "README.txt"), string.Empty);
+
+        const string Include = "**/*";
+        const string Exclude = "**/*.*";
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            Include,
+            Exclude,
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, Include, [Exclude]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_OptimizedDirectoryPolicyExclude_UsesLogicalFileNameSemantics()
+    {
+        using TempFolder tempFolder = new();
+        string directory = Path.Join(tempFolder, "obj-one");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Join(directory, "LICENSE"), string.Empty);
+        File.WriteAllText(Path.Join(directory, "LICENSE.txt"), string.Empty);
+
+        const string Include = "**/*";
+        const string Exclude = "**/obj*/**/LICENSE.*";
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            Include,
+            Exclude,
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, Include, [Exclude]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be(
+            "obj-one/LICENSE".Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_ComplexStarDotStarExclude_UsesAllFilesShortcut()
+    {
+        using TempFolder tempFolder = new();
+        string directory = Path.Join(tempFolder, "obj-one");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Join(directory, "README"), string.Empty);
+        File.WriteAllText(Path.Join(directory, "README.txt"), string.Empty);
+
+        const string Include = "**/*";
+        const string Exclude = "**/obj*/**/*.*";
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            Include,
+            Exclude,
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, Include, [Exclude]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_ComplexEmbeddedStarDotStarExclude_UsesRawLogicalSemantics()
+    {
+        using TempFolder tempFolder = new();
+        string directory = Path.Join(tempFolder, "obj-one");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Join(directory, "ab"), string.Empty);
+        File.WriteAllText(Path.Join(directory, "aX.Yb"), string.Empty);
+
+        const string Include = "**/*";
+        const string Exclude = "**/obj*/**/a*.*b";
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            Include,
+            Exclude,
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, Include, [Exclude]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be(
+            "obj-one/ab".Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_RegexPathEmbeddedStarDotStarExclude_MatchesFileMatcher()
+    {
+        using TempFolder tempFolder = new();
+        string directory = Path.Join(tempFolder, "src");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Join(directory, "ab"), string.Empty);
+        File.WriteAllText(Path.Join(directory, "aX.Yb"), string.Empty);
+
+        const string Include = "**/*";
+        const string Exclude = "*/a*.*b";
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            Include,
+            Exclude,
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, Include, [Exclude]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_ComplexTrailingDotExclude_UsesRawLogicalSemantics()
+    {
+        using TempFolder tempFolder = new();
+        string directory = Path.Join(tempFolder, "obj-one");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Join(directory, "README"), string.Empty);
+        File.WriteAllText(Path.Join(directory, "README.txt"), string.Empty);
+
+        const string Include = "**/*";
+        const string Exclude = "**/obj*/**/*.";
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            Include,
+            Exclude,
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, Include, [Exclude]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().HaveCount(2);
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_RegexPathTrailingDotExclude_MatchesFileMatcher()
+    {
+        using TempFolder tempFolder = new();
+        string directory = Path.Join(tempFolder, "src");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Join(directory, "README"), string.Empty);
+        File.WriteAllText(Path.Join(directory, "README.txt"), string.Empty);
+
+        const string Include = "**/*";
+        const string Exclude = "*/*.";
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            Include,
+            Exclude,
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, Include, [Exclude]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be(
+            "src/README.txt".Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_Win32MatchTypePolicyExclude_UsesLogicalFileNameSemantics()
+    {
+        using TempFolder tempFolder = new();
+        File.WriteAllText(Path.Join(tempFolder, "LICENSE"), string.Empty);
+        File.WriteAllText(Path.Join(tempFolder, "LICENSE.txt"), string.Empty);
+        EnumerationOptions options = new()
+        {
+            MatchType = MatchType.Win32,
+            MatchCasing = MatchCasing.PlatformDefault,
+            RecurseSubdirectories = true
+        };
+
+        const string Include = "**/*";
+        const string Exclude = "**/LICENSE.*";
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            Include,
+            Exclude,
+            tempFolder,
+            options);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, Include, [Exclude]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be("LICENSE");
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_ComplexDirectoryPattern_UsesLogicalFileNameSemantics()
+    {
+        using TempFolder tempFolder = new();
+
+        string directory = Path.Join(tempFolder, "src");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Join(directory, "LICENSE"), string.Empty);
+        File.WriteAllText(Path.Join(directory, "LICENSE.txt"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "*/LICENSE.*",
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "*/LICENSE.*");
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be(
+            "src/LICENSE.txt".Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_ComplexDirectoryPattern_UsesCaseInsensitiveLogicalMatching()
+    {
+        using TempFolder tempFolder = new();
+
+        string directory = Path.Join(tempFolder, "src");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Join(directory, "FILE.CS"), string.Empty);
+
+        List<string> files = [];
+        using MSBuildEnumerator enumerator = CreateEnumerator(
+            "s*/f*.cs",
+            tempFolder);
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(tempFolder, "s*/f*.cs");
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be(
+            "src/FILE.CS".Replace('/', Path.DirectorySeparatorChar));
+    }
+
     [TestMethod, Ignore("Local testing")]
     public void EnumerateFiles_ToukiProject_CSharpDefaultExclude()
     {
         string toukiFolder = Path.Join(s_projectRoot, "touki");
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(
+        using MSBuildEnumerator enumerator = CreateEnumerator(
             "**/*.cs",
             "bin/Debug/**;obj/Debug/**;bin/**;obj/**/;**/*.user;**/*.*proj;**/*.sln;**/*.slnx;**/*.vssscc;**/.DS_Store",
             toukiFolder);
@@ -978,7 +1938,7 @@ public class MSBuildEnumeratorTests
     {
         string toukiFolder = @"n:\repos\runtime\";
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(
+        using MSBuildEnumerator enumerator = CreateEnumerator(
             "**/*.cs",
             "bin/Debug/**;obj/Debug/**;bin/**;obj/**/;**/*.user;**/*.*proj;**/*.sln;**/*.slnx;**/*.vssscc;**/.DS_Store",
             toukiFolder);
@@ -1011,7 +1971,7 @@ public class MSBuildEnumeratorTests
     {
         string rootFolder = @"n:\repos\runtime\";
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(
+        using MSBuildEnumerator enumerator = CreateEnumerator(
             "**/src/**/*.cs",
             //            "bin/Debug/**;obj/Debug/**;bin/**;obj/**/;**/*.user;**/*.*proj;**/*.sln;**/*.slnx;**/*.vssscc;**/.DS_Store",
             rootFolder);
@@ -1053,7 +2013,7 @@ public class MSBuildEnumeratorTests
         string spec = Path.Join(tempFolder, "*.txt");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(spec, tempFolder);
+        using MSBuildEnumerator enumerator = CreateEnumerator(spec, tempFolder);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);
@@ -1074,7 +2034,7 @@ public class MSBuildEnumeratorTests
         string spec = Path.Join(tempFolder, "*.txt");
 
         List<string> files = [];
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(spec, projectDirectory: null);
+        using MSBuildEnumerator enumerator = CreateEnumerator(spec, projectDirectory: null);
         while (enumerator.MoveNext())
         {
             files.Add(enumerator.Current);

@@ -52,6 +52,7 @@ public class NegationPruningBashOracleTests
         ["!(bin|obj)/!(test)/*.cs"],
         // No negation - pruning inactive, must still agree with the oracle.
         ["**/*.cs"],
+        ["**/a/b/*.cs"],
     ];
 
     [TestMethod]
@@ -77,10 +78,12 @@ public class NegationPruningBashOracleTests
         HashSet<string> pruned = [];
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             pattern,
-            excludePattern: null,
             root,
-            GlobDialect.Bash,
-            Options);
+            new()
+            {
+                Dialect = GlobDialect.Bash,
+                GlobOptions = Options
+            });
         while (enumerator.MoveNext())
         {
             pruned.Add(ToForwardSlash(enumerator.Current));
@@ -105,6 +108,8 @@ public class NegationPruningBashOracleTests
         Directory.CreateDirectory(Path.Combine(root, "lib", "bin"));
         Directory.CreateDirectory(Path.Combine(root, "a", "bin"));
         Directory.CreateDirectory(Path.Combine(root, "a", "lib"));
+        Directory.CreateDirectory(Path.Combine(root, "a", "a", "b"));
+        Directory.CreateDirectory(Path.Combine(root, "a", "b"));
 
         File.WriteAllText(Path.Combine(root, "top.cs"), "");
         File.WriteAllText(Path.Combine(root, "src", "a.cs"), "");
@@ -120,6 +125,8 @@ public class NegationPruningBashOracleTests
         File.WriteAllText(Path.Combine(root, "lib", "k.cs"), "");
         File.WriteAllText(Path.Combine(root, "a", "bin", "x.cs"), "");
         File.WriteAllText(Path.Combine(root, "a", "lib", "y.cs"), "");
+        File.WriteAllText(Path.Combine(root, "a", "a", "b", "repeated.cs"), "");
+        File.WriteAllText(Path.Combine(root, "a", "b", "direct.cs"), "");
         return folder;
     }
 

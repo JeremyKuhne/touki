@@ -42,7 +42,7 @@ public class GlobMatchFirstSegmentNegationPruningTests
 
     private static GlobMatch CreateMSBuildExtGlob(string pattern, string root) =>
         GlobSpecification.Compile(pattern, GlobDialect.MSBuild, GlobOptions.AllowExtGlob)
-            .CreateMatcher(root);
+            .CreateSession(root);
 
     [TestMethod]
     public void MatchesDirectory_FirstSegmentNegation_PrunesNegatedRootDirectories()
@@ -50,18 +50,21 @@ public class GlobMatchFirstSegmentNegationPruningTests
         using TempFolder folder = CreateFixture();
         string root = folder.TempPath;
         using GlobMatch matcher = CreateMSBuildExtGlob("!(bin|obj)/**/*.cs", root);
-        IEnumerationMatcher boundary = matcher;
 
         // Root-level directories whose name is exactly one of the negated literals
         // are pruned: no file beneath them can match.
-        boundary.MatchesDirectory(root, "bin".AsSpan(), matchForExclusion: false).Should().BeFalse();
-        boundary.MatchesDirectory(root, "obj".AsSpan(), matchForExclusion: false).Should().BeFalse();
+        matcher.MatchesDirectory(root, "bin".AsSpan())
+            .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+        matcher.MatchesDirectory(root, "obj".AsSpan())
+            .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
 
         // Non-negated root directories are descended.
-        boundary.MatchesDirectory(root, "src".AsSpan(), matchForExclusion: false).Should().BeTrue();
+        matcher.MatchesDirectory(root, "src".AsSpan())
+            .Should().NotBe(DirectoryMatchType.NoDescendantFilesMatch);
 
         // Pruning is exact: a name that merely shares a prefix is not negated.
-        boundary.MatchesDirectory(root, "binx".AsSpan(), matchForExclusion: false).Should().BeTrue();
+        matcher.MatchesDirectory(root, "binx".AsSpan())
+            .Should().NotBe(DirectoryMatchType.NoDescendantFilesMatch);
     }
 
     [TestMethod]
@@ -70,13 +73,13 @@ public class GlobMatchFirstSegmentNegationPruningTests
         using TempFolder folder = CreateFixture();
         string root = folder.TempPath;
         using GlobMatch matcher = CreateMSBuildExtGlob("!(bin|obj)/**/*.cs", root);
-        IEnumerationMatcher boundary = matcher;
 
         // A `bin` directory nested under another segment can still contribute
         // matches (e.g. src/bin/d.cs matches !(bin|obj)/**/*.cs), so it must not
         // be pruned.
         string srcDir = Path.Combine(root, "src");
-        boundary.MatchesDirectory(srcDir, "bin".AsSpan(), matchForExclusion: false).Should().BeTrue();
+        matcher.MatchesDirectory(srcDir, "bin".AsSpan())
+            .Should().NotBe(DirectoryMatchType.NoDescendantFilesMatch);
     }
 
     [TestMethod]
@@ -88,9 +91,9 @@ public class GlobMatchFirstSegmentNegationPruningTests
         // The negation is behind a globstar, so it is not anchored to the first
         // path segment - `bin` at the root must still be descended.
         using GlobMatch matcher = CreateMSBuildExtGlob("**/!(bin)/*.cs", root);
-        IEnumerationMatcher boundary = matcher;
 
-        boundary.MatchesDirectory(root, "bin".AsSpan(), matchForExclusion: false).Should().BeTrue();
+        matcher.MatchesDirectory(root, "bin".AsSpan())
+            .Should().NotBe(DirectoryMatchType.NoDescendantFilesMatch);
     }
 
     [TestMethod]
@@ -102,14 +105,16 @@ public class GlobMatchFirstSegmentNegationPruningTests
         // The negation is anchored to the second segment under a literal prefix:
         // src/!(bin)/**/*.cs excludes src/bin entirely but descends src/lib.
         using GlobMatch matcher = CreateMSBuildExtGlob("src/!(bin)/**/*.cs", root);
-        IEnumerationMatcher boundary = matcher;
 
         string srcDir = Path.Combine(root, "src");
-        boundary.MatchesDirectory(srcDir, "bin".AsSpan(), matchForExclusion: false).Should().BeFalse();
-        boundary.MatchesDirectory(srcDir, "lib".AsSpan(), matchForExclusion: false).Should().BeTrue();
+        matcher.MatchesDirectory(srcDir, "bin".AsSpan())
+            .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+        matcher.MatchesDirectory(srcDir, "lib".AsSpan())
+            .Should().NotBe(DirectoryMatchType.NoDescendantFilesMatch);
 
         // The `src` root itself stays viable.
-        boundary.MatchesDirectory(root, "src".AsSpan(), matchForExclusion: false).Should().BeTrue();
+        matcher.MatchesDirectory(root, "src".AsSpan())
+            .Should().NotBe(DirectoryMatchType.NoDescendantFilesMatch);
     }
 
     [TestMethod]
@@ -118,10 +123,12 @@ public class GlobMatchFirstSegmentNegationPruningTests
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "src/!(bin)/**/*.cs",
-            excludePattern: null,
             folder.TempPath,
-            GlobDialect.MSBuild,
-            GlobOptions.AllowExtGlob);
+            new()
+            {
+                Dialect = GlobDialect.MSBuild,
+                GlobOptions = GlobOptions.AllowExtGlob
+            });
 
         HashSet<string> results = Collect(enumerator);
 
@@ -136,10 +143,12 @@ public class GlobMatchFirstSegmentNegationPruningTests
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "!(bin|obj)/**/*.cs",
-            excludePattern: null,
             folder.TempPath,
-            GlobDialect.MSBuild,
-            GlobOptions.AllowExtGlob);
+            new()
+            {
+                Dialect = GlobDialect.MSBuild,
+                GlobOptions = GlobOptions.AllowExtGlob
+            });
 
         HashSet<string> results = Collect(enumerator);
 
@@ -156,10 +165,12 @@ public class GlobMatchFirstSegmentNegationPruningTests
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/!(bin)/*.cs",
-            excludePattern: null,
             folder.TempPath,
-            GlobDialect.MSBuild,
-            GlobOptions.AllowExtGlob);
+            new()
+            {
+                Dialect = GlobDialect.MSBuild,
+                GlobOptions = GlobOptions.AllowExtGlob
+            });
 
         HashSet<string> results = Collect(enumerator);
 

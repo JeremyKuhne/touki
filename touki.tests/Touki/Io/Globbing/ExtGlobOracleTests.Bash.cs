@@ -22,7 +22,7 @@ namespace Touki.Io.Globbing;
 ///   Documented divergence (skipped here): bash's <c>!(*)</c> against the
 ///   empty string returns true; touki returns false because <c>*</c> matches
 ///   the empty alternative slice exactly, so the negation rejects <c>L=0</c>.
-///   Tracked in <c>docs/globbing-feature-plan.md</c>.
+///   This remains an intentional compatibility boundary.
 ///  </para>
 /// </remarks>
 [TestClass]

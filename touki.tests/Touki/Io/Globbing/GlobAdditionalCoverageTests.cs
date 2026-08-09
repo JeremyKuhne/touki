@@ -129,13 +129,22 @@ public class GlobAdditionalCoverageTests
     {
         // MSBuild treats `***` (three or more *) as a never-match sentinel. The matcher
         // is path-aware so MatchesFile dispatches to the two-span MatchCore override.
-        GlobMatch matcher = GlobSpecification.Compile("***", GlobDialect.MSBuild).CreateMatcher(Root);
-        IEnumerationMatcher boundary = matcher;
+        using GlobMatch matcher = GlobSpecification.Compile("***", GlobDialect.MSBuild).CreateSession(Root);
 
-        boundary.MatchesFile(Root, "anything".AsSpan()).Should().BeFalse();
-        boundary.DirectoryFinished();
-        boundary.MatchesFile(Path.Combine(Root, "sub"), "file.cs".AsSpan()).Should().BeFalse();
-        matcher.Dispose();
+        matcher.MatchesFile(Root, "anything".AsSpan()).Should().BeFalse();
+        matcher.DirectoryFinished(Root);
+        matcher.MatchesFile(Path.Combine(Root, "sub"), "file.cs".AsSpan()).Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void CreateSession_Dispose_DefinitionRemainsReusable()
+    {
+        GlobSpecification specification = GlobSpecification.Compile("**/*.cs", GlobDialect.MSBuild);
+        GlobMatch firstSession = specification.CreateSession(Root);
+        firstSession.Dispose();
+
+        using GlobMatch secondSession = specification.CreateSession(Root);
+        secondSession.MatchesFile(Root, "file.cs").Should().BeTrue();
     }
 
     [TestMethod]
@@ -143,29 +152,29 @@ public class GlobAdditionalCoverageTests
     {
         // PosixPath + literal `a/b/file.cs` → LiteralGlobStrategy; path-aware so
         // MatchesFile uses the two-span override.
-        GlobMatch matcher = GlobSpecification.Compile("a/b/file.cs", GlobDialect.PosixPath).CreateMatcher(Root);
-        IEnumerationMatcher boundary = matcher;
+        using GlobMatch matcher = GlobSpecification.Compile(
+            "a/b/file.cs",
+            GlobDialect.PosixPath).CreateSession(Root);
 
-        boundary.MatchesFile(Path.Combine(Root, "a", "b"), "file.cs".AsSpan()).Should().BeTrue();
-        boundary.DirectoryFinished();
-        boundary.MatchesFile(Path.Combine(Root, "a", "b"), "OTHER.cs".AsSpan()).Should().BeFalse();
-        matcher.Dispose();
+        string directory = Path.Combine(Root, "a", "b");
+        matcher.MatchesFile(directory, "file.cs".AsSpan()).Should().BeTrue();
+        matcher.DirectoryFinished(directory);
+        matcher.MatchesFile(directory, "OTHER.cs".AsSpan()).Should().BeFalse();
     }
 
     [TestMethod]
     public void LiteralGlobStrategy_MatchesFile_TwoSpan_Ascii()
     {
         // PosixPath + IgnoreCase → IgnoreCaseKind.Ascii branch in two-span MatchCore.
-        GlobMatch matcher = GlobSpecification.Compile(
+        using GlobMatch matcher = GlobSpecification.Compile(
             "a/b/FILE.cs",
             GlobDialect.PosixPath,
-            GlobOptions.IgnoreCase).CreateMatcher(Root);
-        IEnumerationMatcher boundary = matcher;
+            GlobOptions.IgnoreCase).CreateSession(Root);
 
-        boundary.MatchesFile(Path.Combine(Root, "a", "b"), "file.cs".AsSpan()).Should().BeTrue();
-        boundary.DirectoryFinished();
-        boundary.MatchesFile(Path.Combine(Root, "a", "b"), "nope.cs".AsSpan()).Should().BeFalse();
-        matcher.Dispose();
+        string directory = Path.Combine(Root, "a", "b");
+        matcher.MatchesFile(directory, "file.cs".AsSpan()).Should().BeTrue();
+        matcher.DirectoryFinished(directory);
+        matcher.MatchesFile(directory, "nope.cs".AsSpan()).Should().BeFalse();
     }
 
     [TestMethod]
@@ -173,25 +182,26 @@ public class GlobAdditionalCoverageTests
     {
         // MSBuild dialect's default IgnoreCaseKind is Unicode; a pure literal pattern
         // routes to LiteralGlobStrategy with the Unicode branch in two-span MatchCore.
-        GlobMatch matcher = GlobSpecification.Compile("a/b/file.cs", GlobDialect.MSBuild).CreateMatcher(Root);
-        IEnumerationMatcher boundary = matcher;
+        using GlobMatch matcher = GlobSpecification.Compile(
+            "a/b/file.cs",
+            GlobDialect.MSBuild).CreateSession(Root);
 
-        boundary.MatchesFile(Path.Combine(Root, "a", "b"), "FILE.cs".AsSpan()).Should().BeTrue();
-        boundary.DirectoryFinished();
-        boundary.MatchesFile(Path.Combine(Root, "a", "b"), "different.cs".AsSpan()).Should().BeFalse();
-        matcher.Dispose();
+        string directory = Path.Combine(Root, "a", "b");
+        matcher.MatchesFile(directory, "FILE.cs".AsSpan()).Should().BeTrue();
+        matcher.DirectoryFinished(directory);
+        matcher.MatchesFile(directory, "different.cs".AsSpan()).Should().BeFalse();
     }
 
     [TestMethod]
     public void LiteralGlobStrategy_MatchesFile_TwoSpan_LengthMismatch()
     {
         // total != _literal.Length short-circuit branch (line 44 of LiteralGlobStrategy).
-        GlobMatch matcher = GlobSpecification.Compile("a/b/x", GlobDialect.PosixPath).CreateMatcher(Root);
-        IEnumerationMatcher boundary = matcher;
+        using GlobMatch matcher = GlobSpecification.Compile(
+            "a/b/x",
+            GlobDialect.PosixPath).CreateSession(Root);
 
         // File name combined with the cached dir prefix doesn't have matching length.
-        boundary.MatchesFile(Path.Combine(Root, "a", "b"), "xy".AsSpan()).Should().BeFalse();
-        matcher.Dispose();
+        matcher.MatchesFile(Path.Combine(Root, "a", "b"), "xy".AsSpan()).Should().BeFalse();
     }
 
     [TestMethod]

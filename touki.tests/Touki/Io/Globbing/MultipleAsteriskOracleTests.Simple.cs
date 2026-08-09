@@ -33,6 +33,16 @@ public class MultipleAsteriskSimpleOracleTests
             oracle,
             because: $"GlobSpecification(Simple) and FileSystemName.MatchesSimpleExpression must agree on pattern '{pattern}' vs input '{input}'");
     }
+
+    [TestMethod]
+    public void IsMatch_SimpleDialect_StarDotStarExtensionless_AgreesWithBcl()
+    {
+        bool oracle = FileSystemName.MatchesSimpleExpression("*.*", "README", ignoreCase: false);
+        GlobSpecification specification = GlobSpecification.Compile("*.*", GlobDialect.Simple);
+        bool actual = specification.IsMatch("README");
+
+        actual.Should().Be(oracle);
+    }
 }
 
 #endif

@@ -363,15 +363,8 @@ public partial class GlobSpecificationTests
             out GlobSpecification? result,
             out _);
 
-        try
-        {
-            atLimit.Should().BeTrue();
-            result.Should().NotBeNull();
-        }
-        finally
-        {
-            result?.Dispose();
-        }
+        atLimit.Should().BeTrue();
+        result.Should().NotBeNull();
 
         bool overLimit = GlobSpecification.TryCompile(
             pattern,
@@ -385,6 +378,24 @@ public partial class GlobSpecificationTests
         overLimit.Should().BeFalse();
         result.Should().BeNull();
         error.Code.Should().Be(GlobCompileErrorCode.PatternTooLarge);
+    }
+
+    [TestMethod]
+    public void TryCompile_MSBuildFileNameRewrite_RespectsSourceLengthLimit()
+    {
+        bool success = GlobSpecification.TryCompile(
+            "*.*",
+            GlobDialect.MSBuild,
+            GlobOptions.None,
+            GlobPathSeparator.DialectDefault,
+            maxPatternLength: 2,
+            out GlobSpecification? result,
+            out GlobCompileError error);
+
+        success.Should().BeFalse();
+        result.Should().BeNull();
+        error.Code.Should().Be(GlobCompileErrorCode.PatternTooLarge);
+        error.Position.Should().Be(2);
     }
 
     [TestMethod]

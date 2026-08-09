@@ -34,6 +34,22 @@ public class MultipleAsteriskPosixOracleTests
     }
 
     [TestMethod]
+    public void IsMatch_PosixDialect_StarDotStarExtensionless_AgreesWithFnmatch()
+    {
+        if (!FnmatchInterop.IsSupported)
+        {
+            Assert.Inconclusive("fnmatch(3) oracle requires Linux or macOS.");
+            return;
+        }
+
+        bool oracle = FnmatchInterop.Matches("*.*", "README", flags: 0);
+        GlobSpecification specification = GlobSpecification.Compile("*.*", GlobDialect.Posix);
+        bool actual = specification.IsMatch("README");
+
+        actual.Should().Be(oracle);
+    }
+
+    [TestMethod]
     public void IsMatch_PosixDialect_EscapedAsteriskBeforeExtGlob_AgreesWithFnmatchExtMatch()
     {
         if (!FnmatchInterop.SupportsExtMatch)
@@ -47,7 +63,7 @@ public class MultipleAsteriskPosixOracleTests
         bool oracle = FnmatchInterop.Matches(pattern, input, FnmatchInterop.FnmExtMatch);
         oracle.Should().BeTrue("the fixture must distinguish an escaped star from the ordinary wildcard run");
 
-        using GlobSpecification matcher = GlobSpecification.Compile(
+        GlobSpecification matcher = GlobSpecification.Compile(
             pattern,
             GlobDialect.Posix,
             GlobOptions.AllowExtGlob);

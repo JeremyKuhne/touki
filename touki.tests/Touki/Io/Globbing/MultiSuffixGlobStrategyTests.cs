@@ -9,8 +9,8 @@ namespace Touki.Io.Globbing;
 ///  specialization the factory selects for <c>**/&#x40;(*lit1|*lit2|...)</c>
 ///  and other compatible suffix-set shapes. The matching semantics must agree
 ///  with the equivalent generic bytecode (or, for the common
-///  <c>**/&#x40;(*.ext1|*.ext2)</c> shape, with an N-include
-///  <see cref="MatchSet"/> of <c>**/*.extN</c>) so the optimization stays
+///  <c>**/&#x40;(*.ext1|*.ext2)</c> shape, with the union of N
+///  <c>**/*.extN</c> specifications) so the optimization stays
 ///  invisible to callers.
 /// </summary>
 /// <remarks>
@@ -51,7 +51,7 @@ public class MultiSuffixGlobStrategyTests
         MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
-    // Leading-dot rule cross-check against the matching N-include MatchSet
+    // Leading-dot rule cross-check against the matching N-include union
     // (`**/*.cs` ∪ `**/*.md`). The specialization must agree with the
     // baseline shape on every input. Encoded as oracle pairs so that any
     // future change to the leading-dot semantics flips both sides together.
@@ -63,7 +63,7 @@ public class MultiSuffixGlobStrategyTests
     [DataRow("", ".hidden.cs")]
     [DataRow("src/", ".cs")]
     [DataRow("src/", ".gitignore")]
-    public void MatchCore_LeadingDotRule_MatchesMatchSetBaseline(string prefix, string fileName)
+    public void MatchCore_LeadingDotRule_MatchesUnionBaseline(string prefix, string fileName)
     {
         bool extGlob = GlobSpecification
             .Compile("**/@(*.cs|*.md)", GlobDialect.Bash, GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob)
@@ -163,7 +163,7 @@ public class MultiSuffixGlobStrategyTests
         string fileName,
         bool expected)
     {
-        using GlobSpecification specification = GlobSpecification.Compile(
+        GlobSpecification specification = GlobSpecification.Compile(
             pattern,
             GlobDialect.FileSystemGlobbing,
             GlobOptions.AllowExtGlob);

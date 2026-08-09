@@ -31,8 +31,7 @@ public class MultipleAsteriskBashOracleTests
         // *shell-glob* `**` semantics (segment-bounded globstar, `*` does not cross
         // `/`). The `[[ str == pat ]]` oracle instead uses bash's *string-match*
         // semantics, where `*` matches any string including `/`. These four rows are
-        // where the two diverge after the `***`+ &rarr; `**` normalization. Tracked
-        // in docs/globbing-feature-plan.md "Multiple-asterisk-run behavior" findings.
+        // where the two diverge after the `***`+ &rarr; `**` normalization.
         if ((pattern, input) is ("***/foo", "foo")
             or ("***.cs", "a/foo.cs")
             or ("a/***/b", "a/b")
@@ -47,6 +46,23 @@ public class MultipleAsteriskBashOracleTests
         actual.Should().Be(
             oracle,
             because: $"GlobSpecification(Bash) and bash [[ == ]] must agree on pattern '{pattern}' vs input '{input}'");
+    }
+
+    [TestMethod]
+    public void IsMatch_BashDialect_StarDotStarExtensionless_AgreesWithBash()
+    {
+        string? bashPath = BashInterop.ResolveBashPath();
+        if (bashPath is null)
+        {
+            Assert.Inconclusive("bash oracle requires bash on PATH (or Git for Windows installed).");
+            return;
+        }
+
+        bool oracle = BashInterop.Matches(bashPath, "*.*", "README");
+        GlobSpecification specification = GlobSpecification.Compile("*.*", GlobDialect.Bash);
+        bool actual = specification.IsMatch("README");
+
+        actual.Should().Be(oracle);
     }
 }
 

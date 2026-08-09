@@ -16,16 +16,14 @@ namespace Touki.Io.Globbing;
 ///   allocate no managed objects; separator coalescing and complex extglob matching
 ///   may rent or allocate temporary storage.
 ///   The specification is not bound to any enumeration root and may be reused
-///   concurrently against many different roots via <see cref="CreateMatcher(string?)"/>.
+///   concurrently against many different roots via <see cref="CreateFileSystemMatcher"/>.
 ///  </para>
 ///  <para>
 ///   For one-shot flat-string testing use <see cref="IsMatch(ReadOnlySpan{char})"/>;
 ///   it does not consult any per-directory cache and is safe to call from multiple
 ///   threads concurrently. To drive a file-system enumeration via
-///   <see cref="MatchEnumerator{TResult}"/>, call <see cref="CreateMatcher"/> to
-///   produce a <see cref="GlobMatch"/> bound to the enumeration root - the wrapper
-///   owns the per-directory cache and is single-threaded against its
-///   <see cref="IEnumerationMatcher"/> entry points.
+///   <see cref="FileSystemMatchEnumerator{TResult}"/>, call <see cref="CreateFileSystemMatcher"/>
+///   to produce a reusable definition. Each enumeration creates an independent root-bound session.
 ///  </para>
 ///  <para>
 ///   This mirrors the <see cref="MSBuildSpecification"/> / <see cref="MatchMSBuild"/>
@@ -33,13 +31,36 @@ namespace Touki.Io.Globbing;
 ///   a root and owns mutable enumeration state.
 ///  </para>
 /// </remarks>
-public sealed partial class GlobSpecification : DisposableBase
+public sealed partial class GlobSpecification : IFileSystemMatcher
 {
     private readonly GlobStrategy _strategy;
+    private readonly StringSegment _msbuildTrailingDotFileNamePattern;
+    private readonly bool _hasMSBuildTrailingDotFileNamePattern;
+    private readonly CompiledGlobStrategy? _msbuildTrailingDotExtGlobStrategy;
+    private readonly CompiledGlobStrategy? _msbuildTrailingDotRawExtGlobStrategy;
+    private readonly GlobSpecification[]? _msbuildTrailingDotNegatedAlternatives;
+    private readonly GlobSpecification[]? _msbuildTrailingDotPositiveAlternatives;
+    private readonly bool _msbuildTrailingDotNeverMatches;
 
-    private GlobSpecification(GlobStrategy strategy, StringSegment pattern)
+    private GlobSpecification(
+        GlobStrategy strategy,
+        StringSegment pattern,
+        StringSegment msbuildTrailingDotFileNamePattern,
+        bool hasMSBuildTrailingDotFileNamePattern,
+        CompiledGlobStrategy? msbuildTrailingDotExtGlobStrategy,
+        CompiledGlobStrategy? msbuildTrailingDotRawExtGlobStrategy,
+        GlobSpecification[]? msbuildTrailingDotNegatedAlternatives,
+        GlobSpecification[]? msbuildTrailingDotPositiveAlternatives,
+        bool msbuildTrailingDotNeverMatches)
     {
         _strategy = strategy;
+        _msbuildTrailingDotFileNamePattern = msbuildTrailingDotFileNamePattern;
+        _hasMSBuildTrailingDotFileNamePattern = hasMSBuildTrailingDotFileNamePattern;
+        _msbuildTrailingDotExtGlobStrategy = msbuildTrailingDotExtGlobStrategy;
+        _msbuildTrailingDotRawExtGlobStrategy = msbuildTrailingDotRawExtGlobStrategy;
+        _msbuildTrailingDotNegatedAlternatives = msbuildTrailingDotNegatedAlternatives;
+        _msbuildTrailingDotPositiveAlternatives = msbuildTrailingDotPositiveAlternatives;
+        _msbuildTrailingDotNeverMatches = msbuildTrailingDotNeverMatches;
         Pattern = pattern;
     }
 
@@ -129,13 +150,526 @@ public sealed partial class GlobSpecification : DisposableBase
             return false;
         }
 
-        if (!Factory.TryCreate(pattern, dialect, options, separator, maxPatternLength, out GlobStrategy? strategy, out error))
+        if (maxPatternLength >= 0 && pattern.Length > maxPatternLength)
         {
+            error = new GlobCompileError(
+                GlobCompileErrorCode.PatternTooLarge,
+                position: maxPatternLength,
+                message: $"Pattern length {pattern.Length} exceeds the configured limit of {maxPatternLength}.");
+
             return false;
         }
 
-        result = new GlobSpecification(strategy, pattern);
+        StringSegment compiledPattern = pattern;
+        StringSegment msbuildTrailingDotFileNamePattern = default;
+        bool hasMSBuildTrailingDotFileNamePattern = false;
+        int msbuildFileNameStart = 0;
+        int[]? msbuildRewriteSourcePositions = null;
+        bool allowExtGlob = (options & GlobOptions.AllowExtGlob) != 0;
+        if (dialect == GlobDialect.MSBuild)
+        {
+            compiledPattern = NormalizeMSBuildFileNamePattern(
+                pattern,
+                allowExtGlob,
+                out msbuildFileNameStart,
+                out msbuildTrailingDotFileNamePattern,
+                out hasMSBuildTrailingDotFileNamePattern,
+                out msbuildRewriteSourcePositions);
+        }
+
+        if (!Factory.TryCreate(
+            compiledPattern,
+            dialect,
+            options,
+            separator,
+            maxPatternLength,
+            out GlobStrategy? strategy,
+            out error))
+        {
+            if (msbuildRewriteSourcePositions is not null && error.Position >= 0)
+            {
+                error = new GlobCompileError(
+                    error.Code,
+                    RemapMSBuildStarDotStarErrorPosition(
+                        pattern,
+                        error.Position,
+                        msbuildFileNameStart,
+                        msbuildRewriteSourcePositions),
+                    error.Message);
+            }
+
+            return false;
+        }
+
+        CompiledGlobStrategy? msbuildTrailingDotExtGlobStrategy = null;
+        CompiledGlobStrategy? msbuildTrailingDotRawExtGlobStrategy = null;
+        GlobSpecification[]? msbuildTrailingDotNegatedAlternatives = null;
+        GlobSpecification[]? msbuildTrailingDotPositiveAlternatives = null;
+        bool msbuildTrailingDotNeverMatches = false;
+        if (hasMSBuildTrailingDotFileNamePattern
+            && (options & GlobOptions.AllowExtGlob) != 0
+            && ContainsExtGlobOpener(msbuildTrailingDotFileNamePattern))
+        {
+            StringSegment pathPrefix = pattern[..msbuildFileNameStart];
+            string fullTrailingDotPattern = $"{pathPrefix}{msbuildTrailingDotFileNamePattern}";
+            if (!Factory.TryCreate(
+                fullTrailingDotPattern,
+                GlobDialect.MSBuild,
+                options,
+                separator,
+                maxPatternLength,
+                out GlobStrategy? trailingDotStrategy,
+                out error,
+                markEffectiveDoubleStarRuns: true))
+            {
+                strategy.Dispose();
+                if (error.Position >= 0)
+                {
+                    error = new GlobCompileError(
+                        error.Code,
+                        error.Position,
+                        error.Message);
+                }
+
+                return false;
+            }
+
+            if (!TryCompileMSBuildTrailingDotNegatedAlternatives(
+                msbuildTrailingDotFileNamePattern,
+                pathPrefix,
+                options,
+                separator,
+                out msbuildTrailingDotNegatedAlternatives,
+                out error))
+            {
+                trailingDotStrategy.Dispose();
+                strategy.Dispose();
+                return false;
+            }
+
+            if (msbuildTrailingDotNegatedAlternatives is null
+                && !TryCompileMSBuildTrailingDotPositiveAlternatives(
+                    msbuildTrailingDotFileNamePattern,
+                    pathPrefix,
+                    options,
+                    separator,
+                    out msbuildTrailingDotPositiveAlternatives,
+                    out error))
+            {
+                trailingDotStrategy.Dispose();
+                strategy.Dispose();
+                return false;
+            }
+
+            if (msbuildTrailingDotNegatedAlternatives is null
+                && msbuildTrailingDotPositiveAlternatives is null)
+            {
+                if (trailingDotStrategy is NeverMatchGlobStrategy)
+                {
+                    trailingDotStrategy.Dispose();
+                    msbuildTrailingDotNeverMatches = true;
+                }
+                else if (trailingDotStrategy is not CompiledGlobStrategy compiledTrailingDotStrategy)
+                {
+                    trailingDotStrategy.Dispose();
+                    strategy.Dispose();
+                    error = new GlobCompileError(
+                        GlobCompileErrorCode.FeatureNotEnabled,
+                        position: -1,
+                        message: "MSBuild trailing-dot extglob requires the compiled matching strategy.");
+                    return false;
+                }
+                else
+                {
+                    compiledTrailingDotStrategy.EnableMSBuildTrailingDotMatching();
+                    msbuildTrailingDotExtGlobStrategy = compiledTrailingDotStrategy;
+
+                    string rawFileNamePattern = $"{fullTrailingDotPattern}.";
+                    if (!Factory.TryCreate(
+                        rawFileNamePattern,
+                        GlobDialect.MSBuild,
+                        options,
+                        separator,
+                        maxPatternLength,
+                        out GlobStrategy? rawTrailingDotStrategy,
+                        out error,
+                        markEffectiveDoubleStarRuns: true))
+                    {
+                        msbuildTrailingDotExtGlobStrategy.Dispose();
+                        strategy.Dispose();
+                        if (error.Position >= 0)
+                        {
+                            error = new GlobCompileError(
+                                error.Code,
+                                error.Position,
+                                error.Message);
+                        }
+
+                        return false;
+                    }
+
+                    if (rawTrailingDotStrategy is not CompiledGlobStrategy compiledRawTrailingDotStrategy)
+                    {
+                        rawTrailingDotStrategy.Dispose();
+                        msbuildTrailingDotExtGlobStrategy.Dispose();
+                        strategy.Dispose();
+                        error = new GlobCompileError(
+                            GlobCompileErrorCode.FeatureNotEnabled,
+                            position: -1,
+                            message: "MSBuild raw trailing-dot extglob requires the compiled matching strategy.");
+                        return false;
+                    }
+
+                    compiledRawTrailingDotStrategy.RequireEffectiveDoubleStar();
+                    msbuildTrailingDotRawExtGlobStrategy = compiledRawTrailingDotStrategy;
+                }
+            }
+            else
+            {
+                trailingDotStrategy.Dispose();
+            }
+        }
+
+        result = new GlobSpecification(
+            strategy,
+            pattern,
+            msbuildTrailingDotFileNamePattern,
+            hasMSBuildTrailingDotFileNamePattern,
+            msbuildTrailingDotExtGlobStrategy,
+            msbuildTrailingDotRawExtGlobStrategy,
+            msbuildTrailingDotNegatedAlternatives,
+            msbuildTrailingDotPositiveAlternatives,
+            msbuildTrailingDotNeverMatches);
         return true;
+    }
+
+    private static bool TryCompileMSBuildTrailingDotPositiveAlternatives(
+        StringSegment pattern,
+        StringSegment pathPrefix,
+        GlobOptions options,
+        GlobPathSeparator separator,
+        out GlobSpecification[]? alternatives,
+        out GlobCompileError error)
+    {
+        alternatives = null;
+        error = default;
+        if (pattern.Length < 3 || pattern[0] != '@' || pattern[1] != '(')
+        {
+            return true;
+        }
+
+        int close = FindExtGlobClose(pattern, opener: 0);
+        if (close != pattern.Length - 1)
+        {
+            return true;
+        }
+
+        return TryCompileMSBuildTrailingDotAlternativeList(
+            pattern,
+            bodyStart: 2,
+            close,
+            sourceOffset: 0,
+            pathPrefix,
+            options,
+            separator,
+            out alternatives,
+            out error);
+    }
+
+    private static bool TryCompileMSBuildTrailingDotNegatedAlternatives(
+        StringSegment pattern,
+        StringSegment pathPrefix,
+        GlobOptions options,
+        GlobPathSeparator separator,
+        out GlobSpecification[]? alternatives,
+        out GlobCompileError error)
+    {
+        alternatives = null;
+        error = default;
+        int sourceOffset = 0;
+        while (pattern.Length >= 3 && pattern[0] == '@' && pattern[1] == '(')
+        {
+            int wrapperClose = FindExtGlobClose(pattern, opener: 0);
+            if (wrapperClose != pattern.Length - 1
+                || ContainsTopLevelAlternativeSeparator(pattern[2..wrapperClose]))
+            {
+                break;
+            }
+
+            pattern = pattern[2..wrapperClose];
+            sourceOffset += 2;
+        }
+
+        if (pattern.Length < 3 || pattern[0] != '!' || pattern[1] != '(')
+        {
+            return true;
+        }
+
+        int close = FindExtGlobClose(pattern, opener: 0);
+        if (close != pattern.Length - 1)
+        {
+            return true;
+        }
+
+        return TryCompileMSBuildTrailingDotAlternativeList(
+            pattern,
+            bodyStart: 2,
+            close,
+            sourceOffset,
+            pathPrefix,
+            options,
+            separator,
+            out alternatives,
+            out error);
+    }
+
+    private static bool TryCompileMSBuildTrailingDotAlternativeList(
+        StringSegment pattern,
+        int bodyStart,
+        int close,
+        int sourceOffset,
+        StringSegment pathPrefix,
+        GlobOptions options,
+        GlobPathSeparator separator,
+        out GlobSpecification[]? alternatives,
+        out GlobCompileError error)
+    {
+        alternatives = null;
+        error = default;
+        List<GlobSpecification> compiled = [];
+        int alternativeStart = bodyStart;
+        int index = alternativeStart;
+        while (index <= close)
+        {
+            bool atEnd = index == close;
+            if (!atEnd && IsExtGlobOpenerAt(pattern, index))
+            {
+                int nestedClose = FindExtGlobClose(pattern, index);
+                if (nestedClose < 0)
+                {
+                    break;
+                }
+
+                index = nestedClose + 1;
+                continue;
+            }
+
+            if (atEnd || pattern[index] == '|')
+            {
+                string alternativePattern = $"{pathPrefix}{pattern[alternativeStart..index]}.";
+                if (!TryCompile(
+                    alternativePattern,
+                    GlobDialect.MSBuild,
+                    options,
+                    separator,
+                    maxPatternLength: -1,
+                    out GlobSpecification? specification,
+                    out error))
+                {
+                    if (error.Position >= 0)
+                    {
+                        int alternativePosition = error.Position - pathPrefix.Length;
+                        error = new GlobCompileError(
+                            error.Code,
+                            alternativePosition < 0
+                                ? error.Position
+                                : pathPrefix.Length + sourceOffset + alternativeStart + alternativePosition,
+                            error.Message);
+                    }
+
+                    return false;
+                }
+
+                compiled.Add(specification);
+                alternativeStart = index + 1;
+            }
+
+            index++;
+        }
+
+        alternatives = [.. compiled];
+        return true;
+    }
+
+    private static bool ContainsTopLevelAlternativeSeparator(ReadOnlySpan<char> pattern)
+    {
+        int index = 0;
+        while (index < pattern.Length)
+        {
+            if (IsExtGlobOpenerAt(pattern, index))
+            {
+                int close = FindExtGlobClose(pattern, index);
+                if (close < 0)
+                {
+                    return false;
+                }
+
+                index = close + 1;
+                continue;
+            }
+
+            if (pattern[index] == '|')
+            {
+                return true;
+            }
+
+            index++;
+        }
+
+        return false;
+    }
+
+    private static int FindExtGlobClose(ReadOnlySpan<char> pattern, int opener)
+    {
+        int depth = 1;
+        int index = opener + 2;
+        while (index < pattern.Length)
+        {
+            if (IsExtGlobOpenerAt(pattern, index))
+            {
+                depth++;
+                index += 2;
+                continue;
+            }
+
+            if (pattern[index] == ')' && --depth == 0)
+            {
+                return index;
+            }
+
+            index++;
+        }
+
+        return -1;
+    }
+
+    private static bool IsExtGlobOpenerAt(ReadOnlySpan<char> pattern, int index) =>
+        index + 1 < pattern.Length
+        && pattern[index + 1] == '('
+        && pattern[index] is '?' or '*' or '+' or '@' or '!';
+
+    private static bool ContainsExtGlobOpener(ReadOnlySpan<char> pattern)
+    {
+        for (int index = 0; index + 1 < pattern.Length; index++)
+        {
+            if (pattern[index + 1] == '('
+                && pattern[index] is '?' or '*' or '+' or '@' or '!')
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static StringSegment NormalizeMSBuildFileNamePattern(
+        StringSegment pattern,
+        bool allowExtGlob,
+        out int fileNameStart,
+        out StringSegment trailingDotFileNamePattern,
+        out bool hasTrailingDotFileNamePattern,
+        out int[]? rewriteSourcePositions)
+    {
+        trailingDotFileNamePattern = default;
+        hasTrailingDotFileNamePattern = false;
+        rewriteSourcePositions = null;
+        fileNameStart = 0;
+        if (pattern.IsEmpty)
+        {
+            return pattern;
+        }
+
+        fileNameStart = FindMSBuildFileNameStart(pattern, allowExtGlob);
+        StringSegment fileName = pattern[fileNameStart..];
+
+        if (!fileName.IsEmpty
+            && fileName[^1] == '.'
+            && !MSBuildFileNamePattern.ContainsEffectiveDoubleStar(fileName[..^1], allowExtGlob))
+        {
+            trailingDotFileNamePattern = fileName[..^1];
+            hasTrailingDotFileNamePattern = true;
+            if (fileNameStart == 0)
+            {
+                return "*";
+            }
+
+            using ValueStringBuilder builder = new(stackalloc char[256]);
+            builder.Append(pattern[..fileNameStart]);
+            builder.Append('*');
+            return builder.ToString();
+        }
+
+        StringSegment rewrittenFileName = MSBuildFileNamePattern.RewriteStarDotStarSequences(
+            fileName,
+            allowExtGlob,
+            out int[]? fileNameSourcePositions);
+        if (rewrittenFileName.Equals(fileName))
+        {
+            return pattern;
+        }
+
+        rewriteSourcePositions = fileNameSourcePositions;
+
+        if (fileNameStart == 0)
+        {
+            return rewrittenFileName;
+        }
+
+        using (ValueStringBuilder builder = new(stackalloc char[256]))
+        {
+            builder.Append(pattern[..fileNameStart]);
+            builder.Append(rewrittenFileName);
+            return builder.ToString();
+        }
+    }
+
+    private static int RemapMSBuildStarDotStarErrorPosition(
+        ReadOnlySpan<char> originalPattern,
+        int rewrittenPosition,
+        int fileNameStart,
+        ReadOnlySpan<int> fileNameSourcePositions)
+    {
+        if (rewrittenPosition < fileNameStart)
+        {
+            return rewrittenPosition;
+        }
+
+        int fileNamePosition = rewrittenPosition - fileNameStart;
+        if ((uint)fileNamePosition < (uint)fileNameSourcePositions.Length)
+        {
+            return fileNameStart + fileNameSourcePositions[fileNamePosition];
+        }
+
+        return originalPattern.Length;
+    }
+
+    private static int FindMSBuildFileNameStart(ReadOnlySpan<char> pattern, bool allowExtGlob)
+    {
+        int lastSeparator = -1;
+        int index = 0;
+        while (index < pattern.Length)
+        {
+            if (allowExtGlob && IsExtGlobOpenerAt(pattern, index))
+            {
+                int close = FindExtGlobClose(pattern, index);
+                if (close < 0)
+                {
+                    break;
+                }
+
+                index = close + 1;
+                continue;
+            }
+
+            if (pattern[index] is '/' or '\\')
+            {
+                lastSeparator = index;
+            }
+
+            index++;
+        }
+
+        return lastSeparator + 1;
     }
 
     /// <summary>
@@ -296,21 +830,17 @@ public sealed partial class GlobSpecification : DisposableBase
     }
 
     /// <summary>
-    ///  Creates a new <see cref="GlobMatch"/> bound to <paramref name="rootDirectory"/>
-    ///  that can drive a file-system enumeration via <see cref="IEnumerationMatcher"/>.
+    ///  Creates a reusable definition that binds this specification to a root for each file-system enumeration.
     /// </summary>
-    /// <param name="rootDirectory">
-    ///  The directory the enumeration walks. When <see langword="null"/> or the
-    ///  specification is path-unaware, the matcher falls back to matching the bare
-    ///  file name without using path context.
-    /// </param>
-    /// <remarks>
-    ///  <para>
-    ///   One specification can produce any number of <see cref="GlobMatch"/> wrappers
-    ///   concurrently, each owning its own per-directory cache.
-    ///  </para>
-    /// </remarks>
-    public GlobMatch CreateMatcher(string? rootDirectory = null) => new(this, rootDirectory);
+    public IFileSystemMatcher CreateFileSystemMatcher() => this;
+
+    IFileSystemMatcherSession IFileSystemMatcher.CreateSession(string rootDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(rootDirectory);
+        return new GlobMatch(this, rootDirectory);
+    }
+
+    internal GlobMatch CreateSession(string? rootDirectory = null) => new(this, rootDirectory);
 
     /// <summary>
     ///  Splits <paramref name="input"/> into a directory-prefix span (ending with
@@ -322,13 +852,13 @@ public sealed partial class GlobSpecification : DisposableBase
     {
         if (!IsPathAware)
         {
-            return _strategy.MatchCore(default, input);
+            return MatchCore(default, input);
         }
 
         int lastSeparator = input.LastIndexOf(Separator);
         return lastSeparator < 0
-            ? _strategy.MatchCore(default, input)
-            : _strategy.MatchCore(input[..(lastSeparator + 1)], input[(lastSeparator + 1)..]);
+            ? MatchCore(default, input)
+            : MatchCore(input[..(lastSeparator + 1)], input[(lastSeparator + 1)..]);
     }
 
     /// <summary>
@@ -336,8 +866,98 @@ public sealed partial class GlobSpecification : DisposableBase
     ///  <see cref="GlobMatch"/> hot path; routes through the strategy directly to
     ///  bypass the <see cref="IsMatch"/> wrapper's separator-run coalescing.
     /// </summary>
-    internal bool MatchCore(ReadOnlySpan<char> directoryPrefix, ReadOnlySpan<char> fileName) =>
-        _strategy.MatchCore(directoryPrefix, fileName);
+    internal bool MatchCore(ReadOnlySpan<char> directoryPrefix, ReadOnlySpan<char> fileName)
+    {
+        if (TryMatchMSBuildTrailingDotComposition(directoryPrefix, fileName, out bool composedMatch))
+        {
+            return composedMatch;
+        }
+
+        if (_msbuildTrailingDotExtGlobStrategy is not null || _msbuildTrailingDotNeverMatches)
+        {
+            return MatchesMSBuildTrailingDotPattern(directoryPrefix, fileName);
+        }
+
+        return MatchesMSBuildTrailingDotPattern(directoryPrefix, fileName)
+            && _strategy.MatchCore(directoryPrefix, fileName);
+    }
+
+    private bool TryMatchMSBuildTrailingDotComposition(
+        ReadOnlySpan<char> directoryPrefix,
+        ReadOnlySpan<char> fileName,
+        out bool result)
+    {
+        if (_msbuildTrailingDotNegatedAlternatives is not null)
+        {
+            if (!_strategy.MatchCore(directoryPrefix, fileName))
+            {
+                result = false;
+                return true;
+            }
+
+            foreach (GlobSpecification alternative in _msbuildTrailingDotNegatedAlternatives)
+            {
+                if (alternative.MatchCore(directoryPrefix, fileName))
+                {
+                    result = false;
+                    return true;
+                }
+            }
+
+            result = true;
+            return true;
+        }
+
+        if (_msbuildTrailingDotPositiveAlternatives is not null)
+        {
+            foreach (GlobSpecification alternative in _msbuildTrailingDotPositiveAlternatives)
+            {
+                if (alternative.MatchCore(directoryPrefix, fileName))
+                {
+                    result = true;
+                    return true;
+                }
+            }
+
+            result = false;
+            return true;
+        }
+
+        result = false;
+        return false;
+    }
+
+    private bool MatchesMSBuildTrailingDotPattern(
+        ReadOnlySpan<char> directoryPrefix,
+        ReadOnlySpan<char> fileName)
+    {
+        if (!_hasMSBuildTrailingDotFileNamePattern)
+        {
+            return true;
+        }
+
+        if (_msbuildTrailingDotNeverMatches)
+        {
+            return false;
+        }
+
+        if (_msbuildTrailingDotExtGlobStrategy is null)
+        {
+            return MSBuildTrailingDotFileNameMatcher.Matches(
+                fileName,
+                _msbuildTrailingDotFileNamePattern,
+                IgnoreCaseKind);
+        }
+
+        ReadOnlySpan<char> normalized = MSBuildTrailingDotFileNameMatcher.NormalizeExtGlobInput(
+            fileName,
+            out bool isAllDotInput);
+        bool trailingDotMatch = isAllDotInput
+            ? _msbuildTrailingDotExtGlobStrategy.MatchesMSBuildTrailingDotAllDotInput(directoryPrefix)
+            : _msbuildTrailingDotExtGlobStrategy.MatchCore(directoryPrefix, normalized);
+        return trailingDotMatch
+            || _msbuildTrailingDotRawExtGlobStrategy!.MatchCore(directoryPrefix, fileName);
+    }
 
     private static bool ContainsSeparatorRun(ReadOnlySpan<char> input, char separator)
     {
@@ -392,12 +1012,4 @@ public sealed partial class GlobSpecification : DisposableBase
         return dstIndex;
     }
 
-    /// <inheritdoc/>
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            _strategy.Dispose();
-        }
-    }
 }

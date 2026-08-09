@@ -26,7 +26,7 @@ namespace Touki.Fuzz;
 ///   <see cref="GlobSpecification.TryCompile(StringSegment, GlobDialect, GlobOptions, GlobPathSeparator, int, out GlobSpecification, out GlobCompileError)"/>
 ///   overloads, <see cref="GlobSpecification.Compile(StringSegment, GlobDialect, GlobOptions, GlobPathSeparator, int)"/>,
 ///   <see cref="GlobSpecification.IsMatch(ReadOnlySpan{char})"/>, and
-///   <see cref="GlobSpecification.CreateMatcher(string)"/>. The oracles are differential:
+///   <see cref="GlobSpecification.CreateFileSystemMatcher"/>. The oracles are differential:
 ///  </para>
 ///  <para>
 ///   <list type="bullet">
@@ -146,65 +146,49 @@ internal static class GlobSpecificationTarget
             thrown = ex;
         }
 
-        try
+        if (tryOk != (thrown is null))
         {
-            if (tryOk != (thrown is null))
-            {
-                throw new FuzzInvariantException("Compile and TryCompile disagree on whether the pattern is valid.");
-            }
-
-            if (!tryOk)
-            {
-                // Nothing further to validate on the failure path.
-                return;
-            }
-
-            // spec is non-null on success (NotNullWhen(true)); compiled mirrors it.
-            CheckSpecification(spec!, pattern, patternString, dialect, inputs);
-
-            if (compiled is not null)
-            {
-                AssertSameMatches(spec!, compiled, inputs, "Compile vs TryCompile");
-            }
-
-            // Determinism: a second compile with identical inputs must behave identically.
-            bool tryOk2 = GlobSpecification.TryCompile(
-                pattern,
-                dialect,
-                options,
-                separator,
-                maxPatternLength,
-                out GlobSpecification? spec2,
-                out _);
-
-            if (!tryOk2 || spec2 is null)
-            {
-                throw new FuzzInvariantException("Re-compiling a valid pattern failed.");
-            }
-
-            try
-            {
-                AssertSameMatches(spec!, spec2, inputs, "Compile determinism");
-            }
-            finally
-            {
-                spec2.Dispose();
-            }
-
-            // The 5-argument TryCompile must equal the 7-argument overload given the same defaults.
-            CheckShortOverloadEquivalence(pattern, dialect, options, inputs);
+            throw new FuzzInvariantException("Compile and TryCompile disagree on whether the pattern is valid.");
         }
-        finally
+
+        if (!tryOk)
         {
-            spec?.Dispose();
-            compiled?.Dispose();
+            // Nothing further to validate on the failure path.
+            return;
         }
+
+        // spec is non-null on success (NotNullWhen(true)); compiled mirrors it.
+        CheckSpecification(spec!, pattern, dialect, inputs);
+
+        if (compiled is not null)
+        {
+            AssertSameMatches(spec!, compiled, inputs, "Compile vs TryCompile");
+        }
+
+        // Determinism: a second compile with identical inputs must behave identically.
+        bool tryOk2 = GlobSpecification.TryCompile(
+            pattern,
+            dialect,
+            options,
+            separator,
+            maxPatternLength,
+            out GlobSpecification? spec2,
+            out _);
+
+        if (!tryOk2 || spec2 is null)
+        {
+            throw new FuzzInvariantException("Re-compiling a valid pattern failed.");
+        }
+
+        AssertSameMatches(spec!, spec2, inputs, "Compile determinism");
+
+        // The 5-argument TryCompile must equal the 7-argument overload given the same defaults.
+        CheckShortOverloadEquivalence(pattern, dialect, options, inputs);
     }
 
     private static void CheckSpecification(
         GlobSpecification spec,
         StringSegment pattern,
-        string patternString,
         GlobDialect dialect,
         string[] inputs)
     {
@@ -237,9 +221,11 @@ internal static class GlobSpecificationTarget
             }
         }
 
-        // CreateMatcher must not throw for a null or a synthesized root.
-        using GlobMatch matcherNull = spec.CreateMatcher(null);
-        using GlobMatch matcherRoot = spec.CreateMatcher(patternString.Length == 0 ? "." : patternString);
+        // Reusable definitions must create independent sessions for a normalized root.
+        string rootDirectory = Path.GetFullPath(".");
+        IFileSystemMatcher matcher = spec.CreateFileSystemMatcher();
+        using IFileSystemMatcherSession firstSession = matcher.CreateSession(rootDirectory);
+        using IFileSystemMatcherSession secondSession = matcher.CreateSession(rootDirectory);
     }
 
     private static void CheckShortOverloadEquivalence(
@@ -264,22 +250,14 @@ internal static class GlobSpecificationTarget
             out GlobSpecification? spec7,
             out _);
 
-        try
+        if (try5 != try7)
         {
-            if (try5 != try7)
-            {
-                throw new FuzzInvariantException("5-argument and 7-argument TryCompile disagree on success.");
-            }
-
-            if (try5 && spec5 is not null && spec7 is not null)
-            {
-                AssertSameMatches(spec5, spec7, inputs, "TryCompile overload equivalence");
-            }
+            throw new FuzzInvariantException("5-argument and 7-argument TryCompile disagree on success.");
         }
-        finally
+
+        if (try5 && spec5 is not null && spec7 is not null)
         {
-            spec5?.Dispose();
-            spec7?.Dispose();
+            AssertSameMatches(spec5, spec7, inputs, "TryCompile overload equivalence");
         }
     }
 

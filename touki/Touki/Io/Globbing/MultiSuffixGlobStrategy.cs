@@ -17,7 +17,7 @@ namespace Touki.Io.Globbing;
 ///   <c>AnyRun + Literal</c> shape. Routing the pattern here lets the
 ///   per-file hot path skip the bytecode interpreter and run a tight
 ///   <c>EndsWith</c> sweep over the suffix table, matching the throughput
-///   of a hand-built <c>MatchSet</c> of N <c>SuffixGlobStrategy</c>
+///   of a hand-built union of N <c>SuffixGlobStrategy</c> instances
 ///   includes while keeping a single compiled spec.
 ///  </para>
 ///  <para>
@@ -28,7 +28,7 @@ namespace Touki.Io.Globbing;
 ///   <c>EndsWith</c> per suffix per file (vectorized on both target
 ///   frameworks). On the
 ///   <c>GlobEnumerateExtGlobPerf</c> benchmark this is the dominant
-///   win on net481, closing the gap with the <c>MatchSet</c> baseline
+///   win on net481, closing the gap with the multi-definition baseline
 ///   on the canonical <c>**/&#x40;(*.cs|*.md|...)</c> shape. If you
 ///   change the strategy's selection criteria, verify the benchmark
 ///   on net481 first - modern .NET RyuJIT will tolerate

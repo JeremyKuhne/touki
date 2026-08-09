@@ -45,15 +45,14 @@ public class MSBuildSpecificationTrailingSeparatorTests
     private static string[] EnumerateTouki(string root, string spec)
     {
         MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(
-            fileSpec: spec,
-            projectDirectory: root);
+            new(spec, root));
 
-        if (result.Action != MSBuildSearchAction.RunSearch || result.Enumerator is null)
+        if (result is not MSBuildSearchResult search)
         {
             return [];
         }
 
-        using MSBuildEnumerator enumerator = result.Enumerator;
+        using MSBuildEnumerator enumerator = search.Enumerator;
         List<string> files = [];
         while (enumerator.MoveNext())
         {
@@ -95,14 +94,10 @@ public class MSBuildSpecificationTrailingSeparatorTests
         using TempFolder tempFolder = new();
         CreateFixture(tempFolder.TempPath);
 
-        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(
-            fileSpec: spec,
-            projectDirectory: tempFolder.TempPath);
+        MSBuildSearchResult result = MSBuildEnumerator.CreateResult(
+            new(spec, tempFolder.TempPath)).Should().BeOfType<MSBuildSearchResult>().Which;
 
-        result.Action.Should().Be(MSBuildSearchAction.RunSearch);
-        result.Enumerator.Should().NotBeNull();
-
-        using MSBuildEnumerator enumerator = result.Enumerator!;
+        using MSBuildEnumerator enumerator = result.Enumerator;
         List<string> files = [];
         while (enumerator.MoveNext())
         {
@@ -122,19 +117,16 @@ public class MSBuildSpecificationTrailingSeparatorTests
     [DataRow("Missing/file.txt")]
     [DataRow("Missing/**")]
     [DataRow("Missing/*.txt")]
-    public void CreateResult_FixedDirectoryMissingOrFile_ReturnsEmptyListAction(string spec)
+    public void CreateResult_FixedDirectoryMissingOrFile_ReturnsEmpty(string spec)
     {
         using TempFolder tempFolder = new();
         CreateFixture(tempFolder.TempPath);
 
         MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(
-            fileSpec: spec,
-            projectDirectory: tempFolder.TempPath);
+            new(spec, tempFolder.TempPath));
 
-        result.Action.Should().Be(MSBuildSearchAction.ReturnEmptyList);
-        result.Enumerator.Should().BeNull();
-        result.GlobFailure.Should().BeNull();
-        result.FailedExcludeSpec.Should().BeNull();
+        result.Should().BeOfType<MSBuildEmptyResult>()
+            .Which.Reason.Should().Be(MSBuildEmptyReason.StartDirectoryNotFound);
     }
 
     [TestMethod]

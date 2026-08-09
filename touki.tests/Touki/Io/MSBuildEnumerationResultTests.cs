@@ -20,6 +20,22 @@ public class MSBuildEnumerationResultTests
     private static string DriveRootRecursiveSpec => $"{CurrentDriveRoot}**{Path.DirectorySeparatorChar}*.touki-no-such-file";
 
     [TestMethod]
+    public void Create_DefaultRequest_Throws()
+    {
+        Action action = () => MSBuildEnumerator.Create(default);
+
+        action.Should().Throw<ArgumentException>().WithParameterName("request");
+    }
+
+    [TestMethod]
+    public void CreateResult_DefaultRequest_Throws()
+    {
+        Action action = () => MSBuildEnumerator.CreateResult(default);
+
+        action.Should().Throw<ArgumentException>().WithParameterName("request");
+    }
+
+    [TestMethod]
     public void IsDriveRootRecursion_DriveRootDoubleStar_ReturnsTrue()
     {
         MSBuildSpecification spec = new MSBuildSpecification($"{CurrentDriveRoot}**").FullyQualify(Environment.CurrentDirectory);
@@ -226,24 +242,24 @@ public class MSBuildEnumerationResultTests
     [TestMethod]
     public void CreateResult_DriveRootRecursionDefault_StopsSearching()
     {
-        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(DriveRootRecursiveSpec);
-        result.Action.Should().Be(MSBuildSearchAction.FailBecauseDriveEnumerationIsForbidden);
-        result.GlobFailure.Should().NotBeNullOrEmpty();
-        result.Enumerator.Should().BeNull();
+        MSBuildRejectedResult result = MSBuildEnumerator.CreateResult(
+            new(DriveRootRecursiveSpec)).Should().BeOfType<MSBuildRejectedResult>().Which;
+
+        result.Reason.Should().Be(MSBuildRejectionReason.DriveEnumerationForbidden);
+        result.Message.Should().NotBeNullOrEmpty();
     }
 
     [TestMethod]
     public void CreateResult_DriveRootRecursionOptIn_RunsSearch()
     {
-        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(
-            DriveRootRecursiveSpec,
-            options: new MSBuildEnumerationOptions { AllowDriveEnumeration = true });
+        MSBuildSearchResult result = MSBuildEnumerator.CreateResult(
+            new(
+                DriveRootRecursiveSpec,
+                allowDriveEnumeration: true)).Should().BeOfType<MSBuildSearchResult>().Which;
+        using MSBuildEnumerator enumerator = result.Enumerator;
 
-        result.Action.Should().Be(MSBuildSearchAction.RunSearch);
-        result.GlobFailure.Should().BeNull();
         // Don't materialize - that would actually walk the drive. Just confirm the enumerator was built.
-        result.Enumerator.Should().NotBeNull();
-        result.Enumerator!.Dispose();
+        enumerator.Should().NotBeNull();
     }
 
     [TestMethod]
@@ -253,15 +269,10 @@ public class MSBuildEnumerationResultTests
         File.WriteAllText(Path.Combine(tempFolder.TempPath, "a.txt"), string.Empty);
         File.WriteAllText(Path.Combine(tempFolder.TempPath, "b.txt"), string.Empty);
 
-        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(
-            "*.txt",
-            projectDirectory: tempFolder.TempPath);
+        MSBuildSearchResult result = MSBuildEnumerator.CreateResult(
+            new("*.txt", tempFolder.TempPath)).Should().BeOfType<MSBuildSearchResult>().Which;
 
-        result.Action.Should().Be(MSBuildSearchAction.RunSearch);
-        result.GlobFailure.Should().BeNull();
-        result.FailedExcludeSpec.Should().BeNull();
-
-        using MSBuildEnumerator enumerator = result.Enumerator!;
+        using MSBuildEnumerator enumerator = result.Enumerator;
         List<string> files = [];
         while (enumerator.MoveNext())
         {
@@ -278,14 +289,13 @@ public class MSBuildEnumerationResultTests
         File.WriteAllText(Path.Combine(tempFolder.TempPath, "keep.txt"), string.Empty);
         File.WriteAllText(Path.Combine(tempFolder.TempPath, "skip.txt"), string.Empty);
 
-        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(
-            fileSpec: "*.txt",
-            excludeSpecs: "skip.txt",
-            projectDirectory: tempFolder.TempPath);
+        MSBuildSearchResult result = MSBuildEnumerator.CreateResult(
+            new(
+                "*.txt",
+                tempFolder.TempPath,
+                excludes: "skip.txt")).Should().BeOfType<MSBuildSearchResult>().Which;
 
-        result.Action.Should().Be(MSBuildSearchAction.RunSearch);
-
-        using MSBuildEnumerator enumerator = result.Enumerator!;
+        using MSBuildEnumerator enumerator = result.Enumerator;
         List<string> files = [];
         while (enumerator.MoveNext())
         {
@@ -295,26 +305,178 @@ public class MSBuildEnumerationResultTests
         files.Should().BeEquivalentTo("keep.txt");
     }
 
+    [TestMethod]
+    public void CreateResult_ProjectDirectoryWithRelativeSegments_ReturnsCanonicalRelativeResults()
+    {
+        using TempFolder tempFolder = new();
+        Directory.CreateDirectory(Path.Combine(tempFolder.TempPath, "sub"));
+        File.WriteAllText(Path.Combine(tempFolder.TempPath, "file.txt"), string.Empty);
+        string projectDirectory = Path.Combine(tempFolder.TempPath, "sub", "..");
+        MSBuildSearchResult result = MSBuildEnumerator.CreateResult(
+            new("**/*.txt", projectDirectory)).Should().BeOfType<MSBuildSearchResult>().Which;
+        using MSBuildEnumerator enumerator = result.Enumerator;
+
+        List<string> files = [];
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        files.Should().Equal("file.txt");
+    }
+
+    [TestMethod]
+    public void CreateResult_RelativeProjectDirectory_ResolvesAgainstCurrentDirectory()
+    {
+        using TempFolder tempFolder = new();
+        File.WriteAllText(Path.Combine(tempFolder.TempPath, "file.txt"), string.Empty);
+        string projectDirectory = Path.GetRelativePath(Environment.CurrentDirectory, tempFolder.TempPath);
+        MSBuildSearchResult result = MSBuildEnumerator.CreateResult(
+            new("**/*.txt", projectDirectory)).Should().BeOfType<MSBuildSearchResult>().Which;
+        using MSBuildEnumerator enumerator = result.Enumerator;
+
+        List<string> files = [];
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        files.Should().Equal("file.txt");
+    }
+
+    [TestMethod]
+    public void Create_CallerMutatesEnumerationOptions_TraversalUsesSnapshot()
+    {
+        using TempFolder tempFolder = new();
+        string nested = Path.Combine(tempFolder.TempPath, "nested");
+        Directory.CreateDirectory(nested);
+        File.WriteAllText(Path.Combine(nested, "file.txt"), string.Empty);
+        EnumerationOptions options = new()
+        {
+            IgnoreInaccessible = true,
+            RecurseSubdirectories = true
+        };
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(
+            new("**/*.txt", tempFolder.TempPath, enumerationOptions: options));
+
+        options.RecurseSubdirectories = false;
+        List<string> files = [];
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        files.Should().Equal(Path.Combine("nested", "file.txt"));
+    }
+
+    [TestMethod]
+    public void CreateResult_CallerMutatesEnumerationOptions_TraversalUsesSnapshot()
+    {
+        using TempFolder tempFolder = new();
+        string nested = Path.Combine(tempFolder.TempPath, "nested");
+        Directory.CreateDirectory(nested);
+        File.WriteAllText(Path.Combine(nested, "file.txt"), string.Empty);
+        EnumerationOptions options = new()
+        {
+            IgnoreInaccessible = true,
+            RecurseSubdirectories = true
+        };
+        MSBuildSearchResult result = MSBuildEnumerator.CreateResult(
+            new(
+                "**/*.txt",
+                tempFolder.TempPath,
+                enumerationOptions: options)).Should().BeOfType<MSBuildSearchResult>().Which;
+        using MSBuildEnumerator enumerator = result.Enumerator;
+
+        options.RecurseSubdirectories = false;
+        List<string> files = [];
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        files.Should().Equal(Path.Combine("nested", "file.txt"));
+    }
+
+    [TestMethod]
+    public void CreateResult_ValidAndInvalidExcludes_AppliesFiltersAndRetainsInvalidInSourceOrder()
+    {
+        using TempFolder tempFolder = new();
+        File.WriteAllText(Path.Combine(tempFolder.TempPath, "keep.txt"), string.Empty);
+        File.WriteAllText(Path.Combine(tempFolder.TempPath, "skip.txt"), string.Empty);
+        File.WriteAllText(Path.Combine(tempFolder.TempPath, "bad...txt"), string.Empty);
+
+        MSBuildSearchResult result = MSBuildEnumerator.CreateResult(
+            new(
+                "**/*.txt",
+                tempFolder.TempPath,
+                excludes: "bad...txt;**/skip.txt;a**b")).Should().BeOfType<MSBuildSearchResult>().Which;
+
+        result.InvalidExcludeSpecifications.Should().Equal("bad...txt", "a**b");
+
+        using MSBuildEnumerator enumerator = result.Enumerator;
+        List<string> files = [];
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        string[] expected = FileMatcherWrapper.GetFilesSimple(
+            tempFolder.TempPath,
+            "**/*.txt",
+            ["bad...txt", "**/skip.txt", "a**b"]);
+
+        files.Should().BeEquivalentTo(expected);
+        files.Should().ContainSingle().Which.Should().Be("keep.txt");
+    }
+
+    [TestMethod]
+    public void CreateResult_InvalidExcludeSpecs_CannotMutateLiveEnumeratorFilters()
+    {
+        using TempFolder tempFolder = new();
+        File.WriteAllText(Path.Combine(tempFolder.TempPath, "keep.txt"), string.Empty);
+        File.WriteAllText(Path.Combine(tempFolder.TempPath, "bad...txt"), string.Empty);
+
+        MSBuildSearchResult result = MSBuildEnumerator.CreateResult(
+            new(
+                "**/*.txt",
+                tempFolder.TempPath,
+                excludes: "bad...txt")).Should().BeOfType<MSBuildSearchResult>().Which;
+        IList<string> exposedExcludes = (IList<string>)result.InvalidExcludeSpecifications;
+
+        Action mutate = () => exposedExcludes[0] = "keep.txt";
+        mutate.Should().Throw<NotSupportedException>();
+
+        using MSBuildEnumerator enumerator = result.Enumerator;
+        List<string> files = [];
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        files.Should().ContainSingle().Which.Should().Be("keep.txt");
+    }
+
     [TestMethod, Ignore("This test is expensive to run, should be checked manually")]
     public void CreateResult_DriveRootRecursion_MatchesFileMatcherOracle()
     {
         // Parity check against MSBuild's FileMatcher. MSBuild's default behavior depends on
         // Traits.Instance.ThrowOnDriveEnumeratingWildcard; in this test environment that trait is
         // off, so the oracle returns LogDriveEnumeratingWildcard (the search proceeds but a
-        // warning is logged). Touki diverges intentionally: MSBuildEnumerationOptions.AllowDriveEnumeration
-        // defaults to false, so CreateResult returns FailBecauseDriveEnumerationIsForbidden. Both
+        // warning is logged). Touki diverges intentionally: MSBuildEnumerationRequest.AllowDriveEnumeration
+        // defaults to false, so CreateResult returns a rejected result. Both
         // outcomes share the property that the search does NOT run normally.
         FileMatcherWrapper.GetFilesResult oracle = FileMatcherWrapper.GetFiles(
             Environment.CurrentDirectory,
             DriveRootRecursiveSpec);
 
-        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(DriveRootRecursiveSpec);
+        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(new(DriveRootRecursiveSpec));
 
         oracle.Action.Should().BeOneOf(
             FileMatcherWrapper.SearchAction.FailOnDriveEnumeratingWildcard,
             FileMatcherWrapper.SearchAction.LogDriveEnumeratingWildcard);
         oracle.FileList.Should().BeEmpty();
-        result.Action.Should().Be(MSBuildSearchAction.FailBecauseDriveEnumerationIsForbidden);
+        result.Should().BeOfType<MSBuildRejectedResult>();
     }
 
     [TestMethod]
@@ -322,26 +484,25 @@ public class MSBuildEnumerationResultTests
     [DataRow("foo.../bar.cs")]            // triple-dot sequence
     [DataRow("a**b")]                     // misplaced ** between non-separator chars
     [DataRow("*.cs**")]                   // misplaced ** glued to filename
-    public void CreateResult_IllegalIncludeSpec_ReturnsFileSpecAction(string spec)
+    public void CreateResult_IllegalIncludeSpec_ReturnsLiteral(string spec)
     {
-        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(spec);
+        MSBuildReturnLiteralResult result = MSBuildEnumerator.CreateResult(
+            new(spec)).Should().BeOfType<MSBuildReturnLiteralResult>().Which;
 
-        result.Action.Should().Be(MSBuildSearchAction.ReturnFileSpec);
-        result.Enumerator.Should().BeNull();
-        result.GlobFailure.Should().NotBeNullOrEmpty();
-        result.FailedExcludeSpec.Should().BeNull();
+        result.Specification.Should().Be(spec);
+        result.Reason.Should().NotBeNullOrEmpty();
     }
 
     [TestMethod]
-    public void CreateResult_WhitespaceOnlyIncludeSpec_ReturnsFileSpecAction()
+    public void CreateResult_WhitespaceOnlyIncludeSpec_ReturnsLiteral()
     {
         // A whitespace-only include normalizes to empty. CreateResult treats that as a
         // ReturnFileSpec error (mirroring MSBuild's "return the spec verbatim" for illegal specs)
         // rather than letting the MSBuildSpecification constructor throw.
-        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult("   ");
+        MSBuildReturnLiteralResult result = MSBuildEnumerator.CreateResult(
+            new("   ")).Should().BeOfType<MSBuildReturnLiteralResult>().Which;
 
-        result.Action.Should().Be(MSBuildSearchAction.ReturnFileSpec);
-        result.Enumerator.Should().BeNull();
-        result.GlobFailure.Should().NotBeNullOrEmpty();
+        result.Specification.Should().Be("   ");
+        result.Reason.Should().NotBeNullOrEmpty();
     }
 }

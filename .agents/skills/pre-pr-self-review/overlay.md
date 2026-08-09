@@ -44,8 +44,7 @@ vendored payload).
   and `-Base`).
 - Touki utility types referenced in the checklist's test-hygiene items:
   `Touki.Text.ValueStringBuilder`, `Touki.Io.TempFolder`,
-  `Touki.Collections.ArrayPoolList<T>`, and the MSBuild matcher handles returned by
-  `MSBuildMatchBuilder.FromSpecification`.
+  `Touki.Collections.ArrayPoolList<T>`, and `MSBuildMatchBuildResult.Session`.
 - The war-stories the core anonymized were touki review rounds: PR #141 (a PR body
   claiming a `Span<char>` "null at end" case and a `MatchAnyDirectory` double-dispose
   test, neither in the diff) and PR #110 (links broken by a stale base point).

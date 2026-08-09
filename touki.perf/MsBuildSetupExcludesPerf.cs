@@ -79,7 +79,8 @@ public class MsBuildSetupExcludesPerf
     [Benchmark]
     public IReadOnlyList<string> MsBuildEnumerator()
     {
-        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(Filespec, UnsplitExcludes, _directory);
+        using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(
+            new(Filespec, _directory, UnsplitExcludes));
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -92,11 +93,9 @@ public class MsBuildSetupExcludesPerf
     [Benchmark]
     public IReadOnlyList<string> MsBuildEnumeratorResult()
     {
-        MSBuildEnumerationResult result = MSBuildEnumerator.CreateResult(
-            Filespec,
-            excludeSpecs: UnsplitExcludes,
-            projectDirectory: _directory);
-        using MSBuildEnumerator enumerator = result.Enumerator!;
+        MSBuildSearchResult result = (MSBuildSearchResult)MSBuildEnumerator.CreateResult(
+            new(Filespec, _directory, UnsplitExcludes));
+        using MSBuildEnumerator enumerator = result.Enumerator;
         List<string> results = [];
         while (enumerator.MoveNext())
         {

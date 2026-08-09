@@ -106,9 +106,11 @@ wsl --cd <LINUX_CHECKOUT> -- bash -ic `
 Windows runs skip `Posix`, `PosixPath`, and (without Git for Windows
 installed) `Bash` oracle suites. The Linux run adds them and validates
 `GlobMatcher`'s multiple-asterisk and sequential-separator normalization
-against `fnmatch(3)` and native bash 5 with `extglob`/`globstar`. Pending
-engine-level gaps are tracked under "Multiple-asterisk-run behavior"
-findings in [docs/globbing-feature-plan.md](../../../docs/globbing-feature-plan.md).
+against `fnmatch(3)` and native bash 5 with `extglob`/`globstar`. Known Bash
+and Git engine-level gaps remain explicit inconclusive rows in the
+[Bash](../../../touki.tests/Touki/Io/Globbing/MultipleAsteriskOracleTests.Bash.cs)
+and [Git](../../../touki.tests/Touki/Io/Globbing/MultipleAsteriskOracleTests.Git.cs)
+oracle tests.
 
 The one OS-conditional row to expect is
 `SequentialSeparatorMSBuildOracleTests` `//a` vs `/a`: `MSBuildGlob` on

@@ -50,7 +50,7 @@ public partial class GlobSpecificationTests
     [TestMethod]
     public void Compile_FileSystemGlobbing_ExtGlobQuestionMarkInBody_IsLiteral()
     {
-        using GlobSpecification matcher = GlobSpecification.Compile(
+        GlobSpecification matcher = GlobSpecification.Compile(
             "@(a?b|c)",
             GlobDialect.FileSystemGlobbing,
             GlobOptions.AllowExtGlob);
@@ -63,7 +63,7 @@ public partial class GlobSpecificationTests
     [TestMethod]
     public void Compile_FileSystemGlobbing_ExtGlobQuestionMarkAfterLiteral_IsExtGlob()
     {
-        using GlobSpecification matcher = GlobSpecification.Compile(
+        GlobSpecification matcher = GlobSpecification.Compile(
             "a?(b)",
             GlobDialect.FileSystemGlobbing,
             GlobOptions.AllowExtGlob);
@@ -76,7 +76,7 @@ public partial class GlobSpecificationTests
     [TestMethod]
     public void Compile_FileSystemGlobbing_StarRunBeforeExtGlob_PreservesWildcardAndOperator()
     {
-        using GlobSpecification matcher = GlobSpecification.Compile(
+        GlobSpecification matcher = GlobSpecification.Compile(
             "ab***(e|f)g",
             GlobDialect.FileSystemGlobbing,
             GlobOptions.AllowExtGlob);
@@ -90,7 +90,7 @@ public partial class GlobSpecificationTests
     [TestMethod]
     public void Compile_FileSystemGlobbing_StarRunSegmentBeforeExtGlob_CollapsesToOneSegment()
     {
-        using GlobSpecification matcher = GlobSpecification.Compile(
+        GlobSpecification matcher = GlobSpecification.Compile(
             "***/@(x)",
             GlobDialect.FileSystemGlobbing,
             GlobOptions.AllowExtGlob);
@@ -102,14 +102,14 @@ public partial class GlobSpecificationTests
     [TestMethod]
     public void Compile_FileSystemGlobbing_ExtGlobPattern_DoesNotApplyWholePatternRewrites()
     {
-        using GlobSpecification parentMatcher = GlobSpecification.Compile(
+        GlobSpecification parentMatcher = GlobSpecification.Compile(
             "@(foo/../bar|baz)",
             GlobDialect.FileSystemGlobbing,
             GlobOptions.AllowExtGlob);
 
         parentMatcher.IsMatch("foo/../bar").Should().BeTrue();
 
-        using GlobSpecification recursiveSuffixMatcher = GlobSpecification.Compile(
+        GlobSpecification recursiveSuffixMatcher = GlobSpecification.Compile(
             "@(foo/**.cs|bar)",
             GlobDialect.FileSystemGlobbing,
             GlobOptions.AllowExtGlob);

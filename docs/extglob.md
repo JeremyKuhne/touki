@@ -122,7 +122,7 @@ The option is opt-in on every dialect:
 ```csharp
 using Touki.Io.Globbing;
 
-using GlobSpecification specification = GlobSpecification.Compile(
+GlobSpecification specification = GlobSpecification.Compile(
     pattern: "@(*.cs|*.txt)",
     dialect: GlobDialect.Bash,
     options: GlobOptions.AllowExtGlob);

@@ -7,10 +7,8 @@ using Touki.Io.Globbing;
 namespace Touki.Io;
 
 /// <summary>
-///  Coverage and behavior tests for <see cref="GlobEnumerator"/>: every public
-///  factory overload, null-argument validation, single-exclude and multi-exclude
-///  composition (subtree subsumption + file-name disjointness dedupe), default
-///  enumeration options, custom enumeration options, and the per-entry
+///  Coverage and behavior tests for <see cref="GlobEnumerator"/>: options validation,
+///  exclude composition, default and custom enumeration options, and the per-entry
 ///  <c>TransformEntry</c> output paths (root-relative for nested files,
 ///  bare name for top-level files).
 /// </summary>
@@ -36,16 +34,32 @@ public class GlobEnumeratorTests
         return folder;
     }
 
+    private static GlobEnumerationOptions CreateOptions(
+        IReadOnlyList<string>? excludePatterns = null,
+        GlobDialect dialect = GlobDialect.PosixPath,
+        GlobOptions globOptions = GlobOptions.None,
+        EnumerationOptions? enumerationOptions = null) => new()
+    {
+        ExcludePatterns = excludePatterns ?? Array.Empty<string>(),
+        Dialect = dialect,
+        GlobOptions = globOptions,
+        EnumerationOptions = enumerationOptions ?? new EnumerationOptions
+        {
+            MatchType = MatchType.Simple,
+            MatchCasing = MatchCasing.PlatformDefault,
+            IgnoreInaccessible = true,
+            RecurseSubdirectories = true
+        }
+    };
+
     [TestMethod]
     public void Create_IncludeOnly_PosixPathDefault_FindsExpectedFiles()
     {
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.cs",
-            excludePattern: null,
             folder.TempPath,
-            GlobDialect.PosixPath,
-            GlobOptions.AllowGlobStar);
+            CreateOptions(globOptions: GlobOptions.AllowGlobStar));
 
         HashSet<string> results = Collect(enumerator);
 
@@ -62,10 +76,8 @@ public class GlobEnumeratorTests
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.cs",
-            "",
             folder.TempPath,
-            GlobDialect.PosixPath,
-            GlobOptions.AllowGlobStar);
+            CreateOptions([""], globOptions: GlobOptions.AllowGlobStar));
 
         IEnumerable<string> results = Collect(enumerator);
         results.Should().Contain(JoinSep("obj", "Debug", "obj.cs"));
@@ -77,10 +89,8 @@ public class GlobEnumeratorTests
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.cs",
-            "**/obj/**",
             folder.TempPath,
-            GlobDialect.PosixPath,
-            GlobOptions.AllowGlobStar);
+            CreateOptions(["**/obj/**"], globOptions: GlobOptions.AllowGlobStar));
 
         HashSet<string> results = Collect(enumerator);
         results.Should().Contain(JoinSep("src", "a.cs"));
@@ -88,29 +98,51 @@ public class GlobEnumeratorTests
     }
 
     [TestMethod]
-    public void Create_DialectOverload_HonorsDialect()
+    [DataRow(GlobDialect.MSBuild, GlobOptions.None)]
+    [DataRow(GlobDialect.FileSystemGlobbing, GlobOptions.None)]
+    [DataRow(GlobDialect.PosixPath, GlobOptions.AllowGlobStar)]
+    [DataRow(GlobDialect.Bash, GlobOptions.AllowGlobStar)]
+    public void Create_FileOnlyExclude_DoesNotPruneDirectory(
+        GlobDialect dialect,
+        GlobOptions globOptions)
+    {
+        using TempFolder folder = new();
+        string objDirectory = Path.Combine(folder.TempPath, "obj");
+        Directory.CreateDirectory(objDirectory);
+        File.WriteAllText(Path.Combine(objDirectory, "excluded.txt"), string.Empty);
+        File.WriteAllText(Path.Combine(objDirectory, "included.cs"), string.Empty);
+
+        using GlobEnumerator enumerator = GlobEnumerator.Create(
+            "**/*",
+            folder.TempPath,
+            CreateOptions(["**/obj/*.txt"], dialect, globOptions));
+
+        HashSet<string> results = Collect(enumerator);
+        results.Should().ContainSingle().Which.Should().Be(JoinSep("obj", "included.cs"));
+    }
+
+    [TestMethod]
+    public void Create_DialectOption_HonorsDialect()
     {
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.cs",
-            excludePattern: null,
             folder.TempPath,
-            GlobDialect.MSBuild);
+            CreateOptions(dialect: GlobDialect.MSBuild));
 
         HashSet<string> results = Collect(enumerator);
         results.Should().Contain(JoinSep("top.cs"));
     }
 
     [TestMethod]
-    public void Create_DialectAndOptionsOverload_HonorsOptions()
+    public void Create_GlobOptions_HonorsOptions()
     {
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.CS",
-            excludePattern: null,
             folder.TempPath,
-            GlobDialect.PosixPath,
-            GlobOptions.AllowGlobStar | GlobOptions.IgnoreCase);
+            CreateOptions(
+                globOptions: GlobOptions.AllowGlobStar | GlobOptions.IgnoreCase));
 
         HashSet<string> results = Collect(enumerator);
         results.Should().Contain(JoinSep("top.cs"));
@@ -122,8 +154,8 @@ public class GlobEnumeratorTests
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.cs",
-            new[] { "**/obj/**", "**/bin/**" },
-            folder.TempPath);
+            folder.TempPath,
+            CreateOptions(["**/obj/**", "**/bin/**"]));
 
         HashSet<string> results = Collect(enumerator);
         results.Should().NotContain(JoinSep("obj", "Debug", "obj.cs"));
@@ -132,64 +164,86 @@ public class GlobEnumeratorTests
     }
 
     [TestMethod]
-    public void Create_MultipleExcludes_DialectOverload()
+    public void Create_MultipleExcludes_DialectOption()
     {
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.cs",
-            new[] { "**/obj/**" },
             folder.TempPath,
-            GlobDialect.MSBuild);
+            CreateOptions(["**/obj/**"], dialect: GlobDialect.MSBuild));
 
         HashSet<string> results = Collect(enumerator);
         results.Should().NotContain(JoinSep("obj", "Debug", "obj.cs"));
     }
 
     [TestMethod]
-    public void Create_MultipleExcludes_DialectAndOptionsOverload()
+    public void Create_MultipleExcludes_DialectAndGlobOptions()
     {
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.cs",
-            new[] { "**/obj/**" },
             folder.TempPath,
-            GlobDialect.PosixPath,
-            GlobOptions.AllowGlobStar);
+            CreateOptions(["**/obj/**"], globOptions: GlobOptions.AllowGlobStar));
 
         HashSet<string> results = Collect(enumerator);
         results.Should().NotContain(JoinSep("obj", "Debug", "obj.cs"));
     }
 
     [TestMethod]
-    public void Create_MultipleExcludes_SubtreeSubsumption_RedundantSubdirSkipped()
+    public void Create_MultipleOverlappingSubtreeExcludes_ApplyTogether()
     {
-        // `obj/**` subsumes `obj/Debug/**`; the dedupe pass marks the redundant
-        // exclude as skipped before compilation.
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.cs",
-            new[] { "obj/**", "obj/Debug/**" },
-            folder.TempPath);
+            folder.TempPath,
+            CreateOptions(["obj/**", "obj/Debug/**"]));
 
         HashSet<string> results = Collect(enumerator);
         results.Should().NotContain(JoinSep("obj", "Debug", "obj.cs"));
     }
 
     [TestMethod]
-    public void Create_MultipleExcludes_FileNameDisjointness_DropsUnreachableExclude()
+    public void Create_MultipleFileExcludes_ApplyTogether()
     {
-        // The include's trailing literal is `.cs`; the `.user` exclude can never
-        // match a `.cs` file, so the dedupe pass drops it. The enumeration still
-        // returns the expected files.
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.cs",
-            new[] { "**/*.user", "**/obj/**" },
-            folder.TempPath);
+            folder.TempPath,
+            CreateOptions(["**/*.user", "**/obj/**"]));
 
         HashSet<string> results = Collect(enumerator);
         results.Should().Contain(JoinSep("src", "a.cs"));
         results.Should().NotContain(JoinSep("src", "b.user"));
+    }
+
+    [TestMethod]
+    public void Create_MSBuildCaseInsensitiveExclude_IsNotDropped()
+    {
+        using TempFolder folder = new();
+        File.WriteAllText(Path.Combine(folder.TempPath, "source.cs"), string.Empty);
+
+        using GlobEnumerator enumerator = GlobEnumerator.Create(
+            "**/*.CS",
+            folder.TempPath,
+            CreateOptions(["**/*.cs"], dialect: GlobDialect.MSBuild));
+
+        Collect(enumerator).Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public void Create_PosixPathWithoutGlobstar_AppliesBothDoubleStarExcludes()
+    {
+        using TempFolder folder = new();
+        string directory = Path.Combine(folder.TempPath, "foo", "bar");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, "source.cs"), string.Empty);
+
+        using GlobEnumerator enumerator = GlobEnumerator.Create(
+            "foo/bar/*",
+            folder.TempPath,
+            CreateOptions(["foo/**", "foo/bar/**"]));
+
+        Collect(enumerator).Should().BeEmpty();
     }
 
     [TestMethod]
@@ -199,8 +253,8 @@ public class GlobEnumeratorTests
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.cs",
-            new[] { "", "**/obj/**", "" },
-            folder.TempPath);
+            folder.TempPath,
+            CreateOptions(["", "**/obj/**", ""]));
 
         HashSet<string> results = Collect(enumerator);
         results.Should().NotContain(JoinSep("obj", "Debug", "obj.cs"));
@@ -208,31 +262,27 @@ public class GlobEnumeratorTests
     }
 
     [TestMethod]
-    public void Create_TrailingSlashSubtreeSubsumption()
+    public void Create_TrailingSlashSubtreePatterns_ApplyTogether()
     {
-        // `obj/**/` (with trailing slash) is still recognized as a subtree pattern.
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.cs",
-            new[] { "obj/**/", "obj/Debug/**" },
-            folder.TempPath);
+            folder.TempPath,
+            CreateOptions(["obj/**/", "obj/Debug/**"]));
 
         HashSet<string> results = Collect(enumerator);
         results.Should().NotContain(JoinSep("obj", "Debug", "obj.cs"));
     }
 
     [TestMethod]
-    public void Create_BackslashSubtreePatternRecognized()
+    public void Create_BackslashSubtreePatterns_CompileTogether()
     {
-        // The subsumption pass recognizes either separator.
         using TempFolder folder = CreateFixture();
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.cs",
-            new[] { @"obj\**", @"obj\Debug\**" },
-            folder.TempPath);
+            folder.TempPath,
+            CreateOptions([@"obj\**", @"obj\Debug\**"]));
 
-        // The exclude compiles even with backslash; the matcher will use its own
-        // separator. The point is the dedupe pass doesn't choke on `\`.
         _ = Collect(enumerator);
     }
 
@@ -250,11 +300,8 @@ public class GlobEnumeratorTests
 
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "*.cs",
-            excludePattern: null,
             folder.TempPath,
-            GlobDialect.PosixPath,
-            GlobOptions.None,
-            options);
+            CreateOptions(enumerationOptions: options));
 
         HashSet<string> results = Collect(enumerator);
         results.Should().Contain("top.cs");
@@ -268,7 +315,7 @@ public class GlobEnumeratorTests
         using TempFolder folder = CreateFixture();
 
         FluentActions.Invoking(() =>
-            GlobEnumerator.Create(null!, excludePattern: null, folder.TempPath))
+            GlobEnumerator.Create(null!, folder.TempPath))
             .Should().Throw<ArgumentNullException>();
     }
 
@@ -277,25 +324,67 @@ public class GlobEnumeratorTests
     {
         using TempFolder folder = CreateFixture();
 
-        FluentActions.Invoking(() =>
-            GlobEnumerator.Create("**/*.cs", excludePatterns: null!, folder.TempPath))
-            .Should().Throw<ArgumentNullException>();
+        GlobEnumerationOptions options = new() { ExcludePatterns = null! };
+
+        FluentActions.Invoking(() => GlobEnumerator.Create("**/*.cs", folder.TempPath, options))
+            .Should().Throw<ArgumentException>();
+    }
+
+    [TestMethod]
+    public void Create_NullExcludeElement_Throws()
+    {
+        using TempFolder folder = CreateFixture();
+        GlobEnumerationOptions options = new() { ExcludePatterns = [null!] };
+
+        FluentActions.Invoking(() => GlobEnumerator.Create("**/*.cs", folder.TempPath, options))
+            .Should().Throw<ArgumentException>();
     }
 
     [TestMethod]
     public void Create_NullRootDirectory_Throws()
     {
-        FluentActions.Invoking(() =>
-            GlobEnumerator.Create("**/*.cs", excludePattern: null, rootDirectory: null!))
+        FluentActions.Invoking(() => GlobEnumerator.Create("**/*.cs", rootDirectory: null!))
             .Should().Throw<ArgumentNullException>();
     }
 
     [TestMethod]
-    public void Create_NullRootDirectory_ExcludeListOverload_Throws()
+    public void Create_NullEnumerationOptionsProperty_UsesDefaults()
     {
-        FluentActions.Invoking(() =>
-            GlobEnumerator.Create("**/*.cs", new[] { "**/obj/**" }, rootDirectory: null!))
-            .Should().Throw<ArgumentNullException>();
+        using TempFolder folder = CreateFixture();
+        GlobEnumerationOptions options = new()
+        {
+            GlobOptions = GlobOptions.AllowGlobStar,
+            EnumerationOptions = null
+        };
+        using GlobEnumerator enumerator = GlobEnumerator.Create("**/*.cs", folder.TempPath, options);
+
+        Collect(enumerator).Should().Contain(JoinSep("src", "nested", "c.cs"));
+    }
+
+    [TestMethod]
+    public void Create_MutableOptions_AreSnapshotted()
+    {
+        using TempFolder folder = CreateFixture();
+        List<string> excludes = ["**/obj/**"];
+        EnumerationOptions enumerationOptions = new()
+        {
+            RecurseSubdirectories = true,
+            IgnoreInaccessible = true
+        };
+        GlobEnumerationOptions options = new()
+        {
+            ExcludePatterns = excludes,
+            GlobOptions = GlobOptions.AllowGlobStar,
+            EnumerationOptions = enumerationOptions
+        };
+        using GlobEnumerator enumerator = GlobEnumerator.Create("**/*.cs", folder.TempPath, options);
+
+        excludes.Clear();
+        enumerationOptions.RecurseSubdirectories = false;
+        HashSet<string> results = Collect(enumerator);
+
+        results.Should().Contain(JoinSep("src", "nested", "c.cs"));
+        results.Should().NotContain(JoinSep("obj", "Debug", "obj.cs"));
     }
 
     [TestMethod]
@@ -305,7 +394,7 @@ public class GlobEnumeratorTests
         // a top-level file in that case is yielded as its bare name.
         using TempFolder folder = CreateFixture();
         string rootWithSep = folder.TempPath + Path.DirectorySeparatorChar;
-        using GlobEnumerator enumerator = GlobEnumerator.Create("*.cs", excludePattern: null, rootWithSep);
+        using GlobEnumerator enumerator = GlobEnumerator.Create("*.cs", rootWithSep);
 
         HashSet<string> results = Collect(enumerator);
         results.Should().Contain("top.cs");

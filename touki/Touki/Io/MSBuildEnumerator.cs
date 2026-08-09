@@ -3,6 +3,8 @@
 // See LICENSE file in the project root for full license information
 
 using Touki.Collections;
+using System.Runtime.ExceptionServices;
+using System.Threading;
 
 namespace Touki.Io;
 
@@ -31,7 +33,7 @@ namespace Touki.Io;
 ///   </list>
 ///  </para>
 /// </remarks>
-public class MSBuildEnumerator : MatchEnumerator<string>
+public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
 {
     /// <summary>
     ///  Default options for the enumerator.
@@ -47,18 +49,24 @@ public class MSBuildEnumerator : MatchEnumerator<string>
     private readonly string _projectDirectory;
     private readonly bool _stripProjectDirectory;
     private readonly int _projectDirectoryLength;
+    private readonly IReadOnlyList<string> _invalidExcludeSpecs;
+    private readonly IFileSystemMatcherSession _session;
+    private int _sessionDisposed;
 
     /// <summary>
     ///  Initializes a new instance of the <see cref="MSBuildEnumerator"/> class.
     /// </summary>
     private MSBuildEnumerator(
-        IEnumerationMatcher matcher,
+        IFileSystemMatcherSession matcher,
         string? projectDirectory,
         bool stripProjectDirectory,
         string startDirectory,
-        EnumerationOptions options)
-        : base(startDirectory, matcher, options)
+        EnumerationOptions options,
+        IReadOnlyList<string>? invalidExcludeSpecs = null)
+        : base(startDirectory, options)
     {
+        _session = matcher;
+
         // Initialize project directory settings
         if (projectDirectory is null || !stripProjectDirectory)
         {
@@ -73,208 +81,312 @@ public class MSBuildEnumerator : MatchEnumerator<string>
             _projectDirectoryLength = projectDirectory.Length +
                 (Path.EndsInDirectorySeparator(_projectDirectory) ? 0 : 1);
         }
+
+        _invalidExcludeSpecs = invalidExcludeSpecs ?? Array.Empty<string>();
     }
 
     /// <summary>
-    ///  Creates an <see cref="MSBuildEnumerator"/> for the given file specification.
+    ///  Creates a lazy enumerator for a request that resolves to a search.
     /// </summary>
-    /// <param name="fileSpec">
-    ///  The specification of files to enumerate, which can include wildcards.
-    /// </param>
-    /// <param name="projectDirectory">
-    ///  The project directory used to resolve the specification. Relative
-    ///  specifications return paths relative to this directory. When
-    ///  <see langword="null"/>, <see cref="Environment.CurrentDirectory"/> is used
-    ///  for resolution and results are fully qualified.
-    /// </param>
-    /// <param name="options">
-    ///  Enumeration options that control matching behavior and recursion. If <see langword="null"/>,
-    ///  sensible defaults are used.
-    /// </param>
-    /// <returns>
-    ///  An <see cref="MSBuildEnumerator"/> that yields files matching the provided specification.
-    /// </returns>
-    public static MSBuildEnumerator Create(string fileSpec, string? projectDirectory, EnumerationOptions? options = null)
+    /// <exception cref="ArgumentException">The include must be returned literally.</exception>
+    /// <exception cref="global::System.IO.DirectoryNotFoundException">
+    ///  The resolved fixed start directory does not exist.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">The request is rejected by a safety policy.</exception>
+    public static MSBuildEnumerator Create(MSBuildEnumerationRequest request)
     {
-        ArgumentNullException.ThrowIfNull(fileSpec);
+        MSBuildEnumerationPlan plan = CreatePlan(request, returnEmptyForMissingStartDirectory: false);
+        if (plan.Enumerator is { } enumerator)
+        {
+            return enumerator;
+        }
 
-        options ??= DefaultOptions;
-
-        MSBuildSpecification include = new(fileSpec);
-        IEnumerationMatcher matcher = MSBuildMatchBuilder.FromSpecification(
-            include,
-            EmptyList<MSBuildSpecification>.Instance,
-            options.MatchType,
-            options.MatchCasing,
-            projectDirectory,
-            out StringSegment startDirectory);
-
-        return new MSBuildEnumerator(
-            matcher,
-            projectDirectory,
-            !Path.IsPathFullyQualified(fileSpec),
-            startDirectory.ToString(),
-            options);
-    }
-
-    /// <inheritdoc cref="Create(string, string?, EnumerationOptions?)"/>
-    /// <param name="excludeSpecs">Exclude specifications.</param>
-    public static MSBuildEnumerator Create(
-        string fileSpec,
-        string excludeSpecs,
-        string? projectDirectory,
-        EnumerationOptions? options = null)
-    {
-        ArgumentNullException.ThrowIfNull(fileSpec);
-
-        options ??= DefaultOptions;
-        MatchCasing matchCasing = Paths.GetFinalCasing(options.MatchCasing);
-
-        MSBuildSpecification include = new(fileSpec);
-        using var excludes = MSBuildSpecification.Split(excludeSpecs, ignoreCase: matchCasing == MatchCasing.CaseInsensitive);
-
-        IEnumerationMatcher matcher = MSBuildMatchBuilder.FromSpecification(
-            include,
-            excludes,
-            options.MatchType,
-            options.MatchCasing,
-            projectDirectory,
-            out StringSegment startDirectory);
-
-        return new MSBuildEnumerator(
-            matcher,
-            projectDirectory,
-            stripProjectDirectory: !Path.IsPathFullyQualified(fileSpec),
-            startDirectory.ToString(),
-            options);
+        return plan.Result switch
+        {
+            MSBuildReturnLiteralResult literal => throw new ArgumentException(literal.Reason, nameof(request)),
+            MSBuildEmptyResult => throw new global::System.IO.DirectoryNotFoundException(
+                "The resolved MSBuild enumeration start directory does not exist."),
+            MSBuildRejectedResult rejected => throw new InvalidOperationException(rejected.Message),
+            _ => throw new InvalidOperationException("Unknown MSBuild enumeration result.")
+        };
     }
 
     /// <summary>
-    ///  Builds an enumeration result for the given include / exclude specifications, mirroring the
-    ///  4-tuple returned by MSBuild's internal <c>FileMatcher.GetFiles</c>.
+    ///  Plans an MSBuild-compatible request as one closed result variant.
     /// </summary>
-    /// <param name="fileSpec">The include specification.</param>
-    /// <param name="excludeSpecs">
-    ///  Optional semicolon-separated exclude specifications. <see langword="null"/> or empty means no
-    ///  excludes.
-    /// </param>
-    /// <param name="projectDirectory">
-    ///  The project directory used to resolve a non-rooted include spec. When <see langword="null"/>,
-    ///  <see cref="Environment.CurrentDirectory"/> is used to resolve the spec, but absolute paths are
-    ///  returned in <see cref="MSBuildEnumerationResult.Enumerator"/> (paths are stripped to be relative
-    ///  to <paramref name="projectDirectory"/> only when a non-<see langword="null"/> value is supplied
-    ///  and the include spec is not fully qualified).
-    /// </param>
-    /// <param name="options">
-    ///  Enumeration options and Touki-specific safety flags. <see langword="null"/> selects a fresh
-    ///  <see cref="MSBuildEnumerationOptions"/> with default values.
-    /// </param>
+    /// <param name="request">The request to validate, parse, and plan.</param>
     /// <remarks>
     ///  <para>
-    ///   On the <see cref="MSBuildSearchAction.RunSearch"/> path the caller owns the
-    ///   <see cref="MSBuildEnumerationResult.Enumerator"/> and must dispose it after iteration.
+    ///   The caller owns <see cref="MSBuildSearchResult.Enumerator"/> when a
+    ///   <see cref="MSBuildSearchResult"/> is returned.
     ///  </para>
     /// </remarks>
-    public static MSBuildEnumerationResult CreateResult(
-        string fileSpec,
-        string? excludeSpecs = null,
-        string? projectDirectory = null,
-        MSBuildEnumerationOptions? options = null)
+    public static MSBuildEnumerationResult CreateResult(MSBuildEnumerationRequest request)
     {
+        MSBuildEnumerationPlan plan = CreatePlan(request, returnEmptyForMissingStartDirectory: true);
+        if (plan.Result is { } result)
+        {
+            return result;
+        }
+
+        MSBuildEnumerator enumerator = plan.Enumerator
+            ?? throw new InvalidOperationException("The MSBuild enumeration plan is invalid.");
+        try
+        {
+            return new MSBuildSearchResult(enumerator, plan.InvalidExcludeSpecifications);
+        }
+        catch
+        {
+            enumerator.Dispose();
+            throw;
+        }
+    }
+
+    private static MSBuildEnumerationPlan CreatePlan(
+        MSBuildEnumerationRequest request,
+        bool returnEmptyForMissingStartDirectory)
+    {
+        string fileSpec = request.Include
+            ?? throw new ArgumentException("The request must be initialized with an include specification.", nameof(request));
         ArgumentNullException.ThrowIfNull(fileSpec);
 
-        options ??= new MSBuildEnumerationOptions();
-        EnumerationOptions enumOptions = options.EnumerationOptions;
-        string rootDirectory = projectDirectory ?? Environment.CurrentDirectory;
+        EnumerationOptions enumOptions = request.EnumerationOptions is { } suppliedEnumerationOptions
+            ? SnapshotEnumerationOptions(suppliedEnumerationOptions)
+            : DefaultOptions;
+        string? excludeSpecs = request.Excludes;
+        string? projectDirectory = request.ProjectDirectory is null
+            ? null
+            : FileSystemMatchEnumeratorArguments.NormalizeRootDirectory(request.ProjectDirectory);
+        string rootDirectory = projectDirectory
+            ?? FileSystemMatchEnumeratorArguments.NormalizeRootDirectory(Environment.CurrentDirectory);
 
         // Validate the include spec against MSBuild's "legal file spec" rules before we ever try to
         // build an MSBuildSpecification. When the spec is illegal, MSBuild's FileMatcher.GetFiles
-        // returns it verbatim via SearchAction.ReturnFileSpec; we mirror that with our own
-        // ReturnFileSpec action and surface the validation reason via GlobFailure.
+        // returns it verbatim via SearchAction.ReturnFileSpec; we mirror that with an
+        // MSBuildReturnLiteralResult carrying the validation reason.
         StringSegment fileSpecSegment = new(fileSpec);
         StringSegment normalizedFileSpec = MSBuildSpecification.NormalizeAndValidate(fileSpecSegment, out string? includeError);
 
         if (includeError is not null)
         {
-            return new MSBuildEnumerationResult(
-                enumerator: null,
-                action: MSBuildSearchAction.ReturnFileSpec,
-                failedExcludeSpec: null,
-                globFailure: $"Specification '{fileSpec}' is not a legal file spec: {includeError}");
+            return new(new MSBuildReturnLiteralResult(
+                fileSpec,
+                $"Specification '{fileSpec}' is not a legal file spec: {includeError}"));
         }
 
-        // Parse once. The Create overloads parse a second time and FullyQualify a third time through
-        // MSBuildMatchBuilder; CreateResult avoids that by driving the match builder directly with the
-        // already-qualified include.
+        // Parse once and drive the match builder directly with the already-qualified include.
         MSBuildSpecification include = new MSBuildSpecification(fileSpecSegment, normalizedFileSpec).FullyQualify(rootDirectory);
 
-        if (!options.AllowDriveEnumeration && include.IsDriveRootRecursion)
+        if (!request.AllowDriveEnumeration && include.IsDriveRootRecursion)
         {
-            return new MSBuildEnumerationResult(
-                enumerator: null,
-                action: MSBuildSearchAction.FailBecauseDriveEnumerationIsForbidden,
-                failedExcludeSpec: null,
-                globFailure:
-                    $"Drive enumeration is not allowed for '{fileSpec}'. Set " +
-                    $"{nameof(MSBuildEnumerationOptions)}.{nameof(MSBuildEnumerationOptions.AllowDriveEnumeration)} = true to override.");
+            return new(new MSBuildRejectedResult(
+                MSBuildRejectionReason.DriveEnumerationForbidden,
+                $"Drive enumeration is not allowed for '{fileSpec}'. Set " +
+                    $"{nameof(MSBuildEnumerationRequest)}.{nameof(MSBuildEnumerationRequest.AllowDriveEnumeration)} to true to override."));
         }
 
         bool ignoreCase = Paths.GetFinalCasing(enumOptions.MatchCasing) == MatchCasing.CaseInsensitive;
-        ListBase<MSBuildSpecification> excludes = string.IsNullOrEmpty(excludeSpecs)
-            ? EmptyList<MSBuildSpecification>.Instance
-            : MSBuildSpecification.Split(excludeSpecs!, ignoreCase);
+        ListBase<MSBuildSpecificationResult>? excludeResults = null;
+        SingleOptimizedList<MSBuildSpecification, ArrayPoolList<MSBuildSpecification>>? parsedExcludes = null;
+        ListBase<MSBuildSpecification> excludes = EmptyList<MSBuildSpecification>.Instance;
+        string[] invalidExcludeSpecs = [];
+
+        if (!string.IsNullOrEmpty(excludeSpecs))
+        {
+            excludeResults = MSBuildSpecification.SplitWithErrors(excludeSpecs!, ignoreCase);
+            parsedExcludes = [];
+            SingleOptimizedList<string, ArrayPoolList<string>> ignoredExcludes = [];
+            try
+            {
+                for (int i = 0; i < excludeResults.Count; i++)
+                {
+                    MSBuildSpecificationResult result = excludeResults[i];
+                    if (result.IsError)
+                    {
+                        ignoredExcludes.Add(result.Original.ToString());
+                    }
+                    else
+                    {
+                        parsedExcludes.Add(result.Specification);
+                    }
+                }
+
+                if (ignoredExcludes.Count > 0)
+                {
+                    invalidExcludeSpecs = new string[ignoredExcludes.Count];
+                    ignoredExcludes.CopyTo(invalidExcludeSpecs, 0);
+                }
+            }
+            finally
+            {
+                ignoredExcludes.Dispose();
+            }
+
+            excludes = parsedExcludes;
+        }
 
         try
         {
-            IEnumerationMatcher matcher = MSBuildMatchBuilder.FromSpecification(
+            MSBuildMatchBuildResult buildResult = MSBuildMatchBuilder.FromSpecification(
                 include,
                 excludes,
                 enumOptions.MatchType,
                 enumOptions.MatchCasing,
-                rootDirectory,
-                out StringSegment startDirectory);
+                rootDirectory);
+            IFileSystemMatcherSession matcher = buildResult.Session;
 
-            string startDirectoryString = startDirectory.ToString();
+            string startDirectoryString = buildResult.StartDirectory.ToString();
 
             // Mirror MSBuild's FileMatcher.GetFileSearchData: when the resolved fixed directory does
             // not exist as a directory on disk, return an empty list rather than letting the
             // underlying FileSystemEnumerator throw on first iteration. This catches both trailing-
             // separator specs that resolve onto a file (e.g. "Foo/b.txt/") and specs naming a missing
             // subdirectory (e.g. "Missing/", "Missing/**").
-            if (!Directory.Exists(startDirectoryString))
+            if (returnEmptyForMissingStartDirectory && !Directory.Exists(startDirectoryString))
             {
-                return new MSBuildEnumerationResult(
-                    enumerator: null,
-                    action: MSBuildSearchAction.ReturnEmptyList,
-                    failedExcludeSpec: null,
-                    globFailure: null);
+                matcher.Dispose();
+                return new(new MSBuildEmptyResult(MSBuildEmptyReason.StartDirectoryNotFound));
             }
 
-            MSBuildEnumerator enumerator = new(
-                matcher,
-                projectDirectory,
-                stripProjectDirectory: !Path.IsPathFullyQualified(fileSpec),
-                startDirectoryString,
-                enumOptions);
+            MSBuildEnumerator enumerator;
+            try
+            {
+                enumerator = new(
+                    matcher,
+                    projectDirectory,
+                    stripProjectDirectory: !Path.IsPathFullyQualified(fileSpec),
+                    startDirectoryString,
+                    enumOptions,
+                    invalidExcludeSpecs);
+            }
+            catch
+            {
+                matcher.Dispose();
+                throw;
+            }
 
-            return new MSBuildEnumerationResult(
-                enumerator: enumerator,
-                action: MSBuildSearchAction.RunSearch,
-                failedExcludeSpec: null,
-                globFailure: null);
+            return new(enumerator, invalidExcludeSpecs);
         }
         finally
         {
-            if (excludes is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
+            parsedExcludes?.Dispose();
+            excludeResults?.Dispose();
         }
     }
 
+    private static EnumerationOptions SnapshotEnumerationOptions(EnumerationOptions options) => new()
+    {
+        AttributesToSkip = options.AttributesToSkip,
+        BufferSize = options.BufferSize,
+        IgnoreInaccessible = options.IgnoreInaccessible,
+        MatchCasing = options.MatchCasing,
+        MatchType = options.MatchType,
+        MaxRecursionDepth = options.MaxRecursionDepth,
+        RecurseSubdirectories = options.RecurseSubdirectories,
+        ReturnSpecialDirectories = options.ReturnSpecialDirectories
+    };
+
     /// <inheritdoc/>
     protected override bool ShouldIncludeEntry(ref FileSystemEntry entry) =>
-        !entry.IsDirectory && base.ShouldIncludeEntry(ref entry);
+        !entry.IsDirectory
+        && _session.MatchesFile(entry.Directory, entry.FileName)
+        && ShouldIncludeMatchedFile(ref entry);
+
+    /// <inheritdoc/>
+    protected override bool ShouldRecurseIntoEntry(ref FileSystemEntry entry) =>
+        _session.MatchesDirectory(entry.Directory, entry.FileName)
+            != DirectoryMatchType.NoDescendantFilesMatch;
+
+    /// <inheritdoc/>
+    protected override void OnDirectoryFinished(ReadOnlySpan<char> directory) =>
+        _session.DirectoryFinished(directory);
+
+    private bool ShouldIncludeMatchedFile(ref FileSystemEntry entry)
+    {
+        for (int i = 0; i < _invalidExcludeSpecs.Count; i++)
+        {
+            if (MatchesResultPath(ref entry, _invalidExcludeSpecs[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool MatchesResultPath(ref FileSystemEntry entry, ReadOnlySpan<char> exclude)
+    {
+        if (!Path.IsPathFullyQualified(exclude) && !_stripProjectDirectory)
+        {
+            return false;
+        }
+
+        if (_stripProjectDirectory && !EntryDirectoryIsWithinProjectDirectory(entry.Directory))
+        {
+            string relativePath = Path.GetRelativePath(_projectDirectory, entry.ToFullPath());
+            return exclude.SequenceEqual(relativePath);
+        }
+
+        ReadOnlySpan<char> prefix;
+        if (!_stripProjectDirectory)
+        {
+            prefix = entry.Directory;
+        }
+        else if (entry.Directory.Length <= _projectDirectoryLength)
+        {
+            return exclude.SequenceEqual(entry.FileName);
+        }
+        else
+        {
+            prefix = entry.Directory[_projectDirectoryLength..];
+        }
+
+        return MatchesResultPath(prefix, entry.FileName, exclude);
+    }
+
+    /// <inheritdoc/>
+    protected override void Dispose(bool disposing)
+    {
+        Exception? firstException = null;
+        try
+        {
+            base.Dispose(disposing);
+        }
+        catch (Exception exception)
+        {
+            firstException = exception;
+        }
+
+        if (disposing && Interlocked.Exchange(ref _sessionDisposed, 1) == 0)
+        {
+            try
+            {
+                _session.Dispose();
+            }
+            catch (Exception exception)
+            {
+                firstException ??= exception;
+            }
+        }
+
+        if (firstException is not null)
+        {
+            ExceptionDispatchInfo.Capture(firstException).Throw();
+        }
+    }
+
+    internal static bool MatchesResultPath(
+        ReadOnlySpan<char> prefix,
+        ReadOnlySpan<char> fileName,
+        ReadOnlySpan<char> exclude)
+    {
+        bool needsSeparator = prefix.IsEmpty || prefix[^1] != Path.DirectorySeparatorChar;
+        int separatorLength = needsSeparator ? 1 : 0;
+        return exclude.Length == prefix.Length + separatorLength + fileName.Length
+            && exclude.StartsWith(prefix, StringComparison.Ordinal)
+            && (!needsSeparator || exclude[prefix.Length] == Path.DirectorySeparatorChar)
+            && exclude[(prefix.Length + separatorLength)..].SequenceEqual(fileName);
+    }
 
     /// <inheritdoc/>
     protected override string TransformEntry(ref FileSystemEntry entry)
@@ -285,6 +397,11 @@ public class MSBuildEnumerator : MatchEnumerator<string>
             return entry.ToFullPath();
         }
 
+        if (!EntryDirectoryIsWithinProjectDirectory(entry.Directory))
+        {
+            return Path.GetRelativePath(_projectDirectory, entry.ToFullPath());
+        }
+
         if (entry.Directory.Length <= _projectDirectoryLength)
         {
             // If the entry is in the base directory, we can just return the file name.
@@ -293,4 +410,10 @@ public class MSBuildEnumerator : MatchEnumerator<string>
 
         return $"{entry.Directory[_projectDirectoryLength..]}{Path.DirectorySeparatorChar}{entry.FileName}";
     }
+
+    private bool EntryDirectoryIsWithinProjectDirectory(ReadOnlySpan<char> entryDirectory) =>
+        Paths.IsSameOrSubdirectory(
+            _projectDirectory,
+            entryDirectory,
+            ignoreCase: Paths.GetFinalCasing(MatchCasing.PlatformDefault) == MatchCasing.CaseInsensitive);
 }

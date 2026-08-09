@@ -28,6 +28,8 @@ namespace Touki.Io.Globbing;
 /// </remarks>
 internal sealed partial class CompiledGlobStrategy : GlobStrategy
 {
+    private const string MSBuildAllDotInput = "\0";
+
     private readonly string _program;
     private readonly int _nfaProgramLength;
     private readonly int _tailStart;
@@ -52,6 +54,8 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
     ///  walk would re-run on every hidden-file input for extglob programs.
     /// </summary>
     private readonly bool _canStartWithDot;
+    private bool _useMSBuildTrailingDotAny;
+    private EffectiveDoubleStarMode _effectiveDoubleStarMode;
 
     /// <summary>
     ///  Constructs a matcher with no trailing-literal anchor (the program is run end-to-end).
@@ -91,6 +95,31 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
 
     /// <inheritdoc/>
     internal override string LiteralPathPrefix => _literalPathPrefix;
+
+    internal void EnableMSBuildTrailingDotMatching()
+    {
+        _useMSBuildTrailingDotAny = true;
+        _effectiveDoubleStarMode = EffectiveDoubleStarMode.RequireAbsent;
+    }
+
+    internal void RequireEffectiveDoubleStar() =>
+        _effectiveDoubleStarMode = EffectiveDoubleStarMode.RequirePresent;
+
+    internal bool MatchesMSBuildTrailingDotAllDotInput(ReadOnlySpan<char> directoryPrefix)
+    {
+        Debug.Assert(_traits.AreFlagsSet(GlobTraits.ExtGlob));
+        Debug.Assert(_useMSBuildTrailingDotAny);
+
+        return MatchExtGlob(
+            directoryPrefix,
+            MSBuildAllDotInput.AsSpan(),
+            _program.AsSpan(0, _nfaProgramLength),
+            Separator,
+            IgnoreCaseKind,
+            useMSBuildTrailingDotAny: true,
+            useMSBuildAllDotInput: true,
+            _effectiveDoubleStarMode);
+    }
 
     /// <summary>
     ///  Walks the encoded program looking for a leading <see cref="GlobOpCodes.Literal"/>
@@ -262,7 +291,15 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
 
         if (_traits.AreFlagsSet(GlobTraits.ExtGlob))
         {
-            return MatchExtGlob(first, second, program, Separator, IgnoreCaseKind);
+            return MatchExtGlob(
+                first,
+                second,
+                program,
+                Separator,
+                IgnoreCaseKind,
+                _useMSBuildTrailingDotAny,
+                useMSBuildAllDotInput: false,
+                _effectiveDoubleStarMode);
         }
 
         if (IgnoreCaseKind == IgnoreCaseKind.Off)

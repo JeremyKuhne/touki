@@ -39,18 +39,33 @@ internal sealed partial class CompiledGlobStrategy
         /// <summary>Case-sensitivity policy for literal/class comparisons.</summary>
         public readonly IgnoreCaseKind Kind;
 
+        /// <summary>Whether <c>?</c> uses MSBuild trailing-dot two-character semantics.</summary>
+        public readonly bool UseMSBuildTrailingDotAny;
+
+        /// <summary>Whether the synthetic input represents a Windows all-dot filename.</summary>
+        public readonly bool UseMSBuildAllDotInput;
+
+        /// <summary>Required effective-double-star state for an accepting execution path.</summary>
+        public readonly EffectiveDoubleStarMode EffectiveDoubleStarMode;
+
         public EngineInputs(
             ReadOnlySpan<char> first,
             ReadOnlySpan<char> second,
             ReadOnlySpan<char> program,
             char separator,
-            IgnoreCaseKind kind)
+            IgnoreCaseKind kind,
+            bool useMSBuildTrailingDotAny = false,
+            bool useMSBuildAllDotInput = false,
+            EffectiveDoubleStarMode effectiveDoubleStarMode = EffectiveDoubleStarMode.Ignore)
         {
             First = first;
             Second = second;
             Program = program;
             Separator = separator;
             Kind = kind;
+            UseMSBuildTrailingDotAny = useMSBuildTrailingDotAny;
+            UseMSBuildAllDotInput = useMSBuildAllDotInput;
+            EffectiveDoubleStarMode = effectiveDoubleStarMode;
         }
     }
 }
