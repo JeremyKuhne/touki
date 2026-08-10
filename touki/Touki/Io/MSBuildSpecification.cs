@@ -399,13 +399,29 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///   the subset that is actually meaningful for this library:
     ///  </para>
     ///  <list type="bullet">
-    ///   <item><description>Embedded null character ('\0'). MSBuild&#39;s <c>MSBuildConstants.InvalidPathChars</c>
-    ///    historically had a larger set; in practice only the null byte is universally illegal.</description></item>
-    ///   <item><description>The literal substring <c>"..."</c> (three or more consecutive dots).</description></item>
-    ///   <item><description>A <c>**</c> recursive wildcard that is not a standalone path segment
-    ///    (e.g. <c>a**b</c>, <c>*.cs**</c>); standalone <c>**</c> at either end of the spec or between
-    ///    separators is legal.</description></item>
-    ///   <item><description>A <c>..</c> substring in the wildcard-directory portion.</description></item>
+    ///   <item>
+    ///    <description>
+    ///     Embedded null character ('\0'). MSBuild&#39;s <c>MSBuildConstants.InvalidPathChars</c>
+    ///     historically had a larger set; in practice only the null byte is universally illegal.
+    ///    </description>
+    ///   </item>
+    ///   <item>
+    ///    <description>
+    ///     The literal substring <c>"..."</c> (three or more consecutive dots).
+    ///    </description>
+    ///   </item>
+    ///   <item>
+    ///    <description>
+    ///     A <c>**</c> recursive wildcard that is not a standalone path segment
+    ///     (e.g. <c>a**b</c>, <c>*.cs**</c>); standalone <c>**</c> at either end of the spec or between
+    ///     separators is legal.
+    ///    </description>
+    ///   </item>
+    ///   <item>
+    ///    <description>
+    ///     A <c>..</c> substring in the wildcard-directory portion.
+    ///    </description>
+    ///   </item>
     ///  </list>
     ///  <para>
     ///   Not validated (intentionally): MSBuild&#39;s "colon not at position 1" rule (breaks Unix

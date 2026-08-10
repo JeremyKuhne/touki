@@ -22,9 +22,7 @@ public static class Glob
     ///   same pattern, compile once and cache the resulting <see cref="GlobSpecification"/>.
     ///  </para>
     /// </remarks>
-    /// <exception cref="ArgumentNullException">
-    ///  <paramref name="pattern"/> is <see langword="null"/>.
-    /// </exception>
+    /// <exception cref="ArgumentNullException"><paramref name="pattern"/> is <see langword="null"/>.</exception>
     /// <exception cref="GlobFormatException">The pattern is invalid.</exception>
     public static bool IsMatch(
         string pattern,

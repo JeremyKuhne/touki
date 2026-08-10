@@ -1,0 +1,73 @@
+// Copyright (c) 2025 Jeremy W Kuhne
+// SPDX-License-Identifier: MIT
+// See LICENSE file in the project root for full license information
+
+using System.Collections.Immutable;
+using System.Composition;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeActions;
+using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.Text;
+
+namespace Touki.Analyzers;
+
+/// <summary>
+///  Offers a "Format XML documentation comment" fix for <c>TOUKI0024</c>.
+/// </summary>
+/// <remarks>
+///  <para>
+///   The analyzer computes the complete replacement because it owns the per-file indentation and line-length
+///   configuration. The fix applies that replacement without reinterpreting the documentation XML.
+///  </para>
+/// </remarks>
+[ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(FormatXmlDocumentationCodeFixProvider))]
+[Shared]
+public sealed class FormatXmlDocumentationCodeFixProvider : CodeFixProvider
+{
+    // Hardcoded to avoid a dependency on the analyzer assembly; these are stable public contracts.
+    private const string XmlDocumentationFormattingId = "TOUKI0024";
+    private const string ReplacementProperty = "Replacement";
+
+    private static readonly ImmutableArray<string> s_fixableDiagnosticIds = [XmlDocumentationFormattingId];
+
+    /// <inheritdoc/>
+    public override ImmutableArray<string> FixableDiagnosticIds => s_fixableDiagnosticIds;
+
+    /// <inheritdoc/>
+    public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+
+    /// <inheritdoc/>
+    public override Task RegisterCodeFixesAsync(CodeFixContext context)
+    {
+        foreach (Diagnostic diagnostic in context.Diagnostics)
+        {
+            if (!diagnostic.Properties.TryGetValue(ReplacementProperty, out string? replacement)
+                || replacement is null)
+            {
+                continue;
+            }
+
+            TextSpan span = diagnostic.Location.SourceSpan;
+            context.RegisterCodeFix(
+                CodeAction.Create(
+                    "Format XML documentation comment",
+                    cancellationToken => ReplaceAsync(context.Document, span, replacement, cancellationToken),
+                    equivalenceKey: nameof(FormatXmlDocumentationCodeFixProvider)),
+                diagnostic);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static async Task<Document> ReplaceAsync(
+        Document document,
+        TextSpan span,
+        string replacement,
+        CancellationToken cancellationToken)
+    {
+        SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(false);
+        return document.WithText(text.WithChanges(new TextChange(span, replacement)));
+    }
+}

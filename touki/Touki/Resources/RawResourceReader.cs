@@ -225,9 +225,7 @@ public sealed class RawResourceReader : DisposableBase
     ///  idempotent; after it, member access throws <see cref="ObjectDisposedException"/>. A reader
     ///  constructed directly over a <see cref="ReadOnlyMemory{T}"/> owns no mapping to release.
     /// </summary>
-    /// <param name="disposing">
-    ///  <see langword="true"/> when called from <see cref="DisposableBase.Dispose()"/>.
-    /// </param>
+    /// <param name="disposing"><see langword="true"/> when called from <see cref="DisposableBase.Dispose()"/>.</param>
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -438,7 +436,9 @@ public sealed class RawResourceReader : DisposableBase
     /// <param name="index">A resource index in the range <c>[0, <see cref="ResourceCount"/>)</c>.</param>
     /// <param name="destination">The span to copy the name characters into.</param>
     /// <param name="charsWritten">On success, the number of characters written.</param>
-    /// <returns><see langword="false"/> if <paramref name="destination"/> is too small; otherwise <see langword="true"/>.</returns>
+    /// <returns>
+    ///  <see langword="false"/> if <paramref name="destination"/> is too small; otherwise <see langword="true"/>.
+    /// </returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is out of range.</exception>
     /// <exception cref="BadImageFormatException">The file is malformed.</exception>
     public bool TryGetResourceName(int index, Span<char> destination, out int charsWritten)

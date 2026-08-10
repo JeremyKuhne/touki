@@ -902,7 +902,9 @@ public readonly partial struct Value
     /// </summary>
     /// <param name="value">The <see cref="Value"/> to convert.</param>
     /// <returns>The nullable <see cref="DateTimeOffset"/> value stored in the <see cref="Value"/>.</returns>
-    /// <exception cref="InvalidCastException">The stored value is not a nullable <see cref="DateTimeOffset"/>.</exception>
+    /// <exception cref="InvalidCastException">
+    ///  The stored value is not a nullable <see cref="DateTimeOffset"/>.
+    /// </exception>
     public static explicit operator DateTimeOffset?(in Value value) => value.As<DateTimeOffset?>();
     #endregion
 
@@ -1210,7 +1212,8 @@ public readonly partial struct Value
     }
 
     /// <summary>
-    ///  Use this method to avoid generic instantiation for an unsupported value type (T) on <see cref="Create{T}(T)"/>    /// </summary>
+    ///  Use this method to avoid generic instantiation for an unsupported value type (T) on <see cref="Create{T}(T)"/>
+    /// </summary>
     public static Value Box(object? value) => new Value(value);
 
     private Value(object o, ulong u)
@@ -1224,7 +1227,9 @@ public readonly partial struct Value
     /// </summary>
     /// <typeparam name="T">The type to retrieve the value as.</typeparam>
     /// <param name="value">When this method returns, contains the value if the conversion succeeded.</param>
-    /// <returns><see langword="true"/> if the value was successfully retrieved; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if the value was successfully retrieved; otherwise, <see langword="false"/>.
+    /// </returns>
     public readonly unsafe bool TryGetValue<T>(out T value)
     {
         bool success;

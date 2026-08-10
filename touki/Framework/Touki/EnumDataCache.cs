@@ -48,9 +48,7 @@ internal static partial class EnumDataCache
     ///   Returns the BCL's internal cached arrays - callers must not mutate them.
     ///  </para>
     /// </remarks>
-    /// <exception cref="ArgumentException">
-    ///  <paramref name="type"/> is not an enum type.
-    /// </exception>
+    /// <exception cref="ArgumentException"><paramref name="type"/> is not an enum type.</exception>
     public static (ulong[] Values, string[] Names) GetEnumValuesAndNames(Type type)
     {
         if (!type.IsEnum)

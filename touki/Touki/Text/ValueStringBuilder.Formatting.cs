@@ -505,12 +505,15 @@ public ref partial struct ValueStringBuilder
         }
     }
 
-    /// <summary>Writes the specified value to the handler.</summary>
+    /// <summary>
+    ///  Writes the specified value to the handler.
+    /// </summary>
     /// <param name="value">The value to write.</param>
     /// <param name="format">The format string.</param>
     /// <param name="alignment">
     ///  Minimum number of characters that should be written for this value. If the value is negative,
-    ///  it indicates left-aligned and the required minimum is the absolute value.</param>
+    ///  it indicates left-aligned and the required minimum is the absolute value.
+    /// </param>
     public void AppendFormatted(scoped ReadOnlySpan<char> value, int alignment = 0, string? format = null)
     {
         bool leftAlign = false;
@@ -548,7 +551,9 @@ public ref partial struct ValueStringBuilder
         }
     }
 
-    /// <summary>Formats the value using the custom formatter from the provider.</summary>
+    /// <summary>
+    ///  Formats the value using the custom formatter from the provider.
+    /// </summary>
     /// <param name="value">The value to write.</param>
     /// <param name="format">The format string.</param>
     [MethodImpl(MethodImplOptions.NoInlining)]

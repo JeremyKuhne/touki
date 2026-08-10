@@ -4,6 +4,7 @@
 
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Touki.Analyzers;
 
@@ -38,6 +39,28 @@ internal static class AnalyzerTestHarness
         IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions = null)
     {
         CSharpCompilation compilation = CreateCompilation(source, fileName);
+
+        return await GetDiagnosticsAsync(analyzer, compilation, options, diagnosticOptions).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    ///  Runs <paramref name="analyzer"/> against instrumented <paramref name="source"/>. The callback runs after
+    ///  parsing and before analyzer execution, allowing parser activity to be excluded from instrumentation.
+    /// </summary>
+    public static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(
+        DiagnosticAnalyzer analyzer,
+        SourceText source,
+        Action beforeAnalysis,
+        IReadOnlyDictionary<string, string>? options = null,
+        IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions = null)
+    {
+        SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source);
+        CSharpCompilation compilation = CSharpCompilation.Create(
+            assemblyName: "Touki.Analyzers.TestCompilation",
+            syntaxTrees: [syntaxTree],
+            references: s_references.Value,
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
+        beforeAnalysis();
 
         return await GetDiagnosticsAsync(analyzer, compilation, options, diagnosticOptions).ConfigureAwait(false);
     }

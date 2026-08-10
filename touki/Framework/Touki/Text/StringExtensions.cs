@@ -111,7 +111,9 @@ public static partial class StringExtensions
         /// </summary>
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <param name="handler">The interpolated string.</param>
-        /// <returns>The string that results for formatting the interpolated string using the specified format provider.</returns>
+        /// <returns>
+        ///  The string that results for formatting the interpolated string using the specified format provider.
+        /// </returns>
         public static string Create(
             IFormatProvider? provider,
             [InterpolatedStringHandlerArgument("provider")] ref DefaultInterpolatedStringHandler handler) =>
@@ -126,7 +128,9 @@ public static partial class StringExtensions
         ///  The contents of this buffer may be overwritten.
         /// </param>
         /// <param name="handler">The interpolated string.</param>
-        /// <returns>The string that results for formatting the interpolated string using the specified format provider.</returns>
+        /// <returns>
+        ///  The string that results for formatting the interpolated string using the specified format provider.
+        /// </returns>
         public static string Create(
             IFormatProvider? provider,
             Span<char> initialBuffer,

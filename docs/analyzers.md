@@ -2,8 +2,8 @@
 
 `KlutzyNinja.Touki` ships a set of Roslyn analyzers **inside the package**. There is no
 separate analyzer package to install - adding the package reference is enough. The shipped
-rules start running on the next build and in the IDE. TOUKI0041 and TOUKI0022 ship disabled
-unless a project opts in.
+rules start running on the next build and in the IDE. TOUKI0022, TOUKI0024, and TOUKI0041 ship
+disabled unless a project opts in.
 
 The analyzers encode the conventions this library is built on: avoid hidden struct
 copies, release resources deterministically, keep scratch buffers off the stack once
@@ -24,6 +24,7 @@ name a field for what it actually is.
 | [TOUKI0021](#touki0021) | File name should match the type it declares | Maintainability | Warning | Yes | - |
 | [TOUKI0022](#touki0022) | Avoid tab characters | Maintainability | **Disabled** | Yes | - |
 | [TOUKI0023](#touki0023) | Remove trailing whitespace | Maintainability | Warning | - | - |
+| [TOUKI0024](#touki0024) | Format XML documentation as nested XML | Maintainability | **Disabled** | Yes | - |
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
 | [TOUKI0041](#touki0041) | Naming rule violation | Naming | **Disabled** | Yes | - |
 
@@ -296,6 +297,71 @@ line and stops at the first character that is not whitespace; a combining mark i
 whitespace, so a space that carries a following mark is never the last character on the
 line and is never reported.
 
+## TOUKI0024
+
+**Format XML documentation as nested XML.** Enforces the repository's one-space-per-XML-level
+layout for structured `///` comments while preserving documentation text and intentional prose
+line breaks.
+
+`<summary>` is always a block:
+
+```csharp
+/// <summary>
+///  Gets the requested name.
+/// </summary>
+```
+
+Other top-level paired elements may stay on one line when the complete physical source line fits
+within the configured limit. A three-line element with exactly one content line is compacted when
+it fits:
+
+```csharp
+/// <returns>The requested name.</returns>
+```
+
+An element with two or more content lines is never compacted. Nested block elements are expanded
+and indented; inline elements such as `<see>`, `<paramref>`, and `<c>` remain in prose. The
+contents of `<code>` and CDATA sections retain their relative indentation. Self-closing elements
+remain self-closing. Malformed XML and `/** */` documentation comments are left alone.
+
+Indentation is evaluated per contiguous logical block, such as a start tag, end tag, or run of
+prose. When the first line is correctly indented, the rest of that block is left unchanged so
+deliberate hanging indentation survives. When the first line is misindented, every line in the
+block is shifted by the same amount.
+
+Compaction removes only ordinary ASCII spaces and tabs that belong to the `///` layout; Unicode
+whitespace such as NBSP remains documentation content. Content under effective
+`xml:space="preserve"` is opaque, including inherited preservation. A nested
+`xml:space="default"` element resumes normal formatting.
+
+The rule ships **disabled** because documentation layout is a house style. Enable it with:
+
+```ini
+dotnet_diagnostic.TOUKI0024.severity = warning
+```
+
+The XML indentation step defaults to one space and can be overridden per path:
+
+```ini
+dotnet_code_quality.TOUKI0024.indent_size = 1
+```
+
+Values from 1 through 16 are accepted. Missing, invalid, non-positive, and larger values use the
+default of 1.
+
+The maximum physical line length uses the first positive integer from this list:
+
+1. `dotnet_code_quality.TOUKI0024.max_line_length`
+2. `max_line_length` - the standard EditorConfig property
+3. 120
+
+The physical length includes source indentation and the `/// ` prefix. Invalid and non-positive
+values fall through to the next source rather than failing the build.
+
+To keep analysis bounded on adversarial source, the rule stays silent for an individual comment
+larger than 1 MiB, containing more than 4,096 structured XML nodes, nested more than 128 XML
+elements deep, or whose formatted replacement would exceed 4 MiB.
+
 ## TOUKI0030
 
 **Use `ValueStringBuilder` to build strings.** Reports a `StringBuilder` that is only used
@@ -536,6 +602,9 @@ same documents.
 syntax and both support Fix All. The tab fix computes each run's spaces from the original
 columns, so several fixes on one line compose without having to be applied in order.
 
+`FormatXmlDocumentationCodeFixProvider` fixes TOUKI0024 by applying the complete replacement
+computed by the analyzer from the file's options. It supports Fix All.
+
 ## Relationship to IDE0055
 
 The .NET SDK's `IDE0055` ([Fix formatting](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055))
@@ -567,6 +636,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 | 0.5.0 | TOUKI0020, TOUKI0030 |
 | 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |
 | 0.7.0 | TOUKI0022, TOUKI0023 |
+| Unshipped | TOUKI0024 |
 
 The authoritative list lives in
 [AnalyzerReleases.Shipped.md](../touki.analyzers/AnalyzerReleases.Shipped.md) and

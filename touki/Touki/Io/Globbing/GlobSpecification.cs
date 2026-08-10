@@ -76,21 +76,15 @@ public sealed partial class GlobSpecification
     ///  documented default; see <see cref="GlobPathSeparator"/> for the semantics of
     ///  each value (ignored for path-unaware dialects).
     /// </summary>
-    /// <param name="pattern">
-    ///  The glob pattern.
-    /// </param>
+    /// <param name="pattern">The glob pattern.</param>
     /// <param name="maxPatternLength">
     ///  Optional upper bound on <paramref name="pattern"/>'s length, in characters.
     ///  Pass <c>-1</c> to disable the check. Callers that compile patterns supplied
     ///  by untrusted input should set this to an application-specific limit;
     ///  oversized patterns fail with <see cref="GlobCompileErrorCode.PatternTooLarge"/>.
     /// </param>
-    /// <exception cref="GlobFormatException">
-    ///  The pattern is invalid for the requested dialect or options.
-    /// </exception>
-    /// <exception cref="ArgumentNullException">
-    ///  <paramref name="pattern"/> is <see langword="null"/>.
-    /// </exception>
+    /// <exception cref="GlobFormatException">The pattern is invalid for the requested dialect or options.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="pattern"/> is <see langword="null"/>.</exception>
     public static GlobSpecification Compile(
         string pattern,
         GlobDialect dialect,
@@ -164,9 +158,7 @@ public sealed partial class GlobSpecification
     /// <param name="result">The compiled specification on success; otherwise <see langword="null"/>.</param>
     /// <param name="error">The compilation error on failure; otherwise the default value.</param>
     /// <returns><see langword="true"/> when compilation succeeds; otherwise <see langword="false"/>.</returns>
-    /// <exception cref="ArgumentNullException">
-    ///  <paramref name="pattern"/> is <see langword="null"/>.
-    /// </exception>
+    /// <exception cref="ArgumentNullException"><paramref name="pattern"/> is <see langword="null"/>.</exception>
     public static bool TryCompile(
         string pattern,
         GlobDialect dialect,

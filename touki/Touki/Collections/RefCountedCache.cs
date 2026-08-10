@@ -20,14 +20,12 @@ namespace Touki.Collections;
 ///  The type of data to associate with a cache entry. For a simple cache this can be the same type as
 ///  <typeparamref name="TKey"/>.
 /// </typeparam>
-/// <typeparam name="TKey">
-///  The type of key used to look up cache entries.
-/// </typeparam>
+/// <typeparam name="TKey">The type of key used to look up cache entries.</typeparam>
 /// <remarks>
 ///  <para>
 ///   A simple cache that maintains a list of `Pen` to `Color` keys would be defined as:
 ///   <code>
-///<![CDATA[ public sealed class PenCache : RefCountedCache<Pen, Color, Color>
+///    <![CDATA[ public sealed class PenCache : RefCountedCache<Pen, Color, Color>
 /// {
 ///   protected override CacheEntry CreateEntry(Color key, bool cached) => new PenCacheEntry(key, cached);
 ///   protected override bool IsMatch(Color key, CacheEntry entry) => key == entry.Data;

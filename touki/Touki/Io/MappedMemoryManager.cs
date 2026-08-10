@@ -53,9 +53,7 @@ public sealed unsafe class MappedMemoryManager : MemoryManager<byte>
     /// <param name="path">The path of the file to map.</param>
     /// <returns>A manager that owns the mapping until it is disposed.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
-    /// <exception cref="IOException">
-    ///  The file is empty or larger than <see cref="int.MaxValue"/> bytes.
-    /// </exception>
+    /// <exception cref="IOException">The file is empty or larger than <see cref="int.MaxValue"/> bytes.</exception>
     public static MappedMemoryManager CreateFromFile(string path)
     {
         ArgumentNullException.ThrowIfNull(path);

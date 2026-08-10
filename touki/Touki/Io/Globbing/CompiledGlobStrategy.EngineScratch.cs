@@ -22,19 +22,29 @@ internal sealed partial class CompiledGlobStrategy
     /// </remarks>
     private readonly ref struct EngineScratch
     {
-        /// <summary>Explicit backtrack stack of choice points.</summary>
+        /// <summary>
+        ///  Explicit backtrack stack of choice points.
+        /// </summary>
         public readonly Span<Frame> Frames;
 
-        /// <summary>Range-snapshot arena backing each frame's saved configuration.</summary>
+        /// <summary>
+        ///  Range-snapshot arena backing each frame's saved configuration.
+        /// </summary>
         public readonly Span<ProgramRange> Arena;
 
-        /// <summary>The active ("work") range list the forward loop advances.</summary>
+        /// <summary>
+        ///  The active ("work") range list the forward loop advances.
+        /// </summary>
         public readonly Span<ProgramRange> Work;
 
-        /// <summary>Scratch list used while building an alternative's range list.</summary>
+        /// <summary>
+        ///  Scratch list used while building an alternative's range list.
+        /// </summary>
         public readonly Span<ProgramRange> Rest;
 
-        /// <summary>Failure-memo serialization key buffer.</summary>
+        /// <summary>
+        ///  Failure-memo serialization key buffer.
+        /// </summary>
         public readonly Span<int> Key;
 
         public EngineScratch(

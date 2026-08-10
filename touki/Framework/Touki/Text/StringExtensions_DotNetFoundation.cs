@@ -19,56 +19,56 @@ public static partial class StringExtensions
     extension(string stringValue)
     {
         /// <summary>
-        /// Replaces all newline sequences in the current string with <see cref="Environment.NewLine"/>.
+        ///  Replaces all newline sequences in the current string with <see cref="Environment.NewLine"/>.
         /// </summary>
         /// <returns>
-        /// A string whose contents match the current string, but with all newline sequences replaced
-        /// with <see cref="Environment.NewLine"/>.
+        ///  A string whose contents match the current string, but with all newline sequences replaced
+        ///  with <see cref="Environment.NewLine"/>.
         /// </returns>
         /// <remarks>
-        /// This method searches for all newline sequences within the string and canonicalizes them to match
-        /// the newline sequence for the current environment. For example, when running on Windows, all
-        /// occurrences of non-Windows newline sequences will be replaced with the sequence CRLF. When
-        /// running on Unix, all occurrences of non-Unix newline sequences will be replaced with
-        /// a single LF character.
+        ///  This method searches for all newline sequences within the string and canonicalizes them to match
+        ///  the newline sequence for the current environment. For example, when running on Windows, all
+        ///  occurrences of non-Windows newline sequences will be replaced with the sequence CRLF. When
+        ///  running on Unix, all occurrences of non-Unix newline sequences will be replaced with
+        ///  a single LF character.
         ///
-        /// It is not recommended that protocol parsers utilize this API. Protocol specifications often
-        /// mandate specific newline sequences. For example, HTTP/1.1 (RFC 8615) mandates that the request
-        /// line, status line, and headers lines end with CRLF. Since this API operates over a wide range
-        /// of newline sequences, a protocol parser utilizing this API could exhibit behaviors unintended
-        /// by the protocol's authors.
+        ///  It is not recommended that protocol parsers utilize this API. Protocol specifications often
+        ///  mandate specific newline sequences. For example, HTTP/1.1 (RFC 8615) mandates that the request
+        ///  line, status line, and headers lines end with CRLF. Since this API operates over a wide range
+        ///  of newline sequences, a protocol parser utilizing this API could exhibit behaviors unintended
+        ///  by the protocol's authors.
         ///
-        /// This overload is equivalent to calling <see cref="ReplaceLineEndings(string)"/>, passing
-        /// <see cref="Environment.NewLine"/> as the <em>replacementText</em> parameter.
+        ///  This overload is equivalent to calling <see cref="ReplaceLineEndings(string)"/>, passing
+        ///  <see cref="Environment.NewLine"/> as the <em>replacementText</em> parameter.
         ///
-        /// This method is guaranteed O(n) complexity, where <em>n</em> is the length of the input string.
+        ///  This method is guaranteed O(n) complexity, where <em>n</em> is the length of the input string.
         /// </remarks>
         public string ReplaceLineEndings() => stringValue.ReplaceLineEndings(NewLineConst);
 
         /// <summary>
-        /// Replaces all newline sequences in the current string with <paramref name="replacementText"/>.
+        ///  Replaces all newline sequences in the current string with <paramref name="replacementText"/>.
         /// </summary>
         /// <returns>
-        /// A string whose contents match the current string, but with all newline sequences replaced
-        /// with <paramref name="replacementText"/>.
+        ///  A string whose contents match the current string, but with all newline sequences replaced
+        ///  with <paramref name="replacementText"/>.
         /// </returns>
         /// <remarks>
-        /// This method searches for all newline sequences within the string and canonicalizes them to the
-        /// newline sequence provided by <paramref name="replacementText"/>. If <paramref name="replacementText"/>
-        /// is <see cref="Empty"/>, all newline sequences within the string will be removed.
+        ///  This method searches for all newline sequences within the string and canonicalizes them to the
+        ///  newline sequence provided by <paramref name="replacementText"/>. If <paramref name="replacementText"/>
+        ///  is <see cref="Empty"/>, all newline sequences within the string will be removed.
         ///
-        /// It is not recommended that protocol parsers utilize this API. Protocol specifications often
-        /// mandate specific newline sequences. For example, HTTP/1.1 (RFC 8615) mandates that the request
-        /// line, status line, and headers lines end with CRLF. Since this API operates over a wide range
-        /// of newline sequences, a protocol parser utilizing this API could exhibit behaviors unintended
-        /// by the protocol's authors.
+        ///  It is not recommended that protocol parsers utilize this API. Protocol specifications often
+        ///  mandate specific newline sequences. For example, HTTP/1.1 (RFC 8615) mandates that the request
+        ///  line, status line, and headers lines end with CRLF. Since this API operates over a wide range
+        ///  of newline sequences, a protocol parser utilizing this API could exhibit behaviors unintended
+        ///  by the protocol's authors.
         ///
-        /// The list of recognized newline sequences is CR (U+000D), LF (U+000A), CRLF (U+000D U+000A),
-        /// NEL (U+0085), LS (U+2028), FF (U+000C), and PS (U+2029). This list is given by the Unicode
-        /// Standard, Sec. 5.8, Recommendation R4 and Table 5-2.
+        ///  The list of recognized newline sequences is CR (U+000D), LF (U+000A), CRLF (U+000D U+000A),
+        ///  NEL (U+0085), LS (U+2028), FF (U+000C), and PS (U+2029). This list is given by the Unicode
+        ///  Standard, Sec. 5.8, Recommendation R4 and Table 5-2.
         ///
-        /// This method is guaranteed O(n * r) complexity, where <em>n</em> is the length of the input string,
-        /// and where <em>r</em> is the length of <paramref name="replacementText"/>.
+        ///  This method is guaranteed O(n * r) complexity, where <em>n</em> is the length of the input string,
+        ///  and where <em>r</em> is the length of <paramref name="replacementText"/>.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string ReplaceLineEndings(string replacementText)
