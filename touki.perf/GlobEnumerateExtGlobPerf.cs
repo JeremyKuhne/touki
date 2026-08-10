@@ -120,10 +120,12 @@ public class GlobEnumerateExtGlobPerf
         {
             for (int index = 0; index < _patterns.Length; index++)
             {
-                includes[index] = GlobSpecification.Compile(
-                    _patterns[index],
-                    GlobDialect.Bash,
-                    GlobOptions.AllowGlobStar);
+                includes[index] = GlobSpecification
+                    .Compile(
+                        _patterns[index],
+                        GlobDialect.Bash,
+                        GlobOptions.AllowGlobStar)
+                    .CreateFileSystemMatcher();
             }
 
             IFileSystemMatcher matcher = FileSystemMatcher.CreateExclusionWins(includes);

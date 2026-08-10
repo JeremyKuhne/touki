@@ -191,6 +191,8 @@ public partial class GlobSpecificationPerf
 [SimpleJob(RuntimeMoniker.HostProcess, warmupCount: 1, iterationCount: 5, launchCount: 1)]
 public class GlobSpecificationCompilePerf
 {
+    private const string SlicedPatternSource = "prefix**/*.cssuffix";
+
     [Benchmark]
     public GlobSpecification Compile_Literal() => GlobSpecification.Compile("Program.cs", GlobDialect.Posix);
 
@@ -223,4 +225,15 @@ public class GlobSpecificationCompilePerf
     [Benchmark]
     public GlobSpecification Compile_MixedClassesAndNamed() =>
         GlobSpecification.Compile("[[:upper:]][a-z]*_[[:digit:]][0-9].[ch]s", GlobDialect.Posix);
+
+    [Benchmark]
+    public GlobSpecification Compile_Property_FullString() =>
+        GlobSpecification.Compile("**/*.cs", GlobDialect.PosixPath, GlobOptions.AllowGlobStar);
+
+    [Benchmark]
+    public GlobSpecification Compile_Property_StringSegmentSlice() =>
+        GlobSpecification.Compile(
+            new Touki.Text.StringSegment(SlicedPatternSource, 6, 7),
+            GlobDialect.PosixPath,
+            GlobOptions.AllowGlobStar);
 }

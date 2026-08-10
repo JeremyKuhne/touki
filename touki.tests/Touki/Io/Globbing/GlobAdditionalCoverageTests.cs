@@ -6,7 +6,8 @@ namespace Touki.Io.Globbing;
 
 /// <summary>
 ///  Targeted coverage tests for branches not exercised by the dialect/oracle suites:
-///  the one-shot <see cref="Glob.IsMatch"/> helper, the specialized matcher
+///  the one-shot
+///  <see cref="Glob.IsMatch(string, ReadOnlySpan{char}, GlobDialect, GlobOptions)"/> helper, the specialized matcher
 ///  case-insensitive paths, leading-dot fail paths on Suffix/Contains matchers, the
 ///  <c>NeverMatchGlobStrategy</c> two-span entry point reached via
 ///  <see cref="GlobMatch.MatchesFile"/>, and the path-aware
@@ -23,6 +24,143 @@ public class GlobAdditionalCoverageTests
     [DataRow("a*c", "abz", false)]
     public void Glob_IsMatch_OneShotHelper(string pattern, string input, bool expected) =>
         Glob.IsMatch(pattern, input.AsSpan(), GlobDialect.Posix).Should().Be(expected);
+
+    [TestMethod]
+    public void IsMatch_NullPattern_Throws()
+    {
+        Action action = () => Glob.IsMatch((string)null!, "input", GlobDialect.Posix);
+
+        action.Should().Throw<ArgumentNullException>().WithParameterName("pattern");
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_LazyRepeatableAndOptionsSnapshotted()
+    {
+        using TempFolder folder = new();
+        string sourceDirectory = Path.Combine(folder, "src");
+        Directory.CreateDirectory(sourceDirectory);
+        File.WriteAllText(Path.Combine(folder, "top.cs"), string.Empty);
+        EnumerationOptions enumerationOptions = new()
+        {
+            IgnoreInaccessible = true,
+            MatchCasing = MatchCasing.PlatformDefault,
+            MatchType = MatchType.Simple,
+            RecurseSubdirectories = true
+        };
+
+        IEnumerable<string> files = Glob.EnumerateFiles(
+            folder,
+            "**/*.cs",
+            GlobDialect.PosixPath,
+            GlobOptions.AllowGlobStar,
+            enumerationOptions);
+
+        enumerationOptions.RecurseSubdirectories = false;
+        File.WriteAllText(Path.Combine(sourceDirectory, "nested.cs"), string.Empty);
+
+        string[] expected = ["top.cs", "src/nested.cs"];
+        files.Should().BeEquivalentTo(expected);
+        files.Should().BeEquivalentTo(expected);
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_InterleavedEnumerators_AreIndependent()
+    {
+        using TempFolder folder = new();
+        string sourceDirectory = Path.Combine(folder, "src");
+        string nestedDirectory = Path.Combine(sourceDirectory, "nested");
+        Directory.CreateDirectory(nestedDirectory);
+        File.WriteAllText(Path.Combine(sourceDirectory, "first.cs"), string.Empty);
+        File.WriteAllText(Path.Combine(nestedDirectory, "second.cs"), string.Empty);
+        IEnumerable<string> files = Glob.EnumerateFiles(
+            folder,
+            "src/**/*.cs",
+            GlobDialect.PosixPath,
+            GlobOptions.AllowGlobStar);
+
+        using IEnumerator<string> first = files.GetEnumerator();
+        using IEnumerator<string> second = files.GetEnumerator();
+        List<string> firstResults = [];
+        List<string> secondResults = [];
+        while (true)
+        {
+            bool firstMoved = first.MoveNext();
+            bool secondMoved = second.MoveNext();
+            firstMoved.Should().Be(secondMoved);
+            if (!firstMoved)
+            {
+                break;
+            }
+
+            firstResults.Add(first.Current);
+            secondResults.Add(second.Current);
+        }
+
+        firstResults.Should().BeEquivalentTo("src/first.cs", "src/nested/second.cs");
+        secondResults.Should().BeEquivalentTo(firstResults);
+    }
+
+    [TestMethod]
+    [DoNotParallelize]
+    public void EnumerateFiles_RelativeRoot_ResolvesAtCallTime()
+    {
+        using TempFolder parentFolder = new();
+        string sourceDirectory = Path.Combine(parentFolder, "source");
+        string otherDirectory = Path.Combine(parentFolder, "other");
+        Directory.CreateDirectory(sourceDirectory);
+        Directory.CreateDirectory(otherDirectory);
+        File.WriteAllText(Path.Combine(sourceDirectory, "source.cs"), string.Empty);
+        string originalDirectory = Environment.CurrentDirectory;
+        try
+        {
+            Environment.CurrentDirectory = parentFolder;
+            const string relativeRoot = "source";
+            Path.IsPathFullyQualified(relativeRoot).Should().BeFalse();
+            IEnumerable<string> files = Glob.EnumerateFiles(
+                relativeRoot,
+                "*.cs",
+                GlobDialect.PosixPath);
+
+            Environment.CurrentDirectory = otherDirectory;
+            files.Should().ContainSingle().Which.Should().Be("source.cs");
+        }
+        finally
+        {
+            Environment.CurrentDirectory = originalDirectory;
+        }
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_InvalidPattern_ThrowsBeforeReturning()
+    {
+        using TempFolder folder = new();
+
+        Func<IEnumerable<string>> action = () => Glob.EnumerateFiles(
+            folder,
+            "?(unterminated",
+            GlobDialect.Bash,
+            GlobOptions.AllowExtGlob);
+
+        action.Should().Throw<GlobFormatException>();
+    }
+
+    [TestMethod]
+    public void EnumerateFiles_NullArguments_ThrowBeforeReturning()
+    {
+        using TempFolder folder = new();
+
+        Func<IEnumerable<string>> nullRoot = () => Glob.EnumerateFiles(
+            null!,
+            "*.cs",
+            GlobDialect.PosixPath);
+        Func<IEnumerable<string>> nullPattern = () => Glob.EnumerateFiles(
+            folder,
+            null!,
+            GlobDialect.PosixPath);
+
+        nullRoot.Should().Throw<ArgumentNullException>().WithParameterName("rootDirectory");
+        nullPattern.Should().Throw<ArgumentNullException>().WithParameterName("pattern");
+    }
 
     [TestMethod]
     // Path-unaware Posix with IgnoreCase picks the Ascii fold path for Prefix.

@@ -61,6 +61,16 @@ public class GlobEnumeratorApiPerf
             throw new InvalidOperationException("The include-only fixture returned an unexpected count.");
         }
 
+        if (EnumerateFacade() != ModuleCount * 3)
+        {
+            throw new InvalidOperationException("The facade fixture returned an unexpected count.");
+        }
+
+        if (EnumeratePathEnumerator() != ModuleCount * 3)
+        {
+            throw new InvalidOperationException("The path-enumerator fixture returned an unexpected count.");
+        }
+
         if (Enumerate(s_excludes) != ModuleCount)
         {
             throw new InvalidOperationException("The exclude fixture returned an unexpected count.");
@@ -82,12 +92,53 @@ public class GlobEnumeratorApiPerf
     [Benchmark]
     public int IncludeWithExcludes() => Enumerate(s_excludes);
 
+    [Benchmark]
+    public int IncludeOnlyFacade() => EnumerateFacade();
+
+    [Benchmark]
+    public int IncludeOnlyPathEnumerator() => EnumeratePathEnumerator();
+
     private int Enumerate(IReadOnlyList<string>? excludes)
     {
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.cs",
             _root,
             excludes is null ? s_includeOnlyOptions : s_excludeOptions);
+
+        int count = 0;
+        while (enumerator.MoveNext())
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    private int EnumerateFacade()
+    {
+        int count = 0;
+        foreach (string path in Glob.EnumerateFiles(
+            _root,
+            "**/*.cs",
+            GlobDialect.PosixPath,
+            GlobOptions.AllowGlobStar))
+        {
+            _ = path;
+            count++;
+        }
+
+        return count;
+    }
+
+    private int EnumeratePathEnumerator()
+    {
+        GlobSpecification specification = GlobSpecification.Compile(
+            "**/*.cs",
+            GlobDialect.PosixPath,
+            GlobOptions.AllowGlobStar);
+        using FileSystemPathEnumerator enumerator = FileSystemPathEnumerator.Create(
+            _root,
+            specification.CreateFileSystemMatcher());
 
         int count = 0;
         while (enumerator.MoveNext())
