@@ -10,6 +10,8 @@ namespace Touki.Io.Globbing;
 /// </summary>
 public readonly struct GlobCompileError
 {
+    private readonly string? _message;
+
     /// <summary>
     ///  Initializes a new instance of the <see cref="GlobCompileError"/> struct.
     /// </summary>
@@ -21,9 +23,11 @@ public readonly struct GlobCompileError
     /// <param name="message">A human-readable description of the failure.</param>
     public GlobCompileError(GlobCompileErrorCode code, int position, string message)
     {
+        ArgumentNullException.ThrowIfNull(message);
+
         Code = code;
         Position = position;
-        Message = message;
+        _message = message;
     }
 
     /// <inheritdoc cref="GlobCompileError(GlobCompileErrorCode, int, string)"/>
@@ -43,7 +47,7 @@ public readonly struct GlobCompileError
     /// <summary>
     ///  Gets a human-readable description of the failure.
     /// </summary>
-    public string Message { get; }
+    public string Message => _message ?? string.Empty;
 
     /// <summary>
     ///  Gets a value indicating whether this error represents a failure.

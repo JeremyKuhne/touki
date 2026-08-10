@@ -2,10 +2,131 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Touki.Text;
+
 namespace Touki.Io.Globbing;
 
 public partial class GlobSpecificationTests
 {
+    [TestMethod]
+    public void TryCompile_DefaultOptions_UsesDialectDefaults()
+    {
+        bool success = GlobSpecification.TryCompile(
+            "*.CS",
+            GlobDialect.MSBuild,
+            out GlobSpecification? specification,
+            out GlobCompileError error);
+
+        success.Should().BeTrue();
+        error.IsError.Should().BeFalse();
+        error.Message.Should().BeEmpty();
+        specification.Should().NotBeNull();
+        specification!.IsMatch("source.cs").Should().BeTrue();
+    }
+
+    [TestMethod]
+    public void Compile_NullPattern_Throws()
+    {
+        Action action = () => GlobSpecification.Compile((string)null!, GlobDialect.Posix);
+
+        action.Should().Throw<ArgumentNullException>().WithParameterName("pattern");
+    }
+
+    [TestMethod]
+    public void TryCompile_NullPattern_ThrowsForEveryStringOverload()
+    {
+        Action defaultOptions = () => GlobSpecification.TryCompile(
+            (string)null!,
+            GlobDialect.Posix,
+            out _,
+            out _);
+        Action suppliedOptions = () => GlobSpecification.TryCompile(
+            (string)null!,
+            GlobDialect.Posix,
+            GlobOptions.None,
+            out _,
+            out _);
+        Action allArguments = () => GlobSpecification.TryCompile(
+            (string)null!,
+            GlobDialect.Posix,
+            GlobOptions.None,
+            GlobPathSeparator.DialectDefault,
+            maxPatternLength: -1,
+            out _,
+            out _);
+
+        defaultOptions.Should().Throw<ArgumentNullException>().WithParameterName("pattern");
+        suppliedOptions.Should().Throw<ArgumentNullException>().WithParameterName("pattern");
+        allArguments.Should().Throw<ArgumentNullException>().WithParameterName("pattern");
+    }
+
+    [TestMethod]
+    public void Message_Default_ReturnsEmpty() =>
+        default(GlobCompileError).Message.Should().BeEmpty();
+
+    [TestMethod]
+    public void CreateFileSystemMatcher_ReturnsSeparateReusableAdapter()
+    {
+        GlobSpecification specification = GlobSpecification.Compile("*.cs", GlobDialect.Posix);
+
+        specification.Should().NotBeAssignableTo<IFileSystemMatcher>();
+        IFileSystemMatcher matcher = specification.CreateFileSystemMatcher();
+        matcher.Should().BeSameAs(specification.CreateFileSystemMatcher());
+        using IFileSystemMatcherSession first = matcher.CreateSession("root");
+        using IFileSystemMatcherSession second = matcher.CreateSession("root");
+        first.Should().NotBeSameAs(second);
+        first.MatchesFile("root", "file.cs").Should().BeTrue();
+    }
+
+    [TestMethod]
+    public void Pattern_StringInput_ReturnsOriginalReference()
+    {
+        string pattern = "src/**/*.cs";
+
+        GlobSpecification specification = GlobSpecification.Compile(
+            pattern,
+            GlobDialect.PosixPath,
+            GlobOptions.AllowGlobStar);
+
+        specification.Pattern.Should().BeSameAs(pattern);
+    }
+
+    [TestMethod]
+    public void Pattern_StringSegmentInput_MaterializesSlice()
+    {
+        StringSegment pattern = new("prefix/**/*.cs;suffix", 7, 7);
+
+        GlobSpecification specification = GlobSpecification.Compile(
+            pattern,
+            GlobDialect.PosixPath,
+            GlobOptions.AllowGlobStar);
+
+        specification.Pattern.Should().Be("**/*.cs");
+    }
+
+    [TestMethod]
+    public void Constructor_NullMessage_Throws()
+    {
+        Action action = () => new GlobCompileError(GlobCompileErrorCode.PatternTooLarge, null!);
+
+        action.Should().Throw<ArgumentNullException>().WithParameterName("message");
+    }
+
+    [TestMethod]
+    [DataRow("*.cs", "")]
+    [DataRow("src/**/*.cs", "src/")]
+    public void LiteralPathPrefix_Pattern_ReturnsExpectedString(
+        string pattern,
+        string expected)
+    {
+        GlobSpecification specification = GlobSpecification.Compile(
+            pattern,
+            GlobDialect.PosixPath,
+            GlobOptions.AllowGlobStar);
+
+        specification.LiteralPathPrefix.Should().Be(expected);
+    }
+
     [TestMethod]
     [DataRow("", "", true)]
     [DataRow("", "a", false)]

@@ -1,13 +1,15 @@
 # Compiled Glob Matching and File-System Enumeration
 
 Touki separates glob compilation from file-system enumeration. Use
+[`Glob`](../touki/Touki/Io/Globbing/Glob.cs) for one-shot matching and simple
+single-pattern enumeration,
 [`GlobSpecification`](../touki/Touki/Io/Globbing/GlobSpecification.cs) to
 compile and reuse a pattern, [`GlobEnumerator`](../touki/Touki/Io/GlobEnumerator.cs)
-to apply compiled glob semantics to a directory tree, and
+for Touki's advanced include/exclude enumeration API, and
 [`MSBuildEnumerator`](../touki/Touki/Io/MSBuildEnumerator.cs) when compatibility
 with MSBuild item specifications is the primary requirement.
 
-All three APIs are available on .NET 10 and .NET Framework 4.7.2.
+These APIs are available on .NET 10, .NET 11, and .NET Framework 4.7.2.
 
 ## Compile and reuse a pattern
 
@@ -99,10 +101,36 @@ intentional differences between supported dialects.
 
 ## Enumerate a directory tree
 
-`GlobEnumerator` accepts one include and a `GlobEnumerationOptions` object containing
-zero or more excludes, the dialect, glob options, and optional traversal options. Its
-default dialect is `PosixPath`; select another dialect explicitly when the pattern
-comes from another ecosystem.
+`Glob.EnumerateFiles` is the simplest way to lazily enumerate one pattern. It
+compiles the pattern and snapshots the traversal options when called. Each
+enumeration creates an independent matcher session and returns canonical
+root-relative paths with `/` separators.
+
+```csharp
+using Touki.Io.Globbing;
+
+IEnumerable<string> sourceFiles = Glob.EnumerateFiles(
+    rootDirectory: projectDirectory,
+    pattern: "**/*.cs",
+    dialect: GlobDialect.PosixPath,
+    options: GlobOptions.AllowGlobStar);
+
+foreach (string file in sourceFiles)
+{
+    Console.WriteLine(file);
+}
+```
+
+Pattern and root validation happen before `EnumerateFiles` returns; file-system
+traversal starts during enumeration. Relative roots are resolved against the current
+directory at call time. The convenience method is intended for trusted or prevalidated
+patterns because it does not expose `maxPatternLength`; compile untrusted patterns
+separately with a finite limit and use `FileSystemPathEnumerator`.
+
+For multiple excludes, Touki also provides `GlobEnumerator`. It accepts one include and
+a `GlobEnumerationOptions` object containing zero or more excludes, the dialect, glob
+options, and optional traversal options. Its default dialect is `PosixPath`; select
+another dialect explicitly when the pattern comes from another ecosystem.
 
 ```csharp
 using Touki.Io;

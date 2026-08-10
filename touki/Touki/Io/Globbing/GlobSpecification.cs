@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.Threading;
+
 namespace Touki.Io.Globbing;
 
 /// <summary>
@@ -10,7 +12,7 @@ namespace Touki.Io.Globbing;
 /// <remarks>
 ///  <para>
 ///   <see cref="GlobSpecification"/> is the output of
-///   <see cref="Compile(StringSegment, GlobDialect, GlobOptions, GlobPathSeparator, int)"/>:
+///   <see cref="Compile(string, GlobDialect, GlobOptions, GlobPathSeparator, int)"/>:
 ///   a thread-safe parse result that holds the encoded pattern (literal table,
 ///   opcode program, etc.) and the pattern-level flags. Common evaluation paths
 ///   allocate no managed objects; separator coalescing and complex extglob matching
@@ -27,12 +29,14 @@ namespace Touki.Io.Globbing;
 ///  </para>
 ///  <para>
 ///   This mirrors the <see cref="MSBuildSpecification"/> / <see cref="MatchMSBuild"/>
-///   split: the specification is the value-ish parse output; the matcher binds it to
-///   a root and owns mutable enumeration state.
+///   split: the specification is the value-ish parse output; the reusable matcher is
+///   root-independent, and each session binds it to a root and owns mutable enumeration state.
 ///  </para>
 /// </remarks>
-public sealed partial class GlobSpecification : IFileSystemMatcher
+public sealed partial class GlobSpecification
 {
+    private IFileSystemMatcher? _fileSystemMatcher;
+
     private readonly GlobStrategy _strategy;
     private readonly StringSegment _msbuildTrailingDotFileNamePattern;
     private readonly bool _hasMSBuildTrailingDotFileNamePattern;
@@ -61,7 +65,7 @@ public sealed partial class GlobSpecification : IFileSystemMatcher
         _msbuildTrailingDotNegatedAlternatives = msbuildTrailingDotNegatedAlternatives;
         _msbuildTrailingDotPositiveAlternatives = msbuildTrailingDotPositiveAlternatives;
         _msbuildTrailingDotNeverMatches = msbuildTrailingDotNeverMatches;
-        Pattern = pattern;
+        Pattern = pattern.ToString();
     }
 
     /// <summary>
@@ -73,9 +77,7 @@ public sealed partial class GlobSpecification : IFileSystemMatcher
     ///  each value (ignored for path-unaware dialects).
     /// </summary>
     /// <param name="pattern">
-    ///  The glob pattern. Accepted as a <see cref="StringSegment"/> so callers that
-    ///  already hold a backing string (item-include strings, gitignore lines, glob
-    ///  lists from configuration) can slice without copying.
+    ///  The glob pattern.
     /// </param>
     /// <param name="maxPatternLength">
     ///  Optional upper bound on <paramref name="pattern"/>'s length, in characters.
@@ -86,6 +88,26 @@ public sealed partial class GlobSpecification : IFileSystemMatcher
     /// <exception cref="GlobFormatException">
     ///  The pattern is invalid for the requested dialect or options.
     /// </exception>
+    /// <exception cref="ArgumentNullException">
+    ///  <paramref name="pattern"/> is <see langword="null"/>.
+    /// </exception>
+    public static GlobSpecification Compile(
+        string pattern,
+        GlobDialect dialect,
+        GlobOptions options = GlobOptions.None,
+        GlobPathSeparator separator = GlobPathSeparator.DialectDefault,
+        int maxPatternLength = -1)
+    {
+        ArgumentNullException.ThrowIfNull(pattern);
+        return Compile(new StringSegment(pattern), dialect, options, separator, maxPatternLength);
+    }
+
+    /// <inheritdoc cref="Compile(string, GlobDialect, GlobOptions, GlobPathSeparator, int)"/>
+    /// <remarks>
+    ///  <para>
+    ///   This Touki-specific overload retains a slice of a backing string without copying.
+    ///  </para>
+    /// </remarks>
     public static GlobSpecification Compile(
         StringSegment pattern,
         GlobDialect dialect,
@@ -102,26 +124,92 @@ public sealed partial class GlobSpecification : IFileSystemMatcher
             ? result
             : throw new GlobFormatException(error);
 
+    /// <inheritdoc cref="TryCompile(string, GlobDialect, GlobOptions, GlobPathSeparator, int, out GlobSpecification, out GlobCompileError)"/>
+    public static bool TryCompile(
+        string pattern,
+        GlobDialect dialect,
+        [NotNullWhen(true)] out GlobSpecification? result,
+        out GlobCompileError error)
+    {
+        ArgumentNullException.ThrowIfNull(pattern);
+        return TryCompile(new StringSegment(pattern), dialect, out result, out error);
+    }
+
+    /// <inheritdoc cref="TryCompile(string, GlobDialect, GlobOptions, GlobPathSeparator, int, out GlobSpecification, out GlobCompileError)"/>
+    public static bool TryCompile(
+        string pattern,
+        GlobDialect dialect,
+        GlobOptions options,
+        [NotNullWhen(true)] out GlobSpecification? result,
+        out GlobCompileError error)
+    {
+        ArgumentNullException.ThrowIfNull(pattern);
+        return TryCompile(new StringSegment(pattern), dialect, options, out result, out error);
+    }
+
     /// <summary>
     ///  Attempts to compile <paramref name="pattern"/>. On failure,
     ///  <paramref name="result"/> is <see langword="null"/> and
     ///  <paramref name="error"/> is populated.
     /// </summary>
-    public static bool TryCompile(
-        StringSegment pattern,
-        GlobDialect dialect,
-        GlobOptions options,
-        out GlobSpecification? result,
-        out GlobCompileError error) =>
-        TryCompile(pattern, dialect, options, GlobPathSeparator.DialectDefault, maxPatternLength: -1, out result, out error);
-
-    /// <inheritdoc cref="TryCompile(StringSegment, GlobDialect, GlobOptions, out GlobSpecification, out GlobCompileError)"/>
+    /// <param name="pattern">The glob pattern.</param>
+    /// <param name="dialect">The pattern dialect.</param>
+    /// <param name="options">Options that modify compilation and matching.</param>
     /// <param name="separator">Explicit path separator override; ignored for path-unaware dialects.</param>
     /// <param name="maxPatternLength">
     ///  Optional upper bound on <paramref name="pattern"/>'s length, in characters. Pass
     ///  <c>-1</c> to disable the check; otherwise oversized patterns fail with
     ///  <see cref="GlobCompileErrorCode.PatternTooLarge"/>.
     /// </param>
+    /// <param name="result">The compiled specification on success; otherwise <see langword="null"/>.</param>
+    /// <param name="error">The compilation error on failure; otherwise the default value.</param>
+    /// <returns><see langword="true"/> when compilation succeeds; otherwise <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException">
+    ///  <paramref name="pattern"/> is <see langword="null"/>.
+    /// </exception>
+    public static bool TryCompile(
+        string pattern,
+        GlobDialect dialect,
+        GlobOptions options,
+        GlobPathSeparator separator,
+        int maxPatternLength,
+        [NotNullWhen(true)] out GlobSpecification? result,
+        out GlobCompileError error)
+    {
+        ArgumentNullException.ThrowIfNull(pattern);
+        return TryCompile(
+            new StringSegment(pattern),
+            dialect,
+            options,
+            separator,
+            maxPatternLength,
+            out result,
+            out error);
+    }
+
+    /// <inheritdoc cref="TryCompile(string, GlobDialect, GlobOptions, GlobPathSeparator, int, out GlobSpecification, out GlobCompileError)"/>
+    public static bool TryCompile(
+        StringSegment pattern,
+        GlobDialect dialect,
+        [NotNullWhen(true)] out GlobSpecification? result,
+        out GlobCompileError error) =>
+        TryCompile(pattern, dialect, GlobOptions.None, out result, out error);
+
+    /// <inheritdoc cref="TryCompile(string, GlobDialect, GlobOptions, GlobPathSeparator, int, out GlobSpecification, out GlobCompileError)"/>
+    public static bool TryCompile(
+        StringSegment pattern,
+        GlobDialect dialect,
+        GlobOptions options,
+        [NotNullWhen(true)] out GlobSpecification? result,
+        out GlobCompileError error) =>
+        TryCompile(pattern, dialect, options, GlobPathSeparator.DialectDefault, maxPatternLength: -1, out result, out error);
+
+    /// <inheritdoc cref="TryCompile(string, GlobDialect, GlobOptions, GlobPathSeparator, int, out GlobSpecification, out GlobCompileError)"/>
+    /// <remarks>
+    ///  <para>
+    ///   This Touki-specific overload retains a slice of a backing string without copying.
+    ///  </para>
+    /// </remarks>
     public static bool TryCompile(
         StringSegment pattern,
         GlobDialect dialect,
@@ -673,19 +761,20 @@ public sealed partial class GlobSpecification : IFileSystemMatcher
     }
 
     /// <summary>
-    ///  The pattern source as supplied to <see cref="Compile"/>.
+    ///  The pattern source as supplied to
+    ///  <see cref="Compile(string, GlobDialect, GlobOptions, GlobPathSeparator, int)"/>.
     /// </summary>
     /// <remarks>
     ///  <para>
-    ///   When the caller passes a backing string (the common case via
-    ///   <see cref="StringSegment"/>), this property slices that string rather
-    ///   than allocating. Dialect-specific normalization that the factory may
+    ///   The <see langword="string"/> overload retains the caller's original instance.
+    ///   The Touki-specific <see cref="StringSegment"/> overload materializes a new
+    ///   string when the segment is a partial slice. Dialect-specific normalization that the factory may
     ///   apply (separator coalescing, gitignore marker stripping, etc.) does
     ///   <em>not</em> flow back into this property - it always reflects
     ///   the user-supplied input.
     ///  </para>
     /// </remarks>
-    public StringSegment Pattern { get; }
+    public string Pattern { get; }
 
     /// <summary>
     ///  The dialect this specification was compiled with.
@@ -746,12 +835,11 @@ public sealed partial class GlobSpecification : IFileSystemMatcher
     /// </summary>
     /// <remarks>
     ///  <para>
-    ///   Exposed as a <see cref="StringSegment"/> so consumers can slice without
-    ///   copying. The underlying bytes are owned by the strategy and remain valid
-    ///   for the lifetime of this specification.
+    ///   The returned string is owned by the compiled strategy and remains valid for
+    ///   the lifetime of this specification.
     ///  </para>
     /// </remarks>
-    public StringSegment LiteralPathPrefix => _strategy.LiteralPathPrefix;
+    public string LiteralPathPrefix => _strategy.LiteralPathPrefix;
 
     /// <summary>
     ///  <see langword="true"/> when the compiled pattern contains at least one
@@ -832,12 +920,16 @@ public sealed partial class GlobSpecification : IFileSystemMatcher
     /// <summary>
     ///  Creates a reusable definition that binds this specification to a root for each file-system enumeration.
     /// </summary>
-    public IFileSystemMatcher CreateFileSystemMatcher() => this;
-
-    IFileSystemMatcherSession IFileSystemMatcher.CreateSession(string rootDirectory)
+    public IFileSystemMatcher CreateFileSystemMatcher()
     {
-        ArgumentNullException.ThrowIfNull(rootDirectory);
-        return new GlobMatch(this, rootDirectory);
+        IFileSystemMatcher? matcher = Volatile.Read(ref _fileSystemMatcher);
+        if (matcher is not null)
+        {
+            return matcher;
+        }
+
+        matcher = new GlobFileSystemMatcher(this);
+        return Interlocked.CompareExchange(ref _fileSystemMatcher, matcher, null) ?? matcher;
     }
 
     internal GlobMatch CreateSession(string? rootDirectory = null) => new(this, rootDirectory);
