@@ -922,7 +922,7 @@ public sealed partial class GlobSpecification
     /// </summary>
     public IFileSystemMatcher CreateFileSystemMatcher()
     {
-        IFileSystemMatcher? matcher = _fileSystemMatcher;
+        IFileSystemMatcher? matcher = Volatile.Read(ref _fileSystemMatcher);
         if (matcher is not null)
         {
             return matcher;
