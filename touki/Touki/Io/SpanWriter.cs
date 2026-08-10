@@ -19,9 +19,7 @@ public unsafe ref struct SpanWriter<T>(Span<T> span) where T : unmanaged
     /// <summary>
     ///  Gets or sets the current position of the writer within the span.
     /// </summary>
-    /// <value>
-    ///  The zero-based position of the writer. Setting this value repositions the writer.
-    /// </value>
+    /// <value>The zero-based position of the writer. Setting this value repositions the writer.</value>
     /// <exception cref="ArgumentOutOfRangeException">
     ///  Thrown when the value is negative or greater than <see cref="Length"/>.
     /// </exception>
@@ -45,7 +43,9 @@ public unsafe ref struct SpanWriter<T>(Span<T> span) where T : unmanaged
     ///  Try to write the given value.
     /// </summary>
     /// <param name="value">The value to write.</param>
-    /// <returns><see langword="true"/> if the value was successfully written; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if the value was successfully written; otherwise, <see langword="false"/>.
+    /// </returns>
     public bool TryWrite(T value)
     {
         bool success = false;
@@ -64,7 +64,9 @@ public unsafe ref struct SpanWriter<T>(Span<T> span) where T : unmanaged
     ///  Try to write the given values.
     /// </summary>
     /// <param name="values">The values to write.</param>
-    /// <returns><see langword="true"/> if all values were successfully written; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if all values were successfully written; otherwise, <see langword="false"/>.
+    /// </returns>
     public bool TryWrite(ReadOnlySpan<T> values)
     {
         bool success = false;
@@ -84,7 +86,9 @@ public unsafe ref struct SpanWriter<T>(Span<T> span) where T : unmanaged
     /// </summary>
     /// <param name="count">The number of times to write the value.</param>
     /// <param name="value">The value to write.</param>
-    /// <returns><see langword="true"/> if all values were successfully written; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if all values were successfully written; otherwise, <see langword="false"/>.
+    /// </returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count"/> is negative.</exception>
     public bool TryWrite(int count, T value)
     {

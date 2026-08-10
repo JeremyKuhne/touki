@@ -66,9 +66,7 @@ internal static class MSBuildMatchBuilder
     ///  The root directory used to fully qualify non-rooted specifications. If <see langword="null"/>,
     ///  the <see cref="Environment.CurrentDirectory"/> is used.
     /// </param>
-    /// <returns>
-    ///  The owned matcher session and resolved enumeration start directory.
-    /// </returns>
+    /// <returns>The owned matcher session and resolved enumeration start directory.</returns>
     /// <remarks>
     ///  <para>
     ///   When the include is a simple recursive match (e.g. <c>**/*.cs</c>), a specialized fast matcher is used.

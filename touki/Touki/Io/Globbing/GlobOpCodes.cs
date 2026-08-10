@@ -12,10 +12,14 @@ namespace Touki.Io.Globbing;
 /// </summary>
 internal static class GlobOpCodes
 {
-    /// <summary>Match exactly one character (<c>?</c>). No payload.</summary>
+    /// <summary>
+    ///  Match exactly one character (<c>?</c>). No payload.
+    /// </summary>
     public const char Any = '\uFDD0';
 
-    /// <summary>Match zero or more characters (<c>*</c>). No payload.</summary>
+    /// <summary>
+    ///  Match zero or more characters (<c>*</c>). No payload.
+    /// </summary>
     public const char AnyRun = '\uFDD1';
 
     /// <summary>

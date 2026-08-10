@@ -40,9 +40,7 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     /// <summary>
     ///  Gets or sets the current position of the reader within the span.
     /// </summary>
-    /// <value>
-    ///  The zero-based position of the reader. Setting this value repositions the reader.
-    /// </value>
+    /// <value>The zero-based position of the reader. Setting this value repositions the reader.</value>
     /// <exception cref="ArgumentOutOfRangeException">
     ///  Thrown when the value is negative or greater than <see cref="Length"/>.
     /// </exception>
@@ -130,7 +128,9 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     /// </summary>
     /// <param name="span">The read data, if any.</param>
     /// <param name="delimiter">The delimiter to look for.</param>
-    /// <param name="advancePastDelimiter"><see langword="true"/> to move past the <paramref name="delimiter"/> if found.</param>
+    /// <param name="advancePastDelimiter">
+    ///  <see langword="true"/> to move past the <paramref name="delimiter"/> if found.
+    /// </param>
     /// <returns><see langword="true"/> if the <paramref name="delimiter"/> was found.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryReadTo(T delimiter, bool advancePastDelimiter, out ReadOnlySpan<T> span)
@@ -164,7 +164,9 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     /// </summary>
     /// <param name="span">The read data, if any.</param>
     /// <param name="delimiters">The delimiters to look for.</param>
-    /// <param name="advancePastDelimiter">True to move past the first found instance of any of the given <paramref name="delimiters"/>.</param>
+    /// <param name="advancePastDelimiter">
+    ///  True to move past the first found instance of any of the given <paramref name="delimiters"/>.
+    /// </param>
     /// <returns>True if any of the <paramref name="delimiters"/> were found.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryReadToAny(scoped ReadOnlySpan<T> delimiters, bool advancePastDelimiter, out ReadOnlySpan<T> span)
@@ -269,7 +271,9 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     /// <param name="value">
     ///  When this method returns, contains the value that was read, or the default value if not enough data was available.
     /// </param>
-    /// <returns><see langword="true"/> if the value was successfully read; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if the value was successfully read; otherwise, <see langword="false"/>.
+    /// </returns>
     /// <exception cref="ArgumentException">
     ///  Thrown when the size of <typeparamref name="TValue"/> is not evenly divisible by the size of <typeparamref name="T"/>.
     /// </exception>
@@ -360,7 +364,7 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     }
 
     /// <summary>
-    /// Peeks at the next value without advancing the reader.
+    ///  Peeks at the next value without advancing the reader.
     /// </summary>
     /// <param name="value">The next value or default if at the end.</param>
     /// <returns>False if at the end of the reader.</returns>
@@ -433,7 +437,9 @@ public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged
     ///  Try to advance the reader by the given <paramref name="count"/>.
     /// </summary>
     /// <param name="count">The number of positions to advance.</param>
-    /// <returns><see langword="true"/> if the reader was successfully advanced; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if the reader was successfully advanced; otherwise, <see langword="false"/>.
+    /// </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryAdvance(int count)
     {

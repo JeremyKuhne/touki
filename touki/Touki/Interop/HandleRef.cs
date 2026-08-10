@@ -63,7 +63,9 @@ public readonly struct HandleRef<THandle> : IHandle<THandle>, IEquatable<HandleR
     /// </summary>
     /// <param name="left">The first handle reference to compare.</param>
     /// <param name="right">The second handle reference to compare.</param>
-    /// <returns><see langword="true"/> if <paramref name="left"/> and <paramref name="right"/> are equal; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if <paramref name="left"/> and <paramref name="right"/> are equal; otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool operator ==(HandleRef<THandle> left, HandleRef<THandle> right) => left.Equals(right);
 
     /// <summary>
@@ -71,7 +73,9 @@ public readonly struct HandleRef<THandle> : IHandle<THandle>, IEquatable<HandleR
     /// </summary>
     /// <param name="left">The first handle reference to compare.</param>
     /// <param name="right">The second handle reference to compare.</param>
-    /// <returns><see langword="true"/> if <paramref name="left"/> and <paramref name="right"/> are not equal; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if <paramref name="left"/> and <paramref name="right"/> are not equal; otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool operator !=(HandleRef<THandle> left, HandleRef<THandle> right) => !(left == right);
 
     /// <summary>

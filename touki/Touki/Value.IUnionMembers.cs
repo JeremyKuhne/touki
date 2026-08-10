@@ -32,118 +32,194 @@ public readonly partial struct Value : Value.IUnionMembers
     /// </summary>
     public interface IUnionMembers
     {
-        /// <summary>Creates a <see cref="Value"/> from a <see cref="bool"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from a <see cref="bool"/> (union case type).
+        /// </summary>
         static Value Create(bool value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from a <see cref="byte"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from a <see cref="byte"/> (union case type).
+        /// </summary>
         static Value Create(byte value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from an <see cref="sbyte"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from an <see cref="sbyte"/> (union case type).
+        /// </summary>
         static Value Create(sbyte value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from a <see cref="char"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from a <see cref="char"/> (union case type).
+        /// </summary>
         static Value Create(char value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from a <see cref="short"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from a <see cref="short"/> (union case type).
+        /// </summary>
         static Value Create(short value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from a <see cref="ushort"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from a <see cref="ushort"/> (union case type).
+        /// </summary>
         static Value Create(ushort value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from an <see cref="int"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from an <see cref="int"/> (union case type).
+        /// </summary>
         static Value Create(int value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from a <see cref="uint"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from a <see cref="uint"/> (union case type).
+        /// </summary>
         static Value Create(uint value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from a <see cref="long"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from a <see cref="long"/> (union case type).
+        /// </summary>
         static Value Create(long value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from a <see cref="ulong"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from a <see cref="ulong"/> (union case type).
+        /// </summary>
         static Value Create(ulong value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from a <see cref="float"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from a <see cref="float"/> (union case type).
+        /// </summary>
         static Value Create(float value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from a <see cref="double"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from a <see cref="double"/> (union case type).
+        /// </summary>
         static Value Create(double value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from a <see cref="DateTime"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from a <see cref="DateTime"/> (union case type).
+        /// </summary>
         static Value Create(DateTime value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from a <see cref="DateTimeOffset"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from a <see cref="DateTimeOffset"/> (union case type).
+        /// </summary>
         static Value Create(DateTimeOffset value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from a <see cref="string"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from a <see cref="string"/> (union case type).
+        /// </summary>
         static Value Create(string value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from an <see cref="ArraySegment{T}"/> of <see cref="byte"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from an <see cref="ArraySegment{T}"/> of <see cref="byte"/> (union case type).
+        /// </summary>
         static Value Create(ArraySegment<byte> value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from an <see cref="ArraySegment{T}"/> of <see cref="char"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from an <see cref="ArraySegment{T}"/> of <see cref="char"/> (union case type).
+        /// </summary>
         static Value Create(ArraySegment<char> value) => value;
 
-        /// <summary>Creates a <see cref="Value"/> from a <see cref="StringSegment"/> (union case type).</summary>
+        /// <summary>
+        ///  Creates a <see cref="Value"/> from a <see cref="StringSegment"/> (union case type).
+        /// </summary>
         static Value Create(StringSegment value) => value;
 
-        /// <summary>Gets the contents boxed, or <see langword="null"/> when empty. Mandatory union member.</summary>
+        /// <summary>
+        ///  Gets the contents boxed, or <see langword="null"/> when empty. Mandatory union member.
+        /// </summary>
         object? Value { get; }
 
-        /// <summary>Gets a value indicating whether the union holds a non-null value.</summary>
+        /// <summary>
+        ///  Gets a value indicating whether the union holds a non-null value.
+        /// </summary>
         bool HasValue { get; }
 
-        /// <summary>Non-boxing access for the <see cref="bool"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="bool"/> case.
+        /// </summary>
         bool TryGetValue(out bool value);
 
-        /// <summary>Non-boxing access for the <see cref="byte"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="byte"/> case.
+        /// </summary>
         bool TryGetValue(out byte value);
 
-        /// <summary>Non-boxing access for the <see cref="sbyte"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="sbyte"/> case.
+        /// </summary>
         bool TryGetValue(out sbyte value);
 
-        /// <summary>Non-boxing access for the <see cref="char"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="char"/> case.
+        /// </summary>
         bool TryGetValue(out char value);
 
-        /// <summary>Non-boxing access for the <see cref="short"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="short"/> case.
+        /// </summary>
         bool TryGetValue(out short value);
 
-        /// <summary>Non-boxing access for the <see cref="ushort"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="ushort"/> case.
+        /// </summary>
         bool TryGetValue(out ushort value);
 
-        /// <summary>Non-boxing access for the <see cref="int"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="int"/> case.
+        /// </summary>
         bool TryGetValue(out int value);
 
-        /// <summary>Non-boxing access for the <see cref="uint"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="uint"/> case.
+        /// </summary>
         bool TryGetValue(out uint value);
 
-        /// <summary>Non-boxing access for the <see cref="long"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="long"/> case.
+        /// </summary>
         bool TryGetValue(out long value);
 
-        /// <summary>Non-boxing access for the <see cref="ulong"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="ulong"/> case.
+        /// </summary>
         bool TryGetValue(out ulong value);
 
-        /// <summary>Non-boxing access for the <see cref="float"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="float"/> case.
+        /// </summary>
         bool TryGetValue(out float value);
 
-        /// <summary>Non-boxing access for the <see cref="double"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="double"/> case.
+        /// </summary>
         bool TryGetValue(out double value);
 
-        /// <summary>Non-boxing access for the <see cref="DateTime"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="DateTime"/> case.
+        /// </summary>
         bool TryGetValue(out DateTime value);
 
-        /// <summary>Non-boxing access for the <see cref="DateTimeOffset"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="DateTimeOffset"/> case.
+        /// </summary>
         bool TryGetValue(out DateTimeOffset value);
 
-        /// <summary>Non-boxing access for the <see cref="string"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="string"/> case.
+        /// </summary>
         bool TryGetValue(out string? value);
 
-        /// <summary>Non-boxing access for the <see cref="ArraySegment{T}"/> of <see cref="byte"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="ArraySegment{T}"/> of <see cref="byte"/> case.
+        /// </summary>
         bool TryGetValue(out ArraySegment<byte> value);
 
-        /// <summary>Non-boxing access for the <see cref="ArraySegment{T}"/> of <see cref="char"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="ArraySegment{T}"/> of <see cref="char"/> case.
+        /// </summary>
         bool TryGetValue(out ArraySegment<char> value);
 
-        /// <summary>Non-boxing access for the <see cref="StringSegment"/> case.</summary>
+        /// <summary>
+        ///  Non-boxing access for the <see cref="StringSegment"/> case.
+        /// </summary>
         bool TryGetValue(out StringSegment value);
     }
 }

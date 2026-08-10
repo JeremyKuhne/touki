@@ -20,7 +20,9 @@ public interface ITypedServiceProvider : IServiceProvider
     ///  Attempts to get a service of the specified type.
     /// </summary>
     /// <typeparam name="T">The type of service to get.</typeparam>
-    /// <param name="service">When this method returns, contains the service instance, or <see langword="null"/> if not found.</param>
+    /// <param name="service">
+    ///  When this method returns, contains the service instance, or <see langword="null"/> if not found.
+    /// </param>
     /// <returns><see langword="true"/> if the service was found; otherwise, <see langword="false"/>.</returns>
     bool TryGetService<T>([NotNullWhen(true)] out T? service) where T : class;
 }

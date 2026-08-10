@@ -113,7 +113,9 @@ public ref partial struct ValueStringBuilder
         _hasCustomFormatter = provider is not null && HasCustomFormatter(provider);
     }
 
-    /// <summary>Gets whether the provider provides a custom formatter.</summary>
+    /// <summary>
+    ///  Gets whether the provider provides a custom formatter.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)] // only used in a few hot path call sites
     internal static bool HasCustomFormatter(IFormatProvider provider)
     {
@@ -243,7 +245,9 @@ public ref partial struct ValueStringBuilder
     ///  Forms a slice out of the buffer starting at a specified index.
     /// </summary>
     /// <param name="start">The index at which to begin the slice.</param>
-    /// <returns>A span that consists of the remaining elements from the buffer starting at <paramref name="start"/>.</returns>
+    /// <returns>
+    ///  A span that consists of the remaining elements from the buffer starting at <paramref name="start"/>.
+    /// </returns>
     public readonly ReadOnlySpan<char> Slice(int start)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(start);
@@ -256,7 +260,9 @@ public ref partial struct ValueStringBuilder
     /// </summary>
     /// <param name="start">The index at which to begin the slice.</param>
     /// <param name="length">The desired length of the slice.</param>
-    /// <returns>A span that consists of <paramref name="length"/> elements from the buffer starting at <paramref name="start"/>.</returns>
+    /// <returns>
+    ///  A span that consists of <paramref name="length"/> elements from the buffer starting at <paramref name="start"/>.
+    /// </returns>
     public readonly ReadOnlySpan<char> Slice(int start, int length)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(start);
@@ -290,8 +296,12 @@ public ref partial struct ValueStringBuilder
     ///  Attempts to copy the contents of this builder to the destination span.
     /// </summary>
     /// <param name="destination">The destination span to copy the contents to.</param>
-    /// <param name="charsWritten">When this method returns, contains the number of characters written to the destination.</param>
-    /// <returns><see langword="true"/> if the copy operation was successful; otherwise, <see langword="false"/>.</returns>
+    /// <param name="charsWritten">
+    ///  When this method returns, contains the number of characters written to the destination.
+    /// </param>
+    /// <returns>
+    ///  <see langword="true"/> if the copy operation was successful; otherwise, <see langword="false"/>.
+    /// </returns>
     /// <remarks>
     ///  This method disposes the builder after attempting the copy operation, making it unusable afterwards.
     /// </remarks>
@@ -382,9 +392,7 @@ public ref partial struct ValueStringBuilder
     /// <summary>
     ///  Append a string to the builder. If the string is <see langword="null"/>, this method does nothing.
     /// </summary>
-    /// <devdoc>
-    ///  Name must be AppendLiteral to work with interpolated strings.
-    /// </devdoc>
+    /// <devdoc>Name must be AppendLiteral to work with interpolated strings.</devdoc>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AppendLiteral(string? s)
     {
@@ -537,9 +545,7 @@ public ref partial struct ValueStringBuilder
     /// <summary>
     ///  Replace all occurrences of a character in the segment with another character.
     /// </summary>
-    /// <returns>
-    ///  The new <see cref="StringSegment"/> with the specified character replaced.
-    /// </returns>
+    /// <returns>The new <see cref="StringSegment"/> with the specified character replaced.</returns>
     public readonly void Replace(char oldValue, char newValue)
     {
         if (_length == 0 || oldValue == newValue)
@@ -561,9 +567,7 @@ public ref partial struct ValueStringBuilder
     ///  Resize the internal buffer either by doubling current buffer size or by adding
     ///  <paramref name="additionalCapacityBeyondPos"/> to <see cref="_length"/> whichever is greater.
     /// </summary>
-    /// <param name="additionalCapacityBeyondPos">
-    ///  Number of chars requested beyond current position.
-    /// </param>
+    /// <param name="additionalCapacityBeyondPos">Number of chars requested beyond current position.</param>
     [MethodImpl(MethodImplOptions.NoInlining)]
     [MemberNotNull(nameof(_arrayToReturnToPool))]
     private void Grow(int additionalCapacityBeyondPos)

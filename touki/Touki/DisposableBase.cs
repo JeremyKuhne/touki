@@ -16,9 +16,7 @@ public abstract partial class DisposableBase : IDisposable
     /// <summary>
     ///  Gets a value indicating whether the object has been disposed.
     /// </summary>
-    /// <value>
-    ///  <see langword="true"/> if the object has been disposed; otherwise, <see langword="false"/>.
-    /// </value>
+    /// <value><see langword="true"/> if the object has been disposed; otherwise, <see langword="false"/>.</value>
     protected bool Disposed => _disposedValue != 0;
 
     /// <summary>

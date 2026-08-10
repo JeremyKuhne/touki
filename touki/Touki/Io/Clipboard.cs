@@ -87,9 +87,7 @@ public static class Clipboard
     ///  When this method returns <see langword="true"/>, contains the clipboard text.
     ///  When <see langword="false"/>, contains <see langword="null"/>.
     /// </param>
-    /// <returns>
-    ///  <see langword="true"/> if text was successfully read; otherwise <see langword="false"/>.
-    /// </returns>
+    /// <returns><see langword="true"/> if text was successfully read; otherwise <see langword="false"/>.</returns>
     public static bool TryGetText([NotNullWhen(true)] out string? text) => s_provider.TryGetText(out text);
 
     /// <summary>

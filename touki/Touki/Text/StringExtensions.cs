@@ -100,12 +100,8 @@ public static partial class StringExtensions
         /// <summary>
         ///  Generates <paramref name="count"/> random UTF-16 strings.
         /// </summary>
-        /// <param name="minLength">
-        ///  Minimum length of the generated strings in UTF-16 code units, inclusive.
-        /// </param>
-        /// <param name="maxLength">
-        ///  Maximum length of the generated strings in UTF-16 code units, inclusive.
-        /// </param>
+        /// <param name="minLength">Minimum length of the generated strings in UTF-16 code units, inclusive.</param>
+        /// <param name="maxLength">Maximum length of the generated strings in UTF-16 code units, inclusive.</param>
         /// <remarks>
         ///  <para>
         ///   Length bounds are inclusive and measure UTF-16 code units (i.e., C# char count).

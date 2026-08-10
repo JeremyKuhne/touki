@@ -24,28 +24,44 @@ internal sealed partial class CompiledGlobStrategy
     /// </remarks>
     private readonly ref struct EngineInputs
     {
-        /// <summary>Directory-prefix span; the first half of the virtual input.</summary>
+        /// <summary>
+        ///  Directory-prefix span; the first half of the virtual input.
+        /// </summary>
         public readonly ReadOnlySpan<char> First;
 
-        /// <summary>File-name span; the second half of the virtual input.</summary>
+        /// <summary>
+        ///  File-name span; the second half of the virtual input.
+        /// </summary>
         public readonly ReadOnlySpan<char> Second;
 
-        /// <summary>The compiled bytecode program (extglob subset).</summary>
+        /// <summary>
+        ///  The compiled bytecode program (extglob subset).
+        /// </summary>
         public readonly ReadOnlySpan<char> Program;
 
-        /// <summary>Path separator, or <c>'\0'</c> when the matcher is path-unaware.</summary>
+        /// <summary>
+        ///  Path separator, or <c>'\0'</c> when the matcher is path-unaware.
+        /// </summary>
         public readonly char Separator;
 
-        /// <summary>Case-sensitivity policy for literal/class comparisons.</summary>
+        /// <summary>
+        ///  Case-sensitivity policy for literal/class comparisons.
+        /// </summary>
         public readonly IgnoreCaseKind Kind;
 
-        /// <summary>Whether <c>?</c> uses MSBuild trailing-dot two-character semantics.</summary>
+        /// <summary>
+        ///  Whether <c>?</c> uses MSBuild trailing-dot two-character semantics.
+        /// </summary>
         public readonly bool UseMSBuildTrailingDotAny;
 
-        /// <summary>Whether the synthetic input represents a Windows all-dot filename.</summary>
+        /// <summary>
+        ///  Whether the synthetic input represents a Windows all-dot filename.
+        /// </summary>
         public readonly bool UseMSBuildAllDotInput;
 
-        /// <summary>Required effective-double-star state for an accepting execution path.</summary>
+        /// <summary>
+        ///  Required effective-double-star state for an accepting execution path.
+        /// </summary>
         public readonly EffectiveDoubleStarMode EffectiveDoubleStarMode;
 
         public EngineInputs(

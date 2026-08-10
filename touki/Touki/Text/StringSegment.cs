@@ -167,7 +167,9 @@ public readonly struct StringSegment :
     /// </summary>
     /// <param name="startIndex">The start index.</param>
     /// <param name="length">The length of the new segment.</param>
-    /// <returns>A new <see cref="StringSegment"/> that starts at the specified index and has the specified length.</returns>
+    /// <returns>
+    ///  A new <see cref="StringSegment"/> that starts at the specified index and has the specified length.
+    /// </returns>
     /// <exception cref="ArgumentOutOfRangeException">
     ///  Thrown when <paramref name="startIndex"/> or <paramref name="length"/> are negative, or if
     ///  <paramref name="startIndex"/> + <paramref name="length"/> exceeds <see cref="Length"/>.
@@ -219,9 +221,7 @@ public readonly struct StringSegment :
     /// <summary>
     ///  Splits on the next separator, or returns the entire segment if no separator is found.
     /// </summary>
-    /// <returns>
-    ///  <see langword="false"/> if the current segment is empty, otherwise <see langword="true"/>.
-    /// </returns>
+    /// <returns><see langword="false"/> if the current segment is empty, otherwise <see langword="true"/>.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TrySplitAny(char value0, char value1, out StringSegment left, out StringSegment right)
     {
@@ -372,9 +372,7 @@ public readonly struct StringSegment :
     /// <summary>
     ///  Replace all occurrences of a character in the segment with another character.
     /// </summary>
-    /// <returns>
-    ///  The new <see cref="StringSegment"/> with the specified character replaced.
-    /// </returns>
+    /// <returns>The new <see cref="StringSegment"/> with the specified character replaced.</returns>
     /// <remarks>
     ///  <para>
     ///   This API will never allocate a new backing string unless the segment contains the character to be replaced.
@@ -765,7 +763,9 @@ public readonly struct StringSegment :
     ///  Gets a value indicating whether the segment equals the specified object.
     /// </summary>
     /// <param name="obj">The object to compare with.</param>
-    /// <returns><see langword="true"/> if the segment equals the specified object; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if the segment equals the specified object; otherwise, <see langword="false"/>.
+    /// </returns>
     public override bool Equals(object? obj) => (obj is StringSegment other && Equals(other))
         || (obj is string otherString && Equals(otherString));
 
@@ -904,7 +904,9 @@ public readonly struct StringSegment :
     /// </summary>
     /// <param name="left">The first segment.</param>
     /// <param name="right">The second segment.</param>
-    /// <returns><see langword="true"/> if the left segment is less than the right segment; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if the left segment is less than the right segment; otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool operator <(StringSegment left, StringSegment right) => left.CompareTo(right) < 0;
 
     /// <summary>
@@ -912,7 +914,9 @@ public readonly struct StringSegment :
     /// </summary>
     /// <param name="left">The first segment.</param>
     /// <param name="right">The second segment.</param>
-    /// <returns><see langword="true"/> if the left segment is less than or equal to the right segment; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if the left segment is less than or equal to the right segment; otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool operator <=(StringSegment left, StringSegment right) => left.CompareTo(right) <= 0;
 
     /// <summary>
@@ -920,7 +924,9 @@ public readonly struct StringSegment :
     /// </summary>
     /// <param name="left">The first segment.</param>
     /// <param name="right">The second segment.</param>
-    /// <returns><see langword="true"/> if the left segment is greater than the right segment; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if the left segment is greater than the right segment; otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool operator >(StringSegment left, StringSegment right) => left.CompareTo(right) > 0;
 
     /// <summary>
@@ -928,7 +934,9 @@ public readonly struct StringSegment :
     /// </summary>
     /// <param name="left">The first segment.</param>
     /// <param name="right">The second segment.</param>
-    /// <returns><see langword="true"/> if the left segment is greater than or equal to the right segment; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if the left segment is greater than or equal to the right segment; otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool operator >=(StringSegment left, StringSegment right) => left.CompareTo(right) >= 0;
 
     /// <summary>
@@ -936,7 +944,9 @@ public readonly struct StringSegment :
     /// </summary>
     /// <param name="left">The segment.</param>
     /// <param name="right">The string to compare with.</param>
-    /// <returns><see langword="true"/> if the segment is less than the string; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if the segment is less than the string; otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool operator <(StringSegment left, string right) => left.CompareTo(right) < 0;
 
     /// <summary>
@@ -944,7 +954,9 @@ public readonly struct StringSegment :
     /// </summary>
     /// <param name="left">The segment.</param>
     /// <param name="right">The string to compare with.</param>
-    /// <returns><see langword="true"/> if the segment is less than or equal to the string; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if the segment is less than or equal to the string; otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool operator <=(StringSegment left, string right) => left.CompareTo(right) <= 0;
 
     /// <summary>
@@ -952,7 +964,9 @@ public readonly struct StringSegment :
     /// </summary>
     /// <param name="left">The segment.</param>
     /// <param name="right">The string to compare with.</param>
-    /// <returns><see langword="true"/> if the segment is greater than the string; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if the segment is greater than the string; otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool operator >(StringSegment left, string right) => left.CompareTo(right) > 0;
 
     /// <summary>
@@ -960,7 +974,9 @@ public readonly struct StringSegment :
     /// </summary>
     /// <param name="left">The segment.</param>
     /// <param name="right">The string to compare with.</param>
-    /// <returns><see langword="true"/> if the segment is greater than or equal to the string; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///  <see langword="true"/> if the segment is greater than or equal to the string; otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool operator >=(StringSegment left, string right) => left.CompareTo(right) >= 0;
 
     /// <summary>

@@ -122,13 +122,13 @@ public ref struct BufferScope<T>
     /// </summary>
     /// <param name="start">The index at which to begin the slice.</param>
     /// <param name="length">The desired length of the slice.</param>
-    /// <returns>A span that consists of <paramref name="length"/> elements from the buffer starting at <paramref name="start"/>.</returns>
+    /// <returns>
+    ///  A span that consists of <paramref name="length"/> elements from the buffer starting at <paramref name="start"/>.
+    /// </returns>
     public readonly Span<T> Slice(int start, int length) => _span.Slice(start, length);
 
     /// <inheritdoc cref="Span{T}.GetPinnableReference"/>
-    /// <remarks>
-    ///  This is used by C# to enable using the buffer in a fixed statement.
-    /// </remarks>
+    /// <remarks>This is used by C# to enable using the buffer in a fixed statement.</remarks>
     public readonly ref T GetPinnableReference() => ref _span.GetPinnableReference();
 
     /// <summary>

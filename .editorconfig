@@ -62,6 +62,10 @@ dotnet_diagnostic.TOUKI0041.severity = warning
 # tab_width below; no rule-specific key is needed.
 dotnet_diagnostic.TOUKI0022.severity = warning
 
+# TOUKI0024 ships disabled because XML documentation layout is a house style. Touki uses
+# one additional space for each XML nesting level and the rule's default 120-character limit.
+dotnet_diagnostic.TOUKI0024.severity = warning
+
 # P/Invoke declarations keep the spelling of the native symbol they bind to, which is what makes
 # them greppable against the native header. Naming a rule two symbol groups gives the "either
 # attribute" match that a single required_attributes list cannot express.

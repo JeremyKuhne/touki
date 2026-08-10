@@ -17,7 +17,9 @@ public static unsafe partial class NumberExtensions
 {
     extension(decimal decimalValue)
     {
-        /// <summary>Determines whether the specified value is negative.</summary>
+        /// <summary>
+        ///  Determines whether the specified value is negative.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNegative(decimal value)
         {
@@ -109,7 +111,9 @@ public static unsafe partial class NumberExtensions
 
     extension(float floatValue)
     {
-        /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
+        /// <summary>
+        ///  Determines whether the specified value is finite (zero, subnormal, or normal).
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsFinite()
         {
@@ -117,14 +121,18 @@ public static unsafe partial class NumberExtensions
             return (bits & 0x7FFFFFFF) < 0x7F800000;
         }
 
-        /// <summary>Determines whether the specified value is negative.</summary>
+        /// <summary>
+        ///  Determines whether the specified value is negative.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsNegative() => (*(int*)&floatValue) < 0;
     }
 
     extension(double doubleValue)
     {
-        /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
+        /// <summary>
+        ///  Determines whether the specified value is finite (zero, subnormal, or normal).
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsFinite()
         {
@@ -132,7 +140,9 @@ public static unsafe partial class NumberExtensions
             return (bits & 0x7FFFFFFFFFFFFFFF) < 0x7FF0000000000000;
         }
 
-        /// <summary>Determines whether the specified value is negative.</summary>
+        /// <summary>
+        ///  Determines whether the specified value is negative.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsNegative() => BitConverter.DoubleToInt64Bits(doubleValue) < 0;
     }

@@ -12,23 +12,40 @@ namespace Touki.Io;
 ///  Enumerates files that match a glob pattern with zero allocations until matches are found.
 /// </summary>
 /// <remarks>
-///  <para>The following wildcard patterns are supported:
+///  <para>
+///   The following wildcard patterns are supported:
 ///   <list type="table">
 ///    <listheader>
-///     <term>Pattern</term>
-///     <description>Description</description>
+///     <term>
+///      Pattern
+///     </term>
+///     <description>
+///      Description
+///     </description>
 ///    </listheader>
 ///    <item>
-///     <term>*</term>
-///     <description>Matches zero or more characters within a file or directory name</description>
+///     <term>
+///      *
+///     </term>
+///     <description>
+///      Matches zero or more characters within a file or directory name
+///     </description>
 ///    </item>
 ///    <item>
-///     <term>**</term>
-///     <description>Matches zero or more directories (recursive wildcard)</description>
+///     <term>
+///      **
+///     </term>
+///     <description>
+///      Matches zero or more directories (recursive wildcard)
+///     </description>
 ///    </item>
 ///    <item>
-///     <term>?</term>
-///     <description>Matches a single character</description>
+///     <term>
+///      ?
+///     </term>
+///     <description>
+///      Matches a single character
+///     </description>
 ///    </item>
 ///   </list>
 ///  </para>

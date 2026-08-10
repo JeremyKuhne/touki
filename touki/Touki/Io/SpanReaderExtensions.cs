@@ -18,7 +18,9 @@ public static class SpanReaderExtensions
         ///  Tries to read an integer from the current position of the <see cref="SpanReader{T}"/>.
         /// </summary>
         /// <param name="value">When successful, contains the read integer.</param>
-        /// <returns><see langword="true"/> if an integer was successfully read; otherwise, <see langword="false"/>.</returns>
+        /// <returns>
+        ///  <see langword="true"/> if an integer was successfully read; otherwise, <see langword="false"/>.
+        /// </returns>
         public bool TryReadPositiveInteger(out uint value)
         {
             // Read digits until we hit a non-digit character or the end of the span.
@@ -70,7 +72,9 @@ public static class SpanReaderExtensions
         ///  </para>
         /// </remarks>
         /// <param name="value">On success, the value read.</param>
-        /// <returns><see langword="true"/> if a well-formed value was read; otherwise <see langword="false"/>.</returns>
+        /// <returns>
+        ///  <see langword="true"/> if a well-formed value was read; otherwise <see langword="false"/>.
+        /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryRead7BitEncodedInt32(out int value)
         {

@@ -185,9 +185,7 @@ public static class Paths
     /// </summary>
     /// <param name="path">The path to simplify.</param>
     /// <param name="builder">String builder that will store the result.</param>
-    /// <returns>
-    ///  <see langword="true"/> if the path was modified in copying to the <paramref name="builder"/>
-    /// </returns>
+    /// <returns><see langword="true"/> if the path was modified in copying to the <paramref name="builder"/></returns>
     public static bool RemoveRelativeSegments(ReadOnlySpan<char> path, ref ValueStringBuilder builder)
     {
         // Need to get the length up front to allow for replacing in place.
