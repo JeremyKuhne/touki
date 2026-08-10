@@ -318,8 +318,8 @@ public class GlobAdditionalCoverageTests
     [TestMethod]
     public void LiteralGlobStrategy_MatchesFile_TwoSpan_Unicode()
     {
-        // MSBuild dialect's default IgnoreCaseKind is Unicode; a pure literal pattern
-        // routes to LiteralGlobStrategy with the Unicode branch in two-span MatchCore.
+        // MSBuild selects Unicode by default; a pure literal pattern routes to
+        // LiteralGlobStrategy with the Unicode branch in two-span MatchCore.
         using GlobMatch matcher = GlobSpecification.Compile(
             "a/b/file.cs",
             GlobDialect.MSBuild).CreateSession(Root);

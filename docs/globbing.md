@@ -72,9 +72,11 @@ or edge case.
     literals rather than single-character wildcards.
 * **`MSBuild`** - `GlobSpecification` models `MSBuildGlob`'s in-memory logical
     matcher, including recursive repeated anchors, `*.*`, and trailing-dot
-    patterns. Physical `FileMatcher.GetFiles` also inherits platform filesystem
-    wildcard behavior; use `MSBuildEnumerator` when that enumeration behavior is
-    required.
+    patterns. The dialect uses Unicode ordinal case-insensitive matching by
+    default. Current `MSBuildGlob` and `FileMatcher.IsMatch` APIs do not expose
+    case-sensitive matching. Physical `FileMatcher.GetFiles` also inherits
+    platform filesystem wildcard behavior; use `MSBuildEnumerator` when that
+    enumeration behavior is required.
 * **`PowerShell`** - Touki defaults to case-sensitive matching like a bare
     `WildcardPattern`; PowerShell `-like` is case-insensitive, so use
     `IgnoreCase` for that casing. Touki additionally accepts POSIX-style bracket
@@ -90,7 +92,7 @@ is not already provided by a dialect's defaults:
 
 | Option | Effect |
 | --- | --- |
-| `IgnoreCase` | Enables the dialect's case-insensitive comparison mode. |
+| `IgnoreCase` | Enables the dialect's case-insensitive comparison mode; redundant for `MSBuild`, which is already case-insensitive by default. |
 | `MatchLeadingDot` | Allows wildcards to consume a leading `.`. |
 | `NoEscape` | Treats the dialect's escape character as a literal. |
 | `AllowGlobStar` | Enables path-aware `**` matching where it is not enabled by default. |
@@ -154,9 +156,10 @@ while (enumerator.MoveNext())
 }
 ```
 
-Results are relative to `rootDirectory`. Use `GlobOptions.IgnoreCase` to select
-case-insensitive matching. Set `GlobEnumerationOptions.EnumerationOptions` to customize
-recursion, inaccessible-directory handling, and other file-system traversal behavior.
+Results are relative to `rootDirectory`. Except for `MSBuild`, dialects are
+case-sensitive by default; use `GlobOptions.IgnoreCase` to select case-insensitive
+matching. Set `GlobEnumerationOptions.EnumerationOptions` to customize recursion,
+inaccessible-directory handling, and other file-system traversal behavior.
 
 ## Compose custom matchers
 

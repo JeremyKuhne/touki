@@ -63,7 +63,9 @@ public enum GlobDialect
     Git,
 
     /// <summary>
-    ///  MSBuild item-wildcard semantics.
+    ///  MSBuild item-wildcard semantics. This dialect uses Unicode ordinal
+    ///  case-insensitive matching by default. Current <c>MSBuildGlob</c> and
+    ///  <c>FileMatcher.IsMatch</c> APIs do not expose case-sensitive matching.
     /// </summary>
     /// <remarks>
     ///  <para>

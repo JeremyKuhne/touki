@@ -5,17 +5,16 @@
 namespace Touki.Io.Globbing;
 
 /// <summary>
-///  Selects which case-folding rules a <see cref="GlobSpecification"/> applies when
-///  <see cref="GlobOptions.IgnoreCase"/> is set. Each <see cref="GlobDialect"/> has a
-///  documented default (see <see cref="GlobDialectExtensions.DefaultIgnoreCaseKind"/>);
-///  the value is currently chosen by the factory and not user-configurable. See the
-///  follow-up note on <see cref="GlobOptions.IgnoreCase"/>.
+///  Selects which case-folding rules a <see cref="GlobSpecification"/> applies.
+///  <see cref="GlobDialect.MSBuild"/> selects Unicode folding by default; other
+///  dialects select their documented fold only when <see cref="GlobOptions.IgnoreCase"/>
+///  is set. The value is chosen by the factory and is not directly user-configurable.
 /// </summary>
 internal enum IgnoreCaseKind
 {
     /// <summary>
-    ///  Case-sensitive ordinal matching. Selected when
-    ///  <see cref="GlobOptions.IgnoreCase"/> is clear regardless of dialect.
+    ///  Case-sensitive ordinal matching. Selected when <see cref="GlobOptions.IgnoreCase"/>
+    ///  is clear for every dialect except <see cref="GlobDialect.MSBuild"/>.
     /// </summary>
     Off,
 
@@ -40,8 +39,9 @@ internal enum IgnoreCaseKind
 
     /// <summary>
     ///  Full Unicode ordinal case fold matching <see cref="StringComparison.OrdinalIgnoreCase"/>.
-    ///  Implements the behavior of MSBuild item globs, <c>Microsoft.Extensions.FileSystemGlobbing.Matcher</c>,
-    ///  the .NET <c>FileSystemName.MatchesSimpleExpression</c>, and PowerShell's <c>-like</c> operator.
+    ///  Implements the behavior of MSBuild item globs and, when case-insensitive matching
+    ///  is requested, <c>Microsoft.Extensions.FileSystemGlobbing.Matcher</c>, the .NET
+    ///  <c>FileSystemName.MatchesSimpleExpression</c>, and PowerShell's <c>-like</c> operator.
     /// </summary>
     /// <remarks>
     ///  <para>
