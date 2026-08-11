@@ -35,8 +35,7 @@ public sealed class MakeMemberReadonlyCodeFixProvider : CodeFixProvider
     private const string NonCopyableDefensiveCopyId = "TOUKI0003";
 
     /// <inheritdoc/>
-    public override ImmutableArray<string> FixableDiagnosticIds =>
-        ImmutableArray.Create(DefensiveCopyId, NonCopyableDefensiveCopyId);
+    public override ImmutableArray<string> FixableDiagnosticIds => [DefensiveCopyId, NonCopyableDefensiveCopyId];
 
     /// <inheritdoc/>
     public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
