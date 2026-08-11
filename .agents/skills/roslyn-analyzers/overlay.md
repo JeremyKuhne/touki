@@ -1,6 +1,6 @@
 ---
 core: roslyn-analyzers
-core-pin: v0.13.0
+core-pin: v0.15.0
 ---
 
 # Touki overlay - roslyn-analyzers
@@ -13,7 +13,7 @@ Repo-specific companion to the vendored [roslyn-analyzers](SKILL.md) skill. The
 `metadata.github-*` provenance in `SKILL.md`). Do not hand-edit the core -
 `gh skill update` would flag the drift. Everything touki-specific lives here.
 
-> **Pinned to a release.** The core is pinned to the commons **v0.13.0** tag. Pull
+> **Pinned to a release.** The core is pinned to the commons **v0.15.0** tag. Pull
 > later upstream changes with `gh skill update roslyn-analyzers` (review the diff,
 > re-pin to the new tag).
 
@@ -66,7 +66,7 @@ starting `DEVIATION from dotnet/roslyn:` with the issue number that motivated th
 The portable rules - covering each declaration shape once, reporting only names
 owned at the report site (indexers, overrides, explicit implementations), and
 diagnosing `AD0001` and static-initializer ordering - were upstreamed and now ship
-in the core's [symbol-actions.md](symbol-actions.md) as of commons **v0.13.0**.
+in the core's [symbol-actions.md](symbol-actions.md) as of commons **v0.15.0**.
 
 Touki's worked example of that page is
 [NamingStyleAnalyzer](../../../touki.analyzers/NamingStyleAnalyzer.cs), which
@@ -102,7 +102,7 @@ Two consequences to document wherever the rule is configured:
 The file format, the numeric release heading, the frozen-once-shipped rule, the
 `;`-comment for an exact prerelease package version, and the RS2000-RS2008 guide
 were upstreamed and now ship in the core's
-[release-tracking.md](release-tracking.md) as of commons **v0.13.0**. It binds to
+[release-tracking.md](release-tracking.md) as of commons **v0.15.0**. It binds to
 the two `AnalyzerReleases.*.md` files listed under "Concrete bindings" above; the
 repo's commented-row convention for suppression ids is in
 [suppressors.md](suppressors.md) Rule 5.

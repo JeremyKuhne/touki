@@ -6,10 +6,10 @@ metadata:
     applicability: git-github
     binding: optional-overlay
     github-path: skills/github-actions-cost-optimization
-    github-pinned: v0.13.0
-    github-ref: refs/tags/v0.13.0
+    github-pinned: v0.15.0
+    github-ref: refs/tags/v0.15.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 1fac6778d86ec0879641e2b593e881f49b43c648
+    github-tree-sha: 1c06c60d0c2bbb5738be232f3f97a562bb3f5a9e
     maturity: canary
     portability: portable
     related: engineering-baseline, security-review

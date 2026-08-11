@@ -1,11 +1,11 @@
 # Analyzer performance
 
-Detail for the [roslyn-analyzers](SKILL.md) skill. An analyzer is not batch tooling
-- it runs **inside the IDE on every keystroke**, concurrently with every other
-analyzer, on the UI-latency path. A slow analyzer does not just slow itself; it
-degrades typing responsiveness across the whole solution. The Roslyn SDK guidance
-is blunt about it: *an analyzer should exit as quickly as possible, doing minimal
-work.* Treat the in-IDE per-edit budget as the design constraint.
+Detail for the [roslyn-analyzers](SKILL.md) skill. An analyzer is not batch
+tooling - it runs **inside the IDE on every keystroke**, concurrently with every
+other analyzer, on the UI-latency path. A slow analyzer does not just slow itself;
+it degrades typing responsiveness across the whole solution. The Roslyn SDK
+guidance is blunt about it: *an analyzer should exit as quickly as possible, doing
+minimal work.* Treat the in-IDE per-edit budget as the design constraint.
 
 ## The cardinal rule: cheap filter first, semantics last
 
@@ -21,6 +21,12 @@ never reach it.
 3. **Semantic model calls** - `GetSymbolInfo`, `GetTypeInfo`, `GetDeclaredSymbol`,
    data-flow analysis. These bind and are comparatively expensive. Only call them
    after the syntactic guards have already established the node is a real candidate.
+
+Build reusable rejection data at compilation or symbol start when that narrows the
+hot path. For example, collect candidate field names once, compare the rightmost
+identifier text first, and call `GetSymbolInfo` only for matching names. Measure how
+many callbacks survive each gate; elapsed time alone does not reveal which dimension
+multiplies the work.
 
 The Roslyn SDK tutorial makes the same point structurally: it does the syntactic
 filtering in one loop and defers the semantic checks to a second loop "because they
@@ -79,8 +85,8 @@ foreach (AttributeData attribute in type.GetAttributes())
 }
 ```
 
-`GetAttributes()` returns the symbol's existing attribute array, so this iterate-
-and-compare is allocation-free - no dictionary, no string build. A
+`GetAttributes()` returns the symbol's existing attribute array, so the direct loop
+does not add a dictionary or string build. A
 `ConcurrentDictionary<INamedTypeSymbol, bool>` "cache" on top of this is usually
 overhead, not savings: the work it memoizes is already cheap, and the dictionary
 itself allocates. Reach for a memo only when a *profile* shows the lookup dominating.
@@ -102,6 +108,23 @@ correct pattern: the closure lives only as long as that one compilation's analys
 so nothing is rooted afterward. The danger is the field, not the capture - a
 per-compilation local or closure is fine.
 
+### Audit cache lifetime and cardinality
+
+`static`, weak, concurrent, and pooled caches are not automatically cheap or bounded.
+Before adding one, name:
+
+- the maximum or expected number of keys;
+- the retained object graph per value;
+- whether key identity stays stable across workspace snapshots;
+- the event that makes entries collectible or evicts them;
+- whether observed access order supports a smaller policy, such as retaining only
+  the last project.
+
+Key the cache by the lifetime of the fact, not the narrowest object currently in
+hand. Compilation-invariant data belongs at compilation scope; pass the current
+semantic model into the individual query rather than caching equivalent state once
+per model.
+
 ## Enable concurrency
 
 `context.EnableConcurrentExecution()` lets the host parallelize your callbacks
@@ -112,12 +135,16 @@ across cores. It is free throughput *if* your analyzer holds no shared mutable s
 
 Per-keystroke, per-node code is the wrong place to allocate:
 
-- **No LINQ in hot callbacks.** `Where`/`Select`/`Any` allocate enumerators and
-  closures on a path that runs thousands of times. Use direct loops and early
-  `return`.
+- **Avoid construction-heavy composition in measured hot callbacks.** LINQ,
+  immutable unions, temporary dictionaries, and hidden `params` arrays can multiply
+  allocations when repeated per node or compilation. Use direct loops, reusable
+  storage, or pooling when measurement shows that ownership shape is cheaper.
 - **No `DescendantNodes()` / manual subtree walks** to find something a narrower
   registration would have delivered. The registration filter is the walk; re-walking
   is duplicated work.
+- **Prune unavoidable walks with subtree metadata.** For example, reject a tree with
+  no relevant directive, then descend only through nodes whose `ContainsDirectives`
+  flag is set. Do not realize red nodes on branches that cannot answer the question.
 - **Cache the descriptor array.** Return a `static readonly`
   `ImmutableArray<DiagnosticDescriptor>` from `SupportedDiagnostics`; never build it
   per access.
@@ -143,6 +170,10 @@ dotnet build <root>.csproj -c Release -p:ReportAnalyzer=true -bl
 - Compare your analyzer's time against the others in the same build. An analyzer
   that is a multiple of its peers' time is a red flag - usually an un-cached symbol
   lookup or a semantic call that should have been gated behind a syntactic check.
+- Record the exact commit, fixture, multiplying dimension, elapsed time, and an
+  allocation or retained-memory measure when making a performance claim. Run the
+  same input before and after; `ReportAnalyzer` time alone does not establish why a
+  broad change helped.
 - In Visual Studio, the IDE can surface per-analyzer CPU; if a specific project
   feels slow to type in, that is the signal to re-profile.
 
@@ -153,7 +184,9 @@ dotnet build <root>.csproj -c Release -p:ReportAnalyzer=true -bl
 | Slow on every project | Semantic call before syntactic gate | Reorder: cheap checks first, `return` early |
 | Slow even where rule is irrelevant | No early bail | Resolve target symbol at compilation start; return if absent |
 | Time scales with file size | `DescendantNodes()` / tree walk | Register a narrower node/operation kind |
-| GC pressure during typing | LINQ / closures in callback | Direct loops, `static` lambdas, cached arrays |
+| Walk realizes irrelevant branches | No subtree pruning | Gate and descend with `Contains*` metadata |
+| GC pressure during typing | Repeated temporary composition | Direct loops, `static` lambdas, cached arrays where measurement supports them |
 | GC pressure on type checks | `ToString()` / `ToDisplayString()` compares | Resolve once with `GetTypeByMetadataName`, compare via `SymbolEqualityComparer` |
 | Memory grows across edits | `Compilation`/`ISymbol` in a static/instance field | Capture per-compilation symbols in the closure, never a field |
+| Cache grows across projects/solutions | Unbounded or unstable keys | Budget cardinality, key by fact lifetime, define collection/eviction |
 | Wrong results under parallelism | Shared mutable state | Remove it; keep state per-callback or per-compilation |

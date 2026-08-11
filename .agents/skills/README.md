@@ -26,11 +26,12 @@ The "Disambiguation" section below records every known overlap.
 | [run-tests-on-wsl](./run-tests-on-wsl/SKILL.md) | "run tests on Linux", "run the Posix/PosixPath/Bash oracles", "iterate Unix tests locally"; WSL Ubuntu bootstrap, the `~/repos/touki` Linux-native mirror that sidesteps the `/mnt/` DrvFs NuGet trap, the `DOTNET_ROOT` apphost requirement, and the `iconv` UTF-16 log trick | repo-specific | `performance-testing`, `pre-pr-self-review` |
 | [fuzz-testing](./fuzz-testing/SKILL.md) | "add a fuzz target", "run the fuzzer", "install fuzzing prereqs", "fuzz SpanReader/SpanWriter", coverage-guided SharpFuzz runs on net10/net481, promoting a crash into a regression | vendored (portable core) + overlay | `security-review`, `pre-pr-self-review`, `run-tests-on-wsl` (via [overlay](./fuzz-testing/overlay.md)) |
 | [publish-release](./publish-release/SKILL.md) | "publish a new version", "release alpha.N", "ship a beta", "cut a release", "promote alpha to beta", "tag and publish" - choosing the right `Major.Minor.Patch`, alpha/beta/rc/stable channel, tag stream (`v*` vs `ts-v*`), and GitHub release notes | repo-specific | `pre-pr-self-review`, `create-pr` |
-| [manage-skills](./manage-skills/SKILL.md) | "find a skill", "build a skill" / "create a skill" (checks for an existing one first), "update the skill", sync a local change upstream vs into an overlay; the find-first build path, tiered search, pull/push update flow | vendored (portable core) | `agent-files-review` |
+| [manage-skills](./manage-skills/SKILL.md) | "find a skill", "build/create a skill" (checks for an existing one first), "review this skill", "update/sync the skill", "retire/remove this skill"; tiered search and the five-verb skill lifecycle | vendored (portable core) | `agent-files-review` |
 | [roslyn-analyzers](./roslyn-analyzers/SKILL.md) | "write an analyzer", "create a Roslyn/diagnostic analyzer", "add an analyzer rule", "add a code fix", "enforce a convention at build time", "flag a pattern in code"; find-first check of existing `CA`/`IDE` rules, `BannedApiAnalyzers`, EditorConfig, Roslynator/StyleCop/Meziantou before authoring; `touki.analyzers` layout, packing into `KlutzyNinja.Touki`, statelessness/`IOperation` design, the `Microsoft.CodeAnalysis.Testing` harness, in-IDE perf budget | vendored (portable core) + overlay | `performance-testing`, `security-review`, `pre-pr-self-review`, `il-copy-inspection`, `create-pr` (via [overlay](./roslyn-analyzers/overlay.md)) |
 | [il-copy-inspection](./il-copy-inspection/SKILL.md) | "find struct copies", "where does the compiler copy this struct", "is this a defensive copy", "check for boxing in IL", "did the compiler emit a copy", "confirm the analyzer's defensive-copy warning", "audit a `[NonCopyable]` type's copies after build"; reading emitted IL (`ildasm`/`ilspycmd`/Cecil/`MetadataReader`) for the `ldobj`/`stloc`/`ldloca` defensive-copy signature, `box`, by-value field/arg/return copies, and PDB offset-to-source mapping | vendored (portable core) + overlay | `roslyn-analyzers`, `framework-jit-optimization`, `performance-testing`, `scratch-buffer-strategy` (via [overlay](./il-copy-inspection/overlay.md)) |
 | [code-comprehension](./code-comprehension/SKILL.md) | "review this for readability", "is this too complex", "reduce nesting / cognitive load", "reasonable method length / parameter count / nesting depth", judging whether code will be hard to understand | vendored (portable core) + overlay | `pre-pr-self-review` (via [overlay](./code-comprehension/overlay.md)) |
 | [cswin32-interop](./cswin32-interop/SKILL.md) | replacing `[DllImport]` with generated `PInvoke.*` calls, working with `Windows.Win32` projections (`HANDLE`/`HRESULT`/`BOOL`, typed enums and constants), editing `NativeMethods.txt` / `NativeMethods.json`, blittable signatures under `allowMarshaling: false`, native allocator ownership and byte-versus-element lengths, platform guards for Windows-only code, CsWin32 vs `[LibraryImport]` | vendored (portable core) + overlay | `cswin32-com`, `dotnet-polyfills`, `scratch-buffer-strategy`, `security-review` (via [overlay](./cswin32-interop/overlay.md)) |
+| [cswin32-com](./cswin32-com/SKILL.md) | struct-based COM interop with raw pointers, `ComScope`, `IComIID`, `delegate* unmanaged` vtables, COM activation, connection points, CCW bridges, manual COM structs, or cross-assembly COM composition | vendored (portable core) + overlay | `cswin32-interop`, `security-review`, `il-copy-inspection` (via [overlay](./cswin32-com/overlay.md)) |
 | [github-actions-cost-optimization](./github-actions-cost-optimization/SKILL.md) | "reduce CI cost / spend / minutes / job count", optimizing workflow triggers, matrices, runner selection, caches, artifact retention, eliminating duplicate Actions runs, deciding which checks are automatic versus scheduled or manual | vendored (portable core) + overlay | `engineering-baseline`, `security-review` (via [overlay](./github-actions-cost-optimization/overlay.md)) |
 
 **Portability** (mirrored from each skill's `metadata.portability`) marks how much
@@ -54,15 +55,15 @@ match the user's request, follow the rule below.
 
 ### `manage-skills` vs `agent-files-review`
 
-Both touch skill files. They are mutually exclusive by **scope**:
+Both touch skill files, but lifecycle work chains into file validation:
 
-- **The catalog lifecycle** - discovering a skill, adding one, vendoring from the
-  commons, syncing a local change up or down -> `manage-skills`.
+- **The catalog lifecycle** - finding, building, reviewing, updating, or retiring
+  a skill -> start with `manage-skills`.
 - **Validating one agent file** - frontmatter, mirror sync, whitespace, the
-  `agent-files.yml` gate -> `agent-files-review`.
+  `agent-files.yml` gate -> use `agent-files-review` directly.
 
-The normal order is to run `manage-skills` to bring a skill in or push one out,
-then `agent-files-review` to validate the file you ended up with.
+Lifecycle work finishes with `agent-files-review`; direct file/schema diagnostics
+do not need the lifecycle workflow first.
 
 ### `create-pr` vs `address-pr-feedback`
 
@@ -194,10 +195,9 @@ Both match "reduce cost" and "optimize". They split by **what is being measured*
 "Make CI cheaper" is never `performance-testing`, and "make this method faster"
 is never `github-actions-cost-optimization`.
 
-Two commons skills that these two name are intentionally **not vendored here**:
-`cswin32-com` (touki has no struct-based COM surface) and `engineering-baseline`
-(touki is already an established repository). Their names appear only as
-upstream-owned cross-references.
+The commons `engineering-baseline` skill is intentionally **not vendored here**:
+Touki is already an established repository. Its name appears only as an
+upstream-owned cross-reference.
 
 ## Maintenance
 

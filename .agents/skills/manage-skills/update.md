@@ -52,9 +52,11 @@ common, and the options:
 - **Upstream it now** - prepare the PR to the commons; *creating* it still needs an
   explicit publish verb from the user. Once merged, re-vendor here at the new pin.
 - **Not now / not plausible** - keep the change in the local core as a *tracked
-  pending-upstream divergence*: record it (in the commit message and a short note)
-  so the drift check's later alarm is expected, not a surprise. Re-attempt
-  upstreaming when it becomes plausible; re-pinning clears the divergence.
+  pending-upstream divergence*: record it in the commit message and the repository's
+  divergence ledger or a short note. Identify the skill, affected files, base pin,
+  reason, and upstream status so the drift check's later alarm is expected, not a
+  surprise. Re-attempt upstreaming when it becomes plausible; remove the record when
+  the pinned upstream artifact contains the change.
 - **Reclassify** - if discussion shows the change is actually repo-specific, move
   it to the overlay instead and restore the core.
 
@@ -89,7 +91,10 @@ core.
 
 ## After any update
 
-Re-run the validators and the link check, and if the change touched the catalog
-or a skill's trigger phrasing, reconcile the catalog `README.md` (inventory row,
-disambiguation) in the same change. Then hand off to the repository's
-`agent-files-review` skill to validate the resulting files.
+Run [review.md](review.md) against the changed routing, workflow, and ownership
+surface. Re-run the validators and link check, and if the change touched the catalog
+or trigger phrasing, reconcile the catalog `README.md` (inventory row and
+disambiguation) in the same change. Then hand off to `agent-files-review` to validate
+the resulting files; semantic lifecycle review does not replace file-level review.
+If the skill is obsolete rather than changed, follow [retire.md](retire.md) instead
+of forcing removal into the update path.

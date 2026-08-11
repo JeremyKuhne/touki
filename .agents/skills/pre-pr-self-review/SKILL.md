@@ -6,8 +6,8 @@ metadata:
     applicability: universal
     binding: optional-overlay
     github-path: skills/pre-pr-self-review
-    github-pinned: v0.13.0
-    github-ref: refs/tags/v0.13.0
+    github-pinned: v0.15.0
+    github-ref: refs/tags/v0.15.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
     github-tree-sha: c172ca7a01a7368bb4fee88b4d0b756442d38976
     maturity: canary

@@ -65,6 +65,12 @@ walking, which is where slow analyzers come from. Never call
 `SyntaxNode.DescendantNodes()` to hunt for nodes a registration filter would have
 delivered directly.
 
+Do not recursively visit syntax, operations, or embedded-language trees whose depth
+comes from source. A `StackOverflowException` can terminate the host rather than
+surface as a recoverable `AD0001`. Use an explicit work stack for arbitrary depth,
+or a tested stack budget around every recursive phase. A guard around parsing does
+not protect later diagnostic or capture walks.
+
 For rules that walk declarations, [symbol-actions.md](symbol-actions.md) covers
 parameters/type parameters, locals, synthetic names, overrides, and explicit
 interface implementations.
@@ -88,6 +94,18 @@ When a syntactic match needs *one* semantic confirmation, do the cheap syntax ch
 first and only then reach for `context.SemanticModel` - never the other way round
 (see [performance.md](performance.md)).
 
+Treat nullable and optional semantic results as ordinary IDE states. Error recovery,
+incomplete edits, and speculative models can produce operations with a null `Type`,
+missing symbols, or several declared locals where the common form has one. Prove a
+`GetRequired*` helper's precondition for the exact node in hand; otherwise check and
+return. Likewise, index an analysis map only when its producer proves total coverage;
+unsupported or newly added kinds should normally use `TryGetValue` and bail out.
+
+Choose a symbol identity policy for maps and sets. If constructed generic symbols
+and their definitions represent the same logical declaration, normalize both
+insertion and lookup to `OriginalDefinition`. Comparing one normalized side to one
+constructed side leaves a locally consistent cache that still misses valid inputs.
+
 ## Rule 4: a stable, well-formed `DiagnosticDescriptor`
 
 ```csharp
@@ -107,6 +125,9 @@ private static readonly DiagnosticDescriptor s_rule = new(
 - Cache the descriptor in a `static readonly` field and return a cached
   `ImmutableArray` from `SupportedDiagnostics` (`ImmutableArray.Create(s_rule)`).
   Do not allocate a new descriptor or array per call.
+- If one descriptor must be canonical, carry explicit order. Dictionary iteration
+  order is not a selection contract, and descriptor equality may omit operationally
+  relevant properties such as `CustomTags`.
 - `messageFormat` is a format string; pass arguments at `Diagnostic.Create`. Do not
   pre-format with interpolation - it defeats localization and allocates.
 - Set a real `helpLinkUri`.
@@ -136,6 +157,10 @@ Consumers enable it with `dotnet_diagnostic.<id>.severity`, which also controls
 the effective severity of every report under that ID. Do not rely on per-report
 severity to preserve independent sub-rule levels once the consumer sets the
 ID-wide severity; use analyzer-specific options to turn sub-rules off instead.
+
+For analyzer-specific options, make zero/default safe or validate before use.
+Missing and malformed EditorConfig values are normal inputs, and future enum values
+must not turn dictionary indexing or supposedly unreachable branches into `AD0001`.
 
 ## Rule 7: release tracking is part of the change
 
@@ -207,7 +232,10 @@ with "Could not find a part of the path ...\<root>.analyzers.codefixes\...".
 - [ ] No instance/static mutable state.
 - [ ] `EnableConcurrentExecution()` + `ConfigureGeneratedCodeAnalysis(None)`.
 - [ ] Narrowest registration with a kind filter; no manual tree walks.
+- [ ] No recursion whose depth is controlled by source or embedded input.
 - [ ] `IOperation` where semantics matter; raw syntax only for source-shape rules.
+- [ ] Nullable semantic results, option defaults, and partial maps are handled.
+- [ ] Constructed/definition symbol identity is normalized consistently.
 - [ ] Cached descriptor + cached `SupportedDiagnostics`; `messageFormat` args, not interpolation.
 - [ ] Diagnostic reported at the tightest location.
 - [ ] New rule ID recorded in `AnalyzerReleases.Unshipped.md`.

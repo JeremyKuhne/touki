@@ -20,11 +20,14 @@
         a strict parser, like the strictyaml skills-ref uses, would reject).
       - readability: Markdown files contain no HTML entities; direct Unicode and
         plain words remain valid.
+      - list indentation: wrapped prose stays on its paragraph's starting column;
+        lazy and inconsistently indented continuations are rejected.
       - length: SKILL.md is at most 500 lines (the spec's progressive-disclosure
         recommendation, "Keep your main SKILL.md under 500 lines").
 
-    The length and no-XML-tags checks go beyond skills-ref, which validates
-    frontmatter only; the colon check restores parity with its strict YAML parser.
+    The length, no-XML-tags, readability, and list-indentation checks go beyond
+    skills-ref, which validates frontmatter only; the colon check restores parity
+    with its strict YAML parser.
 
     With -RequirePortfolioMetadata, also enforces this commons' portable-core
     policy: metadata.portability/applicability/binding/risk/maturity/requires/
@@ -422,6 +425,123 @@ function Test-PortfolioMetadata ($metadata, [string] $raw, [string] $dir, [bool]
     Test-OverlayContract $metadata $raw $dir
 }
 
+function Get-MarkdownListIndentationErrors ([string] $markdownPath, [string] $skillDirectory) {
+    $errors = [System.Collections.Generic.List[string]]::new()
+    $lines = @(Get-Content -LiteralPath $markdownPath)
+    $listItems = [System.Collections.Generic.List[object]]::new()
+    $paragraphIndent = $null
+    $fenceCharacter = $null
+    [int] $fenceLength = 0
+    $insideFrontmatter = $lines.Count -gt 0 -and $lines[0] -ceq '---'
+    [string] $relativePath = [System.IO.Path]::GetRelativePath($skillDirectory, $markdownPath)
+
+    for ([int] $lineIndex = 0; $lineIndex -lt $lines.Count; $lineIndex++) {
+        [string] $line = $lines[$lineIndex]
+
+        if ($insideFrontmatter) {
+            if ($lineIndex -gt 0 -and $line -ceq '---') { $insideFrontmatter = $false }
+            continue
+        }
+
+        if ($null -ne $fenceCharacter) {
+            $closingFence = [regex]::Match($line.TrimStart(), '^(?<fence>`{3,}|~{3,})\s*$')
+            if ($closingFence.Success -and
+                $closingFence.Groups['fence'].Value[0] -ceq $fenceCharacter -and
+                $closingFence.Groups['fence'].Value.Length -ge $fenceLength) {
+                $fenceCharacter = $null
+                $fenceLength = 0
+            }
+            continue
+        }
+
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            $paragraphIndent = $null
+            continue
+        }
+
+        $openingFence = [regex]::Match($line, '^(?<indent> *)(?<fence>`{3,}|~{3,})')
+        if ($openingFence.Success) {
+            [int] $openingIndent = $openingFence.Groups['indent'].Value.Length
+            while ($listItems.Count -gt 1 -and $openingIndent -lt $listItems[$listItems.Count - 1].ContentIndent) {
+                $listItems.RemoveAt($listItems.Count - 1)
+            }
+            if ($listItems.Count -eq 1 -and $openingIndent -lt $listItems[0].ContentIndent) {
+                $listItems.Clear()
+            }
+            [string] $fence = $openingFence.Groups['fence'].Value
+            $fenceCharacter = $fence[0]
+            $fenceLength = $fence.Length
+            $paragraphIndent = $null
+            continue
+        }
+
+        $listItem = [regex]::Match(
+            $line,
+            '^(?<indent> *)(?<marker>(?:\d{1,9}[.)]|[-+*]))(?<spacing> {1,4})(?<content>.*)$')
+        if ($listItem.Success) {
+            [int] $markerIndent = $listItem.Groups['indent'].Value.Length
+            while ($listItems.Count -gt 0 -and $markerIndent -lt $listItems[$listItems.Count - 1].ContentIndent) {
+                $listItems.RemoveAt($listItems.Count - 1)
+            }
+
+            [int] $contentIndent = $markerIndent +
+                $listItem.Groups['marker'].Value.Length +
+                $listItem.Groups['spacing'].Value.Length
+            $listItems.Add([pscustomobject]@{
+                    MarkerIndent = $markerIndent
+                    ContentIndent = $contentIndent
+                })
+            $paragraphIndent = if ($listItem.Groups['content'].Value.Length -gt 0) { $contentIndent } else { $null }
+            continue
+        }
+
+        if ($listItems.Count -eq 0) { continue }
+
+        [int] $leadingSpaces = [regex]::Match($line, '^ *').Length
+        while ($listItems.Count -gt 1 -and $leadingSpaces -lt $listItems[$listItems.Count - 1].ContentIndent) {
+            $listItems.RemoveAt($listItems.Count - 1)
+            $paragraphIndent = $null
+        }
+
+        [int] $requiredIndent = $listItems[$listItems.Count - 1].ContentIndent
+        [string] $trimmedLine = $line.TrimStart()
+        $startsNewBlock = $trimmedLine -match '^(?:#{1,6}(?:\s|$)|>|<[/!?A-Za-z]|(?:-{3,}|\*{3,}|_{3,})\s*$)'
+        if ($leadingSpaces -lt $requiredIndent) {
+            if ($null -ne $paragraphIndent -and -not $startsNewBlock) {
+                $errors.Add("$relativePath`:$($lineIndex + 1) list continuation is indented $leadingSpaces spaces; align it with the paragraph's $paragraphIndent-space indentation.")
+                continue
+            }
+            if ($null -eq $paragraphIndent -and
+                $leadingSpaces -gt $listItems[$listItems.Count - 1].MarkerIndent -and
+                -not $startsNewBlock) {
+                $errors.Add("$relativePath`:$($lineIndex + 1) list paragraph starts at $leadingSpaces spaces; indent it to the list item's $requiredIndent-space content column or move it to column 0.")
+                continue
+            }
+
+            $listItems.Clear()
+            $paragraphIndent = $null
+            continue
+        }
+
+        if ($null -eq $paragraphIndent -and
+            $leadingSpaces -gt $requiredIndent -and
+            $leadingSpaces -lt ($requiredIndent + 4) -and
+            -not $startsNewBlock) {
+            $errors.Add("$relativePath`:$($lineIndex + 1) list paragraph starts at $leadingSpaces spaces; align prose with the list item's $requiredIndent-space content column.")
+            continue
+        }
+
+        if ($null -eq $paragraphIndent) {
+            $paragraphIndent = $leadingSpaces
+        }
+        elseif ($leadingSpaces -ne $paragraphIndent) {
+            $errors.Add("$relativePath`:$($lineIndex + 1) list continuation is indented $leadingSpaces spaces; align it with the paragraph's $paragraphIndent-space indentation.")
+        }
+    }
+
+    return $errors.ToArray()
+}
+
 function Test-SkillDir ([string] $dir) {
     $errors = [System.Collections.Generic.List[string]]::new()
 
@@ -463,6 +583,8 @@ function Test-SkillDir ([string] $dir) {
                 $errors.Add("$relativePath`:$lineNumber contains HTML entity '$($match.Value)'; write the character directly or use plain words.")
             }
         }
+        Get-MarkdownListIndentationErrors $markdownFile.FullName $dir |
+            ForEach-Object { $errors.Add($_) }
     }
 
     $lineCount = Measure-SkillLineCount $raw

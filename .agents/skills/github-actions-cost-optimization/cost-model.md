@@ -32,8 +32,8 @@ Always distinguish:
 1. **Actual invoiced cost.** What the owner is expected to pay under current
    visibility, plan allowance, budgets, runner class, and storage usage.
 2. **Normalized list-price cost.** A synthetic rate-weighted measure: observed
-  job duration multiplied by current published runner rates before
-  public-repository or plan allowances.
+   job duration multiplied by current published runner rates before
+   public-repository or plan allowances.
 
 For a public repository on standard hosted runners, actual minute cost may be
 zero while normalized cost is nonzero. Report both. Normalized cost makes runner

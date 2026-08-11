@@ -94,8 +94,15 @@ For every rule, test all of:
   literal). (`AnalyzeComparison_NonNullEquality_ReportsNoDiagnostic`.)
 - **Boundary / known false-positive risks** - generated code (must stay silent given
   `ConfigureGeneratedCodeAnalysis(None)`), partial/erroneous code the IDE feeds while
-  the user is mid-edit, nullable vs non-nullable contexts, generics, expression
-  vs statement position.
+  the user is mid-edit, null/error types, deconstruction and multi-local declarations,
+  constructed generic symbols, default/unknown options, unsupported map entries,
+  nullable vs non-nullable contexts, and expression vs statement position.
+- **Adversarial depth** - if source or embedded input controls traversal depth, use a
+  fixture beyond the known failing shape. Run a recursion-regression probe in a child
+  process so `StackOverflowException` cannot terminate the test runner.
+- **Lifecycle and cancellation** - for pooled or cached components, run sequential
+  requests with distinct cancellation tokens and repeated create/dispose or
+  open/close cycles; assert cache cardinality or collection where practical.
 - **Exact location** - when using the official harness, assert the span with markup,
   not just presence.
 - **The code fix** (if any) - before/after equality, that the fix is a no-op /
@@ -105,6 +112,11 @@ For every rule, test all of:
 A useful discipline from the Roslyn SDK tutorial: write the "should not fire" tests
 *first*. They are where real analyzers go wrong, because the cheap syntactic match
 over-triggers until the semantic guards are added.
+
+For a performance or stability regression, retain the triggering scale dimension
+and verify that a compiling mutation of the fix makes the test fail. A deep-input
+test that never reaches the former recursion depth, or a semantic test whose source
+does not exercise the guarded null/constructed shape, pins nothing.
 
 ## Run in Debug and Release
 

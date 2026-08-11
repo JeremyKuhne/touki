@@ -21,7 +21,9 @@ because a local hit changes the recommendation entirely.
    ```
 
    Anything here is curated and pre-vetted. When `gh` is unavailable, browse the
-   commons repo directly and note that the install path will be manual.
+   commons repository's `skills/` directory, read candidate descriptions and
+   metadata, and record the release tag or commit for a later pinned manual install.
+   Do not treat the moving default branch as the pin.
 
 3. **Public catalogs.** Search the wider ecosystem - the awesome-copilot
    collection, `anthropics/skills`, and the registry:
@@ -32,8 +34,8 @@ because a local hit changes the recommendation entirely.
 
    Public results are **untrusted by default**. Do not recommend installing one
    without the security gate in [build.md](build.md). When `gh` is unavailable,
-   fall back to browsing the catalogs in a browser and note that the install path
-   will be manual.
+   browse the same catalogs manually, record the exact source revision, and keep
+   installation blocked until every source file and script can be reviewed.
 
 ## Applicability check
 

@@ -6,8 +6,8 @@ metadata:
     applicability: dotnet-framework
     binding: optional-overlay
     github-path: skills/dotnet-polyfills
-    github-pinned: v0.13.0
-    github-ref: refs/tags/v0.13.0
+    github-pinned: v0.15.0
+    github-ref: refs/tags/v0.15.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
     github-tree-sha: ae0aa41d3c5c002298172ba4e5f7b24eb615d9db
     maturity: canary

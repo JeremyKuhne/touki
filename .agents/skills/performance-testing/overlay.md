@@ -1,6 +1,6 @@
 ---
 core: performance-testing
-core-pin: v0.13.0
+core-pin: v0.15.0
 ---
 
 # Touki overlay - performance-testing
@@ -15,7 +15,7 @@ core - `gh skill update` would flag the drift. Everything touki-specific lives
 here, plus the two profiling pages below, which are a touki overlay (they drive
 the repo's trace analyzer).
 
-> **Pinned to a release.** The core is pinned to the commons **v0.13.0** tag. Pull
+> **Pinned to a release.** The core is pinned to the commons **v0.15.0** tag. Pull
 > later upstream changes with `gh skill update performance-testing` (review the
 > diff, re-pin to the new tag).
 
@@ -75,7 +75,7 @@ here - one-shot phase measurement versus adaptive phase profiling, the experimen
 ledger that retains rejected variants, exact-source comparison, and
 reconstructable run-artifact provenance - was upstreamed and now ships in the
 core's [investigation-workflow.md](investigation-workflow.md) as of commons
-**v0.13.0**. The touki [profiling.md](profiling.md) page defers to it instead of
+**v0.15.0**. The touki [profiling.md](profiling.md) page defers to it instead of
 restating it.
 
 Periodic CPU sample-quality, provider-state, source-resolution, BenchmarkDotNet

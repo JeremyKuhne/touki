@@ -116,9 +116,10 @@ pwsh tools/Validate-AgentSkills.ps1
 pwsh tools/Test-AgentFileLinks.ps1
 ```
 
-`Validate-AgentSkills.ps1` runs the bundled validator over the mixed 18-skill
-catalog, runs strict portfolio validation over the commons cores selected by
-provenance, and checks overlays, relationship targets/cycles, and catalog labels.
+`Validate-AgentSkills.ps1` runs the bundled validator over the mixed skill
+catalog except explicitly provenance-verified tool payloads, runs strict
+portfolio validation over the commons cores selected by provenance, and checks
+overlays, relationship targets/cycles, and catalog labels.
 
 ## Discovery
 

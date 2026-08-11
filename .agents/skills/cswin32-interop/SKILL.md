@@ -6,10 +6,10 @@ metadata:
     applicability: dotnet
     binding: optional-overlay
     github-path: skills/cswin32-interop
-    github-pinned: v0.13.0
-    github-ref: refs/tags/v0.13.0
+    github-pinned: v0.15.0
+    github-ref: refs/tags/v0.15.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 14960bec081ff29eaa9bf5593b7a6ca9d5201ae8
+    github-tree-sha: e747e5bb429ee6fae9d1fc083fe3ec144affcdfd
     maturity: canary
     portability: portable
     related: cswin32-com, dotnet-polyfills, scratch-buffer-strategy, security-review
@@ -35,11 +35,11 @@ it - see the paired **cswin32-com** skill, whose vtable methods follow the same
 ## Rules
 
 1. **Replace a hand-written `[DllImport]` with `PInvoke.*` when CsWin32 can
-  project the API.** After verifying the generated declaration and supporting
-  types, delete their hand-written equivalents. Keep a source-generated
-  `[LibraryImport]` on .NET 10 and `[DllImport]` on .NET Framework for an
-  export absent from the available Win32 metadata. See
-  [types-and-constants.md](types-and-constants.md).
+   project the API.** After verifying the generated declaration and supporting
+   types, delete their hand-written equivalents. Keep a source-generated
+   `[LibraryImport]` on .NET 10 and `[DllImport]` on .NET Framework for an
+   export absent from the available Win32 metadata. See
+   [types-and-constants.md](types-and-constants.md).
 2. **Use the generated types directly** (`HANDLE`, `HMODULE`, `HRESULT.S_OK`,
    `FILE_FLAGS_AND_ATTRIBUTES`, ...). Never keep a parallel local copy of a
    Win32 enum or struct CsWin32 already projects.
@@ -48,9 +48,9 @@ it - see the paired **cswin32-com** skill, whose vtable methods follow the same
    assemblies. When a downstream package intentionally extends a public owner,
    use the [owner/extender composition](composition.md) model instead.
 4. **Prefer CsWin32 for Windows APIs present in its metadata.** Use
-  `[LibraryImport]` (or `[DllImport]` on .NET Framework) for private, custom,
-  or otherwise unprojectable Windows exports and for non-Windows native calls
-  such as `libc`. Keep those signatures blittable under the same rules.
+   `[LibraryImport]` (or `[DllImport]` on .NET Framework) for private, custom, or
+   otherwise unprojectable Windows exports and for non-Windows native calls such
+   as `libc`. Keep those signatures blittable under the same rules.
 5. **Preserve the original error-handling contract when migrating.** Check the
    old declaration for `PreserveSig` / `SetLastError` / `BOOL` / `HRESULT`
    semantics and reproduce them: `PreserveSig=false` becomes
