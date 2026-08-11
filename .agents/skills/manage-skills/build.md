@@ -19,9 +19,21 @@ catalog - is the failure mode this path exists to prevent. Always run
    gh skill install JeremyKuhne/agent-skills <skill> --pin vX.Y.Z
    ```
 
+   Read the selected revision's `metadata.requires` and install its complete
+   transitive requirement closure at the same pin; `gh skill install` installs only
+   the named skill. Review each requirement's applicability and source before
+   installing it.
+
    `--pin` records the exact version so later `update --all` runs skip it until
    you deliberately re-pin. The install writes provenance frontmatter (source
    repo, ref, and tree SHA); commit it.
+
+   Without `gh`, check out or download the exact tag/commit, copy the complete
+   directory for the skill and each transitive requirement (not only each
+   `SKILL.md`), preserve or add provenance metadata for that immutable revision, add
+   the local overlay, and compare every copied file list and hash against the source
+   before running the validators. If an exact revision or complete file set cannot
+   be obtained, keep vendoring blocked.
 4. **In a public catalog** -> do not build from scratch. Apply the security gate
    below. If it is good, vendor it; if it is close but imperfect, fork it into the
    commons and vendor that. A mediocre public skill is usually worth adapting over
@@ -66,6 +78,12 @@ Author it to the repo's `FORMAT.md`:
   mode, then run the repo's remaining agent-file checks (the installed-artifact
   link check, markdown lint, and generated catalog check).
 
+Before calling the skill complete, run the semantic workflow review in
+[review.md](review.md), then hand the resulting files to `agent-files-review` for
+frontmatter, links, whitespace, and repository diagnostics. A validator pass does
+not establish that the skill will invoke at the right time or lead an agent to a
+finished outcome.
+
 ### Born-local vs born-shared
 
 Decide where the skill's home is before writing much:
@@ -73,12 +91,16 @@ Decide where the skill's home is before writing much:
 - **Born-local** - the skill is specific to this repo (its paths, projects, or
   one-off workflow). Author it here under `.agents/skills/` and leave it; it never
   goes to the commons.
-- **Born-shared** - the skill is generic and other repos will want it. Author the
-  portable core directly in the commons, then vendor it back here with an overlay.
-  Keep repo-specific paths, cross-references, and example links out of the core
-  from the start - they belong in the overlay. Leave a short prose cue in the core
-  telling the agent to read `overlay.md` when present; that stable loader contract
-  is what gets the overlay read.
+- **Born-shared** - the skill is generic and other repos will want it. First ask the
+  user whether to pursue commons authoring, as required by [update.md](update.md).
+  Prepare and validate the portable core in a commons checkout or local staging
+  branch, but do not create a remote branch, push, or open a PR without the
+  repository's explicit approvals. Once the shared change is merged and released,
+  vendor that immutable revision back here with an overlay. Keep repo-specific
+  paths, cross-references, and example links out of the core from the start - they
+  belong in the overlay. Leave a short prose cue in the core telling the agent to
+  read `overlay.md` when present; that stable loader contract is what gets the
+  overlay read.
 
 A skill that is mostly generic but needs a few local specifics is still
 born-shared: the generic part is the core, the specifics are the overlay. The test

@@ -28,10 +28,10 @@ Move a helper toward the lowest reusable layer that can own it without importing
 higher-level policy:
 
 - A pooled scratch buffer, allocation-free flag operation, or .NET Framework
-   BCL polyfill belongs in the managed foundation.
+  BCL polyfill belongs in the managed foundation.
 - A `HANDLE` close helper, `HRESULT` mapping, `PWSTR` ownership operation,
-   owned COM-pointer scope, `SAFEARRAY`/`VARIANT` support, or owner-side CCW hook
-   belongs in the Win32 owner when multiple extenders can use it.
+  owned COM-pointer scope, `SAFEARRAY`/`VARIANT` support, or owner-side CCW hook
+  belongs in the Win32 owner when multiple extenders can use it.
 - A windowing framework, accessibility model, dialog abstraction, or
   domain-specific COM adapter belongs in the extender.
 - An implementation-only vtable provider needed by one extender stays there

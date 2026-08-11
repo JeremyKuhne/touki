@@ -6,10 +6,10 @@ metadata:
     applicability: dotnet-project-gated
     binding: optional-overlay
     github-path: skills/roslyn-analyzers
-    github-pinned: v0.13.0
-    github-ref: refs/tags/v0.13.0
+    github-pinned: v0.15.0
+    github-ref: refs/tags/v0.15.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: bbaae1b14879e43711ccfe12b09dcc87b29b4d37
+    github-tree-sha: e44cec3101f086ee66823cc1ec0b35d421b99a29
     maturity: canary
     portability: portable
     related: performance-testing, security-review, pre-pr-self-review, il-copy-inspection
@@ -86,14 +86,15 @@ library it guards (`<root>` is the library project name):
    severity, `helpLinkUri`. Add the row to `AnalyzerReleases.Unshipped.md` in the
    same change or RS2000 fails.
 3. **Design the analyzer** to the statelessness, registration, and
-    `IOperation`-vs-syntax rules in [design.md](design.md). Copy the shape of a
-    known-good analyzer. For declaration-wide rules, also read
-    [symbol-actions.md](symbol-actions.md).
+   `IOperation`-vs-syntax rules in [design.md](design.md). Copy the shape of a
+   known-good analyzer. For declaration-wide rules, also read
+   [symbol-actions.md](symbol-actions.md).
 4. **Validate** with positive, negative, and boundary cases per
-   [validation.md](validation.md). Run in Debug *and* Release.
+   [validation.md](validation.md). Include malformed semantic state and adversarial
+   depth where applicable. Run in Debug *and* Release.
 5. **Check performance** against the in-IDE budget in [performance.md](performance.md):
-   cheap syntactic filter first, semantic model only after, symbols cached once per
-   compilation, `EnableConcurrentExecution()`.
+   cheap syntactic filter first, semantic model only after, and cache lifetime and
+   cardinality made explicit. Enable concurrent execution only with stateless code.
 6. **Decide whether to dogfood it** on your own source. If yes, the analyzer must
    be clean against the existing tree or scoped off where it shouldn't apply - e.g.
    a directory-level `.editorconfig` that disables the rule for generated or ported
@@ -114,10 +115,10 @@ library it guards (`<root>` is the library project name):
 - [release-tracking.md](release-tracking.md) - shipped/unshipped file format,
   immutable release history, release promotion, and the `RS20xx` diagnostics.
 - [validation.md](validation.md) - testing: the `Microsoft.CodeAnalysis.Testing`
-  markup harness, a lightweight in-memory harness, the coverage checklist, and the
-  dogfood probe.
+  markup harness, a lightweight in-memory harness, malformed/deep-input coverage,
+  the coverage checklist, and the dogfood probe.
 - [performance.md](performance.md) - the in-IDE performance budget, the cheap-first
-  rule, per-compilation symbol caching, concurrency, allocation hygiene, and how to
+  rule, cache lifetime and cardinality, traversal/allocation hygiene, and how to
   measure with `ReportAnalyzer`.
 - [suppressors.md](suppressors.md) - `DiagnosticSuppressor`: when owning the domain
   beats suppressing, what is suppressible at all, the id convention, why suppressions

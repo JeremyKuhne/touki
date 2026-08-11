@@ -1,6 +1,6 @@
 ---
 core: address-pr-feedback
-core-pin: v0.13.0
+core-pin: v0.15.0
 ---
 
 # Touki overlay - address-pr-feedback
@@ -12,7 +12,7 @@ Repo-specific companion to the vendored [address-pr-feedback](SKILL.md) skill. T
 `metadata.github-*` provenance in its frontmatter). Do not hand-edit the core -
 `gh skill update` would flag the drift. Everything touki-specific lives here.
 
-> **Pinned to a release.** The core is pinned to the commons **v0.13.0** tag. Pull
+> **Pinned to a release.** The core is pinned to the commons **v0.15.0** tag. Pull
 > later upstream changes with `gh skill update address-pr-feedback` (review the
 > diff, re-pin to the new tag).
 

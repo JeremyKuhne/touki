@@ -62,7 +62,7 @@ repository chooses to track them alongside rules.
 2. Move every unshipped section and row under it.
 3. Return the unshipped file to its empty header state.
 4. Build and pack with the intended package version so the recorded release and
-  package agree.
+   package agree.
 
 ## Diagnostic guide
 

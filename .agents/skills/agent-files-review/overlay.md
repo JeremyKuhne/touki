@@ -1,6 +1,6 @@
 ---
 core: agent-files-review
-core-pin: v0.13.0
+core-pin: v0.15.0
 ---
 
 # Touki overlay - agent-files-review

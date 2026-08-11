@@ -3,10 +3,12 @@
     Validate the mixed skill catalog used by this repository.
 
 .DESCRIPTION
-    Runs the validator bundled with the vendored manage-skills core over all
-    skills, then runs its strict portfolio mode over only the commons-vendored
-    portable cores. Also validates local overlay pins and tool-package bindings,
-    relationship targets and cycles, and the inventory/category labels in
+    Runs the validator bundled with the vendored manage-skills core over locally
+    authored and commons-vendored skills, then runs its strict portfolio mode
+    over only the commons-vendored portable cores. Exact tool-owned payloads
+    retain their source formatting and are validated through provenance hashes.
+    Also validates local overlay pins and tool-package bindings, relationship
+    targets and cycles, and the inventory/category labels in
     .agents/skills/README.md.
 
     Exact vendored payloads remain owned by their source repositories. This
@@ -30,6 +32,7 @@ $CatalogPath = Join-Path $SkillsRoot 'README.md'
 $McpPath = Join-Path $RepoRoot '.vscode/mcp.json'
 $BundledValidator = Join-Path $SkillsRoot 'manage-skills/scripts/Validate-Skills.ps1'
 $CommonsRepo = 'https://github.com/JeremyKuhne/agent-skills'
+$ProvenanceVerifiedToolPayloads = @('filtrace')
 $Errors = [System.Collections.Generic.List[string]]::new()
 
 function Add-Error([string] $Message) {
@@ -176,10 +179,9 @@ $skillDirs = @(Get-ChildItem -LiteralPath $SkillsRoot -Directory |
     Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'SKILL.md') } |
     Sort-Object Name)
 
-Invoke-BundledValidator -Paths @($SkillsRoot)
-
 $skillData = @{}
 $commonsDirs = [System.Collections.Generic.List[string]]::new()
+$validatedDirs = [System.Collections.Generic.List[string]]::new()
 foreach ($dir in $skillDirs) {
     $skillPath = Join-Path $dir.FullName 'SKILL.md'
     $raw = Get-Content -Raw -LiteralPath $skillPath
@@ -195,6 +197,17 @@ foreach ($dir in $skillDirs) {
     $related = Get-Scalar $raw 'related' $true
     $overlayPath = Join-Path $dir.FullName 'overlay.md'
     $hasOverlay = Test-Path -LiteralPath $overlayPath -PathType Leaf
+
+    $isProvenanceVerifiedToolPayload = $dir.Name -in $ProvenanceVerifiedToolPayloads
+    if ($isProvenanceVerifiedToolPayload -and $applicability -ne 'tool-shipped') {
+        Add-Error ".agents/skills/$($dir.Name)/SKILL.md must use metadata.applicability 'tool-shipped'."
+    }
+    elseif (-not $isProvenanceVerifiedToolPayload) {
+        $validatedDirs.Add($dir.FullName)
+        if ($applicability -eq 'tool-shipped') {
+            Add-Error ".agents/skills/$($dir.Name)/SKILL.md is not an approved provenance-verified tool payload."
+        }
+    }
 
     if ($repo -eq $CommonsRepo) {
         $commonsDirs.Add($dir.FullName)
@@ -246,6 +259,20 @@ foreach ($dir in $skillDirs) {
         Requires = $requires
         Related = $related
         HasOverlay = $hasOverlay
+    }
+}
+
+if ($validatedDirs.Count -gt 0) {
+    $validatedRoot = Join-Path ([System.IO.Path]::GetTempPath()) "touki-agent-skills-$([guid]::NewGuid())"
+    New-Item -ItemType Directory -Path $validatedRoot | Out-Null
+    try {
+        foreach ($validatedDir in $validatedDirs) {
+            Copy-Item -LiteralPath $validatedDir -Destination $validatedRoot -Recurse
+        }
+        Invoke-BundledValidator -Paths @($validatedRoot)
+    }
+    finally {
+        Remove-Item -LiteralPath $validatedRoot -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
 

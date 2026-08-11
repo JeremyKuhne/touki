@@ -25,7 +25,7 @@ lives here.
 | "How much memory does X use?" / "Does X allocate?" | bytes per operation | `[MemoryDiagnoser]` benchmark, report `Allocated` on both TFMs ([interpreting-results](interpreting-results.md)) |
 | "Where is the time spent?" / "Why is X slow?" | the hot method or line | profile a trace (EventPipe on the modern runtime, **ETW on .NET Framework**), rank -> callers -> lines; if a thin driver/wrapper tops the modern ranking, cross-check under ETW - inlining can misattribute self-time to the host |
 | "What's allocating?" / "What's the GC doing?" | the hot alloc site / GC pressure | the allocation or GC view of a trace |
-| "Make X faster" / "improve this method" | a *verified* improvement | the full loop below: scenario -> baseline -> profile -> change -> re-measure |
+| "Make X faster" / "improve this method" | a *verified* improvement | the bounded loop below: scenario -> baseline/hypothesis -> mechanism screen -> product pilot -> confirmation |
 | "Did my change help / regress anything?" | a before/after delta | baseline before, re-run after, diff both TFMs ([interpreting-results](interpreting-results.md)) |
 
 ## First, nail the scenario - a method has no single "speed"
@@ -59,27 +59,40 @@ out what you could have read is its own failure.
 This is the request that most needs handholding. Walk these steps out loud, one
 at a time, so the user sees the method:
 
+For a multi-candidate or end-to-end optimization, treat the steps below as an
+escalation funnel, not work to run in full for every idea. Before the first
+candidate, write down a time budget, the maximum candidate count, the cheapest
+screen, the real product gate, and the stop rule. Use a short benchmark screen and
+a small real-scenario pilot before broad matrices, repeated retained runs, or
+before/after profiling. See [investigation-workflow.md](investigation-workflow.md)
+for the staged workflow and default limits. A candidate that fails correctness, a
+hard allocation/memory cap, or the stable product pilot is rejected; more profiling
+does not rescue it.
+
 1. **Find the scenario.** Read the method, identify the inputs that drive cost,
    propose a representative set. Confirm or proceed with stated assumptions.
-2. **Establish the baseline.** Write a benchmark in the perf project
-   ([authoring](authoring.md)), run it on both TFMs, and report the table. This
-   *is* the answer to "how slow is it today", and it is the thing every later
-   change is measured against. The benchmark stays in the repo as the regression
-   guard - do not throw the scenario away.
-3. **Find where the cost is.** Profile the baseline: rank -> callers -> lines for
-   CPU, or the allocation view if `Allocated` is the problem. Tell the user the
-   hot spot in plain language ("62% of the time is in the inner copy loop at
-   `Parser.cs:214`; it re-walks the segment each pass").
+2. **Establish a reusable baseline.** Write a benchmark in the perf project
+   ([authoring](authoring.md)) and run the representative short job on both TFMs.
+   This is the initial answer to "how slow is it today" and the comparison for the
+   mechanism screen. Keep the benchmark as the regression guard, but defer the full
+   matrix until a candidate passes the product pilot.
+3. **Find where the cost is when the target is unclear.** Profile the baseline:
+   rank -> callers -> lines for CPU, or the allocation view if `Allocated` is the
+   problem. When code and a targeted benchmark already isolate the cost, state that
+   evidence and skip a broad profile. Tell the user the hypothesis in plain language
+   ("62% of the time is in the inner copy loop at `Parser.cs:214`; it re-walks the
+   segment each pass").
 4. **Form a hypothesis tied to the evidence, then change one thing.** Connect the
    edit to what the profile showed. For *how* to write the hot path, branch to
    the codegen skills: the framework-JIT-optimization skill for specialization /
    unrolling / BCL-delegation, and the scratch-buffer-strategy skill for
    stackalloc vs pool vs a stack-with-pool-fallback buffer.
-5. **Verify on both TFMs.** Re-run the baseline benchmark, diff against the saved
-   numbers, and confirm the *targeted* frame actually moved and nothing regressed
-   - especially `Allocated`, and especially the *other* TFM
-   ([interpreting-results](interpreting-results.md)). A faster wall clock with
-   the targeted frame unchanged is noise or a different win; say so.
+5. **Verify in stages.** Run the narrow correctness check and short benchmark
+   screen, then the real-scenario product pilot. Only a survivor earns the full
+   benchmark on both TFMs, retained product confirmation against the actual gate,
+   and candidate before/after attribution ([investigation workflow](investigation-workflow.md)).
+   Confirm nothing regressed, especially `Allocated` and the other TFM. A faster
+   wall clock with the targeted frame unchanged is noise or a different win; say so.
 6. **Report and offer the next drill.** Show the before/after for both TFMs and
    the line-level evidence, then suggest the logical follow-up.
 
@@ -149,7 +162,15 @@ yet. Offer it:
 - **A single Mean with no error bars or allocation column.** Sub-microsecond
   deltas are usually noise; trust `Allocated` and deltas outside `Error`/`StdDev`
   ([interpreting-results](interpreting-results.md)).
-- **Optimizing before profiling.** "Where is the time" has an evidence-based
-  answer; guessing wastes the change.
+- **Optimizing without an evidence-based hypothesis.** Profile when the target is
+  unclear; when code and a targeted benchmark already isolate it, record that
+  evidence instead. Guessing wastes the change.
+- **Running retained evidence for every candidate.** Three-run matrices, high launch
+  counts, and before/after profiles belong after a candidate passes the cheap screen
+  and product pilot. Otherwise rigor becomes an unbounded search cost rather than a
+  decision tool.
+- **Continuing after a hard gate failed.** Do not broaden the matrix, tune thresholds,
+  or capture attribution for code that already missed correctness, allocation, memory,
+  or product-impact gates. Record the rejection and move on.
 - **Declaring victory from a wall-clock drop alone.** Confirm the targeted cost
   moved and nothing else regressed.

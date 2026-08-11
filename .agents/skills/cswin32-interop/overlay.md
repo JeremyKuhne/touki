@@ -1,6 +1,6 @@
 ---
 core: cswin32-interop
-core-pin: v0.13.0
+core-pin: v0.15.0
 ---
 
 # Touki overlay - cswin32-interop
@@ -13,7 +13,7 @@ from [JeremyKuhne/agent-skills](https://github.com/JeremyKuhne/agent-skills) (se
 the `metadata.github-*` provenance in `SKILL.md`). Do not hand-edit the core -
 `gh skill update` would flag the drift. Everything touki-specific lives here.
 
-> **Pinned to a release.** The core is pinned to the commons **v0.13.0** tag. Pull
+> **Pinned to a release.** The core is pinned to the commons **v0.15.0** tag. Pull
 > later upstream changes with `gh skill update cswin32-interop` (review the diff,
 > re-pin to the new tag).
 
@@ -28,9 +28,8 @@ the `metadata.github-*` provenance in `SKILL.md`). Do not hand-edit the core -
   `net472` (`NETFRAMEWORK`); tests run the Framework leg as `net481`. Never
   describe a projection as "net481-only".
 - **Generator version**: `Microsoft.Windows.CsWin32` is pinned centrally in
-  [Directory.Packages.props](../../../Directory.Packages.props). The core's
-  `IComIID` and extension-block guidance assumes a newer generator than the one
-  pinned here; check the pinned version before relying on it.
+  [Directory.Packages.props](../../../Directory.Packages.props) at a version
+  satisfying the paired `cswin32-com` skill's `0.3.296` minimum.
 - **API list**: [touki/NativeMethods.txt](../../../touki/NativeMethods.txt) - the
   clipboard surface (`OpenClipboard` ... `GetClipboardData`), the global-memory
   allocator (`GlobalAlloc`/`GlobalLock`/`GlobalUnlock`/`GlobalSize`/`GlobalFree`),
@@ -83,9 +82,10 @@ net481/net10 size crossovers this repo measured.
 - [`il-copy-inspection`](../il-copy-inspection/SKILL.md) - confirming struct
   copies around blittable projections.
 
-The core's paired `cswin32-com` skill is **not vendored here**: touki has no
-struct-based COM surface (no `ComScope`, `IID.Get`, `delegate*` vtables, or CCW
-bridges). Vendor it if an OLE/`IDataObject` clipboard path ever lands.
+The paired [`cswin32-com`](../cswin32-com/SKILL.md) skill is vendored for future
+raw COM work. Its [overlay](../cswin32-com/overlay.md) records that Touki does
+not yet provide a struct-based COM surface or the support helpers used in the
+core's examples.
 
 ## Updating
 

@@ -10,10 +10,146 @@ For a simple A/B benchmark over one pure operation, use [authoring.md](authoring
 directly. Do not add phase harnesses or source bundles when the ordinary benchmark
 already answers the question.
 
+Use only the sections the task needs:
+
+| Investigation shape | Read |
+| --- | --- |
+| Multiple optimization candidates | [budget and stages](#bound-the-investigation-before-the-first-run) |
+| Consumable/mutable phase inputs | [fresh-state measurement](#measure-phases-with-fresh-state) |
+| External baseline or revision | [exact-source oracle](#compare-an-exact-source-oracle) |
+| Dirty or generated retained inputs | [reconstructable run](#preserve-a-reconstructable-run) |
+
 The expected outputs are a trustworthy benchmark or profile, a compact experiment
 ledger, and enough source and run provenance to reconstruct any result that is kept.
 Creating those local artifacts does not authorize committing, uploading, or
 publishing them.
+
+## Bound the investigation before the first run
+
+Performance rigor should narrow a decision, not create an open-ended search. Before
+editing, record these in the ledger:
+
+- the user-facing outcome and numeric keep/reject gate;
+- one small/common guardrail and one or two target scenarios;
+- the cheapest check that can falsify the hypothesis;
+- a maximum of three one-variable candidates unless the user approves more;
+- a wall-clock budget (default 60-90 minutes when neither the user nor repository
+  sets one), with a shorter budget for each stage;
+- the escalation and stop rules below.
+
+When the budget expires, preserve the evidence and report `inconclusive`; do not
+silently turn the task into harness development, a larger matrix, or another round
+of policy tuning. A missing reusable scenario or broken harness is separate
+measurement work: fix or land it first, select a new baseline, and restart the
+candidate investigation.
+
+### Estimate product headroom before coding
+
+Use the baseline profile or phase decomposition to estimate how much end-to-end
+improvement the target can possibly deliver. If the target owns fraction $p$ of
+product latency and the candidate speeds that phase up by factor $s$, Amdahl's law
+gives the optimistic product speedup:
+
+$$
+S = \frac{1}{(1-p) + p/s}
+$$
+
+Treat the estimate as a screen, not a promise. If even eliminating the target phase
+cannot reach the product gate, reject or choose a broader bottleneck before writing
+production code. If the phase share is unknown, the first product pilot should
+test the end-to-end effect cheaply rather than assuming a microbenchmark ratio will
+survive startup, loading, I/O, rendering, or other pipeline work.
+
+### Stage 1: screen the mechanism
+
+Spend roughly 10-15 minutes on the smallest discriminating slice:
+
+1. Run the narrow correctness/parity check.
+2. Use a smoke or short benchmark job on one small guardrail, one representative
+   target, and the largest useful target.
+3. Change one material variable at a time and try no more than three candidates.
+4. Reject immediately on semantic drift, a hard allocation/memory breach, a target
+   regression, or a result too small to plausibly reach the predeclared product gate.
+
+Do not broaden methods, input axes, target frameworks beyond those the production
+surface requires, or policy combinations until one candidate survives this screen.
+One local repair is reasonable when the result exposes a simple defect in the same
+mechanism. A second redesign is a new candidate and consumes the candidate budget.
+Changing scheduler/concurrency primitive, partition/merge shape, numeric reduction
+order, cache state, or measurement affinity is a material variable, not a repair.
+Treat floating-point reassociation and concurrent tie/order behavior as correctness:
+pin exact totals/serialization or retain a sequential fallback before timing it.
+Treat intuitive input axes such as size, depth, and cardinality as hypotheses, not
+causes; vary them independently before claiming which axis controls the crossover.
+
+### Stage 2: run a product pilot
+
+Before a full matrix, test whether the isolated win survives the real product path:
+
+- run the common guardrail and largest target, typically 3-5 launches per arm;
+- compare exact output or the repository's explicit normalization;
+- collect only the process timing and memory counters needed for the hard gate;
+- predeclare a plausibility cutoff below the retained target (default 80% of that
+  target, such as 8% for a 10% gate).
+
+For screening, call a pilot stable only when every launch succeeds with equivalent
+output, each arm's CV is within the repository limit (default 5%), and the candidate
+has the same direction in every one of three paired/alternated repetitions or at
+least four of five. Reject when the median improvement is below the plausibility
+cutoff. When direction or CV is unstable, repeat the unchanged pilot once; if it is
+still unstable, stop as `inconclusive` rather than promoting it to confirmation.
+
+Reject a stable product regression or a result outside that plausibility margin.
+Do not profile a candidate after it has failed a hard product gate. A lightweight
+baseline profile may be needed to form the original hypothesis; the expensive
+before/after attribution capture belongs after the product pilot passes, or when an
+ambiguous pilot can be resolved by one specific target-frame query.
+
+Keep three conclusions separate in the ledger and final report:
+
+- **mechanism:** did the isolated operation improve, and at what allocation cost?;
+- **product:** did the user-facing scenario improve within its latency/memory gate?;
+- **attribution:** did the intended frame or phase shrink?
+
+A mechanism win is not a product win. Attribution explains a candidate that is
+otherwise eligible to ship; it cannot override a stable product regression or a
+missed product threshold. Conversely, unchanged peak process memory does not waive a
+per-operation allocation cap when that cap protects scalability or GC pressure.
+
+### Stage 3: confirm the surviving candidate
+
+Only a candidate that passes the first two stages earns broader confirmation:
+
+- cover the affected operation families and meaningful input axes;
+- accept or reject each operation family independently when throughput or allocation
+  behavior differs; one shared mechanism does not imply one shared decision;
+- use the full/default benchmark job and inspect complete error/allocation columns;
+- run cold and warm forms when setup/cache state can change the answer;
+- confirm the real product scenario at the repository's retained-run rigor and
+  require the actual predeclared product gate, not the pilot's plausibility cutoff;
+- validate every supported target framework and the repository's correctness gates.
+
+If two controlled reruns still miss the repository's noise/CV limit, stop as
+`inconclusive`. Do not keep changing affinity, job shape, thresholds, or outlier
+policy until one triplet happens to pass.
+
+### Stage 4: retain evidence
+
+Run the expensive evidence package only for a candidate that passed confirmation:
+exact-source worktrees, alternating independent runs, high launch counts, full
+telemetry, and before/after profile attribution. Profiling confirms where a retained
+win came from; it does not override a failed product, correctness, allocation, or
+memory gate.
+
+Default hard stops for an optimization investigation are therefore:
+
+- at most three policy candidates;
+- at most one simple repair per candidate;
+- at most two controlled noise reruns before `inconclusive`;
+- no broad matrix before the mechanism screen passes;
+- no retained run or attribution profile before the product pilot passes;
+- no further optimization work after a hard gate fails, unless the user explicitly
+  reopens the gate or approves a new investigation.
 
 ## Measure phases with fresh state
 
@@ -181,11 +317,11 @@ The workflow is complete when all applicable checks pass:
   enough query-level evidence.
 - The ledger preserves rejected variants and explains the final decision.
 - An opt-in BenchmarkDotNet child build references the assembly built from the
-   recorded oracle commit and hash, semantic-parity checks pass on fresh state, and
-   an ordinary build has no oracle surface.
+  recorded oracle commit and hash, semantic-parity checks pass on fresh state, and
+  an ordinary build has no oracle surface.
 - A clean checkout plus the retained dirty-source bundle reconstructs and verifies
-   every source and input byte needed for the run; its explicit allowlist contains
-   no secret, unauthorized, or unrelated content.
+  every source and input byte needed for the run; its explicit allowlist contains
+  no secret, unauthorized, or unrelated content.
 - The retained command, non-secret environment, runtime/JIT, OS/architecture,
-   target framework, job, and profiler scope identify the execution environment
-   closely enough to rerun the same experiment.
+  target framework, job, and profiler scope identify the execution environment
+  closely enough to rerun the same experiment.

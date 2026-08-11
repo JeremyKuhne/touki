@@ -6,10 +6,10 @@ metadata:
     applicability: dotnet-project-gated
     binding: optional-overlay
     github-path: skills/performance-testing
-    github-pinned: v0.13.0
-    github-ref: refs/tags/v0.13.0
+    github-pinned: v0.15.0
+    github-ref: refs/tags/v0.15.0
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 9cdddfa386a045ddc14a9799126929da23341e89
+    github-tree-sha: 092f4be5093fe4e4bd1646b02d7ad62bbd07b90b
     maturity: canary
     portability: portable
     related: framework-jit-optimization, scratch-buffer-strategy, pre-pr-self-review
@@ -54,14 +54,24 @@ answer yourself from the code), walks the "make X faster" journey end to end, an
 lists the follow-ups to offer once a result is in hand. The rest of this skill is
 the *how*; that page is the *what to measure and why*.
 
+Choose the narrowest workflow that answers the question:
+
+| Need | Start with | Escalate only when |
+| --- | --- | --- |
+| One latency/allocation number | [running.md](running.md) | the scenario or result needs explanation |
+| A new benchmark | [authoring.md](authoring.md) | the benchmark exposes a multi-phase investigation |
+| Interpret an A/B result | [interpreting-results.md](interpreting-results.md) | the targeted cost is unclear |
+| Find a hot method/line | the repository profiling overlay | a code change needs measured verification |
+| Try multiple optimization candidates | [investigation-workflow.md](investigation-workflow.md) | each stage's gate passes |
+
 **Related skills** (a consuming repo links the ones it vendors in its overlay):
 
 - A **trace-analyzer** skill - the profiler this skill drives to find the hot
   method or source line. The overlay names it and the concrete profiling page.
-- A **framework-JIT-optimization** skill - decisions about specialization,
+- A **framework-JIT-optimization** skill, when available - decisions about specialization,
   unrolling, and BCL-delegation on the older Framework JIT that the benchmarks
   here exist to validate.
-- A **scratch-buffer-strategy** skill - choosing between zeroed `stackalloc`,
+- A **scratch-buffer-strategy** skill, when available - choosing between zeroed `stackalloc`,
   `[SkipLocalsInit]`, a stack-with-pool-fallback buffer, and an `ArrayPool`
   rental; several benchmarks exist to validate those crossovers.
 - A **pre-pr-self-review** skill - which requires a benchmark (or an explicit
@@ -82,6 +92,13 @@ Five rules cover most benchmark work; the sub-pages hold the rest.
    meaningless. See [authoring.md](authoring.md).
 5. **Run both TFMs** for any code that compiles for both. Results diverge: the
    modern runtime has vectorized BCL APIs the older Framework runtime lacks.
+
+For a multi-candidate optimization, **screen before you confirm**: predeclare the
+product gate and time/candidate budget, use a narrow short-job benchmark and small
+real-scenario pilot, and reject hard-gate failures before broad matrices, retained
+runs, or candidate before/after profiling. A lightweight baseline profile may form
+the hypothesis; defer candidate attribution until the product pilot passes. The
+staged defaults and stop rules are in [investigation-workflow.md](investigation-workflow.md).
 
 ```powershell
 # The canonical run, one TFM. Repeat with the other -f <tfm>.
@@ -119,7 +136,8 @@ both, keep full rows, confirm the targeted frame moved).
 For decisions about *how to write* a hot path - whether to specialize a generic
 for primitives, choose between scalar/unrolled forms, defer to BCL primitives
 like `IndexOf` / `SequenceEqual`, or interpret a Framework-vs-modern divergence -
-see the framework-JIT-optimization skill. That skill is the right entry point for
+see the framework-JIT-optimization skill when the consuming repository provides it.
+That skill is the right entry point for
 "this loop is slow on the older Framework JIT, what should I try?" questions,
 while this one is about authoring and running the benchmarks themselves.
 
@@ -141,9 +159,10 @@ inspection.
   method, the interactive picker, and useful switches.
 - [interpreting-results.md](interpreting-results.md) - before/after discipline on
   both TFMs and reading the memory columns.
-- [investigation-workflow.md](investigation-workflow.md) - fresh-state phase
-   measurement versus profiling, experiment ledgers, exact-source oracles, and
-   reconstructable run provenance for multi-step investigations.
+- [investigation-workflow.md](investigation-workflow.md) - staged fail-fast
+  screening, fresh-state phase measurement versus profiling, experiment ledgers,
+  exact-source oracles, and reconstructable run provenance for multi-step
+  investigations.
 - [reading-codegen.md](reading-codegen.md) - seeing the C# lowering, IL, and JIT
   asm behind a number: sharplab, `[DisassemblyDiagnoser]`, `[HardwareCounters]`,
   the `DOTNET_JitDisasm*` knobs, and the tiering/PGO inspection traps.
