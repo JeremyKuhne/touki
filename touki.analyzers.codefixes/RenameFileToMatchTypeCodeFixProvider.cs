@@ -100,26 +100,7 @@ public sealed class RenameFileToMatchTypeCodeFixProvider : CodeFixProvider
         document.FilePath is not null
         && document.Project.Solution.Workspace.Kind != WorkspaceKind.MSBuild
         && document.Project.Solution.Workspace.CanApplyChange(ApplyChangesKind.ChangeDocumentInfo)
-        && !HasSharedFilePath(document.Project.Solution, document);
-
-    private static bool HasSharedFilePath(Solution solution, Document document)
-    {
-        string filePath = document.FilePath!;
-
-        foreach (Project project in solution.Projects)
-        {
-            foreach (Document candidate in project.Documents)
-            {
-                if (candidate.Id != document.Id
-                    && string.Equals(candidate.FilePath, filePath, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
+        && !DocumentFileUtilities.HasSharedFilePath(document.Project.Solution, document);
 
     private static string GetAvailableFileName(
         Solution solution,
@@ -147,78 +128,10 @@ public sealed class RenameFileToMatchTypeCodeFixProvider : CodeFixProvider
 
     private static bool IsDestinationAvailable(Solution solution, Document document, string fileName)
     {
-        string targetFilePath = GetTargetFilePath(document, fileName)!;
+        string targetFilePath = DocumentFileUtilities.GetTargetFilePath(document, fileName)!;
         string currentFilePath = document.FilePath!;
-
-        foreach (Project project in solution.Projects)
-        {
-            foreach (Document candidate in project.Documents)
-            {
-                if (candidate.Id != document.Id
-                    && string.Equals(candidate.FilePath, targetFilePath, StringComparison.OrdinalIgnoreCase))
-                {
-                    return false;
-                }
-            }
-        }
-
-        return IsFileSystemDestinationAvailable(currentFilePath, targetFilePath);
-    }
-
-    private static bool IsFileSystemDestinationAvailable(string currentFilePath, string targetFilePath)
-    {
-        string fullCurrentPath = Path.GetFullPath(currentFilePath);
-        string fullTargetPath = Path.GetFullPath(targetFilePath);
-        if (string.Equals(fullCurrentPath, fullTargetPath, StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        string? directory = Path.GetDirectoryName(fullTargetPath);
-        if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
-        {
-            return true;
-        }
-
-        string targetName = Path.GetFileName(fullTargetPath);
-
-        try
-        {
-            foreach (string entry in Directory.EnumerateFileSystemEntries(directory))
-            {
-                string fullEntryPath = Path.GetFullPath(entry);
-                if (string.Equals(fullEntryPath, fullCurrentPath, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                if (string.Equals(Path.GetFileName(fullEntryPath), targetName, StringComparison.OrdinalIgnoreCase))
-                {
-                    return false;
-                }
-            }
-        }
-        catch (IOException)
-        {
-            return false;
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    private static string? GetTargetFilePath(Document document, string fileName)
-    {
-        if (document.FilePath is null)
-        {
-            return null;
-        }
-
-        string? directory = Path.GetDirectoryName(document.FilePath);
-        return string.IsNullOrEmpty(directory) ? fileName : Path.Combine(directory, fileName);
+        return !DocumentFileUtilities.HasDocumentWithFilePath(solution, targetFilePath, document.Id)
+            && DocumentFileUtilities.IsFileSystemDestinationAvailable(currentFilePath, targetFilePath);
     }
 
     private static Task<Solution> RenameDocumentAsync(
@@ -228,7 +141,7 @@ public sealed class RenameFileToMatchTypeCodeFixProvider : CodeFixProvider
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        string? targetFilePath = GetTargetFilePath(document, fileName);
+        string? targetFilePath = DocumentFileUtilities.GetTargetFilePath(document, fileName);
         if (targetFilePath is null)
         {
             return Task.FromResult(solution);

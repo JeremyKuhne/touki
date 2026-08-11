@@ -121,7 +121,7 @@ public sealed class MoveTypeToFileCodeFixProvider : CodeFixProvider
             || document.Project.Solution.Workspace.Kind == WorkspaceKind.MSBuild
             || !document.Project.Solution.Workspace.CanApplyChange(ApplyChangesKind.AddDocument)
             || !document.Project.Solution.Workspace.CanApplyChange(ApplyChangesKind.ChangeDocument)
-            || HasSharedFilePath(document.Project.Solution, document)
+            || DocumentFileUtilities.HasSharedFilePath(document.Project.Solution, document)
             || ContainsDirective(root)
             || ContainsFileLocalDeclaration(root))
         {
@@ -281,25 +281,6 @@ public sealed class MoveTypeToFileCodeFixProvider : CodeFixProvider
         }
     }
 
-    private static bool HasSharedFilePath(Solution solution, Document document)
-    {
-        string filePath = document.FilePath!;
-
-        foreach (Project project in solution.Projects)
-        {
-            foreach (Document candidate in project.Documents)
-            {
-                if (candidate.Id != document.Id
-                    && string.Equals(candidate.FilePath, filePath, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     private static char GetDetailSeparator(Document document, SyntaxTree syntaxTree)
     {
         AnalyzerConfigOptions options = document.Project.AnalyzerOptions.AnalyzerConfigOptionsProvider.GetOptions(syntaxTree);
@@ -379,76 +360,9 @@ public sealed class MoveTypeToFileCodeFixProvider : CodeFixProvider
 
     private static bool IsDestinationAvailable(Solution solution, Document document, string fileName)
     {
-        string targetFilePath = GetTargetFilePath(document, fileName)!;
-
-        foreach (Project project in solution.Projects)
-        {
-            foreach (Document candidate in project.Documents)
-            {
-                if (string.Equals(candidate.FilePath, targetFilePath, StringComparison.OrdinalIgnoreCase))
-                {
-                    return false;
-                }
-            }
-        }
-
-        return IsFileSystemDestinationAvailable(document.FilePath!, targetFilePath);
-    }
-
-    private static bool IsFileSystemDestinationAvailable(string currentFilePath, string targetFilePath)
-    {
-        string fullCurrentPath = Path.GetFullPath(currentFilePath);
-        string fullTargetPath = Path.GetFullPath(targetFilePath);
-        if (string.Equals(fullCurrentPath, fullTargetPath, StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        string? directory = Path.GetDirectoryName(fullTargetPath);
-        if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
-        {
-            return true;
-        }
-
-        string targetName = Path.GetFileName(fullTargetPath);
-
-        try
-        {
-            foreach (string entry in Directory.EnumerateFileSystemEntries(directory))
-            {
-                string fullEntryPath = Path.GetFullPath(entry);
-                if (string.Equals(fullEntryPath, fullCurrentPath, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                if (string.Equals(Path.GetFileName(fullEntryPath), targetName, StringComparison.OrdinalIgnoreCase))
-                {
-                    return false;
-                }
-            }
-        }
-        catch (IOException)
-        {
-            return false;
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    private static string? GetTargetFilePath(Document document, string fileName)
-    {
-        if (document.FilePath is null)
-        {
-            return null;
-        }
-
-        string? directory = Path.GetDirectoryName(document.FilePath);
-        return string.IsNullOrEmpty(directory) ? fileName : Path.Combine(directory, fileName);
+        string targetFilePath = DocumentFileUtilities.GetTargetFilePath(document, fileName)!;
+        return !DocumentFileUtilities.HasDocumentWithFilePath(solution, targetFilePath)
+            && DocumentFileUtilities.IsFileSystemDestinationAvailable(document.FilePath!, targetFilePath);
     }
 
     private static async Task<Solution> MoveAsync(
@@ -468,7 +382,7 @@ public sealed class MoveTypeToFileCodeFixProvider : CodeFixProvider
             await GetDeclarationsToMoveAsync(document, root, declaration, cancellationToken).ConfigureAwait(false);
         CompilationUnitSyntax destinationRoot = CreateDestinationRoot(root, declarations, generator);
         CompilationUnitSyntax sourceRoot = CreateSourceRoot(root, declarations, generator);
-        string? targetFilePath = GetTargetFilePath(document, fileName);
+        string? targetFilePath = DocumentFileUtilities.GetTargetFilePath(document, fileName);
         if (targetFilePath is null)
         {
             return document.Project.Solution;

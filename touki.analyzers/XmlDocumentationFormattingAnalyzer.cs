@@ -3,7 +3,6 @@
 // See LICENSE file in the project root for full license information
 
 using System.Collections.Immutable;
-using System.Globalization;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -110,12 +109,12 @@ public sealed class XmlDocumentationFormattingAnalyzer : DiagnosticAnalyzer
         }
 
         AnalyzerConfigOptions options = context.Options.AnalyzerConfigOptionsProvider.GetOptions(context.Tree);
-        int indentSize = TryGetPositiveInteger(options, IndentSizeOption, out int configuredIndentSize)
+        int indentSize = options.TryGetPositiveInteger(IndentSizeOption, out int configuredIndentSize)
             && configuredIndentSize <= MaximumIndentSize
                 ? configuredIndentSize
                 : DefaultIndentSize;
-        int maxLineLength = TryGetPositiveInteger(options, MaxLineLengthOption, out int configuredMaxLineLength)
-            || TryGetPositiveInteger(options, StandardMaxLineLengthOption, out configuredMaxLineLength)
+        int maxLineLength = options.TryGetPositiveInteger(MaxLineLengthOption, out int configuredMaxLineLength)
+            || options.TryGetPositiveInteger(StandardMaxLineLengthOption, out configuredMaxLineLength)
                 ? configuredMaxLineLength
                 : DefaultMaxLineLength;
         SyntaxNode root = context.Tree.GetRoot(context.CancellationToken);
@@ -222,18 +221,5 @@ public sealed class XmlDocumentationFormattingAnalyzer : DiagnosticAnalyzer
             source.Lines[lastLineNumber].End);
 
         return true;
-    }
-
-    private static bool TryGetPositiveInteger(AnalyzerConfigOptions options, string key, out int value)
-    {
-        if (options.TryGetValue(key, out string? raw)
-            && int.TryParse(raw.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out value)
-            && value > 0)
-        {
-            return true;
-        }
-
-        value = 0;
-        return false;
     }
 }

@@ -4,12 +4,9 @@
 
 using System.Collections.Immutable;
 using System.Composition;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.Text;
 
 namespace Touki.Analyzers;
 
@@ -49,25 +46,14 @@ public sealed class FormatXmlDocumentationCodeFixProvider : CodeFixProvider
                 continue;
             }
 
-            TextSpan span = diagnostic.Location.SourceSpan;
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    "Format XML documentation comment",
-                    cancellationToken => ReplaceAsync(context.Document, span, replacement, cancellationToken),
-                    equivalenceKey: nameof(FormatXmlDocumentationCodeFixProvider)),
-                diagnostic);
+            TextChangeCodeFix.Register(
+                context,
+                diagnostic,
+                "Format XML documentation comment",
+                replacement,
+                nameof(FormatXmlDocumentationCodeFixProvider));
         }
 
         return Task.CompletedTask;
-    }
-
-    private static async Task<Document> ReplaceAsync(
-        Document document,
-        TextSpan span,
-        string replacement,
-        CancellationToken cancellationToken)
-    {
-        SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(false);
-        return document.WithText(text.WithChanges(new TextChange(span, replacement)));
     }
 }
