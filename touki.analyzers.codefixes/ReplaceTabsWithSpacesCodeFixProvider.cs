@@ -4,12 +4,9 @@
 
 using System.Collections.Immutable;
 using System.Composition;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.Text;
 
 namespace Touki.Analyzers;
 
@@ -52,26 +49,14 @@ public sealed class ReplaceTabsWithSpacesCodeFixProvider : CodeFixProvider
                 continue;
             }
 
-            TextSpan span = diagnostic.Location.SourceSpan;
-
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    "Replace tabs with spaces",
-                    cancellationToken => ReplaceAsync(context.Document, span, replacement, cancellationToken),
-                    equivalenceKey: nameof(ReplaceTabsWithSpacesCodeFixProvider)),
-                diagnostic);
+            TextChangeCodeFix.Register(
+                context,
+                diagnostic,
+                "Replace tabs with spaces",
+                replacement,
+                nameof(ReplaceTabsWithSpacesCodeFixProvider));
         }
 
         return Task.CompletedTask;
-    }
-
-    private static async Task<Document> ReplaceAsync(
-        Document document,
-        TextSpan span,
-        string replacement,
-        CancellationToken cancellationToken)
-    {
-        SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(false);
-        return document.WithText(text.WithChanges(new TextChange(span, replacement)));
     }
 }

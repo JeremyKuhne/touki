@@ -14,8 +14,6 @@ namespace Touki.Analyzers;
 /// </summary>
 internal static class AnalyzerTestHarness
 {
-    private static readonly Lazy<ImmutableArray<MetadataReference>> s_references = new(CreateReferences);
-
     /// <summary>
     ///  Runs <paramref name="analyzer"/> against <paramref name="source"/> and returns the
     ///  analyzer-produced diagnostics.
@@ -58,7 +56,7 @@ internal static class AnalyzerTestHarness
         CSharpCompilation compilation = CSharpCompilation.Create(
             assemblyName: "Touki.Analyzers.TestCompilation",
             syntaxTrees: [syntaxTree],
-            references: s_references.Value,
+            references: RoslynTestEnvironment.References,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
         beforeAnalysis();
 
@@ -82,19 +80,14 @@ internal static class AnalyzerTestHarness
 
     private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(
         DiagnosticAnalyzer analyzer,
-        CSharpCompilation compilation,
+        Compilation compilation,
         IReadOnlyDictionary<string, string>? options,
         IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions)
     {
-
-        if (diagnosticOptions is not null)
-        {
-            compilation = compilation.WithOptions(
-                compilation.Options.WithSpecificDiagnosticOptions(diagnosticOptions));
-        }
+        compilation = RoslynTestEnvironment.ApplyDiagnosticOptions(compilation, diagnosticOptions);
 
         CompilationWithAnalyzers compilationWithAnalyzers =
-            compilation.WithAnalyzers([analyzer], CreateAnalyzerOptions(options));
+            compilation.WithAnalyzers([analyzer], RoslynTestEnvironment.CreateAnalyzerOptions(options));
 
         return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false);
     }
@@ -114,26 +107,7 @@ internal static class AnalyzerTestHarness
         return CSharpCompilation.Create(
             assemblyName: "Touki.Analyzers.TestCompilation",
             syntaxTrees: syntaxTrees,
-            references: s_references.Value,
+            references: RoslynTestEnvironment.References,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
-    }
-
-    private static AnalyzerOptions CreateAnalyzerOptions(IReadOnlyDictionary<string, string>? options) =>
-        new(
-            additionalFiles: [],
-            optionsProvider: new TestAnalyzerConfigOptionsProvider(
-                options is null ? TestAnalyzerConfigOptions.Empty : new TestAnalyzerConfigOptions(options)));
-
-    private static ImmutableArray<MetadataReference> CreateReferences()
-    {
-        string trustedAssemblies = (string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!;
-
-        return
-        [
-            .. trustedAssemblies
-                .Split(Path.PathSeparator)
-                .Where(path => path.Length > 0)
-                .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
-        ];
     }
 }

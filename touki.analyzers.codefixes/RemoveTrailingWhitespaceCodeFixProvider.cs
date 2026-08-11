@@ -4,12 +4,9 @@
 
 using System.Collections.Immutable;
 using System.Composition;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.Text;
 
 namespace Touki.Analyzers;
 
@@ -43,25 +40,14 @@ public sealed class RemoveTrailingWhitespaceCodeFixProvider : CodeFixProvider
     {
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
-            TextSpan span = diagnostic.Location.SourceSpan;
-
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    "Remove trailing whitespace",
-                    cancellationToken => RemoveAsync(context.Document, span, cancellationToken),
-                    equivalenceKey: nameof(RemoveTrailingWhitespaceCodeFixProvider)),
-                diagnostic);
+            TextChangeCodeFix.Register(
+                context,
+                diagnostic,
+                "Remove trailing whitespace",
+                string.Empty,
+                nameof(RemoveTrailingWhitespaceCodeFixProvider));
         }
 
         return Task.CompletedTask;
-    }
-
-    private static async Task<Document> RemoveAsync(
-        Document document,
-        TextSpan span,
-        CancellationToken cancellationToken)
-    {
-        SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(false);
-        return document.WithText(text.WithChanges(new TextChange(span, string.Empty)));
     }
 }

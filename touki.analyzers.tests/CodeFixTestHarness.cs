@@ -17,8 +17,6 @@ namespace Touki.Analyzers;
 /// </summary>
 internal static class CodeFixTestHarness
 {
-    private static readonly Lazy<ImmutableArray<MetadataReference>> s_references = new(CreateReferences);
-
     /// <summary>
     ///  Runs <paramref name="analyzer"/> against <paramref name="source"/>, applies <paramref name="codeFix"/> to
     ///  the first diagnostic with id <paramref name="diagnosticId"/>, and returns the fixed source. Returns the
@@ -42,22 +40,14 @@ internal static class CodeFixTestHarness
         using AdhocWorkspace workspace = new();
         Project project = workspace
             .AddProject("TestProject", LanguageNames.CSharp)
-            .AddMetadataReferences(s_references.Value)
+            .AddMetadataReferences(RoslynTestEnvironment.References)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         Document document = project.AddDocument("Test.cs", source);
 
         Compilation compilation = (await document.Project.GetCompilationAsync().ConfigureAwait(false))!;
 
-        if (diagnosticOptions is not null)
-        {
-            compilation = compilation.WithOptions(
-                compilation.Options.WithSpecificDiagnosticOptions(diagnosticOptions));
-        }
-
-        AnalyzerOptions analyzerOptions = new(
-            additionalFiles: [],
-            optionsProvider: new TestAnalyzerConfigOptionsProvider(
-                options is null ? TestAnalyzerConfigOptions.Empty : new TestAnalyzerConfigOptions(options)));
+        compilation = RoslynTestEnvironment.ApplyDiagnosticOptions(compilation, diagnosticOptions);
+        AnalyzerOptions analyzerOptions = RoslynTestEnvironment.CreateAnalyzerOptions(options);
 
         CompilationWithAnalyzers withAnalyzers = compilation.WithAnalyzers([analyzer], analyzerOptions);
         ImmutableArray<Diagnostic> diagnostics = await withAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false);
@@ -107,7 +97,7 @@ internal static class CodeFixTestHarness
             : new AdhocWorkspace(MefHostServices.DefaultHost, workspaceKind);
         Project project = workspace
             .AddProject("TestProject", LanguageNames.CSharp)
-            .AddMetadataReferences(s_references.Value)
+            .AddMetadataReferences(RoslynTestEnvironment.References)
             .WithCompilationOptions(new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,
                 allowUnsafe: true));
@@ -124,16 +114,8 @@ internal static class CodeFixTestHarness
 
         Compilation compilation = (await project.GetCompilationAsync().ConfigureAwait(false))!;
 
-        if (diagnosticOptions is not null)
-        {
-            compilation = compilation.WithOptions(
-                compilation.Options.WithSpecificDiagnosticOptions(diagnosticOptions));
-        }
-
-        AnalyzerOptions analyzerOptions = new(
-            additionalFiles: [],
-            optionsProvider: new TestAnalyzerConfigOptionsProvider(
-                options is null ? TestAnalyzerConfigOptions.Empty : new TestAnalyzerConfigOptions(options)));
+        compilation = RoslynTestEnvironment.ApplyDiagnosticOptions(compilation, diagnosticOptions);
+        AnalyzerOptions analyzerOptions = RoslynTestEnvironment.CreateAnalyzerOptions(options);
 
         CompilationWithAnalyzers withAnalyzers = compilation.WithAnalyzers([analyzer], analyzerOptions);
         ImmutableArray<Diagnostic> diagnostics = await withAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false);
@@ -251,11 +233,7 @@ internal static class CodeFixTestHarness
             }
 
             Compilation compilation = (await project.GetCompilationAsync().ConfigureAwait(false))!;
-            if (diagnosticOptions is not null)
-            {
-                compilation = compilation.WithOptions(
-                    compilation.Options.WithSpecificDiagnosticOptions(diagnosticOptions));
-            }
+            compilation = RoslynTestEnvironment.ApplyDiagnosticOptions(compilation, diagnosticOptions);
 
             compilerErrors.AddRange(
                 compilation.GetDiagnostics().Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
@@ -307,18 +285,6 @@ internal static class CodeFixTestHarness
             Task.FromResult<IEnumerable<Diagnostic>>(diagnostics);
     }
 
-    private static ImmutableArray<MetadataReference> CreateReferences()
-    {
-        string trustedAssemblies = (string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!;
-
-        return
-        [
-            .. trustedAssemblies
-                .Split(Path.PathSeparator)
-                .Where(path => path.Length > 0)
-                .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
-        ];
-    }
 }
 
 internal sealed record CodeFixTestResult(

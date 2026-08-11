@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Globalization;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -180,28 +179,10 @@ public sealed class NoTabsAnalyzer : DiagnosticAnalyzer
 
         // The rule-specific key wins so a project can decouple this rule from its editor settings; the
         // standard keys are consulted next so the common case needs no new configuration at all.
-        return TryGetPositiveInteger(options, SpacesPerTabOption, out int width)
-            || TryGetPositiveInteger(options, TabWidthOption, out width)
-            || TryGetPositiveInteger(options, IndentSizeOption, out width)
+        return options.TryGetPositiveInteger(SpacesPerTabOption, out int width)
+            || options.TryGetPositiveInteger(TabWidthOption, out width)
+            || options.TryGetPositiveInteger(IndentSizeOption, out width)
             ? width
             : DefaultSpacesPerTab;
-    }
-
-    /// <summary>
-    ///  Reads <paramref name="key"/> as a positive integer. A missing, unparsable, or non-positive value
-    ///  yields <see langword="false"/> so the next source is consulted rather than failing the build over an
-    ///  editor setting this rule does not own. <c>indent_size = tab</c> is the common non-numeric value.
-    /// </summary>
-    private static bool TryGetPositiveInteger(AnalyzerConfigOptions options, string key, out int value)
-    {
-        if (options.TryGetValue(key, out string? raw)
-            && int.TryParse(raw.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out value)
-            && value > 0)
-        {
-            return true;
-        }
-
-        value = 0;
-        return false;
     }
 }
