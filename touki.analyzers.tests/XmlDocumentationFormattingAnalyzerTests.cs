@@ -408,13 +408,15 @@ public partial class XmlDocumentationFormattingAnalyzerTests
     public async Task Analyze_OverLimitReturnsAfterLongParameter_CorrectsInlineXmlContentIndentation()
     {
         string source =
-            "    /// <summary>\n    ///  Attempts to retrieve the value as the specified type.\n    /// </summary>\n"
+            "class Sample\n{\n"
+            + "    /// <summary>\n    ///  Attempts to retrieve the value as the specified type.\n    /// </summary>\n"
             + "    /// <typeparam name=\"T\">The type to retrieve the value as.</typeparam>\n"
             + "    /// <param name=\"value\">When this method returns, contains the value if the conversion succeeded.</param>\n"
             + "    /// <returns>\n"
             + "    /// <see langword=\"true\"/> if the value was successfully retrieved; otherwise, <see langword=\"false\"/>.\n"
             + "    /// </returns>\n"
-            + "    public bool TryGetValue<T>(out T value) { value = default!; return true; }\n";
+            + "    public bool TryGetValue<T>(out T value) { value = default!; return true; }\n"
+            + "}\n";
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 

@@ -47,12 +47,13 @@ internal static class CodeFixTestHarness
         Compilation compilation = (await document.Project.GetCompilationAsync().ConfigureAwait(false))!;
 
         compilation = RoslynTestEnvironment.ApplyDiagnosticOptions(compilation, diagnosticOptions);
+        ThrowIfCompilerErrors(compilation, "Code-fix test source");
         AnalyzerOptions analyzerOptions = RoslynTestEnvironment.CreateAnalyzerOptions(options);
 
         CompilationWithAnalyzers withAnalyzers = compilation.WithAnalyzers([analyzer], analyzerOptions);
         ImmutableArray<Diagnostic> diagnostics = await withAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false);
 
-        Diagnostic? target = diagnostics.FirstOrDefault(diagnostic => diagnostic.Id == diagnosticId);
+        Diagnostic? target = GetFirstDiagnostic(diagnostics, diagnosticId);
         if (target is null)
         {
             return source;
@@ -75,6 +76,8 @@ internal static class CodeFixTestHarness
             await actions[0].GetOperationsAsync(CancellationToken.None).ConfigureAwait(false);
         ApplyChangesOperation applyChanges = operations.OfType<ApplyChangesOperation>().Single();
         Document changedDocument = applyChanges.ChangedSolution.GetDocument(document.Id)!;
+        Compilation changedCompilation = (await changedDocument.Project.GetCompilationAsync().ConfigureAwait(false))!;
+        ThrowIfCompilerErrors(changedCompilation, "Code-fix result");
         SourceText text = await changedDocument.GetTextAsync().ConfigureAwait(false);
         return text.ToString();
     }
@@ -119,7 +122,7 @@ internal static class CodeFixTestHarness
 
         CompilationWithAnalyzers withAnalyzers = compilation.WithAnalyzers([analyzer], analyzerOptions);
         ImmutableArray<Diagnostic> diagnostics = await withAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false);
-        Diagnostic? target = diagnostics.FirstOrDefault(diagnostic => diagnostic.Id == diagnosticId);
+        Diagnostic? target = GetFirstDiagnostic(diagnostics, diagnosticId);
         if (target is null || target.Location.SourceTree is null)
         {
             return await CreateResultAsync(
@@ -247,6 +250,24 @@ internal static class CodeFixTestHarness
             compilerErrors.ToImmutable(),
             analyzerDiagnostics.ToImmutable(),
             fixAllActionOffered);
+    }
+
+    private static Diagnostic? GetFirstDiagnostic(ImmutableArray<Diagnostic> diagnostics, string diagnosticId) =>
+        diagnostics
+            .Where(diagnostic => diagnostic.Id == diagnosticId)
+            .OrderBy(diagnostic => diagnostic.Location.SourceTree?.FilePath, StringComparer.Ordinal)
+            .ThenBy(diagnostic => diagnostic.Location.SourceSpan.Start)
+            .FirstOrDefault();
+
+    private static void ThrowIfCompilerErrors(Compilation compilation, string context)
+    {
+        ImmutableArray<Diagnostic> compilerErrors =
+            [.. compilation.GetDiagnostics().Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)];
+        if (!compilerErrors.IsEmpty)
+        {
+            throw new InvalidOperationException(
+                $"{context} contains compiler errors:{Environment.NewLine}{string.Join(Environment.NewLine, compilerErrors)}");
+        }
     }
 
     private static string GetAbsoluteTestPath(string filePath, string temporaryRoot)
