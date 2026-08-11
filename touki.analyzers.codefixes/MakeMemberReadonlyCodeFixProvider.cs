@@ -107,7 +107,7 @@ public sealed class MakeMemberReadonlyCodeFixProvider : CodeFixProvider
     private static async Task<Solution> MakeMemberReadonlyAsync(Solution solution, ISymbol member, CancellationToken cancellationToken)
     {
         Dictionary<DocumentId, List<SyntaxNode>> declarationsByDocument = [];
-        List<ISymbol> members = [member];
+        HashSet<ISymbol> members = new(SymbolEqualityComparer.Default) { member };
 
         if (member is IMethodSymbol method)
         {
