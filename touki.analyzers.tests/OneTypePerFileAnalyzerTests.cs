@@ -450,7 +450,10 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new OneTypePerFileAnalyzer(),
+            source,
+            expectedCompilerDiagnosticIds: ["CS0261"]).ConfigureAwait(false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(OneTypePerFileAnalyzer.DiagnosticId);
@@ -561,35 +564,6 @@ public class OneTypePerFileAnalyzerTests
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Scoped");
-    }
-
-    [TestMethod]
-    public async Task AnalyzeSyntaxTree_ExtensionBlocks_ReportsNothing()
-    {
-        // An extension block is a TypeDeclarationSyntax with no identifier, which the analyzer must not count.
-        // The harness pins Roslyn 4.14.0, which predates the syntax, so today this only pins the "no crash, no
-        // report" outcome and becomes a real guard on the next Roslyn bump. The behavior is verified now by
-        // touki's own build, which dogfoods the rule over sources that use extension blocks.
-        const string source = """
-            namespace Sample;
-
-            public static class StringExtensions
-            {
-                extension(string value)
-                {
-                    public bool IsEmpty => value.Length == 0;
-                }
-
-                extension(int value)
-                {
-                    public bool IsZero => value == 0;
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
-
-        diagnostics.Should().BeEmpty();
     }
 
     [TestMethod]

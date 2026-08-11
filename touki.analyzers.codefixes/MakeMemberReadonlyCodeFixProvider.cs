@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Threading;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 
@@ -104,17 +106,68 @@ public sealed class MakeMemberReadonlyCodeFixProvider : CodeFixProvider
 
     private static async Task<Solution> MakeMemberReadonlyAsync(Solution solution, ISymbol member, CancellationToken cancellationToken)
     {
+        Dictionary<DocumentId, List<SyntaxNode>> declarationsByDocument = [];
+        List<ISymbol> members = [member];
+
+        if (member is IMethodSymbol method)
+        {
+            if (method.PartialDefinitionPart is { } definition)
+            {
+                members.Add(definition);
+            }
+
+            if (method.PartialImplementationPart is { } implementation)
+            {
+                members.Add(implementation);
+            }
+        }
+        else if (member is IPropertySymbol property)
+        {
+            if (property.PartialDefinitionPart is { } definition)
+            {
+                members.Add(definition);
+            }
+
+            if (property.PartialImplementationPart is { } implementation)
+            {
+                members.Add(implementation);
+            }
+        }
+
+        foreach (ISymbol declaredMember in members)
+        {
+            foreach (SyntaxReference reference in declaredMember.DeclaringSyntaxReferences)
+            {
+                Document? document = solution.GetDocument(reference.SyntaxTree);
+                if (document is null)
+                {
+                    continue;
+                }
+
+                SyntaxNode declaration = await reference.GetSyntaxAsync(cancellationToken).ConfigureAwait(false);
+                if (!declarationsByDocument.TryGetValue(document.Id, out List<SyntaxNode>? declarations))
+                {
+                    declarations = [];
+                    declarationsByDocument.Add(document.Id, declarations);
+                }
+
+                if (!declarations.Contains(declaration))
+                {
+                    declarations.Add(declaration);
+                }
+            }
+        }
+
         Solution updatedSolution = solution;
 
-        foreach (SyntaxReference reference in member.DeclaringSyntaxReferences)
+        foreach (KeyValuePair<DocumentId, List<SyntaxNode>> entry in declarationsByDocument)
         {
-            Document? document = updatedSolution.GetDocument(reference.SyntaxTree);
+            Document? document = updatedSolution.GetDocument(entry.Key);
             if (document is null)
             {
                 continue;
             }
 
-            SyntaxNode declaration = await reference.GetSyntaxAsync(cancellationToken).ConfigureAwait(false);
             SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
             if (root is null)
             {
@@ -122,18 +175,44 @@ public sealed class MakeMemberReadonlyCodeFixProvider : CodeFixProvider
             }
 
             SyntaxGenerator generator = SyntaxGenerator.GetGenerator(document);
-            DeclarationModifiers modifiers = generator.GetModifiers(declaration);
-            if (modifiers.IsReadOnly)
-            {
-                continue;
-            }
-
-            SyntaxNode updatedDeclaration = generator.WithModifiers(declaration, modifiers.WithIsReadOnly(true));
             updatedSolution = updatedSolution.WithDocumentSyntaxRoot(
                 document.Id,
-                root.ReplaceNode(declaration, updatedDeclaration));
+                root.ReplaceNodes(
+                    entry.Value,
+                    (_, rewritten) => MakeReadonly(rewritten, generator)));
         }
 
         return updatedSolution;
+    }
+
+    private static SyntaxNode MakeReadonly(SyntaxNode declaration, SyntaxGenerator generator)
+    {
+        return declaration switch
+        {
+            MethodDeclarationSyntax method => method.WithModifiers(AddReadonly(method.Modifiers)),
+            PropertyDeclarationSyntax property => property.WithModifiers(AddReadonly(property.Modifiers)),
+            IndexerDeclarationSyntax indexer => indexer.WithModifiers(AddReadonly(indexer.Modifiers)),
+            _ => generator.WithModifiers(
+                declaration,
+                generator.GetModifiers(declaration).WithIsReadOnly(true))
+        };
+    }
+
+    private static SyntaxTokenList AddReadonly(SyntaxTokenList modifiers)
+    {
+        if (modifiers.Any(SyntaxKind.ReadOnlyKeyword))
+        {
+            return modifiers;
+        }
+
+        for (int index = 0; index < modifiers.Count; index++)
+        {
+            if (modifiers[index].IsKind(SyntaxKind.PartialKeyword))
+            {
+                return modifiers.Insert(index, SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword));
+            }
+        }
+
+        return modifiers.Add(SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword));
     }
 }
