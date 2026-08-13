@@ -39,6 +39,9 @@ on:
       native-aot-rid:
         default: ''
         type: string
+      validate-solution-platforms:
+        default: false
+        type: boolean
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -63,6 +66,10 @@ jobs:
           ${{ runner.os }}-${{ runner.arch }}-nuget-
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
+    - name: Validate Visual Studio solution platforms
+      if: inputs.validate-solution-platforms
+      shell: pwsh
+      run: pwsh tools/Test-SolutionProjectPlatforms.ps1 -SolutionPath ./touki.slnx
     - name: Install Linux desktop dependencies
       if: inputs.linux-desktop
       shell: bash

@@ -2,6 +2,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Platforms>x64;AnyCPU</Platforms>
+
     <!--
       Code-fix providers reference the Roslyn Workspaces APIs, which must not live in the analyzer assembly
       (RS1022). They ship in a separate assembly that is packed alongside the analyzer under analyzers/dotnet/cs
