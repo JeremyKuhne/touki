@@ -2,8 +2,8 @@
 
 `KlutzyNinja.Touki` ships a set of Roslyn analyzers **inside the package**. There is no
 separate analyzer package to install - adding the package reference is enough. The shipped
-rules start running on the next build and in the IDE. TOUKI0022, TOUKI0024, and TOUKI0041 ship
-disabled unless a project opts in.
+rules start running on the next build and in the IDE. TOUKI0012, TOUKI0022, TOUKI0024, and TOUKI0041
+ship disabled unless a project opts in.
 
 The analyzers encode the conventions this library is built on: avoid hidden struct
 copies, release resources deterministically, keep scratch buffers off the stack once
@@ -20,6 +20,7 @@ name a field for what it actually is.
 | [TOUKI0004](#touki0004) | By-value copy of a non-copyable struct | Reliability | Warning | - | `[NonCopyable]` |
 | [TOUKI0010](#touki0010) | Dispose a `[MustDispose]` value deterministically | Reliability | Warning | - | `[MustDispose]` |
 | [TOUKI0011](#touki0011) | Avoid large `stackalloc` allocations | Reliability | Warning | Yes | - |
+| [TOUKI0012](#touki0012) | Derive disposable classes from `DisposableBase` | Reliability | **Disabled** | - | `DisposableBase` |
 | [TOUKI0020](#touki0020) | Declare one type per file | Maintainability | Warning | Yes | - |
 | [TOUKI0021](#touki0021) | File name should match the type it declares | Maintainability | Warning | Yes | - |
 | [TOUKI0022](#touki0022) | Avoid tab characters | Maintainability | **Disabled** | Yes | - |
@@ -28,8 +29,9 @@ name a field for what it actually is.
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
 | [TOUKI0041](#touki0041) | Naming rule violation | Naming | **Disabled** | Yes | - |
 
-Rules that list a requirement only fire on code that opts in by applying the named
-attribute. The rest apply to any C# the compiler hands them.
+Rules that require an attribute only fire on code that applies it. TOUKI0012 requires
+the compilation to reference `Touki.DisposableBase`. The rest apply to any C# the
+compiler hands them.
 
 Generated code is excluded from every rule.
 
@@ -136,6 +138,28 @@ The rule only reports what it can size from source: a compile-time constant leng
 primitive, enum, pointer, or native-integer element type. A run-time length or a custom
 struct element is left alone, because the total is not knowable at compile time. Native
 integers and pointers are counted as 8 bytes.
+
+## TOUKI0012
+
+**Derive disposable classes from `DisposableBase`.** Reports a class that declares
+`IDisposable` in its own base list without deriving from `Touki.DisposableBase`. The base
+provides thread-safe, idempotent disposal and a consistent `Dispose(bool)` override point.
+
+```csharp
+sealed class ManualResource : IDisposable           // TOUKI0012
+{
+  public void Dispose() { }
+}
+
+sealed class StandardResource : DisposableBase
+{
+  protected override void Dispose(bool disposing) { }
+}
+```
+
+The rule deliberately stays silent for structs, generated code, and classes that only
+inherit an `IDisposable` implementation from a base class. It also does not run when the
+compilation cannot resolve `Touki.DisposableBase`.
 
 ## TOUKI0020
 
@@ -636,7 +660,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 | 0.5.0 | TOUKI0020, TOUKI0030 |
 | 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |
 | 0.7.0 | TOUKI0022, TOUKI0023 |
-| Unshipped | TOUKI0024 |
+| Unshipped | TOUKI0012, TOUKI0024 |
 
 The authoritative list lives in
 [AnalyzerReleases.Shipped.md](../touki.analyzers/AnalyzerReleases.Shipped.md) and

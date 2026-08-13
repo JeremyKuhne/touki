@@ -2,6 +2,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Platforms>x64;AnyCPU</Platforms>
+
     <!--
       Roslyn analyzers must target netstandard2.0 so they load in every compiler
       host (command line, Visual Studio, VS Code). This is enforced by RS1038.
