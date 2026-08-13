@@ -256,7 +256,7 @@ public class UseDisposableBaseAnalyzerTests
     }
 
     [TestMethod]
-    public async Task AnalyzeNamedType_InheritsIDisposableImplementation_ReportsNothing()
+    public async Task AnalyzeNamedType_BaseClassDirectlyImplementsIDisposable_ReportsBaseClass()
     {
         string source = DisposableBase + """
             class Parent : IDisposable
