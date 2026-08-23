@@ -157,6 +157,35 @@ public class TextWriterExtensionsTests
     }
 
     [TestMethod]
+    public void WriteFormatted_NullWriter_ThrowsAndDisposesBuilder()
+    {
+        System.IO.TextWriter writer = null!;
+        ValueStringBuilder builder = new(initialCapacity: 32);
+        ArgumentNullException? exception = null;
+        try
+        {
+            builder.Append("Hello");
+
+            try
+            {
+                writer.WriteFormatted(ref builder);
+            }
+            catch (ArgumentNullException caught)
+            {
+                exception = caught;
+            }
+
+            exception.Should().NotBeNull();
+            exception!.ParamName.Should().Be("writer");
+            builder.Capacity.Should().Be(0);
+        }
+        finally
+        {
+            builder.Dispose();
+        }
+    }
+
+    [TestMethod]
     public void WriteFormatted_CustomWriter_UsesVirtualStringOverload()
     {
         using RecordingTextWriter writer = new();

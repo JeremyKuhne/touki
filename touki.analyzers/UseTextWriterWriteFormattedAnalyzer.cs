@@ -103,7 +103,7 @@ public sealed class UseTextWriterWriteFormattedAnalyzer : DiagnosticAnalyzer
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
         if (invocation.Syntax is not InvocationExpressionSyntax syntax
             || syntax.ArgumentList.Arguments.Count != 1
-            || GetInterpolatedString(syntax.ArgumentList.Arguments[0].Expression) is not { } interpolatedString
+            || GetInterpolatedString(syntax.ArgumentList.Arguments[0].Expression) is null
             || syntax.SyntaxTree.Options is not CSharpParseOptions parseOptions
             || parseOptions.LanguageVersion < LanguageVersion.CSharp10)
         {

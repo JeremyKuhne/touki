@@ -42,6 +42,8 @@ public static partial class TextWriterExtensions
         {
             try
             {
+                ArgumentNullException.ThrowIfNull(writer);
+
                 Type writerType = writer.GetType();
                 if (writerType == typeof(StringWriter))
                 {
