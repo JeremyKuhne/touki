@@ -35,13 +35,16 @@ internal static class CodeFixTestHarness
         string source,
         string diagnosticId,
         IReadOnlyDictionary<string, string>? options = null,
-        IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions = null)
+        IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions = null,
+        IReadOnlyCollection<MetadataReference>? additionalReferences = null,
+        CSharpParseOptions? parseOptions = null)
     {
         using AdhocWorkspace workspace = new();
         Project project = workspace
             .AddProject("TestProject", LanguageNames.CSharp)
-            .AddMetadataReferences(RoslynTestEnvironment.References)
-            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            .AddMetadataReferences(RoslynTestEnvironment.GetReferences(additionalReferences))
+            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+            .WithParseOptions(parseOptions ?? new CSharpParseOptions(LanguageVersion.Preview));
         Document document = project.AddDocument("Test.cs", source);
 
         Compilation compilation = (await document.Project.GetCompilationAsync().ConfigureAwait(false))!;
@@ -93,14 +96,15 @@ internal static class CodeFixTestHarness
         bool fixAll,
         IReadOnlyDictionary<string, string>? options = null,
         IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions = null,
-        string? workspaceKind = null)
+        string? workspaceKind = null,
+        IReadOnlyCollection<MetadataReference>? additionalReferences = null)
     {
         using AdhocWorkspace workspace = workspaceKind is null
             ? new AdhocWorkspace()
             : new AdhocWorkspace(MefHostServices.DefaultHost, workspaceKind);
         Project project = workspace
             .AddProject("TestProject", LanguageNames.CSharp)
-            .AddMetadataReferences(RoslynTestEnvironment.References)
+            .AddMetadataReferences(RoslynTestEnvironment.GetReferences(additionalReferences))
             .WithCompilationOptions(new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,
                 allowUnsafe: true));
