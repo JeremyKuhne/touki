@@ -399,6 +399,25 @@ public class TextWriterExtensionsTests
         writer.StringOverloadCalled.Should().BeTrue();
         writer.Captured.Should().Be("Hello");
     }
+
+    [TestMethod]
+    public void WriteFormatted_StringOverloadWithNullWriter_ThrowsArgumentNullException()
+    {
+        System.IO.TextWriter writer = null!;
+        ArgumentNullException? exception = null;
+
+        try
+        {
+            writer.WriteFormatted("Hello");
+        }
+        catch (ArgumentNullException caught)
+        {
+            exception = caught;
+        }
+
+        exception.Should().NotBeNull();
+        exception!.ParamName.Should().Be("writer");
+    }
 #endif
 
     [TestMethod]

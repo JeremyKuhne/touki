@@ -86,6 +86,8 @@ public static partial class TextWriterExtensions
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void WriteFormatted(string value)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             Type writerType = writer.GetType();
             if (writerType == typeof(StringWriter) || writerType == typeof(StreamWriter))
             {
