@@ -207,7 +207,7 @@ public class AvoidPathIsPathRootedAnalyzerTests
     }
 
     [TestMethod]
-    public async Task AnalyzeInvocation_Net472SystemIoPath_RecommendsMicrosoftIoQualificationCheck()
+    public async Task AnalyzeInvocation_Net472SystemIoPathWithoutRedist_RecommendsMicrosoftIoQualificationCheck()
     {
         const string source = """
             class Sample
@@ -216,10 +216,18 @@ public class AvoidPathIsPathRootedAnalyzerTests
             }
             """;
 
+        ImmutableArray<MetadataReference> references =
+        [
+            .. RoslynTestEnvironment.Net472References.Where(reference =>
+                !string.Equals(
+                    Path.GetFileName(reference.Display),
+                    "Microsoft.IO.Redist.dll",
+                    StringComparison.OrdinalIgnoreCase))
+        ];
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new AvoidPathIsPathRootedAnalyzer(),
             source,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: references).ConfigureAwait(false);
 
         diagnostics.Should().ContainSingle().Which.GetMessage()
             .Should().Contain("Microsoft.IO.Path.IsPathFullyQualified");

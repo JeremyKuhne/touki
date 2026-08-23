@@ -77,15 +77,13 @@ public sealed class AvoidPathIsPathRootedAnalyzer : DiagnosticAnalyzer
             }
 
             bool systemHasFullyQualified = path is not null && HasPublicFullyQualified(path);
-            bool redistHasFullyQualified = redistPath is not null && HasPublicFullyQualified(redistPath);
 
             start.RegisterSyntaxNodeAction(
                 syntaxContext => AnalyzeInvocation(
                     syntaxContext,
                     path,
                     redistPath,
-                    systemHasFullyQualified,
-                    redistHasFullyQualified),
+                    systemHasFullyQualified),
                 SyntaxKind.InvocationExpression);
         });
     }
@@ -94,8 +92,7 @@ public sealed class AvoidPathIsPathRootedAnalyzer : DiagnosticAnalyzer
         SyntaxNodeAnalysisContext context,
         INamedTypeSymbol? path,
         INamedTypeSymbol? redistPath,
-        bool systemHasFullyQualified,
-        bool redistHasFullyQualified)
+        bool systemHasFullyQualified)
     {
         InvocationExpressionSyntax invocation = (InvocationExpressionSyntax)context.Node;
         if (GetMethodName(invocation.Expression) is not { Identifier.ValueText: "IsPathRooted" } methodName
@@ -109,7 +106,7 @@ public sealed class AvoidPathIsPathRootedAnalyzer : DiagnosticAnalyzer
 
         string recommendation =
             SymbolEqualityComparer.Default.Equals(method.ContainingType, redistPath)
-                || !systemHasFullyQualified && redistHasFullyQualified
+                || !systemHasFullyQualified
                 ? "Microsoft.IO.Path.IsPathFullyQualified"
                 : "Path.IsPathFullyQualified";
         context.ReportDiagnostic(Diagnostic.Create(s_rule, methodName.GetLocation(), recommendation));
