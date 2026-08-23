@@ -16,6 +16,15 @@ internal static class RoslynTestEnvironment
     public static ImmutableArray<MetadataReference> References => s_references.Value;
 
     /// <summary>
+    ///  Gets the platform references followed by any test-specific references.
+    /// </summary>
+    public static ImmutableArray<MetadataReference> GetReferences(
+        IReadOnlyCollection<MetadataReference>? additionalReferences) =>
+        additionalReferences is null || additionalReferences.Count == 0
+            ? References
+            : References.AddRange(additionalReferences);
+
+    /// <summary>
     ///  Creates analyzer options backed by the supplied EditorConfig values.
     /// </summary>
     public static AnalyzerOptions CreateAnalyzerOptions(IReadOnlyDictionary<string, string>? options) =>
@@ -40,12 +49,14 @@ internal static class RoslynTestEnvironment
     private static ImmutableArray<MetadataReference> CreateReferences()
     {
         string trustedAssemblies = (string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!;
+        string toukiAssembly = typeof(Touki.Io.TextWriterExtensions).Assembly.Location;
 
         return
         [
             .. trustedAssemblies
                 .Split(Path.PathSeparator)
                 .Where(path => path.Length > 0)
+                .Where(path => !string.Equals(path, toukiAssembly, StringComparison.OrdinalIgnoreCase))
                 .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
         ];
     }

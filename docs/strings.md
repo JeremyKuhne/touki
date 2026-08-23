@@ -125,10 +125,10 @@ but do not have implicit conversions.
 ### `Stream` and `TextWriter` extensions
 
 `StreamExtensions` and `TextWriterExtensions` add handler-backed `WriteFormatted`
-overloads that format an interpolated value without materializing a result string
-([`StreamExtensions.cs`](../touki/Touki/Io/StreamExtensions.cs) and
-[`TextWriterExtensions.cs`](../touki/Touki/Io/TextWriterExtensions.cs)). Unit
-tests demonstrate the pattern
+overloads that format an interpolated value through `ValueStringBuilder`-backed
+storage ([`StreamExtensions.cs`](../touki/Touki/Io/StreamExtensions.cs) and
+[`TextWriterExtensions.cs`](../touki/Touki/Io/TextWriterExtensions.cs)). Unit tests
+demonstrate the pattern
 ([`StreamExtensionsTests.cs`](../touki.tests/Touki/StreamExtensionsTests.cs)):
 
 ```csharp
@@ -144,10 +144,12 @@ stream.WriteFormatted($"Library: {name}, Version: {version}");
 textWriter.WriteFormatted($"Library: {name}, Version: {version}");
 ```
 
-The handler formats through `ValueStringBuilder`-backed storage and writes that
-content to the target, so this overload does not create an intermediate result
-string. On .NET, a separate optimization overload accepts an existing `string`;
-that overload is not available on .NET Framework.
+The handler writes directly to a `Stream`, an exact `StreamWriter`, or an exact
+`StringWriter`, so those paths do not create an intermediate result string. A
+custom `TextWriter` instead receives a string through its virtual `Write(string)`
+method, preserving overrides and their side effects. On .NET, a separate
+optimization overload accepts an existing `string`; that overload is not available
+on .NET Framework.
 
 The `Stream` overload writes raw UTF-16 code-unit bytes without applying a text
 encoding or byte-order mark. Use a `TextWriter` such as `StreamWriter` when the

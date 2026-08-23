@@ -40,6 +40,10 @@
   <ItemGroup>
     <ProjectReference Include="..\touki.analyzers\touki.analyzers.csproj" />
     <ProjectReference Include="..\touki.analyzers.codefixes\touki.analyzers.codefixes.csproj" />
+    <!-- Used by consumer-style analyzer tests that bind against the real public API metadata. -->
+    <ProjectReference Include="..\touki\touki.csproj"
+                      AdditionalProperties="TargetFramework=$(DotNetCoreVersion)"
+                      PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

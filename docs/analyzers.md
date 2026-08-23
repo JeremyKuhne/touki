@@ -7,8 +7,8 @@ ship disabled unless a project opts in.
 
 The analyzers encode the conventions this library is built on: avoid hidden struct
 copies, release resources deterministically, keep scratch buffers off the stack once
-they get large, keep types easy to find by file name, keep whitespace out of the way, and
-name a field for what it actually is.
+they get large, write formatted text without temporary strings, keep types easy to find
+by file name, keep whitespace out of the way, and name a field for what it actually is.
 
 ## Rules
 
@@ -27,10 +27,12 @@ name a field for what it actually is.
 | [TOUKI0023](#touki0023) | Remove trailing whitespace | Maintainability | Warning | - | - |
 | [TOUKI0024](#touki0024) | Format XML documentation as nested XML | Maintainability | **Disabled** | Yes | - |
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
+| [TOUKI0031](#touki0031) | Use `WriteFormatted` for interpolated strings | Performance | Warning | - | C# 10, `TextWriterExtensions` |
 | [TOUKI0041](#touki0041) | Naming rule violation | Naming | **Disabled** | Yes | - |
 
 Rules that require an attribute only fire on code that applies it. TOUKI0012 requires
-the compilation to reference `Touki.DisposableBase`. The rest apply to any C# the
+the compilation to reference `Touki.DisposableBase`. TOUKI0031 requires C# 10 or later
+and the Touki `TextWriterExtensions` handler overload. The rest apply to any C# the
 compiler hands them.
 
 Generated code is excluded from every rule.
@@ -423,6 +425,40 @@ is misleading:
 Once `Touki.Text` is imported the accessible type wins and the internal one is ignored,
 including when `using System.Text;` sits in an inner scope.
 
+## TOUKI0031
+
+**Use `WriteFormatted` for interpolated strings.** Reports a non-constant interpolated
+string passed directly to the one-argument `TextWriter.Write(string)` method when the
+receiver is statically typed as `TextWriter`, `StringWriter`, or `StreamWriter`, or is a
+type parameter directly constrained to one of those types. `Write` first creates the complete string;
+`Touki.Io.TextWriterExtensions.WriteFormatted` instead formats through
+`ValueStringBuilder`. Exact `StringWriter` and `StreamWriter` instances receive the
+builder content directly, without allocating that intermediate string. Custom writer
+types receive a string through their virtual `Write(string)` method so overrides and
+their side effects are preserved.
+
+```csharp
+writer.Write($"Rows written: {count}"); // TOUKI0031
+
+writer.WriteFormatted($"Rows written: {count}");
+```
+
+The code fix renames the call and adds `using Touki.Io;` when needed. A named `value:`
+argument is changed to the handler parameter name, `builder:`. The fix is only offered
+after Roslyn proves that the changed call binds to Touki's exact handler overload, so a
+competing extension or instance method cannot silently capture it. Project-level global
+usings are honored. A required `using Touki.Io;` is added only when it introduces no
+compiler errors or binding changes elsewhere in the document. Fix All is supported.
+
+The rule deliberately stays silent for `WriteLine`, because a rename would lose the line
+terminator; compile-time-constant interpolated strings, which create no intermediate
+run-time string; string values built before the call; C# versions before 10; expression
+trees, which cannot contain handler conversions; `base.Write(...)`; applicable instance
+`WriteFormatted` methods; receivers statically known to be custom writer subclasses;
+conditional access; and calls without an explicit receiver. Those forms cannot be
+converted by the same behavior-preserving local edit or cannot use the optimized writer
+path.
+
 ## TOUKI0041
 
 **Naming rule violation** - a name does not follow the configured naming rules. A
@@ -629,6 +665,9 @@ columns, so several fixes on one line compose without having to be applied in or
 `FormatXmlDocumentationCodeFixProvider` fixes TOUKI0024 by applying the complete replacement
 computed by the analyzer from the file's options. It supports Fix All.
 
+`UseTextWriterWriteFormattedCodeFixProvider` fixes TOUKI0031 by renaming the diagnosed
+`Write` call and importing `Touki.Io` when necessary. It supports Fix All.
+
 ## Relationship to IDE0055
 
 The .NET SDK's `IDE0055` ([Fix formatting](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055))
@@ -660,7 +699,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 | 0.5.0 | TOUKI0020, TOUKI0030 |
 | 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |
 | 0.7.0 | TOUKI0022, TOUKI0023 |
-| Unshipped | TOUKI0012, TOUKI0024 |
+| Unshipped | TOUKI0012, TOUKI0024, TOUKI0031 |
 
 The authoritative list lives in
 [AnalyzerReleases.Shipped.md](../touki.analyzers/AnalyzerReleases.Shipped.md) and

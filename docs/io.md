@@ -170,8 +170,10 @@ cancellation-token support for the asynchronous forms.
 its `Stream`-targeted partial in
 [`StreamExtensions.cs`](../touki/Touki/Io/StreamExtensions.cs)) adds
 `WriteFormatted` overloads that accept a `ValueStringBuilder`-backed
-interpolated string handler, so formatted output flows directly into the
-target without an intermediate `string` allocation. See
+interpolated string handler. Formatted output flows directly into a `Stream`,
+an exact `StreamWriter`, or an exact `StringWriter` without an intermediate
+`string` allocation. Custom `TextWriter` types receive a string through their
+virtual `Write(string)` method so their behavior is preserved. See
 [strings.md](strings.md) for the full picture.
 
 ```csharp
