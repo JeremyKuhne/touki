@@ -30,6 +30,7 @@ of the way, and name a field for what it actually is.
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
 | [TOUKI0031](#touki0031) | Use `WriteFormatted` for interpolated strings | Performance | Warning | - | C# 10, `TextWriterExtensions` |
 | [TOUKI0032](#touki0032) | Use `Path.Join` instead of `Path.Combine` | Reliability | Warning | - | - |
+| [TOUKI0033](#touki0033) | Avoid `Path.IsPathRooted` | Reliability | Warning | - | - |
 | [TOUKI0041](#touki0041) | Naming rule violation | Naming | **Disabled** | Yes | - |
 
 Rules that require an attribute only fire on code that applies it. TOUKI0012 requires
@@ -510,6 +511,49 @@ fix is also withheld when comments or directives appear inside the original qual
 method access, where replacing the qualifier would discard that trivia. Fix All is
 supported.
 
+## TOUKI0033
+
+**Avoid `Path.IsPathRooted`.** Reports calls bound to either
+`System.IO.Path.IsPathRooted` or the downlevel `Microsoft.IO.Path.IsPathRooted` from the
+strong-named `Microsoft.IO.Redist` assembly. "Rooted" does not mean that a path resolves
+independently of working-directory state.
+
+On Windows, both drive-relative and root-relative paths are rooted but not fully
+qualified:
+
+```csharp
+Path.IsPathRooted("C:child");          // true
+Path.IsPathFullyQualified("C:child"); // false
+
+Path.IsPathRooted("\\child");          // true
+Path.IsPathFullyQualified("\\child"); // false
+```
+
+`C:child` resolves against the current directory recorded for drive `C:`, which can
+differ from the process current directory. `\child` resolves against the current drive.
+These distinctions are particularly easy to lose when paths cross Windows, Unix, and WSL
+boundaries.
+
+Use `Path.IsPathFullyQualified` when the question is whether resolving a path can be
+changed by current-directory state:
+
+```csharp
+bool resolutionIsIndependent = Path.IsPathFullyQualified(path);
+```
+
+For a `net472` caller using `System.IO.Path.IsPathRooted`, the corresponding downlevel
+API is `Microsoft.IO.Path.IsPathFullyQualified` from `Microsoft.IO.Redist`.
+
+Manual replacement must account for the string-overload contracts. `IsPathRooted(null)`
+returns `false`, while `IsPathFullyQualified(null)` throws `ArgumentNullException`.
+Moving a `net472` BCL call to `Microsoft.IO.Redist` also adopts modern path validation:
+the Redist API does not perform .NET Framework's legacy invalid-path-character check.
+
+No code fix is offered. Some code intentionally asks whether a path has a root marker or
+needs root-relative classification, and replacing that check would change its meaning.
+After confirming such intent, suppress TOUKI0033 at that individual call and document the
+classification being performed.
+
 ## TOUKI0041
 
 **Naming rule violation** - a name does not follow the configured naming rules. A
@@ -754,7 +798,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 | 0.5.0 | TOUKI0020, TOUKI0030 |
 | 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |
 | 0.7.0 | TOUKI0022, TOUKI0023 |
-| Unshipped | TOUKI0012, TOUKI0024, TOUKI0031, TOUKI0032 |
+| Unshipped | TOUKI0012, TOUKI0024, TOUKI0031, TOUKI0032, TOUKI0033 |
 
 The authoritative list lives in
 [AnalyzerReleases.Shipped.md](../touki.analyzers/AnalyzerReleases.Shipped.md) and
