@@ -40,14 +40,17 @@ internal static class AnalyzerTestHarness
         IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions = null,
         IReadOnlyCollection<string>? expectedCompilerDiagnosticIds = null,
         CSharpParseOptions? parseOptions = null,
-        IReadOnlyCollection<MetadataReference>? additionalReferences = null)
+        IReadOnlyCollection<MetadataReference>? additionalReferences = null,
+        IReadOnlyCollection<MetadataReference>? metadataReferences = null)
     {
+        IReadOnlyCollection<MetadataReference> references =
+            metadataReferences ?? RoslynTestEnvironment.GetReferences(additionalReferences);
         CSharpCompilation compilation = parseOptions is null
-            ? CreateCompilation(source, fileName, additionalReferences)
+            ? CreateCompilation(source, fileName, references)
             : CSharpCompilation.Create(
                 assemblyName: "Touki.Analyzers.TestCompilation",
                 syntaxTrees: [CSharpSyntaxTree.ParseText(source, parseOptions, fileName ?? string.Empty)],
-                references: RoslynTestEnvironment.GetReferences(additionalReferences),
+                references: references,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
 
         return await GetDiagnosticsAsync(
@@ -142,12 +145,12 @@ internal static class AnalyzerTestHarness
     private static CSharpCompilation CreateCompilation(
         string source,
         string? fileName,
-        IReadOnlyCollection<MetadataReference>? additionalReferences = null) =>
-        CreateCompilation([(source, fileName ?? string.Empty)], additionalReferences);
+        IReadOnlyCollection<MetadataReference>? metadataReferences = null)
+        => CreateCompilation([(source, fileName ?? string.Empty)], metadataReferences);
 
     private static CSharpCompilation CreateCompilation(
         IReadOnlyList<(string Source, string FileName)> sources,
-        IReadOnlyCollection<MetadataReference>? additionalReferences = null)
+        IReadOnlyCollection<MetadataReference>? metadataReferences = null)
     {
         SyntaxTree[] syntaxTrees = new SyntaxTree[sources.Count];
 
@@ -159,7 +162,7 @@ internal static class AnalyzerTestHarness
         return CSharpCompilation.Create(
             assemblyName: "Touki.Analyzers.TestCompilation",
             syntaxTrees: syntaxTrees,
-            references: RoslynTestEnvironment.GetReferences(additionalReferences),
+            references: metadataReferences ?? RoslynTestEnvironment.References,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
     }
 }

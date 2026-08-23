@@ -7,8 +7,9 @@ ship disabled unless a project opts in.
 
 The analyzers encode the conventions this library is built on: avoid hidden struct
 copies, release resources deterministically, keep scratch buffers off the stack once
-they get large, write formatted text without temporary strings, keep types easy to find
-by file name, keep whitespace out of the way, and name a field for what it actually is.
+they get large, write formatted text without temporary strings, compose paths without
+silently discarding segments, keep types easy to find by file name, keep whitespace out
+of the way, and name a field for what it actually is.
 
 ## Rules
 
@@ -28,6 +29,7 @@ by file name, keep whitespace out of the way, and name a field for what it actua
 | [TOUKI0024](#touki0024) | Format XML documentation as nested XML | Maintainability | **Disabled** | Yes | - |
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
 | [TOUKI0031](#touki0031) | Use `WriteFormatted` for interpolated strings | Performance | Warning | - | C# 10, `TextWriterExtensions` |
+| [TOUKI0032](#touki0032) | Use `Path.Join` instead of `Path.Combine` | Reliability | Warning | - | - |
 | [TOUKI0041](#touki0041) | Naming rule violation | Naming | **Disabled** | Yes | - |
 
 Rules that require an attribute only fire on code that applies it. TOUKI0012 requires
@@ -459,6 +461,55 @@ conditional access; and calls without an explicit receiver. Those forms cannot b
 converted by the same behavior-preserving local edit or cannot use the optimized writer
 path.
 
+## TOUKI0032
+
+**Use `Path.Join` instead of `Path.Combine`.** Reports calls bound to either
+`System.IO.Path.Combine` or the downlevel `Microsoft.IO.Path.Combine` from the
+strong-named `Microsoft.IO.Redist` assembly. `Combine` treats a rooted later argument as
+a replacement for everything accumulated before it. That behavior is easy to miss when
+a segment comes from configuration, an environment variable, or another operating
+system's path syntax: a leading `/` is meaningful to both Unix and WSL tooling and may
+unexpectedly discard a Windows-side prefix.
+
+`Path.Join` never interprets a later segment as replacing the preceding path:
+
+```csharp
+string path = Path.Combine(root, segment); // TOUKI0032
+string path = Path.Join(root, segment);
+```
+
+The change is intentional semantic hardening, not merely style. Code that specifically
+wants rooted segments to replace earlier segments should make that branch explicit rather
+than relying on `Combine` to do it implicitly.
+
+Adopting `Join` also adopts its other argument semantics:
+
+- null segments are treated as empty rather than rejected by overloads that validate them;
+- on Windows, drive-relative forms change - for example, `Combine("C:", "child")`
+  produces `C:child`, while `Join("C:", "child")` produces `C:\child`;
+- the .NET Framework implementation from `Microsoft.IO.Redist` does not perform the legacy
+  invalid-path-character validation that `Path.Combine` performs.
+
+These differences are why the rule is in the Reliability category. Suppress TOUKI0032 at
+an individual call only when the `Combine` behavior is deliberate and documented.
+
+The code fix preserves the existing `Path` spelling, alias, or static import when
+`System.IO.Path.Join` is available. Calls already bound to `Microsoft.IO.Path.Combine`
+retain that type and are renamed to its `Join` member. On .NET Framework, where the BCL
+member does not exist, calls to `System.IO.Path.Combine` are rewritten to the fully
+qualified `global::Microsoft.IO.Path.Join` provided by `Microsoft.IO.Redist`. Touki
+already references that package for its `net472` target. The fix is offered only when
+Roslyn proves that the rewritten overload binds successfully.
+
+Multi-targeted projects are analyzed once per target, so a shared source file can receive
+the diagnostic in both its modern .NET and .NET Framework project contexts. The fix is
+withheld when that physical source file appears in more than one project context: no
+single replacement is portable when one target exposes `System.IO.Path.Join` and another
+requires `Microsoft.IO.Path.Join`. TFM-specific files can be fixed normally. A downlevel
+fix is also withheld when comments or directives appear inside the original qualified
+method access, where replacing the qualifier would discard that trivia. Fix All is
+supported.
+
 ## TOUKI0041
 
 **Naming rule violation** - a name does not follow the configured naming rules. A
@@ -668,6 +719,10 @@ computed by the analyzer from the file's options. It supports Fix All.
 `UseTextWriterWriteFormattedCodeFixProvider` fixes TOUKI0031 by renaming the diagnosed
 `Write` call and importing `Touki.Io` when necessary. It supports Fix All.
 
+`UsePathJoinCodeFixProvider` fixes TOUKI0032 by selecting `System.IO.Path.Join` on modern
+.NET or `Microsoft.IO.Path.Join` from `Microsoft.IO.Redist` on .NET Framework. It
+preserves existing aliases and static imports where possible and supports Fix All.
+
 ## Relationship to IDE0055
 
 The .NET SDK's `IDE0055` ([Fix formatting](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055))
@@ -699,7 +754,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 | 0.5.0 | TOUKI0020, TOUKI0030 |
 | 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |
 | 0.7.0 | TOUKI0022, TOUKI0023 |
-| Unshipped | TOUKI0012, TOUKI0024, TOUKI0031 |
+| Unshipped | TOUKI0012, TOUKI0024, TOUKI0031, TOUKI0032 |
 
 The authoritative list lives in
 [AnalyzerReleases.Shipped.md](../touki.analyzers/AnalyzerReleases.Shipped.md) and
