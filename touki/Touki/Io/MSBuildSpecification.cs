@@ -99,10 +99,15 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
         Debug.Assert(Normalized.Equals(Normalize(Original)));
 
         IsFullyQualified = Path.IsPathFullyQualified(Normalized.AsSpan());
+
+        // Deliberately distinguish nested relative paths from root- and drive-relative paths after checking full
+        // qualification above. Resolution independence is not the question this second classification answers.
+#pragma warning disable TOUKI0033
         IsNestedRelative = !IsFullyQualified
             && !Path.IsPathRooted(Normalized.AsSpan())
             && !(Normalized.StartsWith("..")
                 && (Normalized.Length == 2 || (Normalized.Length > 2 && Normalized[2] == Path.DirectorySeparatorChar)));
+#pragma warning restore TOUKI0033
 
         int lastSeparator = Normalized.LastIndexOf(Path.DirectorySeparatorChar);
         int firstWildCard = Normalized.IndexOfAny('*', '?');
