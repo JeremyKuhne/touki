@@ -1,6 +1,6 @@
 ---
 core: agent-files-review
-core-pin: v0.15.0
+core-pin: v0.16.1
 ---
 
 # Touki overlay - agent-files-review
@@ -48,6 +48,9 @@ Repo-specific companion to the vendored [agent-files-review](SKILL.md) skill. Th
 - [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - its section 4
   final-audit step calls the link checker for changes under `.agents/`,
   `AGENTS.md`, or the mirror.
+- [`technical-writing`](../technical-writing/SKILL.md) - the optional
+  comprehension pass after customization behavior and file correctness are
+  settled.
 
 ## Touki war-story (the core anonymized this)
 

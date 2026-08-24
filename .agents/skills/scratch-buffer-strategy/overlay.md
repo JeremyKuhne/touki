@@ -1,6 +1,6 @@
 ---
 core: scratch-buffer-strategy
-core-pin: v0.15.0
+core-pin: v0.16.1
 ---
 
 # Touki overlay - scratch-buffer-strategy

@@ -6,13 +6,13 @@ metadata:
     applicability: agent-customization
     binding: optional-overlay
     github-path: skills/agent-files-review
-    github-pinned: v0.15.0
-    github-ref: refs/tags/v0.15.0
+    github-pinned: v0.16.1
+    github-ref: refs/tags/v0.16.1
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 0505415b189f0541bcaa46521600142f4d52cfcc
+    github-tree-sha: 9b83bf2c2da636e09b8467db74757401eecadcc4
     maturity: canary
     portability: portable
-    related: manage-skills
+    related: manage-skills, technical-writing
     requires: none
     risk: local-write
 name: agent-files-review
@@ -24,6 +24,12 @@ repository-specific bindings. This core remains usable without it.
 
 Run through every applicable item below before approving a change to an agent
 customization file. Each item below caught a real bug in PR review history.
+
+This skill owns customization behavior and file correctness. Use
+`technical-writing` as an optional handoff for human and agent comprehension.
+A readability edit must preserve literal triggers, requirement strength,
+commands, permissions, and stop conditions; changing one is a behavior change
+that must return to semantic review.
 
 This skill assumes the repository has adopted the agent-file scaffold: an
 `AGENTS.md` single-source with a generated `.github/copilot-instructions.md`

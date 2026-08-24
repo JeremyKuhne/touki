@@ -6,8 +6,8 @@ metadata:
     applicability: dotnet-project-gated
     binding: optional-overlay
     github-path: skills/fuzz-testing
-    github-pinned: v0.15.0
-    github-ref: refs/tags/v0.15.0
+    github-pinned: v0.16.1
+    github-ref: refs/tags/v0.16.1
     github-repo: https://github.com/JeremyKuhne/agent-skills
     github-tree-sha: fe13e0ef1efd66ebe32d7b37ef15669429591e39
     maturity: canary

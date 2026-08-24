@@ -1,6 +1,6 @@
 ---
 core: code-comprehension
-core-pin: v0.15.0
+core-pin: v0.16.1
 ---
 
 # Touki overlay - code-comprehension
@@ -43,6 +43,8 @@ upstream before the next re-vendor.
 
 - [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - the pre-PR checklist;
   the core's "keep a change small and reviewable" rule feeds directly into it.
+- [`technical-writing`](../technical-writing/SKILL.md) - human-facing technical
+  prose; this skill remains responsible for source-code comprehension.
 
 ## Touki docs
 

@@ -1,6 +1,6 @@
 ---
 core: address-pr-feedback
-core-pin: v0.15.0
+core-pin: v0.16.1
 ---
 
 # Touki overlay - address-pr-feedback
@@ -12,7 +12,7 @@ Repo-specific companion to the vendored [address-pr-feedback](SKILL.md) skill. T
 `metadata.github-*` provenance in its frontmatter). Do not hand-edit the core -
 `gh skill update` would flag the drift. Everything touki-specific lives here.
 
-> **Pinned to a release.** The core is pinned to the commons **v0.15.0** tag. Pull
+> **Pinned to a release.** The core is pinned to the commons **v0.16.1** tag. Pull
 > later upstream changes with `gh skill update address-pr-feedback` (review the
 > diff, re-pin to the new tag).
 
@@ -22,6 +22,8 @@ Repo-specific companion to the vendored [address-pr-feedback](SKILL.md) skill. T
   gate, different edit scope).
 - [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - the validation checklist
   that applies to both initial and follow-up rounds.
+- [`technical-writing`](../technical-writing/SKILL.md) - drafts and reviews
+  follow-up commit messages and thread replies without owning publication.
 
 ## Touki specifics
 

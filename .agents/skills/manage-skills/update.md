@@ -6,34 +6,81 @@ directions. The second - pushing a local improvement - is where the
 
 ## Pull: take upstream changes
 
-When a vendored skill has moved upstream in the commons, pull the change:
+First identify the canonical source and every installed project/user target. Do
+not edit a runtime copy merely because it is the first path found.
+
+When a skill has moved upstream, check before changing files:
 
 ```pwsh
-# one skill
-gh skill update <skill>
-# every unpinned vendored skill
-gh skill update --all
+# One skill
+gh skill update <skill> --dry-run
+
+# All installed skills
+gh skill update --all --dry-run
 ```
 
 `gh skill update` compares the local copy's provenance tree SHA against upstream
-and surfaces the difference as a normal diff. Review it like a dependency bump:
-read what changed, run the repo's agent-file checks (the frontmatter validator and
-the installed-artifact link checker), then re-pin when satisfied. Update the
-overlay's `core-pin` and re-review its bindings in the same change. A skill pinned
-with `--pin` is skipped by `--all`; bump its pin deliberately when you want its
-updates.
+and scans known host directories at project and user scope. Review each target
+like a dependency bump: read what changed, run the applicable agent-file checks,
+then re-pin when satisfied. Update an overlay's `core-pin` and re-review its
+bindings in the same change. A skill pinned with `--pin` is skipped; reinstall
+it with a new pin deliberately.
 
-Manual fallback (no `gh`): compare the local core against the commons copy at the
-recorded ref, apply the diff by hand, and update the provenance SHA.
+### Pass the pin and divergence gate
+
+Before changing any pin or provenance ref:
+
+1. enumerate the overlay and every pending-divergence record for the skill;
+2. compare each divergent file against both the current pin and candidate pin;
+3. search the candidate upstream tree and release history for the equivalent
+   change;
+4. remove a divergence record only when the candidate artifact contains it;
+5. rebase a still-needed divergence onto the candidate and update its base pin,
+   affected files, reason, and upstream status;
+6. update every overlay `core-pin` only after its bindings are reviewed against
+   the candidate;
+7. run the upstream mirror comparison and semantic cases before installing.
+
+For an installer-produced artifact, normalize only the installer boundary. The
+mirror comparison passes when:
+
+- the installed manifest equals the source manifest plus declared overlays or
+  pending-divergence files;
+- every source resource other than `SKILL.md` is byte-identical;
+- every source-authored frontmatter field has the same parsed value;
+- the normalized `SKILL.md` body is identical after line-ending and
+  frontmatter-boundary normalization; and
+- generated `github-repo`, `github-ref`, `github-pinned`, `github-path`,
+  `github-tree-sha`, or `local-path` metadata matches the reviewed source and
+  target.
+
+Do not compare a provenance-stamped `SKILL.md` by raw file hash: `gh skill`
+reserializes frontmatter and may remove the blank line after its closing
+delimiter. Treat any other field, body, resource, or manifest difference as
+drift. Overlays and local catalog collateral are additive and must be identified
+separately.
+
+Stop the update if any overlay or divergence has no explicit disposition. A new
+pin with a stale base-pin record is unexplained drift, even when validation and
+the skill itself still load.
+
+`--force` overwrites locally modified tracked files but does not remove extra
+files. It therefore does not prove overlays or pending divergences are still
+valid.
+
+Manual fallback (no `gh`): compare the canonical source or installed core against
+the recorded immutable revision, apply the reviewed diff, update provenance, and
+reinstall every recorded host/scope target with file-list and hash verification.
 
 ## Push: send a local improvement to the right layer
 
 When you improve a vendored skill locally, first classify the change, then decide
 where it lives. Classification does not trigger any action on its own.
 
-- **Local deviation** - specific to this repo (a repo-only tool, a local path, a
-  repo-specific example). It belongs in the **overlay**, never in the vendored
-  core. Move the change into `overlay.md` (starting from
+- **Local deviation** - specific to this repo or user (a repo-only tool,
+  personal policy, local path, or target-specific example). It belongs in the
+  installation's **overlay**, never in the vendored core. Move the change into
+  `overlay.md` (starting from
   `assets/overlay.md.tmpl` when needed), restore the core to match upstream, and
   record the current pin in `core-pin`. No upstreaming question arises.
 - **Common** - generic, helps every consumer (a clearer phrasing of a portable
@@ -63,6 +110,14 @@ common, and the options:
 Default to asking even when the change looks obviously common and obviously worth
 sharing. Nothing about upstreaming happens without an explicit decision.
 
+Before presenting an upstream summary or publishing an approved commons change,
+run `technical-writing` against the current diff and lifecycle disposition.
+Review pending-divergence text locally when upstreaming is deferred. For an
+approved PR, run pre-publication mode on the exact title and body immediately
+before creation; rerun it if the candidate, diff, validation, or upstream state
+changes. A successful prose review does not answer the upstreaming query or
+authorize the PR.
+
 ## The golden rule and its mechanics
 
 *Never let a vendored core diverge silently.* A vendored core is a mirror of
@@ -79,10 +134,10 @@ fine; an unexplained one is the alarm. What makes this enforceable:
 
 - **Provenance frontmatter** on every vendored copy records the source repo, ref,
   and tree SHA it was installed from.
-- **The drift check** (`gh skill update`, or the tree-SHA comparison in CI)
-  compares the local core against that recorded upstream. Unexplained drift - a
-  local core that no longer matches its pin and has no corresponding upstream PR -
-  is the alarm that an improvement was written into the wrong layer.
+- **The drift check** (`gh skill update`, or the normalized mirror comparison in
+  CI) compares the local core against that recorded upstream. Unexplained drift
+  - a local core that no longer matches its pin and has no corresponding upstream
+  PR - is the alarm that an improvement was written into the wrong layer.
 
 So the discipline is mechanical: if the drift check lights up and there is no
 upstream PR in flight and no recorded pending-upstream note, the change was a local
@@ -98,3 +153,10 @@ disambiguation) in the same change. Then hand off to `agent-files-review` to val
 the resulting files; semantic lifecycle review does not replace file-level review.
 If the skill is obsolete rather than changed, follow [retire.md](retire.md) instead
 of forcing removal into the update path.
+
+Then follow [install.md](install.md) to verify each effective project/user copy,
+registered source, plugin, and host path. Report any target intentionally left
+at an older pin.
+
+Run the update cases in [evaluations.md](evaluations.md), including a candidate
+pin that already contains one local divergence and another that does not.

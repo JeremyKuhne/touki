@@ -123,12 +123,20 @@ safety to you; the review *is* the safety check. The per-API table
 - API takes a root + relative input and returns paths - results
   stay inside the root? Symlink behavior is the caller's documented
   choice, not silently re-enabled?
-- Caller-supplied fragments concatenated without normalization?
-  `Path.Combine` honors absolute inner segments, which is a foot-gun.
+- Path construction uses `Path.Join`, never `Path.Combine` or string
+  concatenation? A rooted later argument makes `Path.Combine` discard the
+  trusted prefix.
+- Code uses `Path.IsPathFullyQualified` when it needs independence from current
+  directories? `Path.IsPathRooted` also returns true for Windows drive-relative
+  and root-relative paths.
+- A path that is not fully qualified is resolved with
+  `Path.GetFullPath(path, knownFullyQualifiedBase)`, not the one-argument
+  overload? Deterministic resolution is still followed by a containment check?
 
-**Tests:** inputs with `..` segments, absolute paths, alternate
-separators, and symlink-style names; enumerator stays inside the
-configured root.
+**Tests:** inputs with `..` segments, fully qualified paths, Windows
+drive-relative and root-relative paths, alternate separators, and symlink-style
+names; current-directory changes cannot alter resolution; enumerator stays
+inside the configured root.
 
 ## 9. Argument validation at the boundary
 

@@ -1,6 +1,6 @@
 ---
 core: create-pr
-core-pin: v0.15.0
+core-pin: v0.16.1
 ---
 
 # Touki overlay - create-pr
@@ -19,6 +19,8 @@ Repo-specific companion to the vendored [create-pr](SKILL.md) skill. The
   self-review validates against for a .NET Framework polyfill.
 - [`address-pr-feedback`](../address-pr-feedback/SKILL.md) - the post-PR workflow
   for subsequent edit rounds.
+- [`technical-writing`](../technical-writing/SKILL.md) - the required local
+  review of commit messages and PR title/body candidates before publication.
 
 ## Touki specifics
 

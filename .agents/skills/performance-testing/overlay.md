@@ -1,6 +1,6 @@
 ---
 core: performance-testing
-core-pin: v0.15.0
+core-pin: v0.16.1
 ---
 
 # Touki overlay - performance-testing
@@ -15,7 +15,7 @@ core - `gh skill update` would flag the drift. Everything touki-specific lives
 here, plus the two profiling pages below, which are a touki overlay (they drive
 the repo's trace analyzer).
 
-> **Pinned to a release.** The core is pinned to the commons **v0.15.0** tag. Pull
+> **Pinned to a release.** The core is pinned to the commons **v0.16.1** tag. Pull
 > later upstream changes with `gh skill update performance-testing` (review the
 > diff, re-pin to the new tag).
 
