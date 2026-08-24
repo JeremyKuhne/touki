@@ -798,7 +798,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 | 0.5.0 | TOUKI0020, TOUKI0030 |
 | 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |
 | 0.7.0 | TOUKI0022, TOUKI0023 |
-| Unshipped | TOUKI0012, TOUKI0024, TOUKI0031, TOUKI0032, TOUKI0033 |
+| 0.8.0 | TOUKI0012, TOUKI0024, TOUKI0031, TOUKI0032, TOUKI0033 |
 
 The authoritative list lives in
 [AnalyzerReleases.Shipped.md](../touki.analyzers/AnalyzerReleases.Shipped.md) and
