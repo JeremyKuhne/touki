@@ -1,6 +1,6 @@
 ---
 core: security-review
-core-pin: v0.15.0
+core-pin: v0.16.1
 ---
 
 # Touki overlay - security-review
@@ -19,6 +19,8 @@ here instead.
   checklist; run security-review alongside it before any publish.
 - [`performance-testing`](../performance-testing/SKILL.md) - use when you need to
   *measure* a worst-case input rather than just bound it with a `Stopwatch`.
+- [`dotnet-file-creation`](../dotnet-file-creation/SKILL.md) - path construction,
+  deterministic resolution, temporary storage, and platform file semantics.
 
 ## Touki examples for the checklist
 

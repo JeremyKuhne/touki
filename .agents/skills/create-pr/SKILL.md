@@ -1,26 +1,28 @@
 ---
 compatibility: Requires git; remote creation uses an available GitHub integration or authenticated gh, with a browser fallback.
-description: Create a pull request for the current changes. Use when asked to "make a PR", "open a pull request", "push and PR", or otherwise publish in-progress work for review. Ensures changes are on a non-`main` branch, commits are made and pushed, and the PR targets `upstream/main` when an `upstream` remote exists, otherwise `origin/main`.
+description: Create or prepare a pull request for the current changes. Use when asked to "make a PR", "prepare a PR", "open a pull request", "push and PR", or otherwise publish in-progress work for review. Ensures changes are on a non-`main` branch, commits are made and pushed, and the PR targets `upstream/main` when an `upstream` remote exists, otherwise `origin/main`.
 license: MIT
 metadata:
     applicability: git-github
     binding: optional-overlay
     github-path: skills/create-pr
-    github-pinned: v0.15.0
-    github-ref: refs/tags/v0.15.0
+    github-pinned: v0.16.1
+    github-ref: refs/tags/v0.16.1
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: 6fef038602c67d66b0c8278e8f7681b56803a95f
+    github-tree-sha: 8c776159d75235f58733d44a027763a3a2d2777e
     maturity: canary
     portability: portable
     related: pre-pr-self-review, address-pr-feedback
-    requires: none
+    requires: technical-writing
     risk: remote-write
 name: create-pr
 ---
 # Create a pull request
 
 If `overlay.md` exists beside this file, read it before acting; it contains
-repository-specific bindings. This core remains usable without it.
+repository-specific bindings. This core remains usable without it. Check for it
+directly in this skill's base directory before any other action or response; do
+not combine this check with another skill's overlay lookup.
 
 Follow these steps in order. Stop and ask the user if any check is ambiguous;
 do not force-push, rewrite history, or delete branches without explicit
@@ -46,6 +48,12 @@ it catches the test, allocation, overflow-arithmetic, and TFM-phrasing mistakes
 that repeatedly cost a review round-trip. If the change polyfills a .NET API for
 .NET Framework, a `polyfill-dotnet-api` skill (where the repo provides one)
 defines the design rules the self-review then validates against.
+
+Load the required `technical-writing` skill before drafting, revising,
+normalizing, or returning any commit message, pull request title, or pull
+request body. This includes prepare-only requests with no remote action. It
+checks the local candidate; this workflow still owns approval and the remote
+action. A successful prose review is not publish approval.
 
 ## 1. Inspect repository state
 
@@ -85,21 +93,26 @@ Decide the PR base:
 - If `git status` shows uncommitted changes that belong in the PR, stage them
   with `git add` (prefer explicit paths over `git add -A` unless the user
   asked for everything).
-- Write a concise commit message: short imperative subject (≤ 72 chars), and
-  a body only if the change needs explanation. Match the style of recent
-  commits (`git log --oneline -20`).
+- Derive a concise commit message from the staged diff and recent repository
+  style (`git log --oneline -20`): short imperative subject (≤ 72 chars), and a
+  body only when motivation, prior behavior, compatibility, or a non-obvious
+  consequence needs explanation.
+- Run `technical-writing` in draft or revise mode, then pre-publication mode on
+  the exact proposed message. Preserve a user-supplied message's supported
+  meaning and references. Report an unsupported issue, validation, impact, or
+  compatibility claim instead of polishing it into the commit.
 - Do not amend or rebase published commits without explicit user approval.
 - Do not pass `--no-verify`; let hooks run.
 
 ### Approval checkpoint
 
-**Stop here.** Show the user the staged diff (or summarize it) and the
-proposed commit message. Wait for the user to explicitly say `commit`,
-`push`, or `ship it` (or one of the other verbs listed in your repo's
-agent guidance "Working with the user on changes" rules) before running
-`git commit`. If the user already used one of those verbs in the message
-that triggered this skill, proceed without asking again. Do not infer
-approval from the original "open a PR" request.
+**Stop here.** Show the user the staged diff (or summarize it) and the reviewed
+commit message. Wait for the user to explicitly say `commit`, `push`, or
+`ship it` (or one of the other verbs listed in your repo's agent guidance
+"Working with the user on changes" rules) before running `git commit`. If the
+user already used one of those verbs in the message that triggered this skill,
+proceed without asking again. Do not infer approval from the original "open a
+PR" request or from the prose review.
 
 ## 4. Push the branch
 
@@ -168,11 +181,22 @@ Call the host's pull-request creation capability with:
 ### PR title and body
 
 - Title: same style as the commit subject; reference the area touched.
-- Body: brief summary of what changed and why, bullet list of notable
-  changes, and any test/validation notes (e.g. "ran the test suite"). Link
-  related issues with `Fixes #N` when appropriate.
+- Draft or revise the title and body from the current diff and observed
+  validation. State what changed and why, identify notable adjacent changes,
+  and report tests that actually ran separately from a proposed test plan or
+  known gap. Do not invent issue references, impact, risk, compatibility, or
+  completion claims.
+- Run `technical-writing` pre-publication mode on the exact title and body
+  immediately before the pull-request creation call. If a rebase, material diff
+  change, or validation result changes the evidence, update the candidate and
+  rerun the review.
+- Normalize the exact outgoing body for GitHub's remote Markdown field before
+  the creation call. Keep each prose paragraph and each individual list item on
+  one physical source line. Use line breaks only between logical blocks or where
+  Markdown syntax or content requires them; do not carry source-document hard
+  wrapping into the published body.
 - If the user has not supplied a title/body, propose one and confirm before
-  creating.
+  creating. This confirmation remains separate from commit/push approval.
 
 ### Option C - Browser fallback
 

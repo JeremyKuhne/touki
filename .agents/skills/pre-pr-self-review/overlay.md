@@ -1,6 +1,6 @@
 ---
 core: pre-pr-self-review
-core-pin: v0.15.0
+core-pin: v0.16.1
 ---
 
 # Touki overlay - pre-pr-self-review
@@ -29,6 +29,8 @@ vendored payload).
 - [`security-review`](../security-review/SKILL.md) - the security-specific subset;
   invoke alongside this checklist for any change accepting caller-supplied data or
   touching `unsafe` / `Unsafe.*` / `MemoryMarshal.*` / `Marshal.*`.
+- [`technical-writing`](../technical-writing/SKILL.md) - the final reader-facing
+  pass after this checklist establishes that PR claims match the diff.
 
 ## Touki specifics the core refers to generically
 

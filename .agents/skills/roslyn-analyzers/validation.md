@@ -87,6 +87,13 @@ For every rule, test all of:
 - **Both/all shapes** that should fire - operand on the left vs right, `==` vs `!=`,
   each `OperationKind`/`SyntaxKind` you registered.
   (`AnalyzeComparison_NullOnLeft_ReportsDiagnostic`.)
+- **Each supported language** - use separate C# and VB test methods and fixtures.
+  A language-neutral `IOperation` analyzer still receives language-specific syntax,
+  conversions, and error recovery; one language passing does not establish the
+  other.
+- **Equivalent call shapes** - for argument-sensitive rules, cover positional,
+  named, and reordered arguments, plus the target call or argument nested inside a
+  larger expression. Bind arguments by parameter identity rather than source order.
 - **Negative - already correct** - the idiomatic form the rule steers toward does
   **not** fire. (`AnalyzeComparison_IsNullPattern_ReportsNoDiagnostic`.)
 - **Negative - lookalike** - similar-but-fine code does not fire (comparing two
@@ -105,9 +112,15 @@ For every rule, test all of:
   open/close cycles; assert cache cardinality or collection where practical.
 - **Exact location** - when using the official harness, assert the span with markup,
   not just presence.
-- **The code fix** (if any) - before/after equality, that the fix is a no-op /
-  not offered when the code is already correct, and that **FixAll** produces the same
-  result across many occurrences.
+- **The code fix** (if any) - before/after equality; trivia preservation; no action
+  offered when the code is already correct, uneditable, or outside the fixer's
+  supported shapes; and explicit coverage for every known invalid rewrite context.
+  Keep diagnostic tests for those unsupported shapes to prove reporting does not
+  depend on fix eligibility. If an action may change semantics, assert its
+  `(may change semantics)` title and the intended changed interpretation.
+- **FixAll** - prove the combined result across multiple occurrences and every
+  applicable conflict shape. Read [fix-all.md](fix-all.md); include a positive
+  control that fails if only one occurrence is processed.
 
 A useful discipline from the Roslyn SDK tutorial: write the "should not fire" tests
 *first*. They are where real analyzers go wrong, because the cheap syntactic match
@@ -117,6 +130,43 @@ For a performance or stability regression, retain the triggering scale dimension
 and verify that a compiling mutation of the fix makes the test fail. A deep-input
 test that never reaches the former recursion depth, or a semantic test whose source
 does not exercise the guarded null/constructed shape, pins nothing.
+
+## Validate false positives on real code
+
+Unit tests establish behavior on cases you anticipated; they do not measure the
+false-positive rate on code you did not design. Before enabling a rule by default,
+run it against at least one large, representative codebase that does not already
+conform to the rule by construction.
+
+Triage every report from a bounded run:
+
+1. Record the repository revision, analyzer revision, configuration, and total
+   compilations or projects analyzed.
+2. Classify each report as actionable, intentional pattern, analyzer defect,
+   duplicate/noise, or uncertain. Preserve representative source shapes without
+   copying proprietary code into fixtures.
+3. Convert every analyzer defect and important uncertain shape into a focused
+   positive or negative test before changing the implementation.
+4. Rerun the same revision and configuration. Compare report counts and every
+   classification that should not have changed.
+
+Treat default severity as an evidence claim. A clean unit suite is insufficient to
+justify enabling a warning broadly; use the observed precision, impact, and cost of
+remediation. If the sample is too small or domain-specific, ship disabled by
+default and state what evidence is still missing.
+
+## Prove no-fix contexts explicitly
+
+For every source shape where the analyzer reports but the fixer must decline, use
+the code-fix harness to assert zero registered actions. Do not infer this from an
+unchanged fixed document: that result cannot distinguish "no action offered" from
+an action that ran and returned its input.
+
+Keep the matching analyzer assertion in the same fixture or a paired test. This
+proves that diagnostic eligibility remains broader than fix eligibility. Include
+metadata-only declarations, stale or malformed diagnostic properties, missing
+additional locations, unsupported syntax shapes, and semantic preconditions that
+cannot be re-established in the current document when those cases apply.
 
 ## Run in Debug and Release
 

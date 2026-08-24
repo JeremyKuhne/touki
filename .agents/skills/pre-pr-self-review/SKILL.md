@@ -1,18 +1,18 @@
 ---
 compatibility: Requires git plus the repository's build, test, and agent-file validation commands.
-description: Self-review checklist - plus an agentic review pass (a read-only reviewer persona over the diff) - before opening a PR. Use before invoking `create-pr`, when reviewing your own draft, or when a reviewer flags issues that should have been caught earlier. Codifies recurring mistakes from multi-targeted polyfill work - missing tests for new public surface, unchecked length sums, null-pointer foot-guns from `MemoryMarshal.GetReference` on empty spans, drift from `ArgumentNullException.ThrowIfNull` and `checked()` conventions, TFM phrasing errors, and stale PR descriptions.
+description: Self-review checklist - plus an agentic review pass (a read-only reviewer persona over the diff) - before opening a PR. Use before invoking `create-pr`, when reviewing your own code change or PR candidate, or when a reviewer flags issues that should have been caught earlier. Codifies recurring mistakes from multi-targeted polyfill work - missing tests for new public surface, unchecked length sums, null-pointer foot-guns from `MemoryMarshal.GetReference` on empty spans, drift from `ArgumentNullException.ThrowIfNull` and `checked()` conventions, TFM phrasing errors, and stale PR descriptions.
 license: MIT
 metadata:
     applicability: universal
     binding: optional-overlay
     github-path: skills/pre-pr-self-review
-    github-pinned: v0.15.0
-    github-ref: refs/tags/v0.15.0
+    github-pinned: v0.16.1
+    github-ref: refs/tags/v0.16.1
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: c172ca7a01a7368bb4fee88b4d0b756442d38976
+    github-tree-sha: a6765168fb61c538f1a4854ed15a6b006b58c517
     maturity: canary
     portability: portable
-    related: create-pr, address-pr-feedback, security-review, performance-testing
+    related: create-pr, address-pr-feedback, security-review, performance-testing, technical-writing
     requires: none
     risk: local-write
 name: pre-pr-self-review
@@ -112,6 +112,10 @@ patterns in a `polyfill-correctness` overlay companion):
 If the change is not in the Framework-only tree, skip to section 3.
 
 ## 3. PR description matches reality
+
+This section checks the description's factual correspondence to the diff. Use
+`technical-writing` for the final reader-facing structure, audience, tone,
+authority, and concision pass; neither review substitutes for the other.
 
 - TFM phrasing: name the polyfill's *target* TFM (the framework target,
   e.g. `net472`) distinctly from the TFM the tests merely *run* on (e.g.

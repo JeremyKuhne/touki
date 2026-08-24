@@ -17,6 +17,7 @@ frontmatter, schema, whitespace, link, or diagnostic checks. Those belong to
 | Existing skill effectiveness | Missed/false invocation, agent stalls, excessive context, missing stop/recovery paths |
 | Vendored update | Behavioral drift, new dependencies, overlay compatibility, provenance/pin disposition |
 | Local core edit | Common vs local classification and upstream/overlay/pending-divergence outcome |
+| Installation/scope change | Canonical source, hosts, scope, copy/register mode, precedence, privacy |
 | Portfolio review | Trigger overlap, catalog disambiguation, duplicate skills, missing prerequisites |
 
 Review the smallest relevant surface: catalog row and neighboring trigger domains,
@@ -57,6 +58,9 @@ with the repository's eval harness:
   setup work; irrelevant skills are not vendored "just in case".
 - **Dependencies:** `requires` and `related` match actual workflow routing; optional
   skills have a local fallback instead of a dead end.
+- **Installation:** target hosts and scope match the audience, duplicate names
+  resolve to the intended source, and a project/user hit is not mistaken for the
+  other scope.
 
 Treat false positives and false negatives separately. Broader trigger wording is not
 automatically better: it may steal work from a more precise skill.
@@ -76,6 +80,9 @@ missing policy.
 - Validation follows the first edit and scales with risk.
 - Completion is an observable user outcome with a concise report of evidence and
   remaining gaps.
+- Installation workflows distinguish copying, registering a source, symlinking,
+  and plugin/managed distribution. Verification proves the effective source
+  path, not merely that files were created.
 
 Flag instructions that only say "consider", "review", or "ensure" without naming a
 check, owner, or next action. Also flag unconditional guarantees whose invariant is
@@ -102,6 +109,9 @@ retain unrelated branches in working memory before choosing the first action.
 
 - Portable behavior belongs in the core; repository paths, commands, defaults, and
   local policy belong in the overlay.
+- Source ownership and runtime scope are orthogonal. A portable core may be a
+  user install; a born-personal skill may have no repository home. Reclassifying
+  scope does not reclassify ownership.
 - A new skill is born-shared when another repository would want the core unchanged;
   otherwise it is born-local.
 - A vendored core edit ends upstreamed, moved to the overlay, or recorded as a
@@ -111,6 +121,10 @@ retain unrelated branches in working memory before choosing the first action.
   obsolete assumptions.
 - Public-source imports pass the security gate in [build.md](build.md), retain an
   immutable pin, and do not inherit third-party tool permissions blindly.
+- Personal skills pass the privacy gate in [install.md](install.md). Review name
+  and description exposure, invocation-time model disclosure, script
+  permissions, source/destination visibility, synchronization, logs, and remote
+  availability.
 
 ## 6. Review validation and maintenance
 
@@ -120,11 +134,30 @@ run. Then invoke `agent-files-review` for file-level validation and run the cons
 repository's validator, link checker, markdown checks, generated-catalog checks, and
 upstream mirror check as applicable.
 
+After semantic findings are resolved, run `technical-writing` in review mode on
+the changed skill prose. Treat changed triggers, requirement strength, commands,
+permissions, or stopping behavior as semantic changes that must return to the
+earlier review sections; do not accept them as style edits. Prose quality cannot
+make an incomplete or unsafe workflow correct.
+
+For an install/scope change, exercise one project request, one user request, one
+duplicate-name case, and one private or remote-session boundary. Use the host's
+skill listing to confirm the active source path and scope.
+
+Treat an unresolved ownership/scope mismatch or duplicate name as a blocking
+finding, not residual risk. For a pin change, require a disposition for every
+overlay and pending divergence at the candidate pin.
+
 For a changed vendored skill, verify both sides:
 
-- local comparison against the provenance pin makes additional drift visible;
+- local normalized mirror comparison against the provenance pin makes
+  additional drift visible without treating generated provenance or YAML
+  serialization as a core edit;
 - upstream comparison shows whether each recorded divergence remains at the candidate
   pin, and records are removed once that artifact contains the change.
+
+Run the applicable cases in [evaluations.md](evaluations.md) before declaring the
+semantic review complete.
 
 ## Review output
 
@@ -137,8 +170,9 @@ Separate:
 4. progressive-disclosure and maintainability issues;
 5. missing semantic tests or evidence.
 
-Then state the ownership disposition (core, overlay, upstream, or pending divergence),
-the `agent-files-review` result, commands run, and residual risk. If no issues remain,
-say so explicitly rather than manufacturing style churn: "Semantic review complete;
-no invocation, workflow, portability, or lifecycle defects found. Proceeding to
-agent-files-review."
+Then state the ownership disposition (core, overlay, upstream, or pending
+divergence), installation targets and scope when applicable, the
+`agent-files-review` result, commands run, and residual risk. If no issues remain,
+say so explicitly rather than manufacturing style churn: "Semantic review
+complete; no invocation, workflow, portability, or lifecycle defects found.
+Proceeding to agent-files-review."

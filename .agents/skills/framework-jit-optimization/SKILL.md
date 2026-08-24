@@ -6,8 +6,8 @@ metadata:
     applicability: dotnet-framework
     binding: optional-overlay
     github-path: skills/framework-jit-optimization
-    github-pinned: v0.15.0
-    github-ref: refs/tags/v0.15.0
+    github-pinned: v0.16.1
+    github-ref: refs/tags/v0.16.1
     github-repo: https://github.com/JeremyKuhne/agent-skills
     github-tree-sha: 97120f8dc990d4af91d9dbfb1c191a48ecce48f1
     maturity: canary

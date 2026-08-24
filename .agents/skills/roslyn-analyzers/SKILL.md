@@ -6,10 +6,10 @@ metadata:
     applicability: dotnet-project-gated
     binding: optional-overlay
     github-path: skills/roslyn-analyzers
-    github-pinned: v0.15.0
-    github-ref: refs/tags/v0.15.0
+    github-pinned: v0.16.1
+    github-ref: refs/tags/v0.16.1
     github-repo: https://github.com/JeremyKuhne/agent-skills
-    github-tree-sha: e44cec3101f086ee66823cc1ec0b35d421b99a29
+    github-tree-sha: 4fb5463004cf4b1d774ce9d6753c61085e2c3064
     maturity: canary
     portability: portable
     related: performance-testing, security-review, pre-pr-self-review, il-copy-inspection
@@ -89,9 +89,9 @@ library it guards (`<root>` is the library project name):
    `IOperation`-vs-syntax rules in [design.md](design.md). Copy the shape of a
    known-good analyzer. For declaration-wide rules, also read
    [symbol-actions.md](symbol-actions.md).
-4. **Validate** with positive, negative, and boundary cases per
-   [validation.md](validation.md). Include malformed semantic state and adversarial
-   depth where applicable. Run in Debug *and* Release.
+4. **Validate.** Follow [validation.md](validation.md), including malformed state,
+   adversarial depth, and real-code triage before enabling by default. Run Debug
+   and Release.
 5. **Check performance** against the in-IDE budget in [performance.md](performance.md):
    cheap syntactic filter first, semantic model only after, and cache lifetime and
    cardinality made explicit. Enable concurrent execution only with stateless code.
@@ -110,13 +110,16 @@ library it guards (`<root>` is the library project name):
 - [design.md](design.md) - authoring rules: stateless and thread-safe, narrowest
   registration, `IOperation` over raw syntax, descriptors, release tracking, and a
   note on code-fix providers.
+- [fix-all.md](fix-all.md) - when `BatchFixer` is safe, conflict-aware document
+  edits, equivalence-key filtering, edit ordering, and tests that prove the bulk
+  path ran.
 - [symbol-actions.md](symbol-actions.md) - complete symbol coverage, names that
   cannot be fixed at the report site, and analyzer-crash diagnosis.
 - [release-tracking.md](release-tracking.md) - shipped/unshipped file format,
   immutable release history, release promotion, and the `RS20xx` diagnostics.
 - [validation.md](validation.md) - testing: the `Microsoft.CodeAnalysis.Testing`
   markup harness, a lightweight in-memory harness, malformed/deep-input coverage,
-  the coverage checklist, and the dogfood probe.
+  explicit no-fix contexts, real-code false-positive triage, and the dogfood probe.
 - [performance.md](performance.md) - the in-IDE performance budget, the cheap-first
   rule, cache lifetime and cardinality, traversal/allocation hygiene, and how to
   measure with `ReportAnalyzer`.

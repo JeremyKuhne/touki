@@ -75,6 +75,13 @@ For rules that walk declarations, [symbol-actions.md](symbol-actions.md) covers
 parameters/type parameters, locals, synthetic names, overrides, and explicit
 interface implementations.
 
+When analysis state belongs to one symbol, prefer a symbol-start action with
+symbol-end reporting over compilation-start plus compilation-end reporting.
+Compilation-end diagnostics are not produced during normal live IDE analysis, so
+a rule that reports only there can appear to work in builds while remaining silent
+as the user edits. Use compilation-end only for facts that genuinely require the
+whole compilation and validate its intended host behavior explicitly.
+
 ## Rule 3: prefer `IOperation` over raw syntax when semantics matter
 
 Raw syntax is a literal transcription of the source - it cannot tell you what a
@@ -182,16 +189,47 @@ A code fix is a separate type from the analyzer:
   `SyntaxGenerator` (from `Microsoft.CodeAnalysis.Editing`) is the language-neutral
   way to edit modifiers/declarations - e.g. `generator.WithModifiers(decl,
   generator.GetModifiers(decl).WithIsReadOnly(true))`.
-- Override `GetFixAllProvider()` (usually `WellKnownFixAllProviders.BatchFixer`) so
-  "fix all occurrences" works.
+- Override `GetFixAllProvider()` so "fix all occurrences" works. Use
+  `WellKnownFixAllProviders.BatchFixer` only when independently computed text
+  changes cannot conflict; otherwise use one coherent document edit. Read
+  [fix-all.md](fix-all.md) before choosing the provider.
 - Use a stable, descriptive `equivalenceKey` on the `CodeAction` so FixAll can group
   identical fixes.
-- Only offer the fix when the target is editable - check
-  `member.DeclaringSyntaxReferences` is non-empty before registering, so the fix
-  does not appear on members defined in metadata.
 
-A fix that can change behavior (not just style) should be offered conservatively
-and covered by before/after tests ([validation.md](validation.md)).
+### Diagnostic eligibility and fix eligibility are separate
+
+The analyzer reports every source shape that violates the rule, including shapes
+the fixer cannot safely rewrite. Do not narrow analyzer registration or reporting
+to make every diagnostic fixable.
+
+`RegisterCodeFixesAsync` independently decides whether to offer an action. Validate
+that the target still has the expected syntax and semantics, and that it is
+editable. For example, check `member.DeclaringSyntaxReferences` is non-empty so a
+fix does not appear for metadata. If the fix is ineligible, register no action;
+do not register an action whose transformation later returns the unchanged
+document.
+
+Carry analyzer-derived facts needed by the fixer in `Diagnostic.Properties` or
+additional `Location`s. `DiagnosticDescriptor.CustomTags` describe the rule and
+are shared by every report; they are not per-diagnostic data. Use stable property
+keys and values that survive diagnostic serialization; pass source spans as
+additional locations rather than encoding positions into strings. The fixer must
+validate transported values against the current document because diagnostics can
+outlive the snapshot that produced them.
+
+### Disclose semantic-changing fixes
+
+Prefer a semantics-preserving transformation when it is straightforward. A useful
+fix may intentionally change behavior, but its action title must include
+`(may change semantics)` and its before/after tests must demonstrate the changed
+interpretation. When both interpretations are useful, offer separate actions with
+distinct titles and equivalence keys rather than silently choosing one.
+
+The fix owns the validity of the target shape it creates. Make a reasonable effort
+to produce code that binds and compiles for the supported input, including required
+parentheses, conversions, imports, and trivia. It need not repair unrelated errors
+already present elsewhere in the document. Test intentional error-recovery inputs
+with the expected compiler diagnostics so this boundary is explicit.
 
 ### Code fixes go in a SEPARATE assembly (RS1022)
 
@@ -238,4 +276,11 @@ with "Could not find a part of the path ...\<root>.analyzers.codefixes\...".
 - [ ] Constructed/definition symbol identity is normalized consistently.
 - [ ] Cached descriptor + cached `SupportedDiagnostics`; `messageFormat` args, not interpolation.
 - [ ] Diagnostic reported at the tightest location.
+- [ ] Diagnostic and fix eligibility are evaluated independently.
+- [ ] Per-diagnostic fixer data uses stable properties or additional locations and
+  is revalidated against the current document.
+- [ ] Semantic-changing actions disclose the change in their title.
+- [ ] The fix produces a valid target shape without claiming to repair unrelated
+  compiler errors.
+- [ ] FixAll provider is justified by the edit shape and tested for conflicts.
 - [ ] New rule ID recorded in `AnalyzerReleases.Unshipped.md`.

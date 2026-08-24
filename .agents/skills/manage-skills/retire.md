@@ -21,7 +21,7 @@ Record why the skill is leaving and choose one disposition:
 Do not invent unsupported `deprecated` frontmatter. Express deprecation through the
 source catalog/release and narrowed routing until removal.
 
-## 2. Inventory dependents and ownership
+## 2. Inventory dependents, installations, and ownership
 
 Search for the skill name, directory path, and workflow vocabulary in:
 
@@ -36,6 +36,12 @@ catalogs and expected inventories are commonly under `.agents/`, `.github/`, `to
 package/project files, and contribution docs, but consuming repositories may bind
 different locations in their overlays.
 
+Also inventory every runtime target from [install.md](install.md): project,
+inherited, user, plugin/managed, and custom directories for each host. Use host
+skill listings to find registered directories and duplicate names. Classify each
+target as a copy, registered source, symlink, plugin, or canonical source before
+removing anything.
+
 Classify ownership before acting:
 
 - Removing a vendored skill from one consuming repo is a local reversible edit, but
@@ -47,6 +53,18 @@ Classify ownership before acting:
   by the repository's publishing policy.
 - Remove any pending-upstream divergence record for the skill when the local copy
   leaves.
+- Removing a user installation is not permission to delete its canonical private
+  source. Unregistering a directory is not the same as deleting its files.
+
+For Copilot CLI, a custom directory path unregisters the source and leaves its
+files in place:
+
+```pwsh
+copilot plugins remove ./path/to/skill-directory --skill
+```
+
+Removing by skill name can delete a copied personal or project skill. Confirm the
+install mode and pass the registered path when canonical files must survive.
 
 ## 3. Reroute before deletion
 
@@ -68,13 +86,23 @@ lifecycle state until the separately approved removal milestone.
 
 For **Replace** or **Remove now**:
 
-1. delete the skill core and overlay from the consuming repo;
-2. remove catalog rows and obsolete disambiguation;
-3. update expected-skill lists, package manifests, generated collateral, docs, tests,
+1. remove each approved runtime copy or registration at project/user/plugin scope;
+2. delete the project core and overlay only when that project owns the source;
+3. remove catalog rows and obsolete disambiguation;
+4. update expected-skill lists, package manifests, generated collateral, docs, tests,
    and evals;
-4. remove pin/provenance and pending-divergence records owned only by that skill;
-5. regenerate mirrors/catalogs through their owning tools rather than hand-editing
+5. remove pin/provenance and pending-divergence records owned only by that skill;
+6. regenerate mirrors/catalogs through their owning tools rather than hand-editing
    generated files.
+
+Run only generators documented by the canonical source or local overlay. If no
+owning tool exists for a collateral file, record it as not applicable or update
+the hand-owned file directly; do not guess a command or silently skip known
+generated output.
+
+For a personal/private skill, also apply its retention policy to staging copies,
+backups, sync locations, logs, and caches. Do not claim secure deletion unless the
+storage and backup systems actually provide it.
 
 Do not remove unrelated historical release notes merely because they mention the
 skill; preserve history unless it still acts as live routing or instructions.
@@ -87,8 +115,9 @@ one near-neighbor that should not route to the replacement. Then invoke
 `agent-files-review` for file-level validation and run repository validators, link
 checks, generated-catalog checks, packaging checks, and upstream mirror checks.
 
-The retirement is complete when no live dependency or routing reference points to
-the removed skill, the replacement path reaches an observable outcome, and the
-repository's expected skill inventory matches disk. Report the disposition,
-replacement or unsupported scope, validation evidence, and any external migration
-still pending.
+The retirement is complete when no live dependency or routing reference points
+to the removed skill, host listings no longer show the retired target, the
+replacement path reaches an observable outcome, and expected project/user
+inventories match disk. Report the disposition, removed and retained scopes,
+canonical-source outcome, replacement or unsupported scope, validation evidence,
+and any external migration still pending.

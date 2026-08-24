@@ -1,6 +1,6 @@
 ---
 core: cswin32-com
-core-pin: v0.15.0
+core-pin: v0.16.1
 ---
 
 # Touki overlay - cswin32-com

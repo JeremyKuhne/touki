@@ -6,8 +6,8 @@ metadata:
     applicability: dotnet
     binding: optional-overlay
     github-path: skills/cswin32-com
-    github-pinned: v0.15.0
-    github-ref: refs/tags/v0.15.0
+    github-pinned: v0.16.1
+    github-ref: refs/tags/v0.16.1
     github-repo: https://github.com/JeremyKuhne/agent-skills
     github-tree-sha: 476cd72a964d5d78fe64353139245e3ecb589dee
     maturity: canary
