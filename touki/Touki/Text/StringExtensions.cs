@@ -54,31 +54,69 @@ public static partial class StringExtensions
 
         /// <inheritdoc cref="FormatValue{TArgument}(ReadOnlySpan{char}, TArgument)" />
         /// <param name="args">The arguments to format.</param>
+        public static string FormatValues(ReadOnlySpan<char> format, ReadOnlySpan<Value> args) =>
+            FormatValues(null, format, args);
+
+        /// <summary>
+        ///  Creates a formatted string using the specified format provider.
+        /// </summary>
+        /// <param name="provider">
+        ///  An object that supplies culture-specific formatting information, or <see langword="null"/> to use the
+        ///  current culture.
+        /// </param>
+        /// <param name="format">The format string.</param>
+        /// <param name="args">The arguments to format.</param>
+        /// <remarks>
+        ///  <para>
+        ///   Primitive values are formatted without boxing when <paramref name="provider"/> does not supply an
+        ///   <see cref="ICustomFormatter"/>. Custom formatters use an object-based contract and may box primitives.
+        ///  </para>
+        /// </remarks>
         [SkipLocalsInit]
-        public static string FormatValues(ReadOnlySpan<char> format, ReadOnlySpan<Value> args)
+        public static string FormatValues(
+            IFormatProvider? provider,
+            ReadOnlySpan<char> format,
+            ReadOnlySpan<Value> args)
         {
             Span<char> buffer = stackalloc char[256];
-            using ValueStringBuilder builder = new(buffer);
+            using ValueStringBuilder builder = new(buffer, provider);
             builder.AppendFormat(format, args);
             return builder.ToString();
         }
 
         /// <inheritdoc cref="FormatValues(ReadOnlySpan{char}, Value, Value, Value, Value)" />
+        public static string FormatValues(ReadOnlySpan<char> format, Value arg1, Value arg2) =>
+            FormatValues(null, format, arg1, arg2);
+
+        /// <inheritdoc cref="FormatValues(IFormatProvider, ReadOnlySpan{char}, Value, Value, Value, Value)" />
         [SkipLocalsInit]
-        public static string FormatValues(ReadOnlySpan<char> format, Value arg1, Value arg2)
+        public static string FormatValues(
+            IFormatProvider? provider,
+            ReadOnlySpan<char> format,
+            Value arg1,
+            Value arg2)
         {
             Span<char> buffer = stackalloc char[256];
-            using ValueStringBuilder builder = new(buffer);
+            using ValueStringBuilder builder = new(buffer, provider);
             builder.AppendFormat(format, arg1, arg2);
             return builder.ToString();
         }
 
         /// <inheritdoc cref="FormatValues(ReadOnlySpan{char}, Value, Value, Value, Value)" />
+        public static string FormatValues(ReadOnlySpan<char> format, Value arg1, Value arg2, Value arg3) =>
+            FormatValues(null, format, arg1, arg2, arg3);
+
+        /// <inheritdoc cref="FormatValues(IFormatProvider, ReadOnlySpan{char}, Value, Value, Value, Value)" />
         [SkipLocalsInit]
-        public static string FormatValues(ReadOnlySpan<char> format, Value arg1, Value arg2, Value arg3)
+        public static string FormatValues(
+            IFormatProvider? provider,
+            ReadOnlySpan<char> format,
+            Value arg1,
+            Value arg2,
+            Value arg3)
         {
             Span<char> buffer = stackalloc char[256];
-            using ValueStringBuilder builder = new(buffer);
+            using ValueStringBuilder builder = new(buffer, provider);
             builder.AppendFormat(format, arg1, arg2, arg3);
             return builder.ToString();
         }
@@ -88,11 +126,38 @@ public static partial class StringExtensions
         /// <param name="arg2">The second argument to format.</param>
         /// <param name="arg3">The third argument to format.</param>
         /// <param name="arg4">The fourth argument to format.</param>
+        public static string FormatValues(ReadOnlySpan<char> format, Value arg1, Value arg2, Value arg3, Value arg4) =>
+            FormatValues(null, format, arg1, arg2, arg3, arg4);
+
+        /// <summary>
+        ///  Creates a formatted string using the specified format provider.
+        /// </summary>
+        /// <param name="provider">
+        ///  An object that supplies culture-specific formatting information, or <see langword="null"/> to use the
+        ///  current culture.
+        /// </param>
+        /// <param name="format">The format string.</param>
+        /// <param name="arg1">The first argument to format.</param>
+        /// <param name="arg2">The second argument to format.</param>
+        /// <param name="arg3">The third argument to format.</param>
+        /// <param name="arg4">The fourth argument to format.</param>
+        /// <remarks>
+        ///  <para>
+        ///   Primitive values are formatted without boxing when <paramref name="provider"/> does not supply an
+        ///   <see cref="ICustomFormatter"/>. Custom formatters use an object-based contract and may box primitives.
+        ///  </para>
+        /// </remarks>
         [SkipLocalsInit]
-        public static string FormatValues(ReadOnlySpan<char> format, Value arg1, Value arg2, Value arg3, Value arg4)
+        public static string FormatValues(
+            IFormatProvider? provider,
+            ReadOnlySpan<char> format,
+            Value arg1,
+            Value arg2,
+            Value arg3,
+            Value arg4)
         {
             Span<char> buffer = stackalloc char[256];
-            using ValueStringBuilder builder = new(buffer);
+            using ValueStringBuilder builder = new(buffer, provider);
             builder.AppendFormat(format, arg1, arg2, arg3, arg4);
             return builder.ToString();
         }

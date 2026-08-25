@@ -1677,6 +1677,10 @@ public readonly partial struct Value
                 }
             }
         }
+        else
+        {
+            destination.AppendFormatted((object?)null, format);
+        }
     }
 
     private void FormatTypeFlagSlow(
