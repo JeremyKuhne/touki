@@ -4,6 +4,9 @@
 
 namespace Touki.Exceptions;
 
+/// <summary>
+///  Provides a non-returning helper for throwing <see cref="NotSupportedException"/> with an optional message.
+/// </summary>
 internal static class NotSupportedExtensions
 {
     extension(NotSupportedException)

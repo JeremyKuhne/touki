@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Evaluates exclusion-wins matching across split-input and canonical-path sessions, constructing the path once.
+/// </summary>
 internal sealed class PathAwareExclusionWinsFileSystemMatcherSession(
     IFileSystemMatcherSession[] includes,
     IFileSystemMatcherSession[] excludes,

@@ -31,6 +31,10 @@ namespace Touki.Analyzers;
 ///   deferring nested-type adoption.
 ///  </para>
 ///  <para>
+///   File-local types and the types nested within them are excluded. Their <see langword="file"/> modifier
+///   intentionally ties them to the source file that contains them.
+///  </para>
+///  <para>
 ///   <b>Constraints and limitations.</b> The rule is purely syntactic; it never binds a symbol.
 ///   <list type="bullet">
 ///    <item>
@@ -146,6 +150,11 @@ public sealed class OneTypePerFileAnalyzer : DiagnosticAnalyzer
                     CollectTypes(namespaceDeclaration.Members, types, includeNestedTypes);
                     break;
                 case TypeDeclarationSyntax typeDeclaration:
+                    if (HasFileModifier(typeDeclaration))
+                    {
+                        break;
+                    }
+
                     if (IsNamedType(typeDeclaration)
                         && !IsHostingShell(typeDeclaration)
                         && !IsRepeatedPartialDeclaration(typeDeclaration, types))
@@ -161,11 +170,22 @@ public sealed class OneTypePerFileAnalyzer : DiagnosticAnalyzer
                     break;
                 case EnumDeclarationSyntax or DelegateDeclarationSyntax:
                     // Neither can be partial or contain a nested type, so they are always a plain leaf.
-                    types.Add(member);
+                    if (!HasFileModifier(member))
+                    {
+                        types.Add(member);
+                    }
+
                     break;
             }
         }
     }
+
+    private static bool HasFileModifier(MemberDeclarationSyntax declaration) => declaration switch
+    {
+        BaseTypeDeclarationSyntax type => type.Modifiers.Any(SyntaxKind.FileKeyword),
+        DelegateDeclarationSyntax @delegate => @delegate.Modifiers.Any(SyntaxKind.FileKeyword),
+        _ => false
+    };
 
     /// <summary>
     ///  Returns <see langword="true"/> if <paramref name="member"/> declares a named type. An extension block

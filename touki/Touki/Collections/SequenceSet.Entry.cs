@@ -6,6 +6,9 @@ namespace Touki.Collections;
 
 public sealed partial class SequenceSet<T> where T : unmanaged, IEquatable<T>
 {
+    /// <summary>
+    ///  Stores the arena location, cached hash, and bucket-chain link for one sequence.
+    /// </summary>
     private struct Entry
     {
         // Offset of this sequence's first element in the arena.

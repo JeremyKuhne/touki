@@ -43,6 +43,9 @@ namespace System;
 //
 // The convention for this enum is using the argument name as the enum name
 //
+/// <summary>
+///  Identifies parameter names passed to <see cref="ThrowHelper"/> without embedding strings at call sites.
+/// </summary>
 internal enum ExceptionArgument
 {
     obj,

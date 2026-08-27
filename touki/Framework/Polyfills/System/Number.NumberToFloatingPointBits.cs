@@ -12,6 +12,9 @@ namespace System;
 
 internal unsafe partial class Number
 {
+    /// <summary>
+    ///  Describes the mantissa, exponent, and bit masks used to assemble floating-point values.
+    /// </summary>
     public readonly struct FloatingPointInfo
     {
         public static readonly FloatingPointInfo s_double = new(

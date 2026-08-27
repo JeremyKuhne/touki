@@ -6,6 +6,10 @@ namespace Touki.Io;
 
 internal sealed partial class MatchMSBuild
 {
+    /// <summary>
+    ///  Classifies whether consumed directory segments cannot match, may be completed by descendants, or fully
+    ///  match the specification.
+    /// </summary>
     private enum PathMatchState
     {
         /// <summary>

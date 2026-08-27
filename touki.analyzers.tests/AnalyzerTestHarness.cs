@@ -58,7 +58,8 @@ internal static class AnalyzerTestHarness
             compilation,
             options,
             diagnosticOptions,
-            expectedCompilerDiagnosticIds).ConfigureAwait(false);
+            expectedCompilerDiagnosticIds,
+            optionsByFile: null).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -89,7 +90,8 @@ internal static class AnalyzerTestHarness
             compilation,
             options,
             diagnosticOptions,
-            expectedCompilerDiagnosticIds).ConfigureAwait(false);
+            expectedCompilerDiagnosticIds,
+            optionsByFile: null).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -99,12 +101,16 @@ internal static class AnalyzerTestHarness
     /// <param name="expectedCompilerDiagnosticIds">
     ///  Compiler error identifiers expected from the sources. The default requires the sources to compile without errors.
     /// </param>
+    /// <param name="optionsByFile">
+    ///  Optional effective <c>.editorconfig</c> values keyed by syntax-tree file path.
+    /// </param>
     public static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(
         DiagnosticAnalyzer analyzer,
         IReadOnlyList<(string Source, string FileName)> sources,
         IReadOnlyDictionary<string, string>? options = null,
         IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions = null,
-        IReadOnlyCollection<string>? expectedCompilerDiagnosticIds = null)
+        IReadOnlyCollection<string>? expectedCompilerDiagnosticIds = null,
+        IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? optionsByFile = null)
     {
         CSharpCompilation compilation = CreateCompilation(sources);
 
@@ -113,7 +119,8 @@ internal static class AnalyzerTestHarness
             compilation,
             options,
             diagnosticOptions,
-            expectedCompilerDiagnosticIds).ConfigureAwait(false);
+            expectedCompilerDiagnosticIds,
+            optionsByFile).ConfigureAwait(false);
     }
 
     private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(
@@ -121,7 +128,8 @@ internal static class AnalyzerTestHarness
         Compilation compilation,
         IReadOnlyDictionary<string, string>? options,
         IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions,
-        IReadOnlyCollection<string>? expectedCompilerDiagnosticIds)
+        IReadOnlyCollection<string>? expectedCompilerDiagnosticIds,
+        IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? optionsByFile)
     {
         compilation = RoslynTestEnvironment.ApplyDiagnosticOptions(compilation, diagnosticOptions);
 
@@ -137,7 +145,9 @@ internal static class AnalyzerTestHarness
         }
 
         CompilationWithAnalyzers compilationWithAnalyzers =
-            compilation.WithAnalyzers([analyzer], RoslynTestEnvironment.CreateAnalyzerOptions(options));
+            compilation.WithAnalyzers(
+                [analyzer],
+                RoslynTestEnvironment.CreateAnalyzerOptions(options, optionsByFile));
 
         return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false);
     }

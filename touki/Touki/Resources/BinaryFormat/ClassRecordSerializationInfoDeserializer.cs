@@ -12,6 +12,9 @@ namespace Touki.Resources.BinaryFormat;
 
 #pragma warning disable SYSLIB0050 // Type or member is obsolete.
 
+/// <summary>
+///  Builds <see cref="SerializationInfo"/> for an <see cref="ISerializable"/> record and defers object population.
+/// </summary>
 internal sealed class ClassRecordSerializationInfoDeserializer : ClassRecordDeserializer
 {
     private readonly ClassRecord _classRecord;

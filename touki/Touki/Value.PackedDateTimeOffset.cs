@@ -6,6 +6,10 @@ namespace Touki;
 
 public readonly partial struct Value
 {
+    /// <summary>
+    ///  Packs eligible ticks and 30-minute UTC offsets into one 64-bit value and reconstructs the corresponding
+    ///  <see cref="DateTimeOffset"/>.
+    /// </summary>
     private readonly struct PackedDateTimeOffset
     {
         // The maximum supported number of minutes is +/- 14 hours, but everything goes between -12:00 and +14:00 and

@@ -9,6 +9,9 @@
 
 namespace System;
 
+/// <summary>
+///  Provides hexadecimal-character classification on .NET Framework.
+/// </summary>
 internal static partial class HexConverter
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

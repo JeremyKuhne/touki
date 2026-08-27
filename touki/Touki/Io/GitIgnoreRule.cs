@@ -6,6 +6,9 @@ using Touki.Io.Globbing;
 
 namespace Touki.Io;
 
+/// <summary>
+///  Matches a compiled Git-ignore pattern relative to its source base path and carries the rule's ordered action.
+/// </summary>
 internal sealed class GitIgnoreRule(
     GlobSpecification specification,
     string basePath,

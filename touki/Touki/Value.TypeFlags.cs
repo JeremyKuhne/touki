@@ -6,6 +6,9 @@ namespace Touki;
 
 public readonly partial struct Value
 {
+    /// <summary>
+    ///  Holds singleton type markers for the built-in values that <see cref="Value"/> stores inline.
+    /// </summary>
     private static class TypeFlags
     {
         internal static StraightCastFlag<bool> Boolean { get; } = StraightCastFlag<bool>.Instance;

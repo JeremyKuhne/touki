@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Evaluates compiled Git-ignore rules against canonical root-relative paths and classifies directories for pruning.
+/// </summary>
 internal sealed class GitIgnoreFileSystemMatcherSession : FileSystemMatcherSession
 {
     private const int StackPathBufferSize = 256;

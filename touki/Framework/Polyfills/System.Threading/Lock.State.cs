@@ -9,6 +9,9 @@ namespace System.Threading;
 
 public sealed partial class Lock
 {
+    /// <summary>
+    ///  Encodes and atomically transitions lock ownership, spinner, and waiter state.
+    /// </summary>
     private struct State : IEquatable<State>
     {
         // Layout constants for Lock._state

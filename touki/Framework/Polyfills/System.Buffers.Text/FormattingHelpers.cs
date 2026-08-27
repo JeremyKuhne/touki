@@ -9,6 +9,9 @@ using System.Numerics;
 
 namespace System.Buffers.Text;
 
+/// <summary>
+///  Provides helpers for counting digits and trailing zeros when formatting numbers.
+/// </summary>
 internal static partial class FormattingHelpers
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

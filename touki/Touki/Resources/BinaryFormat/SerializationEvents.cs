@@ -10,6 +10,9 @@ using System.Runtime.Serialization;
 
 namespace Touki.Resources.BinaryFormat;
 
+/// <summary>
+///  Discovers deserialization callbacks across a type hierarchy and binds them to an instance in base-first order.
+/// </summary>
 internal sealed class SerializationEvents
 {
     private static readonly SerializationEvents s_noEvents = new();

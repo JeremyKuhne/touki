@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Enumerates segments backward across two logically concatenated paths without allocating a combined path.
+/// </summary>
 internal ref struct ReversePathSegmentEnumerator
 {
     private readonly ReadOnlySpan<char> _firstPath;

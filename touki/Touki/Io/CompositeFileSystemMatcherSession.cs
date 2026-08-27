@@ -4,6 +4,10 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Evaluates nested ordered and exclusion-wins matcher compositions as a flattened node graph and
+///  owns the leaf matcher sessions.
+/// </summary>
 internal sealed class CompositeFileSystemMatcherSession : FileSystemMatcherSession
 {
     private const int StackResultBufferSize = 256;

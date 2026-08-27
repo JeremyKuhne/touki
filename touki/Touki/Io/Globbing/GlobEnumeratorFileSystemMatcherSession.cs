@@ -6,6 +6,9 @@ using System.Runtime.ExceptionServices;
 
 namespace Touki.Io.Globbing;
 
+/// <summary>
+///  Applies one include glob and a set of exclusion globs while preserving directory-pruning guarantees.
+/// </summary>
 internal sealed class GlobEnumeratorFileSystemMatcherSession(
     GlobMatch include,
     GlobMatch[] excludes) : FileSystemMatcherSession

@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Combines directory results and manages the include and exclude sessions shared by exclusion-wins implementations.
+/// </summary>
 internal abstract class ExclusionWinsFileSystemMatcherSessionBase(
     IFileSystemMatcherSession[] includes,
     IFileSystemMatcherSession[] excludes) : FileSystemMatcherSession

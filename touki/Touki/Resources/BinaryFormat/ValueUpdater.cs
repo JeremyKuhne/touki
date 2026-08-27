@@ -9,6 +9,9 @@ using System.Formats.Nrbf;
 
 namespace Touki.Resources.BinaryFormat;
 
+/// <summary>
+///  Identifies a referenced value that must be written back to its owner after dependency completion.
+/// </summary>
 internal abstract class ValueUpdater
 {
     private protected ValueUpdater(SerializationRecordId objectId, SerializationRecordId valueId)

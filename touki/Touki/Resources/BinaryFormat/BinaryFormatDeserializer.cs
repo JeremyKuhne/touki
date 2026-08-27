@@ -12,6 +12,9 @@ namespace Touki.Resources.BinaryFormat;
 
 #pragma warning disable SYSLIB0050 // Type or member is obsolete.
 
+/// <summary>
+///  Coordinates materialization, dependency fixups, serialization constructors, and callbacks for an NRBF graph.
+/// </summary>
 internal sealed class BinaryFormatDeserializer : IDeserializer
 {
     private const int InitialParserStackCapacity = 8;

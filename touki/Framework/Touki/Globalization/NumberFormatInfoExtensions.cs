@@ -7,6 +7,9 @@ using System.Reflection;
 
 namespace Touki.Globalization;
 
+/// <summary>
+///  Provides access to .NET Framework number-format group sizes without cloning their backing arrays.
+/// </summary>
 internal static class NumberFormatInfoExtensions
 {
     private static readonly FieldInfo s_numberGroupSizes = typeof(NumberFormatInfo).GetField("numberGroupSizes", BindingFlags.NonPublic | BindingFlags.Instance)

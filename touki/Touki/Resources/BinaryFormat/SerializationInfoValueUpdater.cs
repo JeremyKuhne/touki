@@ -10,6 +10,9 @@ using System.Runtime.Serialization;
 
 namespace Touki.Resources.BinaryFormat;
 
+/// <summary>
+///  Replaces a named <see cref="SerializationInfo"/> member after its referenced value is available.
+/// </summary>
 internal sealed class SerializationInfoValueUpdater : ValueUpdater
 {
     private readonly SerializationInfo _info;

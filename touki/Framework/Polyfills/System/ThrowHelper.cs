@@ -49,6 +49,9 @@ namespace System;
 
 // Throw-only helpers; every method ends with throw new ... and is [DoesNotReturn]. Coverage is exercised transitively
 // via the throwing call sites.
+/// <summary>
+///  Centralizes exception construction and throwing for BCL polyfills to reduce generated code size.
+/// </summary>
 [StackTraceHidden]
 [ExcludeFromCodeCoverage]
 internal static class ThrowHelper

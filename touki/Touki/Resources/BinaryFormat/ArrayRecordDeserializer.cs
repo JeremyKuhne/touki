@@ -9,6 +9,9 @@ using System.Formats.Nrbf;
 
 namespace Touki.Resources.BinaryFormat;
 
+/// <summary>
+///  Materializes array records element by element and schedules fixups for unresolved references and value types.
+/// </summary>
 internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
 {
     private readonly ArrayRecord _arrayRecord;

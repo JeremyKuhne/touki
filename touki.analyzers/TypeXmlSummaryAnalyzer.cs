@@ -1,0 +1,524 @@
+// Copyright (c) 2025 Jeremy W Kuhne
+// SPDX-License-Identifier: MIT
+// See LICENSE file in the project root for full license information
+
+using System;
+using System.Collections.Immutable;
+using System.IO;
+using System.Threading;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
+
+namespace Touki.Analyzers;
+
+/// <summary>
+///  Reports source types that do not declare exactly one XML <c>&lt;summary&gt;</c> element.
+/// </summary>
+/// <remarks>
+///  <para>
+///   Classes, structs, interfaces, records, enums, and delegates are analyzed, including nested types. For a
+///   partial type, exactly one declaration may contain a top-level <c>&lt;summary&gt;</c> element. Summaries on
+///   generated partial declarations participate in the count, but diagnostics are reported only in user-authored
+///   code.
+///  </para>
+///  <para>
+///   Configure the analyzed visibility with
+///   <c>dotnet_code_quality.TOUKI0025.api_surface</c>. The accepted comma-separated values are <c>public</c>,
+///   <c>internal</c>, <c>private</c>, and <c>file</c>; <c>all</c> is the default. A partial type is analyzed when
+///   any declaring file includes its effective visibility.
+///  </para>
+/// </remarks>
+[DiagnosticAnalyzer(LanguageNames.CSharp)]
+public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
+{
+    /// <summary>
+    ///  The diagnostic identifier reported by this analyzer.
+    /// </summary>
+    public const string DiagnosticId = "TOUKI0025";
+
+    /// <summary>
+    ///  The <c>.editorconfig</c> key that controls which type visibilities are analyzed.
+    /// </summary>
+    public const string ApiSurfaceOption = "dotnet_code_quality.TOUKI0025.api_surface";
+
+    private const string GeneratedCodeOption = "generated_code";
+
+    private static readonly DiagnosticDescriptor s_rule = new(
+        id: DiagnosticId,
+        title: "Require exactly one XML summary per type",
+        messageFormat: "Type '{0}' must declare exactly one XML <summary> element; found {1}",
+        category: "Maintainability",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Each type should have exactly one XML summary across all of its declarations.",
+        helpLinkUri: HelpLinks.ForRule(DiagnosticId));
+
+    private static readonly ImmutableArray<DiagnosticDescriptor> s_supportedDiagnostics = [s_rule];
+
+    /// <inheritdoc/>
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => s_supportedDiagnostics;
+
+    /// <inheritdoc/>
+    public override void Initialize(AnalysisContext context)
+    {
+        context.ConfigureGeneratedCodeAnalysis(
+            GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
+        context.EnableConcurrentExecution();
+
+        context.RegisterCompilationStartAction(static compilationContext =>
+        {
+            INamedTypeSymbol? generatedCodeAttribute = compilationContext.Compilation.GetTypeByMetadataName(
+                "System.CodeDom.Compiler.GeneratedCodeAttribute");
+            INamedTypeSymbol? compilerGeneratedAttribute = compilationContext.Compilation.GetTypeByMetadataName(
+                "System.Runtime.CompilerServices.CompilerGeneratedAttribute");
+
+            compilationContext.RegisterSymbolAction(
+                symbolContext => AnalyzeNamedType(
+                    symbolContext,
+                    compilationContext.Compilation,
+                    generatedCodeAttribute,
+                    compilerGeneratedAttribute),
+                SymbolKind.NamedType);
+        });
+    }
+
+    private static void AnalyzeNamedType(
+        SymbolAnalysisContext context,
+        Compilation compilation,
+        INamedTypeSymbol? generatedCodeAttribute,
+        INamedTypeSymbol? compilerGeneratedAttribute)
+    {
+        INamedTypeSymbol type = (INamedTypeSymbol)context.Symbol;
+        if (type.IsImplicitlyDeclared
+            || !IsSupportedTypeKind(type.TypeKind)
+            || type.DeclaringSyntaxReferences.IsDefaultOrEmpty)
+        {
+            return;
+        }
+
+        ImmutableArray<SyntaxReference> declarations = type.DeclaringSyntaxReferences;
+        MemberDeclarationSyntax? reportDeclaration = GetReportDeclaration(
+            type,
+            declarations,
+            compilation,
+            context.Options.AnalyzerConfigOptionsProvider,
+            generatedCodeAttribute,
+            compilerGeneratedAttribute,
+            context.CancellationToken);
+        if (reportDeclaration is null
+            || !IsIncluded(type, declarations, context.Options.AnalyzerConfigOptionsProvider))
+        {
+            return;
+        }
+
+        int summaryCount = CountSummaries(declarations, context.CancellationToken);
+        if (summaryCount == 1)
+        {
+            return;
+        }
+
+        context.ReportDiagnostic(
+            Diagnostic.Create(
+                s_rule,
+                GetIdentifierLocation(reportDeclaration),
+                type.Name,
+                summaryCount));
+    }
+
+    private static bool IsSupportedTypeKind(TypeKind typeKind) => typeKind is
+        TypeKind.Class or TypeKind.Struct or TypeKind.Interface or TypeKind.Enum or TypeKind.Delegate;
+
+    private static MemberDeclarationSyntax? GetReportDeclaration(
+        INamedTypeSymbol type,
+        ImmutableArray<SyntaxReference> declarations,
+        Compilation compilation,
+        AnalyzerConfigOptionsProvider optionsProvider,
+        INamedTypeSymbol? generatedCodeAttribute,
+        INamedTypeSymbol? compilerGeneratedAttribute,
+        CancellationToken cancellationToken)
+    {
+        MemberDeclarationSyntax? result = null;
+
+        foreach (SyntaxReference reference in declarations)
+        {
+            if (reference.GetSyntax(cancellationToken) is not MemberDeclarationSyntax declaration
+                || IsGeneratedDeclaration(
+                    type,
+                    declaration,
+                    compilation,
+                    optionsProvider,
+                    generatedCodeAttribute,
+                    compilerGeneratedAttribute,
+                    cancellationToken))
+            {
+                continue;
+            }
+
+            if (result is null || IsEarlier(declaration, result))
+            {
+                result = declaration;
+            }
+        }
+
+        return result;
+    }
+
+    private static bool IsGeneratedDeclaration(
+        INamedTypeSymbol type,
+        MemberDeclarationSyntax declaration,
+        Compilation compilation,
+        AnalyzerConfigOptionsProvider optionsProvider,
+        INamedTypeSymbol? generatedCodeAttribute,
+        INamedTypeSymbol? compilerGeneratedAttribute,
+        CancellationToken cancellationToken)
+    {
+        if (HasGeneratedAttribute(
+            type,
+            declaration,
+            generatedCodeAttribute,
+            compilerGeneratedAttribute,
+            cancellationToken))
+        {
+            return true;
+        }
+
+        SyntaxTree tree = declaration.SyntaxTree;
+        if (tree is CSharpSyntaxTree csharpTree
+            && csharpTree.GetLineVisibility(declaration.SpanStart, cancellationToken) == LineVisibility.Hidden)
+        {
+            return true;
+        }
+
+        if (type.ContainingType is INamedTypeSymbol containingType
+            && GetContainingTypeDeclaration(declaration) is MemberDeclarationSyntax containingDeclaration
+            && IsGeneratedDeclaration(
+                containingType,
+                containingDeclaration,
+                compilation,
+                optionsProvider,
+                generatedCodeAttribute,
+                compilerGeneratedAttribute,
+                cancellationToken))
+        {
+            return true;
+        }
+
+        AnalyzerConfigOptions options = optionsProvider.GetOptions(tree);
+        if (options.TryGetValue(GeneratedCodeOption, out string? configured)
+            && bool.TryParse(configured.Trim(), out bool configuredGenerated))
+        {
+            return configuredGenerated;
+        }
+
+        SyntaxTreeOptionsProvider? syntaxTreeOptions = compilation.Options.SyntaxTreeOptionsProvider;
+        if (syntaxTreeOptions is not null)
+        {
+            GeneratedKind generatedKind = syntaxTreeOptions.IsGenerated(tree, cancellationToken);
+            if (generatedKind == GeneratedKind.MarkedGenerated)
+            {
+                return true;
+            }
+
+            if (generatedKind == GeneratedKind.NotGenerated)
+            {
+                return false;
+            }
+        }
+
+        return HasGeneratedFileName(tree.FilePath) || HasGeneratedHeader(tree, cancellationToken);
+    }
+
+    private static MemberDeclarationSyntax? GetContainingTypeDeclaration(MemberDeclarationSyntax declaration)
+    {
+        for (SyntaxNode? current = declaration.Parent; current is not null; current = current.Parent)
+        {
+            if (current is TypeDeclarationSyntax containingType)
+            {
+                return containingType;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool HasGeneratedAttribute(
+        INamedTypeSymbol type,
+        MemberDeclarationSyntax declaration,
+        INamedTypeSymbol? generatedCodeAttribute,
+        INamedTypeSymbol? compilerGeneratedAttribute,
+        CancellationToken cancellationToken)
+    {
+        bool hasAttributeLists = declaration switch
+        {
+            BaseTypeDeclarationSyntax declaredType => declaredType.AttributeLists.Count > 0,
+            DelegateDeclarationSyntax @delegate => @delegate.AttributeLists.Count > 0,
+            _ => false
+        };
+
+        if (!hasAttributeLists || (generatedCodeAttribute is null && compilerGeneratedAttribute is null))
+        {
+            return false;
+        }
+
+        foreach (AttributeData attribute in type.GetAttributes())
+        {
+            if ((!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, generatedCodeAttribute)
+                    && !SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, compilerGeneratedAttribute))
+                || attribute.ApplicationSyntaxReference is not SyntaxReference application
+                || application.SyntaxTree != declaration.SyntaxTree
+                || !declaration.Span.Contains(application.Span))
+            {
+                continue;
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool HasGeneratedFileName(string filePath)
+    {
+        string fileName = Path.GetFileName(filePath);
+        return fileName.EndsWith(".designer.cs", StringComparison.OrdinalIgnoreCase)
+            || fileName.EndsWith(".generated.cs", StringComparison.OrdinalIgnoreCase)
+            || fileName.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase)
+            || fileName.EndsWith(".g.i.cs", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool HasGeneratedHeader(SyntaxTree tree, CancellationToken cancellationToken)
+    {
+        SyntaxNode root = tree.GetRoot(cancellationToken);
+        foreach (SyntaxTrivia trivia in root.GetLeadingTrivia())
+        {
+            if (!trivia.IsKind(SyntaxKind.SingleLineCommentTrivia)
+                && !trivia.IsKind(SyntaxKind.MultiLineCommentTrivia))
+            {
+                continue;
+            }
+
+            string text = trivia.ToString();
+            if (text.IndexOf("<auto-generated", StringComparison.OrdinalIgnoreCase) >= 0
+                || text.IndexOf("<autogenerated", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsIncluded(
+        INamedTypeSymbol type,
+        ImmutableArray<SyntaxReference> declarations,
+        AnalyzerConfigOptionsProvider optionsProvider)
+    {
+        ApiSurface visibility = GetEffectiveVisibility(type);
+
+        foreach (SyntaxReference declaration in declarations)
+        {
+            AnalyzerConfigOptions options = optionsProvider.GetOptions(declaration.SyntaxTree);
+            if ((GetConfiguredApiSurface(options) & visibility) != 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static ApiSurface GetEffectiveVisibility(INamedTypeSymbol type)
+    {
+        ApiSurface visibility = ApiSurface.Public;
+
+        for (INamedTypeSymbol? current = type; current is not null; current = current.ContainingType)
+        {
+            switch (current.DeclaredAccessibility)
+            {
+                case Accessibility.Private:
+                    return ApiSurface.Private;
+                case Accessibility.Internal:
+                case Accessibility.ProtectedAndInternal:
+                    visibility = ApiSurface.Internal;
+                    break;
+            }
+
+            if (current.IsFileLocal)
+            {
+                return ApiSurface.File;
+            }
+        }
+
+        return visibility;
+    }
+
+    private static ApiSurface GetConfiguredApiSurface(AnalyzerConfigOptions options)
+    {
+        if (!options.TryGetValue(ApiSurfaceOption, out string? configured)
+            || string.IsNullOrWhiteSpace(configured))
+        {
+            return ApiSurface.All;
+        }
+
+        ApiSurface result = 0;
+        int tokenStart = 0;
+
+        while (tokenStart <= configured.Length)
+        {
+            int separator = configured.IndexOf(',', tokenStart);
+            int tokenEnd = separator < 0 ? configured.Length : separator;
+
+            while (tokenStart < tokenEnd && char.IsWhiteSpace(configured[tokenStart]))
+            {
+                tokenStart++;
+            }
+
+            while (tokenEnd > tokenStart && char.IsWhiteSpace(configured[tokenEnd - 1]))
+            {
+                tokenEnd--;
+            }
+
+            int tokenLength = tokenEnd - tokenStart;
+            if (TokenEquals(configured, tokenStart, tokenLength, "all"))
+            {
+                return ApiSurface.All;
+            }
+
+            if (TokenEquals(configured, tokenStart, tokenLength, "public"))
+            {
+                result |= ApiSurface.Public;
+            }
+            else if (TokenEquals(configured, tokenStart, tokenLength, "internal"))
+            {
+                result |= ApiSurface.Internal;
+            }
+            else if (TokenEquals(configured, tokenStart, tokenLength, "private"))
+            {
+                result |= ApiSurface.Private;
+            }
+            else if (TokenEquals(configured, tokenStart, tokenLength, "file"))
+            {
+                result |= ApiSurface.File;
+            }
+            else
+            {
+                return ApiSurface.All;
+            }
+
+            if (separator < 0)
+            {
+                break;
+            }
+
+            tokenStart = separator + 1;
+        }
+
+        return result == 0 ? ApiSurface.All : result;
+    }
+
+    private static bool TokenEquals(string value, int start, int length, string expected) =>
+        length == expected.Length
+        && string.Compare(value, start, expected, 0, length, StringComparison.OrdinalIgnoreCase) == 0;
+
+    private static int CountSummaries(
+        ImmutableArray<SyntaxReference> declarations,
+        CancellationToken cancellationToken)
+    {
+        int count = 0;
+
+        foreach (SyntaxReference declaration in declarations)
+        {
+            SyntaxNode syntax = declaration.GetSyntax(cancellationToken);
+            SyntaxTriviaList leadingTrivia = syntax.GetLeadingTrivia();
+            bool foundDocumentation = false;
+            bool foundOtherTrivia = false;
+
+            for (int i = leadingTrivia.Count - 1; i >= 0; i--)
+            {
+                SyntaxTrivia trivia = leadingTrivia[i];
+                if (trivia.GetStructure() is DocumentationCommentTriviaSyntax documentation)
+                {
+                    foundDocumentation = true;
+                    if (foundOtherTrivia || !IsWellFormed(documentation))
+                    {
+                        continue;
+                    }
+
+                    foreach (XmlNodeSyntax content in documentation.Content)
+                    {
+                        if ((content is XmlElementSyntax element && IsSummaryName(element.StartTag.Name))
+                            || (content is XmlEmptyElementSyntax emptyElement && IsSummaryName(emptyElement.Name)))
+                        {
+                            count++;
+                        }
+                    }
+
+                    continue;
+                }
+
+                if (foundDocumentation
+                    && !trivia.IsKind(SyntaxKind.WhitespaceTrivia)
+                    && !trivia.IsKind(SyntaxKind.EndOfLineTrivia))
+                {
+                    foundOtherTrivia = true;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    private static bool IsWellFormed(DocumentationCommentTriviaSyntax documentation)
+    {
+        if (documentation.ContainsDiagnostics)
+        {
+            return false;
+        }
+
+        foreach (SyntaxToken token in documentation.DescendantTokens(descendIntoTrivia: true))
+        {
+            if (token.IsMissing)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsSummaryName(XmlNameSyntax name) =>
+        name.Prefix is null
+        && string.Equals(name.LocalName.ValueText, "summary", StringComparison.Ordinal);
+
+    private static Location GetIdentifierLocation(MemberDeclarationSyntax declaration) =>
+        declaration switch
+        {
+            BaseTypeDeclarationSyntax type => type.Identifier.GetLocation(),
+            DelegateDeclarationSyntax @delegate => @delegate.Identifier.GetLocation(),
+            _ => declaration.GetLocation()
+        };
+
+    private static bool IsEarlier(MemberDeclarationSyntax candidate, MemberDeclarationSyntax current)
+    {
+        int pathComparison = string.Compare(
+            candidate.SyntaxTree.FilePath,
+            current.SyntaxTree.FilePath,
+            StringComparison.Ordinal);
+
+        return pathComparison < 0
+            || (pathComparison == 0 && candidate.SpanStart < current.SpanStart);
+    }
+
+    [Flags]
+    private enum ApiSurface
+    {
+        Public = 1,
+        Internal = 2,
+        Private = 4,
+        File = 8,
+        All = Public | Internal | Private | File
+    }
+}

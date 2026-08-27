@@ -41,6 +41,106 @@ public class OneTypePerFileAnalyzerTests
     }
 
     [TestMethod]
+    public async Task AnalyzeSyntaxTree_OrdinaryTypeThenFileLocalType_ReportsNothing()
+    {
+        const string source = """
+            public class Owner
+            {
+            }
+
+            file class Helper
+            {
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_FileLocalTypeThenOrdinaryType_ReportsNothing()
+    {
+        const string source = """
+            file class Helper
+            {
+            }
+
+            public class Owner
+            {
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_FileLocalTypeBetweenOrdinaryTypes_ReportsSecondOrdinaryType()
+    {
+        const string source = """
+            public class First
+            {
+            }
+
+            file class Helper
+            {
+            }
+
+            public class Second
+            {
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        Location location = diagnostics.Should().ContainSingle().Subject.Location;
+        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Second");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_TypeNestedInFileLocalType_ReportsNothing()
+    {
+        const string source = """
+            public class Owner
+            {
+            }
+
+            file class Helper
+            {
+                public class Nested
+                {
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_FileLocalEnum_ReportsNothing()
+    {
+        const string source = "class Owner { } file enum Hidden { None }";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeSyntaxTree_FileLocalDelegate_ReportsNothing()
+    {
+        const string source = "class Owner { } file delegate void Hidden();";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
     public async Task AnalyzeSyntaxTree_TwoTypes_ReportsSecond()
     {
         const string source = """

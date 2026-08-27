@@ -26,6 +26,9 @@ public struct ChunkEnumerator
     // there would be significant overhead to call through the FieldInfo APIs. Using Unsafe.As
     // as on .NET Framework we don't expect the initial fields to change.
     // Layout-only Unsafe.As shim; members are reinterpreted, never directly executed.
+    /// <summary>
+    ///  Mirrors the private <see cref="StringBuilder"/> chunk fields used to enumerate chunks without reflection.
+    /// </summary>
     [ExcludeFromCodeCoverage]
     private class StringBuilderAccessor
     {

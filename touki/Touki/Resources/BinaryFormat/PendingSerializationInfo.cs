@@ -13,6 +13,9 @@ namespace Touki.Resources.BinaryFormat;
 
 #pragma warning disable SYSLIB0050 // Type or member is obsolete.
 
+/// <summary>
+///  Defers invoking a type's serialization constructor until its <see cref="SerializationInfo"/> is complete.
+/// </summary>
 internal sealed class PendingSerializationInfo
 {
     private readonly SerializationInfo _info;

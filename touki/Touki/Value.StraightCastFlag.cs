@@ -6,6 +6,9 @@ namespace Touki;
 
 public readonly partial struct Value
 {
+    /// <summary>
+    ///  Identifies an inline value whose bits can be reinterpreted directly from union storage.
+    /// </summary>
     private sealed class StraightCastFlag<T> : TypeFlag<T>
     {
         public static StraightCastFlag<T> Instance { get; } = new();

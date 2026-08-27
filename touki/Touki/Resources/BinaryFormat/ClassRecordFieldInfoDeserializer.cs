@@ -12,6 +12,9 @@ namespace Touki.Resources.BinaryFormat;
 
 #pragma warning disable SYSLIB0050 // Type or member is obsolete.
 
+/// <summary>
+///  Populates serializable fields from a class record and schedules fixups for incomplete member values.
+/// </summary>
 internal sealed class ClassRecordFieldInfoDeserializer : ClassRecordDeserializer
 {
     private readonly ClassRecord _classRecord;

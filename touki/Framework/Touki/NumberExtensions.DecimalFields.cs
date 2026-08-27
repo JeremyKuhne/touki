@@ -7,6 +7,9 @@ namespace Touki;
 public static unsafe partial class NumberExtensions
 {
 #pragma warning disable CS0649 // Field 'DecimalFields._flags' is never assigned to, and will always have its default value 0
+    /// <summary>
+    ///  Mirrors the .NET Framework <see cref="decimal"/> field layout for bit-level access.
+    /// </summary>
     private struct DecimalFields
     {
         // Matching the layout of the decimal type in .NET Framework.

@@ -6,6 +6,10 @@ namespace Touki;
 
 public readonly partial struct Value
 {
+    /// <summary>
+    ///  Models the layout of a non-empty <see cref="Nullable{T}"/> for reconstructing nullable values from inline
+    ///  storage.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     private readonly struct NullableTemplate<T> where T : unmanaged
     {

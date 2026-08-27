@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Evaluates ordered rules over sessions that consume separate directory and file-name spans.
+/// </summary>
 internal sealed class OrderedFileSystemMatcherSession(
     FileSystemMatchRule[] rules,
     IFileSystemMatcherSession[] sessions,

@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Identifies how a flattened matcher node obtains or combines its result.
+/// </summary>
 internal enum CompositeMatcherNodeKind : byte
 {
     Leaf,

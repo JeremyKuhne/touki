@@ -7,15 +7,19 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Touki.Analyzers;
 
 /// <summary>
-///  Supplies the same <see cref="TestAnalyzerConfigOptions"/> for every syntax tree, which is
-///  all the single-file analyzer fixtures need.
+///  Supplies effective <see cref="TestAnalyzerConfigOptions"/> for analyzer test syntax trees.
 /// </summary>
-internal sealed class TestAnalyzerConfigOptionsProvider(TestAnalyzerConfigOptions options)
+internal sealed class TestAnalyzerConfigOptionsProvider(
+    TestAnalyzerConfigOptions options,
+    Dictionary<string, TestAnalyzerConfigOptions>? optionsByFile = null)
     : AnalyzerConfigOptionsProvider
 {
     public override AnalyzerConfigOptions GlobalOptions => options;
 
-    public override AnalyzerConfigOptions GetOptions(SyntaxTree tree) => options;
+    public override AnalyzerConfigOptions GetOptions(SyntaxTree tree) =>
+        optionsByFile is not null && optionsByFile.TryGetValue(tree.FilePath, out TestAnalyzerConfigOptions? treeOptions)
+            ? treeOptions
+            : options;
 
     public override AnalyzerConfigOptions GetOptions(AdditionalText textFile) => options;
 }

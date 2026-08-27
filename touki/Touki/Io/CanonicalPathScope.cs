@@ -4,6 +4,10 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Provides a canonical root-relative file path with directory separators normalized to <c>/</c>,
+///  using scoped storage when the directory and file name must be combined.
+/// </summary>
 [NonCopyable]
 internal ref struct CanonicalPathScope
 {

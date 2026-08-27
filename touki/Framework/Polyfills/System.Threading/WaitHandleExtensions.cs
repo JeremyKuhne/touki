@@ -9,6 +9,9 @@ using Windows.Win32.Foundation;
 
 namespace System.Threading;
 
+/// <summary>
+///  Provides the .NET Framework wait implementation used by synchronization polyfills.
+/// </summary>
 internal static class WaitHandleExtensions
 {
     internal static unsafe bool WaitOneNoCheck(

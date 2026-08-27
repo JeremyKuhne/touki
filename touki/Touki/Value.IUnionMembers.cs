@@ -4,17 +4,14 @@
 
 namespace Touki;
 
-/// <summary>
-///  Makes <see cref="Value"/> a C# language union via the union member provider pattern.
-/// </summary>
 /// <remarks>
 ///  <para>
-///   A union type must expose a <c>Value</c> member, but a type named <see cref="Value"/> cannot have a
-///   property named <c>Value</c> (CS0542). The union member provider pattern resolves this: the union
-///   members live on a nested <see cref="IUnionMembers"/> interface instead of on the type. Case types come
-///   from the static <c>Create</c> factory methods (so the existing constructors need not change), and the
-///   non-boxing access members (<c>HasValue</c>, <c>TryGetValue</c>) live on the interface too, which keeps
-///   pattern matching allocation-free.
+///   This partial declaration makes <see cref="Value"/> a C# language union via the union member provider pattern.
+///   A union type must expose a <c>Value</c> member, but a type named <see cref="Value"/> cannot have a property
+///   named <c>Value</c> (CS0542). The union member provider pattern resolves this: the union members live on a
+///   nested <see cref="IUnionMembers"/> interface instead of on the type. Case types come from the static
+///   <c>Create</c> factory methods (so the existing constructors need not change), and the non-boxing access members
+///   (<c>HasValue</c>, <c>TryGetValue</c>) live on the interface too, which keeps pattern matching allocation-free.
 ///  </para>
 ///  <para>
 ///   The case types mirror the non-boxed value types, <see cref="string"/>, and the array/string segments

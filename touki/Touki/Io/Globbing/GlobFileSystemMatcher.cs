@@ -4,6 +4,9 @@
 
 namespace Touki.Io.Globbing;
 
+/// <summary>
+///  Adapts a compiled glob specification to the file-system matcher session contract.
+/// </summary>
 internal sealed class GlobFileSystemMatcher(GlobSpecification specification) : IFileSystemMatcher
 {
     public IFileSystemMatcherSession CreateSession(string rootDirectory)

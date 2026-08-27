@@ -27,6 +27,7 @@ of the way, and name a field for what it actually is.
 | [TOUKI0022](#touki0022) | Avoid tab characters | Maintainability | **Disabled** | Yes | - |
 | [TOUKI0023](#touki0023) | Remove trailing whitespace | Maintainability | Warning | - | - |
 | [TOUKI0024](#touki0024) | Format XML documentation as nested XML | Maintainability | **Disabled** | Yes | - |
+| [TOUKI0025](#touki0025) | Require exactly one XML summary per type | Maintainability | Warning | Yes | - |
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
 | [TOUKI0031](#touki0031) | Use `WriteFormatted` for interpolated strings | Performance | Warning | - | C# 10, `TextWriterExtensions` |
 | [TOUKI0032](#touki0032) | Use `Path.Join` instead of `Path.Combine` | Reliability | Warning | - | - |
@@ -38,7 +39,8 @@ the compilation to reference `Touki.DisposableBase`. TOUKI0031 requires C# 10 or
 and the Touki `TextWriterExtensions` handler overload. The rest apply to any C# the
 compiler hands them.
 
-Generated code is excluded from every rule.
+Generated code is not diagnosed. TOUKI0025 counts a summary on a generated partial declaration when analyzing
+the corresponding user-authored type.
 
 ---
 
@@ -189,6 +191,11 @@ The fix is deliberately withheld for source files containing preprocessor direct
 file-local types, declarations that reference file-local types, and linked source files. Those
 shapes cannot be moved independently without changing preprocessing or identity, editing
 several projects at once, or breaking symbol binding.
+
+File-local types are excluded from the rule entirely. The `file` modifier deliberately ties a
+type and everything nested within it to that source file, so moving either declaration would
+change its identity or accessibility. Other non-file-local types in the same file are still
+counted normally.
 
 To enforce top-level types now and defer nested types, set:
 
@@ -390,6 +397,51 @@ values fall through to the next source rather than failing the build.
 To keep analysis bounded on adversarial source, the rule stays silent for an individual comment
 larger than 1 MiB, containing more than 4,096 structured XML nodes, nested more than 128 XML
 elements deep, or whose formatted replacement would exceed 4 MiB.
+
+## TOUKI0025
+
+**Require exactly one XML summary per type.** Reports a class, struct, interface, record, enum,
+or delegate that does not have exactly one top-level `<summary>` element. Nested and file-local
+types are included by default.
+
+```csharp
+class Undocumented { } // TOUKI0025
+
+/// <summary>
+///  Represents a documented type.
+/// </summary>
+class Documented { }
+```
+
+For a partial type, the rule counts summaries across every declaration and reports once on the
+earliest user-authored declaration. Exactly one declaration may contain the summary, whether the
+parts are in one file or several. A summary in generated code participates in the count and can
+satisfy the rule, but a type declared only in generated code is not diagnosed. Generated files,
+`generated_code = true`, `#line hidden`, `[GeneratedCode]`, and `[CompilerGenerated]`
+declarations are recognized. Types lexically nested in a generated declaration are also excluded.
+
+Only well-formed `<summary>` elements in documentation blocks associated with the declaration
+count. `<inheritdoc/>`, `<remarks>`, a malformed summary, an unprocessed documentation block, and
+a `<summary>` nested inside another XML element do not substitute for a top-level summary. The
+association follows the compiler: ordinary comments between the nearest documentation block and
+the declaration are allowed, while an ordinary comment between documentation blocks leaves the
+earlier block unprocessed.
+
+Configure the analyzed visibility with a comma-separated list:
+
+```ini
+dotnet_code_quality.TOUKI0025.api_surface = public, internal
+```
+
+Accepted values are `public`, `internal`, `private`, `file`, and `all`. The default is `all`.
+Values are case-insensitive and surrounding whitespace is ignored. A missing, empty, or invalid
+value falls back to `all`.
+
+Nested types use effective visibility through their containing types. For example, a public type
+nested in an internal type is `internal`. The `file` value is literal: it selects a file-local type
+and non-private types nested within it, while `private` selects an explicitly private nested type.
+For a partial type whose files receive different EditorConfig settings, the rule runs when any
+declaring file includes the type's effective visibility.
 
 ## TOUKI0030
 
@@ -799,6 +851,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 | 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |
 | 0.7.0 | TOUKI0022, TOUKI0023 |
 | 0.8.0 | TOUKI0012, TOUKI0024, TOUKI0031, TOUKI0032, TOUKI0033 |
+| Unreleased | TOUKI0025 |
 
 The authoritative list lives in
 [AnalyzerReleases.Shipped.md](../touki.analyzers/AnalyzerReleases.Shipped.md) and

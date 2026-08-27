@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Stores either a leaf session index or the edge range and policy metadata for a composite matcher node.
+/// </summary>
 internal readonly struct CompositeMatcherNode
 {
     public CompositeMatcherNode(int sessionIndex)

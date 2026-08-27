@@ -6,6 +6,9 @@ namespace Touki;
 
 public readonly partial struct Value
 {
+    /// <summary>
+    ///  Identifies an inline <see cref="DateTimeOffset"/> stored as UTC ticks and reconstructs it with a zero offset.
+    /// </summary>
     private sealed class DateTimeOffsetFlag : TypeFlag<DateTimeOffset>
     {
         public static DateTimeOffsetFlag Instance { get; } = new();

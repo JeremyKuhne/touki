@@ -19,6 +19,9 @@ internal static partial class Number
     internal const int UInt32NumberBufferLength = 10 + 1;   // 10 for the longest input: 4,294,967,295
     internal const int UInt64NumberBufferLength = 20 + 1;   // 20 for the longest input: 18,446,744,073,709,551,615
 
+    /// <summary>
+    ///  Stores decimal digits, scale, sign, and tail information during numeric parsing and formatting.
+    /// </summary>
     internal unsafe ref struct NumberBuffer
     {
         public int DigitsCount;
@@ -114,6 +117,9 @@ internal static partial class Number
         }
     }
 
+    /// <summary>
+    ///  Identifies the numeric representation held by a <see cref="NumberBuffer"/>.
+    /// </summary>
     internal enum NumberBufferKind : byte
     {
         Unknown = 0,

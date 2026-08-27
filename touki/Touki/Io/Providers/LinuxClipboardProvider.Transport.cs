@@ -8,6 +8,9 @@ namespace Touki.Io.Providers;
 
 internal sealed partial class LinuxClipboardProvider
 {
+    /// <summary>
+    ///  Identifies the external Linux clipboard helper selected for clipboard operations.
+    /// </summary>
     private enum Transport
     {
         None,

@@ -6,6 +6,10 @@ namespace Touki;
 
 public readonly partial struct Value
 {
+    /// <summary>
+    ///  Identifies an inline enum value, reconstructs it from union storage, and exposes its underlying storage
+    ///  metadata.
+    /// </summary>
     private sealed class EnumTypeFlag<T> : TypeFlag<T>, IEnumType
     {
         public static EnumTypeFlag<T> Instance { get; } = new();

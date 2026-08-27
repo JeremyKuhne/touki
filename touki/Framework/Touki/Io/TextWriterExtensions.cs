@@ -4,9 +4,6 @@
 
 namespace Touki.Io;
 
-/// <summary>
-///  Extension methods for <see cref="TextWriter"/>.
-/// </summary>
 public static partial class TextWriterExtensions
 {
     extension(TextWriter writer)

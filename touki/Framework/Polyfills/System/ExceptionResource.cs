@@ -43,6 +43,9 @@ namespace System;
 //
 // The convention for this enum is using the resource name as the enum name
 //
+/// <summary>
+///  Identifies exception message resources selected by <see cref="ThrowHelper"/> without embedding names at call sites.
+/// </summary>
 internal enum ExceptionResource
 {
     ArgumentOutOfRange_IndexMustBeLessOrEqual,

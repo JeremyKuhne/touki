@@ -8,6 +8,9 @@ namespace Touki.Text;
 
 public ref partial struct ValueStringBuilder
 {
+    /// <summary>
+    ///  Creates and caches a delegate for formatting <see cref="ISpanFormattable"/> value types without boxing.
+    /// </summary>
     private static class FormatterHelper<T>
     {
         private static TryFormatDelegate<T>? s_tryFormatWithoutBoxing;

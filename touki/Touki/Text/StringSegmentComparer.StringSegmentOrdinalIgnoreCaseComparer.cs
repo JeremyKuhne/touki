@@ -6,6 +6,9 @@ namespace Touki.Text;
 
 public abstract partial class StringSegmentComparer
 {
+    /// <summary>
+    ///  Applies ordinal-ignore-case comparison and matching hash semantics directly to string segments.
+    /// </summary>
     private sealed class StringSegmentOrdinalIgnoreCaseComparer : StringSegmentComparer
     {
         public override int Compare(StringSegment x, StringSegment y) => x.CompareTo(y, StringComparison.OrdinalIgnoreCase);

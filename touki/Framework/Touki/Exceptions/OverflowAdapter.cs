@@ -4,6 +4,9 @@
 
 namespace Touki.Exceptions;
 
+/// <summary>
+///  Provides a non-inlined path for throwing <see cref="OverflowException"/> with an optional message.
+/// </summary>
 internal static class OverflowAdapter
 {
     [DoesNotReturn]

@@ -9,17 +9,16 @@
 
 namespace Touki;
 
-/// <summary>
-///  Ordinal-ignore-case span extensions matching the full Unicode semantics of
-///  <c>string.Equals(s1, s2, StringComparison.OrdinalIgnoreCase)</c> and
-///  <c>string.Compare(s1, s2, StringComparison.OrdinalIgnoreCase)</c> with an ASCII
-///  fast-path for short inputs and a hand-off to the BCL's vectorized
-///  <see cref="StringComparison.OrdinalIgnoreCase"/> path for inputs at or above
-///  <c>16</c> characters. Also provides ASCII-letter-only case folding for callers
-///  emulating POSIX <c>fnmatch(FNM_CASEFOLD)</c>, bash <c>nocaseglob</c>, and
-///  git <c>core.ignoreCase</c> behavior.
-/// </summary>
 /// <remarks>
+///  <para>
+///   This partial declaration provides ordinal-ignore-case span operations matching the full Unicode semantics of
+///   <c>string.Equals(s1, s2, StringComparison.OrdinalIgnoreCase)</c> and
+///   <c>string.Compare(s1, s2, StringComparison.OrdinalIgnoreCase)</c>. Short inputs use an ASCII fast-path, while
+///   inputs of at least <c>16</c> characters delegate to the BCL's vectorized
+///   <see cref="StringComparison.OrdinalIgnoreCase"/> path. It also provides ASCII-letter-only case folding for
+///   callers emulating POSIX <c>fnmatch(FNM_CASEFOLD)</c>, bash <c>nocaseglob</c>, and
+///   git <c>core.ignoreCase</c> behavior.
+///  </para>
 ///  <para>
 ///   <b>Which ignore-case primitive should I use?</b>
 ///  </para>

@@ -6,6 +6,10 @@ namespace Touki;
 
 public readonly partial struct Value
 {
+    /// <summary>
+    ///  Provides overlapping storage for the primitive, temporal, packed, and segment representations held by
+    ///  <see cref="Value"/>.
+    /// </summary>
     [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
     private struct Union
     {
