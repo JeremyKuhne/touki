@@ -12,6 +12,9 @@ namespace Touki.Resources.BinaryFormat;
 
 #pragma warning disable SYSLIB0050 // Type or member is obsolete.
 
+/// <summary>
+///  Provides resumable member unwrapping and dependency detection for class and array record deserializers.
+/// </summary>
 internal abstract class ObjectRecordDeserializer
 {
     private protected static readonly object s_missingValueSentinel = new();

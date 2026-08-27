@@ -9,6 +9,9 @@ using System.Formats.Nrbf;
 
 namespace Touki.Resources.BinaryFormat;
 
+/// <summary>
+///  Replaces an array element at a captured multidimensional index after its referenced value is available.
+/// </summary>
 internal sealed class ArrayUpdater : ValueUpdater
 {
     private readonly int[] _indices;

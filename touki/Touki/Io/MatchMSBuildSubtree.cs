@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Matches every file beneath a fixed root or beneath directory segments selected by an MSBuild pattern.
+/// </summary>
 internal sealed class MatchMSBuildSubtree : DisposableBase, IFileSystemMatcherSession
 {
     private const byte CurrentDirectoryNotEvaluated = 0;

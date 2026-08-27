@@ -12,6 +12,9 @@ namespace Touki.Resources.BinaryFormat;
 
 #pragma warning disable SYSLIB0050 // Type or member is obsolete.
 
+/// <summary>
+///  Creates uninitialized serializable objects and selects field-based or <see cref="ISerializable"/> population.
+/// </summary>
 internal abstract class ClassRecordDeserializer : ObjectRecordDeserializer
 {
     private readonly bool _onlyAllowPrimitives;

@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Combines directory classifications and manages owned child sessions for ordered-rule implementations.
+/// </summary>
 internal abstract class OrderedFileSystemMatcherSessionBase(
     FileSystemMatchRule[] rules,
     IFileSystemMatcherSession[] sessions,

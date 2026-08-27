@@ -6,6 +6,9 @@ using Windows.Win32.Foundation;
 
 namespace Touki.Exceptions;
 
+/// <summary>
+///  Wraps an HRESULT as an exception while preserving its numeric error code.
+/// </summary>
 internal sealed class HResultException : Exception
 {
     public HResultException(HRESULT hresult)

@@ -11,6 +11,9 @@ namespace System.Threading;
 
 public sealed partial class Lock
 {
+    /// <summary>
+    ///  Stores the operating-system thread identifier used to track lock ownership.
+    /// </summary>
     internal partial struct ThreadId
     {
         [ThreadStatic]

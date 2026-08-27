@@ -6,6 +6,9 @@ using System.Runtime.ExceptionServices;
 
 namespace Touki.Io;
 
+/// <summary>
+///  Creates, validates unique ownership of, and disposes matcher session sets used by composed matchers.
+/// </summary>
 internal static class FileSystemMatcherSessionFactory
 {
     public static bool ContainsFrameworkComposition(IFileSystemMatcher[] matchers)

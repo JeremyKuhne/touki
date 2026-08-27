@@ -375,6 +375,9 @@ public static class BitOperations
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint Crc32C(uint crc, ulong data) => Crc32C(Crc32C(crc, (uint)data), (uint)(data >> 32));
 
+    /// <summary>
+    ///  Computes CRC-32C checksums with the reflected polynomial lookup-table fallback.
+    /// </summary>
     private static class Crc32Fallback
     {
         // CRC-32 transition table.

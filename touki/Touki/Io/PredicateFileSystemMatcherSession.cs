@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Invokes a file predicate with the current directory and file-name spans supplied by enumeration.
+/// </summary>
 internal sealed class PredicateFileSystemMatcherSession(FileSystemMatchPredicate predicate)
     : FileSystemMatcherSession
 {

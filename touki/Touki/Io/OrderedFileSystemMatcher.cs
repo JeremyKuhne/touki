@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Defines an ordered include and exclude composition in which the last matching rule determines the result.
+/// </summary>
 internal sealed class OrderedFileSystemMatcher(
     FileSystemMatchRule[] rules,
     bool includeUnmatched) : IFileSystemMatcher

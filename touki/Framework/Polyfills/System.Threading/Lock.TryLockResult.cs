@@ -9,6 +9,9 @@ namespace System.Threading;
 
 public sealed partial class Lock
 {
+    /// <summary>
+    ///  Identifies whether a lock attempt acquired the lock, should spin, or should wait.
+    /// </summary>
     private enum TryLockResult
     {
         Locked,

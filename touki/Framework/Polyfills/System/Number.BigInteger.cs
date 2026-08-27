@@ -16,8 +16,14 @@ namespace System;
 #pragma warning disable CS9091
 #pragma warning disable CS9094
 
+/// <summary>
+///  Provides parsing, formatting, and conversion routines for numeric values.
+/// </summary>
 internal static partial class Number
 {
+    /// <summary>
+    ///  Stores fixed-capacity multi-precision integers used by numeric formatting and conversion routines.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     internal unsafe ref struct BigInteger
     {

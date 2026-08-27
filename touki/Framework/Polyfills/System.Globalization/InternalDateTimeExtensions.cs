@@ -3,6 +3,9 @@
 // See LICENSE file in the project root for full license information
 
 namespace System.Globalization;
+/// <summary>
+///  Extracts date and time components directly from the .NET Framework <see cref="DateTime"/> representation.
+/// </summary>
 internal static class InternalDateTimeExtensions
 {
     extension(ref readonly DateTime dateTime)
@@ -24,6 +27,9 @@ internal static class InternalDateTimeExtensions
             Unsafe.As<DateTime, InternalDateTime>(ref Unsafe.AsRef(in dateTime)).GetTimePrecise(out hour, out minute, out second, out tick);
     }
 
+    /// <summary>
+    ///  Mirrors the .NET Framework <see cref="DateTime"/> layout for direct component extraction.
+    /// </summary>
     private readonly struct InternalDateTime
     {
         // Number of 100ns ticks per time unit

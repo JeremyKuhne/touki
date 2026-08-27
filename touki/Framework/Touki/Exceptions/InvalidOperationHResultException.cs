@@ -6,6 +6,9 @@ using Windows.Win32.Foundation;
 
 namespace Touki.Exceptions;
 
+/// <summary>
+///  Represents an invalid-operation failure identified by an HRESULT.
+/// </summary>
 internal sealed class InvalidOperationHResultException : Exception
 {
     public InvalidOperationHResultException(HRESULT hresult)

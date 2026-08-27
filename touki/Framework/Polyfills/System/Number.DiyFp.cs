@@ -19,6 +19,9 @@ internal static partial class Number
     // Normalized DiyFp numbers will have the most significant bit of the significand set.
     // Multiplication and Subtraction do not normalize their results.
     // DiyFp are not designed to contain special doubles (NaN and Infinity).
+    /// <summary>
+    ///  Represents a floating-point value as a 64-bit significand and integer exponent for number formatting.
+    /// </summary>
     internal readonly ref struct DiyFp
     {
         public const int DoubleImplicitBitIndex = 52;

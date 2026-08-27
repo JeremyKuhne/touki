@@ -92,17 +92,26 @@ public static partial class SpanExtensions
     //  Comparer abstractions (struct types so the JIT can inline Compare)
     // -----------------------------------------------------------------------
 
+    /// <summary>
+    ///  Defines the comparison operation consumed by the generic span sorting implementation.
+    /// </summary>
     private interface IComparerImpl<T>
     {
         int Compare(T x, T y);
     }
 
+    /// <summary>
+    ///  Compares values using <see cref="Comparer{T}.Default"/>.
+    /// </summary>
     private readonly struct ComparerComparer<T> : IComparerImpl<T>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Compare(T x, T y) => Comparer<T>.Default.Compare(x, y);
     }
 
+    /// <summary>
+    ///  Adapts a <see cref="Comparison{T}"/> for the generic span sorting implementation.
+    /// </summary>
     private readonly struct ComparisonComparer<T>(Comparison<T> comparison) : IComparerImpl<T>
     {
         private readonly Comparison<T> _comparison = comparison;
@@ -111,6 +120,9 @@ public static partial class SpanExtensions
         public int Compare(T x, T y) => _comparison(x, y);
     }
 
+    /// <summary>
+    ///  Adapts an <see cref="IComparer{T}"/> for the generic span sorting implementation.
+    /// </summary>
     private readonly struct IComparerComparer<T>(IComparer<T> comparer) : IComparerImpl<T>
     {
         private readonly IComparer<T> _comparer = comparer;

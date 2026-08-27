@@ -6,6 +6,9 @@ namespace Touki;
 
 public readonly partial struct Value
 {
+    /// <summary>
+    ///  Provides non-generic access to an inline enum's underlying type, signedness, size, and numeric value.
+    /// </summary>
     private interface IEnumType
     {
         Type UnderlyingType { get; }

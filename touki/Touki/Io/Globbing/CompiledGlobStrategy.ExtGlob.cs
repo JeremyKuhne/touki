@@ -4,14 +4,13 @@
 
 namespace Touki.Io.Globbing;
 
-/// <summary>
-///  Matcher used when the compiled program contains
-///  <see cref="GlobOpCodes.AltStart"/> opcodes (extended-glob alternation
-///  constructs). Trades the iterative two-slot backtrack of the non-extglob
-///  fast paths for a "concatenation of program ranges" walker that naturally
-///  handles nested alternations.
-/// </summary>
 /// <remarks>
+///  <para>
+///   Programs containing <see cref="GlobOpCodes.AltStart"/> opcodes use this
+///   matcher for extended-glob alternation constructs. It trades the iterative
+///   two-slot backtrack of the non-extglob fast paths for a "concatenation of
+///   program ranges" walker that naturally handles nested alternations.
+///  </para>
 ///  <para>
 ///   The matcher walks a small list of <see cref="ProgramRange"/> entries; the
 ///   first entry is the &quot;current&quot; sub-program and any additional

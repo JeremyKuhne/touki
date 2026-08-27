@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Compares matcher sessions by object identity so compositions can detect shared session ownership.
+/// </summary>
 internal sealed class MatcherSessionReferenceComparer : IEqualityComparer<IFileSystemMatcherSession>
 {
     public static MatcherSessionReferenceComparer Instance { get; } = new();

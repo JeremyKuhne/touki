@@ -117,6 +117,9 @@ Pre-defined format characters:
 
 */
 
+/// <summary>
+///  Formats <see cref="DateTime"/> and <see cref="DateTimeOffset"/> values using standard and custom format strings.
+/// </summary>
 internal static class DateTimeFormat
 {
     private const int MaxSecondsFractionDigits = 7;

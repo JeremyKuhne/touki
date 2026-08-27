@@ -4,7 +4,9 @@
 
 namespace Touki;
 
-// Internal helper; throws in Release and is unreachable in Release coverage runs.
+/// <summary>
+///  Checks whether the immediate caller belongs to the Touki assembly in Debug builds and throws in Release builds.
+/// </summary>
 [ExcludeFromCodeCoverage]
 internal static class DebugOnly
 {

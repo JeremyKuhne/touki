@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Evaluates exclusion-wins file matching for sessions that consume separate directory and file-name spans.
+/// </summary>
 internal sealed class ExclusionWinsFileSystemMatcherSession(
     IFileSystemMatcherSession[] includes,
     IFileSystemMatcherSession[] excludes) : ExclusionWinsFileSystemMatcherSessionBase(includes, excludes)

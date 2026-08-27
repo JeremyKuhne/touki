@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Adapts a root-relative path predicate into a matcher that creates canonical-path sessions.
+/// </summary>
 internal sealed class PathPredicateFileSystemMatcher(PathMatchPredicate predicate) : IFileSystemMatcher
 {
     public IFileSystemMatcherSession CreateSession(string rootDirectory)

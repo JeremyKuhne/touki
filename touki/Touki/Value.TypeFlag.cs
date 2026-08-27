@@ -6,6 +6,9 @@ namespace Touki;
 
 public readonly partial struct Value
 {
+    /// <summary>
+    ///  Provides runtime type metadata and object conversion for values stored inline in union storage.
+    /// </summary>
     private abstract class TypeFlag
     {
         public abstract Type Type

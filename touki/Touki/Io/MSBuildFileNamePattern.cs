@@ -7,6 +7,9 @@ using Touki.Io.Globbing;
 
 namespace Touki.Io;
 
+/// <summary>
+///  Normalizes MSBuild file-name wildcard policy and selects logical or file-system matching semantics.
+/// </summary>
 internal readonly struct MSBuildFileNamePattern
 {
     private readonly StringSegment _expression;

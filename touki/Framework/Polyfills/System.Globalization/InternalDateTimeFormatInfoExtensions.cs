@@ -5,6 +5,9 @@
 using System.Reflection;
 
 namespace System.Globalization;
+/// <summary>
+///  Exposes the nonpublic <see cref="DateTimeFormatInfo"/> data needed by the Framework date and time formatter.
+/// </summary>
 internal static class InternalDateTimeFormatInfoExtensions
 {
     private static readonly PropertyInfo s_dateTimeOffsetPattern =

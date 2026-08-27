@@ -13,6 +13,9 @@ namespace Touki;
 
 public sealed partial class RegisteredTypeResolver
 {
+    /// <summary>
+    ///  Compares metadata type names by ordinal full name while accounting for array shape and generic arguments.
+    /// </summary>
     private sealed class FullNameTypeNameComparer : IEqualityComparer<TypeName>
     {
         internal static FullNameTypeNameComparer Instance { get; } = new();

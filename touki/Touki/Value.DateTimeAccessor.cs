@@ -6,6 +6,9 @@ namespace Touki;
 
 public readonly partial struct Value
 {
+    /// <summary>
+    ///  Provides a layout-compatible view of the packed tick and kind data stored by <see cref="DateTime"/>.
+    /// </summary>
     [StructLayout(LayoutKind.Auto)]
     private struct DateTimeAccessor
     {

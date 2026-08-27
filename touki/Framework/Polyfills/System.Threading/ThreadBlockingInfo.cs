@@ -27,6 +27,9 @@ namespace System.Threading;
 //     lock and the lock is currently owned by a thread, one of these properties will return a nonzero value that can be
 //     used to identify the lock owner thread.
 //   - Use the _next field value to obtain the next pointer to a blocking info for the thread
+/// <summary>
+///  Records the blocking operation currently associated with a thread for debugger inspection.
+/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 internal unsafe struct ThreadBlockingInfo
 {
@@ -143,6 +146,9 @@ internal unsafe struct ThreadBlockingInfo
         }
     }
 
+    /// <summary>
+    ///  Registers the current thread's lock-blocking information until the scope is disposed.
+    /// </summary>
     public ref struct Scope
     {
         private object? _object;
@@ -168,6 +174,9 @@ internal unsafe struct ThreadBlockingInfo
         }
     }
 
+    /// <summary>
+    ///  Identifies the synchronization object associated with a blocking operation.
+    /// </summary>
     public enum ObjectKind // may be used by debuggers
     {
         MonitorLock, // maps to DebugBlockingItemType::DebugBlock_MonitorCriticalSection in coreclr

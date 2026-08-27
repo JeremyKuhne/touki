@@ -4,6 +4,9 @@
 
 namespace Touki.Io.Globbing;
 
+/// <summary>
+///  Matches MSBuild file-name wildcards that require logical trailing-dot handling instead of file-system semantics.
+/// </summary>
 internal static class MSBuildTrailingDotFileNameMatcher
 {
     public static bool Matches(

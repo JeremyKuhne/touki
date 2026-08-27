@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Evaluates ordered rules across split-input and canonical-path sessions, constructing the path once per file.
+/// </summary>
 internal sealed class PathAwareOrderedFileSystemMatcherSession(
     FileSystemMatchRule[] rules,
     IFileSystemMatcherSession[] sessions,

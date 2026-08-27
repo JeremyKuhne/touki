@@ -4,6 +4,9 @@
 
 namespace Touki.Io.Globbing;
 
+/// <summary>
+///  Controls how the extglob engine constrains matches based on effective double-star participation.
+/// </summary>
 internal enum EffectiveDoubleStarMode : byte
 {
     Ignore,

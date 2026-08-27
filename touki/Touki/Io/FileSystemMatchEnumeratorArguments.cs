@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Snapshots a normalized enumeration root, matcher, and options for constructing a file-system match enumerator.
+/// </summary>
 internal readonly struct FileSystemMatchEnumeratorArguments
 {
     public FileSystemMatchEnumeratorArguments(

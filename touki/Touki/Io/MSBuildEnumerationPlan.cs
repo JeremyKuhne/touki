@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Carries either a terminal enumeration result or a lazy enumerator with invalid exclude specifications.
+/// </summary>
 internal readonly struct MSBuildEnumerationPlan
 {
     public MSBuildEnumerationPlan(MSBuildEnumerationResult result)

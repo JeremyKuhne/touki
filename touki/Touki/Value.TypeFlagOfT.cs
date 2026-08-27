@@ -6,6 +6,9 @@ namespace Touki;
 
 public readonly partial struct Value
 {
+    /// <summary>
+    ///  Provides strongly typed reconstruction and runtime type metadata for an inline union value.
+    /// </summary>
     private abstract class TypeFlag<T> : TypeFlag
     {
         public sealed override Type Type

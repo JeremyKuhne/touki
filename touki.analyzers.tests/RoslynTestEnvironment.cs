@@ -33,11 +33,26 @@ internal static class RoslynTestEnvironment
     /// <summary>
     ///  Creates analyzer options backed by the supplied EditorConfig values.
     /// </summary>
-    public static AnalyzerOptions CreateAnalyzerOptions(IReadOnlyDictionary<string, string>? options) =>
-        new(
+    public static AnalyzerOptions CreateAnalyzerOptions(
+        IReadOnlyDictionary<string, string>? options,
+        IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? optionsByFile = null)
+    {
+        Dictionary<string, TestAnalyzerConfigOptions>? treeOptions = null;
+        if (optionsByFile is not null)
+        {
+            treeOptions = new(StringComparer.Ordinal);
+            foreach (KeyValuePair<string, IReadOnlyDictionary<string, string>> pair in optionsByFile)
+            {
+                treeOptions.Add(pair.Key, new TestAnalyzerConfigOptions(pair.Value));
+            }
+        }
+
+        return new AnalyzerOptions(
             additionalFiles: [],
             optionsProvider: new TestAnalyzerConfigOptionsProvider(
-                options is null ? TestAnalyzerConfigOptions.Empty : new TestAnalyzerConfigOptions(options)));
+                options is null ? TestAnalyzerConfigOptions.Empty : new TestAnalyzerConfigOptions(options),
+                treeOptions));
+    }
 
     /// <summary>
     ///  Applies per-diagnostic reporting options to <paramref name="compilation"/>.

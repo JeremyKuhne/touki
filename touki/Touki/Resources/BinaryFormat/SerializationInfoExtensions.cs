@@ -10,6 +10,9 @@ using System.Runtime.Serialization;
 
 namespace Touki.Resources.BinaryFormat;
 
+/// <summary>
+///  Exposes the framework's non-public <see cref="SerializationInfo"/> value-replacement operation.
+/// </summary>
 internal static class SerializationInfoExtensions
 {
     private static readonly Action<SerializationInfo, string, object, Type> s_updateValue =

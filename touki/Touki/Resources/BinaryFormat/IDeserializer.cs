@@ -12,6 +12,9 @@ namespace Touki.Resources.BinaryFormat;
 
 #pragma warning disable SYSLIB0050 // Type or member is obsolete.
 
+/// <summary>
+///  Defines the object-graph state and fixup scheduling shared by record-specific deserializers.
+/// </summary>
 internal interface IDeserializer
 {
     StreamingContext StreamingContext { get; }

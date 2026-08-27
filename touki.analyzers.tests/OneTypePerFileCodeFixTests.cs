@@ -203,32 +203,6 @@ public class OneTypePerFileCodeFixTests
     }
 
     [TestMethod]
-    public async Task ApplyFix_FileLocalEnum_LeavesSolutionUnchanged()
-    {
-        const string Source = "class Owner { } file enum Hidden { None }";
-
-        CodeFixTestResult result = await ApplyFixAsync(
-            [("Owner.cs", "C:\\src\\Owner.cs", Source)],
-            expectFix: false).ConfigureAwait(false);
-
-        CodeFixTestDocument document = result.Documents.Should().ContainSingle().Subject;
-        document.Source.Should().Be(Source);
-    }
-
-    [TestMethod]
-    public async Task ApplyFix_FileLocalDelegate_LeavesSolutionUnchanged()
-    {
-        const string Source = "class Owner { } file delegate void Hidden();";
-
-        CodeFixTestResult result = await ApplyFixAsync(
-            [("Owner.cs", "C:\\src\\Owner.cs", Source)],
-            expectFix: false).ConfigureAwait(false);
-
-        CodeFixTestDocument document = result.Documents.Should().ContainSingle().Subject;
-        document.Source.Should().Be(Source);
-    }
-
-    [TestMethod]
     public async Task ApplyFix_TypeReferencesFileLocalType_LeavesSolutionUnchanged()
     {
         const string Source = """

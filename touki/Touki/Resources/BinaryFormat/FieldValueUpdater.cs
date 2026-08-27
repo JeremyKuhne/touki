@@ -10,6 +10,9 @@ using System.Reflection;
 
 namespace Touki.Resources.BinaryFormat;
 
+/// <summary>
+///  Reassigns a field after its referenced object has finished deserializing.
+/// </summary>
 internal sealed class FieldValueUpdater : ValueUpdater
 {
     private readonly FieldInfo _field;

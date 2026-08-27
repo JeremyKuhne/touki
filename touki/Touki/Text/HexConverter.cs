@@ -9,6 +9,9 @@
 
 namespace Touki;
 
+/// <summary>
+///  Converts ASCII hexadecimal characters to nibble values and reports other characters as <c>0xFF</c>.
+/// </summary>
 internal static partial class HexConverter
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Invokes a path predicate with a canonical root-relative file path.
+/// </summary>
 internal sealed class PathPredicateFileSystemMatcherSession : FileSystemMatcherSession, ICanonicalPathMatcherSession
 {
     private const int StackPathBufferSize = 256;

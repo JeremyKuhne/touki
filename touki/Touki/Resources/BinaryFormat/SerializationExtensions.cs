@@ -9,6 +9,9 @@ using System.Runtime.Serialization;
 
 namespace Touki.Resources.BinaryFormat;
 
+/// <summary>
+///  Normalizes failures as <see cref="SerializationException"/> while retaining the original exception.
+/// </summary>
 internal static class SerializationExtensions
 {
     internal static SerializationException ConvertToSerializationException(this Exception exception)

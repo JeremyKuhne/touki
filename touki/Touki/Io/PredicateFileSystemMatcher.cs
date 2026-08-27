@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Adapts a directory and file-name predicate to the file-system matcher contract.
+/// </summary>
 internal sealed class PredicateFileSystemMatcher(FileSystemMatchPredicate predicate) : IFileSystemMatcher
 {
     public IFileSystemMatcherSession CreateSession(string rootDirectory)

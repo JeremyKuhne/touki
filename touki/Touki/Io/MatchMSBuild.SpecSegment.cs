@@ -6,6 +6,9 @@ namespace Touki.Io;
 
 internal sealed partial class MatchMSBuild
 {
+    /// <summary>
+    ///  Stores one parsed directory specification segment together with globstar and case-matching metadata.
+    /// </summary>
     private readonly struct SpecSegment
     {
         public StringSegment Spec { get; }

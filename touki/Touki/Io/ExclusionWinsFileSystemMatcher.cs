@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Defines a matcher composition in which any matching exclusion overrides all matching includes.
+/// </summary>
 internal sealed class ExclusionWinsFileSystemMatcher(
     IFileSystemMatcher[] includes,
     IFileSystemMatcher[] excludes) : IFileSystemMatcher

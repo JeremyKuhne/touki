@@ -20,6 +20,9 @@ internal static partial class Number
     // The general idea behind Grisu3 is to leverage additional bits and cached powers of ten to generate the correct digits.
     // The algorithm is imprecise for some numbers. Fortunately, the algorithm itself can determine this scenario and gives us
     // a result indicating success or failure. We must fallback to a different algorithm for the failing scenario.
+    /// <summary>
+    ///  Implements the Grisu3 fast path for converting floating-point values to decimal digits.
+    /// </summary>
     internal static class Grisu3
     {
         private const int CachedPowersDecimalExponentDistance = 8;

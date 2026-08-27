@@ -4,6 +4,9 @@
 
 namespace Touki.Io;
 
+/// <summary>
+///  Provides normalized Boolean operations over directory match classifications used to combine matcher results.
+/// </summary>
 internal static class DirectoryMatchTypeOperations
 {
     public static DirectoryMatchType Normalize(DirectoryMatchType matchType) => matchType switch
