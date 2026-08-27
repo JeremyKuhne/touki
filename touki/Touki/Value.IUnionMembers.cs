@@ -32,91 +32,127 @@ public readonly partial struct Value : Value.IUnionMembers
         /// <summary>
         ///  Creates a <see cref="Value"/> from a <see cref="bool"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="bool"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(bool value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from a <see cref="byte"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="byte"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(byte value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from an <see cref="sbyte"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="sbyte"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(sbyte value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from a <see cref="char"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="char"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(char value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from a <see cref="short"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="short"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(short value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from a <see cref="ushort"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="ushort"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(ushort value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from an <see cref="int"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="int"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(int value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from a <see cref="uint"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="uint"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(uint value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from a <see cref="long"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="long"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(long value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from a <see cref="ulong"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="ulong"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(ulong value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from a <see cref="float"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="float"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(float value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from a <see cref="double"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="double"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(double value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from a <see cref="DateTime"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="DateTime"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(DateTime value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from a <see cref="DateTimeOffset"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="DateTimeOffset"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(DateTimeOffset value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from a <see cref="string"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="string"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(string value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from an <see cref="ArraySegment{T}"/> of <see cref="byte"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="ArraySegment{T}"/> of <see cref="byte"/>.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(ArraySegment<byte> value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from an <see cref="ArraySegment{T}"/> of <see cref="char"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="ArraySegment{T}"/> of <see cref="char"/>.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(ArraySegment<char> value) => value;
 
         /// <summary>
         ///  Creates a <see cref="Value"/> from a <see cref="StringSegment"/> (union case type).
         /// </summary>
+        /// <param name="value">The source <see cref="StringSegment"/> value.</param>
+        /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
         static Value Create(StringSegment value) => value;
 
         /// <summary>
@@ -132,91 +168,127 @@ public readonly partial struct Value : Value.IUnionMembers
         /// <summary>
         ///  Non-boxing access for the <see cref="bool"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="bool"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out bool value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="byte"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="byte"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out byte value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="sbyte"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="sbyte"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out sbyte value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="char"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="char"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out char value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="short"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="short"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out short value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="ushort"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="ushort"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out ushort value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="int"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="int"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out int value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="uint"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="uint"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out uint value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="long"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="long"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out long value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="ulong"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="ulong"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out ulong value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="float"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="float"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out float value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="double"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="double"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out double value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="DateTime"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="DateTime"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out DateTime value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="DateTimeOffset"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="DateTimeOffset"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out DateTimeOffset value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="string"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="string"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out string? value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="ArraySegment{T}"/> of <see cref="byte"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="ArraySegment{T}"/> of <see cref="byte"/> on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out ArraySegment<byte> value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="ArraySegment{T}"/> of <see cref="char"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="ArraySegment{T}"/> of <see cref="char"/> on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out ArraySegment<char> value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="StringSegment"/> case.
         /// </summary>
+        /// <param name="value">The held <see cref="StringSegment"/> value on success.</param>
+        /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
         bool TryGetValue(out StringSegment value);
     }
 }

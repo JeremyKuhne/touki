@@ -12,6 +12,8 @@ public readonly struct FileSystemMatchRule
     /// <summary>
     ///  Constructs a matcher rule.
     /// </summary>
+    /// <param name="matcher">The matcher definition.</param>
+    /// <param name="action">The action to apply when the matcher matches.</param>
     public FileSystemMatchRule(
         IFileSystemMatcher matcher,
         FileSystemMatchAction action)

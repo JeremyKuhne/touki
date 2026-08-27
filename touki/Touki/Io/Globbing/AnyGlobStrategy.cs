@@ -10,6 +10,11 @@ namespace Touki.Io.Globbing;
 /// </summary>
 internal sealed class AnyGlobStrategy : GlobStrategy
 {
+    /// <summary>
+    ///  Initializes a strategy that matches any input allowed by the dialect's leading-dot rule.
+    /// </summary>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
     public AnyGlobStrategy(GlobDialect dialect, GlobOptions options)
         : base(dialect, options)
     {

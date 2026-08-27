@@ -17,6 +17,12 @@ internal sealed class GlobStarFileNameStrategy : GlobStrategy
 {
     private readonly GlobStrategy _segmentMatcher;
 
+    /// <summary>
+    ///  Initializes a globstar strategy that delegates the final segment match.
+    /// </summary>
+    /// <param name="segmentMatcher">The path-unaware matcher for the final segment.</param>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
     public GlobStarFileNameStrategy(GlobStrategy segmentMatcher, GlobDialect dialect, GlobOptions options)
         : base(dialect, options)
     {

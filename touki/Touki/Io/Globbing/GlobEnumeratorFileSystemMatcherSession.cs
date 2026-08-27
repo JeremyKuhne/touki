@@ -9,6 +9,8 @@ namespace Touki.Io.Globbing;
 /// <summary>
 ///  Applies one include glob and a set of exclusion globs while preserving directory-pruning guarantees.
 /// </summary>
+/// <param name="include">The include matcher session.</param>
+/// <param name="excludes">The exclusion matcher sessions.</param>
 internal sealed class GlobEnumeratorFileSystemMatcherSession(
     GlobMatch include,
     GlobMatch[] excludes) : FileSystemMatcherSession

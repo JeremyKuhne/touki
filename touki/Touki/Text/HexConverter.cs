@@ -14,6 +14,11 @@ namespace Touki;
 /// </summary>
 internal static partial class HexConverter
 {
+    /// <summary>
+    ///  Converts an ASCII hexadecimal character to its numeric value.
+    /// </summary>
+    /// <param name="c">The character value to convert.</param>
+    /// <returns>The hexadecimal value of <paramref name="c"/>, or <c>0xFF</c> if it is not hexadecimal.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int FromChar(int c) => c >= CharToHexLookup.Length ? 0xFF : CharToHexLookup[c];
 

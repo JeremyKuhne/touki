@@ -30,6 +30,13 @@ internal sealed class ClassRecordSerializationInfoDeserializer : ClassRecordDese
 
     private bool _canIterate;
 
+    /// <summary>
+    ///  Initializes a deserializer that builds serialization information for a class instance.
+    /// </summary>
+    /// <param name="classRecord">The class record to deserialize.</param>
+    /// <param name="instance">The object materialized for the record.</param>
+    /// <param name="type">The resolved runtime type of <paramref name="instance"/>.</param>
+    /// <param name="deserializer">The object-graph deserializer.</param>
     internal ClassRecordSerializationInfoDeserializer(
         ClassRecord classRecord,
         object instance,
@@ -46,6 +53,7 @@ internal sealed class ClassRecordSerializationInfoDeserializer : ClassRecordDese
         _canIterate = _memberNamesIterator.MoveNext();
     }
 
+    /// <inheritdoc/>
     internal override SerializationRecordId Continue()
     {
         if (_canIterate)

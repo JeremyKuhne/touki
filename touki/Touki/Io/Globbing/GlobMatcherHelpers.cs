@@ -20,6 +20,8 @@ internal static class GlobMatcherHelpers
     ///   <see cref="StringComparison.OrdinalIgnoreCase"/> overloads directly.
     ///  </para>
     /// </remarks>
+    /// <param name="c">The character to fold.</param>
+    /// <returns>The ASCII-folded character.</returns>
     public static char AsciiFold(char c) =>
         (uint)(c - 'a') <= ('z' - 'a') ? (char)(c - ('a' - 'A')) : c;
 
@@ -29,6 +31,9 @@ internal static class GlobMatcherHelpers
     ///  <see cref="IgnoreCaseKind.Ascii"/> rule). Folds both sides to uppercase via
     ///  <see cref="AsciiFold"/> and compares.
     /// </summary>
+    /// <param name="a">The first character.</param>
+    /// <param name="b">The second character.</param>
+    /// <returns><see langword="true"/> if the characters compare equal; otherwise <see langword="false"/>.</returns>
     public static bool AsciiFoldEquals(char a, char b) => AsciiFold(a) == AsciiFold(b);
 
     /// <summary>
@@ -37,6 +42,9 @@ internal static class GlobMatcherHelpers
     ///  <see cref="char.ToUpperInvariant"/> on both sides; matches the BCL's
     ///  <see cref="StringComparison.OrdinalIgnoreCase"/> semantics for the BMP.
     /// </summary>
+    /// <param name="a">The first character.</param>
+    /// <param name="b">The second character.</param>
+    /// <returns><see langword="true"/> if the characters compare equal; otherwise <see langword="false"/>.</returns>
     public static bool UnicodeFoldEquals(char a, char b) =>
         a == b || char.ToUpperInvariant(a) == char.ToUpperInvariant(b);
 }

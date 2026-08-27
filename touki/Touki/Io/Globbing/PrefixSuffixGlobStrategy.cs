@@ -13,6 +13,13 @@ internal sealed class PrefixSuffixGlobStrategy : GlobStrategy
     private readonly string _prefix;
     private readonly string _suffix;
 
+    /// <summary>
+    ///  Initializes a strategy that matches a literal prefix and suffix separated by one wildcard run.
+    /// </summary>
+    /// <param name="prefix">The literal prefix.</param>
+    /// <param name="suffix">The literal suffix.</param>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
     public PrefixSuffixGlobStrategy(string prefix, string suffix, GlobDialect dialect, GlobOptions options)
         : base(dialect, options)
     {

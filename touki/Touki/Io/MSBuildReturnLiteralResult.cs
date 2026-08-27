@@ -9,6 +9,11 @@ namespace Touki.Io;
 /// </summary>
 public sealed class MSBuildReturnLiteralResult : MSBuildEnumerationResult
 {
+    /// <summary>
+    ///  Initializes a result for an include specification that must be returned literally.
+    /// </summary>
+    /// <param name="specification">The original include specification.</param>
+    /// <param name="reason">The validation reason.</param>
     internal MSBuildReturnLiteralResult(string specification, string reason)
     {
         ArgumentNullException.ThrowIfNull(specification);

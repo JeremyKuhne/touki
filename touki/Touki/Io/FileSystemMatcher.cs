@@ -12,6 +12,8 @@ public static partial class FileSystemMatcher
     /// <summary>
     ///  Creates a callback-native matcher that forwards directory and file-name spans without joining them.
     /// </summary>
+    /// <param name="predicate">The callback that determines whether a file matches.</param>
+    /// <returns>The reusable matcher definition.</returns>
     public static IFileSystemMatcher Create(FileSystemMatchPredicate predicate)
     {
         ArgumentNullException.ThrowIfNull(predicate);
@@ -28,6 +30,8 @@ public static partial class FileSystemMatcher
     ///   storage; longer paths use a temporary pooled buffer.
     ///  </para>
     /// </remarks>
+    /// <param name="predicate">The callback that determines whether a canonical path matches.</param>
+    /// <returns>The reusable matcher definition.</returns>
     public static IFileSystemMatcher CreatePath(PathMatchPredicate predicate)
     {
         ArgumentNullException.ThrowIfNull(predicate);

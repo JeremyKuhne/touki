@@ -11,6 +11,13 @@ namespace Touki.Io;
 /// </summary>
 internal static class FileSystemMatcherSessionFactory
 {
+    /// <summary>
+    ///  Determines whether any matcher is a framework composition.
+    /// </summary>
+    /// <param name="matchers">The matcher definitions to inspect.</param>
+    /// <returns>
+    ///  <see langword="true"/> if a matcher is a framework composition; otherwise <see langword="false"/>.
+    /// </returns>
     public static bool ContainsFrameworkComposition(IFileSystemMatcher[] matchers)
     {
         for (int index = 0; index < matchers.Length; index++)
@@ -24,6 +31,13 @@ internal static class FileSystemMatcherSessionFactory
         return false;
     }
 
+    /// <summary>
+    ///  Determines whether any rule uses a framework composition.
+    /// </summary>
+    /// <param name="rules">The match rules to inspect.</param>
+    /// <returns>
+    ///  <see langword="true"/> if a rule uses a framework composition; otherwise <see langword="false"/>.
+    /// </returns>
     public static bool ContainsFrameworkComposition(FileSystemMatchRule[] rules)
     {
         for (int index = 0; index < rules.Length; index++)
@@ -37,6 +51,13 @@ internal static class FileSystemMatcherSessionFactory
         return false;
     }
 
+    /// <summary>
+    ///  Creates one independently owned session for each matcher definition.
+    /// </summary>
+    /// <param name="matchers">The matcher definitions.</param>
+    /// <param name="rootDirectory">The normalized enumeration root.</param>
+    /// <param name="existingSessions">Existing sessions that the new matchers must not reuse.</param>
+    /// <returns>The newly created matcher sessions.</returns>
     public static IFileSystemMatcherSession[] CreateSessions(
         IFileSystemMatcher[] matchers,
         string rootDirectory,
@@ -70,6 +91,12 @@ internal static class FileSystemMatcherSessionFactory
         }
     }
 
+    /// <summary>
+    ///  Creates one independently owned session for each match rule.
+    /// </summary>
+    /// <param name="rules">The match rules.</param>
+    /// <param name="rootDirectory">The normalized enumeration root.</param>
+    /// <returns>The newly created matcher sessions.</returns>
     public static IFileSystemMatcherSession[] CreateSessions(
         FileSystemMatchRule[] rules,
         string rootDirectory)
@@ -100,6 +127,10 @@ internal static class FileSystemMatcherSessionFactory
         }
     }
 
+    /// <summary>
+    ///  Disposes every session and rethrows the first disposal exception after all sessions have been attempted.
+    /// </summary>
+    /// <param name="sessions">The sessions to dispose.</param>
     public static void DisposeSessions(IFileSystemMatcherSession[] sessions)
     {
         Exception? firstException = null;
@@ -121,6 +152,10 @@ internal static class FileSystemMatcherSessionFactory
         }
     }
 
+    /// <summary>
+    ///  Disposes every session and suppresses disposal exceptions.
+    /// </summary>
+    /// <param name="sessions">The sessions to dispose.</param>
     public static void DisposeSessionsSuppressExceptions(IFileSystemMatcherSession[] sessions) =>
         DisposeCreatedSessions(sessions, sessions.Length);
 

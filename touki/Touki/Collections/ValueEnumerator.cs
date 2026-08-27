@@ -24,6 +24,7 @@ public ref struct ValueEnumerator<TEnumerator, TValue>
     /// <summary>
     ///  Constructs a new instance of the <see cref="ValueEnumerator{TEnumerator, TValue}"/> struct.
     /// </summary>
+    /// <param name="enumerator">The value-type enumerator to wrap.</param>
     public ValueEnumerator(TEnumerator enumerator)
     {
         _enumerator = enumerator;

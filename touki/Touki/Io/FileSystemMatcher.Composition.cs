@@ -9,6 +9,9 @@ public static partial class FileSystemMatcher
     /// <summary>
     ///  Creates an immutable matcher in which any matching exclude takes precedence over includes.
     /// </summary>
+    /// <param name="includes">The matchers that include paths.</param>
+    /// <param name="excludes">The optional matchers that exclude paths.</param>
+    /// <returns>The immutable matcher definition.</returns>
     public static IFileSystemMatcher CreateExclusionWins(
         IReadOnlyList<IFileSystemMatcher> includes,
         IReadOnlyList<IFileSystemMatcher>? excludes = null) =>
@@ -21,6 +24,9 @@ public static partial class FileSystemMatcher
     /// <summary>
     ///  Creates an immutable ordered matcher in which the last matching rule determines the result.
     /// </summary>
+    /// <param name="rules">The ordered match rules.</param>
+    /// <param name="includeUnmatched">Whether to include paths that match no rule.</param>
+    /// <returns>The immutable matcher definition.</returns>
     public static IFileSystemMatcher CreateOrdered(
         IReadOnlyList<FileSystemMatchRule> rules,
         bool includeUnmatched = false)

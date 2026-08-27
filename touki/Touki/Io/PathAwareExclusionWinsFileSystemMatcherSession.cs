@@ -7,6 +7,9 @@ namespace Touki.Io;
 /// <summary>
 ///  Evaluates exclusion-wins matching across split-input and canonical-path sessions, constructing the path once.
 /// </summary>
+/// <param name="includes">The sessions that include paths.</param>
+/// <param name="excludes">The sessions that exclude paths.</param>
+/// <param name="rootDirectory">The normalized enumeration root.</param>
 internal sealed class PathAwareExclusionWinsFileSystemMatcherSession(
     IFileSystemMatcherSession[] includes,
     IFileSystemMatcherSession[] excludes,

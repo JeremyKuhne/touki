@@ -9,6 +9,10 @@ namespace Touki.Exceptions;
 /// </summary>
 internal static class OverflowAdapter
 {
+    /// <summary>
+    ///  Throws an <see cref="OverflowException"/> with the specified message.
+    /// </summary>
+    /// <param name="message">The message for the exception.</param>
     [DoesNotReturn]
     public static void Throw(string? message) => ThrowOverflow(message);
 

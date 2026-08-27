@@ -24,6 +24,11 @@ public static class Glob
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="pattern"/> is <see langword="null"/>.</exception>
     /// <exception cref="GlobFormatException">The pattern is invalid.</exception>
+    /// <param name="pattern">The glob pattern to compile.</param>
+    /// <param name="input">The input to match.</param>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
+    /// <returns><see langword="true"/> if the input matches; otherwise <see langword="false"/>.</returns>
     public static bool IsMatch(
         string pattern,
         ReadOnlySpan<char> input,
@@ -68,6 +73,12 @@ public static class Glob
     ///  <paramref name="rootDirectory"/> or <paramref name="pattern"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="GlobFormatException">The pattern is invalid.</exception>
+    /// <param name="rootDirectory">The directory to enumerate.</param>
+    /// <param name="pattern">The glob pattern to compile.</param>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
+    /// <param name="enumerationOptions">The enumeration options, or <see langword="null"/> to use the defaults.</param>
+    /// <returns>A lazy sequence of matching canonical root-relative file paths.</returns>
     public static IEnumerable<string> EnumerateFiles(
         string rootDirectory,
         string pattern,

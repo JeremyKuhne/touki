@@ -30,6 +30,8 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
         /// <summary>
         ///  Constructs a new instance of the <see cref="CacheEntry"/> class.
         /// </summary>
+        /// <param name="data">The data associated with the entry.</param>
+        /// <param name="cached">Whether the entry is stored in the cache.</param>
         public CacheEntry(TCacheEntryData data, bool cached)
         {
             Data = data;
@@ -79,6 +81,7 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
         ///  Create a scope for this entry. The scope will add a reference to the entry and remove it when
         ///  the scope is disposed.
         /// </summary>
+        /// <returns>A scope that holds a reference to this entry.</returns>
         public Scope CreateScope() => new(this);
 
         private string DebuggerDisplay => $"Object: {Object} RefCount: {RefCount}";

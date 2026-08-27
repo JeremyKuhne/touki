@@ -54,6 +54,10 @@ public sealed class GlobEnumerator : FileSystemEnumerator<string>
     ///  Creates an enumerator for files matching <paramref name="includePattern"/> beneath
     ///  <paramref name="rootDirectory"/>.
     /// </summary>
+    /// <param name="includePattern">The glob pattern that includes files.</param>
+    /// <param name="rootDirectory">The directory to enumerate.</param>
+    /// <param name="options">The glob and file-system enumeration options.</param>
+    /// <returns>The created glob enumerator.</returns>
     public static GlobEnumerator Create(
         string includePattern,
         string rootDirectory,
@@ -110,6 +114,12 @@ public sealed class GlobEnumerator : FileSystemEnumerator<string>
     /// <summary>
     ///  Builds an owned matcher session for an include pattern plus zero or more exclude patterns.
     /// </summary>
+    /// <param name="includePattern">The glob pattern that includes files.</param>
+    /// <param name="excludePatterns">The optional glob patterns that exclude files.</param>
+    /// <param name="rootDirectory">The normalized enumeration root.</param>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="globOptions">The glob options.</param>
+    /// <returns>The owned matcher session.</returns>
     internal static IFileSystemMatcherSession BuildSession(
         string includePattern,
         IReadOnlyList<string>? excludePatterns,

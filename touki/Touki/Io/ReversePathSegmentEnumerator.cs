@@ -15,6 +15,11 @@ internal ref struct ReversePathSegmentEnumerator
     private int _position;
     private bool _inSecondPath;
 
+    /// <summary>
+    ///  Initializes reverse enumeration over two logically concatenated paths.
+    /// </summary>
+    /// <param name="firstPath">The first path.</param>
+    /// <param name="secondPath">The second path.</param>
     public ReversePathSegmentEnumerator(
         ReadOnlySpan<char> firstPath,
         ReadOnlySpan<char> secondPath)
@@ -25,8 +30,15 @@ internal ref struct ReversePathSegmentEnumerator
         _position = _inSecondPath ? _secondPath.Length : _firstPath.Length;
     }
 
+    /// <summary>
+    ///  Gets the current path segment.
+    /// </summary>
     public readonly ReadOnlySpan<char> Current => _currentSegment;
 
+    /// <summary>
+    ///  Moves to the preceding non-empty path segment.
+    /// </summary>
+    /// <returns><see langword="true"/> if a segment is available; otherwise <see langword="false"/>.</returns>
     public bool MovePrevious()
     {
         while (true)

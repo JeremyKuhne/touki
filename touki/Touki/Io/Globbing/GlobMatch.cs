@@ -42,6 +42,11 @@ internal sealed partial class GlobMatch : FileSystemMatcherSession
     private int _rootPrefixLength;
     private bool _rootPrefixComputed;
 
+    /// <summary>
+    ///  Initializes a root-bound matcher session for a compiled specification.
+    /// </summary>
+    /// <param name="specification">The compiled glob specification.</param>
+    /// <param name="rootDirectory">The enumeration root, or <see langword="null"/> when unbound.</param>
     internal GlobMatch(
         GlobSpecification specification,
         string? rootDirectory)
@@ -63,6 +68,9 @@ internal sealed partial class GlobMatch : FileSystemMatcherSession
     /// </summary>
     internal string? RootDirectory => _rootDirectory;
 
+    /// <summary>
+    ///  Gets whether a matching directory causes its entire subtree to match.
+    /// </summary>
     internal bool CanMatchWholeSubtree =>
         !_specification.Negated
         && _matchesDirectoryAncestors;

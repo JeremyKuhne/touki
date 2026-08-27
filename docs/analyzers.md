@@ -27,7 +27,8 @@ of the way, and name a field for what it actually is.
 | [TOUKI0022](#touki0022) | Avoid tab characters | Maintainability | **Disabled** | Yes | - |
 | [TOUKI0023](#touki0023) | Remove trailing whitespace | Maintainability | Warning | - | - |
 | [TOUKI0024](#touki0024) | Format XML documentation as nested XML | Maintainability | **Disabled** | Yes | - |
-| [TOUKI0025](#touki0025) | Require exactly one XML summary per type | Maintainability | Warning | Yes | - |
+| [TOUKI0025](#touki0025) | Document types | Maintainability | Warning | Yes | - |
+| [TOUKI0026](#touki0026) | Document members, parameters, and return values | Maintainability | Warning | Yes | - |
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
 | [TOUKI0031](#touki0031) | Use `WriteFormatted` for interpolated strings | Performance | Warning | - | C# 10, `TextWriterExtensions` |
 | [TOUKI0032](#touki0032) | Use `Path.Join` instead of `Path.Combine` | Reliability | Warning | - | - |
@@ -39,8 +40,8 @@ the compilation to reference `Touki.DisposableBase`. TOUKI0031 requires C# 10 or
 and the Touki `TextWriterExtensions` handler overload. The rest apply to any C# the
 compiler hands them.
 
-Generated code is not diagnosed. TOUKI0025 counts a summary on a generated partial declaration when analyzing
-the corresponding user-authored type.
+Generated code is not diagnosed. TOUKI0025 counts documentation on a generated partial declaration when
+analyzing the corresponding user-authored type. TOUKI0026 ignores generated member declarations.
 
 ---
 
@@ -400,9 +401,9 @@ elements deep, or whose formatted replacement would exceed 4 MiB.
 
 ## TOUKI0025
 
-**Require exactly one XML summary per type.** Reports a class, struct, interface, record, enum,
-or delegate that does not have exactly one top-level `<summary>` element. Nested and file-local
-types are included by default.
+**Document types.** Reports a class, struct, interface, record, enum, or delegate that does not
+have one top-level `<summary>` element or a top-level `<inheritdoc>` element. Nested and
+file-local types are included by default.
 
 ```csharp
 class Undocumented { } // TOUKI0025
@@ -420,12 +421,12 @@ satisfy the rule, but a type declared only in generated code is not diagnosed. G
 `generated_code = true`, `#line hidden`, `[GeneratedCode]`, and `[CompilerGenerated]`
 declarations are recognized. Types lexically nested in a generated declaration are also excluded.
 
-Only well-formed `<summary>` elements in documentation blocks associated with the declaration
-count. `<inheritdoc/>`, `<remarks>`, a malformed summary, an unprocessed documentation block, and
-a `<summary>` nested inside another XML element do not substitute for a top-level summary. The
+Only well-formed `<summary>` and `<inheritdoc>` elements in documentation blocks associated with
+the declaration count. `<remarks>`, malformed XML, an unprocessed documentation block, and an
+element nested inside another XML element do not substitute for top-level documentation. The
 association follows the compiler: ordinary comments between the nearest documentation block and
 the declaration are allowed, while an ordinary comment between documentation blocks leaves the
-earlier block unprocessed.
+earlier block unprocessed. Duplicate summaries are still reported even when inheritdoc is present.
 
 Configure the analyzed visibility with a comma-separated list:
 
@@ -442,6 +443,93 @@ nested in an internal type is `internal`. The `file` value is literal: it select
 and non-private types nested within it, while `private` selects an explicitly private nested type.
 For a partial type whose files receive different EditorConfig settings, the rule runs when any
 declaring file includes the type's effective visibility.
+
+## TOUKI0026
+
+**Document members.** Reports a method, constructor, operator, property, indexer, field, enum
+value, or event without a top-level `<summary>` or `<inheritdoc>` element. Generated declarations
+are ignored. Accessors and compiler-generated backing fields are not separate documentation
+targets.
+
+```csharp
+public int Count { get; } // TOUKI0026
+
+/// <summary>
+///  Gets the number of values.
+/// </summary>
+public int Count { get; }
+```
+
+Overrides and explicit interface implementations do not need local documentation when a
+documented member exists somewhere in their base or interface hierarchy. If every member in a
+source hierarchy can be inspected and none is documented, the implementation is reported. A
+metadata hierarchy with unavailable XML documentation is left alone because the rule cannot prove
+that documentation is absent. Implicit interface implementations remain ordinary members and must
+be documented locally.
+
+Configure the effective member visibility with:
+
+```ini
+dotnet_code_quality.TOUKI0026.api_surface = public, internal
+```
+
+Accepted values are `public`, `internal`, `private`, and `all`. The default is `public, internal`,
+which means every effectively non-private member. Containing types constrain visibility: a public
+member in an internal type is `internal`, and a public member in a private nested type is `private`.
+Protected and protected-internal members of a public type belong to the public surface;
+private-protected members belong to the internal surface. Missing, empty, or invalid values use
+the default. The `file` token is not accepted because `file` applies to types, not members.
+
+### Parameters
+
+TOUKI0026 reports a parameter without a matching top-level `<param>` element. Methods,
+constructors, operators, indexers, delegate signatures, and primary-constructor parameters
+participate. Named C# 14 extension-block receivers also participate; put their `<param>` element
+on the `extension(...)` block. Unnamed type-extension receivers have no source identifier and are
+skipped. For a partial member, documentation on either declaration is accepted and parameters are
+matched by ordinal when declaration-part names differ.
+
+```csharp
+/// <summary>Transforms a value.</summary>
+public int Transform(int value) => value; // TOUKI0026
+```
+
+Disable parameter enforcement while retaining member and return enforcement with:
+
+```ini
+dotnet_code_quality.TOUKI0026.require_parameter_documentation = false
+```
+
+The default is `true`. A valid top-level `<inheritdoc>` satisfies the complete inherited contract,
+including parameters.
+
+The compiler copies XML elements from an extension block to each member declared in that block.
+The analyzer follows that behavior, so a block-level summary or inheritdoc can document the
+contained members. Receiver visibility is derived from those members: a private-only extension
+block participates only when the `private` surface is selected.
+
+### Return values
+
+TOUKI0026 reports a non-void method, operator, conversion, or delegate without a top-level
+`<returns>` element. Properties and indexers do not require `<value>` or `<returns>` elements;
+their member documentation is still required.
+
+```csharp
+/// <summary>Gets the current count.</summary>
+public int GetCount() => 0; // TOUKI0026
+```
+
+Disable return enforcement while retaining member and parameter enforcement with:
+
+```ini
+dotnet_code_quality.TOUKI0026.require_return_documentation = false
+```
+
+The default is `true`. A valid top-level `<inheritdoc>` satisfies the inherited return contract.
+
+The member documentation rule is disabled under `touki/Framework/Polyfills` in this repository.
+Those files track `dotnet/runtime`, so retaining upstream documentation coverage keeps future
+updates reviewable; Touki's hand-written shared and Framework support code uses the defaults.
 
 ## TOUKI0030
 
@@ -851,7 +939,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 | 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |
 | 0.7.0 | TOUKI0022, TOUKI0023 |
 | 0.8.0 | TOUKI0012, TOUKI0024, TOUKI0031, TOUKI0032, TOUKI0033 |
-| Unreleased | TOUKI0025 |
+| Unreleased | TOUKI0025, TOUKI0026 |
 
 The authoritative list lives in
 [AnalyzerReleases.Shipped.md](../touki.analyzers/AnalyzerReleases.Shipped.md) and

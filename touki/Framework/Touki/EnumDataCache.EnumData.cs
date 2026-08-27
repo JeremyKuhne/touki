@@ -14,6 +14,7 @@ internal static partial class EnumDataCache
         /// <summary>
         ///  Initializes a new instance of the <see cref="EnumData"/> class.
         /// </summary>
+        /// <param name="type">The enum type to describe.</param>
         public EnumData(Type type)
         {
             if (!type.IsEnum)

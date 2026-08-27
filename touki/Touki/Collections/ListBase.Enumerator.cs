@@ -25,6 +25,7 @@ public abstract partial class ListBase<T> where T : notnull
         /// <summary>
         ///  Constructs a new instance of the <see cref="Enumerator"/> struct.
         /// </summary>
+        /// <param name="list">The list to enumerate.</param>
         public Enumerator(ListBase<T> list)
         {
             _list = list;

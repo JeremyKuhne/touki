@@ -29,6 +29,7 @@ public ref struct BufferScope<T>
     ///  Create the <see cref="BufferScope{T}"/> with an initial buffer. Useful for creating with an initial stack
     ///  allocated buffer.
     /// </summary>
+    /// <param name="initialBuffer">The initial buffer to use.</param>
     public BufferScope(Span<T> initialBuffer)
     {
         _array = null;
@@ -45,6 +46,7 @@ public ref struct BufferScope<T>
     ///   <code>using BufferScope&lt;char> buffer = new(stackalloc char[64]);</code>
     ///  </example>
     /// </remarks>
+    /// <param name="initialBuffer">The initial buffer to use.</param>
     /// <param name="minimumLength">
     ///  The required minimum length. If the <paramref name="initialBuffer"/> is not large enough, this will rent from
     ///  the shared <see cref="ArrayPool{T}"/>.
@@ -72,6 +74,7 @@ public ref struct BufferScope<T>
     ///   this method.
     ///  </para>
     /// </remarks>
+    /// <param name="capacity">The minimum number of elements the buffer must hold.</param>
     /// <param name="copy">True to copy the existing elements when new space is allocated.</param>
     public unsafe void EnsureCapacity(int capacity, bool copy = false)
     {
@@ -159,6 +162,7 @@ public ref struct BufferScope<T>
     /// <summary>
     ///  Returns an enumerator for the buffer's backing <see cref="Span{T}"/>.
     /// </summary>
+    /// <returns>An enumerator for the buffer's elements.</returns>
     public readonly Span<T>.Enumerator GetEnumerator() => _span.GetEnumerator();
 
     /// <summary>

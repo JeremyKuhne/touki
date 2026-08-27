@@ -29,6 +29,7 @@ public static partial class DisposalTracking
     ///   You need to add <see cref="GC.SuppressFinalize"/> under #ifdef when you don't have a single implicit conversion.
     ///  </para>
     /// </remarks>
+    /// <param name="object">The object whose finalizer to suppress.</param>
     [Conditional("DEBUG")]
     public static void SuppressFinalize(object @object)
     {

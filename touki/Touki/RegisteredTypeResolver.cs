@@ -96,6 +96,7 @@ public sealed partial class RegisteredTypeResolver : ITypeResolver
         return _types.TryGetValue(typeName, out type);
     }
 
+    /// <inheritdoc cref="IDeserializer.GetSerializationEvents(Type)"/>
     [UnconditionalSuppressMessage(
         "ReflectionAnalysis",
         "IL2111:UnrecognizedReflectionPattern",

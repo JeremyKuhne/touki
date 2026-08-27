@@ -33,6 +33,9 @@ internal static class GlobDialectExtensions
     ///   the other dialects require <see cref="GlobOptions.IgnoreCase"/>.
     ///  </para>
     /// </remarks>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
+    /// <returns>The case-folding mode used by the dialect and options.</returns>
     public static IgnoreCaseKind DefaultIgnoreCaseKind(this GlobDialect dialect, GlobOptions options)
     {
         // Current MSBuildGlob and FileMatcher.IsMatch are case-insensitive and do
@@ -77,6 +80,9 @@ internal static class GlobDialectExtensions
     ///   regardless of dialect.
     ///  </para>
     /// </remarks>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
+    /// <returns>The escape character, or <c>'\0'</c> when escaping is disabled.</returns>
     public static char GetEscapeChar(this GlobDialect dialect, GlobOptions options)
     {
         if ((options & GlobOptions.NoEscape) != 0
@@ -106,6 +112,10 @@ internal static class GlobDialectExtensions
     ///   when that compatibility is required.
     ///  </para>
     /// </remarks>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <returns>
+    ///  <see langword="true"/> if wildcards match a leading dot by default; otherwise <see langword="false"/>.
+    /// </returns>
     public static bool MatchesLeadingDotByDefault(this GlobDialect dialect) => dialect switch
     {
         GlobDialect.Posix
@@ -131,6 +141,8 @@ internal static class GlobDialectExtensions
     ///   path-unaware.
     ///  </para>
     /// </remarks>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <returns><see langword="true"/> if the dialect is path-aware; otherwise <see langword="false"/>.</returns>
     public static bool IsPathAware(this GlobDialect dialect) => dialect switch
     {
         GlobDialect.PosixPath
@@ -159,6 +171,8 @@ internal static class GlobDialectExtensions
     ///   <see cref="GlobSpecification.Compile(StringSegment, GlobDialect, GlobOptions, GlobPathSeparator, int)"/>.
     ///  </para>
     /// </remarks>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <returns>The default path separator, or <c>'\0'</c> for a path-unaware dialect.</returns>
     public static char DefaultSeparator(this GlobDialect dialect) => dialect switch
     {
         GlobDialect.PosixPath
@@ -182,6 +196,10 @@ internal static class GlobDialectExtensions
     ///   literal characters. Every other dialect supports bracket expressions.
     ///  </para>
     /// </remarks>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <returns>
+    ///  <see langword="true"/> if the dialect supports character classes; otherwise <see langword="false"/>.
+    /// </returns>
     public static bool HasCharacterClasses(this GlobDialect dialect) =>
         dialect is not (GlobDialect.Simple or GlobDialect.MSBuild or GlobDialect.FileSystemGlobbing);
 
@@ -199,6 +217,8 @@ internal static class GlobDialectExtensions
     ///   they are not path-aware.
     ///  </para>
     /// </remarks>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <returns><see langword="true"/> if globstar is enabled by default; otherwise <see langword="false"/>.</returns>
     public static bool GlobStarIsImplicit(this GlobDialect dialect) =>
         dialect is GlobDialect.MSBuild or GlobDialect.FileSystemGlobbing or GlobDialect.Git;
 }

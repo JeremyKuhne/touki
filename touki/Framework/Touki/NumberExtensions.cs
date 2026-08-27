@@ -15,11 +15,14 @@ namespace Touki;
 /// </summary>
 public static unsafe partial class NumberExtensions
 {
+    /// <param name="decimalValue">The decimal receiver.</param>
     extension(decimal decimalValue)
     {
         /// <summary>
         ///  Determines whether the specified value is negative.
         /// </summary>
+        /// <param name="value">The decimal value to inspect.</param>
+        /// <returns><see langword="true"/> if the sign bit is set; otherwise, <see langword="false"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNegative(decimal value)
         {
@@ -33,6 +36,7 @@ public static unsafe partial class NumberExtensions
         /// <summary>
         ///  Low bits of the decimal value.
         /// </summary>
+        /// <returns>The low 32 bits of the decimal value's 96-bit integer representation.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint Low()
         {
@@ -43,6 +47,7 @@ public static unsafe partial class NumberExtensions
         /// <summary>
         ///  Mid bits of the decimal value.
         /// </summary>
+        /// <returns>The middle 32 bits of the decimal value's 96-bit integer representation.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint Mid()
         {
@@ -53,6 +58,7 @@ public static unsafe partial class NumberExtensions
         /// <summary>
         ///  High bits of the decimal value.
         /// </summary>
+        /// <returns>The high 32 bits of the decimal value's 96-bit integer representation.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint High()
         {
@@ -78,6 +84,8 @@ public static unsafe partial class NumberExtensions
         ///  Divides the specified decimal value by 10^9 (1,000,000,000), updates the decimal
         ///  with the quotient, and returns the remainder as a uint.
         /// </summary>
+        /// <param name="value">The decimal value to replace with the quotient.</param>
+        /// <returns>The remainder after division by 1,000,000,000.</returns>
         /// <remarks>
         ///  <para>
         ///   This is primarily used for decimal formatting and arithmetic operations.
@@ -109,11 +117,13 @@ public static unsafe partial class NumberExtensions
 
     // From here forward, code is from the .NET codebase, with minor modifications for clarity.
 
+    /// <param name="floatValue">The single-precision value to inspect.</param>
     extension(float floatValue)
     {
         /// <summary>
         ///  Determines whether the specified value is finite (zero, subnormal, or normal).
         /// </summary>
+        /// <returns><see langword="true"/> if the value is finite; otherwise, <see langword="false"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsFinite()
         {
@@ -124,15 +134,18 @@ public static unsafe partial class NumberExtensions
         /// <summary>
         ///  Determines whether the specified value is negative.
         /// </summary>
+        /// <returns><see langword="true"/> if the sign bit is set; otherwise, <see langword="false"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsNegative() => (*(int*)&floatValue) < 0;
     }
 
+    /// <param name="doubleValue">The double-precision value to inspect.</param>
     extension(double doubleValue)
     {
         /// <summary>
         ///  Determines whether the specified value is finite (zero, subnormal, or normal).
         /// </summary>
+        /// <returns><see langword="true"/> if the value is finite; otherwise, <see langword="false"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsFinite()
         {
@@ -143,6 +156,7 @@ public static unsafe partial class NumberExtensions
         /// <summary>
         ///  Determines whether the specified value is negative.
         /// </summary>
+        /// <returns><see langword="true"/> if the sign bit is set; otherwise, <see langword="false"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsNegative() => BitConverter.DoubleToInt64Bits(doubleValue) < 0;
     }

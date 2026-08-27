@@ -19,6 +19,16 @@ internal sealed class SerializationInfoValueUpdater : ValueUpdater
     private readonly string _name;
     private readonly Type _serializedType;
 
+    /// <summary>
+    ///  Initializes an updater for a named serialization-information value.
+    /// </summary>
+    /// <param name="objectId">The identifier of the object described by the serialization information.</param>
+    /// <param name="valueId">The identifier of the referenced value.</param>
+    /// <param name="info">The serialization information to update.</param>
+    /// <param name="name">The name of the value to update.</param>
+    /// <param name="serializedType">
+    ///  The serialized type to retain when the resolved value is <see langword="null"/>.
+    /// </param>
     internal SerializationInfoValueUpdater(
         SerializationRecordId objectId,
         SerializationRecordId valueId,
@@ -32,6 +42,7 @@ internal sealed class SerializationInfoValueUpdater : ValueUpdater
         _serializedType = serializedType;
     }
 
+    /// <inheritdoc/>
     internal override void UpdateValue(IDictionary<SerializationRecordId, object> objects)
     {
         object? newValue = objects[ValueId];

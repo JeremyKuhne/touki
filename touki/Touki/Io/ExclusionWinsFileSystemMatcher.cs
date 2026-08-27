@@ -7,14 +7,27 @@ namespace Touki.Io;
 /// <summary>
 ///  Defines a matcher composition in which any matching exclusion overrides all matching includes.
 /// </summary>
+/// <param name="includes">The matchers that include paths.</param>
+/// <param name="excludes">The matchers that exclude paths.</param>
 internal sealed class ExclusionWinsFileSystemMatcher(
     IFileSystemMatcher[] includes,
     IFileSystemMatcher[] excludes) : IFileSystemMatcher
 {
+    /// <summary>
+    ///  Gets the matchers that include paths.
+    /// </summary>
     internal IFileSystemMatcher[] Includes => includes;
 
+    /// <summary>
+    ///  Gets the matchers that exclude paths.
+    /// </summary>
     internal IFileSystemMatcher[] Excludes => excludes;
 
+    /// <summary>
+    ///  Creates a matcher session bound to <paramref name="rootDirectory"/>.
+    /// </summary>
+    /// <param name="rootDirectory">The normalized enumeration root.</param>
+    /// <returns>A new matcher session owned by the caller.</returns>
     public IFileSystemMatcherSession CreateSession(string rootDirectory)
     {
         ArgumentNullException.ThrowIfNull(rootDirectory);

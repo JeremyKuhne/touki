@@ -40,6 +40,7 @@ internal sealed partial class MatchMSBuild : DisposableBase, IFileSystemMatcherS
     /// <summary>
     ///  Constructs a new <see cref="MatchMSBuild"/> from a parsed, fully qualified <see cref="MSBuildSpecification"/>.
     /// </summary>
+    /// <param name="specification">The parsed, fully qualified specification.</param>
     /// <param name="matchType">The type of matching to use for the specification.</param>
     /// <param name="matchCasing">The case sensitivity to use.</param>
     public MatchMSBuild(MSBuildSpecification specification, MatchType matchType, MatchCasing matchCasing)
@@ -47,6 +48,13 @@ internal sealed partial class MatchMSBuild : DisposableBase, IFileSystemMatcherS
     {
     }
 
+    /// <summary>
+    ///  Constructs a matcher from a parsed specification with optional logical file-system semantics.
+    /// </summary>
+    /// <param name="specification">The parsed, fully qualified specification.</param>
+    /// <param name="matchType">The type of matching to use for the specification.</param>
+    /// <param name="matchCasing">The case sensitivity to use.</param>
+    /// <param name="forceLogicalSemantics">Whether to bypass file-system filename semantics.</param>
     internal MatchMSBuild(
         MSBuildSpecification specification,
         MatchType matchType,

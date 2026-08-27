@@ -45,6 +45,8 @@ public static class Paths
     ///  Given <paramref name="matchCasing"/>, ensure that it is set to a specific casing. The default is
     ///  to get the default casing for the current operating system.
     /// </summary>
+    /// <param name="matchCasing">The requested match casing.</param>
+    /// <returns>The explicit casing to use.</returns>
     public static MatchCasing GetFinalCasing(MatchCasing matchCasing) => matchCasing switch
     {
         MatchCasing.CaseSensitive => MatchCasing.CaseSensitive,
@@ -58,6 +60,8 @@ public static class Paths
     /// <param name="expression">The expression to match with, such as "*foo".</param>
     /// <param name="name">The name to match against the expression.</param>
     /// <param name="matchCasing">The casing to use.</param>
+    /// <param name="matchType">The expression matching mode.</param>
+    /// <returns><see langword="true"/> if the name matches; otherwise <see langword="false"/>.</returns>
     public static bool MatchesExpression(
         ReadOnlySpan<char> name,
         ReadOnlySpan<char> expression,
@@ -90,6 +94,13 @@ public static class Paths
     ///   and both are not rooted and neither start with a ".." segment, they can be compared correctly.
     ///  </para>
     /// </remarks>
+    /// <param name="firstDirectory">The possible ancestor directory.</param>
+    /// <param name="secondDirectory">The directory to classify.</param>
+    /// <param name="ignoreCase">Whether the lexical comparison ignores case.</param>
+    /// <returns>
+    ///  <see langword="true"/> if the second directory is the same as or below the first; otherwise
+    ///  <see langword="false"/>.
+    /// </returns>
     public static bool IsSameOrSubdirectory(
         ReadOnlySpan<char> firstDirectory,
         ReadOnlySpan<char> secondDirectory,
@@ -107,6 +118,17 @@ public static class Paths
                 || secondDirectory[firstDirectory.Length] == Path.DirectorySeparatorChar);
     }
 
+    /// <summary>
+    ///  Determines whether a candidate child directory is the same as or an ancestor of a target directory.
+    /// </summary>
+    /// <param name="targetDirectory">The target directory.</param>
+    /// <param name="currentDirectory">The directory containing the candidate.</param>
+    /// <param name="directoryName">The candidate directory name.</param>
+    /// <param name="ignoreCase">Whether the lexical comparison ignores case.</param>
+    /// <returns>
+    ///  <see langword="true"/> if the candidate is the same as or an ancestor of the target; otherwise
+    ///  <see langword="false"/>.
+    /// </returns>
     internal static bool CandidateIsSameOrAncestorOf(
         ReadOnlySpan<char> targetDirectory,
         ReadOnlySpan<char> currentDirectory,
@@ -164,6 +186,8 @@ public static class Paths
     /// <summary>
     ///  Converts all alternate directory separators in the given path to the primary directory separator.
     /// </summary>
+    /// <param name="path">The path to convert.</param>
+    /// <returns>The converted path, or the original string when no conversion is required.</returns>
     public static string ChangeAlternateDirectorySeparators(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -302,6 +326,13 @@ public static class Paths
     ///   be reasonably performant, this method only proves the most obvious cases of exclusivity.
     ///  </para>
     /// </remarks>
+    /// <param name="pattern1">The first expression.</param>
+    /// <param name="pattern2">The second expression.</param>
+    /// <param name="matchType">The expression matching mode.</param>
+    /// <param name="matchCasing">The casing to use.</param>
+    /// <returns>
+    ///  <see langword="true"/> if the expressions are proven not to overlap; otherwise <see langword="false"/>.
+    /// </returns>
     public static bool AreExpressionsExclusive(
         StringSegment pattern1,
         StringSegment pattern2,

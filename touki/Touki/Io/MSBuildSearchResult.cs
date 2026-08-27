@@ -9,6 +9,11 @@ namespace Touki.Io;
 /// </summary>
 public sealed class MSBuildSearchResult : MSBuildEnumerationResult
 {
+    /// <summary>
+    ///  Initializes a valid lazy search result.
+    /// </summary>
+    /// <param name="enumerator">The lazy enumerator owned by the caller.</param>
+    /// <param name="invalidExcludeSpecifications">The invalid excludes retained as literal filters.</param>
     internal MSBuildSearchResult(MSBuildEnumerator enumerator, string[] invalidExcludeSpecifications)
     {
         ArgumentNullException.ThrowIfNull(enumerator);

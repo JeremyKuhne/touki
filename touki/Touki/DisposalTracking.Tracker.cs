@@ -35,6 +35,10 @@ public static partial class DisposalTracking
         /// <summary>
         ///  Create a tracker that will throw if finalized without being disposed.
         /// </summary>
+        /// <param name="throwIfFinalized">
+        ///  <see langword="true"/> to capture the originating stack and throw if finalized; otherwise,
+        ///  <see langword="false"/>.
+        /// </param>
         public Tracker(bool throwIfFinalized = true)
         {
             _throwIfFinalized = throwIfFinalized;

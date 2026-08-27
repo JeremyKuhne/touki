@@ -9,6 +9,9 @@ namespace Touki.Io;
 /// </summary>
 public abstract class MSBuildEnumerationResult
 {
+    /// <summary>
+    ///  Initializes an MSBuild enumeration result.
+    /// </summary>
     private protected MSBuildEnumerationResult()
     {
     }

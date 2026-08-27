@@ -11,6 +11,12 @@ internal sealed class PrefixGlobStrategy : GlobStrategy
 {
     private readonly string _prefix;
 
+    /// <summary>
+    ///  Initializes a strategy that matches a fixed literal prefix.
+    /// </summary>
+    /// <param name="prefix">The literal prefix.</param>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
     public PrefixGlobStrategy(string prefix, GlobDialect dialect, GlobOptions options)
         : base(dialect, options)
     {

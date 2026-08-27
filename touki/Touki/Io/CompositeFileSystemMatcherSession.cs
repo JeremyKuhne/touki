@@ -40,6 +40,12 @@ internal sealed class CompositeFileSystemMatcherSession : FileSystemMatcherSessi
             + (Path.EndsInDirectorySeparator(rootDirectory) ? 0 : 1);
     }
 
+    /// <summary>
+    ///  Creates a session that evaluates a flattened representation of <paramref name="matcher"/>.
+    /// </summary>
+    /// <param name="matcher">The matcher definition to flatten.</param>
+    /// <param name="rootDirectory">The root directory for the matcher session.</param>
+    /// <returns>The created matcher session.</returns>
     public static IFileSystemMatcherSession Create(
         IFileSystemMatcher matcher,
         string rootDirectory)

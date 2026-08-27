@@ -91,6 +91,12 @@ internal static class OrdinalIgnoreCaseHelpers
     ///   load becomes a single indexed <c>movzx</c> instead of the slow-span pointer dance.
     ///  </para>
     /// </remarks>
+    /// <param name="a">The first equal-length span to compare.</param>
+    /// <param name="b">The second equal-length span to compare.</param>
+    /// <returns>
+    ///  <see langword="true"/> if the spans are equal under ASCII-letter case folding; otherwise,
+    ///  <see langword="false"/>.
+    /// </returns>
     public static bool EqualsAsciiLetterFold(ReadOnlySpan<char> a, ReadOnlySpan<char> b)
     {
         Debug.Assert(a.Length == b.Length, "EqualsAsciiLetterFold requires equal-length spans.");

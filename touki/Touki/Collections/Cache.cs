@@ -19,6 +19,9 @@ public class Cache<T> : DisposableBase where T : class, new()
     /// <summary>
     ///  Create a cache with space for the specified number of items.
     /// </summary>
+    /// <param name="cacheSpace">
+    ///  The number of shared cache slots, or a value less than one to use a processor-based default.
+    /// </param>
     public Cache(int cacheSpace)
     {
         if (cacheSpace < 1)
@@ -32,6 +35,7 @@ public class Cache<T> : DisposableBase where T : class, new()
     /// <summary>
     ///  Get an item from the cache or create one if none are available.
     /// </summary>
+    /// <returns>An item from the cache, or a newly created item if the cache is empty.</returns>
     public virtual T Acquire()
     {
         T? item = t_localItem;
@@ -58,6 +62,7 @@ public class Cache<T> : DisposableBase where T : class, new()
     /// <summary>
     ///  Release an item back to the cache, disposing if no room is available.
     /// </summary>
+    /// <param name="item">The item to return to the cache.</param>
     public virtual void Release(T item)
     {
         ObjectDisposedException.ThrowIf(Disposed, this);

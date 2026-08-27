@@ -12,6 +12,12 @@ internal sealed class LiteralGlobStrategy : GlobStrategy
     private readonly string _literal;
     private readonly string _literalPathPrefix;
 
+    /// <summary>
+    ///  Initializes a strategy that matches one literal input.
+    /// </summary>
+    /// <param name="literal">The literal input to match.</param>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
     public LiteralGlobStrategy(string literal, GlobDialect dialect, GlobOptions options)
         : base(dialect, options)
     {

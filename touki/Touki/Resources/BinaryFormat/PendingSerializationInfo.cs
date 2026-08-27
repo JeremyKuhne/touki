@@ -24,6 +24,12 @@ internal sealed class PendingSerializationInfo
         DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
     private readonly Type _type;
 
+    /// <summary>
+    ///  Initializes pending serialization-constructor work for an object.
+    /// </summary>
+    /// <param name="objectId">The identifier of the object to populate.</param>
+    /// <param name="info">The completed serialization information.</param>
+    /// <param name="type">The runtime type that declares the serialization constructor.</param>
     internal PendingSerializationInfo(
         SerializationRecordId objectId,
         SerializationInfo info,
@@ -36,8 +42,16 @@ internal sealed class PendingSerializationInfo
         _type = type;
     }
 
+    /// <summary>
+    ///  Gets the identifier of the object to populate.
+    /// </summary>
     internal SerializationRecordId ObjectId { get; }
 
+    /// <summary>
+    ///  Invokes the serialization constructor on the pending object.
+    /// </summary>
+    /// <param name="objects">The deserialized objects keyed by their record identifiers.</param>
+    /// <param name="context">The context supplied to the serialization constructor.</param>
     internal void Populate(IDictionary<SerializationRecordId, object> objects, StreamingContext context)
     {
         object instance = objects[ObjectId];

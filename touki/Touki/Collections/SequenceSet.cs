@@ -183,6 +183,7 @@ public sealed partial class SequenceSet<T> : DisposableBase where T : unmanaged,
     ///  Returns <see langword="true"/> if an equal sequence is already interned in the set.
     /// </summary>
     /// <param name="sequence">The sequence to look for.</param>
+    /// <returns><see langword="true"/> if an equal sequence is interned; otherwise, <see langword="false"/>.</returns>
     public bool Contains(ReadOnlySpan<T> sequence)
     {
         if (_buckets is null)
@@ -335,6 +336,7 @@ public sealed partial class SequenceSet<T> : DisposableBase where T : unmanaged,
     /// <summary>
     ///  Returns an allocation-free enumerator over the interned sequences in insertion order.
     /// </summary>
+    /// <returns>An enumerator over the interned sequences.</returns>
     public Enumerator GetEnumerator() => new(this);
 
     /// <inheritdoc/>

@@ -13,6 +13,13 @@ internal ref struct CanonicalPathScope
 {
     private BufferScope<char> _buffer;
 
+    /// <summary>
+    ///  Initializes a canonical path for <paramref name="fileName"/> relative to the root directory.
+    /// </summary>
+    /// <param name="initialBuffer">The initial storage to use when the path must be combined.</param>
+    /// <param name="rootPrefixLength">The length of the root prefix in <paramref name="currentDirectory"/>.</param>
+    /// <param name="currentDirectory">The directory containing the file.</param>
+    /// <param name="fileName">The file name.</param>
     public CanonicalPathScope(
         Span<char> initialBuffer,
         int rootPrefixLength,
@@ -38,8 +45,14 @@ internal ref struct CanonicalPathScope
         Value = path;
     }
 
+    /// <summary>
+    ///  Gets the canonical root-relative path.
+    /// </summary>
     public ReadOnlySpan<char> Value { get; }
 
+    /// <summary>
+    ///  Releases any rented path storage.
+    /// </summary>
     public void Dispose() => _buffer.Dispose();
 
     private static void CopyCanonicalDirectory(

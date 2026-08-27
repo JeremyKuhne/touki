@@ -86,15 +86,23 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey> : I
     /// <summary>
     ///  Override this to create a new <see cref="CacheEntry"/> for the given <paramref name="key"/>.
     /// </summary>
+    /// <param name="key">The key for the new entry.</param>
     /// <param name="cached">
     ///  <see langword="true"/> if the entry is actually kept in the cache. When the cache hits the hard limit entries
     ///  aren't kept in the cache and need to be cleaned up when the ref count drops to zero.
     /// </param>
+    /// <returns>A cache entry for <paramref name="key"/>.</returns>
     protected abstract CacheEntry CreateEntry(TKey key, bool cached);
 
     /// <summary>
     ///  Return <see langword="true"/> if the given <paramref name="key"/> matches the given <paramref name="entry"/>.
     /// </summary>
+    /// <param name="key">The key to compare.</param>
+    /// <param name="entry">The cache entry to compare with <paramref name="key"/>.</param>
+    /// <returns>
+    ///  <see langword="true"/> if <paramref name="key"/> matches <paramref name="entry"/>; otherwise,
+    ///  <see langword="false"/>.
+    /// </returns>
     protected abstract bool IsMatch(TKey key, CacheEntry entry);
 
     /// <summary>
@@ -105,6 +113,8 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey> : I
     ///   Override if you want to modify behavior or lock cache access.
     ///  </para>
     /// </remarks>
+    /// <param name="key">The key of the entry to find or create.</param>
+    /// <returns>The existing or newly created entry for <paramref name="key"/>.</returns>
     public virtual CacheEntry GetEntry(TKey key)
     {
         // NOTE: Measure carefully when changing logic in this method. Code has been optimized for performance.
@@ -201,6 +211,9 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey> : I
     /// <summary>
     ///  Frees all entries in the cache.
     /// </summary>
+    /// <param name="disposing">
+    ///  <see langword="true"/> to release managed resources; otherwise, <see langword="false"/>.
+    /// </param>
     protected virtual void Dispose(bool disposing)
     {
         if (disposing)

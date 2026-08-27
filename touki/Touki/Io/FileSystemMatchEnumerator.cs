@@ -25,6 +25,9 @@ public abstract class FileSystemMatchEnumerator<TResult> : FileSystemEnumerator<
     ///   The matcher definition is borrowed. The enumerator lazily creates and owns one matcher session.
     ///  </para>
     /// </remarks>
+    /// <param name="rootDirectory">The directory to enumerate.</param>
+    /// <param name="matcher">The matcher used to select files and directories.</param>
+    /// <param name="options">The enumeration options, or <see langword="null"/> to use the defaults.</param>
     protected FileSystemMatchEnumerator(
         string rootDirectory,
         IFileSystemMatcher matcher,
@@ -63,11 +66,16 @@ public abstract class FileSystemMatchEnumerator<TResult> : FileSystemEnumerator<
     /// <summary>
     ///  Applies an additional derived-type filter after the matcher has included a file.
     /// </summary>
+    /// <param name="entry">The matched file entry.</param>
+    /// <returns><see langword="true"/> to include the file; otherwise <see langword="false"/>.</returns>
     protected virtual bool ShouldIncludeMatchedFile(ref FileSystemEntry entry) => true;
 
     /// <summary>
     ///  Releases resources owned by a derived enumerator.
     /// </summary>
+    /// <param name="disposing">
+    ///  <see langword="true"/> to release managed resources; otherwise <see langword="false"/>.
+    /// </param>
     protected virtual void DisposeAdditionalResources(bool disposing) { }
 
     /// <inheritdoc/>

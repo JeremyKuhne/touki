@@ -125,6 +125,9 @@ public static class Clipboard
     ///   helper process.
     ///  </para>
     /// </remarks>
+    /// <returns>
+    ///  <see langword="true"/> if the clipboard contents were released; otherwise <see langword="false"/>.
+    /// </returns>
     public static bool TryClear() => s_provider.TryClear();
 
     // Platform dispatch is structurally untestable: any single CI runner can

@@ -28,6 +28,11 @@ namespace Touki.Io.Globbing;
 /// </remarks>
 internal abstract class GlobStrategy : DisposableBase
 {
+    /// <summary>
+    ///  Initializes a strategy for the specified dialect and options.
+    /// </summary>
+    /// <param name="dialect">The dialect this strategy was compiled with.</param>
+    /// <param name="options">The options this strategy was compiled with.</param>
     private protected GlobStrategy(GlobDialect dialect, GlobOptions options)
     {
         Dialect = dialect;
@@ -118,6 +123,9 @@ internal abstract class GlobStrategy : DisposableBase
     ///  compiled pattern. When <paramref name="directoryPrefix"/> is non-empty it
     ///  ends with <see cref="Separator"/>.
     /// </summary>
+    /// <param name="directoryPrefix">The directory prefix preceding the file name.</param>
+    /// <param name="fileName">The file name to match.</param>
+    /// <returns><see langword="true"/> if the split input matches; otherwise <see langword="false"/>.</returns>
     internal abstract bool MatchCore(
         ReadOnlySpan<char> directoryPrefix,
         ReadOnlySpan<char> fileName);
@@ -173,6 +181,9 @@ internal abstract class GlobStrategy : DisposableBase
     ///   negation.
     ///  </para>
     /// </remarks>
+    /// <param name="directoryPrefix">The directory prefix preceding the candidate name.</param>
+    /// <param name="directoryName">The candidate directory name.</param>
+    /// <returns>The conservative match outcome for the candidate directory.</returns>
     internal virtual MatchOutcome MatchDirectory(
         ReadOnlySpan<char> directoryPrefix,
         ReadOnlySpan<char> directoryName) => MatchOutcome.None;

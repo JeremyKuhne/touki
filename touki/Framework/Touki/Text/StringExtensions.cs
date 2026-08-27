@@ -8,11 +8,14 @@ namespace Touki.Text;
 
 public static partial class StringExtensions
 {
+    /// <param name="stringValue">The string receiver.</param>
     extension(string stringValue)
     {
         /// <summary>
         ///  Generates a hash code for the specified string value that matches what <see langword="string"/> generates.
         /// </summary>
+        /// <param name="value">The characters to hash.</param>
+        /// <returns>The calculated hash code.</returns>
         /// <remarks>
         ///  <para>
         ///   On .NET Framework strings don't go beyond embedded nulls when calculating hash codes. If this matters to

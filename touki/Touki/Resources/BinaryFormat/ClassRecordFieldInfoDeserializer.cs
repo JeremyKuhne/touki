@@ -23,6 +23,13 @@ internal sealed class ClassRecordFieldInfoDeserializer : ClassRecordDeserializer
     private int _currentFieldIndex;
     private bool _hasFixups;
 
+    /// <summary>
+    ///  Initializes a deserializer that populates the serializable fields of a class instance.
+    /// </summary>
+    /// <param name="classRecord">The class record to deserialize.</param>
+    /// <param name="instance">The object materialized for the record.</param>
+    /// <param name="type">The resolved runtime type of <paramref name="instance"/>.</param>
+    /// <param name="deserializer">The object-graph deserializer.</param>
     internal ClassRecordFieldInfoDeserializer(
         ClassRecord classRecord,
         object instance,
@@ -37,6 +44,7 @@ internal sealed class ClassRecordFieldInfoDeserializer : ClassRecordDeserializer
         _isValueType = type.IsValueType;
     }
 
+    /// <inheritdoc/>
     internal override SerializationRecordId Continue()
     {
         while (_currentFieldIndex < _fieldInfo.Length)

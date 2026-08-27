@@ -48,6 +48,8 @@ internal static partial class EnumDataCache
     ///   Returns the BCL's internal cached arrays - callers must not mutate them.
     ///  </para>
     /// </remarks>
+    /// <param name="type">The enum type whose values and names to retrieve.</param>
+    /// <returns>The cached values and corresponding names for <paramref name="type"/>.</returns>
     /// <exception cref="ArgumentException"><paramref name="type"/> is not an enum type.</exception>
     public static (ulong[] Values, string[] Names) GetEnumValuesAndNames(Type type)
     {
@@ -68,5 +70,7 @@ internal static partial class EnumDataCache
     /// <summary>
     ///  Gets cached data for an enum type, including its values, names, and whether it is a flags enum.
     /// </summary>
+    /// <param name="type">The enum type whose metadata to retrieve.</param>
+    /// <returns>The cached metadata for <paramref name="type"/>.</returns>
     public static EnumData GetEnumData(Type type) => s_enumData.GetOrAdd(type, t => new EnumData(t));
 }

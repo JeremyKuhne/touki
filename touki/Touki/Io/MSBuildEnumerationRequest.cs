@@ -12,6 +12,11 @@ public readonly struct MSBuildEnumerationRequest
     /// <summary>
     ///  Constructs an enumeration request.
     /// </summary>
+    /// <param name="include">The include specification.</param>
+    /// <param name="projectDirectory">The project directory used to resolve relative specifications.</param>
+    /// <param name="excludes">The optional semicolon-separated exclude specifications.</param>
+    /// <param name="enumerationOptions">The optional file-system enumeration options.</param>
+    /// <param name="allowDriveEnumeration">Whether recursive drive-root enumeration is allowed.</param>
     public MSBuildEnumerationRequest(
         string include,
         string? projectDirectory = null,

@@ -77,6 +77,14 @@ internal sealed class BinaryFormatDeserializer : IDeserializer
         return events;
     }
 
+    /// <summary>
+    ///  Deserializes the object graph rooted at the specified record.
+    /// </summary>
+    /// <param name="rootId">The identifier of the root record.</param>
+    /// <param name="recordMap">The serialization records keyed by their identifiers.</param>
+    /// <param name="typeResolver">The resolver used to bind serialized type names.</param>
+    /// <param name="streamingContext">The context supplied to serialization callbacks and constructors.</param>
+    /// <returns>The materialized root object.</returns>
     internal static object Deserialize(
         SerializationRecordId rootId,
         IReadOnlyDictionary<SerializationRecordId, SerializationRecord> recordMap,
@@ -233,6 +241,11 @@ internal sealed class BinaryFormatDeserializer : IDeserializer
         _deserializedObjects.Add(id, value);
     }
 
+    /// <summary>
+    ///  Caps a record count for use as an initial collection capacity.
+    /// </summary>
+    /// <param name="count">The record count.</param>
+    /// <returns><paramref name="count"/> capped at <see cref="MaximumCapacityHint"/>.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static int GetCapacityHint(int count) => Math.Min(count, MaximumCapacityHint);
 

@@ -41,6 +41,9 @@ public sealed class BinaryFormattedObject
     private readonly ITypeResolver _typeResolver;
     private int _deserializationStarted;
 
+    /// <summary>
+    ///  Gets the formatter converter used to populate serialization information.
+    /// </summary>
     internal static FormatterConverter DefaultConverter { get; } = new();
 
     /// <summary>

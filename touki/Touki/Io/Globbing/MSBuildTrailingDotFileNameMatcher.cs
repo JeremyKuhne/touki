@@ -9,6 +9,13 @@ namespace Touki.Io.Globbing;
 /// </summary>
 internal static class MSBuildTrailingDotFileNameMatcher
 {
+    /// <summary>
+    ///  Determines whether a file name matches an MSBuild trailing-dot wildcard pattern.
+    /// </summary>
+    /// <param name="fileName">The file name to match.</param>
+    /// <param name="pattern">The wildcard pattern.</param>
+    /// <param name="ignoreCaseKind">The case-folding mode.</param>
+    /// <returns><see langword="true"/> if the file name matches; otherwise <see langword="false"/>.</returns>
     public static bool Matches(
         ReadOnlySpan<char> fileName,
         ReadOnlySpan<char> pattern,
@@ -90,6 +97,12 @@ internal static class MSBuildTrailingDotFileNameMatcher
         return activeStates[stateCount - 1] != 0;
     }
 
+    /// <summary>
+    ///  Applies Windows trailing-dot normalization before extglob matching.
+    /// </summary>
+    /// <param name="fileName">The file name to normalize.</param>
+    /// <param name="isAllDotInput">Receives whether the input is a Windows all-dot name of at least three dots.</param>
+    /// <returns>The normalized file name.</returns>
     internal static ReadOnlySpan<char> NormalizeExtGlobInput(
         ReadOnlySpan<char> fileName,
         out bool isAllDotInput)

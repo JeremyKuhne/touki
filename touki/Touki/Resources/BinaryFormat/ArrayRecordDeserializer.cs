@@ -23,6 +23,11 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
     private bool _hasFixups;
     private bool _canIterate;
 
+    /// <summary>
+    ///  Initializes a deserializer for an array record.
+    /// </summary>
+    /// <param name="arrayRecord">The array record to deserialize.</param>
+    /// <param name="deserializer">The object-graph deserializer.</param>
     [UnconditionalSuppressMessage(
         "AOT",
         "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling",
@@ -45,6 +50,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
         _canIterate = _arrayOfT.Length > 0;
     }
 
+    /// <inheritdoc/>
     internal override SerializationRecordId Continue()
     {
         int[] indices = _indices;
@@ -102,6 +108,11 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
         return default;
     }
 
+    /// <summary>
+    ///  Materializes a single-dimensional primitive array record.
+    /// </summary>
+    /// <param name="record">The primitive array record to materialize.</param>
+    /// <returns>The materialized primitive array.</returns>
     internal static Array GetArraySinglePrimitive(SerializationRecord record)
         => record switch
         {
@@ -123,6 +134,14 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
             _ => throw new NotSupportedException()
         };
 
+    /// <summary>
+    ///  Materializes a supported rectangular primitive array record.
+    /// </summary>
+    /// <param name="arrayRecord">The array record to materialize.</param>
+    /// <param name="typeResolver">The resolver used to bind the array type.</param>
+    /// <returns>
+    ///  The materialized array, or <see langword="null"/> when the record is not a supported rectangular primitive array.
+    /// </returns>
     [UnconditionalSuppressMessage(
         "AOT",
         "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling",

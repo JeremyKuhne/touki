@@ -9,11 +9,15 @@ namespace Touki;
 /// </summary>
 public static partial class SpanExtensions
 {
+    /// <param name="span">The span to inspect.</param>
     extension(ReadOnlySpan<char> span)
     {
         /// <summary>
         ///  Slice the given span at null, if present.
         /// </summary>
+        /// <returns>
+        ///  The portion of the span before the first null character, or the original span if none is present.
+        /// </returns>
         public ReadOnlySpan<char> SliceAtNull()
         {
             int index = span.IndexOf('\0');
@@ -21,11 +25,15 @@ public static partial class SpanExtensions
         }
     }
 
+    /// <param name="span">The span to inspect.</param>
     extension(Span<char> span)
     {
         /// <summary>
         ///  Slice the given span at null, if present.
         /// </summary>
+        /// <returns>
+        ///  The portion of the span before the first null character, or the original span if none is present.
+        /// </returns>
         public Span<char> SliceAtNull()
         {
             int index = span.IndexOf((char)0);
@@ -33,6 +41,7 @@ public static partial class SpanExtensions
         }
     }
 
+    /// <param name="span1">The left span in the comparison.</param>
     extension(ReadOnlySpan<char> span1)
     {
         /// <summary>
@@ -44,6 +53,10 @@ public static partial class SpanExtensions
         ///   that have the same content.
         ///  </para>
         /// </remarks>
+        /// <param name="span2">The span to compare with the receiver.</param>
+        /// <returns>
+        ///  A signed integer that indicates the relative ordinal order of the spans using string comparison semantics.
+        /// </returns>
         public int CompareOrdinalAsString(ReadOnlySpan<char> span2)
         {
             int sharedLength = Math.Min(span1.Length, span2.Length);

@@ -13,6 +13,11 @@ public readonly partial struct Value
     {
         public static PackedDateTimeOffsetFlag Instance { get; } = new();
 
+        /// <summary>
+        ///  Reconstructs a packed <see cref="DateTimeOffset"/> from the specified <see cref="Value"/>.
+        /// </summary>
+        /// <param name="value">The <see cref="Value"/> containing the packed <see cref="DateTimeOffset"/>.</param>
+        /// <returns>The reconstructed <see cref="DateTimeOffset"/>.</returns>
         public override DateTimeOffset To(in Value value) => value._union.PackedDateTimeOffset.Extract();
     }
 }

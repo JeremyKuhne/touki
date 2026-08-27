@@ -11,11 +11,27 @@ namespace Touki.Text;
 
 public static partial class StringExtensions
 {
+    /// <summary>
+    ///  The carriage-return and line-feed sequence used as the .NET Framework newline.
+    /// </summary>
     internal const string NewLineConst = "\r\n";
+
+    /// <summary>
+    ///  The stack buffer length used by line-ending replacement.
+    /// </summary>
     internal const int StackallocCharBufferSizeLimit = 256;
+
+    /// <summary>
+    ///  The recognized newline characters other than line feed.
+    /// </summary>
     internal const string NewLineCharsExceptLineFeed = "\r\f\u0085\u2028\u2029";
+
+    /// <summary>
+    ///  The recognized newline characters.
+    /// </summary>
     internal const string NewLineChars = "\r\f\u0085\u2028\u2029\n";
 
+    /// <param name="stringValue">The string whose line endings to replace.</param>
     extension(string stringValue)
     {
         /// <summary>
@@ -48,6 +64,7 @@ public static partial class StringExtensions
         /// <summary>
         ///  Replaces all newline sequences in the current string with <paramref name="replacementText"/>.
         /// </summary>
+        /// <param name="replacementText">The text to replace each newline sequence with.</param>
         /// <returns>
         ///  A string whose contents match the current string, but with all newline sequences replaced
         ///  with <paramref name="replacementText"/>.

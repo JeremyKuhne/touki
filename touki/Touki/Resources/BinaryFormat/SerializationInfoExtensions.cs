@@ -26,6 +26,13 @@ internal static class SerializationInfoExtensions
             .CreateDelegate(typeof(Action<SerializationInfo, string, object, Type>));
 #endif
 
+    /// <summary>
+    ///  Replaces a named value in serialization information.
+    /// </summary>
+    /// <param name="info">The serialization information to update.</param>
+    /// <param name="name">The name of the value to replace.</param>
+    /// <param name="value">The replacement value.</param>
+    /// <param name="type">The serialized type to associate with the replacement value.</param>
     [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, typeof(SerializationInfo))]
     internal static void UpdateValue(this SerializationInfo info, string name, object? value, Type type)
         => s_updateValue(info, name, value!, type);

@@ -203,6 +203,7 @@ public sealed class RawResourceReader : DisposableBase
     ///  </para>
     /// </remarks>
     /// <param name="path">The path of a <c>.resources</c> file.</param>
+    /// <returns>A reader that owns the file mapping.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
     public static RawResourceReader CreateFromFile(string path)
     {
@@ -370,6 +371,7 @@ public sealed class RawResourceReader : DisposableBase
     ///  Gets the location (type and byte length) of the resource at <paramref name="index"/>.
     /// </summary>
     /// <param name="index">A resource index in the range <c>[0, <see cref="ResourceCount"/>)</c>.</param>
+    /// <returns>The location of the resource at <paramref name="index"/>.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is out of range.</exception>
     /// <exception cref="BadImageFormatException">The file is malformed.</exception>
     public ResourceLocation GetLocation(int index)

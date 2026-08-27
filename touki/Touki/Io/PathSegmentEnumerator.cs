@@ -18,6 +18,7 @@ public ref struct PathSegmentEnumerator
     /// <summary>
     ///  Constructs a virtual path from a single segment.
     /// </summary>
+    /// <param name="path">The path to enumerate.</param>
     public PathSegmentEnumerator(ReadOnlySpan<char> path) : this(path, [])
     {
     }
@@ -35,6 +36,8 @@ public ref struct PathSegmentEnumerator
     /// <summary>
     ///  Constructs a virtual path from two segments.
     /// </summary>
+    /// <param name="firstPath">The first path.</param>
+    /// <param name="secondPath">The second path.</param>
     public PathSegmentEnumerator(ReadOnlySpan<char> firstPath, ReadOnlySpan<char> secondPath)
     {
         _firstPath = firstPath;
@@ -59,6 +62,7 @@ public ref struct PathSegmentEnumerator
     /// <summary>
     ///  Gets the character at the given index.
     /// </summary>
+    /// <param name="index">The index in the virtual path.</param>
     public readonly char this[int index]
     {
         get
@@ -87,6 +91,7 @@ public ref struct PathSegmentEnumerator
     ///  Moves to the next segment (between <see cref="Path.DirectorySeparatorChar"/>)
     ///  in the virtual path, returns <see langword="false"/> if there are no more segments.
     /// </summary>
+    /// <returns><see langword="true"/> if a segment is available; otherwise <see langword="false"/>.</returns>
     public bool MoveNext()
     {
         // Total logical length assumes a separator between paths
@@ -145,8 +150,14 @@ public ref struct PathSegmentEnumerator
     /// </summary>
     public readonly ReadOnlySpan<char> Current => _currentSegment;
 
+    /// <summary>
+    ///  Gets the first path in the virtual path.
+    /// </summary>
     internal readonly ReadOnlySpan<char> FirstPath => _firstPath;
 
+    /// <summary>
+    ///  Gets the second path in the virtual path.
+    /// </summary>
     internal readonly ReadOnlySpan<char> SecondPath => _secondPath;
 
     /// <summary>

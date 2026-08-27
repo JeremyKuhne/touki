@@ -14,14 +14,14 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Touki.Analyzers;
 
 /// <summary>
-///  Reports source types that do not declare exactly one XML <c>&lt;summary&gt;</c> element.
+///  Reports source types that do not declare one XML <c>&lt;summary&gt;</c> or <c>&lt;inheritdoc&gt;</c> element.
 /// </summary>
 /// <remarks>
 ///  <para>
 ///   Classes, structs, interfaces, records, enums, and delegates are analyzed, including nested types. For a
-///   partial type, exactly one declaration may contain a top-level <c>&lt;summary&gt;</c> element. Summaries on
-///   generated partial declarations participate in the count, but diagnostics are reported only in user-authored
-///   code.
+///   partial type, exactly one declaration may contain a top-level <c>&lt;summary&gt;</c> element. A top-level
+///   <c>&lt;inheritdoc&gt;</c> element satisfies a type with no local summary. Documentation on generated partial
+///   declarations participates in the count, but diagnostics are reported only in user-authored code.
 ///  </para>
 ///  <para>
 ///   Configure the analyzed visibility with
@@ -47,12 +47,12 @@ public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
 
     private static readonly DiagnosticDescriptor s_rule = new(
         id: DiagnosticId,
-        title: "Require exactly one XML summary per type",
-        messageFormat: "Type '{0}' must declare exactly one XML <summary> element; found {1}",
+        title: "Document types",
+        messageFormat: "Type '{0}' must declare one XML <summary> element or an <inheritdoc> element; found {1} summaries",
         category: "Maintainability",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "Each type should have exactly one XML summary across all of its declarations.",
+        description: "Each type should have one XML summary or inherit documentation across its declarations.",
         helpLinkUri: HelpLinks.ForRule(DiagnosticId));
 
     private static readonly ImmutableArray<DiagnosticDescriptor> s_supportedDiagnostics = [s_rule];
@@ -113,8 +113,11 @@ public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        int summaryCount = CountSummaries(declarations, context.CancellationToken);
-        if (summaryCount == 1)
+        int summaryCount = CountSummaries(
+            declarations,
+            context.CancellationToken,
+            out bool hasInheritdoc);
+        if (summaryCount == 1 || (summaryCount == 0 && hasInheritdoc))
         {
             return;
         }
@@ -425,9 +428,11 @@ public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
 
     private static int CountSummaries(
         ImmutableArray<SyntaxReference> declarations,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        out bool hasInheritdoc)
     {
         int count = 0;
+        hasInheritdoc = false;
 
         foreach (SyntaxReference declaration in declarations)
         {
@@ -449,10 +454,27 @@ public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
 
                     foreach (XmlNodeSyntax content in documentation.Content)
                     {
-                        if ((content is XmlElementSyntax element && IsSummaryName(element.StartTag.Name))
-                            || (content is XmlEmptyElementSyntax emptyElement && IsSummaryName(emptyElement.Name)))
+                        XmlNameSyntax? name = content switch
+                        {
+                            XmlElementSyntax element => element.StartTag.Name,
+                            XmlEmptyElementSyntax emptyElement => emptyElement.Name,
+                            _ => null
+                        };
+                        if (name is null || name.Prefix is not null)
+                        {
+                            continue;
+                        }
+
+                        if (string.Equals(name.LocalName.ValueText, "summary", StringComparison.Ordinal))
                         {
                             count++;
+                        }
+                        else if (string.Equals(
+                            name.LocalName.ValueText,
+                            "inheritdoc",
+                            StringComparison.Ordinal))
+                        {
+                            hasInheritdoc = true;
                         }
                     }
 
@@ -488,10 +510,6 @@ public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
 
         return true;
     }
-
-    private static bool IsSummaryName(XmlNameSyntax name) =>
-        name.Prefix is null
-        && string.Equals(name.LocalName.ValueText, "summary", StringComparison.Ordinal);
 
     private static Location GetIdentifierLocation(MemberDeclarationSyntax declaration) =>
         declaration switch

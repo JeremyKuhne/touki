@@ -15,6 +15,10 @@ public sealed partial class SequenceSet<T> where T : unmanaged, IEquatable<T>
         private readonly SequenceSet<T> _set;
         private int _index;
 
+        /// <summary>
+        ///  Initializes an enumerator for the specified set.
+        /// </summary>
+        /// <param name="set">The set to enumerate.</param>
         internal Enumerator(SequenceSet<T> set)
         {
             _set = set;
@@ -29,6 +33,7 @@ public sealed partial class SequenceSet<T> where T : unmanaged, IEquatable<T>
         /// <summary>
         ///  Advances to the next interned sequence.
         /// </summary>
+        /// <returns><see langword="true"/> if the enumerator advanced; otherwise, <see langword="false"/>.</returns>
         public bool MoveNext()
         {
             int next = _index + 1;

@@ -21,6 +21,7 @@ public abstract partial class ListBase<T> where T : notnull
         /// <summary>
         ///  Constructs a new instance of the <see cref="Enumerator{TItem}"/> class.
         /// </summary>
+        /// <param name="list">The list to enumerate.</param>
         public Enumerator(ListBase<TItem> list)
         {
             _list = list;

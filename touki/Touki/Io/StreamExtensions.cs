@@ -66,6 +66,7 @@ public static partial class StreamExtensions
         /// <summary>
         ///  Writes an interpolated string directly to a <see cref="Stream"/>.
         /// </summary>
+        /// <param name="builder">The interpolated string builder to write and clear.</param>
         public void WriteFormatted(ref ValueStringBuilder builder)
         {
             if (builder.Length > 0)
@@ -84,6 +85,7 @@ public static partial class StreamExtensions
         ///   Optimization overload that allows string literals to be used without creating a builder.
         ///  </para>
         /// </remarks>
+        /// <param name="value">The string to write.</param>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void WriteFormatted(string value)
         {

@@ -11,6 +11,12 @@ internal sealed class ContainsGlobStrategy : GlobStrategy
 {
     private readonly string _needle;
 
+    /// <summary>
+    ///  Initializes a strategy that searches for a literal substring.
+    /// </summary>
+    /// <param name="needle">The literal substring to find.</param>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
     public ContainsGlobStrategy(string needle, GlobDialect dialect, GlobOptions options)
         : base(dialect, options)
     {
