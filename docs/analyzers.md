@@ -945,8 +945,3 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 | 0.7.0 | TOUKI0022, TOUKI0023 |
 | 0.8.0 | TOUKI0012, TOUKI0024, TOUKI0031, TOUKI0032, TOUKI0033 |
 | 0.9.0 | TOUKI0025, TOUKI0026; first standalone analyzer package |
-
-The authoritative list lives in
-[AnalyzerReleases.Shipped.md](https://github.com/JeremyKuhne/touki/blob/main/touki.analyzers/AnalyzerReleases.Shipped.md)
-and
-[AnalyzerReleases.Unshipped.md](https://github.com/JeremyKuhne/touki/blob/main/touki.analyzers/AnalyzerReleases.Unshipped.md).
