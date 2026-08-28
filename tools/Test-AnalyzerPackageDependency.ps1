@@ -197,6 +197,7 @@ finally {
 $repositoryRoot = Split-Path $PSScriptRoot -Parent
 $toukiProjectPath = Join-Path $repositoryRoot 'touki/touki.csproj'
 $referenceOutput = & dotnet msbuild $toukiProjectPath `
+    -nologo `
     -target:ResolveReferences `
     -getItem:ReferenceCopyLocalPaths `
     -getItem:Analyzer `
