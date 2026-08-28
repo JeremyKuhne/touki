@@ -27,7 +27,7 @@ Everything lives under [.github/workflows/](../../../.github/workflows/):
 | [agent-files.yml](../../../.github/workflows/agent-files.yml) | PR and push to `main` | `ubuntu-latest`, gated in-job by `dorny/paths-filter` |
 | [platform-tests.yml](../../../.github/workflows/platform-tests.yml) | `workflow_call` only | caller-supplied `inputs.runner` |
 | [manual-linux.yml](../../../.github/workflows/manual-linux.yml), [manual-macos.yml](../../../.github/workflows/manual-macos.yml), [manual-windows.yml](../../../.github/workflows/manual-windows.yml) | `workflow_dispatch` | the full per-platform matrices moved off the automatic path |
-| [publish.yml](../../../.github/workflows/publish.yml) (`v*.*.*`), [publishtestsupport.yml](../../../.github/workflows/publishtestsupport.yml) (`ts-v*.*.*`) | tag push, `workflow_dispatch` | `windows-latest` |
+| [publish.yml](../../../.github/workflows/publish.yml) (`v*.*.*`, `analyzers-v*.*.*`), [publishtestsupport.yml](../../../.github/workflows/publishtestsupport.yml) (`ts-v*.*.*`) | tag push, `workflow_dispatch` | `windows-latest` |
 
 `platform-tests.yml` is the single reusable body; measure a change there, not in
 each caller. Its `full-validation`, `collect-coverage`, `pack`, `anycpu`,
@@ -72,8 +72,8 @@ boundaries - see
 
 - [`security-review`](../security-review/SKILL.md) - before changing CodeQL
   cadence, workflow permissions, or anything that runs untrusted PR code.
-- [`publish-release`](../publish-release/SKILL.md) - owns the two tag-triggered
-  publish workflows; do not re-time them for cost.
+- [`publish-release`](../publish-release/SKILL.md) - owns the three release tag
+  streams across the two publish workflows; do not re-time them for cost.
 - [`agent-files-review`](../agent-files-review/SKILL.md) - owns `agent-files.yml`
   and its path filters.
 

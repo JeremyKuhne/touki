@@ -1,4 +1,4 @@
-﻿# Publishes a .NET package to NuGet when a new tag is pushed.
+﻿# Publishes Touki or its analyzers to NuGet from independent tag streams.
 #
 # `workflow_dispatch` is also supported for ad-hoc republishes; it requires
 # the caller to supply the existing tag they want to publish, which the
@@ -6,15 +6,17 @@
 # publishing a `0.0.0-alpha.0.<height>` MinVer fallback by dispatching
 # from `main` with no tag context.
 
-name: Publish NuGet Package
+name: Publish Touki NuGet Packages
 
 on:
   push:
-    tags: ['v*.*.*']        # fires on v0.1.0, v0.1.0-rc.1, etc.
+    tags:
+      - 'v*.*.*'
+      - 'analyzers-v*.*.*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag to publish (e.g. v0.1.0-alpha.13)'
+        description: 'Existing tag to publish (e.g. v0.9.0 or analyzers-v0.9.0)'
         required: true
         type: string
 
@@ -39,11 +41,26 @@ jobs:
       shell: pwsh
       run: |
         $tag = $env:RELEASE_TAG
-        # SemVer numeric identifiers (major/minor/patch) MUST NOT have leading zeros.
-        if ($tag -notmatch '^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$') {
-          Write-Error "Tag '$tag' does not match expected SemVer pattern v<major>.<minor>.<patch>[-<prerelease>] (no leading zeros)."
+        if ($tag.StartsWith('analyzers-v', [System.StringComparison]::Ordinal)) {
+          $version = $tag.Substring('analyzers-v'.Length)
+        }
+        elseif ($tag.StartsWith('v', [System.StringComparison]::Ordinal)) {
+          $version = $tag.Substring(1)
+        }
+        else {
+          Write-Error "Tag '$tag' is not a valid Touki or analyzer release tag."
           exit 1
         }
+
+        # SemVer 2.0 without build metadata. Numeric identifiers cannot have leading zeroes.
+        $identifier = '(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)'
+        $versionPattern = "^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-$identifier(?:\.$identifier)*)?$"
+        if ($version -notmatch $versionPattern) {
+          Write-Error "Tag '$tag' does not contain a valid release version."
+          exit 1
+        }
+
+        Add-Content -Path $env:GITHUB_ENV -Value "RELEASE_VERSION=$version"
         Write-Host "Tag '$tag' OK."
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
@@ -51,31 +68,231 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build -c Release --no-restore
-    - name: Pack
-      run: dotnet pack -c Release --no-build -o ./artifacts
-    - name: Verify package is architecture neutral
-      # touki is a pure-IL library with no native components and must load on
-      # any CPU architecture (x64, ARM64, ...). touki.slnx maps it to
-      # Platform=AnyCPU even though the rest of the solution defaults to x64
-      # (see Directory.Build.props); this guards against that mapping
-      # regressing before anything is pushed to NuGet.
+    - name: Validate analyzer release tracking
+      if: startsWith(env.RELEASE_TAG, 'analyzers-v')
+      shell: pwsh
       run: |
-        Get-ChildItem ./artifacts -Filter KlutzyNinja.Touki.*.nupkg |
-            Where-Object { $_.Name -notlike 'KlutzyNinja.Touki.TestSupport.*' } |
-            ForEach-Object { pwsh tools/Test-PackageArchitectureNeutral.ps1 -PackagePath $_.FullName }
+        $pendingRules = @(
+          Select-String `
+            -Path touki.analyzers/AnalyzerReleases.Unshipped.md `
+            -Pattern '^TOUKI\d+\s*\|'
+        )
+        if ($pendingRules.Count -ne 0) {
+          throw 'Promote all AnalyzerReleases.Unshipped.md entries before publishing analyzers.'
+        }
+
+        if (Select-String -Path docs/analyzers.md -Pattern '^\| Unreleased \|') {
+          throw 'Promote the Unreleased analyzer documentation before publishing analyzers.'
+        }
+    - name: Resolve Touki analyzer dependency
+      if: startsWith(env.RELEASE_TAG, 'v')
+      shell: pwsh
+      run: |
+        $versionOutput = & dotnet msbuild touki/touki.csproj `
+          -getProperty:ToukiAnalyzersPackageVersion `
+          -nologo 2>&1
+        if ($LASTEXITCODE -ne 0) {
+          throw "Could not read ToukiAnalyzersPackageVersion:`n$($versionOutput | Out-String)"
+        }
+
+        $version = ($versionOutput | Out-String).Trim()
+        if ($version -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$') {
+          throw "ToukiAnalyzersPackageVersion '$version' is not valid SemVer."
+        }
+
+        $restoreDirectory = Join-Path $env:RUNNER_TEMP 'touki-analyzer-dependency'
+        $restoreProjectPath = Join-Path $restoreDirectory 'AnalyzerDependency.csproj'
+        $restoreConfigPath = Join-Path $restoreDirectory 'NuGet.Config'
+        $restorePackagesPath = Join-Path $restoreDirectory 'packages'
+        New-Item -ItemType Directory -Path $restoreDirectory -Force | Out-Null
+        $restoreProject = @"
+        <Project Sdk="Microsoft.NET.Sdk">
+          <PropertyGroup>
+            <TargetFramework>net10.0</TargetFramework>
+          </PropertyGroup>
+          <ItemGroup>
+            <PackageReference Include="KlutzyNinja.Touki.Analyzers" Version="[$version]" />
+          </ItemGroup>
+        </Project>
+        "@
+        $restoreConfig = @"
+        <?xml version="1.0" encoding="utf-8"?>
+        <configuration>
+          <packageSources>
+            <clear />
+            <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+          </packageSources>
+        </configuration>
+        "@
+        [System.IO.File]::WriteAllText($restoreProjectPath, $restoreProject)
+        [System.IO.File]::WriteAllText($restoreConfigPath, $restoreConfig)
+
+        $restoreOutput = & dotnet restore $restoreProjectPath `
+          --packages $restorePackagesPath `
+          --configfile $restoreConfigPath `
+          --no-cache `
+          --force-evaluate 2>&1 | Out-String
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host $restoreOutput
+          throw "Publish KlutzyNinja.Touki.Analyzers $version before publishing this Touki release."
+        }
+
+        $assetsPath = Join-Path $restoreDirectory 'obj/project.assets.json'
+        $assets = Get-Content $assetsPath -Raw | ConvertFrom-Json -Depth 100
+        $resolvedAnalyzer = $assets.libraries.PSObject.Properties["KlutzyNinja.Touki.Analyzers/$version"]
+        if ($null -eq $resolvedAnalyzer -or $resolvedAnalyzer.Value.type -ne 'package') {
+          throw "Restore did not resolve KlutzyNinja.Touki.Analyzers $version exactly."
+        }
+
+        $versionPath = $version.ToLowerInvariant()
+        $packagePath = Join-Path `
+          $restorePackagesPath `
+          "klutzyninja.touki.analyzers/$versionPath/klutzyninja.touki.analyzers.$versionPath.nupkg"
+        if (!(Test-Path $packagePath)) {
+          throw "Restored analyzer package archive was not found at '$packagePath'."
+        }
+
+        New-Item -ItemType Directory -Path ./artifacts/validation -Force | Out-Null
+        Copy-Item $packagePath ./artifacts/validation
+    - name: Pack Touki
+      if: startsWith(env.RELEASE_TAG, 'v')
+      shell: pwsh
+      run: |
+        dotnet pack touki/touki.csproj `
+          --configuration Release `
+          --no-build `
+          --output ./artifacts `
+          -p:Platform=AnyCPU `
+          -p:Platforms=AnyCPU
+        if ($LASTEXITCODE -ne 0) {
+          throw "Touki pack failed with exit code $LASTEXITCODE."
+        }
+    - name: Pack analyzers
+      if: startsWith(env.RELEASE_TAG, 'analyzers-v')
+      shell: pwsh
+      run: |
+        dotnet pack touki.analyzers/touki.analyzers.csproj `
+          --configuration Release `
+          --no-build `
+          --output ./artifacts `
+          -p:Platform=AnyCPU `
+          -p:Platforms=AnyCPU
+        if ($LASTEXITCODE -ne 0) {
+          throw "Analyzer pack failed with exit code $LASTEXITCODE."
+        }
+
+        $analyzerPackages = @(
+          Get-ChildItem ./artifacts -Filter KlutzyNinja.Touki.Analyzers.*.nupkg
+        )
+        if ($analyzerPackages.Count -ne 1) {
+          throw "Expected one analyzer package, found $($analyzerPackages.Count)."
+        }
+
+        $analyzerPrefix = 'KlutzyNinja.Touki.Analyzers.'
+        $analyzerVersion = $analyzerPackages[0].BaseName.Substring($analyzerPrefix.Length)
+        New-Item -ItemType Directory -Path ./artifacts/validation -Force | Out-Null
+        Copy-Item $analyzerPackages[0].FullName ./artifacts/validation
+
+        dotnet pack touki/touki.csproj `
+          --configuration Release `
+          --no-build `
+          --output ./artifacts/validation `
+          -p:Platform=AnyCPU `
+          -p:Platforms=AnyCPU `
+          "-p:ToukiAnalyzersPackageVersion=$analyzerVersion"
+        if ($LASTEXITCODE -ne 0) {
+          throw "Touki validation pack failed with exit code $LASTEXITCODE."
+        }
+    - name: Verify Touki package
+      if: startsWith(env.RELEASE_TAG, 'v')
+      shell: pwsh
+      run: |
+        $packages = @(
+          Get-ChildItem ./artifacts -Filter KlutzyNinja.Touki.*.nupkg |
+            Where-Object Name -Match '^KlutzyNinja\.Touki\.\d.*\.nupkg$'
+        )
+        if ($packages.Count -ne 1) {
+          throw "Expected one Touki package, found $($packages.Count)."
+        }
+
+        $actualVersion = $packages[0].BaseName.Substring('KlutzyNinja.Touki.'.Length)
+        if ($actualVersion -ne $env:RELEASE_VERSION) {
+          throw "Touki package version '$actualVersion' does not match tag version '$env:RELEASE_VERSION'."
+        }
+
+        pwsh tools/Test-PackageArchitectureNeutral.ps1 -PackagePath $packages[0].FullName
+        if ($LASTEXITCODE -ne 0) {
+          throw "Architecture validation failed for '$($packages[0].Name)'."
+        }
+
+        Copy-Item $packages[0].FullName ./artifacts/validation
+        pwsh tools/Test-AnalyzerPackageDependency.ps1 -PackageDirectory ./artifacts/validation
+        if ($LASTEXITCODE -ne 0) {
+          throw "Analyzer dependency validation failed with exit code $LASTEXITCODE."
+        }
+    - name: Verify analyzer package
+      if: startsWith(env.RELEASE_TAG, 'analyzers-v')
+      shell: pwsh
+      run: |
+        $packages = @(
+          Get-ChildItem ./artifacts -Filter KlutzyNinja.Touki.Analyzers.*.nupkg
+        )
+        if ($packages.Count -ne 1) {
+          throw "Expected one analyzer package, found $($packages.Count)."
+        }
+
+        $actualVersion = $packages[0].BaseName.Substring('KlutzyNinja.Touki.Analyzers.'.Length)
+        if ($actualVersion -ne $env:RELEASE_VERSION) {
+          throw "Analyzer package version '$actualVersion' does not match tag version '$env:RELEASE_VERSION'."
+        }
+
+        pwsh tools/Test-PackageArchitectureNeutral.ps1 -PackagePath $packages[0].FullName
+        if ($LASTEXITCODE -ne 0) {
+          throw "Architecture validation failed for '$($packages[0].Name)'."
+        }
+
+        pwsh tools/Test-AnalyzerPackageDependency.ps1 -PackageDirectory ./artifacts/validation
+        if ($LASTEXITCODE -ne 0) {
+          throw "Analyzer package validation failed with exit code $LASTEXITCODE."
+        }
     # Get a short-lived NuGet API key
     - name: NuGet login (OIDC → temp API key)
       uses: NuGet/login@v1
       id: login
       with:
         user: ${{ secrets.NUGET_USER }}
-    - name: Publish to NuGet
+    - name: Publish Touki to NuGet
+      if: startsWith(env.RELEASE_TAG, 'v')
       run: |
-        Get-ChildItem -Path ./artifacts -Filter KlutzyNinja.Touki.*.nupkg |
-            Where-Object { $_.Name -notlike 'KlutzyNinja.Touki.TestSupport.*' } |
-            ForEach-Object {
-                dotnet nuget push $_.FullName `
-                    --api-key ${{steps.login.outputs.NUGET_API_KEY}} `
-                    --source https://api.nuget.org/v3/index.json `
-                    --skip-duplicate
-            }
+        $toukiPackages = @(
+          Get-ChildItem -Path ./artifacts -Filter KlutzyNinja.Touki.*.nupkg |
+              Where-Object Name -Match '^KlutzyNinja\.Touki\.\d.*\.nupkg$'
+        )
+        if ($toukiPackages.Count -ne 1) {
+          throw "Expected one Touki package to publish, found $($toukiPackages.Count)."
+        }
+
+        dotnet nuget push $toukiPackages[0].FullName `
+            --api-key ${{steps.login.outputs.NUGET_API_KEY}} `
+            --source https://api.nuget.org/v3/index.json `
+            --skip-duplicate
+        if ($LASTEXITCODE -ne 0) {
+          throw "Publishing '$($toukiPackages[0].Name)' failed with exit code $LASTEXITCODE."
+        }
+    - name: Publish analyzers to NuGet
+      if: startsWith(env.RELEASE_TAG, 'analyzers-v')
+      run: |
+        $analyzerPackages = @(
+          Get-ChildItem -Path ./artifacts -Filter KlutzyNinja.Touki.Analyzers.*.nupkg
+        )
+        if ($analyzerPackages.Count -ne 1) {
+          throw "Expected one analyzer package to publish, found $($analyzerPackages.Count)."
+        }
+
+        dotnet nuget push $analyzerPackages[0].FullName `
+            --api-key ${{steps.login.outputs.NUGET_API_KEY}} `
+            --source https://api.nuget.org/v3/index.json `
+            --skip-duplicate
+        if ($LASTEXITCODE -ne 0) {
+          throw "Publishing '$($analyzerPackages[0].Name)' failed with exit code $LASTEXITCODE."
+        }

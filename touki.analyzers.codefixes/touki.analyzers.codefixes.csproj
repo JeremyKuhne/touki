@@ -6,8 +6,8 @@
 
     <!--
       Code-fix providers reference the Roslyn Workspaces APIs, which must not live in the analyzer assembly
-      (RS1022). They ship in a separate assembly that is packed alongside the analyzer under analyzers/dotnet/cs
-      by the _AddAnalyzersToPackage target in touki/touki.csproj. netstandard2.0 so the IDE can load it.
+      (RS1022). They ship in a separate assembly inside the KlutzyNinja.Touki.Analyzers package under
+      analyzers/dotnet/cs. netstandard2.0 allows the IDE to load it.
     -->
     <TargetFramework>netstandard2.0</TargetFramework>
 
@@ -18,6 +18,10 @@
     <IsPackable>false</IsPackable>
     <IncludeBuildOutput>false</IncludeBuildOutput>
 
+    <!-- Keep the code-fix assembly identity aligned with the analyzer package that contains it. -->
+    <MinVerTagPrefix>analyzers-v</MinVerTagPrefix>
+    <MinVerMinimumMajorMinor>0.9</MinVerMinimumMajorMinor>
+
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
@@ -26,6 +30,10 @@
   <ItemGroup>
     <!-- Brings CodeFixProvider, Document, CodeAction, and SyntaxGenerator (and CodeAnalysis.CSharp transitively). -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
+    <PackageReference Include="MinVer">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
 </Project>

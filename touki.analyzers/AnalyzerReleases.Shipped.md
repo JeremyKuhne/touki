@@ -4,7 +4,7 @@
 ; Release headings must be numeric, so they name the version line rather than the exact
 ; package version. The 0.4.0 rules first shipped in the 0.4.0-alpha.1 prerelease, which is
 ; also when touki.analyzers began packing into KlutzyNinja.Touki. 0.5.0 was the first
-; stable release.
+; stable release. 0.9.0 is the first standalone KlutzyNinja.Touki.Analyzers package.
 
 ## Release 0.4.0
 
@@ -52,3 +52,11 @@ TOUKI0024 | Maintainability | Disabled | Format XML documentation as nested XML
 TOUKI0031 | Performance | Warning | Use WriteFormatted for TextWriter interpolated strings
 TOUKI0032 | Reliability | Warning | Use Path.Join instead of Path.Combine
 TOUKI0033 | Reliability | Warning | Avoid Path.IsPathRooted for qualification checks
+
+## Release 0.9.0
+
+### New Rules
+Rule ID | Category | Severity | Notes
+--------|----------|----------|-------
+TOUKI0025 | Maintainability | Warning | Type does not declare an XML summary or inheritdoc
+TOUKI0026 | Maintainability | Warning | Member XML documentation is incomplete

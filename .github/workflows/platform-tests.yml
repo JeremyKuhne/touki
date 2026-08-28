@@ -311,19 +311,44 @@ jobs:
           $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
         }
 
-        $projects = @(
-          'touki/touki.csproj',
-          'touki.testsupport/touki.testsupport.csproj'
-        )
-        foreach ($project in $projects) {
-          dotnet pack $project `
-            --configuration '${{ inputs.configuration }}' `
-            --output ./artifacts/packages `
-            @platformArgs
+        $analyzerProbeVersion = '99.99.99-ci'
+        dotnet pack touki.analyzers/touki.analyzers.csproj `
+          --configuration '${{ inputs.configuration }}' `
+          --output ./artifacts/packages `
+          "-p:MinVerVersionOverride=$analyzerProbeVersion" `
+          @platformArgs
+        if ($LASTEXITCODE -ne 0) {
+          throw "Analyzer pack failed with exit code $LASTEXITCODE."
+        }
 
-          if ($LASTEXITCODE -ne 0) {
-            throw "Pack for '$project' failed with exit code $LASTEXITCODE."
-          }
+        $analyzerPackages = @(
+          Get-ChildItem ./artifacts/packages -Filter KlutzyNinja.Touki.Analyzers.*.nupkg
+        )
+        if ($analyzerPackages.Count -ne 1) {
+          throw "Expected one analyzer package, found $($analyzerPackages.Count)."
+        }
+
+        $analyzerPrefix = 'KlutzyNinja.Touki.Analyzers.'
+        $analyzerVersion = $analyzerPackages[0].BaseName.Substring($analyzerPrefix.Length)
+        if ($analyzerVersion -ne $analyzerProbeVersion) {
+          throw "Analyzer package version '$analyzerVersion' does not match probe version '$analyzerProbeVersion'."
+        }
+
+        dotnet pack touki/touki.csproj `
+          --configuration '${{ inputs.configuration }}' `
+          --output ./artifacts/packages `
+          "-p:ToukiAnalyzersPackageVersion=$analyzerVersion" `
+          @platformArgs
+        if ($LASTEXITCODE -ne 0) {
+          throw "Touki pack failed with exit code $LASTEXITCODE."
+        }
+
+        dotnet pack touki.testsupport/touki.testsupport.csproj `
+          --configuration '${{ inputs.configuration }}' `
+          --output ./artifacts/packages `
+          @platformArgs
+        if ($LASTEXITCODE -ne 0) {
+          throw "TestSupport pack failed with exit code $LASTEXITCODE."
         }
     - name: Verify packages are architecture neutral
       if: inputs.pack
@@ -331,6 +356,7 @@ jobs:
       run: |
         $packages = @(Get-ChildItem ./artifacts/packages -Filter *.nupkg)
         $expectedPackages = @{
+          'KlutzyNinja.Touki.Analyzers' = '^KlutzyNinja\.Touki\.Analyzers\.\d.*\.nupkg$'
           'KlutzyNinja.Touki' = '^KlutzyNinja\.Touki\.\d.*\.nupkg$'
           'KlutzyNinja.Touki.TestSupport' = '^KlutzyNinja\.Touki\.TestSupport\.\d.*\.nupkg$'
         }
@@ -350,6 +376,10 @@ jobs:
             throw "Architecture validation failed for '$($matches[0].Name)'."
           }
         }
+    - name: Verify Touki carries analyzers
+      if: inputs.pack
+      shell: pwsh
+      run: pwsh tools/Test-AnalyzerPackageDependency.ps1 -PackageDirectory ./artifacts/packages
     - name: Generate coverage report
       if: inputs.collect-coverage
       shell: pwsh
