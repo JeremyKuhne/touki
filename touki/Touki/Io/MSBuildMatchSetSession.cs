@@ -119,10 +119,10 @@ internal sealed class MSBuildMatchSetSession : DisposableBase, IFileSystemMatche
             : includeResult;
     }
 
-            /// <summary>
-            ///  Forwards completion of a directory to the include and exclude sessions.
-            /// </summary>
-            /// <param name="directory">The completed directory.</param>
+    /// <summary>
+    ///  Notifies the include and exclude sessions that directory enumeration completed.
+    /// </summary>
+    /// <param name="directory">The completed directory path.</param>
     public void DirectoryFinished(ReadOnlySpan<char> directory)
     {
         if (_excludes is { } excludes)

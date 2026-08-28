@@ -63,7 +63,7 @@ internal abstract class ClassRecordDeserializer : ObjectRecordDeserializer
             : new ClassRecordFieldInfoDeserializer(classRecord, instance, type, deserializer);
     }
 
-            /// <inheritdoc/>
+    /// <inheritdoc cref="ObjectRecordDeserializer.ValidateNewMemberObjectValue"/>
     private protected override void ValidateNewMemberObjectValue(object value)
     {
         if (!_onlyAllowPrimitives)
