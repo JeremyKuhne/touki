@@ -7,6 +7,9 @@ namespace Touki.Io;
 /// <summary>
 ///  Combines directory classifications and manages owned child sessions for ordered-rule implementations.
 /// </summary>
+/// <param name="rules">The ordered match rules.</param>
+/// <param name="sessions">The owned matcher sessions corresponding to the rules.</param>
+/// <param name="includeUnmatched">Whether paths that match no rule are included.</param>
 internal abstract class OrderedFileSystemMatcherSessionBase(
     FileSystemMatchRule[] rules,
     IFileSystemMatcherSession[] sessions,
@@ -14,10 +17,19 @@ internal abstract class OrderedFileSystemMatcherSessionBase(
 {
     private int _disposed;
 
+    /// <summary>
+    ///  Gets the ordered match rules.
+    /// </summary>
     protected FileSystemMatchRule[] Rules { get; } = rules;
 
+    /// <summary>
+    ///  Gets the owned matcher sessions corresponding to the rules.
+    /// </summary>
     protected IFileSystemMatcherSession[] Sessions { get; } = sessions;
 
+    /// <summary>
+    ///  Gets whether paths that match no rule are included.
+    /// </summary>
     protected bool IncludeUnmatched { get; } = includeUnmatched;
 
     public override DirectoryMatchType MatchesDirectory(

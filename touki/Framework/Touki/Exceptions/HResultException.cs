@@ -11,11 +11,19 @@ namespace Touki.Exceptions;
 /// </summary>
 internal sealed class HResultException : Exception
 {
+    /// <inheritdoc cref="HResultException(int, string)"/>
+    /// <param name="hresult">The HRESULT to expose through <see cref="Exception.HResult"/>.</param>
     public HResultException(HRESULT hresult)
         : base($"HRESULT: 0x{((int)hresult):X8}")
     {
         HResult = hresult;
     }
+
+    /// <summary>
+    ///  Initializes a new instance of the <see cref="HResultException"/> class for the specified HRESULT.
+    /// </summary>
+    /// <param name="hresult">The HRESULT to expose through <see cref="Exception.HResult"/>.</param>
+    /// <param name="message">The message that describes the error.</param>
     public HResultException(int hresult, string message)
         : base(message)
     {

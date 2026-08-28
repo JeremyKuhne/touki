@@ -17,23 +17,56 @@ namespace Touki.Resources.BinaryFormat;
 /// </summary>
 internal interface IDeserializer
 {
+    /// <summary>
+    ///  Gets the context supplied to serialization callbacks and constructors.
+    /// </summary>
     StreamingContext StreamingContext { get; }
 
+    /// <summary>
+    ///  Gets the identifiers of objects whose deserialization has not completed.
+    /// </summary>
     HashSet<SerializationRecordId> IncompleteObjects { get; }
 
+    /// <summary>
+    ///  Gets the materialized objects keyed by their serialization record identifiers.
+    /// </summary>
     IDictionary<SerializationRecordId, object> DeserializedObjects { get; }
 
+    /// <summary>
+    ///  Gets the resolver used to bind serialized type names to runtime types.
+    /// </summary>
     ITypeResolver TypeResolver { get; }
 
+    /// <summary>
+    ///  Gets the serialization callbacks declared by the specified type.
+    /// </summary>
+    /// <param name="type">The type whose serialization callbacks are requested.</param>
+    /// <returns>The callbacks declared by <paramref name="type"/>.</returns>
     SerializationEvents GetSerializationEvents(
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type);
 
+    /// <summary>
+    ///  Schedules a value updater until its referenced value is complete.
+    /// </summary>
+    /// <param name="updater">The updater to schedule.</param>
     void PendValueUpdater(ValueUpdater updater);
 
+    /// <summary>
+    ///  Tracks a value-type updater for later reapplication.
+    /// </summary>
+    /// <param name="updater">The updater to track.</param>
     void TrackValueTypeUpdater(ValueUpdater updater);
 
+    /// <summary>
+    ///  Queues delayed population of serialization information.
+    /// </summary>
+    /// <param name="pending">The pending serialization information.</param>
     void PendSerializationInfo(PendingSerializationInfo pending);
 
+    /// <summary>
+    ///  Marks an object as complete and applies dependent fixups.
+    /// </summary>
+    /// <param name="id">The identifier of the completed object.</param>
     void CompleteObject(SerializationRecordId id);
 }
 

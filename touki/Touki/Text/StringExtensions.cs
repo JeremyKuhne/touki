@@ -20,6 +20,8 @@ public static partial class StringExtensions
         /// <summary>
         ///  Allocates a string of the specified length filled with null characters.
         /// </summary>
+        /// <param name="length">The length of the string to allocate.</param>
+        /// <returns>A string of <paramref name="length"/> null characters.</returns>
         internal static string FastAllocateString(int length) =>
             // This calls FastAllocateString in the runtime, with extra checks.
             new string('\0', length);
@@ -33,6 +35,7 @@ public static partial class StringExtensions
         ///  <para>
         ///  </para>
         /// </remarks>
+        /// <returns>The formatted string.</returns>
         [SkipLocalsInit]
         public static string FormatValue<TArgument>(ReadOnlySpan<char> format, TArgument arg) where TArgument : unmanaged
         {
@@ -72,6 +75,7 @@ public static partial class StringExtensions
         ///   <see cref="ICustomFormatter"/>. Custom formatters use an object-based contract and may box primitives.
         ///  </para>
         /// </remarks>
+        /// <returns>The formatted string.</returns>
         [SkipLocalsInit]
         public static string FormatValues(
             IFormatProvider? provider,
@@ -147,6 +151,7 @@ public static partial class StringExtensions
         ///   <see cref="ICustomFormatter"/>. Custom formatters use an object-based contract and may box primitives.
         ///  </para>
         /// </remarks>
+        /// <returns>The formatted string.</returns>
         [SkipLocalsInit]
         public static string FormatValues(
             IFormatProvider? provider,
@@ -165,8 +170,16 @@ public static partial class StringExtensions
         /// <summary>
         ///  Generates <paramref name="count"/> random UTF-16 strings.
         /// </summary>
+        /// <param name="count">The number of strings to generate.</param>
         /// <param name="minLength">Minimum length of the generated strings in UTF-16 code units, inclusive.</param>
         /// <param name="maxLength">Maximum length of the generated strings in UTF-16 code units, inclusive.</param>
+        /// <param name="allowSurrogatePairs">
+        ///  <see langword="true"/> to allow supplementary characters encoded as surrogate pairs; otherwise,
+        ///  <see langword="false"/>.
+        /// </param>
+        /// <param name="random">
+        ///  The random-number generator to use, or <see langword="null"/> to use a shared instance.
+        /// </param>
         /// <remarks>
         ///  <para>
         ///   Length bounds are inclusive and measure UTF-16 code units (i.e., C# char count).
@@ -175,6 +188,7 @@ public static partial class StringExtensions
         ///   Control characters and U+0000 are excluded. Surrogate pairs are emitted only if enabled.
         ///  </para>
         /// </remarks>
+        /// <returns>A list containing <paramref name="count"/> random strings.</returns>
         public static List<string> GenerateRandomStrings(
             int count,
             int minLength = 4,

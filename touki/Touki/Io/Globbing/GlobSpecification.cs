@@ -77,12 +77,16 @@ public sealed partial class GlobSpecification
     ///  each value (ignored for path-unaware dialects).
     /// </summary>
     /// <param name="pattern">The glob pattern.</param>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
+    /// <param name="separator">The path separator behavior.</param>
     /// <param name="maxPatternLength">
     ///  Optional upper bound on <paramref name="pattern"/>'s length, in characters.
     ///  Pass <c>-1</c> to disable the check. Callers that compile patterns supplied
     ///  by untrusted input should set this to an application-specific limit;
     ///  oversized patterns fail with <see cref="GlobCompileErrorCode.PatternTooLarge"/>.
     /// </param>
+    /// <returns>The compiled glob specification.</returns>
     /// <exception cref="GlobFormatException">The pattern is invalid for the requested dialect or options.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="pattern"/> is <see langword="null"/>.</exception>
     public static GlobSpecification Compile(
@@ -848,11 +852,17 @@ public sealed partial class GlobSpecification
     ///  anchored negation provably excludes. See
     ///  <see cref="GlobStrategy.MatchDirectory"/> for the conservative contract.
     /// </summary>
+    /// <param name="directoryPrefix">The directory prefix preceding the candidate name.</param>
+    /// <param name="directoryName">The candidate directory name.</param>
+    /// <returns>The conservative match outcome for the candidate directory.</returns>
     internal MatchOutcome MatchDirectory(
         ReadOnlySpan<char> directoryPrefix,
         ReadOnlySpan<char> directoryName) =>
         _strategy.MatchDirectory(directoryPrefix, directoryName);
 
+    /// <summary>
+    ///  Gets whether the compiled specification treats a path separator specially.
+    /// </summary>
     internal bool IsPathAware => Separator != '\0';
 
     // Internal so GlobMatch can route through the strategy directly and tests can
@@ -886,6 +896,8 @@ public sealed partial class GlobSpecification
     ///   path.
     ///  </para>
     /// </remarks>
+    /// <param name="input">The input to match.</param>
+    /// <returns><see langword="true"/> if the input matches; otherwise <see langword="false"/>.</returns>
     public bool IsMatch(ReadOnlySpan<char> input)
     {
         if (DisallowEmptyInput && input.IsEmpty)
@@ -912,6 +924,7 @@ public sealed partial class GlobSpecification
     /// <summary>
     ///  Creates a reusable definition that binds this specification to a root for each file-system enumeration.
     /// </summary>
+    /// <returns>The reusable matcher definition.</returns>
     public IFileSystemMatcher CreateFileSystemMatcher()
     {
         IFileSystemMatcher? matcher = Volatile.Read(ref _fileSystemMatcher);
@@ -924,6 +937,11 @@ public sealed partial class GlobSpecification
         return Interlocked.CompareExchange(ref _fileSystemMatcher, matcher, null) ?? matcher;
     }
 
+    /// <summary>
+    ///  Creates a matcher session for this specification.
+    /// </summary>
+    /// <param name="rootDirectory">The enumeration root, or <see langword="null"/> when unbound.</param>
+    /// <returns>The created matcher session.</returns>
     internal GlobMatch CreateSession(string? rootDirectory = null) => new(this, rootDirectory);
 
     /// <summary>
@@ -950,6 +968,9 @@ public sealed partial class GlobSpecification
     ///  <see cref="GlobMatch"/> hot path; routes through the strategy directly to
     ///  bypass the <see cref="IsMatch"/> wrapper's separator-run coalescing.
     /// </summary>
+    /// <param name="directoryPrefix">The directory prefix preceding the file name.</param>
+    /// <param name="fileName">The file name to match.</param>
+    /// <returns><see langword="true"/> if the split input matches; otherwise <see langword="false"/>.</returns>
     internal bool MatchCore(ReadOnlySpan<char> directoryPrefix, ReadOnlySpan<char> fileName)
     {
         if (TryMatchMSBuildTrailingDotComposition(directoryPrefix, fileName, out bool composedMatch))

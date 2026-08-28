@@ -16,6 +16,10 @@ public readonly partial struct Value
         public readonly bool _hasValue;
         public readonly T _value;
 
+        /// <summary>
+        ///  Creates a template for a non-empty nullable value.
+        /// </summary>
+        /// <param name="value">The underlying value to store.</param>
         public NullableTemplate(T value)
         {
             _value = value;

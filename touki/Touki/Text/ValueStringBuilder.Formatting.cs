@@ -185,6 +185,8 @@ public ref partial struct ValueStringBuilder
     /// <summary>
     ///  Appends a formatted string to the current instance using the specified format and arguments.
     /// </summary>
+    /// <param name="format">The composite format string.</param>
+    /// <param name="args">The arguments to format.</param>
     public void AppendFormat<TArgument>(ReadOnlySpan<char> format, ReadOnlySpan<TArgument> args)
     {
         ReadOnlySpan<char> remaining = format;

@@ -9,6 +9,10 @@ namespace Touki.Io;
 /// </summary>
 public sealed class MSBuildEmptyResult : MSBuildEnumerationResult
 {
+    /// <summary>
+    ///  Initializes an empty result with the specified reason.
+    /// </summary>
+    /// <param name="reason">The reason the search is empty.</param>
     internal MSBuildEmptyResult(MSBuildEmptyReason reason)
     {
         if (reason is not MSBuildEmptyReason.StartDirectoryNotFound)

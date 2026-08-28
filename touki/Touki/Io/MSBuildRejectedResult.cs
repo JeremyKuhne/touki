@@ -9,6 +9,11 @@ namespace Touki.Io;
 /// </summary>
 public sealed class MSBuildRejectedResult : MSBuildEnumerationResult
 {
+    /// <summary>
+    ///  Initializes a rejected result.
+    /// </summary>
+    /// <param name="reason">The rejection reason.</param>
+    /// <param name="message">The rejection message.</param>
     internal MSBuildRejectedResult(MSBuildRejectionReason reason, string message)
     {
         if (reason is not MSBuildRejectionReason.DriveEnumerationForbidden)

@@ -7,14 +7,22 @@ namespace Touki.Io;
 /// <summary>
 ///  Combines directory results and manages the include and exclude sessions shared by exclusion-wins implementations.
 /// </summary>
+/// <param name="includes">The sessions that include paths.</param>
+/// <param name="excludes">The sessions that exclude paths.</param>
 internal abstract class ExclusionWinsFileSystemMatcherSessionBase(
     IFileSystemMatcherSession[] includes,
     IFileSystemMatcherSession[] excludes) : FileSystemMatcherSession
 {
     private int _disposed;
 
+    /// <summary>
+    ///  Gets the sessions that include paths.
+    /// </summary>
     protected IFileSystemMatcherSession[] Includes { get; } = includes;
 
+    /// <summary>
+    ///  Gets the sessions that exclude paths.
+    /// </summary>
     protected IFileSystemMatcherSession[] Excludes { get; } = excludes;
 
     public override DirectoryMatchType MatchesDirectory(

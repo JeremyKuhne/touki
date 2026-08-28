@@ -14,6 +14,14 @@ namespace Touki.Resources.BinaryFormat;
 /// </summary>
 internal static class SerializationExtensions
 {
+    /// <summary>
+    ///  Converts an exception to a serialization exception.
+    /// </summary>
+    /// <param name="exception">The exception to convert.</param>
+    /// <returns>
+    ///  <paramref name="exception"/> when it is already a <see cref="SerializationException"/>; otherwise, a wrapper
+    ///  that retains <paramref name="exception"/> as its inner exception.
+    /// </returns>
     internal static SerializationException ConvertToSerializationException(this Exception exception)
         => exception is SerializationException serializationException
             ? serializationException

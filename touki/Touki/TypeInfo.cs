@@ -14,6 +14,10 @@ public static partial class TypeInfo<T>
     /// <summary>
     ///  Returns <see langword="true"/> if the type <typeparamref name="T"/> is a reference type or contains references.
     /// </summary>
+    /// <returns>
+    ///  <see langword="true"/> if <typeparamref name="T"/> is a reference type or contains references; otherwise,
+    ///  <see langword="false"/>.
+    /// </returns>
     public static bool IsReferenceOrContainsReferences()
     {
         if (s_hasReferences.HasValue)

@@ -16,12 +16,19 @@ internal sealed class ArrayUpdater : ValueUpdater
 {
     private readonly int[] _indices;
 
+    /// <summary>
+    ///  Initializes an updater for an array element.
+    /// </summary>
+    /// <param name="objectId">The identifier of the array that owns the element.</param>
+    /// <param name="valueId">The identifier of the referenced value.</param>
+    /// <param name="indices">The multidimensional indices of the element to update.</param>
     internal ArrayUpdater(SerializationRecordId objectId, SerializationRecordId valueId, int[] indices)
         : base(objectId, valueId)
     {
         _indices = indices;
     }
 
+    /// <inheritdoc/>
     internal override void UpdateValue(IDictionary<SerializationRecordId, object> objects)
     {
         object value = objects[ValueId];

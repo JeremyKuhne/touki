@@ -43,11 +43,17 @@ public static unsafe partial class EnumExtensions
     //  bitwise expression; without it the inlined body is replaced by a
     //  call frame.
 
+    /// <param name="value">The enum value to inspect.</param>
     extension<T>(T value) where T : unmanaged, Enum
     {
         /// <summary>
         ///  Returns true if the given flag or flags are set.
         /// </summary>
+        /// <param name="flags">The flag mask to test.</param>
+        /// <returns>
+        ///  <see langword="true"/> if every flag in <paramref name="flags"/> is set; otherwise,
+        ///  <see langword="false"/>.
+        /// </returns>
         /// <remarks>
         ///  <para>
         ///   Equivalent to <see cref="Enum.HasFlag(Enum)"/> but without the boxing
@@ -105,6 +111,11 @@ public static unsafe partial class EnumExtensions
         ///  Returns true if only one of the specified <paramref name="flags"/>
         ///  is set.
         /// </summary>
+        /// <param name="flags">The flag mask to test.</param>
+        /// <returns>
+        ///  <see langword="true"/> if exactly one bit selected by <paramref name="flags"/> is set; otherwise,
+        ///  <see langword="false"/>.
+        /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsOnlyOneFlagSet(T flags)
         {
@@ -141,6 +152,11 @@ public static unsafe partial class EnumExtensions
         /// <summary>
         ///  Returns true if any of the given flags are set.
         /// </summary>
+        /// <param name="flags">The flag mask to test.</param>
+        /// <returns>
+        ///  <see langword="true"/> if any flag in <paramref name="flags"/> is set; otherwise,
+        ///  <see langword="false"/>.
+        /// </returns>
         /// <remarks>
         ///  <para>
         ///   There is no BCL equivalent. <see cref="Enum.HasFlag"/>
@@ -173,11 +189,13 @@ public static unsafe partial class EnumExtensions
         }
     }
 
+    /// <param name="value">The enum value to modify.</param>
     extension<T>(ref T value) where T : unmanaged, Enum
     {
         /// <summary>
         ///  Sets the given flag or flags on <paramref name="value"/>.
         /// </summary>
+        /// <param name="flags">The flag mask to set.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetFlags(T flags)
         {
@@ -209,6 +227,7 @@ public static unsafe partial class EnumExtensions
         /// <summary>
         ///  Clears the given flag or flags on <paramref name="value"/>.
         /// </summary>
+        /// <param name="flags">The flag mask to clear.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ClearFlags(T flags)
         {

@@ -13,6 +13,7 @@ public static partial class StreamExtensions
         ///  Writes a sequence of bytes to the current stream and advances the current position within this stream by
         ///  the number of bytes written.
         /// </summary>
+        /// <param name="buffer">The bytes to write.</param>
         public void Write(ReadOnlySpan<byte> buffer)
         {
             if (buffer.IsEmpty)

@@ -14,15 +14,30 @@ namespace Touki.Resources.BinaryFormat;
 /// </summary>
 internal abstract class ValueUpdater
 {
+    /// <summary>
+    ///  Initializes an updater for a referenced value and its owning object.
+    /// </summary>
+    /// <param name="objectId">The identifier of the object that owns the value.</param>
+    /// <param name="valueId">The identifier of the referenced value.</param>
     private protected ValueUpdater(SerializationRecordId objectId, SerializationRecordId valueId)
     {
         ObjectId = objectId;
         ValueId = valueId;
     }
 
+    /// <summary>
+    ///  Gets the identifier of the referenced value.
+    /// </summary>
     internal SerializationRecordId ValueId { get; }
 
+    /// <summary>
+    ///  Gets the identifier of the object that owns the value.
+    /// </summary>
     internal SerializationRecordId ObjectId { get; }
 
+    /// <summary>
+    ///  Writes the resolved value back to its owning object.
+    /// </summary>
+    /// <param name="objects">The deserialized objects keyed by their record identifiers.</param>
     internal abstract void UpdateValue(IDictionary<SerializationRecordId, object> objects);
 }

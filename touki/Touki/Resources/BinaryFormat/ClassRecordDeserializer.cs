@@ -19,6 +19,12 @@ internal abstract class ClassRecordDeserializer : ObjectRecordDeserializer
 {
     private readonly bool _onlyAllowPrimitives;
 
+    /// <summary>
+    ///  Initializes a deserializer for a materialized class record.
+    /// </summary>
+    /// <param name="classRecord">The class record to deserialize.</param>
+    /// <param name="instance">The object materialized for the record.</param>
+    /// <param name="deserializer">The object-graph deserializer.</param>
     private protected ClassRecordDeserializer(
         ClassRecord classRecord,
         object instance,
@@ -29,6 +35,12 @@ internal abstract class ClassRecordDeserializer : ObjectRecordDeserializer
         _onlyAllowPrimitives = instance is IObjectReference;
     }
 
+    /// <summary>
+    ///  Creates the appropriate class-record deserializer for the resolved runtime type.
+    /// </summary>
+    /// <param name="classRecord">The class record to deserialize.</param>
+    /// <param name="deserializer">The object-graph deserializer.</param>
+    /// <returns>The class-record deserializer.</returns>
     internal static ObjectRecordDeserializer Create(ClassRecord classRecord, IDeserializer deserializer)
     {
         Type type = deserializer.TypeResolver.BindToType(classRecord.TypeName);
@@ -51,6 +63,7 @@ internal abstract class ClassRecordDeserializer : ObjectRecordDeserializer
             : new ClassRecordFieldInfoDeserializer(classRecord, instance, type, deserializer);
     }
 
+    /// <inheritdoc cref="ObjectRecordDeserializer.ValidateNewMemberObjectValue"/>
     private protected override void ValidateNewMemberObjectValue(object value)
     {
         if (!_onlyAllowPrimitives)

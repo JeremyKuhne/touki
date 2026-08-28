@@ -36,9 +36,20 @@ public readonly struct StringSegment :
     ISpanFormattable
 {
     private readonly string? _value;
+
+    /// <summary>
+    ///  The zero-based start index in the backing string.
+    /// </summary>
     internal readonly int _startIndex;
+
+    /// <summary>
+    ///  The number of characters in the segment.
+    /// </summary>
     internal readonly int _length;
 
+    /// <summary>
+    ///  Gets the backing string, or an empty string if the segment has no backing value.
+    /// </summary>
     internal string Value => _value ?? string.Empty;
 
     /// <summary>
@@ -182,6 +193,7 @@ public readonly struct StringSegment :
     /// <summary>
     ///  Splits on the next separator, or returns the entire segment if no separator is found.
     /// </summary>
+    /// <param name="delimiter">The delimiter on which to split.</param>
     /// <param name="left">The left side of the split.</param>
     /// <param name="right">The right side of the split, if any.</param>
     /// <returns><see langword="false"/> if the current segment is empty, otherwise <see langword="true"/>.</returns>
@@ -218,10 +230,11 @@ public readonly struct StringSegment :
         return true;
     }
 
-    /// <summary>
-    ///  Splits on the next separator, or returns the entire segment if no separator is found.
-    /// </summary>
-    /// <returns><see langword="false"/> if the current segment is empty, otherwise <see langword="true"/>.</returns>
+    /// <inheritdoc cref="TrySplit(char, out StringSegment, out StringSegment)"/>
+    /// <param name="value0">The first delimiter on which to split.</param>
+    /// <param name="value1">The second delimiter on which to split.</param>
+    /// <param name="left">The left side of the split.</param>
+    /// <param name="right">The right side of the split, if any.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TrySplitAny(char value0, char value1, out StringSegment left, out StringSegment right)
     {
@@ -255,20 +268,27 @@ public readonly struct StringSegment :
     ///  Returns <see langword="true"/> if the segment contains the specified <see langword="char"/>,
     ///  otherwise <see langword="false"/>.
     /// </summary>
+    /// <param name="value">The character to find.</param>
+    /// <returns>
+    ///  <see langword="true"/> if the segment contains <paramref name="value"/>; otherwise,
+    ///  <see langword="false"/>.
+    /// </returns>
     public bool Contains(char value) => IndexOf(value) >= 0;
 
     /// <summary>
     ///  Returns the index of the given <see langword="char"/> or -1 if not found.
     /// </summary>
+    /// <param name="value">The character to find.</param>
+    /// <returns>The zero-based index of <paramref name="value"/> in the segment, or -1 if it is not found.</returns>
     public int IndexOf(char value)
     {
         int index = _value?.IndexOf(value, _startIndex, _length) ?? -1;
         return index < 0 ? -1 : index - _startIndex;
     }
 
-    /// <summary>
-    ///  Returns the index of the given <see langword="char"/>s or -1 if not found.
-    /// </summary>
+    /// <inheritdoc cref="IndexOfAny(ReadOnlySpan{char})"/>
+    /// <param name="value0">The first character to find.</param>
+    /// <param name="value1">The second character to find.</param>
     public int IndexOfAny(char value0, char value1) => value0 == value1
         // Optimizing for DirectorySeparatorChar == AltDirectorySeparatorChar
         ? IndexOf(value0)
@@ -277,6 +297,8 @@ public readonly struct StringSegment :
     /// <summary>
     ///  Returns the index of the given <see langword="char"/>s or -1 if not found.
     /// </summary>
+    /// <param name="values">The characters to find.</param>
+    /// <returns>The zero-based index of the first matching character, or -1 if no character is found.</returns>
     public int IndexOfAny(ReadOnlySpan<char> values) => values.Length switch
     {
         0 => -1,
@@ -288,6 +310,8 @@ public readonly struct StringSegment :
     /// <summary>
     ///  Returns the last index of the given <see langword="char"/> or -1 if not found.
     /// </summary>
+    /// <param name="value">The character to find.</param>
+    /// <returns>The zero-based index of the last <paramref name="value"/>, or -1 if it is not found.</returns>
     public int LastIndexOf(char value)
     {
         if (_length == 0 || _value is null)
@@ -299,9 +323,9 @@ public readonly struct StringSegment :
         return index < 0 ? -1 : index - _startIndex;
     }
 
-    /// <summary>
-    ///  Returns the last index of the given <see langword="char"/>s or -1 if not found.
-    /// </summary>
+    /// <inheritdoc cref="LastIndexOfAny(ReadOnlySpan{char})"/>
+    /// <param name="value0">The first character to find.</param>
+    /// <param name="value1">The second character to find.</param>
     public int LastIndexOfAny(char value0, char value1) => value0 == value1
         // Optimizing for DirectorySeparatorChar == AltDirectorySeparatorChar
         ? LastIndexOf(value0)
@@ -310,6 +334,8 @@ public readonly struct StringSegment :
     /// <summary>
     ///  Returns the last index of the given <see langword="char"/>s or -1 if not found.
     /// </summary>
+    /// <param name="values">The characters to find.</param>
+    /// <returns>The zero-based index of the last matching character, or -1 if no character is found.</returns>
     public int LastIndexOfAny(ReadOnlySpan<char> values) => values.Length switch
     {
         0 => -1,
@@ -318,9 +344,8 @@ public readonly struct StringSegment :
         _ => AsSpan().LastIndexOfAny(values),
     };
 
-    /// <summary>
-    ///  Returns <see langword="true"/> if the segment starts with the specified <see langword="string"/>,
-    /// </summary>
+    /// <inheritdoc cref="StartsWith(ReadOnlySpan{char}, StringComparison)"/>
+    /// <param name="value">The string to compare with the beginning of the segment.</param>
     /// <exception cref="ArgumentNullException"><paramref name="value"/> was <see langword="null"/>.</exception>
     public bool StartsWith(string value, StringComparison comparison = StringComparison.Ordinal)
     {
@@ -329,22 +354,26 @@ public readonly struct StringSegment :
             && string.Compare(_value, _startIndex, value, 0, value.Length, comparison) == 0);
     }
 
-    /// <summary>
-    ///  Returns <see langword="true"/> if the segment starts with the specified <see cref="StringSegment"/>,
-    /// </summary>
+    /// <inheritdoc cref="StartsWith(ReadOnlySpan{char}, StringComparison)"/>
+    /// <param name="value">The segment to compare with the beginning of this segment.</param>
     public bool StartsWith(StringSegment value, StringComparison comparison = StringComparison.Ordinal) =>
         value._length == 0 || (value._length <= _length
             && string.Compare(_value, _startIndex, value._value, value._startIndex, value._length, comparison) == 0);
 
     /// <summary>
-    ///  Returns <see langword="true"/> if the segment starts with the specified <see cref="ReadOnlySpan{Char}"/>.
+    ///  Returns a value indicating whether the segment starts with the specified value.
     /// </summary>
+    /// <param name="value">The span to compare with the beginning of the segment.</param>
+    /// <param name="comparison">The comparison type to use.</param>
+    /// <returns>
+    ///  <see langword="true"/> if the segment starts with <paramref name="value"/>; otherwise,
+    ///  <see langword="false"/>.
+    /// </returns>
     public bool StartsWith(ReadOnlySpan<char> value, StringComparison comparison = StringComparison.Ordinal) =>
         value.Length == 0 || (value.Length <= _length && AsSpan().StartsWith(value, comparison));
 
-    /// <summary>
-    ///  Returns <see langword="true"/> if the segment ends with the specified <see langword="string"/>,
-    /// </summary>
+    /// <inheritdoc cref="EndsWith(ReadOnlySpan{char}, StringComparison)"/>
+    /// <param name="value">The string to compare with the end of the segment.</param>
     public bool EndsWith(string value, StringComparison comparison = StringComparison.Ordinal)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -353,9 +382,8 @@ public readonly struct StringSegment :
                 && string.Compare(_value, _startIndex + _length - value.Length, value, 0, value.Length, comparison) == 0);
     }
 
-    /// <summary>
-    ///  Returns <see langword="true"/> if the segment ends with the specified <see cref="StringSegment"/>,
-    /// </summary>
+    /// <inheritdoc cref="EndsWith(ReadOnlySpan{char}, StringComparison)"/>
+    /// <param name="value">The segment to compare with the end of this segment.</param>
     public bool EndsWith(StringSegment value, StringComparison comparison = StringComparison.Ordinal)
     {
         return value.Length == 0
@@ -364,14 +392,22 @@ public readonly struct StringSegment :
     }
 
     /// <summary>
-    ///  Returns <see langword="true"/> if the segment ends with the specified <see cref="ReadOnlySpan{Char}"/>.
+    ///  Returns a value indicating whether the segment ends with the specified value.
     /// </summary>
+    /// <param name="value">The span to compare with the end of the segment.</param>
+    /// <param name="comparison">The comparison type to use.</param>
+    /// <returns>
+    ///  <see langword="true"/> if the segment ends with <paramref name="value"/>; otherwise,
+    ///  <see langword="false"/>.
+    /// </returns>
     public bool EndsWith(ReadOnlySpan<char> value, StringComparison comparison = StringComparison.Ordinal) =>
         value.Length <= _length && AsSpan(_length - value.Length).StartsWith(value, comparison);
 
     /// <summary>
     ///  Replace all occurrences of a character in the segment with another character.
     /// </summary>
+    /// <param name="oldValue">The character to replace.</param>
+    /// <param name="newValue">The replacement character.</param>
     /// <returns>The new <see cref="StringSegment"/> with the specified character replaced.</returns>
     /// <remarks>
     ///  <para>
@@ -435,6 +471,7 @@ public readonly struct StringSegment :
     /// <summary>
     ///  Trims the segment by removing the specified character.
     /// </summary>
+    /// <param name="trimChar">The character to remove from both ends of the segment.</param>
     /// <returns>The trimmed <see cref="StringSegment"/>.</returns>
     /// <remarks>
     ///  <para>
@@ -697,23 +734,30 @@ public readonly struct StringSegment :
     ///  Implicitly converts a <see cref="StringSegment"/> to a <see cref="ReadOnlySpan{T}"/> of <see cref="char"/>.
     /// </summary>
     /// <param name="segment">The segment to convert.</param>
+    /// <returns>A read-only span over <paramref name="segment"/>.</returns>
     public static implicit operator ReadOnlySpan<char>(StringSegment segment) => segment.AsSpan();
 
     /// <summary>
     ///  Explicitly converts a <see cref="StringSegment"/> to a string.
     /// </summary>
     /// <param name="segment">The segment to convert.</param>
+    /// <returns>The string represented by <paramref name="segment"/>.</returns>
     public static explicit operator string(StringSegment segment) => segment.ToString();
 
     /// <summary>
     ///  Implicitly converts a <see cref="string"/> to a <see cref="StringSegment"/>.
     /// </summary>
     /// <param name="value">The string to convert.</param>
+    /// <returns>A segment that wraps <paramref name="value"/>.</returns>
     public static implicit operator StringSegment(string value) => new StringSegment(value);
 
     /// <summary>
     ///  Implicitly converts a <see cref="StringSegment"/> to a <see cref="ReadOnlyMemory{T}"/> of <see cref="char"/>.
     /// </summary>
+    /// <param name="segment">The segment to convert.</param>
+    /// <returns>
+    ///  Read-only memory over the portion of the backing string represented by <paramref name="segment"/>.
+    /// </returns>
     public static implicit operator ReadOnlyMemory<char>(StringSegment segment) =>
         segment._value.AsMemory(segment._startIndex, segment._length);
 
@@ -778,6 +822,7 @@ public readonly struct StringSegment :
     /// <summary>
     ///  The C# compiler pattern needed to pin the segment in memory.
     /// </summary>
+    /// <returns>A reference to the first character, or a null reference if the segment is empty.</returns>
     [EditorBrowsable(EditorBrowsableState.Never)]
     public unsafe ref char GetPinnableReference()
     {
@@ -982,6 +1027,7 @@ public readonly struct StringSegment :
     /// <summary>
     ///  Writes the segment to the specified <see cref="TextWriter"/>.
     /// </summary>
+    /// <param name="writer">The text writer to write to.</param>
     public void WriteTo(TextWriter writer)
     {
         ArgumentNullException.ThrowIfNull(writer);

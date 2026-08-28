@@ -40,6 +40,16 @@ public readonly partial struct Value
 
         private PackedDateTimeOffset(ulong data) => _data = data;
 
+        /// <summary>
+        ///  Attempts to pack ticks and a UTC offset into one 64-bit value.
+        /// </summary>
+        /// <param name="ticks">The ticks to pack.</param>
+        /// <param name="offsetMinutes">The UTC offset, in minutes, to pack.</param>
+        /// <param name="packed">The packed value on success.</param>
+        /// <returns>
+        ///  <see langword="true"/> if <paramref name="ticks"/> and <paramref name="offsetMinutes"/> can be
+        ///  represented in packed form; otherwise, <see langword="false"/>.
+        /// </returns>
         public static bool TryCreate(ulong ticks, short offsetMinutes, out PackedDateTimeOffset packed)
         {
             bool result = false;
@@ -66,6 +76,10 @@ public readonly partial struct Value
             return result;
         }
 
+        /// <summary>
+        ///  Reconstructs the packed <see cref="DateTimeOffset"/>.
+        /// </summary>
+        /// <returns>The reconstructed <see cref="DateTimeOffset"/>.</returns>
         public DateTimeOffset Extract()
         {
             DateTimeOffset dateTimeOffset = default;

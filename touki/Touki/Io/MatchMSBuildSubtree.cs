@@ -24,12 +24,25 @@ internal sealed class MatchMSBuildSubtree : DisposableBase, IFileSystemMatcherSe
     private bool _currentDirectoryWithinRoot;
     private byte _currentDirectoryMatch;
 
+    /// <summary>
+    ///  Initializes a matcher that includes every file beneath a fixed root path.
+    /// </summary>
+    /// <param name="rootPath">The fixed root path.</param>
+    /// <param name="matchCasing">The path comparison casing.</param>
     public MatchMSBuildSubtree(StringSegment rootPath, MatchCasing matchCasing)
     {
         _rootPath = rootPath.TrimEnd(Path.DirectorySeparatorChar);
         _matchCasing = Paths.GetFinalCasing(matchCasing);
     }
 
+    /// <summary>
+    ///  Initializes a matcher that includes subtrees selected by a directory pattern.
+    /// </summary>
+    /// <param name="rootPath">The fixed root path.</param>
+    /// <param name="matchStartPath">The path from which relative directory matching begins.</param>
+    /// <param name="directoryPattern">The directory segment pattern.</param>
+    /// <param name="matchType">The pattern matching mode.</param>
+    /// <param name="matchCasing">The path comparison casing.</param>
     public MatchMSBuildSubtree(
         StringSegment rootPath,
         StringSegment matchStartPath,
@@ -46,8 +59,18 @@ internal sealed class MatchMSBuildSubtree : DisposableBase, IFileSystemMatcherSe
             && directoryPattern.IndexOfAny('*', '?') < 0;
     }
 
+    /// <summary>
+    ///  Invalidates the cached classification for the completed directory.
+    /// </summary>
+    /// <param name="directory">The completed directory.</param>
     public void DirectoryFinished(ReadOnlySpan<char> directory) => _cacheValid = false;
 
+    /// <summary>
+    ///  Classifies whether a candidate directory can contain matching files.
+    /// </summary>
+    /// <param name="currentDirectory">The directory containing the candidate directory.</param>
+    /// <param name="directoryName">The candidate directory name.</param>
+    /// <returns>The match classification for the candidate directory and its descendants.</returns>
     public DirectoryMatchType MatchesDirectory(
         ReadOnlySpan<char> currentDirectory,
         ReadOnlySpan<char> directoryName)
@@ -79,6 +102,14 @@ internal sealed class MatchMSBuildSubtree : DisposableBase, IFileSystemMatcherSe
                     : DirectoryMatchType.MayContainMatchingFiles;
     }
 
+    /// <summary>
+    ///  Determines whether a file is within a selected subtree.
+    /// </summary>
+    /// <param name="currentDirectory">The directory containing the file.</param>
+    /// <param name="fileName">The file name.</param>
+    /// <returns>
+    ///  <see langword="true"/> if the file is within a selected subtree; otherwise <see langword="false"/>.
+    /// </returns>
     public bool MatchesFile(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> fileName)
     {
         EnsureCurrentDirectory(currentDirectory);

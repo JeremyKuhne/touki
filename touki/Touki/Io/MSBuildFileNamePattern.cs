@@ -18,6 +18,13 @@ internal readonly struct MSBuildFileNamePattern
     private readonly MatchType _matchType;
     private readonly bool _matchAll;
 
+    /// <summary>
+    ///  Initializes a normalized MSBuild filename pattern.
+    /// </summary>
+    /// <param name="expression">The filename expression.</param>
+    /// <param name="matchType">The requested pattern matching mode.</param>
+    /// <param name="useFileSystemSemantics">Whether to apply file-system filename semantics.</param>
+    /// <param name="useRawLogicalSemantics">Whether to use the expression without logical rewriting.</param>
     public MSBuildFileNamePattern(
         StringSegment expression,
         MatchType matchType,
@@ -71,6 +78,12 @@ internal readonly struct MSBuildFileNamePattern
         }
     }
 
+    /// <summary>
+    ///  Determines whether a filename matches the normalized pattern.
+    /// </summary>
+    /// <param name="fileName">The filename to match.</param>
+    /// <param name="matchCasing">The case sensitivity to use.</param>
+    /// <returns><see langword="true"/> if the filename matches; otherwise <see langword="false"/>.</returns>
     public bool Matches(ReadOnlySpan<char> fileName, MatchCasing matchCasing)
     {
         if (_matchAll)
@@ -91,16 +104,37 @@ internal readonly struct MSBuildFileNamePattern
         return Paths.MatchesExpression(fileName, _expression, matchCasing, _matchType);
     }
 
+    /// <summary>
+    ///  Determines whether an expression requires MSBuild filename policy handling.
+    /// </summary>
+    /// <param name="expression">The filename expression.</param>
+    /// <param name="matchType">The requested pattern matching mode.</param>
+    /// <returns><see langword="true"/> if policy handling is required; otherwise <see langword="false"/>.</returns>
     public static bool RequiresPolicy(ReadOnlySpan<char> expression, MatchType matchType) =>
         ContainsStarDotStar(expression)
         || UsesDosDotSemantics(expression)
         || (matchType == MatchType.Win32 && ShouldEnforceLogicalMatch(expression));
 
+    /// <summary>
+    ///  Rewrites effective filename-scope <c>*.*</c> sequences to <c>*</c>.
+    /// </summary>
+    /// <param name="expression">The expression to rewrite.</param>
+    /// <param name="allowExtGlob">Whether extglob groups are recognized.</param>
+    /// <returns>The original expression when unchanged; otherwise the rewritten expression.</returns>
     internal static StringSegment RewriteStarDotStarSequences(
         StringSegment expression,
         bool allowExtGlob = false) =>
         RewriteStarDotStarSequences(expression, allowExtGlob, out _);
 
+    /// <summary>
+    ///  Rewrites effective filename-scope <c>*.*</c> sequences and records source positions.
+    /// </summary>
+    /// <param name="expression">The expression to rewrite.</param>
+    /// <param name="allowExtGlob">Whether extglob groups are recognized.</param>
+    /// <param name="sourcePositions">
+    ///  Receives the source index for each rewritten character, or <see langword="null"/> when unchanged.
+    /// </param>
+    /// <returns>The original expression when unchanged; otherwise the rewritten expression.</returns>
     internal static StringSegment RewriteStarDotStarSequences(
         StringSegment expression,
         bool allowExtGlob,
@@ -343,6 +377,14 @@ internal readonly struct MSBuildFileNamePattern
         return false;
     }
 
+    /// <summary>
+    ///  Determines whether an expression contains a double-star outside extglob operators.
+    /// </summary>
+    /// <param name="expression">The expression to inspect.</param>
+    /// <param name="allowExtGlob">Whether extglob groups are recognized.</param>
+    /// <returns>
+    ///  <see langword="true"/> if an effective double-star is present; otherwise <see langword="false"/>.
+    /// </returns>
     internal static bool ContainsEffectiveDoubleStar(
         ReadOnlySpan<char> expression,
         bool allowExtGlob) =>

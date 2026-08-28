@@ -7,6 +7,7 @@ namespace Touki.Io;
 /// <summary>
 ///  Fast stack based <see cref="Span{T}"/> writer.
 /// </summary>
+/// <param name="span">The span to write.</param>
 public unsafe ref struct SpanWriter<T>(Span<T> span) where T : unmanaged
 {
     private Span<T> _unwritten = span;

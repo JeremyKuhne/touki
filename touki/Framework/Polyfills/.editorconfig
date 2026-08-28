@@ -16,6 +16,10 @@ dotnet_diagnostic.TOUKI0020.severity = none
 # so future ports remain easy to compare.
 dotnet_diagnostic.TOUKI0024.severity = none
 
+# TOUKI0026: Require member, parameter, and return XML documentation. Upstream documentation
+# coverage is retained so future ports remain easy to compare.
+dotnet_diagnostic.TOUKI0026.severity = none
+
 # TOUKI0030: Use ValueStringBuilder to build strings. Upstream builds these strings with
 # StringBuilder; rewriting them would make future ports harder to diff.
 dotnet_diagnostic.TOUKI0030.severity = none

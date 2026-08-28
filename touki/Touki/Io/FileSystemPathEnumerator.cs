@@ -24,6 +24,10 @@ public sealed class FileSystemPathEnumerator : FileSystemMatchEnumerator<string>
     /// <summary>
     ///  Creates an enumerator for files beneath <paramref name="rootDirectory"/>.
     /// </summary>
+    /// <param name="rootDirectory">The directory to enumerate.</param>
+    /// <param name="matcher">The matcher used to select files and directories.</param>
+    /// <param name="options">The enumeration options, or <see langword="null"/> to use the defaults.</param>
+    /// <returns>The created path enumerator.</returns>
     public static FileSystemPathEnumerator Create(
         string rootDirectory,
         IFileSystemMatcher matcher,

@@ -9,11 +9,14 @@ namespace Touki.Text;
 /// </summary>
 public static unsafe partial class StringBuilderExtensions
 {
+    /// <param name="builder">The builder to append to.</param>
     extension(StringBuilder builder)
     {
         /// <summary>
         ///  Appends a <see cref="ReadOnlySpan{T}"/> of characters to the end of the <see cref="StringBuilder"/>.
         /// </summary>
+        /// <param name="value">The characters to append.</param>
+        /// <returns>The receiver after the append operation.</returns>
         public StringBuilder AppendSpan(ReadOnlySpan<char> value)
         {
             if (!value.IsEmpty)
@@ -29,13 +32,17 @@ public static unsafe partial class StringBuilderExtensions
         }
 
         /// <summary>
-        ///  Appends a <see cref="Memory{T}"/> of characters to the end of the <see cref="StringBuilder"/>.
+        ///  Appends the characters in a memory region to the end of the <see cref="StringBuilder"/>.
         /// </summary>
+        /// <param name="value">The characters to append.</param>
+        /// <returns>The receiver after the append operation.</returns>
         public StringBuilder AppendSpan(Memory<char> value) => builder.AppendSpan(value.Span);
 
         /// <summary>
         ///  Cross Framework interpolated string extension for <see cref="StringBuilder"/>.
         /// </summary>
+        /// <param name="valueBuilder">The value builder whose contents to append and clear.</param>
+        /// <returns>The receiver after the append operation.</returns>
         public StringBuilder AppendFormatted(ref ValueStringBuilder valueBuilder)
         {
             if (valueBuilder.Length > 0)
@@ -154,6 +161,9 @@ public static unsafe partial class StringBuilderExtensions
         /// <summary>
         ///  Appends the values in the given span, separated by the specified separator character.
         /// </summary>
+        /// <param name="separator">The character to append between values.</param>
+        /// <param name="values">The values to append.</param>
+        /// <returns>The receiver after the append operation.</returns>
         public StringBuilder AppendJoin(char separator, params ReadOnlySpan<object?> values)
         {
             if (values.IsEmpty)

@@ -17,23 +17,51 @@ namespace Touki.Resources.BinaryFormat;
 /// </summary>
 internal abstract class ObjectRecordDeserializer
 {
+    /// <summary>
+    ///  Represents a member value whose referenced object has not been materialized.
+    /// </summary>
     private protected static readonly object s_missingValueSentinel = new();
 
+    /// <summary>
+    ///  Initializes a deserializer for an object record.
+    /// </summary>
+    /// <param name="objectRecord">The record to deserialize.</param>
+    /// <param name="deserializer">The object-graph deserializer.</param>
     private protected ObjectRecordDeserializer(SerializationRecord objectRecord, IDeserializer deserializer)
     {
         Deserializer = deserializer;
         ObjectRecord = objectRecord;
     }
 
+    /// <summary>
+    ///  Gets the serialization record being deserialized.
+    /// </summary>
     internal SerializationRecord ObjectRecord { get; }
 
+    /// <summary>
+    ///  Gets the object materialized from <see cref="ObjectRecord"/>.
+    /// </summary>
     [AllowNull]
     internal object Object { get; private protected set; }
 
+    /// <summary>
+    ///  Gets the object-graph deserializer.
+    /// </summary>
     private protected IDeserializer Deserializer { get; }
 
+    /// <summary>
+    ///  Continues deserialization until completion or an unresolved record is encountered.
+    /// </summary>
+    /// <returns>
+    ///  The unresolved record identifier, or the <see langword="default"/> identifier when deserialization is complete.
+    /// </returns>
     internal abstract SerializationRecordId Continue();
 
+    /// <summary>
+    ///  Resolves a serialized member value to its materialized value and record identifier.
+    /// </summary>
+    /// <param name="memberValue">The serialized member value.</param>
+    /// <returns>The materialized value and its record identifier.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected (object? value, SerializationRecordId id) UnwrapMemberValue(object? memberValue)
     {
@@ -76,15 +104,33 @@ internal abstract class ObjectRecordDeserializer
         }
     }
 
+    /// <summary>
+    ///  Validates a newly resolved object before it is assigned to a member.
+    /// </summary>
+    /// <param name="value">The resolved object to validate.</param>
     private protected virtual void ValidateNewMemberObjectValue(object value)
     {
     }
 
+    /// <summary>
+    ///  Determines whether a resolved value requires a later fixup.
+    /// </summary>
+    /// <param name="value">The resolved value.</param>
+    /// <param name="valueRecord">The identifier of the value record.</param>
+    /// <returns>
+    ///  <see langword="true"/> if the value requires a later fixup; otherwise <see langword="false"/>.
+    /// </returns>
     private protected bool DoesValueNeedUpdated(object value, SerializationRecordId valueRecord)
         => !valueRecord.Equals(default)
             && (value is IObjectReference
                 || (Deserializer.IncompleteObjects.Contains(valueRecord) && value.GetType().IsValueType));
 
+    /// <summary>
+    ///  Creates the record-specific deserializer for a class or array record.
+    /// </summary>
+    /// <param name="record">The object record to deserialize.</param>
+    /// <param name="deserializer">The object-graph deserializer.</param>
+    /// <returns>The record-specific deserializer.</returns>
     internal static ObjectRecordDeserializer Create(SerializationRecord record, IDeserializer deserializer)
         => record switch
         {

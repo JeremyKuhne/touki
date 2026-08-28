@@ -6,11 +6,13 @@ namespace Touki.Io;
 
 public static partial class TextWriterExtensions
 {
+    /// <param name="writer">The writer to write to.</param>
     extension(TextWriter writer)
     {
         /// <summary>
         ///  Allows writing a <see cref="ReadOnlySpan{Char}"/> to a <see cref="TextWriter"/>.
         /// </summary>
+        /// <param name="value">The characters to write.</param>
         public void Write(ReadOnlySpan<char> value)
         {
             if (value.Length == 0)
@@ -34,6 +36,7 @@ public static partial class TextWriterExtensions
         /// <summary>
         ///  Allows writing a <see cref="ReadOnlySpan{Char}"/> to a <see cref="TextWriter"/>.
         /// </summary>
+        /// <param name="value">The characters to write before the line terminator.</param>
         public void WriteLine(ReadOnlySpan<char> value)
         {
             if (value.Length == 0)

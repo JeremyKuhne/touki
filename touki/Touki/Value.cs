@@ -1214,6 +1214,8 @@ public readonly partial struct Value
     /// <summary>
     ///  Use this method to avoid generic instantiation for an unsupported value type (T) on <see cref="Create{T}(T)"/>
     /// </summary>
+    /// <param name="value">The object to store.</param>
+    /// <returns>A <see cref="Value"/> containing <paramref name="value"/>.</returns>
     public static Value Box(object? value) => new Value(value);
 
     private Value(object o, ulong u)
@@ -1608,6 +1610,8 @@ public readonly partial struct Value
     /// <summary>
     ///  Format the variant into the given <paramref name="destination"/>.
     /// </summary>
+    /// <param name="destination">The builder to append the formatted value to.</param>
+    /// <param name="format">The format specifier to use, or an empty span for the default format.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Format(ref ValueStringBuilder destination, ReadOnlySpan<char> format)
     {

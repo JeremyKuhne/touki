@@ -10,6 +10,13 @@ namespace Touki.Resources;
 /// </summary>
 public readonly struct ResourceLocation
 {
+    /// <summary>
+    ///  Initializes a resource location.
+    /// </summary>
+    /// <param name="index">The zero-based index of the resource.</param>
+    /// <param name="typeCode">The stored type code of the resource.</param>
+    /// <param name="byteLength">The length, in bytes, of the raw value content.</param>
+    /// <param name="contentOffset">The absolute offset of the value content within the reader's memory.</param>
     internal ResourceLocation(int index, ResourceTypeCode typeCode, int byteLength, int contentOffset)
     {
         Index = index;

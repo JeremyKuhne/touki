@@ -7,6 +7,9 @@ namespace Touki.Io;
 /// <summary>
 ///  Evaluates ordered rules over sessions that consume separate directory and file-name spans.
 /// </summary>
+/// <param name="rules">The ordered match rules.</param>
+/// <param name="sessions">The matcher sessions corresponding to the rules.</param>
+/// <param name="includeUnmatched">Whether paths that match no rule are included.</param>
 internal sealed class OrderedFileSystemMatcherSession(
     FileSystemMatchRule[] rules,
     IFileSystemMatcherSession[] sessions,

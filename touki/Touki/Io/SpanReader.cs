@@ -17,6 +17,7 @@ namespace Touki.Io;
 ///   Inspired by SequenceReader{T} patterns.
 ///  </para>
 /// </remarks>
+/// <param name="span">The span to read.</param>
 public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged, IEquatable<T>
 {
     // Deliberately not an auto property for performance.

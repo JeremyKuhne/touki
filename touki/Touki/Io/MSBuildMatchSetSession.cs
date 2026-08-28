@@ -15,12 +15,20 @@ internal sealed class MSBuildMatchSetSession : DisposableBase, IFileSystemMatche
     private readonly IFileSystemMatcherSession _include;
     private SingleOptimizedList<IFileSystemMatcherSession, ArrayPoolList<IFileSystemMatcherSession>>? _excludes;
 
+    /// <summary>
+    ///  Initializes a match set with an owned include session.
+    /// </summary>
+    /// <param name="include">The include matcher session.</param>
     public MSBuildMatchSetSession(IFileSystemMatcherSession include)
     {
         ArgumentNullException.ThrowIfNull(include);
         _include = include;
     }
 
+    /// <summary>
+    ///  Adds an owned exclude matcher session.
+    /// </summary>
+    /// <param name="exclude">The exclude matcher session.</param>
     public void AddExclude(IFileSystemMatcherSession exclude)
     {
         ArgumentNullException.ThrowIfNull(exclude);
@@ -29,6 +37,12 @@ internal sealed class MSBuildMatchSetSession : DisposableBase, IFileSystemMatche
         _excludes.Add(exclude);
     }
 
+    /// <summary>
+    ///  Determines whether a file matches the include session and no exclude session.
+    /// </summary>
+    /// <param name="currentDirectory">The directory containing the file.</param>
+    /// <param name="fileName">The filename.</param>
+    /// <returns><see langword="true"/> if the file matches; otherwise <see langword="false"/>.</returns>
     public bool MatchesFile(
         ReadOnlySpan<char> currentDirectory,
         ReadOnlySpan<char> fileName)
@@ -58,6 +72,12 @@ internal sealed class MSBuildMatchSetSession : DisposableBase, IFileSystemMatche
         return _include.MatchesFile(currentDirectory, fileName);
     }
 
+    /// <summary>
+    ///  Combines include and exclude classifications for a candidate directory.
+    /// </summary>
+    /// <param name="currentDirectory">The directory containing the candidate directory.</param>
+    /// <param name="directoryName">The candidate directory name.</param>
+    /// <returns>The combined match classification for the candidate directory and its descendants.</returns>
     public DirectoryMatchType MatchesDirectory(
         ReadOnlySpan<char> currentDirectory,
         ReadOnlySpan<char> directoryName)
@@ -99,6 +119,10 @@ internal sealed class MSBuildMatchSetSession : DisposableBase, IFileSystemMatche
             : includeResult;
     }
 
+    /// <summary>
+    ///  Notifies the include and exclude sessions that directory enumeration completed.
+    /// </summary>
+    /// <param name="directory">The completed directory path.</param>
     public void DirectoryFinished(ReadOnlySpan<char> directory)
     {
         if (_excludes is { } excludes)

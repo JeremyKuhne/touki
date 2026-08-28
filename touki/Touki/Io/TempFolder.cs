@@ -24,6 +24,8 @@ public sealed class TempFolder : DisposableBase
     /// <summary>
     ///  Implicit conversion from <see cref="TempFolder"/> to <see cref="string"/> that returns the path of the temporary folder.
     /// </summary>
+    /// <param name="folder">The temporary folder.</param>
+    /// <returns>The temporary folder path.</returns>
     public static implicit operator string(TempFolder folder) => folder.TempPath;
 
     /// <inheritdoc/>

@@ -10,6 +10,13 @@ namespace Touki;
 [ExcludeFromCodeCoverage]
 internal static class DebugOnly
 {
+    /// <summary>
+    ///  Determines whether the immediate caller belongs to the Touki assembly in Debug builds.
+    /// </summary>
+    /// <returns>
+    ///  <see langword="true"/> if the immediate caller belongs to the Touki assembly; otherwise,
+    ///  <see langword="false"/>.
+    /// </returns>
     internal static bool CallerIsInToukiAssembly()
 #if !DEBUG
     {

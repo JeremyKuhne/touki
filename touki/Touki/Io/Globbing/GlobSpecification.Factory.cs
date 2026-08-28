@@ -1172,6 +1172,9 @@ public sealed partial class GlobSpecification
         ///  default. <see cref="GlobPathSeparator.DialectDefault"/> uses the dialect's
         ///  documented separator; the other values force a specific character.
         /// </summary>
+        /// <param name="dialect">The dialect that supplies the default separator.</param>
+        /// <param name="separator">The separator override to resolve.</param>
+        /// <returns>The resolved separator character.</returns>
         internal static char ResolveSeparator(GlobDialect dialect, GlobPathSeparator separator) => separator switch
         {
             GlobPathSeparator.DialectDefault => dialect.DefaultSeparator(),

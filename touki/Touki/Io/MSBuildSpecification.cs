@@ -82,10 +82,16 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     /// <summary>
     ///  Constructs a new <see cref="MSBuildSpecification"/> from the given original specification.
     /// </summary>
+    /// <param name="original">The original specification.</param>
     public MSBuildSpecification(StringSegment original) : this(original, Normalize(original))
     {
     }
 
+    /// <summary>
+    ///  Constructs a specification from original and normalized forms.
+    /// </summary>
+    /// <param name="original">The original specification.</param>
+    /// <param name="normalized">The normalized specification.</param>
     internal MSBuildSpecification(StringSegment original, StringSegment normalized)
     {
         if (normalized.IsEmpty)
@@ -286,6 +292,8 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     /// <summary>
     ///  If the specification is not fully qualified, resolves it against the given <paramref name="rootPath"/>.
     /// </summary>
+    /// <param name="rootPath">The root path used to resolve a relative specification.</param>
+    /// <returns>This specification when already fully qualified; otherwise a fully qualified specification.</returns>
     public MSBuildSpecification FullyQualify(string rootPath)
     {
         ArgumentNullException.ThrowIfNull(rootPath);
@@ -352,6 +360,8 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///   This method will allocate a new string for the segment if needed.
     ///  </para>
     /// </remarks>
+    /// <param name="specification">The specification to unescape.</param>
+    /// <returns>The unescaped specification, or the original segment when unchanged.</returns>
     public static StringSegment Unescape(StringSegment specification)
     {
         // Don't bother if the segment doesn't contain an escape character.
@@ -433,6 +443,8 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///   absolute paths) and trailing-dot weirdness.
     ///  </para>
     /// </remarks>
+    /// <param name="specification">The canonicalized specification to validate.</param>
+    /// <returns>A validation reason when invalid; otherwise <see langword="null"/>.</returns>
     internal static string? Validate(StringSegment specification)
     {
         ReadOnlySpan<char> span = specification.AsSpan();
@@ -568,6 +580,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///   Multiple specifications (separated by ';') must be split first for this to work correctly.
     ///  </para>
     /// </remarks>
+    /// <returns>The normalized specification, or the original segment when unchanged.</returns>
     public static StringSegment Normalize(StringSegment specification)
     {
         // Trailing separators are preserved verbatim. They split into two cases:
@@ -721,6 +734,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///  separator. Duplicate specifications will be removed, including some that are effectively duplicate, such as
     ///  "bin/**" and "bin/Debug/**" (the latter is a subdirectory of the former, so it will be replaced).
     /// </returns>
+    /// <param name="ignoreCase">Whether duplicate and subsumption comparisons ignore case.</param>
     public static ListBase<MSBuildSpecification> Split(
         StringSegment specs,
         bool ignoreCase)
@@ -750,6 +764,9 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///   surviving result.
     ///  </para>
     /// </remarks>
+    /// <param name="specs">The possibly semicolon-separated specifications to split.</param>
+    /// <param name="ignoreCase">Whether duplicate and subsumption comparisons ignore case.</param>
+    /// <returns>The parsed and error results in retained source order.</returns>
     public static ListBase<MSBuildSpecificationResult> SplitWithErrors(
         StringSegment specs,
         bool ignoreCase)
@@ -907,24 +924,28 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
     ///  Implicitly converts a <see langword="string"/> to a <see cref="MSBuildSpecification"/>.
     /// </summary>
     /// <param name="specification">The string specification to convert.</param>
+    /// <returns>The parsed specification.</returns>
     public static implicit operator MSBuildSpecification(string specification) => new MSBuildSpecification(specification);
 
     /// <summary>
     ///  Explicitly converts a <see cref="MSBuildSpecification"/> to a <see langword="string"/>.
     /// </summary>
     /// <param name="specification">The string specification to convert.</param>
+    /// <returns>The normalized specification as a string.</returns>
     public static explicit operator string(MSBuildSpecification specification) => (string)specification.Normalized;
 
     /// <summary>
     ///  Implicitly converts a <see cref="StringSegment"/> to a <see cref="MSBuildSpecification"/>.
     /// </summary>
     /// <param name="specification">The string specification to convert.</param>
+    /// <returns>The parsed specification.</returns>
     public static implicit operator MSBuildSpecification(StringSegment specification) => new MSBuildSpecification(specification);
 
     /// <summary>
     ///  Implicitly converts a <see cref="MSBuildSpecification"/> to a <see cref="StringSegment"/>.
     /// </summary>
     /// <param name="specification">The string specification to convert.</param>
+    /// <returns>The normalized specification segment.</returns>
     public static implicit operator StringSegment(MSBuildSpecification specification) => specification.Normalized;
 
     /// <inheritdoc/>

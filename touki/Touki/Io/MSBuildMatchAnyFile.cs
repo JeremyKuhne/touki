@@ -19,6 +19,15 @@ internal sealed class MSBuildMatchAnyFile : DisposableBase,
     private readonly MSBuildFileNamePattern _msbuildFileNamePattern;
     private bool? _nestingMatched;
 
+    /// <summary>
+    ///  Initializes a filename matcher rooted at an MSBuild search path.
+    /// </summary>
+    /// <param name="expression">The filename expression.</param>
+    /// <param name="rootPath">The root path beneath which files can match.</param>
+    /// <param name="matchType">The pattern matching mode.</param>
+    /// <param name="matchCasing">The filename comparison casing.</param>
+    /// <param name="rootMatchCasing">The root path comparison casing.</param>
+    /// <param name="useMSBuildFileNameSemantics">Whether to apply MSBuild filename policy.</param>
     public MSBuildMatchAnyFile(
         StringSegment expression,
         StringSegment rootPath,
@@ -39,8 +48,18 @@ internal sealed class MSBuildMatchAnyFile : DisposableBase,
         }
     }
 
+    /// <summary>
+    ///  Invalidates the cached root-path classification for the completed directory.
+    /// </summary>
+    /// <param name="directory">The completed directory.</param>
     public void DirectoryFinished(ReadOnlySpan<char> directory) => _nestingMatched = null;
 
+    /// <summary>
+    ///  Classifies whether a candidate directory can contain files beneath the configured root.
+    /// </summary>
+    /// <param name="currentDirectory">The directory containing the candidate directory.</param>
+    /// <param name="directoryName">The candidate directory name.</param>
+    /// <returns>The match classification for the candidate directory and its descendants.</returns>
     public DirectoryMatchType MatchesDirectory(
         ReadOnlySpan<char> currentDirectory,
         ReadOnlySpan<char> directoryName)
@@ -59,6 +78,12 @@ internal sealed class MSBuildMatchAnyFile : DisposableBase,
                 : DirectoryMatchType.NoDescendantFilesMatch;
     }
 
+    /// <summary>
+    ///  Determines whether a file is beneath the configured root and matches the filename expression.
+    /// </summary>
+    /// <param name="currentDirectory">The directory containing the file.</param>
+    /// <param name="fileName">The filename.</param>
+    /// <returns><see langword="true"/> if the file matches; otherwise <see langword="false"/>.</returns>
     public bool MatchesFile(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> fileName)
     {
         if (!MatchesRoot(currentDirectory))

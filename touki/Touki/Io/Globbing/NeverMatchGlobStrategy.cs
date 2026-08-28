@@ -12,6 +12,11 @@ namespace Touki.Io.Globbing;
 /// </summary>
 internal sealed class NeverMatchGlobStrategy : GlobStrategy
 {
+    /// <summary>
+    ///  Initializes a strategy that never matches.
+    /// </summary>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
     public NeverMatchGlobStrategy(GlobDialect dialect, GlobOptions options)
         : base(dialect, options)
     {

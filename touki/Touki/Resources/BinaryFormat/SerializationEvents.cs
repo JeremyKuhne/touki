@@ -32,6 +32,11 @@ internal sealed class SerializationEvents
         _onDeserializedMethods = onDeserializedMethods;
     }
 
+    /// <summary>
+    ///  Discovers the deserialization callbacks declared by a type hierarchy.
+    /// </summary>
+    /// <param name="type">The type whose callbacks are requested.</param>
+    /// <returns>The callbacks declared by <paramref name="type"/> and its base types.</returns>
     internal static SerializationEvents Create(
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
     {
@@ -75,9 +80,19 @@ internal sealed class SerializationEvents
         return attributedMethods;
     }
 
+    /// <summary>
+    ///  Binds the post-deserialization callbacks to an object.
+    /// </summary>
+    /// <param name="instance">The object to bind to the callbacks.</param>
+    /// <returns>The combined callback, or <see langword="null"/> when no callbacks are declared.</returns>
     internal Action<StreamingContext>? GetOnDeserialized(object instance)
         => AddOnDelegate(instance, _onDeserializedMethods);
 
+    /// <summary>
+    ///  Binds the pre-deserialization callbacks to an object.
+    /// </summary>
+    /// <param name="instance">The object to bind to the callbacks.</param>
+    /// <returns>The combined callback, or <see langword="null"/> when no callbacks are declared.</returns>
     internal Action<StreamingContext>? GetOnDeserializing(object instance)
         => AddOnDelegate(instance, _onDeserializingMethods);
 

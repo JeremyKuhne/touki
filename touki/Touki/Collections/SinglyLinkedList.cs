@@ -41,6 +41,8 @@ public sealed partial class SinglyLinkedList<T>
     /// <summary>
     ///  Adds a new node with the given <paramref name="value"/> at the front of the list.
     /// </summary>
+    /// <param name="value">The value for the new node.</param>
+    /// <returns>The node added to the front of the list.</returns>
     public Node AddFirst(T value)
     {
         Node node = new(value);
@@ -64,6 +66,8 @@ public sealed partial class SinglyLinkedList<T>
     /// <summary>
     ///  Adds a new node with the given <paramref name="value"/> at the end of the list.
     /// </summary>
+    /// <param name="value">The value for the new node.</param>
+    /// <returns>The node added to the end of the list.</returns>
     public Node AddLast(T value)
     {
         Node node = new(value);
@@ -88,6 +92,7 @@ public sealed partial class SinglyLinkedList<T>
     /// <summary>
     ///  Returns an enumerator for the list.
     /// </summary>
+    /// <returns>An enumerator over the list's nodes.</returns>
     public Enumerator GetEnumerator() => new(this);
 }
 

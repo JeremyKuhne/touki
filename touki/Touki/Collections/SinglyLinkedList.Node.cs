@@ -14,6 +14,7 @@ public sealed partial class SinglyLinkedList<T>
     /// <summary>
     ///  Node in the list.
     /// </summary>
+    /// <param name="value">The initial value of the node.</param>
     public class Node(T value)
     {
         /// <summary>
@@ -29,6 +30,8 @@ public sealed partial class SinglyLinkedList<T>
         /// <summary>
         ///  Implicitly converts the node to its value.
         /// </summary>
+        /// <param name="node">The node to convert.</param>
+        /// <returns>The node's value, or the default value of <typeparamref name="T"/> if the node is null.</returns>
         public static implicit operator T(Node? node) => node is null ? default! : node.Value;
     }
 }

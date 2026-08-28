@@ -9,16 +9,19 @@ namespace Touki.Io;
 /// </summary>
 public static partial class TextWriterExtensions
 {
+    /// <param name="writer">The writer to write to.</param>
     extension(TextWriter writer)
     {
         /// <summary>
         ///  Allows writing a <see cref="StringSegment"/> to a <see cref="TextWriter"/>.
         /// </summary>
+        /// <param name="value">The string segment to write.</param>
         public void Write(StringSegment value) => value.WriteTo(writer);
 
         /// <summary>
         ///  Allows writing a <see cref="StringSegment"/> to a <see cref="TextWriter"/>.
         /// </summary>
+        /// <param name="value">The string segment to write.</param>
         public void WriteLine(StringSegment value)
         {
             value.WriteTo(writer);
@@ -38,6 +41,7 @@ public static partial class TextWriterExtensions
         ///   virtual behavior is preserved.
         ///  </para>
         /// </remarks>
+        /// <param name="builder">The interpolated string builder to write and dispose.</param>
         public void WriteFormatted(ref ValueStringBuilder builder)
         {
             try
@@ -83,6 +87,7 @@ public static partial class TextWriterExtensions
         ///   Optimization overload that allows string literals to be used without creating a builder.
         ///  </para>
         /// </remarks>
+        /// <param name="value">The string to write.</param>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void WriteFormatted(string value)
         {

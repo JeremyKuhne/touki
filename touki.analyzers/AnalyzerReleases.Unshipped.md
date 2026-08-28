@@ -4,4 +4,5 @@
 ### New Rules
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
-TOUKI0025 | Maintainability | Warning | Type does not declare exactly one XML summary
+TOUKI0025 | Maintainability | Warning | Type does not declare an XML summary or inheritdoc
+TOUKI0026 | Maintainability | Warning | Member XML documentation is incomplete

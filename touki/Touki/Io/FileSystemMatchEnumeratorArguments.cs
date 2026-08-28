@@ -9,6 +9,12 @@ namespace Touki.Io;
 /// </summary>
 internal readonly struct FileSystemMatchEnumeratorArguments
 {
+    /// <summary>
+    ///  Initializes normalized arguments for a file-system match enumerator.
+    /// </summary>
+    /// <param name="rootDirectory">The directory to enumerate.</param>
+    /// <param name="matcher">The matcher used to select files and directories.</param>
+    /// <param name="options">The enumeration options, or <see langword="null"/> to use the defaults.</param>
     public FileSystemMatchEnumeratorArguments(
         string rootDirectory,
         IFileSystemMatcher matcher,
@@ -23,6 +29,11 @@ internal readonly struct FileSystemMatchEnumeratorArguments
         Options = options is null ? CreateDefaultOptions() : SnapshotOptions(options);
     }
 
+    /// <summary>
+    ///  Converts a root directory to a fully qualified path without a trailing non-root separator.
+    /// </summary>
+    /// <param name="rootDirectory">The root directory to normalize.</param>
+    /// <returns>The normalized fully qualified path.</returns>
     public static string NormalizeRootDirectory(string rootDirectory)
     {
         string normalizedRoot = Path.GetFullPath(rootDirectory);
@@ -36,10 +47,19 @@ internal readonly struct FileSystemMatchEnumeratorArguments
         return normalizedRoot;
     }
 
+    /// <summary>
+    ///  Gets the normalized enumeration root.
+    /// </summary>
     public string RootDirectory { get; }
 
+    /// <summary>
+    ///  Gets the matcher definition.
+    /// </summary>
     public IFileSystemMatcher Matcher { get; }
 
+    /// <summary>
+    ///  Gets the snapshotted enumeration options.
+    /// </summary>
     public EnumerationOptions Options { get; }
 
     private static EnumerationOptions CreateDefaultOptions() => new()

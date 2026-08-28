@@ -231,6 +231,12 @@ public ref partial struct ValueStringBuilder
         return false;
     }
 
+    /// <summary>
+    ///  Appends the named flag representation of an enum value, falling back to its numeric representation.
+    /// </summary>
+    /// <param name="value">The raw enum value.</param>
+    /// <param name="signed">Whether to interpret a numeric fallback as a signed value.</param>
+    /// <param name="enumData">The cached values and names for the enum type.</param>
     internal void InternalFlagsFormat(ulong value, bool signed, EnumDataCache.EnumData enumData)
     {
         ulong result = value;

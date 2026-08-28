@@ -83,12 +83,17 @@ public static partial class SpanExtensions
     /// </summary>
     internal const int BclCrossoverLength = 16;
 
+    /// <param name="span1">The span to compare.</param>
     extension(ReadOnlySpan<char> span1)
     {
         /// <summary>
         ///  Tests whether two character spans compare equal under
         ///  <see cref="StringComparison.OrdinalIgnoreCase"/>.
         /// </summary>
+        /// <param name="span2">The span to compare with the receiver.</param>
+        /// <returns>
+        ///  <see langword="true"/> if the spans are equal ignoring case; otherwise, <see langword="false"/>.
+        /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool EqualsOrdinalIgnoreCase(ReadOnlySpan<char> span2)
         {
@@ -110,6 +115,11 @@ public static partial class SpanExtensions
         ///  Tests whether <paramref name="span1"/> begins with <paramref name="prefix"/> under
         ///  <see cref="StringComparison.OrdinalIgnoreCase"/>.
         /// </summary>
+        /// <param name="prefix">The span to compare with the beginning of the receiver.</param>
+        /// <returns>
+        ///  <see langword="true"/> if the receiver begins with <paramref name="prefix"/> ignoring case; otherwise,
+        ///  <see langword="false"/>.
+        /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool StartsWithOrdinalIgnoreCase(ReadOnlySpan<char> prefix)
         {
@@ -131,6 +141,11 @@ public static partial class SpanExtensions
         ///  Tests whether <paramref name="span1"/> ends with <paramref name="suffix"/> under
         ///  <see cref="StringComparison.OrdinalIgnoreCase"/>.
         /// </summary>
+        /// <param name="suffix">The span to compare with the end of the receiver.</param>
+        /// <returns>
+        ///  <see langword="true"/> if the receiver ends with <paramref name="suffix"/> ignoring case; otherwise,
+        ///  <see langword="false"/>.
+        /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool EndsWithOrdinalIgnoreCase(ReadOnlySpan<char> suffix)
         {
@@ -158,6 +173,11 @@ public static partial class SpanExtensions
         ///  POSIX <c>fnmatch(FNM_CASEFOLD)</c>, bash <c>nocaseglob</c>, and
         ///  git <c>core.ignoreCase</c>.
         /// </summary>
+        /// <param name="span2">The span to compare with the receiver.</param>
+        /// <returns>
+        ///  <see langword="true"/> if the spans are equal under ASCII-letter case folding; otherwise,
+        ///  <see langword="false"/>.
+        /// </returns>
         public bool EqualsAsciiLetterIgnoreCase(ReadOnlySpan<char> span2) =>
             span1.Length == span2.Length
                 && OrdinalIgnoreCaseHelpers.EqualsAsciiLetterFold(span1, span2);
@@ -166,6 +186,11 @@ public static partial class SpanExtensions
         ///  Tests whether <paramref name="span1"/> begins with <paramref name="prefix"/> under
         ///  ASCII-letter case folding (see <see cref="EqualsAsciiLetterIgnoreCase"/>).
         /// </summary>
+        /// <param name="prefix">The span to compare with the beginning of the receiver.</param>
+        /// <returns>
+        ///  <see langword="true"/> if the receiver begins with <paramref name="prefix"/> under ASCII-letter case
+        ///  folding; otherwise, <see langword="false"/>.
+        /// </returns>
         public bool StartsWithAsciiLetterIgnoreCase(ReadOnlySpan<char> prefix) =>
             prefix.Length <= span1.Length
                 && OrdinalIgnoreCaseHelpers.EqualsAsciiLetterFold(span1[..prefix.Length], prefix);
@@ -174,6 +199,11 @@ public static partial class SpanExtensions
         ///  Tests whether <paramref name="span1"/> ends with <paramref name="suffix"/> under
         ///  ASCII-letter case folding (see <see cref="EqualsAsciiLetterIgnoreCase"/>).
         /// </summary>
+        /// <param name="suffix">The span to compare with the end of the receiver.</param>
+        /// <returns>
+        ///  <see langword="true"/> if the receiver ends with <paramref name="suffix"/> under ASCII-letter case
+        ///  folding; otherwise, <see langword="false"/>.
+        /// </returns>
         public bool EndsWithAsciiLetterIgnoreCase(ReadOnlySpan<char> suffix) =>
             suffix.Length <= span1.Length
                 && OrdinalIgnoreCaseHelpers.EqualsAsciiLetterFold(
@@ -194,6 +224,11 @@ public static partial class SpanExtensions
     ///   <c>MemoryExtensions.CompareTo(span, span, StringComparison.OrdinalIgnoreCase)</c>.
     ///  </para>
     /// </remarks>
+    /// <param name="a">The first span to compare.</param>
+    /// <param name="b">The second span to compare.</param>
+    /// <returns>
+    ///  A signed integer that indicates the relative order of the spans under ordinal ignore-case comparison.
+    /// </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int CompareOrdinalIgnoreCase(ReadOnlySpan<char> a, ReadOnlySpan<char> b)
     {

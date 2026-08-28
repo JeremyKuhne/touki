@@ -104,6 +104,7 @@ public ref partial struct ValueStringBuilder
     ///  Initializes a new instance of the <see cref="ValueStringBuilder"/> struct with the specified initial capacity.
     /// </summary>
     /// <param name="initialCapacity">The initial capacity for the string builder.</param>
+    /// <param name="provider">Optional format provider to use when formatting.</param>
     public ValueStringBuilder(int initialCapacity, IFormatProvider? provider = null)
     {
         _arrayToReturnToPool = ArrayPool<byte>.Shared.Rent(initialCapacity * sizeof(char));
@@ -116,6 +117,11 @@ public ref partial struct ValueStringBuilder
     /// <summary>
     ///  Gets whether the provider provides a custom formatter.
     /// </summary>
+    /// <param name="provider">The format provider to inspect.</param>
+    /// <returns>
+    ///  <see langword="true"/> if <paramref name="provider"/> supplies an <see cref="ICustomFormatter"/>; otherwise,
+    ///  <see langword="false"/>.
+    /// </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)] // only used in a few hot path call sites
     internal static bool HasCustomFormatter(IFormatProvider provider)
     {
@@ -185,6 +191,7 @@ public ref partial struct ValueStringBuilder
     ///   the explicit method call, and write eg "fixed (char* c = builder)"
     ///  </para>
     /// </remarks>
+    /// <returns>A reference to the first character of the null-terminated buffer.</returns>
     public ref char GetPinnableReference()
     {
         EnsureCapacity(_length + 1);
@@ -217,6 +224,7 @@ public ref partial struct ValueStringBuilder
     ///  Returns a span around the contents of the builder.
     /// </summary>
     /// <param name="terminate">Ensures that the builder has a null char after <see cref="Length"/></param>
+    /// <returns>A read-only span representing the current contents of the builder.</returns>
     public ReadOnlySpan<char> AsSpan(bool terminate)
     {
         if (terminate)
@@ -277,6 +285,8 @@ public ref partial struct ValueStringBuilder
     ///  Returns a span of the requested length at the current position in the builder that can be
     ///  used to directly append characters.
     /// </summary>
+    /// <param name="length">The number of characters to append.</param>
+    /// <returns>A writable span over the newly appended region.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Span<char> AppendSpan(int length)
     {
@@ -393,6 +403,7 @@ public ref partial struct ValueStringBuilder
     ///  Append a string to the builder. If the string is <see langword="null"/>, this method does nothing.
     /// </summary>
     /// <devdoc>Name must be AppendLiteral to work with interpolated strings.</devdoc>
+    /// <param name="s">The string to append.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AppendLiteral(string? s)
     {
@@ -510,6 +521,7 @@ public ref partial struct ValueStringBuilder
     /// <summary>
     ///  Appends the <paramref name="value"/> followed by <see cref="Environment.NewLine"/> to this builder.
     /// </summary>
+    /// <param name="value">The string to append before the line terminator.</param>
     public void AppendLine(string value)
     {
         AppendLiteral(value);
@@ -543,9 +555,10 @@ public ref partial struct ValueStringBuilder
     public void AppendLine() => Append(Environment.NewLine);
 
     /// <summary>
-    ///  Replace all occurrences of a character in the segment with another character.
+    ///  Replaces all occurrences of a character in the builder with another character.
     /// </summary>
-    /// <returns>The new <see cref="StringSegment"/> with the specified character replaced.</returns>
+    /// <param name="oldValue">The character to replace.</param>
+    /// <param name="newValue">The replacement character.</param>
     public readonly void Replace(char oldValue, char newValue)
     {
         if (_length == 0 || oldValue == newValue)
@@ -632,13 +645,16 @@ public ref partial struct ValueStringBuilder
     }
 
     /// <summary>
-    ///  Implicitly converts a <see cref="ValueStringBuilder"/> to a <see cref="string"/>.
+    ///  Implicitly converts a <see cref="ValueStringBuilder"/> to a <see cref="ReadOnlySpan{Char}"/>.
     /// </summary>
+    /// <param name="builder">The builder to convert.</param>
+    /// <returns>A read-only span over the builder's current contents.</returns>
     public static implicit operator ReadOnlySpan<char>(ValueStringBuilder builder) => builder._chars[..builder._length];
 
     /// <summary>
     ///  Writes the string to the specified stream.
     /// </summary>
+    /// <param name="stream">The stream to write to.</param>
     public
 #if NET
     readonly
@@ -673,6 +689,7 @@ public ref partial struct ValueStringBuilder
     ///   This attempts to make use of optimized paths for known <see cref="TextWriter"/> types.
     ///  </para>
     /// </remarks>
+    /// <param name="writer">The text writer to write to.</param>
     public
 #if NET
     readonly

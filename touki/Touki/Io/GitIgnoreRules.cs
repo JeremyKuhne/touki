@@ -27,6 +27,8 @@ public sealed class GitIgnoreRules
     /// <summary>
     ///  Parses one root gitignore file.
     /// </summary>
+    /// <param name="content">The gitignore file content.</param>
+    /// <returns>The compiled rules.</returns>
     public static GitIgnoreRules Parse(string content)
     {
         ArgumentNullException.ThrowIfNull(content);
@@ -36,6 +38,8 @@ public sealed class GitIgnoreRules
     /// <summary>
     ///  Compiles gitignore sources in parent-to-child source order.
     /// </summary>
+    /// <param name="sources">The gitignore sources to compile.</param>
+    /// <returns>The compiled rules.</returns>
     public static GitIgnoreRules Compile(IReadOnlyList<GitIgnoreRuleSource> sources)
     {
         ArgumentNullException.ThrowIfNull(sources);
@@ -59,6 +63,8 @@ public sealed class GitIgnoreRules
     /// <summary>
     ///  Returns whether a canonical root-relative file path is ignored.
     /// </summary>
+    /// <param name="rootRelativeFilePath">The canonical root-relative file path.</param>
+    /// <returns><see langword="true"/> if the file is ignored; otherwise <see langword="false"/>.</returns>
     public bool IsIgnoredFile(ReadOnlySpan<char> rootRelativeFilePath)
     {
         ValidateCanonicalPath(rootRelativeFilePath, allowEmpty: false, nameof(rootRelativeFilePath));
@@ -68,13 +74,20 @@ public sealed class GitIgnoreRules
     /// <summary>
     ///  Creates a reusable matcher whose successful file results mean included.
     /// </summary>
+    /// <returns>The reusable matcher definition.</returns>
     public IFileSystemMatcher CreateIncludedMatcher() => new GitIgnoreFileSystemMatcher(this, matchIgnored: false);
 
     /// <summary>
     ///  Creates a reusable matcher whose successful file results mean ignored.
     /// </summary>
+    /// <returns>The reusable matcher definition.</returns>
     public IFileSystemMatcher CreateIgnoredMatcher() => new GitIgnoreFileSystemMatcher(this, matchIgnored: true);
 
+    /// <summary>
+    ///  Determines whether a canonical file path or one of its ancestor directories is ignored.
+    /// </summary>
+    /// <param name="rootRelativeFilePath">The canonical root-relative file path.</param>
+    /// <returns><see langword="true"/> if the file is ignored; otherwise <see langword="false"/>.</returns>
     internal bool IsIgnoredFileCore(ReadOnlySpan<char> rootRelativeFilePath)
     {
         int separatorIndex = rootRelativeFilePath.IndexOf('/');
@@ -94,6 +107,11 @@ public sealed class GitIgnoreRules
         return Evaluate(rootRelativeFilePath, isDirectory: false);
     }
 
+    /// <summary>
+    ///  Determines whether a canonical directory path or one of its ancestor directories is ignored.
+    /// </summary>
+    /// <param name="rootRelativeDirectoryPath">The canonical root-relative directory path.</param>
+    /// <returns><see langword="true"/> if the directory is ignored; otherwise <see langword="false"/>.</returns>
     internal bool IsIgnoredDirectoryCore(ReadOnlySpan<char> rootRelativeDirectoryPath)
     {
         int separatorIndex = rootRelativeDirectoryPath.IndexOf('/');
@@ -113,6 +131,12 @@ public sealed class GitIgnoreRules
         return Evaluate(rootRelativeDirectoryPath, isDirectory: true);
     }
 
+    /// <summary>
+    ///  Validates a canonical root-relative path.
+    /// </summary>
+    /// <param name="path">The path to validate.</param>
+    /// <param name="allowEmpty">Whether an empty path is valid.</param>
+    /// <param name="parameterName">The parameter name to use for validation exceptions.</param>
     internal static void ValidateCanonicalPath(
         ReadOnlySpan<char> path,
         bool allowEmpty,

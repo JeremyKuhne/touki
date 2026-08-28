@@ -17,12 +17,19 @@ internal sealed class FieldValueUpdater : ValueUpdater
 {
     private readonly FieldInfo _field;
 
+    /// <summary>
+    ///  Initializes an updater for an object field.
+    /// </summary>
+    /// <param name="objectId">The identifier of the object that owns the field.</param>
+    /// <param name="valueId">The identifier of the referenced value.</param>
+    /// <param name="field">The field to update.</param>
     internal FieldValueUpdater(SerializationRecordId objectId, SerializationRecordId valueId, FieldInfo field)
         : base(objectId, valueId)
     {
         _field = field;
     }
 
+    /// <inheritdoc/>
     internal override void UpdateValue(IDictionary<SerializationRecordId, object> objects)
     {
         object newValue = objects[ValueId];

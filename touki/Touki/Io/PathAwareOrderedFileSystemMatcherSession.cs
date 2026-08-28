@@ -7,6 +7,10 @@ namespace Touki.Io;
 /// <summary>
 ///  Evaluates ordered rules across split-input and canonical-path sessions, constructing the path once per file.
 /// </summary>
+/// <param name="rules">The ordered match rules.</param>
+/// <param name="sessions">The matcher sessions corresponding to the rules.</param>
+/// <param name="includeUnmatched">Whether paths that match no rule are included.</param>
+/// <param name="rootDirectory">The normalized enumeration root.</param>
 internal sealed class PathAwareOrderedFileSystemMatcherSession(
     FileSystemMatchRule[] rules,
     IFileSystemMatcherSession[] sessions,

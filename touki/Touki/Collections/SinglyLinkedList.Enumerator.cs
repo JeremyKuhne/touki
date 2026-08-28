@@ -14,6 +14,7 @@ public sealed partial class SinglyLinkedList<T>
     /// <summary>
     ///  Enumerator for the list.
     /// </summary>
+    /// <param name="list">The list to enumerate.</param>
     public struct Enumerator(SinglyLinkedList<T> list)
     {
         private readonly SinglyLinkedList<T> _list = list;
@@ -42,6 +43,7 @@ public sealed partial class SinglyLinkedList<T>
         ///  Attempts to move to the next node. Sets <see cref="Current"/> when successful. If there are no more
         ///  nodes returns false and <see cref="Current"/> will be null.
         /// </summary>
+        /// <returns><see langword="true"/> if the enumerator advanced; otherwise, <see langword="false"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool MoveNext()
         {

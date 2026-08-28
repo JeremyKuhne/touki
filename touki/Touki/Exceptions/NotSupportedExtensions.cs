@@ -11,6 +11,10 @@ internal static class NotSupportedExtensions
 {
     extension(NotSupportedException)
     {
+        /// <summary>
+        ///  Throws a <see cref="NotSupportedException"/> with the specified message.
+        /// </summary>
+        /// <param name="message">The message for the exception.</param>
         [DoesNotReturn]
         public static void Throw(string? message = null) => ThrowNotSupported(message);
     }

@@ -36,15 +36,20 @@ internal interface IClipboardProvider
     /// <summary>
     ///  Attempts to read Unicode text from the clipboard.
     /// </summary>
+    /// <param name="text">Receives the clipboard text on success; otherwise <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> if text was read; otherwise <see langword="false"/>.</returns>
     bool TryGetText([NotNullWhen(true)] out string? text);
 
     /// <summary>
     ///  Attempts to place <paramref name="text"/> on the clipboard as Unicode text.
     /// </summary>
+    /// <param name="text">The text to place on the clipboard.</param>
+    /// <returns><see langword="true"/> if the text was placed; otherwise <see langword="false"/>.</returns>
     bool TrySetText(ReadOnlySpan<char> text);
 
     /// <summary>
     ///  Attempts to release the current clipboard contents.
     /// </summary>
+    /// <returns><see langword="true"/> if the contents were released; otherwise <see langword="false"/>.</returns>
     bool TryClear();
 }

@@ -35,6 +35,7 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
         ///   becomes necessary we can add a bool to track whether or not we should dispose it.
         ///  </para>
         /// </remarks>
+        /// <param name="object">The uncached object to hold.</param>
         public Scope(TValue @object)
         {
             _entry = default!;
@@ -44,6 +45,7 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
         /// <summary>
         ///  The constructor to use when you have a <see cref="CacheEntry"/> from the cache.
         /// </summary>
+        /// <param name="entry">The cache entry to hold a reference to.</param>
         public Scope(CacheEntry entry)
         {
             ArgumentNullException.ThrowIfNull(entry);
@@ -55,6 +57,10 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
         /// <summary>
         ///  Returns the cache entry data if this scope is associated with a cached entry.
         /// </summary>
+        /// <param name="data">The cache entry data, or the default value if the scope has no cache entry.</param>
+        /// <returns>
+        ///  <see langword="true"/> if the scope has cache entry data; otherwise, <see langword="false"/>.
+        /// </returns>
         public bool TryGetCacheData(out TCacheEntryData? data)
         {
             if (_entry is null)
@@ -88,6 +94,8 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
         ///   the conversion as a use rather than a dispose, so a scope that is only implicitly converted is flagged.
         ///  </para>
         /// </remarks>
+        /// <param name="scope">The scope whose target object to return.</param>
+        /// <returns>The target object held by <paramref name="scope"/>.</returns>
         public static implicit operator TValue(in Scope scope)
         {
             CacheEntry entry = scope._entry;

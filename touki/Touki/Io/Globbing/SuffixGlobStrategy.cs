@@ -11,6 +11,12 @@ internal sealed class SuffixGlobStrategy : GlobStrategy
 {
     private readonly string _suffix;
 
+    /// <summary>
+    ///  Initializes a strategy that matches a fixed literal suffix.
+    /// </summary>
+    /// <param name="suffix">The literal suffix.</param>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
     public SuffixGlobStrategy(string suffix, GlobDialect dialect, GlobOptions options)
         : base(dialect, options)
     {

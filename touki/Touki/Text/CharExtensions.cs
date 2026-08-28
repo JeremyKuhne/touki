@@ -22,6 +22,12 @@ public static partial class CharExtensions
         /// <summary>
         ///  Tries to convert a hexadecimal character to its integer value.
         /// </summary>
+        /// <param name="c">The character to decode.</param>
+        /// <param name="digit">The decoded value, or <c>0xFF</c> if <paramref name="c"/> is not hexadecimal.</param>
+        /// <returns>
+        ///  <see langword="true"/> if <paramref name="c"/> is a hexadecimal digit; otherwise,
+        ///  <see langword="false"/>.
+        /// </returns>
         public static bool TryDecodeHexDigit(char c, out int digit)
         {
             digit = HexConverter.FromChar(c);
@@ -37,6 +43,10 @@ public static partial class CharExtensions
         ///   Allowed ranges: [0020..007E], [00A0..D7FF], [E000..FFFD], skipping FDD0..FDEF.
         ///  </para>
         /// </remarks>
+        /// <param name="random">
+        ///  The random-number generator to use, or <see langword="null"/> to use a shared instance.
+        /// </param>
+        /// <returns>A random non-control BMP character that is not a non-character.</returns>
         public static char GetRandomSimpleChar(Random? random)
         {
             random ??= s_defaultRandom ??= new Random();

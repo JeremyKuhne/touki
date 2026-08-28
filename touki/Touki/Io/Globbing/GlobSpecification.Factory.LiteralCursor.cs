@@ -36,6 +36,8 @@ public sealed partial class GlobSpecification
             ///  <see cref="IsValid"/> check (<c>Start &gt;= 0</c>) keeps reporting
             ///  "not a Literal".
             /// </summary>
+            /// <param name="flagIndex">The index of the globstar flag byte in the encoded program.</param>
+            /// <returns>The tagged cursor.</returns>
             public static LiteralCursor GlobStar(int flagIndex) => new() { Start = flagIndex, Length = -1 };
 
             public readonly bool IsValid => Start >= 0 && Length >= 0;

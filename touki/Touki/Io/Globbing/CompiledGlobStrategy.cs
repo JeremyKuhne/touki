@@ -60,6 +60,9 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
     /// <summary>
     ///  Constructs a matcher with no trailing-literal anchor (the program is run end-to-end).
     /// </summary>
+    /// <param name="program">The encoded glob program.</param>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
     public CompiledGlobStrategy(string program, GlobDialect dialect, GlobOptions options)
         : this(program, program.Length, tailStart: -1, tailLength: 0, GlobTraits.None, dialect, options)
     {
@@ -74,6 +77,13 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
     ///  negation) the encoder discovered, which select the match loop and gate the
     ///  directory-pruning path.
     /// </summary>
+    /// <param name="program">The encoded glob program.</param>
+    /// <param name="nfaProgramLength">The length of the program interpreted by the NFA.</param>
+    /// <param name="tailStart">The start of the trailing literal in <paramref name="program"/>.</param>
+    /// <param name="tailLength">The length of the trailing literal.</param>
+    /// <param name="traits">The compile-time traits of the program.</param>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
     public CompiledGlobStrategy(
         string program,
         int nfaProgramLength,
@@ -96,15 +106,26 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
     /// <inheritdoc/>
     internal override string LiteralPathPrefix => _literalPathPrefix;
 
+    /// <summary>
+    ///  Enables the MSBuild trailing-dot extglob matching mode.
+    /// </summary>
     internal void EnableMSBuildTrailingDotMatching()
     {
         _useMSBuildTrailingDotAny = true;
         _effectiveDoubleStarMode = EffectiveDoubleStarMode.RequireAbsent;
     }
 
+    /// <summary>
+    ///  Requires a match execution that uses an effective double-star operation.
+    /// </summary>
     internal void RequireEffectiveDoubleStar() =>
         _effectiveDoubleStarMode = EffectiveDoubleStarMode.RequirePresent;
 
+    /// <summary>
+    ///  Matches the MSBuild trailing-dot all-dot sentinel against the compiled extglob program.
+    /// </summary>
+    /// <param name="directoryPrefix">The directory prefix preceding the file name.</param>
+    /// <returns><see langword="true"/> if the sentinel matches; otherwise <see langword="false"/>.</returns>
     internal bool MatchesMSBuildTrailingDotAllDotInput(ReadOnlySpan<char> directoryPrefix)
     {
         Debug.Assert(_traits.AreFlagsSet(GlobTraits.ExtGlob));

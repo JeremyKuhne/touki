@@ -39,6 +39,12 @@ internal sealed class MultiSuffixGlobStrategy : GlobStrategy
 {
     private readonly string[] _suffixes;
 
+    /// <summary>
+    ///  Initializes a strategy that matches any one of several literal suffixes.
+    /// </summary>
+    /// <param name="suffixes">The literal suffixes.</param>
+    /// <param name="dialect">The glob dialect.</param>
+    /// <param name="options">The glob options.</param>
     public MultiSuffixGlobStrategy(string[] suffixes, GlobDialect dialect, GlobOptions options)
         : base(dialect, options)
     {

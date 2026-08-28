@@ -59,6 +59,8 @@ public readonly struct MSBuildSpecificationResult
     /// <summary>
     ///  Creates a successful result wrapping the given <paramref name="specification"/>.
     /// </summary>
+    /// <param name="specification">The parsed specification.</param>
+    /// <returns>The successful result.</returns>
     public static MSBuildSpecificationResult FromSpecification(MSBuildSpecification specification)
     {
         ArgumentNullException.ThrowIfNull(specification);
@@ -70,6 +72,7 @@ public readonly struct MSBuildSpecificationResult
     /// </summary>
     /// <param name="original">The raw specification as it appeared in the input.</param>
     /// <param name="errorReason">A short human-readable reason describing the failure.</param>
+    /// <returns>The error result.</returns>
     public static MSBuildSpecificationResult FromError(StringSegment original, string errorReason)
     {
         ArgumentNullException.ThrowIfNull(errorReason);

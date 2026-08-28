@@ -16,6 +16,12 @@ internal sealed class GitIgnoreFileSystemMatcherSession : FileSystemMatcherSessi
     private readonly int _rootPrefixLength;
     private readonly bool _matchIgnored;
 
+    /// <summary>
+    ///  Initializes a session for compiled Git-ignore rules and an enumeration root.
+    /// </summary>
+    /// <param name="rules">The compiled Git-ignore rules.</param>
+    /// <param name="rootDirectory">The normalized enumeration root.</param>
+    /// <param name="matchIgnored">Whether the session matches ignored paths instead of included paths.</param>
     public GitIgnoreFileSystemMatcherSession(
         GitIgnoreRules rules,
         string rootDirectory,

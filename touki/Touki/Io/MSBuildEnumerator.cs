@@ -110,6 +110,8 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
     ///  The resolved fixed start directory does not exist.
     /// </exception>
     /// <exception cref="InvalidOperationException">The request is rejected by a safety policy.</exception>
+    /// <param name="request">The request to validate, parse, and execute lazily.</param>
+    /// <returns>The created lazy enumerator.</returns>
     public static MSBuildEnumerator Create(MSBuildEnumerationRequest request)
     {
         MSBuildEnumerationPlan plan = CreatePlan(request, returnEmptyForMissingStartDirectory: false);
@@ -138,6 +140,7 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
     ///   <see cref="MSBuildSearchResult"/> is returned.
     ///  </para>
     /// </remarks>
+    /// <returns>The terminal planning result or an owned search result.</returns>
     public static MSBuildEnumerationResult CreateResult(MSBuildEnumerationRequest request)
     {
         MSBuildEnumerationPlan plan = CreatePlan(request, returnEmptyForMissingStartDirectory: true);
@@ -392,6 +395,13 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
         }
     }
 
+    /// <summary>
+    ///  Determines whether an exclude path equals the composed result path.
+    /// </summary>
+    /// <param name="prefix">The result path prefix.</param>
+    /// <param name="fileName">The result file name.</param>
+    /// <param name="exclude">The exclude path to compare.</param>
+    /// <returns><see langword="true"/> if the paths are equal; otherwise <see langword="false"/>.</returns>
     internal static bool MatchesResultPath(
         ReadOnlySpan<char> prefix,
         ReadOnlySpan<char> fileName,

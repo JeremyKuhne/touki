@@ -117,7 +117,8 @@ public class TypeXmlSummaryAnalyzerTests
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Id.Should().Be(TypeXmlSummaryAnalyzer.DiagnosticId);
         diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Sample");
-        diagnostic.GetMessage().Should().Be("Type 'Sample' must declare exactly one XML <summary> element; found 0");
+        diagnostic.GetMessage().Should().Be(
+            "Type 'Sample' must declare one XML <summary> element or an <inheritdoc> element; found 0 summaries");
     }
 
     [TestMethod]
@@ -191,7 +192,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         diagnostics.Should().ContainSingle()
-            .Which.GetMessage().Should().EndWith("found 0");
+            .Which.GetMessage().Should().EndWith("found 0 summaries");
     }
 
     [TestMethod]
@@ -205,11 +206,11 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         diagnostics.Should().ContainSingle()
-            .Which.GetMessage().Should().EndWith("found 0");
+            .Which.GetMessage().Should().EndWith("found 0 summaries");
     }
 
     [TestMethod]
-    public async Task AnalyzeNamedType_InheritdocWithoutSummary_ReportsMissingSummary()
+    public async Task AnalyzeNamedType_InheritdocWithoutSummary_ReportsNothing()
     {
         const string source = """
             /// <inheritdoc/>
@@ -218,8 +219,94 @@ public class TypeXmlSummaryAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_InheritdocWithCref_ReportsNothing()
+    {
+        const string source = """
+            /// <inheritdoc cref="Base"/>
+            class Sample { }
+
+            /// <summary>A base type.</summary>
+            class Base { }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_SummaryAndInheritdoc_ReportsNothing()
+    {
+        const string source = """
+            /// <summary>A sample.</summary>
+            /// <inheritdoc/>
+            class Sample { }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_TwoSummariesAndInheritdoc_ReportsDuplicateSummaries()
+    {
+        const string source = """
+            /// <summary>First.</summary>
+            /// <summary>Second.</summary>
+            /// <inheritdoc/>
+            class Sample { }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
         diagnostics.Should().ContainSingle()
-            .Which.GetMessage().Should().EndWith("found 0");
+            .Which.GetMessage().Should().EndWith("found 2 summaries");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_InheritdocNestedInRemarks_ReportsMissingDocumentation()
+    {
+        const string source = """
+            /// <remarks><inheritdoc/></remarks>
+            class Sample { }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_MalformedInheritdoc_ReportsMissingDocumentation()
+    {
+        const string source = """
+            /// <inheritdoc
+            class Sample { }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_UnprocessedInheritdoc_ReportsMissingDocumentation()
+    {
+        const string source = """
+            /// <inheritdoc/>
+            // This separates the documentation blocks.
+            /// <remarks>Attached remarks.</remarks>
+            class Sample { }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
     }
 
     [TestMethod]
@@ -235,7 +322,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         diagnostics.Should().ContainSingle()
-            .Which.GetMessage().Should().EndWith("found 0");
+            .Which.GetMessage().Should().EndWith("found 0 summaries");
     }
 
     [TestMethod]
@@ -250,7 +337,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         diagnostics.Should().ContainSingle()
-            .Which.GetMessage().Should().EndWith("found 2");
+            .Which.GetMessage().Should().EndWith("found 2 summaries");
     }
 
     [TestMethod]
@@ -280,7 +367,7 @@ public class TypeXmlSummaryAnalyzerTests
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.SourceTree!.FilePath.Should().Be("A.cs");
-        diagnostic.GetMessage().Should().EndWith("found 0");
+        diagnostic.GetMessage().Should().EndWith("found 0 summaries");
     }
 
     [TestMethod]
@@ -296,7 +383,7 @@ public class TypeXmlSummaryAnalyzerTests
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.SourceTree!.FilePath.Should().Be("A.cs");
-        diagnostic.GetMessage().Should().EndWith("found 2");
+        diagnostic.GetMessage().Should().EndWith("found 2 summaries");
     }
 
     [TestMethod]
@@ -313,7 +400,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         diagnostics.Should().ContainSingle()
-            .Which.GetMessage().Should().EndWith("found 2");
+            .Which.GetMessage().Should().EndWith("found 2 summaries");
     }
 
     [TestMethod]
@@ -399,7 +486,7 @@ public class TypeXmlSummaryAnalyzerTests
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.SourceTree!.FilePath.Should().Be("Sample.cs");
-        diagnostic.GetMessage().Should().EndWith("found 2");
+        diagnostic.GetMessage().Should().EndWith("found 2 summaries");
     }
 
     [TestMethod]
