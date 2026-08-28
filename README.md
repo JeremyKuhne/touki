@@ -3,6 +3,8 @@
 [![Build][build-badge]][build-workflow]
 [![codecov][codecov-badge]][codecov]
 [![NuGet][nuget-badge]][nuget]
+[![Analyzers][analyzers-nuget-badge]][analyzers-nuget]
+[![TestSupport][testsupport-nuget-badge]][testsupport-nuget]
 
 [build-badge]: https://github.com/JeremyKuhne/touki/actions/workflows/dotnet.yml/badge.svg
 [build-workflow]: https://github.com/JeremyKuhne/touki/actions/workflows/dotnet.yml
@@ -10,6 +12,10 @@
 [codecov]: https://codecov.io/gh/JeremyKuhne/touki
 [nuget-badge]: https://img.shields.io/nuget/v/KlutzyNinja.Touki.svg
 [nuget]: https://www.nuget.org/packages/KlutzyNinja.Touki/
+[analyzers-nuget-badge]: https://img.shields.io/nuget/v/KlutzyNinja.Touki.Analyzers.svg?label=Analyzers
+[analyzers-nuget]: https://www.nuget.org/packages/KlutzyNinja.Touki.Analyzers/
+[testsupport-nuget-badge]: https://img.shields.io/nuget/v/KlutzyNinja.Touki.TestSupport.svg?label=TestSupport
+[testsupport-nuget]: https://www.nuget.org/packages/KlutzyNinja.Touki.TestSupport/
 
 Provides useful functionality both for .NET and .NET Framework applications.
 
