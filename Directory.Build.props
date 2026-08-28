@@ -72,10 +72,9 @@
   <PropertyGroup>
     <!--
       x64 is the default dev/test/perf Platform so local Windows builds and
-      benchmarks match a well-known architecture. The two NuGet-shipped
-      projects (touki, touki.testsupport) - plus the analyzer assemblies
-      embedded in the touki package - are pure IL with no native components
-      and must run on any CPU architecture. touki.slnx maps them to
+      benchmarks match a well-known architecture. The three NuGet-shipped
+      projects (touki, touki.analyzers, touki.testsupport) are pure IL with no
+      native components and must run on any CPU architecture. touki.slnx maps them to
       Platform=AnyCPU so the published packages stay architecture neutral
       (see tools/Test-PackageArchitectureNeutral.ps1, which verifies this in CI).
     -->

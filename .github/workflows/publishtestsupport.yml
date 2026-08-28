@@ -43,11 +43,21 @@ jobs:
       shell: pwsh
       run: |
         $tag = $env:RELEASE_TAG
-        # SemVer numeric identifiers (major/minor/patch) MUST NOT have leading zeros.
-        if ($tag -notmatch '^ts-v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$') {
-          Write-Error "Tag '$tag' does not match expected SemVer pattern ts-v<major>.<minor>.<patch>[-<prerelease>] (no leading zeros)."
+        if (!$tag.StartsWith('ts-v', [System.StringComparison]::Ordinal)) {
+          Write-Error "Tag '$tag' is not a TestSupport release tag."
           exit 1
         }
+
+        $version = $tag.Substring('ts-v'.Length)
+        # SemVer 2.0 without build metadata. Numeric identifiers cannot have leading zeroes.
+        $identifier = '(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)'
+        $versionPattern = "^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-$identifier(?:\.$identifier)*)?$"
+        if ($version -notmatch $versionPattern) {
+          Write-Error "Tag '$tag' does not contain a valid release version."
+          exit 1
+        }
+
+        Add-Content -Path $env:GITHUB_ENV -Value "RELEASE_VERSION=$version"
         Write-Host "Tag '$tag' OK."
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
@@ -56,16 +66,36 @@ jobs:
     - name: Build
       run: dotnet build -c Release --no-restore
     - name: Pack
-      run: dotnet pack -c Release --no-build -o ./artifacts
-    - name: Verify package is architecture neutral
+      run: |
+        dotnet pack touki.testsupport/touki.testsupport.csproj `
+          --configuration Release `
+          --no-build `
+          --output ./artifacts `
+          -p:Platform=AnyCPU `
+          -p:Platforms=AnyCPU
+    - name: Verify package
       # touki.testsupport is a pure-IL library with no native components and
       # must load on any CPU architecture (x64, ARM64, ...). touki.slnx maps
       # it to Platform=AnyCPU even though the rest of the solution defaults
       # to x64 (see Directory.Build.props); this guards against that mapping
       # regressing before anything is pushed to NuGet.
       run: |
-        Get-ChildItem ./artifacts -Filter KlutzyNinja.Touki.TestSupport.*.nupkg |
-            ForEach-Object { pwsh tools/Test-PackageArchitectureNeutral.ps1 -PackagePath $_.FullName }
+        $packages = @(
+          Get-ChildItem ./artifacts -Filter KlutzyNinja.Touki.TestSupport.*.nupkg
+        )
+        if ($packages.Count -ne 1) {
+          throw "Expected one TestSupport package, found $($packages.Count)."
+        }
+
+        $actualVersion = $packages[0].BaseName.Substring('KlutzyNinja.Touki.TestSupport.'.Length)
+        if ($actualVersion -ne $env:RELEASE_VERSION) {
+          throw "TestSupport package version '$actualVersion' does not match tag version '$env:RELEASE_VERSION'."
+        }
+
+        pwsh tools/Test-PackageArchitectureNeutral.ps1 -PackagePath $packages[0].FullName
+        if ($LASTEXITCODE -ne 0) {
+          throw "Architecture validation failed for '$($packages[0].Name)'."
+        }
     # Get a short-lived NuGet API key
     - name: NuGet login (OIDC → temp API key)
       uses: NuGet/login@v1
@@ -74,9 +104,17 @@ jobs:
         user: ${{ secrets.NUGET_USER }}
     - name: Publish to NuGet
       run: |
-        Get-ChildItem -Path ./artifacts -Filter KlutzyNinja.Touki.TestSupport.*.nupkg | ForEach-Object {
-            dotnet nuget push $_.FullName `
-                --api-key ${{steps.login.outputs.NUGET_API_KEY}} `
-                --source https://api.nuget.org/v3/index.json `
-                --skip-duplicate
+        $packages = @(
+          Get-ChildItem -Path ./artifacts -Filter KlutzyNinja.Touki.TestSupport.*.nupkg
+        )
+        if ($packages.Count -ne 1) {
+          throw "Expected one TestSupport package to publish, found $($packages.Count)."
+        }
+
+        dotnet nuget push $packages[0].FullName `
+            --api-key ${{steps.login.outputs.NUGET_API_KEY}} `
+            --source https://api.nuget.org/v3/index.json `
+            --skip-duplicate
+        if ($LASTEXITCODE -ne 0) {
+          throw "Publishing '$($packages[0].Name)' failed with exit code $LASTEXITCODE."
         }

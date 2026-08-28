@@ -97,6 +97,8 @@
     <Copyright>Copyright (c) Jeremy W. Kuhne. All rights reserved.</Copyright>
     <!-- Publish the repository URL in the built .nupkg (in the NuSpec <repository> element) -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <!-- Advance after publishing an independent analyzer release that Touki should carry as its minimum. -->
+    <ToukiAnalyzersPackageVersion Condition="'$(ToukiAnalyzersPackageVersion)' == ''">0.9.0</ToukiAnalyzersPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <None Include="../README.md" Pack="true" PackagePath="" />
@@ -147,44 +149,30 @@
   <!--
     Analyzer related
 
-    The Touki analyzers ship inside this package under analyzers/dotnet/cs so consumers
-    get them automatically (packed by the _AddAnalyzersToPackage target below).
-
-    OutputItemType="Analyzer" also runs the analyzers against touki's own sources so the
-    library dogfoods its own rules. ReferenceOutputAssembly="false" keeps the analyzer
-    assembly out of touki's runtime references, and PrivateAssets="all" keeps it out of
-    the package's dependency graph.
+    The normal build reference routes the analyzer project output to Roslyn without adding a compile-time or
+    runtime reference, so the library dogfoods its own rules. During restore, NuGet evaluates the second reference
+    instead and records the analyzer package as an analyzer-only public dependency of KlutzyNinja.Touki.
   -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(ExcludeRestorePackageImports)' == ''">
     <ProjectReference Include="..\touki.analyzers\touki.analyzers.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all" />
-    <!--
-      Build-ordering only (no OutputItemType, so it is not loaded as an analyzer during touki's build): ensures the
-      code-fix assembly exists for the _AddAnalyzersToPackage target to pack.
-    -->
-    <ProjectReference Include="..\touki.analyzers.codefixes\touki.analyzers.codefixes.csproj"
-                      ReferenceOutputAssembly="false"
-                      PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(ExcludeRestorePackageImports)' != ''">
+    <ProjectReference Include="..\touki.analyzers\touki.analyzers.csproj"
+                      PrivateAssets="none"
+                      IncludeAssets="analyzers" />
   </ItemGroup>
 
-  <Target Name="_AddAnalyzersToPackage" BeforeTargets="GenerateNuspec">
-    <MSBuild Projects="..\touki.analyzers\touki.analyzers.csproj"
-             Targets="GetTargetPath"
-             Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=netstandard2.0">
-      <Output TaskParameter="TargetOutputs" ItemName="_ToukiAnalyzerAssembly" />
-    </MSBuild>
-    <MSBuild Projects="..\touki.analyzers.codefixes\touki.analyzers.codefixes.csproj"
-             Targets="GetTargetPath"
-             Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=netstandard2.0">
-      <Output TaskParameter="TargetOutputs" ItemName="_ToukiAnalyzerAssembly" />
-    </MSBuild>
+  <!-- NuGet normally uses the referenced project's current MinVer result. Replace it with the independently
+       published analyzer version selected above. -->
+  <Target Name="_SetToukiAnalyzerPackageDependencyVersion" AfterTargets="_GetProjectReferenceVersions">
     <ItemGroup>
-      <_PackageFiles Include="@(_ToukiAnalyzerAssembly)">
-        <BuildAction>None</BuildAction>
-        <PackagePath>analyzers/dotnet/cs</PackagePath>
-      </_PackageFiles>
+      <_ProjectReferencesWithVersions Update="@(_ProjectReferencesWithVersions)"
+                                      Condition="'%(_ProjectReferencesWithVersions.Filename)' == 'touki.analyzers'">
+        <ProjectVersion>$(ToukiAnalyzersPackageVersion)</ProjectVersion>
+      </_ProjectReferencesWithVersions>
     </ItemGroup>
   </Target>
 

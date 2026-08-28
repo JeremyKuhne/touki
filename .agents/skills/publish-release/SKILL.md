@@ -1,6 +1,6 @@
 ---
 name: publish-release
-description: Publish a new version of `KlutzyNinja.Touki` or `KlutzyNinja.Touki.TestSupport` to NuGet by cutting a release tag. Use when asked to "publish a new version", "release alpha.N", "ship a beta", "cut a release", "promote alpha to beta", or "tag and publish". Walks the user through choosing the right `Major.Minor.Patch` bump, deciding whether to stay in `alpha` / `beta` / `rc` / stable, picking the correct tag stream (`v*` vs `ts-v*`), pushing the tag, and creating the matching GitHub release. Vets when an `AssemblyVersion`-changing bump is required (binary breaking changes vs additive/bugfix work).
+description: Publish a new version of `KlutzyNinja.Touki`, `KlutzyNinja.Touki.Analyzers`, or `KlutzyNinja.Touki.TestSupport` to NuGet by cutting a release tag. Use when asked to "publish a new version", "release alpha.N", "ship a beta", "cut a release", "promote alpha to beta", or "tag and publish". Walks the user through choosing the right `Major.Minor.Patch` bump, deciding whether to stay in `alpha` / `beta` / `rc` / stable, picking the correct tag stream (`v*`, `analyzers-v*`, or `ts-v*`), pushing the tag, and creating the matching GitHub release. Vets when an `AssemblyVersion`-changing bump is required (binary breaking changes vs additive/bugfix work).
 metadata:
   applicability: repo-local
   binding: none
@@ -13,23 +13,26 @@ metadata:
 
 # Publish a release
 
-This repo ships two NuGet packages from independent tag streams:
+This repo ships three NuGet packages on independent tag streams:
 
 | Package | Tag prefix | Workflow |
 | ------- | ---------- | -------- |
-| `KlutzyNinja.Touki` | `v` (e.g. `v0.1.0-alpha.13`) | [.github/workflows/publish.yml](../../../.github/workflows/publish.yml) |
-| `KlutzyNinja.Touki.TestSupport` | `ts-v` (e.g. `ts-v0.1.0-alpha.9`) | [.github/workflows/publishtestsupport.yml](../../../.github/workflows/publishtestsupport.yml) |
+| `KlutzyNinja.Touki` | `v` (e.g. `v0.9.0`) | [.github/workflows/publish.yml](../../../.github/workflows/publish.yml) |
+| `KlutzyNinja.Touki.Analyzers` | `analyzers-v` (e.g. `analyzers-v0.9.0`) | [.github/workflows/publish.yml](../../../.github/workflows/publish.yml) |
+| `KlutzyNinja.Touki.TestSupport` | `ts-v` (e.g. `ts-v0.9.0`) | [.github/workflows/publishtestsupport.yml](../../../.github/workflows/publishtestsupport.yml) |
 
 [MinVer](https://github.com/adamralph/minver) derives every version artifact
 (`Version`, `PackageVersion`, `AssemblyVersion`, `FileVersion`,
 `InformationalVersion`) from the tag at HEAD. **The tag *is* the version.**
 `MinVer` is wired in [Directory.Build.targets](../../../Directory.Build.targets)
 gated on `IsPackable != 'false'`; per-project `<MinVerTagPrefix>` overrides
-live in [touki.testsupport/touki.testsupport.csproj](../../../touki.testsupport/touki.testsupport.csproj).
+live in [touki.analyzers/touki.analyzers.csproj](../../../touki.analyzers/touki.analyzers.csproj)
+and [touki.testsupport/touki.testsupport.csproj](../../../touki.testsupport/touki.testsupport.csproj).
+The nonpackable code-fix project references MinVer directly so its assembly
+version follows the analyzer package that contains it.
 
-The publish workflow only fires when the tag is pushed. Both workflows have a
-regex guard that rejects malformed tags (e.g. the historical `v.0.1.0-alpha.11`
-typo) before any pack/push runs.
+The publish workflows only fire when a release tag is pushed. Both have regex
+guards that reject malformed tags before any pack/push runs.
 
 **Approval scope.** "Publish a release" authorizes preparing the tag and
 release notes. It does **not** authorize the tag push. The
@@ -46,7 +49,7 @@ section "Working with the user on changes" for the canonical rule.
 6. **Approval checkpoint** (below) - stop and wait for an explicit publish verb.
 7. Create and push the tag, then watch the workflow - see [release-steps.md](release-steps.md).
 8. Create the GitHub release from the notes template - [release-steps.md](release-steps.md).
-9. Aftercare (sample version bump, TestSupport lockstep) - [release-steps.md](release-steps.md).
+9. Aftercare (analyzer adoption, sample version bump, TestSupport lockstep) - [release-steps.md](release-steps.md).
 
 ## 1. Inspect repo state and confirm the package
 
@@ -64,7 +67,10 @@ Read-only checks:
 
 Ask the user **which package** if not already obvious from the request:
 
-- `KlutzyNinja.Touki` - the main library.
+- `KlutzyNinja.Touki` - the main runtime library. Its selected analyzer version
+  must already exist on NuGet.
+- `KlutzyNinja.Touki.Analyzers` - analyzers and code fixes, released without a
+  Touki runtime package.
 - `KlutzyNinja.Touki.TestSupport` - test helpers. Released only when
   `touki.testsupport/` code changed or the Touki release is a binary break;
   see [versioning.md](versioning.md) "TestSupport releases: when and what
@@ -80,7 +86,7 @@ validated tag.
 
 **Stop here.** Show the user:
 
-- The chosen tag (e.g. `v0.1.0-alpha.13`).
+- The chosen tag (e.g. `v0.9.0` or `analyzers-v0.9.0`).
 - The prior tag and what bumped (e.g. "alpha.12 -> alpha.13, no Major/Minor
   change").
 - The commit the tag will point at (`git rev-parse HEAD`, short SHA + subject).

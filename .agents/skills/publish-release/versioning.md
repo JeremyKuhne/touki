@@ -13,6 +13,9 @@ on the relevant prefix:
 # Main package
 git tag --list 'v*' --sort=-creatordate | Select-Object -First 5
 
+# Analyzers
+git tag --list 'analyzers-v*' --sort=-creatordate | Select-Object -First 5
+
 # TestSupport
 git tag --list 'ts-v*' --sort=-creatordate | Select-Object -First 5
 ```
@@ -22,9 +25,10 @@ that's already live (publishing is idempotent thanks to `--skip-duplicate`,
 but choosing a duplicate is almost always a mistake):
 
 - <https://www.nuget.org/packages/KlutzyNinja.Touki>
+- <https://www.nuget.org/packages/KlutzyNinja.Touki.Analyzers>
 - <https://www.nuget.org/packages/KlutzyNinja.Touki.TestSupport>
 
-Record the prior version (e.g. `0.1.0-alpha.12` for the main package).
+Record the prior version on the selected package's stream.
 
 For TestSupport, stop and read "TestSupport releases: when and what version"
 at the end of this page **before** picking a version - most Touki releases
@@ -66,11 +70,17 @@ pre-1.0, so the rules below describe the **target stable** semantics; while
 the prior tag is itself a prerelease, the same bump table applies to the
 underlying `Major.Minor.Patch` portion.
 
+Apply the table to the selected package. Touki and its analyzer package do not
+share a version axis.
+
 | Change shipped since the last tag | Bump |
 | --- | --- |
 | Binary breaking change to public API of `touki.dll` (removed/renamed type or member, signature change, return-type change, base-type change, broken inheritance, removed `[Obsolete]`'d API) | **Major** |
 | Behavioral break that compiles but changes observable runtime contract (different exception type, different default, different ordering, different threading guarantee) | **Major** unless the user explicitly accepts shipping it as Minor with a release-note callout |
+| Removed/renamed diagnostic ID or option, newly enabled diagnostic, or increased default severity | **Major** because an existing consumer build can fail without a source change |
 | Net-new public API, new overload, new optional parameter, new public type, new TFM | **Minor** |
+| New disabled/hidden diagnostic or new code fix | **Minor** |
+| Analyzer false-positive, false-negative, message, or code-fix correction within the documented rule | **Patch** |
 | Bug fix only, no new public surface, no observable contract change for non-buggy callers | **Patch** |
 | Internal-only refactor, perf, doc, comment, build, CI | **Patch** (or no release at all) |
 
@@ -113,6 +123,7 @@ Format (enforced by the regex guard in each workflow):
 
 ```text
 v<Major>.<Minor>.<Patch>[-<prerelease>]          # main package
+analyzers-v<Major>.<Minor>.<Patch>[-<prerelease>] # analyzers
 ts-v<Major>.<Minor>.<Patch>[-<prerelease>]       # TestSupport
 ```
 
@@ -127,6 +138,7 @@ Examples (good):
 - `v0.2.0-rc.1`
 - `v0.2.0`
 - `v1.0.0-rc.1`
+- `analyzers-v0.9.0`
 - `ts-v0.1.0-alpha.9`
 
 Examples (rejected by guard):
@@ -138,12 +150,36 @@ Examples (rejected by guard):
 - `v0.1` - missing patch component.
 - `v01.02.03` - leading zeros in numeric identifiers.
 
-The regex used by the workflow guards (must match):
+Each workflow strips its package prefix and applies this shared version grammar.
+Build metadata is deliberately not accepted for release tags:
 
 ```text
-^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$
-^ts-v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$
+$identifier = '(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)'
+$versionPattern = "^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-$identifier(?:\.$identifier)*)?$"
 ```
+
+## Analyzer releases and Touki adoption
+
+`KlutzyNinja.Touki.Analyzers` releases independently on `analyzers-v*`.
+Publishing an analyzer does not publish or change `KlutzyNinja.Touki`.
+
+Before creating an analyzer tag:
+
+1. Move every unshipped row into a numeric section in `AnalyzerReleases.Shipped.md`.
+2. Return `AnalyzerReleases.Unshipped.md` to its empty two-line header.
+3. Replace any `Unreleased` row in `docs/analyzers.md` with the release version.
+4. Build and pack that exact version. The workflow rejects pending rows and stale `Unreleased` documentation.
+
+`ToukiAnalyzersPackageVersion` in
+[touki/touki.csproj](../../../touki/touki.csproj) is the minimum analyzer
+version carried by future Touki packages. Advance it only after that analyzer
+version is published. Existing Touki packages keep their original dependency;
+consumers can reference a newer analyzer package directly without updating the
+runtime library.
+
+The first standalone package continues the existing analyzer release history at
+`analyzers-v0.9.0`. Publish it before the next Touki release, whose selected
+minimum is initially `0.9.0`.
 
 ## TestSupport releases: when and what version
 

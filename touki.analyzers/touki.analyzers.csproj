@@ -17,13 +17,24 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Touki.Analyzers</RootNamespace>
 
-    <!--
-      This assembly ships inside the KlutzyNinja.Touki package (under
-      analyzers/dotnet/cs), not as its own package. The packing is done by the
-      _AddAnalyzersToPackage target in touki/touki.csproj.
-    -->
-    <IsPackable>false</IsPackable>
+    <!-- The package contains analyzer assets only; it has no compile-time or runtime library. -->
     <IncludeBuildOutput>false</IncludeBuildOutput>
+
+    <PackageId>KlutzyNinja.Touki.Analyzers</PackageId>
+    <Description>Roslyn analyzers and code fixes for Touki conventions and APIs.</Description>
+    <Authors>Jeremy W. Kuhne</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/JeremyKuhne/touki</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/JeremyKuhne/touki</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>Roslyn;Analyzer;CodeFix;Touki</PackageTags>
+    <Copyright>Copyright (c) Jeremy W. Kuhne. All rights reserved.</Copyright>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <MinVerTagPrefix>analyzers-v</MinVerTagPrefix>
+    <MinVerMinimumMajorMinor>0.9</MinVerMinimumMajorMinor>
 
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
@@ -41,6 +52,28 @@
     <!-- Analyzer release tracking files (satisfies RS2008). -->
     <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
     <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+    <None Include="..\docs\analyzers.md" Pack="true" PackagePath="README.md" />
+    <None Include="..\THIRD-PARTY-NOTICES.TXT" Pack="true" PackagePath="" />
+
+    <!-- Build ordering for the code-fix assembly that ships in this package. -->
+    <ProjectReference Include="..\touki.analyzers.codefixes\touki.analyzers.codefixes.csproj"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
   </ItemGroup>
+
+  <Target Name="_AddAnalyzersToPackage" BeforeTargets="GenerateNuspec">
+    <MSBuild Projects="..\touki.analyzers.codefixes\touki.analyzers.codefixes.csproj"
+             Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=netstandard2.0">
+      <Output TaskParameter="TargetOutputs" ItemName="_ToukiAnalyzerAssembly" />
+    </MSBuild>
+    <ItemGroup>
+      <_ToukiAnalyzerAssembly Include="$(TargetPath)" />
+      <_PackageFiles Include="@(_ToukiAnalyzerAssembly)">
+        <BuildAction>None</BuildAction>
+        <PackagePath>analyzers/dotnet/cs</PackagePath>
+      </_PackageFiles>
+    </ItemGroup>
+  </Target>
 
 </Project>

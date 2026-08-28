@@ -8,13 +8,14 @@
   <!--
     Versioning (MinVer)
 
-    Centralized so packable projects all derive their version from the same
-    `v*` tag stream. Imported from Directory.Build.targets (rather than props)
-    so that a project's own `<IsPackable>false</IsPackable>` setting is in
-    scope when the condition is evaluated.
+    Centralized so packable projects derive their version from a release tag.
+    The default stream is `v*`; independently released projects override the
+    prefix. Imported from Directory.Build.targets (rather than props) so that a
+    project's own `<IsPackable>false</IsPackable>` setting is in scope when the
+    condition is evaluated.
   -->
   <PropertyGroup Condition="'$(IsPackable)' != 'false'">
-    <!-- Ensures that MinVer can find the tags we're using, which start with `v` -->
+    <!-- Use the main `v*` stream unless the project selects an independent prefix. -->
     <MinVerTagPrefix Condition="'$(MinVerTagPrefix)' == ''">v</MinVerTagPrefix>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPackable)' != 'false'">

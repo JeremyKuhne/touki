@@ -36,10 +36,16 @@ Repo-specific companion to the vendored [roslyn-analyzers](SKILL.md) skill. The
 - **Diagnostic-ID prefix** (`<PREFIX>`): `TOUKI`. `TOUKI0001` is the running
   example (`UseIsNull`); `TOUKI0002`-`TOUKI0004` are the defensive-copy /
   `[NonCopyable]` rules.
-- **Library package**: the analyzer ships **inside** `KlutzyNinja.Touki`, not as
-  its own package. [touki/touki.csproj](../../../touki/touki.csproj) packs the
-  analyzer and code-fix assemblies to `analyzers/dotnet/cs/`, with
-  `OutputItemType="Analyzer"` for the dogfood run.
+- **Analyzer package**: `KlutzyNinja.Touki.Analyzers` is produced by
+  [touki.analyzers](../../../touki.analyzers/touki.analyzers.csproj) and contains
+  both the analyzer and code-fix assemblies under `analyzers/dotnet/cs/`.
+  [touki/touki.csproj](../../../touki/touki.csproj) keeps that package as a
+  public dependency while using `OutputItemType="Analyzer"` for the dogfood run.
+  Analyzer releases use the independent `analyzers-v*` tag stream. Touki selects
+  the minimum version it carries through `ToukiAnalyzersPackageVersion` in its
+  project file.
+  This separate-package layout supersedes the portable core's default recommendation
+  to embed analyzers in the library package.
 - **Working example to copy**:
   [touki.analyzers/UseIsNullAnalyzer.cs](../../../touki.analyzers/UseIsNullAnalyzer.cs)
   and its tests

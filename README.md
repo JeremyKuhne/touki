@@ -52,14 +52,14 @@ Some of the design goals include:
 - A `DisposableBase` with double-disposal protection and disposal
   tracking helpers for diagnosing leaks
 - [Roslyn analyzers](https://github.com/JeremyKuhne/touki/blob/main/docs/analyzers.md)
-  that ship in the package and run automatically - no separate analyzer package
-  to install
+  that run automatically through the package's `KlutzyNinja.Touki.Analyzers`
+  dependency, which can also be installed independently
 - Much more!
 
 ## Overviews
 
 - [Configuring Your Project for Touki](https://github.com/JeremyKuhne/touki/blob/main/sample/README.md)
-- [Analyzers Shipped in the Package](https://github.com/JeremyKuhne/touki/blob/main/docs/analyzers.md)
+- [Touki Analyzers](https://github.com/JeremyKuhne/touki/blob/main/docs/analyzers.md)
 - [Reducing String Allocations with Touki](https://github.com/JeremyKuhne/touki/blob/main/docs/strings.md)
 - [Low-Allocation Collections](https://github.com/JeremyKuhne/touki/blob/main/docs/collections.md)
 - [Interning Variable-Length Sequences with `SequenceSet<T>`](https://github.com/JeremyKuhne/touki/blob/main/docs/sequence-set.md)
@@ -95,9 +95,10 @@ PM> Install-Package KlutzyNinja.Touki
 
 ## Analyzers
 
-The package includes Roslyn analyzers. They are delivered inside
-`KlutzyNinja.Touki` itself, so referencing the package is all it takes - there
-is nothing extra to install.
+The package depends on `KlutzyNinja.Touki.Analyzers`, so referencing
+`KlutzyNinja.Touki` is all it takes to run the Roslyn analyzers. The analyzer
+package can also be referenced independently when the runtime library is not
+needed, and it has its own release version.
 
 They encode the conventions the library is built on, across a few areas:
 
@@ -110,8 +111,8 @@ They encode the conventions the library is built on, across a few areas:
 - **Usage and naming** - pattern matching for null checks, and an opt-in
   naming engine that replaces IDE1006.
 
-See [Analyzers Shipped in the Package](https://github.com/JeremyKuhne/touki/blob/main/docs/analyzers.md) for the full rule
-list, what each one flags, and how to configure it.
+See [Touki Analyzers](https://github.com/JeremyKuhne/touki/blob/main/docs/analyzers.md) for the full rule list, what each
+one flags, and how to configure it.
 
 ## Requirements
 

@@ -3,8 +3,9 @@
     Verify that the managed assemblies inside a .nupkg are architecture neutral.
 
 .DESCRIPTION
-    KlutzyNinja.Touki and KlutzyNinja.Touki.TestSupport are pure-IL libraries with
-    no native components, so every assembly they ship must be buildable as
+    KlutzyNinja.Touki, KlutzyNinja.Touki.Analyzers, and
+    KlutzyNinja.Touki.TestSupport contain only pure-IL assemblies with no native
+    components, so every assembly they ship must be buildable as
     "AnyCPU" (PE machine type I386 with the ILOnly CorFlag and without the
     32BitRequired flag). A project that accidentally inherits the repo-wide
     Platform=x64 dev default (see Directory.Build.props / touki.slnx) instead

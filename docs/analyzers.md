@@ -1,9 +1,14 @@
 # Touki Analyzers
 
-`KlutzyNinja.Touki` ships a set of Roslyn analyzers **inside the package**. There is no
-separate analyzer package to install - adding the package reference is enough. The shipped
-rules start running on the next build and in the IDE. TOUKI0012, TOUKI0022, TOUKI0024, and TOUKI0041
-ship disabled unless a project opts in.
+`KlutzyNinja.Touki.Analyzers` ships the Touki Roslyn analyzers and code fixes.
+`KlutzyNinja.Touki` depends on that package, so adding the main package reference is still
+enough: the rules start running on the next build and in the IDE. Reference the analyzer
+package directly when you want the rules without the Touki runtime library. TOUKI0012,
+TOUKI0022, TOUKI0024, and TOUKI0041 ship disabled unless a project opts in.
+
+The analyzer package is versioned independently from `KlutzyNinja.Touki`.
+Referencing Touki selects a tested minimum analyzer version; a direct analyzer
+package reference can select a newer release without updating the runtime library.
 
 The analyzers encode the conventions this library is built on: avoid hidden struct
 copies, release resources deterministically, keep scratch buffers off the stack once
@@ -939,8 +944,4 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 | 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |
 | 0.7.0 | TOUKI0022, TOUKI0023 |
 | 0.8.0 | TOUKI0012, TOUKI0024, TOUKI0031, TOUKI0032, TOUKI0033 |
-| Unreleased | TOUKI0025, TOUKI0026 |
-
-The authoritative list lives in
-[AnalyzerReleases.Shipped.md](../touki.analyzers/AnalyzerReleases.Shipped.md) and
-[AnalyzerReleases.Unshipped.md](../touki.analyzers/AnalyzerReleases.Unshipped.md).
+| 0.9.0 | TOUKI0025, TOUKI0026; first standalone analyzer package |
