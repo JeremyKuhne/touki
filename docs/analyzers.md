@@ -447,7 +447,7 @@ whether the target is documented. An inheritdoc with a `path` attribute does not
 the analyzer does not evaluate XPath filters and therefore cannot establish that a summary is
 inherited.
 
-Configure the analyzed visibility with a comma-separated list:
+Configure the analyzed declared visibility with a comma-separated list:
 
 ```ini
 dotnet_code_quality.TOUKI0025.api_surface = public, internal
@@ -455,13 +455,24 @@ dotnet_code_quality.TOUKI0025.api_surface = public, internal
 
 Accepted values are `public`, `internal`, `private`, `file`, and `all`. The default is `all`.
 Values are case-insensitive and surrounding whitespace is ignored. A missing, empty, or invalid
-value falls back to `all`.
+value falls back to `all`. A nested type is classified by its own declared accessibility, without
+being constrained by its containing types. A directly file-local type belongs to the `file`
+surface. Protected and protected-internal types belong to the `public` surface; private-protected
+types belong to the `internal` surface.
 
-Nested types use effective visibility through their containing types. For example, a public type
-nested in an internal type is `internal`. The `file` value is literal: it selects a file-local type
-and non-private types nested within it, while `private` selects an explicitly private nested type.
+To use a different set for nested types based on their effective visibility, specify:
+
+```ini
+dotnet_code_quality.TOUKI0025.effective_api_surface = public, internal
+```
+
+For nested types, `effective_api_surface` replaces `api_surface` when present and accepts the same
+values, with the same `all` fallback for an empty or invalid value. Top-level types continue using
+`api_surface`. Effective visibility accounts for containing types: a public type nested in an
+internal type is `internal`, a public type nested in a private type is `private`, and a non-private
+type nested in a file-local type is `file`. An explicitly private nested type remains `private`.
 For a partial type whose files receive different EditorConfig settings, the rule runs when any
-declaring file includes the type's effective visibility.
+declaring file includes the type under the set selected for that declaration.
 
 ## TOUKI0026
 
@@ -495,18 +506,30 @@ documentation entry remains unknown and is not diagnosed. An inheritdoc with a `
 does not satisfy the rule; the analyzer does not evaluate XPath filters and therefore cannot
 establish that a summary is inherited.
 
-Configure the effective member visibility with:
+Configure the declared member visibility with:
 
 ```ini
 dotnet_code_quality.TOUKI0026.api_surface = public, internal
 ```
 
 Accepted values are `public`, `internal`, `private`, and `all`. The default is `public, internal`,
-which means every effectively non-private member. Containing types constrain visibility: a public
-member in an internal type is `internal`, and a public member in a private nested type is `private`.
-Protected and protected-internal members of a public type belong to the public surface;
-private-protected members belong to the internal surface. Missing, empty, or invalid values use
+which means every member whose own declared accessibility is non-private, regardless of its
+containing types. Protected and protected-internal members belong to the `public` surface;
+private-protected members belong to the `internal` surface. Missing, empty, or invalid values use
 the default. The `file` token is not accepted because `file` applies to types, not members.
+
+To use a different set for members declared in nested types, based on their effective visibility,
+specify:
+
+```ini
+dotnet_code_quality.TOUKI0026.effective_api_surface = public, internal
+```
+
+For members declared in nested types, `effective_api_surface` replaces `api_surface` when present
+and accepts the same values, with the same `public, internal` fallback for an empty or invalid
+value. Members declared in top-level types continue using `api_surface`. For example, a public
+member in a nested internal type is effectively `internal`, and a public member in a private nested
+type is effectively `private`.
 
 ### Parameters
 

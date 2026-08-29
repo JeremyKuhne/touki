@@ -28,7 +28,9 @@ namespace Touki.Analyzers;
 ///   Configure the analyzed visibility with
 ///   <c>dotnet_code_quality.TOUKI0025.api_surface</c>. The accepted comma-separated values are <c>public</c>,
 ///   <c>internal</c>, <c>private</c>, and <c>file</c>; <c>all</c> is the default. A partial type is analyzed when
-///   any declaring file includes its effective visibility.
+///   any declaring file includes its declared visibility. For nested types,
+///   <c>dotnet_code_quality.TOUKI0025.effective_api_surface</c> can specify a different set based on visibility
+///   through the containing-type hierarchy.
 ///  </para>
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -43,6 +45,12 @@ public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
     ///  The <c>.editorconfig</c> key that controls which type visibilities are analyzed.
     /// </summary>
     public const string ApiSurfaceOption = "dotnet_code_quality.TOUKI0025.api_surface";
+
+    /// <summary>
+    ///  The <c>.editorconfig</c> key that controls effective visibilities for nested types.
+    /// </summary>
+    public const string EffectiveApiSurfaceOption =
+        "dotnet_code_quality.TOUKI0025.effective_api_surface";
 
     private const string GeneratedCodeOption = "generated_code";
 
@@ -329,18 +337,39 @@ public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
         ImmutableArray<SyntaxReference> declarations,
         AnalyzerConfigOptionsProvider optionsProvider)
     {
-        ApiSurface visibility = GetEffectiveVisibility(type);
-
         foreach (SyntaxReference declaration in declarations)
         {
             AnalyzerConfigOptions options = optionsProvider.GetOptions(declaration.SyntaxTree);
-            if ((GetConfiguredApiSurface(options) & visibility) != 0)
+            bool useEffectiveSurface = type.ContainingType is not null
+                && options.TryGetValue(EffectiveApiSurfaceOption, out _);
+            ApiSurface configuredSurface = GetConfiguredApiSurface(
+                options,
+                useEffectiveSurface ? EffectiveApiSurfaceOption : ApiSurfaceOption);
+            ApiSurface typeSurface = useEffectiveSurface
+                ? GetEffectiveVisibility(type)
+                : GetDeclaredVisibility(type);
+            if ((configuredSurface & typeSurface) != 0)
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private static ApiSurface GetDeclaredVisibility(INamedTypeSymbol type)
+    {
+        if (type.IsFileLocal)
+        {
+            return ApiSurface.File;
+        }
+
+        return type.DeclaredAccessibility switch
+        {
+            Accessibility.Private => ApiSurface.Private,
+            Accessibility.Internal or Accessibility.ProtectedAndInternal => ApiSurface.Internal,
+            _ => ApiSurface.Public
+        };
     }
 
     private static ApiSurface GetEffectiveVisibility(INamedTypeSymbol type)
@@ -368,9 +397,9 @@ public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
         return visibility;
     }
 
-    private static ApiSurface GetConfiguredApiSurface(AnalyzerConfigOptions options)
+    private static ApiSurface GetConfiguredApiSurface(AnalyzerConfigOptions options, string option)
     {
-        if (!options.TryGetValue(ApiSurfaceOption, out string? configured)
+        if (!options.TryGetValue(option, out string? configured)
             || string.IsNullOrWhiteSpace(configured))
         {
             return ApiSurface.All;
@@ -397,10 +426,9 @@ public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
             int tokenLength = tokenEnd - tokenStart;
             if (TokenEquals(configured, tokenStart, tokenLength, "all"))
             {
-                return ApiSurface.All;
+                result |= ApiSurface.All;
             }
-
-            if (TokenEquals(configured, tokenStart, tokenLength, "public"))
+            else if (TokenEquals(configured, tokenStart, tokenLength, "public"))
             {
                 result |= ApiSurface.Public;
             }
