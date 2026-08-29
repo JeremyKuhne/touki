@@ -12,11 +12,13 @@ public class TypeXmlSummaryAnalyzerTests
 {
     private static Task<ImmutableArray<Diagnostic>> AnalyzeAsync(
         string source,
-        string? apiSurface = null) =>
+        string? apiSurface = null,
+        IReadOnlyCollection<MetadataReference>? additionalReferences = null) =>
         AnalyzerTestHarness.GetDiagnosticsAsync(
             new TypeXmlSummaryAnalyzer(),
             source,
-            options: CreateOptions(apiSurface));
+            options: CreateOptions(apiSurface),
+            additionalReferences: additionalReferences);
 
     private static Task<ImmutableArray<Diagnostic>> AnalyzeAsync(
         IReadOnlyList<(string Source, string FileName)> sources,
@@ -30,6 +32,16 @@ public class TypeXmlSummaryAnalyzerTests
         apiSurface is null
             ? null
             : new Dictionary<string, string> { [TypeXmlSummaryAnalyzer.ApiSurfaceOption] = apiSurface };
+
+    private static CompilationReference CreateCompilationReference(string source)
+    {
+        CSharpCompilation compilation = CSharpCompilation.Create(
+            assemblyName: "TypeDocumentation.ProjectReference",
+            syntaxTrees: [CSharpSyntaxTree.ParseText(source)],
+            references: RoslynTestEnvironment.References,
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        return compilation.ToMetadataReference();
+    }
 
     private static async Task<ImmutableArray<Diagnostic>> AnalyzeSemanticAsync(string source)
     {
@@ -81,6 +93,32 @@ public class TypeXmlSummaryAnalyzerTests
     }
 
     [TestMethod]
+    public async Task AnalyzeNamedType_SummaryWithDefaultNamespace_ReportsNothing()
+    {
+        const string source = """
+            /// <summary xmlns="urn:test">A sample.</summary>
+            public class Sample { }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_PrefixedSummary_ReportsMissingDocumentation()
+    {
+        const string source = """
+            /// <doc:summary xmlns:doc="urn:test">A sample.</doc:summary>
+            public class Sample { }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
     public async Task AnalyzeNamedType_AllTypeKindsMissingSummary_ReportEachType()
     {
         const string source = """
@@ -118,7 +156,7 @@ public class TypeXmlSummaryAnalyzerTests
         diagnostic.Id.Should().Be(TypeXmlSummaryAnalyzer.DiagnosticId);
         diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Sample");
         diagnostic.GetMessage().Should().Be(
-            "Type 'Sample' must declare one XML <summary> element or an <inheritdoc> element; found 0 summaries");
+            "Type 'Sample' must declare one XML <summary> element or a valid <inheritdoc> element; found 0 summaries");
     }
 
     [TestMethod]
@@ -210,7 +248,7 @@ public class TypeXmlSummaryAnalyzerTests
     }
 
     [TestMethod]
-    public async Task AnalyzeNamedType_InheritdocWithoutSummary_ReportsNothing()
+    public async Task AnalyzeNamedType_BareInheritdocWithoutTarget_ReportsMissingDocumentation()
     {
         const string source = """
             /// <inheritdoc/>
@@ -219,7 +257,7 @@ public class TypeXmlSummaryAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
-        diagnostics.Should().BeEmpty();
+        diagnostics.Should().ContainSingle();
     }
 
     [TestMethod]
@@ -236,6 +274,243 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_AllTypeKindsInheritdocCrefToUndocumentedType_ReportEachType()
+    {
+        const string source = """
+            internal class UndocumentedTarget { }
+
+            /// <inheritdoc cref="UndocumentedTarget"/>
+            public class ClassSample { }
+
+            /// <inheritdoc cref="UndocumentedTarget"/>
+            public struct StructSample { }
+
+            /// <inheritdoc cref="UndocumentedTarget"/>
+            public interface IInterfaceSample { }
+
+            /// <inheritdoc cref="UndocumentedTarget"/>
+            public record RecordSample;
+
+            /// <inheritdoc cref="UndocumentedTarget"/>
+            public record struct RecordStructSample;
+
+            /// <inheritdoc cref="UndocumentedTarget"/>
+            public enum EnumSample { None }
+
+            /// <inheritdoc cref="UndocumentedTarget"/>
+            public delegate void DelegateSample();
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "public").ConfigureAwait(false);
+
+        diagnostics.Should().HaveCount(7);
+        diagnostics.Select(diagnostic => diagnostic.Location.SourceTree!.GetText()
+            .ToString(diagnostic.Location.SourceSpan)).Should().BeEquivalentTo(
+                "ClassSample",
+                "StructSample",
+                "IInterfaceSample",
+                "RecordSample",
+                "RecordStructSample",
+                "EnumSample",
+                "DelegateSample");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_AllTypeKindsInheritdocCrefToDocumentedType_ReportNothing()
+    {
+        const string source = """
+            /// <summary>Shared documentation.</summary>
+            internal class DocumentedTarget { }
+
+            /// <inheritdoc cref="DocumentedTarget"/>
+            public class ClassSample { }
+
+            /// <inheritdoc cref="DocumentedTarget"/>
+            public struct StructSample { }
+
+            /// <inheritdoc cref="DocumentedTarget"/>
+            public interface IInterfaceSample { }
+
+            /// <inheritdoc cref="DocumentedTarget"/>
+            public record RecordSample;
+
+            /// <inheritdoc cref="DocumentedTarget"/>
+            public record struct RecordStructSample;
+
+            /// <inheritdoc cref="DocumentedTarget"/>
+            public enum EnumSample { None }
+
+            /// <inheritdoc cref="DocumentedTarget"/>
+            public delegate void DelegateSample();
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "public").ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_AllTypeKindsBareInheritdocWithoutNaturalTarget_ReportEachType()
+    {
+        const string source = """
+            /// <inheritdoc/>
+            public class ClassSample { }
+
+            /// <inheritdoc/>
+            public struct StructSample { }
+
+            /// <inheritdoc/>
+            public interface IInterfaceSample { }
+
+            /// <inheritdoc/>
+            public record RecordSample;
+
+            /// <inheritdoc/>
+            public record struct RecordStructSample;
+
+            /// <inheritdoc/>
+            public enum EnumSample { None }
+
+            /// <inheritdoc/>
+            public delegate void DelegateSample();
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().HaveCount(7);
+    }
+
+    [TestMethod]
+    [DataRow("byte")]
+    [DataRow("sbyte")]
+    [DataRow("short")]
+    [DataRow("ushort")]
+    [DataRow("int")]
+    [DataRow("uint")]
+    [DataRow("long")]
+    [DataRow("ulong")]
+    public async Task AnalyzeNamedType_BareInheritdocOnEnumWithUnderlyingType_ReportsType(
+        string underlyingType)
+    {
+        string source = $$"""
+            /// <inheritdoc/>
+            public enum Sample : {{underlyingType}} { None }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
+        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Sample");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_InheritdocWithPath_DoesNotSatisfyDocumentation()
+    {
+        const string source = """
+            /// <summary>Target documentation.</summary>
+            internal class Target { }
+
+            /// <inheritdoc cref="Target" path="/summary"/>
+            public class Sample { }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, apiSurface: "public")
+            .ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_InheritdocWithUnresolvedCref_ReportsType()
+    {
+        const string source = """
+            /// <inheritdoc cref="Missing"/>
+            public class Sample { }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_BareInheritdocWithDocumentedBaseOrInterface_ReportsNothing()
+    {
+        const string source = """
+            /// <summary>A documented base.</summary>
+            public class Base { }
+
+            /// <inheritdoc/>
+            public class Derived : Base { }
+
+            /// <summary>A documented contract.</summary>
+            public interface IContract { }
+
+            /// <inheritdoc/>
+            public interface IDerivedContract : IContract { }
+
+            /// <inheritdoc/>
+            public struct Implementation : IContract { }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_InheritdocCrefChainEndingInSummary_ReportsNothing()
+    {
+        const string source = """
+            /// <summary>Root documentation.</summary>
+            public class Root { }
+
+            /// <inheritdoc cref="Root"/>
+            public class Middle { }
+
+            /// <inheritdoc cref="Middle"/>
+            public class Leaf { }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_CyclicInheritdocCrefs_ReportEachType()
+    {
+        const string source = """
+            /// <inheritdoc cref="Second"/>
+            public class First { }
+
+            /// <inheritdoc cref="First"/>
+            public class Second { }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().HaveCount(2);
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_InheritdocCrefToUndocumentedProjectType_ReportsType()
+    {
+        CompilationReference projectReference = CreateCompilationReference("public class ExternalType { }");
+        const string source = """
+            /// <inheritdoc cref="ExternalType"/>
+            public class LocalType { }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            source,
+            additionalReferences: [projectReference]).ConfigureAwait(false);
+
+        Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
+        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("LocalType");
     }
 
     [TestMethod]

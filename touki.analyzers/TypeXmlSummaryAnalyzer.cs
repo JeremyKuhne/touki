@@ -14,13 +14,14 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Touki.Analyzers;
 
 /// <summary>
-///  Reports source types that do not declare one XML <c>&lt;summary&gt;</c> or <c>&lt;inheritdoc&gt;</c> element.
+///  Reports source types that do not declare one XML <c>&lt;summary&gt;</c> element or inherit one from documented code.
 /// </summary>
 /// <remarks>
 ///  <para>
 ///   Classes, structs, interfaces, records, enums, and delegates are analyzed, including nested types. For a
 ///   partial type, exactly one declaration may contain a top-level <c>&lt;summary&gt;</c> element. A top-level
-///   <c>&lt;inheritdoc&gt;</c> element satisfies a type with no local summary. Documentation on generated partial
+///   <c>&lt;inheritdoc&gt;</c> element satisfies a type with no local summary when its target has documentation.
+///   Inheritdoc elements with a <c>path</c> filter do not satisfy the rule. Documentation on generated partial
 ///   declarations participates in the count, but diagnostics are reported only in user-authored code.
 ///  </para>
 ///  <para>
@@ -48,7 +49,7 @@ public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
     private static readonly DiagnosticDescriptor s_rule = new(
         id: DiagnosticId,
         title: "Document types",
-        messageFormat: "Type '{0}' must declare one XML <summary> element or an <inheritdoc> element; found {1} summaries",
+        messageFormat: "Type '{0}' must declare one XML <summary> element or a valid <inheritdoc> element; found {1} summaries",
         category: "Maintainability",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -113,11 +114,20 @@ public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        int summaryCount = CountSummaries(
-            declarations,
-            context.CancellationToken,
-            out bool hasInheritdoc);
-        if (summaryCount == 1 || (summaryCount == 0 && hasInheritdoc))
+        XmlDocumentationInfo documentation = GetDocumentation(declarations, context.CancellationToken);
+        if (documentation.SummaryCount == 1)
+        {
+            return;
+        }
+
+        if (documentation.SummaryCount == 0
+            && documentation.HasInheritdoc
+            && DocumentationInheritanceResolver.GetInheritdocDocumentation(
+                type,
+                documentation,
+                compilation,
+                includeSourceDeclaration: null,
+                context.CancellationToken) is DocumentationAvailability.Documented or DocumentationAvailability.Unknown)
         {
             return;
         }
@@ -127,7 +137,7 @@ public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
                 s_rule,
                 GetIdentifierLocation(reportDeclaration),
                 type.Name,
-                summaryCount));
+                documentation.SummaryCount));
     }
 
     private static bool IsSupportedTypeKind(TypeKind typeKind) => typeKind is
@@ -426,89 +436,19 @@ public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
         length == expected.Length
         && string.Compare(value, start, expected, 0, length, StringComparison.OrdinalIgnoreCase) == 0;
 
-    private static int CountSummaries(
+    private static XmlDocumentationInfo GetDocumentation(
         ImmutableArray<SyntaxReference> declarations,
-        CancellationToken cancellationToken,
-        out bool hasInheritdoc)
+        CancellationToken cancellationToken)
     {
-        int count = 0;
-        hasInheritdoc = false;
+        XmlDocumentationInfo documentation = default;
 
         foreach (SyntaxReference declaration in declarations)
         {
             SyntaxNode syntax = declaration.GetSyntax(cancellationToken);
-            SyntaxTriviaList leadingTrivia = syntax.GetLeadingTrivia();
-            bool foundDocumentation = false;
-            bool foundOtherTrivia = false;
-
-            for (int i = leadingTrivia.Count - 1; i >= 0; i--)
-            {
-                SyntaxTrivia trivia = leadingTrivia[i];
-                if (trivia.GetStructure() is DocumentationCommentTriviaSyntax documentation)
-                {
-                    foundDocumentation = true;
-                    if (foundOtherTrivia || !IsWellFormed(documentation))
-                    {
-                        continue;
-                    }
-
-                    foreach (XmlNodeSyntax content in documentation.Content)
-                    {
-                        XmlNameSyntax? name = content switch
-                        {
-                            XmlElementSyntax element => element.StartTag.Name,
-                            XmlEmptyElementSyntax emptyElement => emptyElement.Name,
-                            _ => null
-                        };
-                        if (name is null || name.Prefix is not null)
-                        {
-                            continue;
-                        }
-
-                        if (string.Equals(name.LocalName.ValueText, "summary", StringComparison.Ordinal))
-                        {
-                            count++;
-                        }
-                        else if (string.Equals(
-                            name.LocalName.ValueText,
-                            "inheritdoc",
-                            StringComparison.Ordinal))
-                        {
-                            hasInheritdoc = true;
-                        }
-                    }
-
-                    continue;
-                }
-
-                if (foundDocumentation
-                    && !trivia.IsKind(SyntaxKind.WhitespaceTrivia)
-                    && !trivia.IsKind(SyntaxKind.EndOfLineTrivia))
-                {
-                    foundOtherTrivia = true;
-                }
-            }
+            documentation.AddDeclaration(syntax);
         }
 
-        return count;
-    }
-
-    private static bool IsWellFormed(DocumentationCommentTriviaSyntax documentation)
-    {
-        if (documentation.ContainsDiagnostics)
-        {
-            return false;
-        }
-
-        foreach (SyntaxToken token in documentation.DescendantTokens(descendIntoTrivia: true))
-        {
-            if (token.IsMissing)
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return documentation;
     }
 
     private static Location GetIdentifierLocation(MemberDeclarationSyntax declaration) =>
