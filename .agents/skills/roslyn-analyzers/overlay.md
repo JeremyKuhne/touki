@@ -92,6 +92,43 @@ are easy to miss:
   `WithSpecificDiagnosticOptions(id => ReportDiagnostic.Warn)`; the harness exposes this
   as the `diagnosticOptions` parameter.
 
+## TOUKI0024 Fix All scale case study
+
+[FormatXmlDocumentationCodeFixProvider.cs](../../../touki.analyzers.codefixes/FormatXmlDocumentationCodeFixProvider.cs)
+is the worked example for `FixAllProvider.Create`. TOUKI0024 diagnostics carry the complete
+replacement for one XML comment, so the callback sorts those non-overlapping `TextChange`
+instances and calls `SourceText.WithChanges` once per document. Tests in
+[XmlDocumentationFormattingCodeFixTests.cs](../../../touki.analyzers.tests/XmlDocumentationFormattingCodeFixTests.cs)
+cover document, project, solution, containing-member, and containing-type scopes, linked
+documents, pre-cancellation, and the observed per-document maximum of 136 diagnostics in an
+approximately 80 KiB source document. The full multi-document workload stays in the real
+consumer probe rather than running in every CI matrix leg.
+
+Run the analyzer suite with:
+
+```pwsh
+dotnet run --project touki.analyzers.tests/touki.analyzers.tests.csproj `
+  -c Release -- --timeout 15m
+```
+
+The real consumer probe uses FastTrace with an isolated NuGet cache and the package-delivered
+code-fix assembly under `analyzers/dotnet/cs/`:
+
+```pwsh
+dotnet format analyzers src/fasttrace/fasttrace.csproj `
+  --no-restore `
+  --diagnostics TOUKI0024 `
+  --severity warn `
+  --verbosity diagnostic
+```
+
+On the 2026-08-28 FastTrace workload under SDK 10.0.301 on modern .NET RyuJIT, `BatchFixer`
+exceeded 22,043,230,208 bytes working set and did not complete. The first custom
+document-batched proof completed in 13.01 seconds at 1,248,325,632 bytes. The final
+`FixAllProvider.Create` implementation completed in 15.23 seconds at 1,313,390,592 bytes peak
+working set for the `dotnet-format.dll` process and changed all 611 affected C# documents. A
+follow-up `--verify-no-changes` run exited successfully and formatted 0 of 905 files.
+
 ## Disabled-by-default rules
 A rule that encodes house style should ship `isEnabledByDefault: false` so it does not
 impose itself on package consumers, and be raised in the repo's own `.editorconfig`.

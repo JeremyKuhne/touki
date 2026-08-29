@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Microsoft.CodeAnalysis.CodeFixes;
+
 namespace Touki.Analyzers;
 
 [TestClass]
@@ -20,6 +22,170 @@ public class XmlDocumentationFormattingCodeFixTests
             XmlDocumentationFormattingAnalyzer.DiagnosticId,
             options,
             s_enabled).ConfigureAwait(false);
+
+    [TestMethod]
+    public void GetFixAllProvider_Default_IsDocumentBased()
+    {
+        FixAllProvider provider = new FormatXmlDocumentationCodeFixProvider().GetFixAllProvider();
+
+        provider.Should().NotBeSameAs(WellKnownFixAllProviders.BatchFixer);
+        provider.GetSupportedFixAllScopes().Should().BeEquivalentTo(
+            [
+                FixAllScope.Document,
+                FixAllScope.Project,
+                FixAllScope.Solution,
+                FixAllScope.ContainingMember,
+                FixAllScope.ContainingType
+            ]);
+    }
+
+    [TestMethod]
+    [DataRow(FixAllScope.Document)]
+    [DataRow(FixAllScope.Project)]
+    [DataRow(FixAllScope.Solution)]
+    [DataRow(FixAllScope.ContainingMember)]
+    [DataRow(FixAllScope.ContainingType)]
+    public async Task FormatAll_Scope_FixesCommentsWithinScope(FixAllScope scope)
+    {
+        const string bothOriginal =
+            "class Sample\n"
+            + "{\n"
+            + "    /// <summary>One.</summary>\n"
+            + "    int One => 1;\n"
+            + "\n"
+            + "    /// <summary>Two.</summary>\n"
+            + "    int Two => 2;\n"
+            + "}\n";
+        const string bothMemberFixed =
+            "class Sample\n"
+            + "{\n"
+            + "    /// <summary>\n"
+            + "    ///  One.\n"
+            + "    /// </summary>\n"
+            + "    int One => 1;\n"
+            + "\n"
+            + "    /// <summary>Two.</summary>\n"
+            + "    int Two => 2;\n"
+            + "}\n";
+        const string bothFixed =
+            "class Sample\n"
+            + "{\n"
+            + "    /// <summary>\n"
+            + "    ///  One.\n"
+            + "    /// </summary>\n"
+            + "    int One => 1;\n"
+            + "\n"
+            + "    /// <summary>\n"
+            + "    ///  Two.\n"
+            + "    /// </summary>\n"
+            + "    int Two => 2;\n"
+            + "}\n";
+        const string otherOriginal = "/// <summary>Other.</summary>\nclass Other { }\n";
+        const string otherFixed = "/// <summary>\n///  Other.\n/// </summary>\nclass Other { }\n";
+        const string additionalOriginal = "/// <summary>Additional.</summary>\nclass Additional { }\n";
+        const string additionalFixed =
+            "/// <summary>\n///  Additional.\n/// </summary>\nclass Additional { }\n";
+        (string Name, string FilePath, string Source)[] sources =
+        [
+            ("Both.cs", "A-Both.cs", bothOriginal),
+            ("Other.cs", "B-Other.cs", otherOriginal)
+        ];
+        (string Name, string FilePath, string Source)[] additionalProjectSources =
+        [
+            ("Additional.cs", "Z-Additional.cs", additionalOriginal)
+        ];
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            sources,
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            fixAllScope: scope,
+            diagnosticOptions: s_enabled,
+            additionalProjectSources: additionalProjectSources).ConfigureAwait(false);
+
+        result.FixAllActionOffered.Should().BeTrue();
+        result.CompilerErrors.Should().BeEmpty();
+        result.InitialAnalyzerDiagnosticCount.Should().Be(4);
+
+        CodeFixTestDocument both = result.Documents.Single(document => document.Name == "Both.cs");
+        CodeFixTestDocument other = result.Documents.Single(document => document.Name == "Other.cs");
+        CodeFixTestDocument additional = result.Documents.Single(document => document.Name == "Additional.cs");
+        switch (scope)
+        {
+            case FixAllScope.ContainingMember:
+                both.Source.Should().Be(bothMemberFixed);
+                other.Source.Should().Be(otherOriginal);
+                additional.Source.Should().Be(additionalOriginal);
+                result.AnalyzerDiagnostics.Should().HaveCount(3);
+                break;
+            case FixAllScope.ContainingType:
+            case FixAllScope.Document:
+                both.Source.Should().Be(bothFixed);
+                other.Source.Should().Be(otherOriginal);
+                additional.Source.Should().Be(additionalOriginal);
+                result.AnalyzerDiagnostics.Should().HaveCount(2);
+                break;
+            case FixAllScope.Project:
+                both.Source.Should().Be(bothFixed);
+                other.Source.Should().Be(otherFixed);
+                additional.Source.Should().Be(additionalOriginal);
+                result.AnalyzerDiagnostics.Should().ContainSingle();
+                break;
+            case FixAllScope.Solution:
+                both.Source.Should().Be(bothFixed);
+                other.Source.Should().Be(otherFixed);
+                additional.Source.Should().Be(additionalFixed);
+                result.AnalyzerDiagnostics.Should().BeEmpty();
+                break;
+        }
+    }
+
+    [TestMethod]
+    public async Task FormatAll_LinkedDocument_FixesBothProjectCopies()
+    {
+        (string Name, string FilePath, string Source)[] sources =
+        [
+            ("Shared.cs", "Shared.cs", "/// <summary>Shared.</summary>\nclass Shared { }\n")
+        ];
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            sources,
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            diagnosticOptions: s_enabled,
+            addLinkedProject: true).ConfigureAwait(false);
+
+        result.FixAllActionOffered.Should().BeTrue();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().BeEmpty();
+        result.Documents.Should().HaveCount(2).And.OnlyContain(document =>
+            document.Source == "/// <summary>\n///  Shared.\n/// </summary>\nclass Shared { }\n");
+    }
+
+    [TestMethod]
+    public async Task FormatAll_Canceled_ThrowsOperationCanceledException()
+    {
+        (string Name, string FilePath, string Source)[] sources =
+        [
+            ("Sample.cs", "Sample.cs", "/// <summary>Sample.</summary>\nclass Sample { }\n")
+        ];
+        using CancellationTokenSource source = new();
+        source.Cancel();
+        Func<Task> action = async () => await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            sources,
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            diagnosticOptions: s_enabled,
+            fixAllCancellationToken: source.Token).ConfigureAwait(false);
+
+        await action.Should().ThrowAsync<OperationCanceledException>().ConfigureAwait(false);
+    }
 
     [TestMethod]
     public async Task Format_SingleLineSummary_ExpandsIt()
@@ -348,6 +514,52 @@ public class XmlDocumentationFormattingCodeFixTests
             .Which.Source.Should().Be(
                 "/// <summary>\n///  One.\n/// </summary>\nclass One { }\n\n"
                 + "/// <summary>\n///  Two.\n/// </summary>\nclass Two { }\n");
+    }
+
+    [TestMethod]
+    public async Task FormatAll_LargeDocument_FixesEveryComment()
+    {
+        const int commentCount = 136;
+        const int targetDocumentLength = 80 * 1024;
+        (string Name, string FilePath, string Source)[] sources =
+        [
+            CreateLargeDocument(commentCount, targetDocumentLength)
+        ];
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            sources,
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            diagnosticOptions: s_enabled).ConfigureAwait(false);
+
+        result.FixAllActionOffered.Should().BeTrue();
+        result.InitialAnalyzerDiagnosticCount.Should().Be(commentCount);
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().BeEmpty();
+        result.Documents.Should().ContainSingle()
+            .Which.Source.Split(["/// <summary>\n"], StringSplitOptions.None).Length.Should()
+            .Be(commentCount + 1);
+
+        static (string Name, string FilePath, string Source) CreateLargeDocument(
+            int commentCount,
+            int targetDocumentLength)
+        {
+            string members = string.Join(
+                "\n",
+                Enumerable.Range(0, commentCount - 1).Select(member =>
+                    $"    /// <summary>Member {member}.</summary>\n"
+                    + $"    int Value{member} => {member};"));
+            string source =
+                "/// <summary>Type.</summary>\n"
+                + "class Sample\n"
+                + "{\n"
+                + members
+                + "\n}\n";
+            source += new string('/', targetDocumentLength - source.Length - 1) + "\n";
+            return ("Sample.cs", "Sample.cs", source);
+        }
     }
 
 }

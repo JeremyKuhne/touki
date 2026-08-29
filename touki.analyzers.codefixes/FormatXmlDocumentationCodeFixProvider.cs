@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Touki.Analyzers;
 
@@ -28,12 +30,21 @@ public sealed class FormatXmlDocumentationCodeFixProvider : CodeFixProvider
     private const string ReplacementProperty = "Replacement";
 
     private static readonly ImmutableArray<string> s_fixableDiagnosticIds = [XmlDocumentationFormattingId];
+    private static readonly FixAllProvider s_fixAllProvider = FixAllProvider.Create(
+        FixAllAsync,
+        [
+            FixAllScope.Document,
+            FixAllScope.Project,
+            FixAllScope.Solution,
+            FixAllScope.ContainingMember,
+            FixAllScope.ContainingType
+        ]);
 
     /// <inheritdoc/>
     public override ImmutableArray<string> FixableDiagnosticIds => s_fixableDiagnosticIds;
 
     /// <inheritdoc/>
-    public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+    public override FixAllProvider GetFixAllProvider() => s_fixAllProvider;
 
     /// <inheritdoc/>
     public override Task RegisterCodeFixesAsync(CodeFixContext context)
@@ -55,5 +66,32 @@ public sealed class FormatXmlDocumentationCodeFixProvider : CodeFixProvider
         }
 
         return Task.CompletedTask;
+    }
+
+    private static async Task<Document?> FixAllAsync(
+        FixAllContext context,
+        Document document,
+        ImmutableArray<Diagnostic> diagnostics)
+    {
+        List<TextChange> changes = new(diagnostics.Length);
+        foreach (Diagnostic diagnostic in diagnostics)
+        {
+            context.CancellationToken.ThrowIfCancellationRequested();
+            if (diagnostic.Id == XmlDocumentationFormattingId
+                && diagnostic.Properties.TryGetValue(ReplacementProperty, out string? replacement)
+                && replacement is not null)
+            {
+                changes.Add(new(diagnostic.Location.SourceSpan, replacement));
+            }
+        }
+
+        if (changes.Count == 0)
+        {
+            return null;
+        }
+
+        changes.Sort(static (left, right) => left.Span.Start.CompareTo(right.Span.Start));
+        SourceText text = await document.GetTextAsync(context.CancellationToken).ConfigureAwait(false);
+        return document.WithText(text.WithChanges(changes));
     }
 }
