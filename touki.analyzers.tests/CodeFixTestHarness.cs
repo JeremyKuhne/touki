@@ -100,15 +100,20 @@ internal static class CodeFixTestHarness
         IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions = null,
         string? workspaceKind = null,
         IReadOnlyCollection<MetadataReference>? additionalReferences = null,
-        IReadOnlyCollection<MetadataReference>? metadataReferences = null)
+        IReadOnlyCollection<MetadataReference>? metadataReferences = null,
+        FixAllScope fixAllScope = FixAllScope.Solution,
+        bool addLinkedProject = false,
+        IReadOnlyList<(string Name, string FilePath, string Source)>? additionalProjectSources = null,
+        CancellationToken fixAllCancellationToken = default)
     {
         using AdhocWorkspace workspace = workspaceKind is null
             ? new AdhocWorkspace()
             : new AdhocWorkspace(MefHostServices.DefaultHost, workspaceKind);
+        IReadOnlyCollection<MetadataReference> references =
+            metadataReferences ?? RoslynTestEnvironment.GetReferences(additionalReferences);
         Project project = workspace
             .AddProject("TestProject", LanguageNames.CSharp)
-            .AddMetadataReferences(
-                metadataReferences ?? RoslynTestEnvironment.GetReferences(additionalReferences))
+            .AddMetadataReferences(references)
             .WithCompilationOptions(new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,
                 allowUnsafe: true));
@@ -123,31 +128,78 @@ internal static class CodeFixTestHarness
             project = document.Project;
         }
 
-        Compilation compilation = (await project.GetCompilationAsync().ConfigureAwait(false))!;
+        Solution solution = project.Solution;
+        if (addLinkedProject)
+        {
+            ProjectId linkedProjectId = ProjectId.CreateNewId();
+            solution = solution
+                .AddProject(linkedProjectId, "LinkedProject", "LinkedProject", LanguageNames.CSharp)
+                .AddMetadataReferences(linkedProjectId, references)
+                .WithProjectCompilationOptions(
+                    linkedProjectId,
+                    new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
+            foreach ((string name, string filePath, string source) in sources)
+            {
+                solution = solution.AddDocument(
+                    DocumentId.CreateNewId(linkedProjectId),
+                    name,
+                    SourceText.From(source),
+                    filePath: GetAbsoluteTestPath(filePath, temporaryRoot));
+            }
+        }
 
-        compilation = RoslynTestEnvironment.ApplyDiagnosticOptions(compilation, diagnosticOptions);
+        if (additionalProjectSources is not null)
+        {
+            ProjectId additionalProjectId = ProjectId.CreateNewId();
+            solution = solution
+                .AddProject(additionalProjectId, "AdditionalProject", "AdditionalProject", LanguageNames.CSharp)
+                .AddMetadataReferences(additionalProjectId, references)
+                .WithProjectCompilationOptions(
+                    additionalProjectId,
+                    new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
+            foreach ((string name, string filePath, string source) in additionalProjectSources)
+            {
+                solution = solution.AddDocument(
+                    DocumentId.CreateNewId(additionalProjectId),
+                    name,
+                    SourceText.From(source),
+                    filePath: GetAbsoluteTestPath(filePath, temporaryRoot));
+            }
+        }
+
         AnalyzerOptions analyzerOptions = RoslynTestEnvironment.CreateAnalyzerOptions(options);
+        ImmutableArray<Diagnostic>.Builder diagnosticsBuilder = ImmutableArray.CreateBuilder<Diagnostic>();
+        foreach (Project currentProject in solution.Projects)
+        {
+            Compilation compilation =
+                (await currentProject.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false))!;
+            compilation = RoslynTestEnvironment.ApplyDiagnosticOptions(compilation, diagnosticOptions);
+            CompilationWithAnalyzers withAnalyzers = compilation.WithAnalyzers([analyzer], analyzerOptions);
+            diagnosticsBuilder.AddRange(
+                await withAnalyzers.GetAnalyzerDiagnosticsAsync(CancellationToken.None).ConfigureAwait(false));
+        }
 
-        CompilationWithAnalyzers withAnalyzers = compilation.WithAnalyzers([analyzer], analyzerOptions);
-        ImmutableArray<Diagnostic> diagnostics = await withAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = diagnosticsBuilder.ToImmutable();
         Diagnostic? target = GetFirstDiagnostic(diagnostics, diagnosticId);
         if (target is null || target.Location.SourceTree is null)
         {
             return await CreateResultAsync(
-                project.Solution,
+                solution,
                 analyzer,
                 analyzerOptions,
-                diagnosticOptions).ConfigureAwait(false);
+                diagnosticOptions,
+                initialAnalyzerDiagnosticCount: diagnostics.Length).ConfigureAwait(false);
         }
 
-        Document? triggerDocument = project.Solution.GetDocument(target.Location.SourceTree);
+        Document? triggerDocument = solution.GetDocument(target.Location.SourceTree);
         if (triggerDocument is null)
         {
             return await CreateResultAsync(
-                project.Solution,
+                solution,
                 analyzer,
                 analyzerOptions,
-                diagnosticOptions).ConfigureAwait(false);
+                diagnosticOptions,
+                initialAnalyzerDiagnosticCount: diagnostics.Length).ConfigureAwait(false);
         }
 
         List<CodeAction> actions = [];
@@ -161,10 +213,11 @@ internal static class CodeFixTestHarness
         if (actions.Count == 0 && !fixAll)
         {
             return await CreateResultAsync(
-                project.Solution,
+                solution,
                 analyzer,
                 analyzerOptions,
-                diagnosticOptions).ConfigureAwait(false);
+                diagnosticOptions,
+                initialAnalyzerDiagnosticCount: diagnostics.Length).ConfigureAwait(false);
         }
 
         CodeAction? actionToApply = actions.FirstOrDefault();
@@ -174,30 +227,43 @@ internal static class CodeFixTestHarness
             if (fixAllProvider is null)
             {
                 return await CreateResultAsync(
-                    project.Solution,
+                    solution,
                     analyzer,
                     analyzerOptions,
                     diagnosticOptions,
-                    fixAllActionOffered: false).ConfigureAwait(false);
+                    fixAllActionOffered: false,
+                    initialAnalyzerDiagnosticCount: diagnostics.Length).ConfigureAwait(false);
             }
 
-            FixAllContext fixAllContext = new(
-                triggerDocument,
-                codeFix,
-                FixAllScope.Solution,
-                actionToApply?.EquivalenceKey,
-                [diagnosticId],
-                new TestDiagnosticProvider(diagnostics),
-                CancellationToken.None);
+            TestDiagnosticProvider diagnosticProvider = new(solution, diagnostics);
+            FixAllContext fixAllContext = fixAllScope is FixAllScope.ContainingMember or FixAllScope.ContainingType
+                ? new(
+                    triggerDocument,
+                    target.Location.SourceSpan,
+                    codeFix,
+                    fixAllScope,
+                    actionToApply?.EquivalenceKey,
+                    [diagnosticId],
+                    diagnosticProvider,
+                    fixAllCancellationToken)
+                : new(
+                    triggerDocument,
+                    codeFix,
+                    fixAllScope,
+                    actionToApply?.EquivalenceKey,
+                    [diagnosticId],
+                    diagnosticProvider,
+                    fixAllCancellationToken);
             CodeAction? fixAllAction = await fixAllProvider.GetFixAsync(fixAllContext).ConfigureAwait(false);
             if (fixAllAction is null)
             {
                 return await CreateResultAsync(
-                    project.Solution,
+                    solution,
                     analyzer,
                     analyzerOptions,
                     diagnosticOptions,
-                    fixAllActionOffered: false).ConfigureAwait(false);
+                    fixAllActionOffered: false,
+                    initialAnalyzerDiagnosticCount: diagnostics.Length).ConfigureAwait(false);
             }
 
             actionToApply = fixAllAction;
@@ -206,22 +272,24 @@ internal static class CodeFixTestHarness
         if (actionToApply is null)
         {
             return await CreateResultAsync(
-                project.Solution,
+                solution,
                 analyzer,
                 analyzerOptions,
-                diagnosticOptions).ConfigureAwait(false);
+                diagnosticOptions,
+                initialAnalyzerDiagnosticCount: diagnostics.Length).ConfigureAwait(false);
         }
 
         ImmutableArray<CodeActionOperation> operations =
-            await actionToApply.GetOperationsAsync(CancellationToken.None).ConfigureAwait(false);
+            await actionToApply.GetOperationsAsync(fixAllCancellationToken).ConfigureAwait(false);
         ApplyChangesOperation? applyChanges = operations.OfType<ApplyChangesOperation>().SingleOrDefault();
-        Solution changedSolution = applyChanges?.ChangedSolution ?? project.Solution;
+        Solution changedSolution = applyChanges?.ChangedSolution ?? solution;
         return await CreateResultAsync(
             changedSolution,
             analyzer,
             analyzerOptions,
             diagnosticOptions,
-            fixAllActionOffered: fixAll ? true : null).ConfigureAwait(false);
+            fixAllActionOffered: fixAll ? true : null,
+            initialAnalyzerDiagnosticCount: diagnostics.Length).ConfigureAwait(false);
     }
 
     private static async Task<CodeFixTestResult> CreateResultAsync(
@@ -229,7 +297,8 @@ internal static class CodeFixTestHarness
         DiagnosticAnalyzer analyzer,
         AnalyzerOptions analyzerOptions,
         IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions,
-        bool? fixAllActionOffered = null)
+        bool? fixAllActionOffered = null,
+        int initialAnalyzerDiagnosticCount = 0)
     {
         ImmutableArray<CodeFixTestDocument>.Builder documents = ImmutableArray.CreateBuilder<CodeFixTestDocument>();
         ImmutableArray<Diagnostic>.Builder compilerErrors = ImmutableArray.CreateBuilder<Diagnostic>();
@@ -257,7 +326,8 @@ internal static class CodeFixTestHarness
             documents.ToImmutable(),
             compilerErrors.ToImmutable(),
             analyzerDiagnostics.ToImmutable(),
-            fixAllActionOffered);
+            fixAllActionOffered,
+            initialAnalyzerDiagnosticCount);
     }
 
     private static Diagnostic? GetFirstDiagnostic(ImmutableArray<Diagnostic> diagnostics, string diagnosticId) =>
@@ -292,7 +362,9 @@ internal static class CodeFixTestHarness
         return Path.GetFullPath(Path.Combine(temporaryRoot, relativePath));
     }
 
-    private sealed class TestDiagnosticProvider(ImmutableArray<Diagnostic> diagnostics)
+    private sealed class TestDiagnosticProvider(
+        Solution solution,
+        ImmutableArray<Diagnostic> diagnostics)
         : FixAllContext.DiagnosticProvider
     {
         public override async Task<IEnumerable<Diagnostic>> GetDocumentDiagnosticsAsync(
@@ -306,12 +378,16 @@ internal static class CodeFixTestHarness
         public override Task<IEnumerable<Diagnostic>> GetProjectDiagnosticsAsync(
             Project project,
             CancellationToken cancellationToken) =>
-            Task.FromResult(diagnostics.Where(diagnostic => diagnostic.Location == Location.None));
+            Task.FromResult(diagnostics.Where(diagnostic =>
+                diagnostic.Location == Location.None && solution.ProjectIds.Count == 1));
 
         public override Task<IEnumerable<Diagnostic>> GetAllDiagnosticsAsync(
             Project project,
             CancellationToken cancellationToken) =>
-            Task.FromResult<IEnumerable<Diagnostic>>(diagnostics);
+            Task.FromResult(diagnostics.Where(diagnostic =>
+                diagnostic.Location.SourceTree is { } tree
+                    ? solution.GetDocument(tree)?.Project.Id == project.Id
+                    : solution.ProjectIds.Count == 1));
     }
 
 }
@@ -320,6 +396,7 @@ internal sealed record CodeFixTestResult(
     ImmutableArray<CodeFixTestDocument> Documents,
     ImmutableArray<Diagnostic> CompilerErrors,
     ImmutableArray<Diagnostic> AnalyzerDiagnostics,
-    bool? FixAllActionOffered);
+    bool? FixAllActionOffered,
+    int InitialAnalyzerDiagnosticCount);
 
 internal sealed record CodeFixTestDocument(string Name, string? FilePath, string Source);

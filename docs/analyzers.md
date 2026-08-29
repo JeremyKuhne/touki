@@ -404,6 +404,10 @@ To keep analysis bounded on adversarial source, the rule stays silent for an ind
 larger than 1 MiB, containing more than 4,096 structured XML nodes, nested more than 128 XML
 elements deep, or whose formatted replacement would exceed 4 MiB.
 
+The code fix supports document, project, solution, containing-member, and containing-type Fix All.
+It groups diagnostics by document and applies the analyzer-computed replacements in one batched text
+update per document, avoiding the per-diagnostic changed-solution cost of Roslyn's generic batch provider.
+
 ## TOUKI0025
 
 **Document types.** Reports a class, struct, interface, record, enum, or delegate that does not
@@ -903,7 +907,8 @@ syntax and both support Fix All. The tab fix computes each run's spaces from the
 columns, so several fixes on one line compose without having to be applied in order.
 
 `FormatXmlDocumentationCodeFixProvider` fixes TOUKI0024 by applying the complete replacement
-computed by the analyzer from the file's options. It supports Fix All.
+computed by the analyzer from the file's options. Its document-based Fix All path applies all
+non-overlapping replacements for a document together.
 
 `UseTextWriterWriteFormattedCodeFixProvider` fixes TOUKI0031 by renaming the diagnosed
 `Write` call and importing `Touki.Io` when necessary. It supports Fix All.
