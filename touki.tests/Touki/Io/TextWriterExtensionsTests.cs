@@ -94,6 +94,16 @@ public class TextWriterExtensionsTests
     }
 
     [TestMethod]
+    public void WriteFormatted_AlignedFormattedValue_AppendsToStringWriter()
+    {
+        using System.IO.StringWriter writer = new();
+
+        writer.WriteFormatted($"{42,4:x}");
+
+        writer.ToString().Should().Be("  2a");
+    }
+
+    [TestMethod]
     public void WriteFormatted_EmptyBuilder_WritesNothing()
     {
         using MemoryStream stream = new();

@@ -487,6 +487,10 @@ public ref partial struct ValueStringBuilder
     }
 
     /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
+    public void AppendFormatted<T>(T value, int alignment, string? format) =>
+        AppendFormatted<T>(value, alignment, (StringSpan)format);
+
+    /// <inheritdoc cref="AppendFormatted(ReadOnlySpan{char}, int, string?)"/>
     public void AppendFormatted<T>(T value, int alignment, StringSpan format)
     {
         int startingPos = _length;
