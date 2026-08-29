@@ -98,7 +98,7 @@
     <!-- Publish the repository URL in the built .nupkg (in the NuSpec <repository> element) -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <!-- Advance after publishing an independent analyzer release that Touki should carry as its minimum. -->
-    <ToukiAnalyzersPackageVersion Condition="'$(ToukiAnalyzersPackageVersion)' == ''">0.9.0</ToukiAnalyzersPackageVersion>
+    <ToukiAnalyzersPackageVersion Condition="'$(ToukiAnalyzersPackageVersion)' == ''">0.9.1</ToukiAnalyzersPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <None Include="../README.md" Pack="true" PackagePath="" />
