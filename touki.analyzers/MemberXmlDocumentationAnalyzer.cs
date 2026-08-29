@@ -37,7 +37,8 @@ namespace Touki.Analyzers;
 ///  <para>
 ///   <c>dotnet_code_quality.TOUKI0026.api_surface</c> filters on each member's declared accessibility.
 ///   For members declared in nested types, <c>dotnet_code_quality.TOUKI0026.effective_api_surface</c> can specify
-///   a different set based on visibility through the containing-type hierarchy.
+///   a different set based on visibility through the containing-type hierarchy. Extension blocks use the combined
+///   surface of their contained extension members.
 ///  </para>
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
