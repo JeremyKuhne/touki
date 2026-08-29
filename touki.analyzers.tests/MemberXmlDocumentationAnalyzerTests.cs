@@ -173,7 +173,9 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         diagnostics.Should().HaveCount(3);
         diagnostics.Should().ContainSingle(
-            diagnostic => diagnostic.GetMessage().Contains("<inheritdoc> target has no summary", StringComparison.Ordinal));
+            diagnostic => diagnostic.GetMessage().Contains(
+                "<inheritdoc> does not resolve to a top-level <summary>",
+                StringComparison.Ordinal));
         diagnostics.Should().ContainSingle(diagnostic => IsParameterDocumentationDiagnostic(diagnostic));
         diagnostics.Should().ContainSingle(diagnostic => IsReturnDocumentationDiagnostic(diagnostic));
     }
@@ -257,7 +259,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             additionalReferences: [projectReference]).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.GetMessage().Should().Contain("<inheritdoc> target has no summary");
+        diagnostic.GetMessage().Should().Contain("<inheritdoc> does not resolve to a top-level <summary>");
         diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("None");
     }
 
@@ -630,7 +632,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         diagnostics.Should().HaveCount(10);
         diagnostics.Should().OnlyContain(
             diagnostic => diagnostic.GetMessage().Contains(
-                "<inheritdoc> target has no summary",
+                "<inheritdoc> does not resolve to a top-level <summary>",
                 StringComparison.Ordinal));
     }
 
@@ -836,7 +838,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             .ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.GetMessage().Should().Contain("<inheritdoc> target has no summary");
+        diagnostic.GetMessage().Should().Contain("<inheritdoc> does not resolve to a top-level <summary>");
     }
 
     [TestMethod]

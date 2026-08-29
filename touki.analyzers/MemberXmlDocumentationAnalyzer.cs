@@ -212,7 +212,7 @@ public sealed class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
             }
 
             string problem = documentation.HasInheritdoc
-                ? "<inheritdoc> target has no summary"
+                ? "<inheritdoc> does not resolve to a top-level <summary>"
                 : "missing <summary> or <inheritdoc>";
             context.ReportDiagnostic(Diagnostic.Create(s_rule, memberLocation, displayName, problem));
         }
