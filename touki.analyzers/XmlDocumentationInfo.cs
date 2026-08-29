@@ -15,17 +15,20 @@ namespace Touki.Analyzers;
 /// </summary>
 internal struct XmlDocumentationInfo
 {
+    private List<InheritdocReference>? _inheritdocReferences;
     private HashSet<string>? _parameterNames;
 
     public int SummaryCount { get; private set; }
 
-    public bool HasInheritdoc { get; private set; }
+    public readonly bool HasInheritdoc => _inheritdocReferences is not null;
+
+    public readonly int InheritdocCount => _inheritdocReferences?.Count ?? 0;
 
     public bool HasReturns { get; private set; }
 
-    public readonly bool HasMemberDocumentation => SummaryCount > 0 || HasInheritdoc;
-
     public readonly bool HasParameter(string name) => _parameterNames?.Contains(name) == true;
+
+    public readonly InheritdocReference GetInheritdoc(int index) => _inheritdocReferences![index];
 
     public void AddDeclaration(SyntaxNode declaration)
     {
@@ -112,7 +115,7 @@ internal struct XmlDocumentationInfo
                 SummaryCount++;
                 break;
             case "inheritdoc":
-                HasInheritdoc = true;
+                AddInheritdoc(attributes);
                 break;
             case "returns":
                 HasReturns = true;
@@ -121,6 +124,29 @@ internal struct XmlDocumentationInfo
                 AddParameter(attributes);
                 break;
         }
+    }
+
+    private void AddInheritdoc(SyntaxList<XmlAttributeSyntax> attributes)
+    {
+        CrefSyntax? target = null;
+        bool hasPath = false;
+        foreach (XmlAttributeSyntax attribute in attributes)
+        {
+            if (attribute is XmlCrefAttributeSyntax crefAttribute
+                && crefAttribute.Name.Prefix is null
+                && string.Equals(crefAttribute.Name.LocalName.ValueText, "cref", StringComparison.Ordinal))
+            {
+                target = crefAttribute.Cref;
+            }
+            else if (attribute is XmlTextAttributeSyntax pathAttribute
+                && pathAttribute.Name.Prefix is null
+                && string.Equals(pathAttribute.Name.LocalName.ValueText, "path", StringComparison.Ordinal))
+            {
+                hasPath = true;
+            }
+        }
+
+        (_inheritdocReferences ??= []).Add(new(target, hasPath));
     }
 
     private void AddParameter(SyntaxList<XmlAttributeSyntax> attributes)
@@ -154,4 +180,20 @@ internal struct XmlDocumentationInfo
 
         return true;
     }
+}
+
+/// <summary>
+///  Describes the target and filtering state of a source <c>&lt;inheritdoc&gt;</c> element.
+/// </summary>
+internal readonly struct InheritdocReference
+{
+    public InheritdocReference(CrefSyntax? target, bool hasPath)
+    {
+        Target = target;
+        HasPath = hasPath;
+    }
+
+    public CrefSyntax? Target { get; }
+
+    public bool HasPath { get; }
 }

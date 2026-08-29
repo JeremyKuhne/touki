@@ -411,7 +411,7 @@ update per document, avoiding the per-diagnostic changed-solution cost of Roslyn
 ## TOUKI0025
 
 **Document types.** Reports a class, struct, interface, record, enum, or delegate that does not
-have one top-level `<summary>` element or a top-level `<inheritdoc>` element. Nested and
+have one top-level `<summary>` element or a valid top-level `<inheritdoc>` element. Nested and
 file-local types are included by default.
 
 ```csharp
@@ -437,6 +437,16 @@ association follows the compiler: ordinary comments between the nearest document
 the declaration are allowed, while an ordinary comment between documentation blocks leaves the
 earlier block unprocessed. Duplicate summaries are still reported even when inheritdoc is present.
 
+An `<inheritdoc>` element is valid when its explicit `cref` resolves through any further
+inheritdoc elements to a declaration with a top-level `<summary>`. Without `cref`, the analyzer
+checks the type's declared base class and interfaces. The implicit `object`, `ValueType`, `Enum`,
+and `MulticastDelegate` bases are not documentation targets. Unresolved references, cycles, and
+inspectable targets with no summary do not satisfy the rule. When XML documentation for PE
+metadata is unavailable, the analyzer leaves the inheritdoc alone because it cannot determine
+whether the target is documented. An inheritdoc with a `path` attribute does not satisfy the rule;
+the analyzer does not evaluate XPath filters and therefore cannot establish that a summary is
+inherited.
+
 Configure the analyzed visibility with a comma-separated list:
 
 ```ini
@@ -456,9 +466,9 @@ declaring file includes the type's effective visibility.
 ## TOUKI0026
 
 **Document members.** Reports a method, constructor, operator, property, indexer, field, enum
-value, or event without a top-level `<summary>` or `<inheritdoc>` element. Generated declarations
-are ignored. Accessors and compiler-generated backing fields are not separate documentation
-targets.
+value, or event without a top-level `<summary>` or valid `<inheritdoc>` element. Generated
+declarations are ignored. Accessors and compiler-generated backing fields are not separate
+documentation targets.
 
 ```csharp
 public int Count { get; } // TOUKI0026
@@ -475,6 +485,15 @@ source hierarchy can be inspected and none is documented, the implementation is 
 metadata hierarchy with unavailable XML documentation is left alone because the rule cannot prove
 that documentation is absent. Implicit interface implementations remain ordinary members and must
 be documented locally.
+
+An explicit `<inheritdoc cref="...">` is valid only when the referenced declaration, or a further
+inheritdoc chain from that declaration, reaches a top-level `<summary>`. A bare `<inheritdoc/>`
+uses an overridden or implemented member; this includes an implicit interface implementation when
+the implementation declares the tag. Unresolved references, cycles, and inspectable source or
+project-reference targets with no summary do not satisfy the rule. PE metadata without an XML
+documentation entry remains unknown and is not diagnosed. An inheritdoc with a `path` attribute
+does not satisfy the rule; the analyzer does not evaluate XPath filters and therefore cannot
+establish that a summary is inherited.
 
 Configure the effective member visibility with:
 

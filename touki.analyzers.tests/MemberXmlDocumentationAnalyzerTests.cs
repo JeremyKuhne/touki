@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Touki.Analyzers;
 
@@ -95,10 +96,11 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
     private static PortableExecutableReference CreateMetadataReference(
         string source,
-        IReadOnlyDictionary<string, string> documentation)
+        IReadOnlyDictionary<string, string> documentation,
+        string assemblyName = "MemberDocumentation.Metadata")
     {
         CSharpCompilation compilation = CSharpCompilation.Create(
-            assemblyName: "MemberDocumentation.Metadata",
+            assemblyName,
             syntaxTrees: [CSharpSyntaxTree.ParseText(source)],
             references: RoslynTestEnvironment.References,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
@@ -113,6 +115,19 @@ public partial class MemberXmlDocumentationAnalyzerTests
             peStream.ToArray(),
             documentation: new TestDocumentationProvider(documentation),
             filePath: "MemberDocumentation.Metadata.dll");
+    }
+
+    private static CompilationReference CreateCompilationReference(
+        string source,
+        string assemblyName = "MemberDocumentation.ProjectReference",
+        IReadOnlyCollection<MetadataReference>? additionalReferences = null)
+    {
+        CSharpCompilation compilation = CSharpCompilation.Create(
+            assemblyName,
+            syntaxTrees: [CSharpSyntaxTree.ParseText(source)],
+            references: RoslynTestEnvironment.GetReferences(additionalReferences),
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        return compilation.ToMetadataReference();
     }
 
     [TestMethod]
@@ -144,7 +159,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
     }
 
     [TestMethod]
-    public async Task AnalyzeMember_Inheritdoc_SatisfiesAllDocumentation()
+    public async Task AnalyzeMember_BareInheritdocWithoutTarget_ReportsAllRequirements()
     {
         const string source = """
             public class Sample
@@ -156,7 +171,674 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
+        diagnostics.Should().HaveCount(3);
+        diagnostics.Should().ContainSingle(
+            diagnostic => diagnostic.GetMessage().Contains(
+                "<inheritdoc> does not resolve to a top-level <summary>",
+                StringComparison.Ordinal));
+        diagnostics.Should().ContainSingle(diagnostic => IsParameterDocumentationDiagnostic(diagnostic));
+        diagnostics.Should().ContainSingle(diagnostic => IsReturnDocumentationDiagnostic(diagnostic));
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_InheritdocCrefToSynthesizedConstructor_ReportsMember()
+    {
+        const string source = """
+            internal class Target { }
+
+            public class Sample
+            {
+                /// <inheritdoc cref="Target.Target()"/>
+                public void Run() { }
+            }
+            """;
+        SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
+        CSharpCompilation compilation = CSharpCompilation.Create(
+            assemblyName: "SynthesizedTarget",
+            syntaxTrees: [tree],
+            references: RoslynTestEnvironment.References,
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        XmlCrefAttributeSyntax cref = tree.GetRoot().DescendantNodes(descendIntoTrivia: true)
+            .OfType<XmlCrefAttributeSyntax>()
+            .Single();
+        ISymbol? target = compilation.GetSemanticModel(tree).GetSymbolInfo(cref.Cref).Symbol;
+        target.Should().BeAssignableTo<IMethodSymbol>();
+        target!.IsImplicitlyDeclared.Should().BeTrue();
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, apiSurface: "public")
+            .ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_InheritdocCrefToAssemblylessFunctionPointer_ReportsMember()
+    {
+        const string source = """
+            using unsafe Callback = delegate* unmanaged<void>;
+
+            public class Sample
+            {
+                /// <inheritdoc cref="Callback"/>
+                public void Run() { }
+            }
+            """;
+        SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
+        CSharpCompilation compilation = CSharpCompilation.Create(
+            assemblyName: "AssemblylessTarget",
+            syntaxTrees: [tree],
+            references: RoslynTestEnvironment.References,
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
+        XmlCrefAttributeSyntax cref = tree.GetRoot().DescendantNodes(descendIntoTrivia: true)
+            .OfType<XmlCrefAttributeSyntax>()
+            .Single();
+        ISymbol? target = compilation.GetSemanticModel(tree).GetSymbolInfo(cref.Cref).Symbol;
+        target.Should().BeAssignableTo<IFunctionPointerTypeSymbol>();
+        target!.ContainingAssembly.Should().BeNull();
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_InheritdocCrefToUndocumentedProjectEnumValue_ReportsMember()
+    {
+        MetadataReference projectReference = CreateCompilationReference("public enum ExternalKind { None }");
+        const string source = """
+            public enum LocalKind
+            {
+                /// <inheritdoc cref="ExternalKind.None"/>
+                None
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new MemberXmlDocumentationAnalyzer(),
+            source,
+            additionalReferences: [projectReference]).ConfigureAwait(false);
+
+        Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
+        diagnostic.GetMessage().Should().Contain("<inheritdoc> does not resolve to a top-level <summary>");
+        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("None");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_InheritdocCrefToDocumentedProjectEnumValue_ReportsNothing()
+    {
+        MetadataReference projectReference = CreateCompilationReference(
+            """
+            public enum ExternalKind
+            {
+                /// <summary>The default value.</summary>
+                None
+            }
+            """);
+        const string source = """
+            public enum LocalKind
+            {
+                /// <inheritdoc cref="ExternalKind.None"/>
+                None
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new MemberXmlDocumentationAnalyzer(),
+            source,
+            additionalReferences: [projectReference]).ConfigureAwait(false);
+
         diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_InheritdocCrefChainInProjectReference_ReportsNothing()
+    {
+        MetadataReference projectReference = CreateCompilationReference(
+            """
+            public enum ExternalKind
+            {
+                /// <summary>The documented value.</summary>
+                Documented,
+
+                /// <inheritdoc cref="Documented"/>
+                Alias
+            }
+            """);
+        const string source = """
+            public enum LocalKind
+            {
+                /// <inheritdoc cref="ExternalKind.Alias"/>
+                None
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new MemberXmlDocumentationAnalyzer(),
+            source,
+            additionalReferences: [projectReference]).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_InheritdocCrefChainAcrossTransitiveProjectReference_ReportsNothing()
+    {
+        CompilationReference rootReference = CreateCompilationReference(
+            """
+            public enum RootKind
+            {
+                /// <summary>The documented value.</summary>
+                Documented
+            }
+            """,
+            assemblyName: "RootProject");
+        CompilationReference middleReference = CreateCompilationReference(
+            """
+            public enum MiddleKind
+            {
+                /// <inheritdoc cref="RootKind.Documented"/>
+                Alias
+            }
+            """,
+            assemblyName: "MiddleProject",
+            additionalReferences: [rootReference]);
+        const string source = """
+            public enum LocalKind
+            {
+                /// <inheritdoc cref="MiddleKind.Alias"/>
+                None
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new MemberXmlDocumentationAnalyzer(),
+            source,
+            additionalReferences: [middleReference]).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_InheritdocCrefChainThroughMetadataDeclarationId_ReportsNothing()
+    {
+        MetadataReference metadata = CreateMetadataReference(
+            "public enum ExternalKind { Documented, Alias }",
+            new Dictionary<string, string>
+            {
+                ["F:ExternalKind.Documented"] =
+                    "<member name=\"F:ExternalKind.Documented\"><summary>The documented value.</summary></member>",
+                ["F:ExternalKind.Alias"] =
+                    "<member name=\"F:ExternalKind.Alias\"><inheritdoc cref=\"F:ExternalKind.Documented\"/></member>"
+            });
+        const string source = """
+            public enum LocalKind
+            {
+                /// <inheritdoc cref="ExternalKind.Alias"/>
+                None
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new MemberXmlDocumentationAnalyzer(),
+            source,
+            additionalReferences: [metadata]).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_InheritdocCrefChainsThroughMetadataMemberDeclarationIds_ReportNothing()
+    {
+        MetadataReference metadata = CreateMetadataReference(
+            """
+            public static class External
+            {
+                public static int RootField;
+                public static int AliasField;
+                public static int RootProperty { get; }
+                public static int AliasProperty { get; }
+                public static event System.Action RootEvent;
+                public static event System.Action AliasEvent;
+                public static void RootMethod() { }
+                public static void AliasMethod() { }
+            }
+            """,
+            new Dictionary<string, string>
+            {
+                ["F:External.RootField"] = "<member><summary>Field documentation.</summary></member>",
+                ["F:External.AliasField"] = "<member><inheritdoc cref=\"F:External.RootField\"/></member>",
+                ["P:External.RootProperty"] = "<member><summary>Property documentation.</summary></member>",
+                ["P:External.AliasProperty"] =
+                    "<member><inheritdoc cref=\"P:External.RootProperty\"/></member>",
+                ["E:External.RootEvent"] = "<member><summary>Event documentation.</summary></member>",
+                ["E:External.AliasEvent"] = "<member><inheritdoc cref=\"E:External.RootEvent\"/></member>",
+                ["M:External.RootMethod"] = "<member><summary>Method documentation.</summary></member>",
+                ["M:External.AliasMethod"] = "<member><inheritdoc cref=\"M:External.RootMethod\"/></member>"
+            });
+        const string source = """
+            public class Sample
+            {
+                /// <inheritdoc cref="External.AliasField"/>
+                public int Field;
+
+                /// <inheritdoc cref="External.AliasProperty"/>
+                public int Property { get; }
+
+                /// <inheritdoc cref="External.AliasEvent"/>
+                public event System.Action? Event;
+
+                /// <inheritdoc cref="External.AliasMethod()"/>
+                public void Method() { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new MemberXmlDocumentationAnalyzer(),
+            source,
+            additionalReferences: [metadata]).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_MetadataInheritdocDeclarationId_ResolvesWithinDeclaringAssembly()
+    {
+        PortableExecutableReference documentedReference = CreateMetadataReference(
+            "public enum External { Root, Alias }",
+            new Dictionary<string, string>
+            {
+                ["F:External.Root"] = "<member><summary>Root documentation.</summary></member>",
+                ["F:External.Alias"] = "<member><inheritdoc cref=\"F:External.Root\"/></member>"
+            },
+            assemblyName: "DocumentedAssembly").WithAliases(["Documented"]);
+        PortableExecutableReference undocumentedReference = CreateMetadataReference(
+            "public enum External { Root, Alias }",
+            new Dictionary<string, string>
+            {
+                ["F:External.Root"] = "<member><remarks>No summary.</remarks></member>"
+            },
+            assemblyName: "UndocumentedAssembly").WithAliases(["Undocumented"]);
+        const string source = """
+            extern alias Documented;
+
+            public enum Local
+            {
+                /// <inheritdoc cref="Documented::External.Alias"/>
+                None
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new MemberXmlDocumentationAnalyzer(),
+            source,
+            additionalReferences: [undocumentedReference, documentedReference]).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_MaximumDuplicateMetadataInheritdocReferences_ReportsNothing()
+    {
+        const int inheritdocCount = 4094;
+        string inheritdocElements = string.Concat(
+            Enumerable.Repeat("<inheritdoc cref=\"F:External.Root\"/>", inheritdocCount));
+        PortableExecutableReference metadata = CreateMetadataReference(
+            "public enum External { Root, Alias }",
+            new Dictionary<string, string>
+            {
+                ["F:External.Root"] = "<member><summary>Root documentation.</summary></member>",
+                ["F:External.Alias"] = $"<member>{inheritdocElements}</member>"
+            }).WithAliases(["ExternalAlias"]);
+        const string source = """
+            extern alias ExternalAlias;
+
+            public enum Local
+            {
+                /// <inheritdoc cref="ExternalAlias::External.Alias"/>
+                None
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new MemberXmlDocumentationAnalyzer(),
+            source,
+            additionalReferences: [metadata]).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_MetadataInheritdocWithPath_DoesNotSatisfyDocumentation()
+    {
+        MetadataReference metadata = CreateMetadataReference(
+            "public enum ExternalKind { Documented, Alias }",
+            new Dictionary<string, string>
+            {
+                ["F:ExternalKind.Documented"] =
+                    "<member name=\"F:ExternalKind.Documented\"><summary>The documented value.</summary></member>",
+                ["F:ExternalKind.Alias"] =
+                    "<member name=\"F:ExternalKind.Alias\"><inheritdoc cref=\"F:ExternalKind.Documented\" path=\"/summary\"/></member>"
+            });
+        const string source = """
+            public enum LocalKind
+            {
+                /// <inheritdoc cref="ExternalKind.Alias"/>
+                None
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new MemberXmlDocumentationAnalyzer(),
+            source,
+            additionalReferences: [metadata]).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_SourceInheritdocWithPath_DoesNotSatisfyDocumentation()
+    {
+        const string source = """
+            internal static class Targets
+            {
+                /// <summary>Target documentation.</summary>
+                public static void Target() { }
+            }
+
+            public class Sample
+            {
+                /// <inheritdoc cref="Targets.Target()" path="/summary"/>
+                public void Run() { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, apiSurface: "public")
+            .ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_InheritdocCrefToMetadataWithoutXml_ReportsNothing()
+    {
+        MetadataReference metadata = CreateMetadataReference(
+            "public static class External { public static void Run() { } }",
+            new Dictionary<string, string>());
+        const string source = """
+            public class Sample
+            {
+                /// <inheritdoc cref="External.Run()"/>
+                public void Run() { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new MemberXmlDocumentationAnalyzer(),
+            source,
+            additionalReferences: [metadata]).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_AllMemberKindsInheritdocCrefToUndocumentedTarget_ReportEachMember()
+    {
+        const string source = """
+            internal class UndocumentedTarget { }
+
+            public class Sample
+            {
+                /// <inheritdoc cref="UndocumentedTarget"/>
+                public int Field;
+
+                /// <inheritdoc cref="UndocumentedTarget"/>
+                public int Property { get; }
+
+                /// <inheritdoc cref="UndocumentedTarget"/>
+                public int this[int index] => index;
+
+                /// <inheritdoc cref="UndocumentedTarget"/>
+                public event System.Action? Changed;
+
+                /// <inheritdoc cref="UndocumentedTarget"/>
+                public Sample() { }
+
+                /// <inheritdoc cref="UndocumentedTarget"/>
+                static Sample() { }
+
+                /// <inheritdoc cref="UndocumentedTarget"/>
+                public void Run() { }
+
+                /// <inheritdoc cref="UndocumentedTarget"/>
+                public static Sample operator +(Sample left, Sample right) => left;
+
+                /// <inheritdoc cref="UndocumentedTarget"/>
+                public static implicit operator int(Sample value) => 0;
+            }
+
+            public enum Kind
+            {
+                /// <inheritdoc cref="UndocumentedTarget"/>
+                None
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            source,
+            apiSurface: "all",
+            requireParameters: false,
+            requireReturns: false).ConfigureAwait(false);
+
+        diagnostics.Should().HaveCount(10);
+        diagnostics.Should().OnlyContain(
+            diagnostic => diagnostic.GetMessage().Contains(
+                "<inheritdoc> does not resolve to a top-level <summary>",
+                StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_AllMemberKindsInheritdocCrefToDocumentedTarget_ReportNothing()
+    {
+        const string source = """
+            /// <summary>Shared documentation.</summary>
+            internal class DocumentedTarget { }
+
+            public class Sample
+            {
+                /// <inheritdoc cref="DocumentedTarget"/>
+                public int Field;
+
+                /// <inheritdoc cref="DocumentedTarget"/>
+                public int Property { get; }
+
+                /// <inheritdoc cref="DocumentedTarget"/>
+                public int this[int index] => index;
+
+                /// <inheritdoc cref="DocumentedTarget"/>
+                public event System.Action? Changed;
+
+                /// <inheritdoc cref="DocumentedTarget"/>
+                public Sample() { }
+
+                /// <inheritdoc cref="DocumentedTarget"/>
+                static Sample() { }
+
+                /// <inheritdoc cref="DocumentedTarget"/>
+                public void Run() { }
+
+                /// <inheritdoc cref="DocumentedTarget"/>
+                public static Sample operator +(Sample left, Sample right) => left;
+
+                /// <inheritdoc cref="DocumentedTarget"/>
+                public static implicit operator int(Sample value) => 0;
+            }
+
+            public enum Kind
+            {
+                /// <inheritdoc cref="DocumentedTarget"/>
+                None
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            source,
+            apiSurface: "all",
+            requireParameters: false,
+            requireReturns: false).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_AllSignatureShapesInheritdocCrefToUndocumentedTarget_ReportRequirements()
+    {
+        const string source = """
+            internal class UndocumentedTarget { }
+
+            /// <inheritdoc cref="UndocumentedTarget"/>
+            public delegate int Transformer(int value);
+
+            /// <inheritdoc cref="UndocumentedTarget"/>
+            public class PrimarySample(int value);
+
+            /// <inheritdoc cref="UndocumentedTarget"/>
+            public record RecordSample(int Value);
+
+            public static class Extensions
+            {
+                /// <inheritdoc cref="UndocumentedTarget"/>
+                extension(string receiver)
+                {
+                    /// <summary>Gets the receiver length.</summary>
+                    /// <returns>The receiver length.</returns>
+                    public int GetLength() => receiver.Length;
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().HaveCount(5);
+        diagnostics.Count(IsParameterDocumentationDiagnostic).Should().Be(4);
+        diagnostics.Should().ContainSingle(diagnostic => IsReturnDocumentationDiagnostic(diagnostic));
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_AllSignatureShapesInheritdocCrefToDocumentedTarget_ReportNothing()
+    {
+        const string source = """
+            /// <summary>Shared documentation.</summary>
+            internal class DocumentedTarget { }
+
+            /// <inheritdoc cref="DocumentedTarget"/>
+            public delegate int Transformer(int value);
+
+            /// <inheritdoc cref="DocumentedTarget"/>
+            public class PrimarySample(int value);
+
+            /// <inheritdoc cref="DocumentedTarget"/>
+            public record RecordSample(int Value);
+
+            public static class Extensions
+            {
+                /// <inheritdoc cref="DocumentedTarget"/>
+                extension(string receiver)
+                {
+                    public int GetLength() => receiver.Length;
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_BareInheritdocWithDocumentedOverrideOrInterfaceTarget_ReportsNothing()
+    {
+        const string source = """
+            public abstract class Base
+            {
+                /// <summary>Runs the operation.</summary>
+                public abstract void Run();
+            }
+
+            public sealed class Derived : Base
+            {
+                /// <inheritdoc/>
+                public override void Run() { }
+            }
+
+            public interface IService
+            {
+                /// <summary>Executes the service.</summary>
+                void Execute();
+            }
+
+            public sealed class Service : IService
+            {
+                /// <inheritdoc/>
+                public void Execute() { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_InheritdocCrefChainEndingInSummary_ReportsNothing()
+    {
+        const string source = """
+            internal static class Targets
+            {
+                /// <summary>Root documentation.</summary>
+                public static void Root() { }
+
+                /// <inheritdoc cref="Root()"/>
+                public static void Middle() { }
+            }
+
+            public class Sample
+            {
+                /// <inheritdoc cref="Targets.Middle()"/>
+                public void Run() { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, apiSurface: "public")
+            .ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_CyclicInheritdocCrefs_ReportMember()
+    {
+        const string source = """
+            internal static class Targets
+            {
+                /// <inheritdoc cref="Second()"/>
+                public static void First() { }
+
+                /// <inheritdoc cref="First()"/>
+                public static void Second() { }
+            }
+
+            public class Sample
+            {
+                /// <inheritdoc cref="Targets.First()"/>
+                public void Run() { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, apiSurface: "public")
+            .ConfigureAwait(false);
+
+        Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
+        diagnostic.GetMessage().Should().Contain("<inheritdoc> does not resolve to a top-level <summary>");
     }
 
     [TestMethod]
@@ -624,6 +1306,65 @@ public partial class MemberXmlDocumentationAnalyzerTests
             /// <param name="Value">The value.</param>
             public record Sample(int Value);
             """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_DerivedPrimaryConstructorsWithBareInheritdoc_ReportNothing()
+    {
+        const string source = """
+            /// <summary>A base class.</summary>
+            public class Base { }
+
+            /// <inheritdoc/>
+            public class Derived(int value) : Base { }
+
+            /// <summary>A base record.</summary>
+            /// <param name="Value">The value.</param>
+            public record BaseRecord(int Value);
+
+            /// <inheritdoc/>
+            public record DerivedRecord(int Value) : BaseRecord(Value);
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_InheritdocCrefChainThroughPrimaryConstructor_ReportsNothing()
+    {
+        const string source = """
+            /// <summary>A documented base.</summary>
+            public class Base { }
+
+            /// <inheritdoc/>
+            public class Middle(int value) : Base { }
+
+            public class Sample
+            {
+                /// <inheritdoc cref="Middle.Middle(int)"/>
+                public void Run() { }
+            }
+            """;
+        SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
+        CSharpCompilation compilation = CSharpCompilation.Create(
+            assemblyName: "PrimaryConstructorTarget",
+            syntaxTrees: [tree],
+            references: RoslynTestEnvironment.References,
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        XmlCrefAttributeSyntax cref = tree.GetRoot().DescendantNodes(descendIntoTrivia: true)
+            .OfType<XmlCrefAttributeSyntax>()
+            .Single();
+        IMethodSymbol target = compilation.GetSemanticModel(tree).GetSymbolInfo(cref.Cref).Symbol
+            .Should().BeAssignableTo<IMethodSymbol>().Subject;
+        target.MethodKind.Should().Be(MethodKind.Constructor);
+        target.DeclaringSyntaxReferences.Should().ContainSingle()
+            .Which.GetSyntax().Should().BeAssignableTo<TypeDeclarationSyntax>();
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 

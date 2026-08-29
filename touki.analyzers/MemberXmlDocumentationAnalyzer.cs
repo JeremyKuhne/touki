@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Threading;
-using System.Xml;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -30,14 +29,15 @@ namespace Touki.Analyzers;
 ///   their hierarchy. A fully inspectable source hierarchy with no documentation requires local documentation; a
 ///   metadata hierarchy whose documentation is unavailable is left alone.
 ///  </para>
+///  <para>
+///   A top-level <c>&lt;inheritdoc&gt;</c> is valid only when its explicit <c>cref</c>, or the member's natural
+///   override or interface target, resolves through any further inheritance to a top-level summary. Inheritdoc
+///   elements with a <c>path</c> filter do not satisfy this rule.
+///  </para>
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
 {
-    private const int MaximumMetadataDocumentationLength = 1024 * 1024;
-    private const int MaximumMetadataDocumentationNodes = 4096;
-    private const int MaximumMetadataDocumentationDepth = 128;
-
     /// <summary>
     ///  The diagnostic identifier for incomplete member XML documentation.
     /// </summary>
@@ -181,30 +181,43 @@ public sealed class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
         string displayName = GetDisplayName(symbol);
         Location memberLocation = GetMemberLocation(symbol, reportDeclaration);
         bool signatureOnly = isDelegate || isPrimaryConstructor || isExtensionBlock;
-
-        if (!signatureOnly && !documentation.HasMemberDocumentation)
-        {
-            HierarchyDocumentation hierarchy = GetHierarchyDocumentation(
-                symbol,
+        ISymbol inheritanceSymbol = isPrimaryConstructor ? symbol.ContainingType : symbol;
+        DocumentationAvailability inheritedSummary = documentation.HasInheritdoc
+            ? GetInheritdocDocumentation(
+            inheritanceSymbol,
+                documentation,
                 compilation,
                 context.Options.AnalyzerConfigOptionsProvider,
-                generatedCodeAttribute,
-                compilerGeneratedAttribute,
-                context.CancellationToken);
-            if (hierarchy is HierarchyDocumentation.Documented or HierarchyDocumentation.Unknown)
+                context.CancellationToken)
+            : DocumentationAvailability.Undocumented;
+
+        if (!signatureOnly && documentation.SummaryCount == 0)
+        {
+            if (inheritedSummary is DocumentationAvailability.Documented or DocumentationAvailability.Unknown)
             {
                 return;
             }
 
-            context.ReportDiagnostic(
-                Diagnostic.Create(
-                    s_rule,
-                    memberLocation,
-                    displayName,
-                    "missing <summary> or <inheritdoc>"));
+            if (!documentation.HasInheritdoc)
+            {
+                DocumentationAvailability hierarchy = GetHierarchyDocumentation(
+                    symbol,
+                    compilation,
+                    context.Options.AnalyzerConfigOptionsProvider,
+                    context.CancellationToken);
+                if (hierarchy is DocumentationAvailability.Documented or DocumentationAvailability.Unknown)
+                {
+                    return;
+                }
+            }
+
+            string problem = documentation.HasInheritdoc
+                ? "<inheritdoc> does not resolve to a top-level <summary>"
+                : "missing <summary> or <inheritdoc>";
+            context.ReportDiagnostic(Diagnostic.Create(s_rule, memberLocation, displayName, problem));
         }
 
-        if (documentation.HasInheritdoc)
+        if (inheritedSummary is DocumentationAvailability.Documented or DocumentationAvailability.Unknown)
         {
             return;
         }
@@ -393,208 +406,45 @@ public sealed class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
             _ => default
         };
 
-    private static HierarchyDocumentation GetHierarchyDocumentation(
+    private static DocumentationAvailability GetInheritdocDocumentation(
+        ISymbol symbol,
+        XmlDocumentationInfo documentation,
+        Compilation compilation,
+        AnalyzerConfigOptionsProvider optionsProvider,
+        CancellationToken cancellationToken) =>
+        DocumentationInheritanceResolver.GetInheritdocDocumentation(
+            symbol,
+            documentation,
+            compilation,
+            (target, declaration, declaringCompilation) => !IsGeneratedDeclaration(
+                target,
+                declaration,
+                declaringCompilation,
+                optionsProvider,
+                declaringCompilation.GetTypeByMetadataName("System.CodeDom.Compiler.GeneratedCodeAttribute"),
+                declaringCompilation.GetTypeByMetadataName(
+                    "System.Runtime.CompilerServices.CompilerGeneratedAttribute"),
+                cancellationToken),
+            cancellationToken);
+
+    private static DocumentationAvailability GetHierarchyDocumentation(
         ISymbol symbol,
         Compilation compilation,
         AnalyzerConfigOptionsProvider optionsProvider,
-        INamedTypeSymbol? generatedCodeAttribute,
-        INamedTypeSymbol? compilerGeneratedAttribute,
-        CancellationToken cancellationToken)
-    {
-        ISymbol? overridden = GetOverriddenMember(symbol);
-        if (overridden is not null)
-        {
-            return GetHierarchyDocumentationFrom(
-                overridden,
-                compilation,
+        CancellationToken cancellationToken) =>
+        DocumentationInheritanceResolver.GetHierarchyDocumentation(
+            symbol,
+            compilation,
+            (target, declaration, declaringCompilation) => !IsGeneratedDeclaration(
+                target,
+                declaration,
+                declaringCompilation,
                 optionsProvider,
-                generatedCodeAttribute,
-                compilerGeneratedAttribute,
-                cancellationToken);
-        }
-
-        ImmutableArray<ISymbol> explicitImplementations = GetExplicitInterfaceImplementations(symbol);
-        if (explicitImplementations.IsEmpty)
-        {
-            return HierarchyDocumentation.Undocumented;
-        }
-
-        bool unknown = false;
-        foreach (ISymbol implementation in explicitImplementations)
-        {
-            HierarchyDocumentation result = GetHierarchyDocumentationFrom(
-                implementation,
-                compilation,
-                optionsProvider,
-                generatedCodeAttribute,
-                compilerGeneratedAttribute,
-                cancellationToken);
-            if (result == HierarchyDocumentation.Documented)
-            {
-                return result;
-            }
-
-            unknown |= result == HierarchyDocumentation.Unknown;
-        }
-
-        return unknown ? HierarchyDocumentation.Unknown : HierarchyDocumentation.Undocumented;
-    }
-
-    private static HierarchyDocumentation GetHierarchyDocumentationFrom(
-        ISymbol member,
-        Compilation compilation,
-        AnalyzerConfigOptionsProvider optionsProvider,
-        INamedTypeSymbol? generatedCodeAttribute,
-        INamedTypeSymbol? compilerGeneratedAttribute,
-        CancellationToken cancellationToken)
-    {
-        bool unknown = false;
-        List<ISymbol> pending = [member];
-        HashSet<ISymbol> visited = new(SymbolEqualityComparer.Default);
-
-        for (int index = 0; index < pending.Count; index++)
-        {
-            ISymbol current = pending[index];
-            if (!visited.Add(current))
-            {
-                continue;
-            }
-
-            if (!current.DeclaringSyntaxReferences.IsDefaultOrEmpty)
-            {
-                XmlDocumentationInfo documentation = default;
-                foreach (SyntaxReference declaration in GetDeclarations(current))
-                {
-                    SyntaxNode syntax = declaration.GetSyntax(cancellationToken);
-                    SyntaxNode owner = XmlDocumentationInfo.GetDocumentationOwner(syntax);
-                    if (owner is not MemberDeclarationSyntax memberDeclaration
-                        || IsGeneratedDeclaration(
-                            current,
-                            memberDeclaration,
-                            compilation,
-                            optionsProvider,
-                            generatedCodeAttribute,
-                            compilerGeneratedAttribute,
-                            cancellationToken))
-                    {
-                        continue;
-                    }
-
-                    documentation.AddDeclaration(memberDeclaration);
-                }
-
-                if (documentation.HasMemberDocumentation)
-                {
-                    return HierarchyDocumentation.Documented;
-                }
-            }
-            else
-            {
-                string? xml = current.GetDocumentationCommentXml(
-                    preferredCulture: null,
-                    expandIncludes: false,
-                    cancellationToken: cancellationToken);
-                if (xml is null || xml.Length == 0)
-                {
-                    unknown = true;
-                }
-                else
-                {
-                    HierarchyDocumentation metadataDocumentation = GetMetadataDocumentation(xml, cancellationToken);
-                    if (metadataDocumentation == HierarchyDocumentation.Documented)
-                    {
-                        return metadataDocumentation;
-                    }
-
-                    if (metadataDocumentation == HierarchyDocumentation.Unknown)
-                    {
-                        unknown = true;
-                    }
-                }
-            }
-
-            if (GetOverriddenMember(current) is ISymbol overridden)
-            {
-                pending.Add(overridden);
-            }
-
-        }
-
-        return unknown ? HierarchyDocumentation.Unknown : HierarchyDocumentation.Undocumented;
-    }
-
-    private static HierarchyDocumentation GetMetadataDocumentation(
-        string xml,
-        CancellationToken cancellationToken)
-    {
-        if (xml.Length > MaximumMetadataDocumentationLength)
-        {
-            return HierarchyDocumentation.Unknown;
-        }
-
-        XmlReaderSettings settings = new()
-        {
-            ConformanceLevel = ConformanceLevel.Fragment,
-            DtdProcessing = DtdProcessing.Prohibit,
-            IgnoreComments = true,
-            IgnoreWhitespace = true,
-            MaxCharactersFromEntities = 0,
-            MaxCharactersInDocument = MaximumMetadataDocumentationLength,
-            XmlResolver = null
-        };
-
-        try
-        {
-            using StringReader textReader = new(xml);
-            using XmlReader reader = XmlReader.Create(textReader, settings);
-            int nodeCount = 0;
-            int memberDepth = -1;
-            bool hasDocumentation = false;
-
-            while (reader.Read())
-            {
-                if ((nodeCount++ & 0x3F) == 0)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                }
-
-                if (nodeCount > MaximumMetadataDocumentationNodes
-                    || reader.Depth > MaximumMetadataDocumentationDepth)
-                {
-                    return HierarchyDocumentation.Unknown;
-                }
-
-                if (reader.NodeType == XmlNodeType.Element && reader.NamespaceURI.Length == 0)
-                {
-                    if (reader.LocalName == "member")
-                    {
-                        memberDepth = reader.Depth;
-                    }
-                    else if ((memberDepth < 0 && reader.Depth == 0
-                            || memberDepth >= 0 && reader.Depth == memberDepth + 1)
-                        && (reader.LocalName == "summary" || reader.LocalName == "inheritdoc"))
-                    {
-                        hasDocumentation = true;
-                    }
-                }
-                else if (reader.NodeType == XmlNodeType.EndElement
-                    && reader.NamespaceURI.Length == 0
-                    && reader.LocalName == "member"
-                    && reader.Depth == memberDepth)
-                {
-                    memberDepth = -1;
-                }
-            }
-
-            return hasDocumentation
-                ? HierarchyDocumentation.Documented
-                : HierarchyDocumentation.Undocumented;
-        }
-        catch (XmlException)
-        {
-            return HierarchyDocumentation.Unknown;
-        }
-    }
+                declaringCompilation.GetTypeByMetadataName("System.CodeDom.Compiler.GeneratedCodeAttribute"),
+                declaringCompilation.GetTypeByMetadataName(
+                    "System.Runtime.CompilerServices.CompilerGeneratedAttribute"),
+                cancellationToken),
+            cancellationToken);
 
     /// <summary>
     ///  Attempts to classify bounded metadata XML documentation for security and boundary tests.
@@ -610,28 +460,11 @@ public sealed class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
     internal static bool TryHasMetadataDocumentation(
         string xml,
         CancellationToken cancellationToken,
-        out bool hasDocumentation)
-    {
-        HierarchyDocumentation result = GetMetadataDocumentation(xml, cancellationToken);
-        hasDocumentation = result == HierarchyDocumentation.Documented;
-        return result != HierarchyDocumentation.Unknown;
-    }
-
-    private static ISymbol? GetOverriddenMember(ISymbol symbol) => symbol switch
-    {
-        IMethodSymbol method => method.OverriddenMethod,
-        IPropertySymbol property => property.OverriddenProperty,
-        IEventSymbol @event => @event.OverriddenEvent,
-        _ => null
-    };
-
-    private static ImmutableArray<ISymbol> GetExplicitInterfaceImplementations(ISymbol symbol) => symbol switch
-    {
-        IMethodSymbol method => [.. method.ExplicitInterfaceImplementations],
-        IPropertySymbol property => [.. property.ExplicitInterfaceImplementations],
-        IEventSymbol @event => [.. @event.ExplicitInterfaceImplementations],
-        _ => []
-    };
+        out bool hasDocumentation) =>
+        DocumentationInheritanceResolver.TryHasMetadataDocumentation(
+            xml,
+            cancellationToken,
+            out hasDocumentation);
 
     private static bool IsGeneratedDeclaration(
         ISymbol symbol,
@@ -942,13 +775,6 @@ public sealed class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
             StringComparison.Ordinal);
         return pathComparison < 0
             || (pathComparison == 0 && candidate.SpanStart < current.SpanStart);
-    }
-
-    private enum HierarchyDocumentation
-    {
-        Undocumented,
-        Documented,
-        Unknown
     }
 
     [Flags]
