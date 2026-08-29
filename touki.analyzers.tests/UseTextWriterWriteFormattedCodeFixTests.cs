@@ -94,6 +94,27 @@ public class UseTextWriterWriteFormattedCodeFixTests
     }
 
     [TestMethod]
+    public async Task UseWriteFormatted_AlignmentAndFormat_RenamesAndCompiles()
+    {
+        const string source = """
+            using System.IO;
+            using Touki.Io;
+
+            class Sample
+            {
+                void WriteValue(TextWriter writer, int value)
+                {
+                    writer.Write($"Value: {value,4:x}");
+                }
+            }
+            """;
+
+        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+
+        fixedSource.Should().Contain("writer.WriteFormatted($\"Value: {value,4:x}\");");
+    }
+
+    [TestMethod]
     public async Task UseWriteFormatted_ConditionalAccess_LeavesSourceUnchanged()
     {
         const string source = """
