@@ -73,7 +73,7 @@ public sealed class FormatXmlDocumentationCodeFixProvider : CodeFixProvider
         Document document,
         ImmutableArray<Diagnostic> diagnostics)
     {
-        List<TextChange> changes = [];
+        List<TextChange> changes = new(diagnostics.Length);
         foreach (Diagnostic diagnostic in diagnostics)
         {
             context.CancellationToken.ThrowIfCancellationRequested();

@@ -24,19 +24,19 @@ public class XmlDocumentationFormattingCodeFixTests
             s_enabled).ConfigureAwait(false);
 
     [TestMethod]
-    public void GetFixAllProvider_Provider_UsesDocumentBasedProvider()
+    public void GetFixAllProvider_Default_IsDocumentBased()
     {
         FixAllProvider provider = new FormatXmlDocumentationCodeFixProvider().GetFixAllProvider();
 
         provider.Should().NotBeSameAs(WellKnownFixAllProviders.BatchFixer);
         provider.GetSupportedFixAllScopes().Should().BeEquivalentTo(
-        [
-            FixAllScope.Document,
-            FixAllScope.Project,
-            FixAllScope.Solution,
-            FixAllScope.ContainingMember,
-            FixAllScope.ContainingType
-        ]);
+            [
+                FixAllScope.Document,
+                FixAllScope.Project,
+                FixAllScope.Solution,
+                FixAllScope.ContainingMember,
+                FixAllScope.ContainingType
+            ]);
     }
 
     [TestMethod]
