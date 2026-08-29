@@ -17,9 +17,14 @@ public partial class MemberXmlDocumentationAnalyzerTests
         string? apiSurface = null,
         bool? requireParameters = null,
         bool? requireReturns = null,
-        string? fileName = null)
+        string? fileName = null,
+        string? effectiveApiSurface = null)
     {
-        Dictionary<string, string>? options = CreateOptions(apiSurface, requireParameters, requireReturns);
+        Dictionary<string, string>? options = CreateOptions(
+            apiSurface,
+            requireParameters,
+            requireReturns,
+            effectiveApiSurface);
         return AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
@@ -29,20 +34,30 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
     private static Task<ImmutableArray<Diagnostic>> AnalyzePreviewAsync(
         string source,
-        string? apiSurface = null) =>
+        string? apiSurface = null,
+        string? effectiveApiSurface = null) =>
         AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            options: CreateOptions(apiSurface, requireParameters: null, requireReturns: null),
+            options: CreateOptions(
+                apiSurface,
+                requireParameters: null,
+                requireReturns: null,
+                effectiveApiSurface),
             parseOptions: new CSharpParseOptions(LanguageVersion.Preview));
 
     private static Task<ImmutableArray<Diagnostic>> AnalyzeAsync(
         IReadOnlyList<(string Source, string FileName)> sources,
         string? apiSurface = null,
         bool? requireParameters = null,
-        bool? requireReturns = null)
+        bool? requireReturns = null,
+        string? effectiveApiSurface = null)
     {
-        Dictionary<string, string>? options = CreateOptions(apiSurface, requireParameters, requireReturns);
+        Dictionary<string, string>? options = CreateOptions(
+            apiSurface,
+            requireParameters,
+            requireReturns,
+            effectiveApiSurface);
         return AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             sources,
@@ -52,9 +67,13 @@ public partial class MemberXmlDocumentationAnalyzerTests
     private static Dictionary<string, string>? CreateOptions(
         string? apiSurface,
         bool? requireParameters,
-        bool? requireReturns)
+        bool? requireReturns,
+        string? effectiveApiSurface = null)
     {
-        if (apiSurface is null && requireParameters is null && requireReturns is null)
+        if (apiSurface is null
+            && requireParameters is null
+            && requireReturns is null
+            && effectiveApiSurface is null)
         {
             return null;
         }
@@ -63,6 +82,13 @@ public partial class MemberXmlDocumentationAnalyzerTests
         if (apiSurface is not null)
         {
             options.Add(MemberXmlDocumentationAnalyzer.ApiSurfaceOption, apiSurface);
+        }
+
+        if (effectiveApiSurface is not null)
+        {
+            options.Add(
+                MemberXmlDocumentationAnalyzer.EffectiveApiSurfaceOption,
+                effectiveApiSurface);
         }
 
         if (requireParameters is bool parameters)
@@ -821,10 +847,10 @@ public partial class MemberXmlDocumentationAnalyzerTests
             internal static class Targets
             {
                 /// <inheritdoc cref="Second()"/>
-                public static void First() { }
+                internal static void First() { }
 
                 /// <inheritdoc cref="First()"/>
-                public static void Second() { }
+                internal static void Second() { }
             }
 
             public class Sample
@@ -999,7 +1025,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
     }
 
     [TestMethod]
-    public async Task AnalyzeMember_EffectivePublicAndInternalSurfaces_ReportSelectedMembers()
+    public async Task AnalyzeMember_CombinedApiSurfaces_AreCaseInsensitiveAndTrimmed()
     {
         const string source = """
             public class Sample
@@ -1024,23 +1050,25 @@ public partial class MemberXmlDocumentationAnalyzerTests
     }
 
     [TestMethod]
-    public async Task AnalyzeMember_PublicMemberInInternalType_UsesInternalSurface()
+    public async Task AnalyzeMember_PublicMemberInTopLevelInternalType_IgnoresEffectiveApiSurface()
     {
         const string source = "internal class Sample { public void Run() { } }";
 
         ImmutableArray<Diagnostic> publicDiagnostics = await AnalyzeAsync(
             source,
-            apiSurface: "public").ConfigureAwait(false);
+            apiSurface: "public",
+            effectiveApiSurface: "private").ConfigureAwait(false);
         ImmutableArray<Diagnostic> internalDiagnostics = await AnalyzeAsync(
             source,
-            apiSurface: "internal").ConfigureAwait(false);
+            apiSurface: "internal",
+            effectiveApiSurface: "internal").ConfigureAwait(false);
 
-        publicDiagnostics.Should().BeEmpty();
-        internalDiagnostics.Should().ContainSingle();
+        publicDiagnostics.Should().ContainSingle();
+        internalDiagnostics.Should().BeEmpty();
     }
 
     [TestMethod]
-    public async Task AnalyzeMember_PublicMemberInPrivateNestedType_UsesPrivateSurface()
+    public async Task AnalyzeMember_PublicMemberInPrivateNestedType_UsesEffectiveSurfaceWhenSpecified()
     {
         const string source = """
             public class Outer
@@ -1056,9 +1084,50 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> privateDiagnostics = await AnalyzeAsync(
             source,
             apiSurface: "private").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> effectiveDefaultDiagnostics = await AnalyzeAsync(
+            source,
+            effectiveApiSurface: "public, internal").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> effectivePrivateDiagnostics = await AnalyzeAsync(
+            source,
+            effectiveApiSurface: "private").ConfigureAwait(false);
 
-        defaultDiagnostics.Should().BeEmpty();
-        privateDiagnostics.Should().ContainSingle();
+        defaultDiagnostics.Should().ContainSingle();
+        privateDiagnostics.Should().BeEmpty();
+        effectiveDefaultDiagnostics.Should().BeEmpty();
+        effectivePrivateDiagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_NestedMember_UsesEffectiveApiSurfaceWhenSpecified()
+    {
+        const string source = "public class Outer { internal class Sample { public void Run() { } } }";
+
+        ImmutableArray<Diagnostic> effectivePublicDiagnostics = await AnalyzeAsync(
+            source,
+            apiSurface: "internal",
+            effectiveApiSurface: "public").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> effectiveInternalDiagnostics = await AnalyzeAsync(
+            source,
+            apiSurface: "private",
+            effectiveApiSurface: "internal").ConfigureAwait(false);
+
+        effectivePublicDiagnostics.Should().BeEmpty();
+        effectiveInternalDiagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    [DataRow("")]
+    [DataRow("unknown")]
+    public async Task AnalyzeMember_EmptyOrInvalidEffectiveApiSurface_UsesEffectiveDefault(
+        string effectiveApiSurface)
+    {
+        const string source = "public class Outer { private class Inner { public void Run() { } } }";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            source,
+            effectiveApiSurface: effectiveApiSurface).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
     }
 
     [TestMethod]
@@ -1079,6 +1148,26 @@ public partial class MemberXmlDocumentationAnalyzerTests
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan)
             .Should().Be("PublicMethod");
+    }
+
+    [TestMethod]
+    [DataRow("all, file")]
+    [DataRow("file, all")]
+    public async Task AnalyzeMember_InvalidCombinedSurface_FallsBackToDefault(string surface)
+    {
+        const string topLevelSource = "public class Sample { private void Run() { } }";
+        const string nestedSource =
+            "public class Outer { private class Inner { private void Run() { } } }";
+
+        ImmutableArray<Diagnostic> apiSurfaceDiagnostics = await AnalyzeAsync(
+            topLevelSource,
+            apiSurface: surface).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> effectiveApiSurfaceDiagnostics = await AnalyzeAsync(
+            nestedSource,
+            effectiveApiSurface: surface).ConfigureAwait(false);
+
+        apiSurfaceDiagnostics.Should().BeEmpty();
+        effectiveApiSurfaceDiagnostics.Should().BeEmpty();
     }
 
     [TestMethod]
@@ -1395,6 +1484,40 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
 
         diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_PartialMemberIncludedByOneFileSurfaceMode_Reports()
+    {
+        IReadOnlyList<(string Source, string FileName)> sources =
+        [
+            (
+                "public partial class Outer { internal partial class Sample { public partial void Run(); } }",
+                "A.cs"),
+            (
+                "public partial class Outer { internal partial class Sample { public partial void Run() { } } }",
+                "B.cs")
+        ];
+        Dictionary<string, IReadOnlyDictionary<string, string>> optionsByFile = new(StringComparer.Ordinal)
+        {
+            ["A.cs"] = new Dictionary<string, string>
+            {
+                [MemberXmlDocumentationAnalyzer.ApiSurfaceOption] = "internal"
+            },
+            ["B.cs"] = new Dictionary<string, string>
+            {
+                [MemberXmlDocumentationAnalyzer.ApiSurfaceOption] = "private",
+                [MemberXmlDocumentationAnalyzer.EffectiveApiSurfaceOption] = "internal"
+            }
+        };
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new MemberXmlDocumentationAnalyzer(),
+            sources,
+            optionsByFile: optionsByFile).ConfigureAwait(false);
+
+        Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
+        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Run");
     }
 
     [TestMethod]
@@ -2052,6 +2175,71 @@ public partial class MemberXmlDocumentationAnalyzerTests
         defaultDiagnostics.Should().BeEmpty();
         Diagnostic diagnostic = privateDiagnostics.Should().ContainSingle().Subject;
         IsParameterDocumentationDiagnostic(diagnostic).Should().BeTrue();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_PublicExtensionInTopLevelInternalType_IgnoresEffectiveApiSurface()
+    {
+        const string source = """
+            internal static class Extensions
+            {
+                extension(string receiver)
+                {
+                    /// <summary>Gets the receiver length.</summary>
+                    /// <returns>The receiver length.</returns>
+                    public int GetLength() => receiver.Length;
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> publicDiagnostics = await AnalyzePreviewAsync(
+            source,
+            apiSurface: "public",
+            effectiveApiSurface: "private").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> internalDiagnostics = await AnalyzePreviewAsync(
+            source,
+            apiSurface: "internal",
+            effectiveApiSurface: "internal").ConfigureAwait(false);
+
+        publicDiagnostics.Should().ContainSingle(
+            diagnostic => IsParameterDocumentationDiagnostic(diagnostic));
+        internalDiagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeMember_MixedAccessibilityExtensionBlock_AggregatesDeclaredMemberSurfaces()
+    {
+        const string source = """
+            internal static class Extensions
+            {
+                extension(string receiver)
+                {
+                    /// <summary>Gets the receiver length.</summary>
+                    /// <returns>The receiver length.</returns>
+                    public int GetLength() => receiver.Length;
+
+                    /// <summary>Gets the receiver hash code.</summary>
+                    /// <returns>The receiver hash code.</returns>
+                    private int GetHashCodeValue() => receiver.GetHashCode();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> publicDiagnostics = await AnalyzePreviewAsync(
+            source,
+            apiSurface: "public").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> privateDiagnostics = await AnalyzePreviewAsync(
+            source,
+            apiSurface: "private").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> internalDiagnostics = await AnalyzePreviewAsync(
+            source,
+            apiSurface: "internal").ConfigureAwait(false);
+
+        publicDiagnostics.Should().ContainSingle(
+            diagnostic => IsParameterDocumentationDiagnostic(diagnostic));
+        privateDiagnostics.Should().ContainSingle(
+            diagnostic => IsParameterDocumentationDiagnostic(diagnostic));
+        internalDiagnostics.Should().BeEmpty();
     }
 
     [TestMethod]

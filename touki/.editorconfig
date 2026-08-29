@@ -7,3 +7,7 @@
 # TreatWarningsAsErrors. TOUKI0003/TOUKI0004 keep their default Warning severity.
 [*.cs]
 dotnet_diagnostic.TOUKI0002.severity = suggestion
+
+# TOUKI0026 defaults to declared member visibility. For members declared in nested types, Touki
+# documents its effective public and internal surface, excluding members hidden inside private implementation types.
+dotnet_code_quality.TOUKI0026.effective_api_surface = public, internal

@@ -34,6 +34,12 @@ namespace Touki.Analyzers;
 ///   override or interface target, resolves through any further inheritance to a top-level summary. Inheritdoc
 ///   elements with a <c>path</c> filter do not satisfy this rule.
 ///  </para>
+///  <para>
+///   <c>dotnet_code_quality.TOUKI0026.api_surface</c> filters on each member's declared accessibility.
+///   For members declared in nested types, <c>dotnet_code_quality.TOUKI0026.effective_api_surface</c> can specify
+///   a different set based on visibility through the containing-type hierarchy. Extension blocks use the combined
+///   surface of their contained extension members.
+///  </para>
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
@@ -44,9 +50,15 @@ public sealed class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
     public const string DiagnosticId = "TOUKI0026";
 
     /// <summary>
-    ///  The <c>.editorconfig</c> key that controls which effective member accessibilities are analyzed.
+    ///  The <c>.editorconfig</c> key that controls which declared member accessibilities are analyzed.
     /// </summary>
     public const string ApiSurfaceOption = "dotnet_code_quality.TOUKI0026.api_surface";
+
+    /// <summary>
+    ///  The <c>.editorconfig</c> key that controls effective accessibilities for members declared in nested types.
+    /// </summary>
+    public const string EffectiveApiSurfaceOption =
+        "dotnet_code_quality.TOUKI0026.effective_api_surface";
 
     /// <summary>
     ///  The <c>.editorconfig</c> key that controls whether parameters require <c>&lt;param&gt;</c> elements.
@@ -168,7 +180,7 @@ public sealed class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
 
             AnalyzerConfigOptions options = context.Options.AnalyzerConfigOptionsProvider.GetOptions(
                 declaration.SyntaxTree);
-            included |= (GetConfiguredApiSurface(options) & GetEffectiveApiSurface(symbol)) != 0;
+            included |= IsIncluded(symbol, options);
             requireParameters |= GetBooleanOption(options, RequireParameterDocumentationOption, defaultValue: true);
             requireReturns |= GetBooleanOption(options, RequireReturnDocumentationOption, defaultValue: true);
         }
@@ -625,9 +637,35 @@ public sealed class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
         return false;
     }
 
-    private static ApiSurface GetConfiguredApiSurface(AnalyzerConfigOptions options)
+    private static bool IsIncluded(ISymbol symbol, AnalyzerConfigOptions options)
     {
-        if (!options.TryGetValue(ApiSurfaceOption, out string? configured)
+        bool useEffectiveSurface = IsDeclaredInNestedType(symbol)
+            && options.TryGetValue(EffectiveApiSurfaceOption, out _);
+        ApiSurface configuredSurface = GetConfiguredApiSurface(
+            options,
+            useEffectiveSurface ? EffectiveApiSurfaceOption : ApiSurfaceOption);
+        ApiSurface symbolSurface = useEffectiveSurface
+            ? GetEffectiveApiSurface(symbol)
+            : GetDeclaredApiSurface(symbol);
+        return (configuredSurface & symbolSurface) != 0;
+    }
+
+    private static bool IsDeclaredInNestedType(ISymbol symbol)
+    {
+        INamedTypeSymbol? declaredType = symbol switch
+        {
+            INamedTypeSymbol { IsExtension: true } extension => extension.ContainingType,
+            INamedTypeSymbol type => type,
+            _ when symbol.ContainingType?.IsExtension == true => symbol.ContainingType.ContainingType,
+            _ => symbol.ContainingType
+        };
+
+        return declaredType?.ContainingType is not null;
+    }
+
+    private static ApiSurface GetConfiguredApiSurface(AnalyzerConfigOptions options, string option)
+    {
+        if (!options.TryGetValue(option, out string? configured)
             || string.IsNullOrWhiteSpace(configured))
         {
             return ApiSurface.Default;
@@ -653,10 +691,9 @@ public sealed class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
             int length = tokenEnd - tokenStart;
             if (TokenEquals(configured, tokenStart, length, "all"))
             {
-                return ApiSurface.All;
+                result |= ApiSurface.All;
             }
-
-            if (TokenEquals(configured, tokenStart, length, "public"))
+            else if (TokenEquals(configured, tokenStart, length, "public"))
             {
                 result |= ApiSurface.Public;
             }
@@ -682,6 +719,30 @@ public sealed class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
         }
 
         return result == 0 ? ApiSurface.Default : result;
+    }
+
+    private static ApiSurface GetDeclaredApiSurface(ISymbol symbol)
+    {
+        if (symbol is INamedTypeSymbol { IsExtension: true } extension)
+        {
+            ApiSurface extensionSurface = 0;
+            foreach (ISymbol member in extension.GetMembers())
+            {
+                if (!member.IsImplicitlyDeclared && IsCandidate(member))
+                {
+                    extensionSurface |= GetDeclaredApiSurface(member);
+                }
+            }
+
+            return extensionSurface;
+        }
+
+        return symbol.DeclaredAccessibility switch
+        {
+            Accessibility.Private => ApiSurface.Private,
+            Accessibility.Internal or Accessibility.ProtectedAndInternal => ApiSurface.Internal,
+            _ => ApiSurface.Public
+        };
     }
 
     private static ApiSurface GetEffectiveApiSurface(ISymbol symbol)

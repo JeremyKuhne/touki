@@ -13,25 +13,45 @@ public class TypeXmlSummaryAnalyzerTests
     private static Task<ImmutableArray<Diagnostic>> AnalyzeAsync(
         string source,
         string? apiSurface = null,
-        IReadOnlyCollection<MetadataReference>? additionalReferences = null) =>
+        IReadOnlyCollection<MetadataReference>? additionalReferences = null,
+        string? effectiveApiSurface = null) =>
         AnalyzerTestHarness.GetDiagnosticsAsync(
             new TypeXmlSummaryAnalyzer(),
             source,
-            options: CreateOptions(apiSurface),
+            options: CreateOptions(apiSurface, effectiveApiSurface),
             additionalReferences: additionalReferences);
 
     private static Task<ImmutableArray<Diagnostic>> AnalyzeAsync(
         IReadOnlyList<(string Source, string FileName)> sources,
-        string? apiSurface = null) =>
+        string? apiSurface = null,
+        string? effectiveApiSurface = null) =>
         AnalyzerTestHarness.GetDiagnosticsAsync(
             new TypeXmlSummaryAnalyzer(),
             sources,
-            options: CreateOptions(apiSurface));
+            options: CreateOptions(apiSurface, effectiveApiSurface));
 
-    private static Dictionary<string, string>? CreateOptions(string? apiSurface) =>
-        apiSurface is null
-            ? null
-            : new Dictionary<string, string> { [TypeXmlSummaryAnalyzer.ApiSurfaceOption] = apiSurface };
+    private static Dictionary<string, string>? CreateOptions(
+        string? apiSurface,
+        string? effectiveApiSurface = null)
+    {
+        if (apiSurface is null && effectiveApiSurface is null)
+        {
+            return null;
+        }
+
+        Dictionary<string, string> options = new();
+        if (apiSurface is not null)
+        {
+            options.Add(TypeXmlSummaryAnalyzer.ApiSurfaceOption, apiSurface);
+        }
+
+        if (effectiveApiSurface is not null)
+        {
+            options.Add(TypeXmlSummaryAnalyzer.EffectiveApiSurfaceOption, effectiveApiSurface);
+        }
+
+        return options;
+    }
 
     private static CompilationReference CreateCompilationReference(string source)
     {
@@ -707,6 +727,43 @@ public class TypeXmlSummaryAnalyzerTests
     }
 
     [TestMethod]
+    public async Task AnalyzeNamedType_PartialTypeIncludedByOneFileSurfaceMode_Reports()
+    {
+        IReadOnlyList<(string Source, string FileName)> sources =
+        [
+            (
+                """
+                /// <summary>An outer type.</summary>
+                internal partial class Outer { public partial class Nested { } }
+                """,
+                "A.cs"),
+            (
+                "internal partial class Outer { public partial class Nested { } }",
+                "B.cs")
+        ];
+        Dictionary<string, IReadOnlyDictionary<string, string>> optionsByFile = new(StringComparer.Ordinal)
+        {
+            ["A.cs"] = new Dictionary<string, string>
+            {
+                [TypeXmlSummaryAnalyzer.ApiSurfaceOption] = "internal"
+            },
+            ["B.cs"] = new Dictionary<string, string>
+            {
+                [TypeXmlSummaryAnalyzer.ApiSurfaceOption] = "private",
+                [TypeXmlSummaryAnalyzer.EffectiveApiSurfaceOption] = "internal"
+            }
+        };
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new TypeXmlSummaryAnalyzer(),
+            sources,
+            optionsByFile: optionsByFile).ConfigureAwait(false);
+
+        Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
+        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Nested");
+    }
+
+    [TestMethod]
     public async Task AnalyzeNamedType_PartialTypeExcludedByEveryFileConfiguration_ReportsNothing()
     {
         IReadOnlyList<(string Source, string FileName)> sources =
@@ -903,7 +960,7 @@ public class TypeXmlSummaryAnalyzerTests
     }
 
     [TestMethod]
-    public async Task AnalyzeNamedType_PublicSurface_ReportsOnlyEffectivelyPublicType()
+    public async Task AnalyzeNamedType_PublicApiSurface_UsesDeclaredVisibility()
     {
         const string source = """
             public class PublicSample { }
@@ -918,12 +975,66 @@ public class TypeXmlSummaryAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "public").ConfigureAwait(false);
 
-        Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("PublicSample");
+        diagnostics.Should().HaveCount(2);
+        diagnostics.Select(diagnostic => diagnostic.Location.SourceTree!.GetText()
+            .ToString(diagnostic.Location.SourceSpan)).Should().BeEquivalentTo("PublicSample", "Nested");
     }
 
     [TestMethod]
-    public async Task AnalyzeNamedType_InternalSurface_IncludesPublicTypeNestedInInternalType()
+    public async Task AnalyzeNamedType_NestedAccessibility_UsesConfiguredSurfaceMode()
+    {
+        const string source = """
+            /// <summary>An outer type.</summary>
+            public class Outer
+            {
+                protected class ProtectedNested { }
+                protected internal class ProtectedInternalNested { }
+                private protected class PrivateProtectedNested { }
+
+                /// <summary>A private container.</summary>
+                private class PrivateContainer
+                {
+                    public class PublicNested { }
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> publicDiagnostics = await AnalyzeAsync(
+            source,
+            apiSurface: "public").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> internalDiagnostics = await AnalyzeAsync(
+            source,
+            apiSurface: "internal").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> effectivePublicDiagnostics = await AnalyzeAsync(
+            source,
+            effectiveApiSurface: "public").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> effectiveInternalDiagnostics = await AnalyzeAsync(
+            source,
+            effectiveApiSurface: "internal").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> effectivePrivateDiagnostics = await AnalyzeAsync(
+            source,
+            effectiveApiSurface: "private").ConfigureAwait(false);
+
+        publicDiagnostics.Select(diagnostic => diagnostic.Location.SourceTree!.GetText()
+            .ToString(diagnostic.Location.SourceSpan)).Should().BeEquivalentTo(
+                "ProtectedNested",
+                "ProtectedInternalNested",
+                "PublicNested");
+        internalDiagnostics.Should().ContainSingle()
+            .Which.Location.SourceTree!.GetText().ToString(
+                internalDiagnostics[0].Location.SourceSpan).Should().Be("PrivateProtectedNested");
+        effectivePublicDiagnostics.Select(diagnostic => diagnostic.Location.SourceTree!.GetText()
+            .ToString(diagnostic.Location.SourceSpan)).Should().BeEquivalentTo(
+                "ProtectedNested",
+                "ProtectedInternalNested");
+        effectiveInternalDiagnostics.Should().ContainSingle();
+        effectivePrivateDiagnostics.Should().ContainSingle()
+            .Which.Location.SourceTree!.GetText().ToString(
+                effectivePrivateDiagnostics[0].Location.SourceSpan).Should().Be("PublicNested");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_PublicTypeNestedInInternalType_UsesConfiguredSurfaceMode()
     {
         const string source = """
             /// <summary>An outer type.</summary>
@@ -933,10 +1044,80 @@ public class TypeXmlSummaryAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "internal").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> internalDiagnostics = await AnalyzeAsync(
+            source,
+            apiSurface: "internal").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> effectiveInternalDiagnostics = await AnalyzeAsync(
+            source,
+            effectiveApiSurface: "internal").ConfigureAwait(false);
 
-        Location location = diagnostics.Should().ContainSingle().Subject.Location;
+        internalDiagnostics.Should().BeEmpty();
+        Location location = effectiveInternalDiagnostics.Should().ContainSingle().Subject.Location;
         location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Nested");
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_NestedType_UsesEffectiveApiSurfaceWhenSpecified()
+    {
+        const string source = """
+            /// <summary>An outer type.</summary>
+            internal class Outer
+            {
+                public class Nested { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> effectivePublicDiagnostics = await AnalyzeAsync(
+            source,
+            apiSurface: "internal",
+            effectiveApiSurface: "public").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> effectiveInternalDiagnostics = await AnalyzeAsync(
+            source,
+            apiSurface: "private",
+            effectiveApiSurface: "internal").ConfigureAwait(false);
+
+        effectivePublicDiagnostics.Should().BeEmpty();
+        effectiveInternalDiagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task AnalyzeNamedType_TopLevelType_IgnoresEffectiveApiSurface()
+    {
+        const string source = "internal class Sample { }";
+
+        ImmutableArray<Diagnostic> publicDiagnostics = await AnalyzeAsync(
+            source,
+            apiSurface: "public",
+            effectiveApiSurface: "internal").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> internalDiagnostics = await AnalyzeAsync(
+            source,
+            apiSurface: "internal",
+            effectiveApiSurface: "private").ConfigureAwait(false);
+
+        publicDiagnostics.Should().BeEmpty();
+        internalDiagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    [DataRow("")]
+    [DataRow("unknown")]
+    public async Task AnalyzeNamedType_EmptyOrInvalidEffectiveApiSurface_UsesEffectiveDefault(
+        string effectiveApiSurface)
+    {
+        const string source = """
+            /// <summary>An outer type.</summary>
+            public class Outer
+            {
+                public class Sample { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            source,
+            apiSurface: "private",
+            effectiveApiSurface: effectiveApiSurface).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
     }
 
     [TestMethod]
@@ -971,7 +1152,7 @@ public class TypeXmlSummaryAnalyzerTests
     }
 
     [TestMethod]
-    public async Task AnalyzeNamedType_FileSurface_IncludesPublicTypeNestedInFileLocalType()
+    public async Task AnalyzeNamedType_PublicTypeNestedInFileLocalType_UsesConfiguredSurfaceMode()
     {
         const string source = """
             /// <summary>A file-local outer type.</summary>
@@ -981,9 +1162,15 @@ public class TypeXmlSummaryAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "file").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> fileDiagnostics = await AnalyzeAsync(
+            source,
+            apiSurface: "file").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> effectiveFileDiagnostics = await AnalyzeAsync(
+            source,
+            effectiveApiSurface: "file").ConfigureAwait(false);
 
-        Location location = diagnostics.Should().ContainSingle().Subject.Location;
+        fileDiagnostics.Should().BeEmpty();
+        Location location = effectiveFileDiagnostics.Should().ContainSingle().Subject.Location;
         location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Nested");
     }
 
