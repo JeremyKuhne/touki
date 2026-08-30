@@ -41,6 +41,7 @@ public sealed class RenameToMatchNamingStyleCodeFixProvider : CodeFixProvider
     ///  Returns <see langword="null"/>. A rename rewrites every reference across the solution, so applying
     ///  several at once would have them fight over the same documents.
     /// </summary>
+    /// <returns><see langword="null"/>.</returns>
     public override FixAllProvider? GetFixAllProvider() => null;
 
     /// <inheritdoc/>

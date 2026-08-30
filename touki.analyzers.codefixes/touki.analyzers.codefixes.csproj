@@ -28,6 +28,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageDownload Include="KlutzyNinja.Touki.Analyzers" Version="[$(ToukiBootstrapAnalyzerVersion)]" />
+    <Analyzer Include="$(NuGetPackageRoot)klutzyninja.touki.analyzers/$(ToukiBootstrapAnalyzerVersion)/analyzers/dotnet/cs/touki.analyzers.dll" />
     <!-- Brings CodeFixProvider, Document, CodeAction, and SyntaxGenerator (and CodeAnalysis.CSharp transitively). -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
     <PackageReference Include="MinVer">
@@ -37,7 +39,21 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\touki.analyzers\AllmanFormatting.cs" Link="Shared\AllmanFormatting.cs" />
+    <Compile Include="..\touki.analyzers\AllmanFormatter.cs" Link="Shared\AllmanFormatter.cs" />
+    <Compile Include="..\touki.analyzers\AllmanFormatter.BlankLineChange.cs"
+             Link="Shared\AllmanFormatter.BlankLineChange.cs" />
+    <Compile Include="..\touki.analyzers\AllmanFormatter.BracePair.cs"
+             Link="Shared\AllmanFormatter.BracePair.cs" />
+    <Compile Include="..\touki.analyzers\AllmanFormatter.LineLayout.cs"
+             Link="Shared\AllmanFormatter.LineLayout.cs" />
+    <Compile Include="..\touki.analyzers\AllmanFormatter.PreprocessorLineKind.cs"
+             Link="Shared\AllmanFormatter.PreprocessorLineKind.cs" />
+    <Compile Include="..\touki.analyzers\AllmanFormatter.PreprocessorLineMap.cs"
+             Link="Shared\AllmanFormatter.PreprocessorLineMap.cs" />
+    <Compile Include="..\touki.analyzers\AllmanFormatter.PreprocessorLineMap.LineRange.cs"
+             Link="Shared\AllmanFormatter.PreprocessorLineMap.LineRange.cs" />
+    <Compile Include="..\touki.analyzers\AllmanFormattingOptions.cs"
+             Link="Shared\AllmanFormattingOptions.cs" />
     <Compile Include="..\touki.analyzers\AnalyzerConfigOptionsExtensions.cs"
              Link="Shared\AnalyzerConfigOptionsExtensions.cs" />
   </ItemGroup>

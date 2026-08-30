@@ -107,11 +107,12 @@ internal static class DocumentFileUtilities
     }
 
     /// <summary>
-    ///  Gets the path for <paramref name="fileName"/> in the directory containing <paramref name="document"/>.
+    ///  Gets the path for <paramref name="fileName"/> in the directory containing
+    ///  <paramref name="document"/>.
     /// </summary>
-    /// <returns>
-    ///  The target path, or <see langword="null"/> when the document has no file path.
-    /// </returns>
+    /// <param name="document">The document whose directory contains the target file.</param>
+    /// <param name="fileName">The target file name.</param>
+    /// <returns>The target path, or <see langword="null"/> when the document has no file path.</returns>
     public static string? GetTargetFilePath(Document document, string fileName)
     {
         if (document.FilePath is null)
@@ -120,6 +121,8 @@ internal static class DocumentFileUtilities
         }
 
         string? directory = Path.GetDirectoryName(document.FilePath);
-        return string.IsNullOrEmpty(directory) ? fileName : Path.Combine(directory, fileName);
+#pragma warning disable TOUKI0032 // Path.Join is unavailable on netstandard2.0.
+    return string.IsNullOrEmpty(directory) ? fileName : Path.Combine(directory, fileName);
+#pragma warning restore TOUKI0032
     }
 }

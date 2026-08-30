@@ -10,21 +10,33 @@ namespace Touki.Analyzers;
 /// </summary>
 internal enum ReadOnlyReason
 {
-    /// <summary>An <see langword="in"/> parameter.</summary>
+    /// <summary>
+    ///  An <see langword="in"/> parameter.
+    /// </summary>
     InParameter,
 
-    /// <summary>A <see langword="ref"/> <see langword="readonly"/> parameter.</summary>
+    /// <summary>
+    ///  A <see langword="ref"/> <see langword="readonly"/> parameter.
+    /// </summary>
     RefReadOnlyParameter,
 
-    /// <summary>An instance <see langword="readonly"/> field accessed outside its declaring constructor.</summary>
+    /// <summary>
+    ///  An instance <see langword="readonly"/> field accessed outside its declaring constructor.
+    /// </summary>
     ReadOnlyField,
 
-    /// <summary>A <see langword="static"/> <see langword="readonly"/> field.</summary>
+    /// <summary>
+    ///  A <see langword="static"/> <see langword="readonly"/> field.
+    /// </summary>
     StaticReadOnlyField,
 
-    /// <summary>A <see langword="ref"/> <see langword="readonly"/> local.</summary>
+    /// <summary>
+    ///  A <see langword="ref"/> <see langword="readonly"/> local.
+    /// </summary>
     RefReadOnlyLocal,
 
-    /// <summary>A member that returns by <see langword="ref"/> <see langword="readonly"/>.</summary>
+    /// <summary>
+    ///  A member that returns by <see langword="ref"/> <see langword="readonly"/>.
+    /// </summary>
     RefReadOnlyReturn,
 }

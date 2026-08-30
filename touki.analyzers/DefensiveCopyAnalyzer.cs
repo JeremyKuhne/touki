@@ -56,10 +56,14 @@ namespace Touki.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class DefensiveCopyAnalyzer : DiagnosticAnalyzer
 {
-    /// <summary>The diagnostic id for a defensive copy of any struct.</summary>
+    /// <summary>
+    ///  The diagnostic id for a defensive copy of any struct.
+    /// </summary>
     public const string DefensiveCopyId = "TOUKI0002";
 
-    /// <summary>The diagnostic id for a defensive copy of a <c>[NonCopyable]</c> struct.</summary>
+    /// <summary>
+    ///  The diagnostic id for a defensive copy of a <c>[NonCopyable]</c> struct.
+    /// </summary>
     public const string NonCopyableDefensiveCopyId = "TOUKI0003";
 
     private static readonly DiagnosticDescriptor s_defensiveCopy = new(

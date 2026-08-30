@@ -23,7 +23,7 @@ namespace Touki.Analyzers;
 /// </summary>
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(UseTextWriterWriteFormattedCodeFixProvider))]
 [Shared]
-public sealed class UseTextWriterWriteFormattedCodeFixProvider : CodeFixProvider
+public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFixProvider
 {
     // Hardcoded to avoid a dependency on the analyzer assembly; this is a stable public contract.
     private const string UseTextWriterWriteFormattedId = "TOUKI0031";
@@ -495,10 +495,4 @@ public sealed class UseTextWriterWriteFormattedCodeFixProvider : CodeFixProvider
         return false;
     }
 
-    private sealed class BindingSnapshot(SyntaxAnnotation annotation, string symbolIdentity)
-    {
-        public SyntaxAnnotation Annotation { get; } = annotation;
-
-        public string SymbolIdentity { get; } = symbolIdentity;
-    }
 }

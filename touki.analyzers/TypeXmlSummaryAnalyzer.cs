@@ -34,7 +34,7 @@ namespace Touki.Analyzers;
 ///  </para>
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
+public sealed partial class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
 {
     /// <summary>
     ///  The diagnostic identifier reported by this analyzer.
@@ -498,13 +498,4 @@ public sealed class TypeXmlSummaryAnalyzer : DiagnosticAnalyzer
             || (pathComparison == 0 && candidate.SpanStart < current.SpanStart);
     }
 
-    [Flags]
-    private enum ApiSurface
-    {
-        Public = 1,
-        Internal = 2,
-        Private = 4,
-        File = 8,
-        All = Public | Internal | Private | File
-    }
 }

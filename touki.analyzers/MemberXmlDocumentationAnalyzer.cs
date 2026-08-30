@@ -42,7 +42,7 @@ namespace Touki.Analyzers;
 ///  </para>
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
+public sealed partial class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
 {
     /// <summary>
     ///  The diagnostic identifier for incomplete member XML documentation.
@@ -838,13 +838,4 @@ public sealed class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
             || (pathComparison == 0 && candidate.SpanStart < current.SpanStart);
     }
 
-    [Flags]
-    private enum ApiSurface
-    {
-        Public = 1,
-        Internal = 2,
-        Private = 4,
-        Default = Public | Internal,
-        All = Default | Private
-    }
 }

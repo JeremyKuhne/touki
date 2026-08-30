@@ -181,19 +181,3 @@ internal struct XmlDocumentationInfo
         return true;
     }
 }
-
-/// <summary>
-///  Describes the target and filtering state of a source <c>&lt;inheritdoc&gt;</c> element.
-/// </summary>
-internal readonly struct InheritdocReference
-{
-    public InheritdocReference(CrefSyntax? target, bool hasPath)
-    {
-        Target = target;
-        HasPath = hasPath;
-    }
-
-    public CrefSyntax? Target { get; }
-
-    public bool HasPath { get; }
-}

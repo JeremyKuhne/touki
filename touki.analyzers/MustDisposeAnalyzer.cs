@@ -59,7 +59,9 @@ namespace Touki.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class MustDisposeAnalyzer : DiagnosticAnalyzer
 {
-    /// <summary>The diagnostic id reported by this analyzer.</summary>
+    /// <summary>
+    ///  The diagnostic id reported by this analyzer.
+    /// </summary>
     public const string DiagnosticId = "TOUKI0010";
 
     /// <summary>

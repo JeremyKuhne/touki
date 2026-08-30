@@ -42,6 +42,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- A package reference would form a cycle because this project produces the same package ID. -->
+    <PackageDownload Include="KlutzyNinja.Touki.Analyzers" Version="[$(ToukiBootstrapAnalyzerVersion)]" />
+    <Analyzer Include="$(NuGetPackageRoot)klutzyninja.touki.analyzers/$(ToukiBootstrapAnalyzerVersion)/analyzers/dotnet/cs/touki.analyzers.dll" />
     <!-- The Roslyn APIs the analyzer is built against. Compile-time only; the host provides these at run time. -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
     <!-- Analyzers that validate analyzer authoring (the RS#### rules). -->
