@@ -31,6 +31,7 @@ internal sealed class GitIgnoreFileSystemMatcherSession : FileSystemMatcherSessi
         _rootDirectory = rootDirectory;
         _rootPrefixLength = rootDirectory.Length
             + (Path.EndsInDirectorySeparator(rootDirectory) ? 0 : 1);
+
         _matchIgnored = matchIgnored;
     }
 

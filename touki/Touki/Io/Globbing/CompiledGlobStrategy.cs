@@ -567,6 +567,7 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
                     char anyRunChar = anyRunInputIndex < firstLength
                         ? first[anyRunInputIndex]
                         : second[anyRunInputIndex - firstLength];
+
                     if (anyRunChar == separator)
                     {
                         return false;
@@ -665,6 +666,7 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
                     char anyRunChar = anyRunInputIndex < firstLength
                         ? first[anyRunInputIndex]
                         : second[anyRunInputIndex - firstLength];
+
                     if (anyRunChar == separator)
                     {
                         return false;
@@ -959,6 +961,7 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
                     currentAbsorbed,
                     state.GlobStarFlags,
                     separator);
+
                 if (nextAbsorbed < 0)
                 {
                     state.GlobStarProgramIndex = -1;
@@ -979,6 +982,7 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
                     char anyRunChar = state.AnyRunInputIndex < firstLength
                         ? first[state.AnyRunInputIndex]
                         : second[state.AnyRunInputIndex - firstLength];
+
                     if (anyRunChar == separator)
                     {
                         state.AnyRunProgramIndex = -1;
@@ -1033,6 +1037,7 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
                 char inputChar = initialInputIndex < firstLength
                     ? first[initialInputIndex]
                     : second[initialInputIndex - firstLength];
+
                 if (inputChar == separator)
                 {
                     return 1;
@@ -1074,6 +1079,7 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
                 char inputChar = position < firstLength
                     ? first[position]
                     : second[position - firstLength];
+
                 if (inputChar == separator)
                 {
                     return position - initialInputIndex + 1;
@@ -1101,6 +1107,7 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
                     char inputChar = initialInputIndex < firstLength
                         ? first[initialInputIndex]
                         : second[initialInputIndex - firstLength];
+
                     if (inputChar == separator)
                     {
                         return 1;

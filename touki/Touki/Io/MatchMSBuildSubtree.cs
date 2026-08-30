@@ -136,11 +136,13 @@ internal sealed class MatchMSBuildSubtree : DisposableBase, IFileSystemMatcherSe
         _currentDirectoryWithinRoot = _hasDirectoryPattern
             ? _rootPath.IsEmpty || Paths.IsSameOrSubdirectory(_rootPath, currentDirectory, ignoreCase)
             : Paths.IsSameOrSubdirectory(_rootPath, currentDirectory, ignoreCase);
+
         _currentDirectoryMatch = _hasDirectoryPattern
             ? CurrentDirectoryNotEvaluated
             : _currentDirectoryWithinRoot
                 ? CurrentDirectoryMatches
                 : CurrentDirectoryDoesNotMatch;
+
         _cacheValid = true;
     }
 
@@ -181,6 +183,7 @@ internal sealed class MatchMSBuildSubtree : DisposableBase, IFileSystemMatcherSe
     {
         bool needsSeparator = !currentDirectory.IsEmpty
             && currentDirectory[^1] != Path.DirectorySeparatorChar;
+
         int expectedLength = currentDirectory.Length + directoryName.Length + (needsSeparator ? 1 : 0);
         if (_rootPath.Length != expectedLength)
         {
@@ -190,6 +193,7 @@ internal sealed class MatchMSBuildSubtree : DisposableBase, IFileSystemMatcherSe
         StringComparison comparison = _matchCasing == MatchCasing.CaseInsensitive
             ? StringComparison.OrdinalIgnoreCase
             : StringComparison.Ordinal;
+
         if (!_rootPath.StartsWith(currentDirectory, comparison))
         {
             return false;

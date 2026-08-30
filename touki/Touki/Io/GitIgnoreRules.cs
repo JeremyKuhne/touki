@@ -244,6 +244,7 @@ public sealed class GitIgnoreRules
             GlobSpecification specification = GlobSpecification.Compile(
                 pattern,
                 GlobDialect.Git);
+
             rules.Add(new(specification, basePath, action));
         }
     }

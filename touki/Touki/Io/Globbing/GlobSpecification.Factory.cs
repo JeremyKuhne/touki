@@ -205,17 +205,22 @@ public sealed partial class GlobSpecification
                     sourceShape.StarCount = fileSystemGlobbingStarCount;
                     sourceShape.LeadsWithStar =
                         fileSystemGlobbingStarCount > 0 && pattern[0] == '*';
+
                     sourceShape.EndsWithStar =
                         fileSystemGlobbingStarCount > 0 && pattern[^1] == '*';
+
                     sourceShape.IsAllStars =
                         fileSystemGlobbingStarCount > 0
                         && fileSystemGlobbingStarCount == pattern.Length;
+
                     sourceShape.HasNoMetacharacters =
                         fileSystemGlobbingStarCount == 0;
+
                     sourceShape.SingleStarSourceIndex =
                         fileSystemGlobbingStarCount == 1
                             ? fileSystemGlobbingFirstStarPosition
                             : 0;
+
                     hasSourceShape = true;
                 }
             }
@@ -522,6 +527,7 @@ public sealed partial class GlobSpecification
                 CoalesceInputSeparators = coalesceInputSeparators,
                 DisallowEmptyInput = disallowEmptyInput,
             };
+
             return true;
         }
 
@@ -727,6 +733,7 @@ public sealed partial class GlobSpecification
             int position = sourcePositionsPreserved
                 ? error.Position + sourcePositionOffset
                 : -1;
+
             if (position != error.Position)
             {
                 error = new GlobCompileError(error.Code, position, error.Message);
@@ -810,6 +817,7 @@ public sealed partial class GlobSpecification
                         && effectiveRunLength >= 2
                         && i < pattern.Length
                         && pattern[i] == '(';
+
                     if (opensExtGlob)
                     {
                         effectiveRunLength--;
@@ -872,6 +880,7 @@ public sealed partial class GlobSpecification
                 or GlobDialect.PosixPath
                 or GlobDialect.Git
                 or GlobDialect.Bash;
+
             bool needsMsbuildSepTransform =
                 dialect == GlobDialect.MSBuild
                 && (hasInternalSeparatorRun
@@ -941,6 +950,7 @@ public sealed partial class GlobSpecification
                     {
                         k++;
                     }
+
                     int runLength = k - runStart;
                     if (allowExtGlob
                         && runLength >= 2
@@ -969,6 +979,7 @@ public sealed partial class GlobSpecification
                     {
                         builder.Append(pattern.Slice(runStart, runLength));
                     }
+
                     continue;
                 }
 
@@ -979,6 +990,7 @@ public sealed partial class GlobSpecification
                     {
                         k++;
                     }
+
                     int runLength = k - runStart;
                     if (runLength >= 2)
                     {
@@ -989,6 +1001,7 @@ public sealed partial class GlobSpecification
                     {
                         builder.Append(separator);
                     }
+
                     continue;
                 }
 
@@ -1164,6 +1177,7 @@ public sealed partial class GlobSpecification
                 Separator = separator,
                 CoalesceInputSeparators = coalesceInputSeparators,
             };
+
             return true;
         }
 
@@ -1587,6 +1601,7 @@ public sealed partial class GlobSpecification
                             GlobCompileErrorCode.DanglingEscape,
                             position: i,
                             message: $"Pattern ends with an unescaped '{escape}'.");
+
                         return false;
                     }
 
@@ -1600,6 +1615,7 @@ public sealed partial class GlobSpecification
                 && !shape.HasQuestionMarks
                 && !shape.HasClasses
                 && !shape.HasExtGlob;
+
             if (shape.StarCount == 1)
             {
                 shape.SingleStarSourceIndex = firstStar;
@@ -1637,6 +1653,7 @@ public sealed partial class GlobSpecification
                     GlobCompileErrorCode.FeatureLimitExceeded,
                     position: i,
                     message: $"Extended-glob nesting depth exceeds the limit of {MaxExtGlobDepth}.");
+
                 return false;
             }
 
@@ -1653,6 +1670,7 @@ public sealed partial class GlobSpecification
                     GlobCompileErrorCode.InvalidExtGlobBody,
                     position: kindIndex,
                     message: "Extended-glob construct has an empty body.");
+
                 return false;
             }
 
@@ -1679,6 +1697,7 @@ public sealed partial class GlobSpecification
                             position: i,
                             message:
                                 $"Extended-glob alternative count exceeds the limit of {MaxExtGlobAlternatives}.");
+
                         return false;
                     }
 
@@ -1720,6 +1739,7 @@ public sealed partial class GlobSpecification
                             GlobCompileErrorCode.DanglingEscape,
                             position: i,
                             message: $"Pattern ends with an unescaped '{escape}'.");
+
                         return false;
                     }
 
@@ -1734,6 +1754,7 @@ public sealed partial class GlobSpecification
                 GlobCompileErrorCode.UnterminatedExtGlob,
                 position: kindIndex,
                 message: "Extended-glob construct is not terminated.");
+
             return false;
         }
 
@@ -1991,6 +2012,7 @@ public sealed partial class GlobSpecification
                     GlobCompileErrorCode.PatternTooLarge,
                     position: overflowPosition,
                     message: $"Encoded opcode body would exceed the {MaxOpcodeBodyLength}-character limit.");
+
                 return false;
             }
 
@@ -2085,6 +2107,7 @@ public sealed partial class GlobSpecification
                     markerFileNameStart = markEffectiveDoubleStarRuns
                         ? FindScopeFileNameStart(pattern, i, alternativeEnd, separator)
                         : alternativeEnd;
+
                     if (msbuildNeverRuns && ContainsMSBuildNeverRun(pattern, i, alternativeEnd))
                     {
                         builder.Append(GlobOpCodes.Never);
@@ -2334,6 +2357,7 @@ public sealed partial class GlobSpecification
                 bool opensExtGlob = effectiveRunLength >= 2
                     && index < end
                     && pattern[index] == '(';
+
                 if (opensExtGlob)
                 {
                     effectiveRunLength--;
@@ -2463,6 +2487,7 @@ public sealed partial class GlobSpecification
                 int merged =
                     (builder[flagIndex] & ~GlobOpCodes.GlobStarFlagTrail)
                     | (flags & GlobOpCodes.GlobStarFlagTrail);
+
                 builder[flagIndex] = (char)merged;
                 return true;
             }

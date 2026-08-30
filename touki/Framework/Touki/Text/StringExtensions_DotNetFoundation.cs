@@ -211,6 +211,7 @@ public static partial class StringExtensions
                 int idx = remaining.IndexOfAny(NewLineCharsExceptLineFeed);
                 if ((uint)idx >= (uint)remaining.Length)
                     break; // no more newline chars
+
                 stride = remaining[idx] == '\r' && (uint)(idx + 1) < (uint)remaining.Length && remaining[idx + 1] == '\n' ? 2 : 1;
                 builder.Append('\n');
                 builder.Append(remaining[..idx]);

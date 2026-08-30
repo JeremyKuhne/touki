@@ -81,6 +81,7 @@ internal sealed class CompositeFileSystemMatcherSession : FileSystemMatcherSessi
                         childCount,
                         exclusionWins.Includes.Length,
                         includeUnmatched: false));
+
                     results.Push(nodes.Count - 1);
                     continue;
                 }
@@ -103,6 +104,7 @@ internal sealed class CompositeFileSystemMatcherSession : FileSystemMatcherSessi
                         actions,
                         results,
                         ordered.Rules.Length);
+
                     for (int index = 0; index < ordered.Rules.Length; index++)
                     {
                         actions[firstEdge + index] = ordered.Rules[index].Action;
@@ -114,12 +116,14 @@ internal sealed class CompositeFileSystemMatcherSession : FileSystemMatcherSessi
                         ordered.Rules.Length,
                         includeCount: 0,
                         ordered.IncludeUnmatched));
+
                     results.Push(nodes.Count - 1);
                     continue;
                 }
 
                 IFileSystemMatcherSession session = item.Matcher.CreateSession(rootDirectory)
                     ?? throw new InvalidOperationException("A matcher returned a null session.");
+
                 if (!sessionIdentities.Add(session))
                 {
                     throw new InvalidOperationException("Matcher definitions returned the same session instance.");
@@ -165,6 +169,7 @@ internal sealed class CompositeFileSystemMatcherSession : FileSystemMatcherSessi
             _rootPrefixLength,
             currentDirectory,
             fileName);
+
         return MatchesFileCore(currentDirectory, fileName, path.Value);
     }
 
@@ -176,6 +181,7 @@ internal sealed class CompositeFileSystemMatcherSession : FileSystemMatcherSessi
         using BufferScope<byte> buffer = new(
             stackalloc byte[StackResultBufferSize],
             _nodes.Length);
+
         Span<byte> results = buffer[.._nodes.Length];
         for (int nodeIndex = 0; nodeIndex < _nodes.Length; nodeIndex++)
         {
@@ -226,6 +232,7 @@ internal sealed class CompositeFileSystemMatcherSession : FileSystemMatcherSessi
         using BufferScope<byte> buffer = new(
             stackalloc byte[StackResultBufferSize],
             _nodes.Length);
+
         Span<byte> results = buffer[.._nodes.Length];
         for (int nodeIndex = 0; nodeIndex < _nodes.Length; nodeIndex++)
         {
@@ -329,6 +336,7 @@ internal sealed class CompositeFileSystemMatcherSession : FileSystemMatcherSessi
         {
             DirectoryMatchType matchType = DirectoryMatchTypeOperations.Normalize(
                 (DirectoryMatchType)results[_edges[edgeIndex]]);
+
             bool include = _actions[edgeIndex] == FileSystemMatchAction.Include;
             if (matchType == DirectoryMatchType.AllDescendantFilesMatch)
             {

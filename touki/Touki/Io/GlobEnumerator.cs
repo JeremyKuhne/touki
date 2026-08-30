@@ -81,6 +81,7 @@ public sealed class GlobEnumerator : FileSystemEnumerator<string>
         EnumerationOptions enumerationOptions = options?.EnumerationOptions is { } suppliedEnumerationOptions
             ? SnapshotEnumerationOptions(suppliedEnumerationOptions)
             : DefaultEnumerationOptions;
+
         string normalizedRoot = FileSystemMatchEnumeratorArguments.NormalizeRootDirectory(rootDirectory);
         IFileSystemMatcherSession session = BuildSession(
             includePattern,
@@ -88,6 +89,7 @@ public sealed class GlobEnumerator : FileSystemEnumerator<string>
             normalizedRoot,
             options?.Dialect ?? GlobDialect.PosixPath,
             options?.GlobOptions ?? GlobOptions.None);
+
         try
         {
             return new GlobEnumerator(session, normalizedRoot, enumerationOptions);

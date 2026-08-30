@@ -93,11 +93,14 @@ internal sealed partial class MatchMSBuild : DisposableBase, IFileSystemMatcherS
         bool isFileSystemSearchShape = wildPath.IsEmpty
             || wildPath == "**"
             || IsOptimizedDirectoryPattern(wildPath);
+
         bool useFileSystemFileNameSemantics = !forceLogicalSemantics
             && UsesFileSystemFileNameSemantics(wildPath);
+
         bool useRawLogicalFileNameSemantics = isFileSystemSearchShape
             && !useFileSystemFileNameSemantics;
     #if NETFRAMEWORK
+
         _directoryMatchType = useFileSystemFileNameSemantics
             ? matchType
             : MatchType.Simple;
@@ -358,6 +361,7 @@ internal sealed partial class MatchMSBuild : DisposableBase, IFileSystemMatcherS
             ReversePathSegmentEnumerator reversePath = new(
                 pathSegments.FirstPath,
                 pathSegments.SecondPath);
+
             for (int specIndex = _specSegments.Count - 1; specIndex > 0; specIndex--)
             {
                 if (!reversePath.MovePrevious()

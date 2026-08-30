@@ -66,6 +66,10 @@ dotnet_diagnostic.TOUKI0022.severity = warning
 # one additional space for each XML nesting level and the rule's default 120-character limit.
 dotnet_diagnostic.TOUKI0024.severity = warning
 
+# TOUKI0027 ships disabled because Allman layout and blank-line separation are house style.
+# Touki uses all three default formatting policies and the standard 120-character line limit.
+dotnet_diagnostic.TOUKI0027.severity = warning
+
 # P/Invoke declarations keep the spelling of the native symbol they bind to, which is what makes
 # them greppable against the native header. Naming a rule two symbol groups gives the "either
 # attribute" match that a single required_attributes list cannot express.

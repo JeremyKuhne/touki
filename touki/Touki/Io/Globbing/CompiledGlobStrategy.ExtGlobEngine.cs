@@ -171,6 +171,7 @@ internal sealed partial class CompiledGlobStrategy
                                     || !WorkSawEffectiveDoubleStar)
                                 && (_effectiveDoubleStarMode != EffectiveDoubleStarMode.RequirePresent
                                     || WorkSawEffectiveDoubleStar);
+
                             break;
                         }
 
@@ -261,6 +262,7 @@ internal sealed partial class CompiledGlobStrategy
                             bool inClass = _kind == IgnoreCaseKind.Off
                                 ? ClassContainsOrdinal(body, inputChar, opcode == GlobOpCodes.NegClass)
                                 : ClassContainsIgnoreCase(body, inputChar, opcode == GlobOpCodes.NegClass);
+
                             if (!inClass)
                             {
                                 break;
@@ -348,6 +350,7 @@ internal sealed partial class CompiledGlobStrategy
                             WorkSawEffectiveDoubleStar,
                             _effectiveDoubleStarMode,
                             _key);
+
                         if (state.IsKnownFailure(_key[..keyLength]))
                         {
                             forward = false;
@@ -372,6 +375,7 @@ internal sealed partial class CompiledGlobStrategy
                         Cursor = 0,
                         Aux = auxValue,
                     };
+
                     _arenaTop += snapshotCount;
                     _frameCount++;
 
@@ -591,6 +595,7 @@ internal sealed partial class CompiledGlobStrategy
                 _frames[frameIdx].SavedEffectiveDoubleStar,
                 _effectiveDoubleStarMode,
                 _key);
+
             state.RecordFailure(_key[..keyLength]);
         }
 
@@ -628,6 +633,7 @@ internal sealed partial class CompiledGlobStrategy
                 WorkInput = savedInput + consumed;
                 WorkSawEffectiveDoubleStar = frame.SavedEffectiveDoubleStar
                     || k == GlobOpCodes.EffectiveDoubleStarRun;
+
                 frame.Cursor = consumed + 1;
                 return true;
             }
@@ -819,6 +825,7 @@ internal sealed partial class CompiledGlobStrategy
                     int maxL = _useMSBuildAllDotInput
                         ? Math.Max(0, _firstLength - savedInput)
                         : _totalLength - savedInput;
+
                     if (_separator != '\0' || _useMSBuildTrailingDotAny)
                     {
                         for (int j = savedInput; j < _totalLength; j++)
@@ -920,6 +927,7 @@ internal sealed partial class CompiledGlobStrategy
                                     probeWorkScope.AsSpan()[..MaxRangesDepth],
                                     probeRestScope.AsSpan()[..MaxRangesDepth],
                                     probeKeyScope.AsSpan()[..keyLength]);
+
                                 probeInputs = new(
                                     _first,
                                     _second,
@@ -929,6 +937,7 @@ internal sealed partial class CompiledGlobStrategy
                                     _useMSBuildTrailingDotAny,
                                     _useMSBuildAllDotInput,
                                     EffectiveDoubleStarMode.Ignore);
+
                                 probeReady = true;
                             }
 

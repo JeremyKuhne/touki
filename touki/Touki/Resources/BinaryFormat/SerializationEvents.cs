@@ -43,6 +43,7 @@ internal sealed class SerializationEvents
         List<MethodInfo>? onDeserializingMethods = GetMethodsWithAttribute(
             typeof(OnDeserializingAttribute),
             type);
+
         List<MethodInfo>? onDeserializedMethods = GetMethodsWithAttribute(
             typeof(OnDeserializedAttribute),
             type);
@@ -110,6 +111,7 @@ internal sealed class SerializationEvents
 #else
                     (Action<StreamingContext>)method.CreateDelegate(typeof(Action<StreamingContext>), instance);
 #endif
+
                 handler += callback;
             }
         }

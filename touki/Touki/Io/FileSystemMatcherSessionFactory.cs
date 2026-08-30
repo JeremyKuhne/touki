@@ -71,6 +71,7 @@ internal static class FileSystemMatcherSessionFactory
             {
                 IFileSystemMatcherSession session = matchers[created].CreateSession(rootDirectory)
                     ?? throw new InvalidOperationException("A matcher returned a null session.");
+
                 if (ContainsReference(sessions, created, session)
                     || existingSessions is not null
                         && ContainsReference(existingSessions, existingSessions.Length, session))
@@ -109,6 +110,7 @@ internal static class FileSystemMatcherSessionFactory
             {
                 IFileSystemMatcherSession session = rules[created].Matcher.CreateSession(rootDirectory)
                     ?? throw new InvalidOperationException("A matcher returned a null session.");
+
                 if (ContainsReference(sessions, created, session))
                 {
                     throw new InvalidOperationException("Matcher definitions returned the same session instance.");

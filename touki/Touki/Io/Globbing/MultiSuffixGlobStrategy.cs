@@ -80,6 +80,7 @@ internal sealed class MultiSuffixGlobStrategy : GlobStrategy
                     IgnoreCaseKind.Unicode => fileName.EqualsOrdinalIgnoreCase(suffix),
                     _ => fileName.SequenceEqual(suffix),
                 };
+
                 if (match)
                 {
                     return true;
@@ -102,6 +103,7 @@ internal sealed class MultiSuffixGlobStrategy : GlobStrategy
                 IgnoreCaseKind.Unicode => fileName.EndsWithOrdinalIgnoreCase(suffix),
                 _ => fileName.EndsWith(suffix),
             };
+
             if (match)
             {
                 return true;

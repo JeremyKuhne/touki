@@ -361,6 +361,7 @@ public sealed partial class GlobSpecification
                         GlobCompileErrorCode.FeatureNotEnabled,
                         position: -1,
                         message: "MSBuild trailing-dot extglob requires the compiled matching strategy.");
+
                     return false;
                 }
                 else
@@ -401,6 +402,7 @@ public sealed partial class GlobSpecification
                             GlobCompileErrorCode.FeatureNotEnabled,
                             position: -1,
                             message: "MSBuild raw trailing-dot extglob requires the compiled matching strategy.");
+
                         return false;
                     }
 
@@ -424,6 +426,7 @@ public sealed partial class GlobSpecification
             msbuildTrailingDotNegatedAlternatives,
             msbuildTrailingDotPositiveAlternatives,
             msbuildTrailingDotNeverMatches);
+
         return true;
     }
 
@@ -687,6 +690,7 @@ public sealed partial class GlobSpecification
             fileName,
             allowExtGlob,
             out int[]? fileNameSourcePositions);
+
         if (rewrittenFileName.Equals(fileName))
         {
             return pattern;
@@ -1057,9 +1061,11 @@ public sealed partial class GlobSpecification
         ReadOnlySpan<char> normalized = MSBuildTrailingDotFileNameMatcher.NormalizeExtGlobInput(
             fileName,
             out bool isAllDotInput);
+
         bool trailingDotMatch = isAllDotInput
             ? _msbuildTrailingDotExtGlobStrategy.MatchesMSBuildTrailingDotAllDotInput(directoryPrefix)
             : _msbuildTrailingDotExtGlobStrategy.MatchCore(directoryPrefix, normalized);
+
         return trailingDotMatch
             || _msbuildTrailingDotRawExtGlobStrategy!.MatchCore(directoryPrefix, fileName);
     }
@@ -1082,6 +1088,7 @@ public sealed partial class GlobSpecification
                 return true;
             }
         }
+
         return false;
     }
 

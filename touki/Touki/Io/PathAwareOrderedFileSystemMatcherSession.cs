@@ -32,6 +32,7 @@ internal sealed class PathAwareOrderedFileSystemMatcherSession(
             _rootPrefixLength,
             currentDirectory,
             fileName);
+
         bool included = IncludeUnmatched;
         for (int index = 0; index < Sessions.Length; index++)
         {
@@ -39,6 +40,7 @@ internal sealed class PathAwareOrderedFileSystemMatcherSession(
             bool matches = session is ICanonicalPathMatcherSession pathSession
                 ? pathSession.MatchesPath(path.Value)
                 : session.MatchesFile(currentDirectory, fileName);
+
             if (matches)
             {
                 included = Rules[index].Action == FileSystemMatchAction.Include;

@@ -92,6 +92,7 @@ internal sealed class MSBuildMatchSetSession : DisposableBase, IFileSystemMatche
                 DirectoryMatchType excludeResult = excludes[index].MatchesDirectory(
                     currentDirectory,
                     directoryName);
+
                 if (excludeResult == DirectoryMatchType.AllDescendantFilesMatch)
                 {
                     return DirectoryMatchType.NoDescendantFilesMatch;

@@ -225,7 +225,8 @@ public static partial class StringExtensions
                     {
                         // 0..0xFFFFF, skip ?FFFE/?FFFF in every plane.
                         codePoint = 0x10000 + random.Next(0x110000 - 0x10000);
-                    } while ((codePoint & 0xFFFE) == 0xFFFE);
+                    }
+                    while ((codePoint & 0xFFFE) == 0xFFFE);
 
                     codePoint -= 0x10000;
 

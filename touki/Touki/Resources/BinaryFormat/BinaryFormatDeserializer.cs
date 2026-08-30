@@ -325,6 +325,7 @@ internal sealed class BinaryFormatDeserializer : IDeserializer
                 Action<StreamingContext>? onDeserialized = ((IDeserializer)this)
                     .GetSerializationEvents(type)
                     .GetOnDeserialized(instance);
+
                 if (onDeserialized is not null)
                 {
                     _onDeserializedCallbacks ??= [];
