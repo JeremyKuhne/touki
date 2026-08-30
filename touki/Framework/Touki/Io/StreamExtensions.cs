@@ -6,51 +6,15 @@ namespace Touki.Io;
 
 public static partial class StreamExtensions
 {
+    /// <summary>
+    ///  Compatibility entry point for writing a byte span to a stream on .NET Framework.
+    /// </summary>
     /// <param name="stream">The target stream.</param>
-    extension(Stream stream)
+    /// <param name="buffer">The bytes to write.</param>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static void Write(Stream stream, ReadOnlySpan<byte> buffer)
     {
-        /// <summary>
-        ///  Writes a sequence of bytes to the current stream and advances the current position within this stream by
-        ///  the number of bytes written.
-        /// </summary>
-        /// <param name="buffer">The bytes to write.</param>
-        public void Write(ReadOnlySpan<byte> buffer)
-        {
-            if (buffer.IsEmpty)
-            {
-                return;
-            }
-
-            // Fast path for publicly visible MemoryStreams: write straight into the backing array
-            // instead of renting a temporary and copying twice. SetLength grows the length (and the
-            // capacity, with amortized doubling) so the written region becomes part of the stream; it
-            // throws for a non-expandable stream exactly as Write would.
-            if (stream is MemoryStream memoryStream && memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
-            {
-                int position = (int)memoryStream.Position;
-                int end = checked(position + buffer.Length);
-                if (end > memoryStream.Length)
-                {
-                    // Growth may reallocate the backing array, so re-acquire the segment afterward.
-                    memoryStream.SetLength(end);
-                    memoryStream.TryGetBuffer(out segment);
-                }
-
-                buffer.CopyTo(segment.AsSpan(position));
-                memoryStream.Position = end;
-                return;
-            }
-
-            byte[] temp = ArrayPool<byte>.Shared.Rent(buffer.Length);
-            try
-            {
-                buffer.CopyTo(temp);
-                stream.Write(temp, 0, buffer.Length);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(temp);
-            }
-        }
+        ArgumentNullException.ThrowIfNull(stream);
+        stream.Write(buffer);
     }
 }

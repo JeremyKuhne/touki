@@ -16,6 +16,79 @@ public static partial class StreamExtensions
     extension(Stream stream)
     {
         /// <summary>
+        ///  Attempts to read <paramref name="count"/> bytes from the current stream and advances the position
+        ///  within the stream.
+        /// </summary>
+        /// <param name="buffer">The buffer to write the data into.</param>
+        /// <param name="offset">The byte offset in <paramref name="buffer"/> at which to begin writing data.</param>
+        /// <param name="count">The number of bytes to read.</param>
+        /// <returns>
+        ///  <see langword="true"/> if <paramref name="count"/> bytes were read; otherwise,
+        ///  <see langword="false"/> if the end of the stream was reached first.
+        /// </returns>
+        /// <remarks>
+        ///  <para>
+        ///   When this method returns <see langword="false"/>, bytes read before the end of the stream remain in the
+        ///   requested range of <paramref name="buffer"/>.
+        ///  </para>
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">A required reference is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///  <paramref name="offset"/> is negative, or <paramref name="count"/> does not identify a valid range in
+        ///  <paramref name="buffer"/>.
+        /// </exception>
+        /// <exception cref="IOException">The stream reports reading more bytes than requested.</exception>
+        public bool TryReadExactly(byte[] buffer, int offset, int count)
+        {
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+
+            return (uint)count > buffer.Length - offset
+                ? throw new ArgumentOutOfRangeException(nameof(count))
+                : TryReadExactly(stream, buffer.AsSpan(offset, count));
+        }
+
+        /// <summary>
+        ///  Attempts to fill <paramref name="buffer"/> from the current stream and advances the position within the
+        ///  stream.
+        /// </summary>
+        /// <param name="buffer">The buffer to fill.</param>
+        /// <returns>
+        ///  <see langword="true"/> if <paramref name="buffer"/> was filled; otherwise,
+        ///  <see langword="false"/> if the end of the stream was reached first.
+        /// </returns>
+        /// <remarks>
+        ///  <para>
+        ///   When this method returns <see langword="false"/>, bytes read before the end of the stream remain at the
+        ///   beginning of <paramref name="buffer"/>.
+        ///  </para>
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
+        /// <exception cref="IOException">The stream reports reading more bytes than requested.</exception>
+        public bool TryReadExactly(Span<byte> buffer)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+
+            while (!buffer.IsEmpty)
+            {
+                int read = stream.Read(buffer);
+                if ((uint)read > (uint)buffer.Length)
+                {
+                    throw new IOException("Stream was too long.");
+                }
+
+                if (read == 0)
+                {
+                    return false;
+                }
+
+                buffer = buffer[read..];
+            }
+
+            return true;
+        }
+
+        /// <summary>
         ///  Reads a sequence of bytes from the current stream and advances the position
         ///  within the stream by the number of bytes read.
         /// </summary>

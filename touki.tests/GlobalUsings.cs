@@ -7,21 +7,27 @@ global using System;
 global using System.Collections.Generic;
 global using System.Diagnostics;
 global using System.Diagnostics.CodeAnalysis;
+global using System.IO;
 global using System.Linq;
 global using System.Runtime.CompilerServices;
 global using System.Runtime.InteropServices;
 global using System.Threading;
 global using System.Threading.Tasks;
 
-global using MemoryStream = System.IO.MemoryStream;
-global using StreamReader = System.IO.StreamReader;
-global using FileAttributes = System.IO.FileAttributes;
-
 #if NETFRAMEWORK
-global using Microsoft.IO;
-global using Microsoft.IO.Enumeration;
+global using Directory = Microsoft.IO.Directory;
+global using DirectoryInfo = Microsoft.IO.DirectoryInfo;
+global using EnumerationOptions = Microsoft.IO.EnumerationOptions;
+global using File = Microsoft.IO.File;
+global using FileInfo = Microsoft.IO.FileInfo;
+global using FileSystemEntry = Microsoft.IO.Enumeration.FileSystemEntry;
+global using FileSystemInfo = Microsoft.IO.FileSystemInfo;
+global using FileSystemName = Microsoft.IO.Enumeration.FileSystemName;
+global using MatchCasing = Microsoft.IO.MatchCasing;
+global using MatchType = Microsoft.IO.MatchType;
+global using Path = Microsoft.IO.Path;
+global using SearchOption = Microsoft.IO.SearchOption;
 #else
-global using System.IO;
 global using System.IO.Enumeration;
 #endif
 
