@@ -530,7 +530,7 @@ internal static class AllmanFormatter
             SyntaxToken semicolon = statement.GetLastToken();
             if (!semicolon.IsKind(SyntaxKind.SemicolonToken)
                 || semicolon.IsMissing
-            || !processedSemicolons.Add(semicolon.SpanStart)
+                || !processedSemicolons.Add(semicolon.SpanStart)
                 || source.Lines.GetLineFromPosition(statement.SpanStart).LineNumber
                     == source.Lines.GetLineFromPosition(semicolon.SpanStart).LineNumber)
             {

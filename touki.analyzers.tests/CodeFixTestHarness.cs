@@ -109,6 +109,13 @@ internal static class CodeFixTestHarness
         CSharpParseOptions? linkedProjectParseOptions = null,
         IReadOnlyDictionary<string, string>? linkedProjectOptions = null)
     {
+        if (linkedProjectOptions is not null && !addLinkedProject)
+        {
+            throw new ArgumentException(
+                $"{nameof(linkedProjectOptions)} requires {nameof(addLinkedProject)} to be true.",
+                nameof(linkedProjectOptions));
+        }
+
         using AdhocWorkspace workspace = workspaceKind is null
             ? new AdhocWorkspace()
             : new AdhocWorkspace(MefHostServices.DefaultHost, workspaceKind);

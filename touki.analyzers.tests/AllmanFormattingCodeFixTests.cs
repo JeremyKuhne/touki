@@ -304,6 +304,32 @@ public class AllmanFormattingCodeFixTests
     }
 
     [TestMethod]
+    public async Task ApplyFixToSolutionAsync_LinkedOptionsWithoutLinkedProject_ThrowsArgumentException()
+    {
+        (string Name, string FilePath, string Source)[] sources =
+        [
+            ("Sample.cs", "Sample.cs", "class Sample { }\n")
+        ];
+        Dictionary<string, string> linkedProjectOptions = new()
+        {
+            [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "false"
+        };
+
+        Func<Task> action = async () => await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new AllmanFormattingAnalyzer(),
+            new FormatAllmanCodeFixProvider(),
+            sources,
+            AllmanFormattingAnalyzer.DiagnosticId,
+            fixAll: false,
+            diagnosticOptions: s_enabled,
+            linkedProjectOptions: linkedProjectOptions).ConfigureAwait(false);
+
+        await action.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("linkedProjectOptions")
+            .ConfigureAwait(false);
+    }
+
+    [TestMethod]
     public async Task Format_CrlfWithTabIndentation_PreservesConfiguredLayout()
     {
         const string source = "class Sample {\r\n\tvoid Method() {\r\n\t}\r\n}\r\n";
