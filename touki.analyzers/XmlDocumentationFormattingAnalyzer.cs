@@ -32,7 +32,7 @@ namespace Touki.Analyzers;
 ///  </para>
 ///  <para>
 ///   The rule ships disabled because documentation layout is a house style. Enable it with
-///   <code>dotnet_diagnostic.TOUKI0024.severity = warning</code>.
+///   <c>dotnet_diagnostic.TOUKI0024.severity = warning</c>.
 ///  </para>
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]

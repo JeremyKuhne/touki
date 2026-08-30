@@ -16,7 +16,7 @@ namespace Touki.Analyzers;
 /// <summary>
 ///  Resolves XML documentation inheritance to declarations that contain required top-level elements.
 /// </summary>
-internal static class DocumentationInheritanceResolver
+internal static partial class DocumentationInheritanceResolver
 {
     private const int MaximumMetadataDocumentationLength = 1024 * 1024;
     private const int MaximumMetadataDocumentationNodes = 4096;
@@ -770,79 +770,4 @@ internal static class DocumentationInheritanceResolver
         }
     }
 
-    private readonly struct PendingSymbol
-    {
-        public PendingSymbol(
-            ISymbol symbol,
-            Compilation compilation,
-            bool followHierarchy,
-            bool includeImplicitInterfaceTargets)
-        {
-            Symbol = symbol;
-            Compilation = compilation;
-            FollowHierarchy = followHierarchy;
-            IncludeImplicitInterfaceTargets = includeImplicitInterfaceTargets;
-        }
-
-        public ISymbol Symbol { get; }
-
-        public Compilation Compilation { get; }
-
-        public bool FollowHierarchy { get; }
-
-        public bool IncludeImplicitInterfaceTargets { get; }
-    }
-
-    private readonly struct SourceDocumentation
-    {
-        public SourceDocumentation(
-            XmlDocumentationInfo documentation,
-            bool hasCSharpDeclaration)
-        {
-            Documentation = documentation;
-            HasCSharpDeclaration = hasCSharpDeclaration;
-        }
-
-        public XmlDocumentationInfo Documentation { get; }
-
-        public bool HasCSharpDeclaration { get; }
-    }
-
-    private readonly struct MetadataInheritdocReference
-    {
-        public MetadataInheritdocReference(string target, bool hasPath)
-        {
-            Target = target;
-            HasPath = hasPath;
-        }
-
-        public string Target { get; }
-
-        public bool HasPath { get; }
-    }
-
-    private enum DocumentationTargetResolution
-    {
-        Unresolved,
-        Resolved,
-        Ambiguous
-    }
-
-    private struct MetadataDocumentationInfo
-    {
-        public bool HasSummary;
-        public bool HasInheritdoc;
-        public bool HasImplicitInheritdoc;
-        public List<MetadataInheritdocReference>? InheritdocReferences;
-    }
-}
-
-/// <summary>
-///  Describes whether inherited XML documentation was found or could be inspected.
-/// </summary>
-internal enum DocumentationAvailability
-{
-    Undocumented,
-    Documented,
-    Unknown
 }

@@ -55,7 +55,9 @@ namespace Touki.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
 {
-    /// <summary>The diagnostic id reported by this analyzer.</summary>
+    /// <summary>
+    ///  The diagnostic id reported by this analyzer.
+    /// </summary>
     public const string DiagnosticId = "TOUKI0004";
 
     private static readonly DiagnosticDescriptor s_rule = new(

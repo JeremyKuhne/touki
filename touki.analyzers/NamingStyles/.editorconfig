@@ -14,6 +14,10 @@ dotnet_diagnostic.TOUKI0001.severity = none
 # inside NamingStyle; splitting them would make future ports harder to diff.
 dotnet_diagnostic.TOUKI0020.severity = none
 
+# TOUKI0024: Format XML documentation. Upstream documentation layout is retained so
+# future ports remain reviewable against Roslyn.
+dotnet_diagnostic.TOUKI0024.severity = none
+
 # TOUKI0030: Use ValueStringBuilder to build strings. Not available in an analyzer
 # assembly (netstandard2.0, no dependency on the touki library itself).
 dotnet_diagnostic.TOUKI0030.severity = none

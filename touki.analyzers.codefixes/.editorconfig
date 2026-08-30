@@ -1,0 +1,6 @@
+[*.cs]
+# Code-fix implementation helpers are not public package API. Public provider types and members remain documented.
+dotnet_code_quality.TOUKI0025.api_surface = public
+dotnet_code_quality.TOUKI0025.effective_api_surface = public
+dotnet_code_quality.TOUKI0026.api_surface = public
+dotnet_code_quality.TOUKI0026.effective_api_surface = public

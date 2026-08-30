@@ -15,7 +15,7 @@ namespace Touki.Analyzers;
 /// <summary>
 ///  Produces the canonical text for one structured single-line XML documentation comment.
 /// </summary>
-internal static class XmlDocumentationCommentFormatter
+internal static partial class XmlDocumentationCommentFormatter
 {
     internal const int MaximumCommentLength = 1024 * 1024;
     private const int MaximumIndentationColumns = 4096;
@@ -1692,14 +1692,4 @@ internal static class XmlDocumentationCommentFormatter
         return false;
     }
 
-    private sealed class BreakBoundary(int start, int end, int depth, bool includeBlankLine)
-    {
-        public int Start { get; } = start;
-
-        public int End { get; set; } = end;
-
-        public int Depth { get; set; } = depth;
-
-        public bool IncludeBlankLine { get; set; } = includeBlankLine;
-    }
 }
