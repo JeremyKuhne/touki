@@ -704,6 +704,55 @@ public class AllmanFormattingCodeFixTests
     }
 
     [TestMethod]
+    public async Task Format_DoWhileContinuation_NormalizesSpacing()
+    {
+        const string source =
+            "class Sample\n"
+            + "{\n"
+            + "    void Method()\n"
+            + "    {\n"
+            + "        do\n"
+            + "        {\n"
+            + "        } while (false);\n"
+            + "        do\n"
+            + "        {\n"
+            + "        }\n"
+            + "\n"
+            + "        while (false);\n"
+            + "        Use();\n"
+            + "    }\n"
+            + "\n"
+            + "    void Use() { }\n"
+            + "}\n";
+        const string expected =
+            "class Sample\n"
+            + "{\n"
+            + "    void Method()\n"
+            + "    {\n"
+            + "        do\n"
+            + "        {\n"
+            + "        }\n"
+            + "        while (false);\n"
+            + "\n"
+            + "        do\n"
+            + "        {\n"
+            + "        }\n"
+            + "        while (false);\n"
+            + "\n"
+            + "        Use();\n"
+            + "    }\n"
+            + "\n"
+            + "    void Use() { }\n"
+            + "}\n";
+
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(false);
+
+        fixedSource.Should().Be(expected);
+        fixedAgain.Should().Be(expected);
+    }
+
+    [TestMethod]
     public async Task Format_BlankLinesBeforeContinuationClauses_RemovesBlankLines()
     {
         const string source =

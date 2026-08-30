@@ -740,6 +740,7 @@ internal static class AllmanFormatter
             SyntaxKind.ElseKeyword => continuation.Parent?.FirstAncestorOrSelf<IfStatementSyntax>(),
             SyntaxKind.CatchKeyword or SyntaxKind.FinallyKeyword =>
                 continuation.Parent?.FirstAncestorOrSelf<TryStatementSyntax>(),
+            SyntaxKind.WhileKeyword => GetDoStatement(closeBrace, continuation),
             _ => GetAccessorList(closeBrace, continuation)
         };
         if (completeConstruct is null)
@@ -875,7 +876,21 @@ internal static class AllmanFormatter
                 SyntaxKind.ElseKeyword or
                 SyntaxKind.CatchKeyword or
                 SyntaxKind.FinallyKeyword
+            || GetDoStatement(closeBrace, nextToken) is not null
             || GetAccessorList(closeBrace, nextToken) is not null);
+
+    private static DoStatementSyntax? GetDoStatement(SyntaxToken closeBrace, SyntaxToken nextToken)
+    {
+        if (!nextToken.IsKind(SyntaxKind.WhileKeyword))
+        {
+            return null;
+        }
+
+        DoStatementSyntax? doStatement = nextToken.Parent?.FirstAncestorOrSelf<DoStatementSyntax>();
+        return doStatement?.Statement.GetLastToken() == closeBrace
+            ? doStatement
+            : null;
+    }
 
     private static AccessorListSyntax? GetAccessorList(SyntaxToken closeBrace, SyntaxToken nextToken)
     {

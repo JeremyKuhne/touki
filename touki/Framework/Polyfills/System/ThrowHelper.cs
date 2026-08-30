@@ -471,10 +471,8 @@ internal static class ThrowHelper
     {
         if (array == null)
             return new ArgumentNullException(nameof(array));
-
         if (offset < 0)
             return new ArgumentOutOfRangeException(nameof(offset), SRF.ArgumentOutOfRange_NeedNonNegNum);
-
         if (count < 0)
             return new ArgumentOutOfRangeException(nameof(count), SRF.ArgumentOutOfRange_NeedNonNegNum);
 

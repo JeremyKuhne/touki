@@ -27,9 +27,9 @@ namespace Touki.Analyzers;
 ///   semicolon-terminated statement. Both policies allow the containing construct to close on the next line.
 ///  </para>
 ///  <para>
-///   The <c>else</c>, <c>catch</c>, and <c>finally</c> continuation clauses remain adjacent to the preceding
-///   closing brace. Sibling accessor bodies also remain adjacent. Preprocessor directives and inactive
-///   conditional text do not satisfy optional spacing.
+///   The <c>else</c>, <c>catch</c>, <c>finally</c>, and a <c>do</c> statement's <c>while</c> continuation
+///   clauses remain adjacent to the preceding closing brace. Sibling accessor bodies also remain adjacent.
+///   Preprocessor directives and inactive conditional text do not satisfy optional spacing.
 ///  </para>
 ///  <para>
 ///   For a multiline switch expression directly terminated by a semicolon, spacing begins after the semicolon.

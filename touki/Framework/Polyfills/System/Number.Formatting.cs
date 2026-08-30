@@ -886,7 +886,6 @@ internal static partial class Number
         byte* dst = number.GetDigitsPointer();
         while (--i >= 0)
             *dst++ = *p++;
-
         *dst = (byte)('\0');
 
         number.CheckConsistency();
@@ -974,7 +973,6 @@ internal static partial class Number
         byte* dst = number.GetDigitsPointer();
         while (--i >= 0)
             *dst++ = *p++;
-
         *dst = (byte)('\0');
 
         number.CheckConsistency();
@@ -1025,7 +1023,6 @@ internal static partial class Number
                     (value, remainder) = Math.DivRem(value, 10);
                     *(--p) = (char)(remainder + '0');
                 }
-
                 while (value != 0);
             }
             else
@@ -1053,7 +1050,6 @@ internal static partial class Number
         byte* p = buffer + Int64Precision;
         while (High32(value) != 0)
             p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
-
         p = UInt32ToDecChars(p, Low32(value), 0);
 
         int i = (int)(buffer + Int64Precision - p);
@@ -1064,7 +1060,6 @@ internal static partial class Number
         byte* dst = number.GetDigitsPointer();
         while (--i >= 0)
             *dst++ = *p++;
-
         *dst = (byte)('\0');
 
         number.CheckConsistency();
@@ -1156,7 +1151,6 @@ internal static partial class Number
 
         while (High32(value) != 0)
             p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
-
         p = UInt32ToDecChars(p, Low32(value), 0);
 
         int i = (int)(buffer + UInt64Precision - p);
@@ -1167,7 +1161,6 @@ internal static partial class Number
         byte* dst = number.GetDigitsPointer();
         while (--i >= 0)
             *dst++ = *p++;
-
         *dst = (byte)('\0');
 
         number.CheckConsistency();
@@ -1328,7 +1321,6 @@ internal static partial class Number
                 {
                     if (nMaxDigits < 0)
                         nMaxDigits = DefaultPrecisionExponentialFormat;
-
                     nMaxDigits++;
 
                     RoundNumber(ref number, nMaxDigits, isCorrectlyRounded);
@@ -1383,7 +1375,6 @@ internal static partial class Number
                 {
                     if (nMaxDigits < 0)
                         nMaxDigits = info.PercentDecimalDigits;
-
                     number.Scale += 2;
 
                     RoundNumber(ref number, number.Scale + nMaxDigits, isCorrectlyRounded);
@@ -1462,14 +1453,12 @@ internal static partial class Number
                         case '0':
                             if (firstDigit == 0x7FFFFFFF)
                                 firstDigit = digitCount;
-
                             digitCount++;
                             lastDigit = digitCount;
                             break;
                         case '.':
                             if (decimalPos < 0)
                                 decimalPos = digitCount;
-
                             break;
                         case ',':
                             if (digitCount > 0 && decimalPos < 0)
@@ -1500,12 +1489,10 @@ internal static partial class Number
                         case '"':
                             while (src < format.Length && pFormat[src] != 0 && pFormat[src++] != ch)
                                 ;
-
                             break;
                         case '\\':
                             if (src < format.Length && pFormat[src] != 0)
                                 src++;
-
                             break;
                         case 'E':
                         case 'e':
@@ -1514,7 +1501,6 @@ internal static partial class Number
                             {
                                 while (++src < format.Length && pFormat[src] == '0')
                                     ;
-
                                 scientific = true;
                             }
 
@@ -1603,7 +1589,6 @@ internal static partial class Number
                 int groupSizeLen = groupDigits.Length;    // The length of groupDigits array.
                 if (groupSizeLen != 0)
                     groupTotalSizeCount = groupDigits[groupSizeIndex];   // The current running total of group size.
-
                 int groupSize = groupTotalSizeCount;
 
                 int totalDigits = digPos + ((adjust < 0) ? adjust : 0); // Actual number of digits in o/p
@@ -1612,7 +1597,6 @@ internal static partial class Number
                 {
                     if (groupSize == 0)
                         break;
-
                     ++thousandsSepCtr;
                     if (thousandsSepCtr >= thousandsSepPos.Length)
                     {
@@ -1735,15 +1719,12 @@ internal static partial class Number
                     case '"':
                         while (src < format.Length && pFormat[src] != 0 && pFormat[src] != ch)
                             sb.Append(pFormat[src++]);
-
                         if (src < format.Length && pFormat[src] != 0)
                             src++;
-
                         break;
                     case '\\':
                         if (src < format.Length && pFormat[src] != 0)
                             sb.Append(pFormat[src++]);
-
                         break;
                     case 'E':
                     case 'e':
@@ -1775,7 +1756,6 @@ internal static partial class Number
 
                                 while (++src < format.Length && pFormat[src] == '0')
                                     i++;
-
                                 if (i > 10)
                                     i = 10;
 
@@ -1790,7 +1770,6 @@ internal static partial class Number
                                 {
                                     if (pFormat[src] is '+' or '-')
                                         sb.Append(pFormat[src++]);
-
                                     while (src < format.Length && pFormat[src] == '0')
                                         sb.Append(pFormat[src++]);
                                 }
@@ -1919,7 +1898,6 @@ internal static partial class Number
                 {
                     sb.Append(*dig != 0 ? (char)(*dig++) : '0');
                 }
-
                 while (--digPos > 0);
             }
         }
@@ -2188,20 +2166,16 @@ internal static partial class Number
                     case '"':
                         while (src < format.Length && pFormat[src] != 0 && pFormat[src++] != ch)
                             ;
-
                         break;
                     case '\\':
                         if (src < format.Length && pFormat[src] != 0)
                             src++;
-
                         break;
                     case ';':
                         if (--section != 0)
                             break;
-
                         if (src < format.Length && pFormat[src] != 0 && pFormat[src] != ';')
                             return src;
-
                         goto case '\0';
                     case '\0':
                         return 0;

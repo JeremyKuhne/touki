@@ -623,15 +623,17 @@ dotnet_code_quality.TOUKI0027.require_blank_line_after_multiline_statement = tru
 
 `require_blank_line_after_closing_brace` applies when `}` is the only code token on its line. It
 requires a blank line unless the next relevant line begins with another structural closing brace,
-the brace is followed by `else`, `catch`, `finally`, or a sibling accessor, or the file ends. The
-continuation clauses must follow the preceding brace without a blank line; for a multiline
-construct, a same-line clause is moved to the next line. Sibling accessor bodies such as `get` and
-`set`, or `add` and `remove`, also have no blank line between them. This adjacency is enforced even
-when the blank-line option is disabled. A trailing comment means the brace is not alone.
+the brace is followed by `else`, `catch`, `finally`, the `while` clause of the same `do` statement,
+or a sibling accessor, or the file ends. Continuation clauses must follow the preceding brace
+without a blank line; for a multiline construct, a same-line clause is moved to the next line.
+Sibling accessor bodies such as `get` and `set`, or `add` and `remove`, also have no blank line
+between them. This adjacency is enforced even when the blank-line option is disabled. A trailing
+comment means the brace is not alone.
 Preprocessor-directive-only lines and inactive conditional text are skipped when looking for a
 blank line or closing brace. A required blank is inserted after the skipped sequence. The check
-stops at `#else` and `#elif` because they begin an alternate source branch. The `while` clause of a
-`do` statement remains subject to the blank-line requirement.
+stops at `#else` and `#elif` because they begin an alternate source branch. A multiline `do`
+statement remains subject to the post-statement policy, so its terminating semicolon is followed by
+a blank line when more code follows.
 
 For a multiline switch expression whose closing brace is directly terminated by a semicolon, the
 semicolon is the structural terminator. The blank-line check therefore runs after `};`, including

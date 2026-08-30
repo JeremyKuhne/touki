@@ -426,6 +426,87 @@ public partial class AllmanFormattingAnalyzerTests
     }
 
     [TestMethod]
+    public async Task Analyze_DoWhileContinuation_ReportsNothing()
+    {
+        const string source = """
+            class Sample
+            {
+                void Method()
+                {
+                    int count = 0;
+                    do
+                    {
+                        count++;
+                    }
+                    while (count < 1);
+
+                    Use(count);
+                }
+
+                void Use(int value) { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_BlankLineBeforeDoWhileClause_ReportsDiagnostic()
+    {
+        const string source = """
+            class Sample
+            {
+                void Method()
+                {
+                    do
+                    {
+                    }
+
+                    while (false);
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
+        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+    }
+
+    [TestMethod]
+    public async Task Analyze_SameLineDoWhileClause_ReportsDiagnostic()
+    {
+        const string source = """
+            class Sample
+            {
+                void Method()
+                {
+                    do
+                    {
+                    } while (false);
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
+        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+    }
+
+    [TestMethod]
+    public async Task Analyze_CompactDoWhileStatement_ReportsNothing()
+    {
+        const string source = "class Sample\n{\n    void Method()\n    {\n        do { } while (false);\n    }\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
     public async Task Analyze_BlankLineBeforeContinuationClause_ReportsDiagnostic()
     {
         const string source = """

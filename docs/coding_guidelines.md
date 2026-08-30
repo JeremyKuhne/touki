@@ -25,14 +25,15 @@ Enabling viewing white space will make conforming to these rules easier. In VS: 
 1. Use four spaces of indentation (never use tabs). XML blocks should get a single space indent (this includes XML comments).
 1. Lines should not have trailing white space or more than one space between code elements (`=` can be aligned when there is notable value in doing so, such as bit flag values).
 1. Avoid more than one empty line at any time. For example, do not have two blank lines between members of a type.
-1. Do not put a blank line between a closing brace and a following `else`, `catch`, or `finally`.
+1. Do not put a blank line between a closing brace and a following `else`, `catch`, `finally`, or
+    the `while` clause of the same `do` statement.
 1. Do not put a blank line between sibling accessor bodies such as `get` and `set`, or `add` and
     `remove`.
 1. Closing braces (`}`) on a line by themselves should be followed by a blank line unless the
     next relevant line begins with another closing brace, the brace is followed by `else`, `catch`,
-    `finally`, or a sibling accessor, or the file ends. Ignore preprocessor-directive-only lines and
-    inactive conditional text when finding the next relevant line, and do not carry this requirement
-    across `#else` or `#elif`.
+    `finally`, the `while` clause of the same `do` statement, or a sibling accessor, or the file ends.
+    Ignore preprocessor-directive-only lines and inactive conditional text when finding the next
+    relevant line, and do not carry this requirement across `#else` or `#elif`.
 1. A semicolon-terminated statement that spans multiple lines should be followed by a blank line
     unless the next relevant line begins with the containing closing brace or the file ends. Ignore
     preprocessor-directive-only lines and inactive conditional text when finding the next relevant

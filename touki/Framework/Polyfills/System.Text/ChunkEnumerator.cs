@@ -142,7 +142,6 @@ public struct ChunkEnumerator
             {
                 return false;
             }
-
             current = _chunks[pos];
             return true;
         }
