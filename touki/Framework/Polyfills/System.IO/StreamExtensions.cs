@@ -22,9 +22,10 @@ public static class StreamExtensions
         /// <returns>The total number of bytes read into <paramref name="buffer"/>.</returns>
         /// <remarks>
         ///  <para>
-        ///   Exact <see cref="MemoryStream"/> instances with publicly visible buffers are read directly. Other streams
-        ///   use a pooled intermediate array and dispatch through the virtual
-        ///   <see cref="Stream.Read(byte[], int, int)"/> overload.
+        ///   Empty buffers dispatch through the virtual <see cref="Stream.Read(byte[], int, int)"/> overload with a
+        ///   shared empty array. For non-empty buffers, exact <see cref="MemoryStream"/> instances with publicly visible
+        ///   buffers are read directly; other streams use a pooled intermediate array and dispatch through that virtual
+        ///   overload.
         ///  </para>
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
@@ -33,8 +34,18 @@ public static class StreamExtensions
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            if (!buffer.IsEmpty
-                && stream.GetType() == typeof(MemoryStream)
+            if (buffer.IsEmpty)
+            {
+                int read = stream.Read([], 0, 0);
+                if (read != 0)
+                {
+                    throw new IOException("Stream was too long.");
+                }
+
+                return 0;
+            }
+
+            if (stream.GetType() == typeof(MemoryStream)
                 && ((MemoryStream)stream).CanRead
                 && ((MemoryStream)stream).TryGetBuffer(out ArraySegment<byte> segment))
             {
@@ -76,15 +87,24 @@ public static class StreamExtensions
         /// <param name="buffer">The bytes to write.</param>
         /// <remarks>
         ///  <para>
-        ///   Exact <see cref="MemoryStream"/> instances with publicly visible buffers are written directly. Other
-        ///   streams use a pooled intermediate array and dispatch through the virtual
-        ///   <see cref="Stream.Write(byte[], int, int)"/> overload.
+        ///   Empty buffers dispatch through the virtual <see cref="Stream.Write(byte[], int, int)"/> overload with a
+        ///   shared empty array. For non-empty buffers, exact <see cref="MemoryStream"/> instances with publicly visible
+        ///   buffers are written directly; other streams use a pooled intermediate array and dispatch through that
+        ///   virtual overload.
         ///  </para>
         /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
         public void Write(ReadOnlySpan<byte> buffer)
         {
-            if (!buffer.IsEmpty
-                && stream.GetType() == typeof(MemoryStream)
+            ArgumentNullException.ThrowIfNull(stream);
+
+            if (buffer.IsEmpty)
+            {
+                stream.Write([], 0, 0);
+                return;
+            }
+
+            if (stream.GetType() == typeof(MemoryStream)
                 && ((MemoryStream)stream).CanWrite
                 && ((MemoryStream)stream).TryGetBuffer(out ArraySegment<byte> segment))
             {

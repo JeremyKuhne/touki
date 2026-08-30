@@ -28,6 +28,27 @@ public partial class StreamExtensionsTests
     }
 
     [TestMethod]
+    public void Read_EmptyByteSpanWhenStreamReturnsBytes_ThrowsIOException()
+    {
+        using InvalidReadCountStream stream = new();
+        Span<byte> buffer = [];
+        System.IO.IOException? exception = null;
+
+        try
+        {
+#pragma warning disable CA2022 // Direct Read call exercises zero-length return-value validation.
+            stream.Read(buffer);
+#pragma warning restore CA2022
+        }
+        catch (System.IO.IOException caught)
+        {
+            exception = caught;
+        }
+
+        exception.Should().NotBeNull();
+    }
+
+    [TestMethod]
     public void Read_EmptyByteSpanOnDisposedMemoryStream_ThrowsObjectDisposedException()
     {
         MemoryStream stream = new();
@@ -196,7 +217,7 @@ public partial class StreamExtensionsTests
     }
 
     [TestMethod]
-    public void Write_EmptyByteSpanBeyondLength_DoesNotGrowStream()
+    public void Write_EmptyByteSpanBeyondLength_GrowsToPositionAndClearsGap()
     {
         using MemoryStream stream = new();
         stream.WriteByte(1);
@@ -205,9 +226,9 @@ public partial class StreamExtensionsTests
 
         stream.Write(buffer);
 
-        stream.ToArray().Should().Equal(1);
+        stream.ToArray().Should().Equal(1, 0, 0);
         stream.Position.Should().Be(3);
-        stream.Length.Should().Be(1);
+        stream.Length.Should().Be(3);
     }
 
     [TestMethod]
@@ -284,6 +305,28 @@ public partial class StreamExtensionsTests
 
         exception.Should().NotBeNull();
     }
+
+#if NETFRAMEWORK
+    [TestMethod]
+    public void Write_ByteSpanNullStream_ThrowsArgumentNullException()
+    {
+        System.IO.Stream stream = null!;
+        ReadOnlySpan<byte> buffer = [];
+        ArgumentNullException? exception = null;
+
+        try
+        {
+            stream.Write(buffer);
+        }
+        catch (ArgumentNullException caught)
+        {
+            exception = caught;
+        }
+
+        exception.Should().NotBeNull();
+        exception.ParamName.Should().Be("stream");
+    }
+#endif
 
 #if NET
     [TestMethod]
