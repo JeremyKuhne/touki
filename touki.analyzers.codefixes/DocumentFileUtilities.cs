@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Jeremy W Kuhne
+﻿// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -122,7 +122,7 @@ internal static class DocumentFileUtilities
 
         string? directory = Path.GetDirectoryName(document.FilePath);
 #pragma warning disable TOUKI0032 // Path.Join is unavailable on netstandard2.0.
-    return string.IsNullOrEmpty(directory) ? fileName : Path.Combine(directory, fileName);
+        return string.IsNullOrEmpty(directory) ? fileName : Path.Combine(directory, fileName);
 #pragma warning restore TOUKI0032
     }
 }

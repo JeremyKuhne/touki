@@ -25,11 +25,14 @@
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+
+    <_ToukiBootstrapRoot>$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)'))</_ToukiBootstrapRoot>
+    <_ToukiBootstrapPackage>$(_ToukiBootstrapRoot)klutzyninja.touki.analyzers/$(ToukiBootstrapAnalyzerVersion)</_ToukiBootstrapPackage>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageDownload Include="KlutzyNinja.Touki.Analyzers" Version="[$(ToukiBootstrapAnalyzerVersion)]" />
-    <Analyzer Include="$(NuGetPackageRoot)klutzyninja.touki.analyzers/$(ToukiBootstrapAnalyzerVersion)/analyzers/dotnet/cs/touki.analyzers.dll" />
+    <Analyzer Include="$(_ToukiBootstrapPackage)/analyzers/dotnet/cs/touki.analyzers.dll" />
     <!-- Brings CodeFixProvider, Document, CodeAction, and SyntaxGenerator (and CodeAnalysis.CSharp transitively). -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
     <PackageReference Include="MinVer">
