@@ -4,14 +4,11 @@
 
 using System.Text;
 using Touki.Text;
-#if NETFRAMEWORK
-using System.IO;
-#endif
 
 namespace Touki;
 
 [TestClass]
-public class StreamExtensionsTests
+public partial class StreamExtensionsTests
 {
     [TestMethod]
     public void Read_Write_ArraySegment()
@@ -80,6 +77,145 @@ public class StreamExtensionsTests
         int read = await memory.ReadAsync(new ArraySegment<byte>(), CancellationToken.None).ConfigureAwait(false);
         read.Should().Be(0);
         memory.Position.Should().Be(initial);
+    }
+
+    [TestMethod]
+    public void TryReadExactly_SpanWithPartialReads_FillsBufferAndReturnsTrue()
+    {
+        using ChunkedReadStream stream = new([1, 2, 3, 4], maximumReadSize: 1);
+        byte[] buffer = [0, 0, 0, 0];
+
+        bool result = stream.TryReadExactly(buffer.AsSpan());
+
+        result.Should().BeTrue();
+        buffer.Should().Equal(1, 2, 3, 4);
+        stream.ReadCallCount.Should().Be(4);
+    }
+
+    [TestMethod]
+    public void TryReadExactly_SpanEndsEarly_ReturnsFalseWithReadPrefix()
+    {
+        using ChunkedReadStream stream = new([1, 2], maximumReadSize: 1);
+        byte[] buffer = [9, 9, 9];
+
+        bool result = stream.TryReadExactly(buffer.AsSpan());
+
+        result.Should().BeFalse();
+        buffer.Should().Equal(1, 2, 9);
+        stream.ReadCallCount.Should().Be(3);
+    }
+
+    [TestMethod]
+    public void TryReadExactly_EmptySpan_ReturnsTrueWithoutReading()
+    {
+        using ChunkedReadStream stream = new([], maximumReadSize: 1);
+        Span<byte> buffer = [];
+
+        bool result = stream.TryReadExactly(buffer);
+
+        result.Should().BeTrue();
+        stream.ReadCallCount.Should().Be(0);
+    }
+
+    [TestMethod]
+    public void TryReadExactly_ArrayRangeWithPartialReads_FillsRangeAndReturnsTrue()
+    {
+        using ChunkedReadStream stream = new([1, 2, 3], maximumReadSize: 1);
+        byte[] buffer = [9, 9, 9, 9, 9];
+
+        bool result = stream.TryReadExactly(buffer, offset: 1, count: 3);
+
+        result.Should().BeTrue();
+        buffer.Should().Equal(9, 1, 2, 3, 9);
+    }
+
+    [TestMethod]
+    public void TryReadExactly_ArrayRangeEndsEarly_ReturnsFalseWithReadPrefix()
+    {
+        using ChunkedReadStream stream = new([1, 2], maximumReadSize: 1);
+        byte[] buffer = [9, 9, 9, 9, 9];
+
+        bool result = stream.TryReadExactly(buffer, offset: 1, count: 3);
+
+        result.Should().BeFalse();
+        buffer.Should().Equal(9, 1, 2, 9, 9);
+    }
+
+    [TestMethod]
+    public void TryReadExactly_NullArray_ThrowsArgumentNullException()
+    {
+        using ChunkedReadStream stream = new([], maximumReadSize: 1);
+
+        Action action = () => stream.TryReadExactly(null!, offset: 0, count: 0);
+
+        action.Should().Throw<ArgumentNullException>().WithParameterName("buffer");
+    }
+
+    [TestMethod]
+    public void TryReadExactly_NullStream_ThrowsArgumentNullException()
+    {
+        System.IO.Stream stream = null!;
+        byte[] buffer = [];
+
+        Action action = () => stream.TryReadExactly(buffer, offset: 0, count: 0);
+
+        action.Should().Throw<ArgumentNullException>().WithParameterName("stream");
+    }
+
+    [TestMethod]
+    [DataRow(-1, 0, "offset")]
+    [DataRow(0, -1, "count")]
+    [DataRow(2, 2, "count")]
+    [DataRow(4, 0, "count")]
+    public void TryReadExactly_InvalidArrayRange_ThrowsArgumentOutOfRangeException(
+        int offset,
+        int count,
+        string parameterName)
+    {
+        using ChunkedReadStream stream = new([], maximumReadSize: 1);
+        byte[] buffer = new byte[3];
+
+        Action action = () => stream.TryReadExactly(buffer, offset, count);
+
+        action.Should().Throw<ArgumentOutOfRangeException>().WithParameterName(parameterName);
+    }
+
+    [TestMethod]
+    public void TryReadExactly_ReadThrows_PropagatesException()
+    {
+        InvalidOperationException expected = new();
+        using ThrowingReadStream stream = new(expected);
+        byte[] buffer = [0];
+
+        Action action = () => stream.TryReadExactly(buffer, offset: 0, count: 1);
+
+        action.Should().Throw<InvalidOperationException>().Which.Should().BeSameAs(expected);
+    }
+
+    [TestMethod]
+    public void Read_ByteSpanWithPartialRead_CopiesOnlyBytesRead()
+    {
+        using ChunkedReadStream stream = new([1, 2, 3], maximumReadSize: 1);
+        byte[] buffer = [9, 9, 9];
+
+        int read = stream.Read(buffer.AsSpan());
+
+        read.Should().Be(1);
+        buffer.Should().Equal(1, 9, 9);
+    }
+
+    [TestMethod]
+    public void Read_ByteSpanDerivedMemoryStream_UsesArrayOverride()
+    {
+        byte[] source = [1, 2, 3];
+        using TrackingMemoryStream stream = new(source);
+        byte[] buffer = [0, 0, 0];
+
+        int read = stream.Read(buffer.AsSpan());
+
+        read.Should().Be(3);
+        buffer.Should().Equal(source);
+        stream.ArrayReadCallCount.Should().Be(1);
     }
 
     [TestMethod]
@@ -280,5 +416,120 @@ public class StreamExtensionsTests
         memory.Position.Should().Be(5);
         byte[] expected = [1, 2, 3, 4, 5];
         backing.Should().Equal(expected);
+    }
+
+    [TestMethod]
+    public void Write_ByteSpanDerivedMemoryStream_UsesArrayOverride()
+    {
+        byte[] backing = new byte[3];
+        using TrackingMemoryStream stream = new(backing);
+        ReadOnlySpan<byte> data = [1, 2, 3];
+
+        stream.Write(data);
+
+        backing.Should().Equal(1, 2, 3);
+        stream.ArrayWriteCallCount.Should().Be(1);
+    }
+
+#if NETFRAMEWORK
+    [TestMethod]
+    public void Write_LegacyStaticEntryPoint_ForwardsToSystemIOPolyfill()
+    {
+        using MemoryStream stream = new();
+        ReadOnlySpan<byte> buffer = [1, 2, 3];
+
+        Touki.Io.StreamExtensions.Write(stream, buffer);
+
+        stream.ToArray().Should().Equal(1, 2, 3);
+    }
+#endif
+
+    private sealed class ChunkedReadStream(byte[] source, int maximumReadSize) : System.IO.Stream
+    {
+        private int _position;
+
+        public int ReadCallCount { get; private set; }
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => source.Length;
+
+        public override long Position
+        {
+            get => _position;
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ReadCallCount++;
+            int read = Math.Min(Math.Min(count, maximumReadSize), source.Length - _position);
+            source.AsSpan(_position, read).CopyTo(buffer.AsSpan(offset, read));
+            _position += read;
+            return read;
+        }
+
+        public override long Seek(long offset, System.IO.SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    private sealed class ThrowingReadStream(Exception exception) : System.IO.Stream
+    {
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => 0;
+
+        public override long Position
+        {
+            get => 0;
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => throw exception;
+
+        public override long Seek(long offset, System.IO.SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    private sealed class TrackingMemoryStream(byte[] buffer)
+        : MemoryStream(buffer, index: 0, count: buffer.Length, writable: true, publiclyVisible: true)
+    {
+        public int ArrayReadCallCount { get; private set; }
+
+        public int ArrayWriteCallCount { get; private set; }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ArrayReadCallCount++;
+            return base.Read(buffer, offset, count);
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            ArrayWriteCallCount++;
+            base.Write(buffer, offset, count);
+        }
     }
 }

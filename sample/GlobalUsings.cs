@@ -4,34 +4,32 @@
 
 #pragma warning disable IDE0005 // Using directive is unnecessary.
 
-// As we have implicit usings disabled (so we can redirect System.IO), we need to bring in other
-// namespaces explicitly here.
+// As we have implicit usings disabled, we need to bring in namespaces explicitly here.
 
 global using System;
 global using System.Collections.Generic;
 global using System.Diagnostics;
 global using System.Diagnostics.CodeAnalysis;
+global using System.IO;
 global using System.Numerics;
 global using System.Threading;
 
-// Try to direct as much as possible to Microsoft.IO on .NET Framework. Follow with explicit usings for types
-// that are not defined in Microsoft.IO (exchange types).
-
 #if NETFRAMEWORK
-global using Microsoft.IO;
-global using Microsoft.IO.Enumeration;
+global using Directory = Microsoft.IO.Directory;
+global using DirectoryInfo = Microsoft.IO.DirectoryInfo;
+global using EnumerationOptions = Microsoft.IO.EnumerationOptions;
+global using File = Microsoft.IO.File;
+global using FileInfo = Microsoft.IO.FileInfo;
+global using FileSystemEntry = Microsoft.IO.Enumeration.FileSystemEntry;
+global using FileSystemInfo = Microsoft.IO.FileSystemInfo;
+global using FileSystemName = Microsoft.IO.Enumeration.FileSystemName;
+global using MatchCasing = Microsoft.IO.MatchCasing;
+global using MatchType = Microsoft.IO.MatchType;
+global using Path = Microsoft.IO.Path;
+global using SearchOption = Microsoft.IO.SearchOption;
 #else
-global using System.IO;
 global using System.IO.Enumeration;
 #endif
-
-global using DirectoryNotFoundException = System.IO.DirectoryNotFoundException;
-global using DriveNotFoundException = System.IO.DriveNotFoundException;
-global using FileAttributes = System.IO.FileAttributes;
-global using FileNotFoundException = System.IO.FileNotFoundException;
-global using IOException = System.IO.IOException;
-global using PathTooLongException = System.IO.PathTooLongException;
-global using Stream = System.IO.Stream;
 
 // Pull in the Touki namespaces to light up extension based functionality.
 

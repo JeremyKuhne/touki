@@ -9,32 +9,29 @@ global using System.Collections.Generic;
 global using System.ComponentModel;
 global using System.Diagnostics;
 global using System.Diagnostics.CodeAnalysis;
+global using System.IO;
 global using System.Runtime.CompilerServices;
 global using System.Runtime.InteropServices;
 
-// Try to direct as much as possible to Microsoft.IO on .NET Framework. Follow with explicit usings for types
-// that are not defined in Microsoft.IO (exchange types).
-
 #if NETFRAMEWORK
-global using Microsoft.IO;
+global using Directory = Microsoft.IO.Directory;
+global using DirectoryInfo = Microsoft.IO.DirectoryInfo;
+global using EnumerationOptions = Microsoft.IO.EnumerationOptions;
+global using File = Microsoft.IO.File;
+global using FileInfo = Microsoft.IO.FileInfo;
+global using FileSystemEntry = Microsoft.IO.Enumeration.FileSystemEntry;
+global using FileSystemInfo = Microsoft.IO.FileSystemInfo;
+global using FileSystemName = Microsoft.IO.Enumeration.FileSystemName;
+global using MatchCasing = Microsoft.IO.MatchCasing;
+global using MatchType = Microsoft.IO.MatchType;
+global using Path = Microsoft.IO.Path;
+global using SearchOption = Microsoft.IO.SearchOption;
+
+// Open generic types cannot be mapped with using aliases.
 global using Microsoft.IO.Enumeration;
 #else
-global using System.IO;
 global using System.IO.Enumeration;
 #endif
-
-global using BinaryReader = System.IO.BinaryReader;
-global using FileAccess = System.IO.FileAccess;
-global using FileMode = System.IO.FileMode;
-global using FileShare = System.IO.FileShare;
-global using FileStream = System.IO.FileStream;
-global using HandleInheritability = System.IO.HandleInheritability;
-global using IOException = System.IO.IOException;
-global using MemoryStream = System.IO.MemoryStream;
-global using Stream = System.IO.Stream;
-global using StreamWriter = System.IO.StreamWriter;
-global using StringWriter = System.IO.StringWriter;
-global using TextWriter = System.IO.TextWriter;
 
 global using Marshal = System.Runtime.InteropServices.Marshal;
 

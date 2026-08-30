@@ -162,7 +162,15 @@ teardown.
 
 [`StreamExtensions`](../touki/Touki/Io/StreamExtensions.cs) adds synchronous and
 asynchronous `Read` / `Write` overloads for `ArraySegment<byte>`, including
-cancellation-token support for the asynchronous forms.
+cancellation-token support for the asynchronous forms. Its `TryReadExactly`
+overloads mirror the synchronous `Stream.ReadExactly` buffer shapes but return
+`false` when the stream ends before the requested range is full. Bytes read before
+that point remain in the destination. Empty ranges succeed without reading.
+
+On .NET Framework, Touki also polyfills `Stream.Read(Span<byte>)` and
+`Stream.Write(ReadOnlySpan<byte>)`. Exact, publicly visible `MemoryStream`
+instances use their backing buffers directly; derived and other streams use the
+same pooled-array fallback as the modern `Stream` base implementation.
 
 ### `WriteFormatted`
 
