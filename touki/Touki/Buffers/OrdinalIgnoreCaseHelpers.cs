@@ -59,6 +59,7 @@ internal static class OrdinalIgnoreCaseHelpers
             {
                 charA -= 0x20;
             }
+
             if ((uint)(charB - 'a') <= 'z' - 'a')
             {
                 charB -= 0x20;

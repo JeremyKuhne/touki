@@ -137,6 +137,7 @@ public static class Paths
     {
         bool needsSeparator = !currentDirectory.IsEmpty
             && currentDirectory[^1] != Path.DirectorySeparatorChar;
+
         int candidateLength = currentDirectory.Length + directoryName.Length + (needsSeparator ? 1 : 0);
         if (candidateLength > targetDirectory.Length)
         {
@@ -146,6 +147,7 @@ public static class Paths
         StringComparison comparison = ignoreCase
             ? StringComparison.OrdinalIgnoreCase
             : StringComparison.Ordinal;
+
         if (!targetDirectory.StartsWith(currentDirectory, comparison))
         {
             return false;

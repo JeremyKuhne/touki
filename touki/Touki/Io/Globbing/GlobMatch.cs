@@ -219,6 +219,7 @@ internal sealed partial class GlobMatch : FileSystemMatcherSession
             {
                 _directoryAncestorMatched = MatchesDirectoryAncestor(
                     GetRelativeDirectory(currentDirectory));
+
                 if (_specification.DirectoryOnly)
                 {
                     _cacheValid = true;
@@ -255,6 +256,7 @@ internal sealed partial class GlobMatch : FileSystemMatcherSession
                 _specification.Strategy.LiteralPathPrefix,
                 _specification.Separator,
                 _specification.IgnoreCaseKind);
+
             _cacheValid = true;
         }
 
@@ -314,6 +316,7 @@ internal sealed partial class GlobMatch : FileSystemMatcherSession
         using BufferScope<char> buffer = new(
             stackalloc char[StackBufferSize],
             relativeDirectory.Length);
+
         Span<char> path = buffer[..relativeDirectory.Length];
         BuildTranslatedPath(relativeDirectory, path, _specification.Separator);
 
@@ -324,6 +327,7 @@ internal sealed partial class GlobMatch : FileSystemMatcherSession
             int segmentEnd = relativeSeparator < 0
                 ? path.Length
                 : segmentStart + relativeSeparator;
+
             if (segmentEnd > segmentStart
                 && _specification.MatchCore(path[..segmentStart], path[segmentStart..segmentEnd]))
             {
@@ -439,6 +443,7 @@ internal sealed partial class GlobMatch : FileSystemMatcherSession
                 IgnoreCaseKind.Unicode => GlobMatcherHelpers.UnicodeFoldEquals(candidateChar, literalChar),
                 _ => candidateChar == literalChar,
             };
+
             if (!match)
             {
                 return PrefixAlignment.Diverged;

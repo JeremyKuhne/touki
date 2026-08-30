@@ -25,6 +25,7 @@ internal sealed class PathPredicateFileSystemMatcherSession : FileSystemMatcherS
     {
         _rootPrefixLength = rootDirectory.Length
             + (Path.EndsInDirectorySeparator(rootDirectory) ? 0 : 1);
+
         _predicate = predicate;
     }
 
@@ -38,6 +39,7 @@ internal sealed class PathPredicateFileSystemMatcherSession : FileSystemMatcherS
             _rootPrefixLength,
             currentDirectory,
             fileName);
+
         return MatchesPath(path.Value);
     }
 

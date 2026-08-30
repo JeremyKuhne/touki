@@ -16,6 +16,10 @@ dotnet_diagnostic.TOUKI0020.severity = none
 # so future ports remain easy to compare.
 dotnet_diagnostic.TOUKI0024.severity = none
 
+# TOUKI0027: Use Allman formatting. Upstream source layout is retained so future ports remain
+# easy to compare.
+dotnet_diagnostic.TOUKI0027.severity = none
+
 # TOUKI0026: Require member, parameter, and return XML documentation. Upstream documentation
 # coverage is retained so future ports remain easy to compare.
 dotnet_diagnostic.TOUKI0026.severity = none

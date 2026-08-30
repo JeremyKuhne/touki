@@ -18,5 +18,6 @@ public static unsafe partial class NumberExtensions
         internal uint _lo;
         internal uint _mid;
     }
+
 #pragma warning restore CS0649
 }

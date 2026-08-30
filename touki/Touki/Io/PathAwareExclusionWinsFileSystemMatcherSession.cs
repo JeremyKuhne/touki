@@ -52,6 +52,7 @@ internal sealed class PathAwareExclusionWinsFileSystemMatcherSession(
             _rootPrefixLength,
             currentDirectory,
             fileName);
+
         for (int index = 0; index < Excludes.Length; index++)
         {
             if (Excludes[index] is ICanonicalPathMatcherSession exclude

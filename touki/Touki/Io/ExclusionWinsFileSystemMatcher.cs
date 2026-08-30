@@ -39,6 +39,7 @@ internal sealed class ExclusionWinsFileSystemMatcher(
 
         IFileSystemMatcherSession[] includeSessions =
             FileSystemMatcherSessionFactory.CreateSessions(includes, rootDirectory);
+
         try
         {
             IFileSystemMatcherSession[] excludeSessions =
@@ -46,6 +47,7 @@ internal sealed class ExclusionWinsFileSystemMatcher(
                     excludes,
                     rootDirectory,
                     includeSessions);
+
             return HasPathSessions(includeSessions) || HasPathSessions(excludeSessions)
                 ? new PathAwareExclusionWinsFileSystemMatcherSession(
                     includeSessions,

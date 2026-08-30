@@ -75,6 +75,7 @@ public sealed partial class Lock
                 _state = newState;
                 return true;
             }
+
             return false;
         }
 
@@ -126,6 +127,7 @@ public sealed partial class Lock
                 _state = newState;
                 return true;
             }
+
             return false;
         }
 
@@ -241,6 +243,7 @@ public sealed partial class Lock
                     {
                         return TryLockResult.Wait;
                     }
+
                     if (lockObj.ShouldStopPreemptingWaiters)
                     {
                         newState.SetShouldNotPreemptWaiters();
@@ -269,6 +272,7 @@ public sealed partial class Lock
                     {
                         isFirstSpinner = true;
                     }
+
                     return result;
                 }
 
@@ -382,6 +386,7 @@ public sealed partial class Lock
                         // This was the first waiter or the waiter start time was reset, record the waiter start time
                         lockObj.RecordWaiterStartTime();
                     }
+
                     return false;
                 }
 
@@ -439,6 +444,7 @@ public sealed partial class Lock
                             lockObj.RecordWaiterStartTime();
                         }
                     }
+
                     return true;
                 }
 
@@ -498,6 +504,7 @@ public sealed partial class Lock
                             lockObj.RecordWaiterStartTime();
                         }
                     }
+
                     return true;
                 }
 

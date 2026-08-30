@@ -42,6 +42,7 @@ internal abstract class OrderedFileSystemMatcherSessionBase(
         {
             DirectoryMatchType matchType = DirectoryMatchTypeOperations.Normalize(
                 Sessions[index].MatchesDirectory(currentDirectory, directoryName));
+
             bool include = Rules[index].Action == FileSystemMatchAction.Include;
             if (matchType == DirectoryMatchType.AllDescendantFilesMatch)
             {

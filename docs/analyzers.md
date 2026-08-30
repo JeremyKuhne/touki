@@ -4,7 +4,7 @@
 `KlutzyNinja.Touki` depends on that package, so adding the main package reference is still
 enough: the rules start running on the next build and in the IDE. Reference the analyzer
 package directly when you want the rules without the Touki runtime library. TOUKI0012,
-TOUKI0022, TOUKI0024, and TOUKI0041 ship disabled unless a project opts in.
+TOUKI0022, TOUKI0024, TOUKI0027, and TOUKI0041 ship disabled unless a project opts in.
 
 The analyzer package is versioned independently from `KlutzyNinja.Touki`.
 Referencing Touki selects a tested minimum analyzer version; a direct analyzer
@@ -34,6 +34,7 @@ of the way, and name a field for what it actually is.
 | [TOUKI0024](#touki0024) | Format XML documentation as nested XML | Maintainability | **Disabled** | Yes | - |
 | [TOUKI0025](#touki0025) | Document types | Maintainability | Warning | Yes | - |
 | [TOUKI0026](#touki0026) | Document members, parameters, and return values | Maintainability | Warning | Yes | - |
+| [TOUKI0027](#touki0027) | Use configured Allman formatting | Maintainability | **Disabled** | Yes | - |
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
 | [TOUKI0031](#touki0031) | Use `WriteFormatted` for interpolated strings | Performance | Warning | - | C# 10, `TextWriterExtensions` |
 | [TOUKI0032](#touki0032) | Use `Path.Join` instead of `Path.Combine` | Reliability | Warning | - | - |
@@ -582,6 +583,94 @@ The member documentation rule is disabled under `touki/Framework/Polyfills` in t
 Those files track `dotnet/runtime`, so retaining upstream documentation coverage keeps future
 updates reviewable; Touki's hand-written shared and Framework support code uses the defaults.
 
+## TOUKI0027
+
+**Use configured Allman formatting.** Checks every structural C# brace pair, including
+declarations, executable blocks, accessor lists, initializers, anonymous objects, `with`
+initializers, switch expressions, and non-empty property patterns. Empty property patterns such as
+`value is { } nonNull` perform a non-null match and are not blocks, so their braces are ignored.
+Interpolated-string delimiters are content rather than structural braces and are also ignored.
+Before C# 11, interpolation holes are left unchanged because those language versions do not permit
+the newlines that Allman formatting may introduce inside a non-verbatim interpolated string.
+
+A construct that spans multiple physical lines puts its opening brace on a new line, leaves no
+code after that opening brace, and puts its closing brace after the construct's final content
+line. A complete construct may remain on one line when the whole physical line fits within the
+configured maximum:
+
+```csharp
+int Count { get; }
+
+if (ready)
+{
+  Run();
+}
+```
+
+The rule ships **disabled** because source layout is a house style. Enable it with:
+
+```ini
+dotnet_diagnostic.TOUKI0027.severity = warning
+```
+
+All three formatting policies default to `true` and can be changed independently:
+
+```ini
+dotnet_code_quality.TOUKI0027.require_blank_line_after_closing_brace = true
+dotnet_code_quality.TOUKI0027.allow_single_line_blocks = true
+dotnet_code_quality.TOUKI0027.require_blank_line_after_multiline_statement = true
+```
+
+`require_blank_line_after_closing_brace` applies when `}` is the only code token on its line. It
+requires a blank line unless the next relevant line begins with another structural closing brace,
+the brace is followed by `else`, `catch`, `finally`, or a sibling accessor, or the file ends. The
+continuation clauses must follow the preceding brace without a blank line; for a multiline
+construct, a same-line clause is moved to the next line. Sibling accessor bodies such as `get` and
+`set`, or `add` and `remove`, also have no blank line between them. This adjacency is enforced even
+when the blank-line option is disabled. A trailing comment means the brace is not alone.
+Preprocessor-directive-only lines and inactive conditional text are skipped when looking for a
+blank line or closing brace. A required blank is inserted after the skipped sequence. The check
+stops at `#else` and `#elif` because they begin an alternate source branch. The `while` clause of a
+`do` statement remains subject to the blank-line requirement.
+
+For a multiline switch expression whose closing brace is directly terminated by a semicolon, the
+semicolon is the structural terminator. The blank-line check therefore runs after `};`, including
+for expression-bodied members and declarations. Separator semicolons inside a `for` header do not
+terminate their owning syntax and do not participate.
+
+`require_blank_line_after_multiline_statement` applies to a `StatementSyntax` whose terminating
+semicolon is on a later physical line than the statement's first token. It requires a blank line
+after the semicolon's physical line unless the next relevant line begins with a closing brace or
+the file ends. Preprocessor-directive-only lines and inactive conditional text are skipped, and the
+check stops at `#else` and `#elif`. A trailing comment stays on the statement line. A following
+statement on that same line is moved after the required blank line. Multiline fields and other
+member declarations are not statements and do not participate.
+
+`allow_single_line_blocks` permits any complete structural brace pair to stay on one line. The
+maximum physical line length uses the first positive integer from this list:
+
+1. `dotnet_code_quality.TOUKI0027.max_line_length`
+2. `max_line_length` - the standard EditorConfig property
+3. 120
+
+The physical length includes indentation and any source before or after the brace pair. Setting
+`allow_single_line_blocks` to `false` expands every pair regardless of length. Invalid boolean
+values use the default. Invalid and non-positive lengths fall through to the next source.
+
+When the fixer creates a line, it follows `indent_style` and `indent_size`. Indentation sizes from
+1 through 16 are accepted; missing, invalid, non-positive, and larger values use four spaces.
+Existing lines are not otherwise reindented.
+
+The code fix formats the complete document in one deterministic text update so brace and spacing
+repairs cannot overlap. Fix All supports document, project, and solution scopes. The analyzer
+stores its resolved options on the diagnostic, so the fixer uses the same configuration that
+produced the report. For a physical file linked into several projects, the fix is offered only when
+every parse and analyzer-configuration context produces identical output; applying it updates every
+linked document. Diagnosis does not materialize the formatted document. When a conservative
+projection shows that formatting could add more than 4 MiB of text, the diagnostic remains but the
+code fix is withheld. The fix is also withheld when moving a brace would relocate a line containing
+`#`, because malformed directive text can become active when moved to a new line.
+
 ## TOUKI0030
 
 **Use `ValueStringBuilder` to build strings.** Reports a `StringBuilder` that is only used
@@ -952,6 +1041,11 @@ columns, so several fixes on one line compose without having to be applied in or
 computed by the analyzer from the file's options. Its document-based Fix All path applies all
 non-overlapping replacements for a document together.
 
+`FormatAllmanCodeFixProvider` fixes TOUKI0027 by rerunning the analyzer's deterministic formatter
+over the complete document. Fix All supports document, project, and solution scopes. Linked
+documents are updated together only when their parse and analyzer-configuration contexts produce
+the same formatted text.
+
 `UseTextWriterWriteFormattedCodeFixProvider` fixes TOUKI0031 by renaming the diagnosed
 `Write` call and importing `Touki.Io` when necessary. It supports Fix All.
 
@@ -973,6 +1067,12 @@ output. Enabling it at `warning` across this repository's own test project produ
 reports, two of which were tabs or trailing whitespace. Two narrow rules can each be set to
 `warning` or `error` on their own.
 
+TOUKI0027 overlaps `csharp_new_line_before_open_brace` and
+`csharp_preserve_single_line_blocks`, but IDE0055 does not independently enforce the two
+conditional blank-line policies or a maximum-length gate for compact brace pairs. TOUKI0027
+lets a project enforce that bundle without raising every IDE0055 formatting preference to the
+same severity.
+
 ## Marker attributes
 
 Two rules are opt-in through public attributes in the `Touki` namespace:
@@ -986,6 +1086,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 
 | Release | Rules added |
 |---------|-------------|
+| Unreleased | TOUKI0027 |
 | 0.4.0 | TOUKI0001, TOUKI0002, TOUKI0003, TOUKI0004, TOUKI0010 |
 | 0.5.0 | TOUKI0020, TOUKI0030 |
 | 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |

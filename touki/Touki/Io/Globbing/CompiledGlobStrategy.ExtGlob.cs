@@ -124,6 +124,7 @@ internal sealed partial class CompiledGlobStrategy
             useMSBuildTrailingDotAny,
             useMSBuildAllDotInput,
             effectiveDoubleStarMode);
+
         ExtGlobMatchState state = default;
         try
         {

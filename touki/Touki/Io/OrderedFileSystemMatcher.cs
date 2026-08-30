@@ -38,6 +38,7 @@ internal sealed class OrderedFileSystemMatcher(
 
         IFileSystemMatcherSession[] sessions =
             FileSystemMatcherSessionFactory.CreateSessions(rules, rootDirectory);
+
         return HasPathSessions(sessions)
             ? new PathAwareOrderedFileSystemMatcherSession(
                 rules,

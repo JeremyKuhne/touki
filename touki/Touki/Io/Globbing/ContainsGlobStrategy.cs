@@ -79,6 +79,7 @@ internal sealed class ContainsGlobStrategy : GlobStrategy
                 return i;
             }
         }
+
         return -1;
     }
 }

@@ -73,6 +73,7 @@ public sealed unsafe class MappedMemoryManager : MemoryManager<byte>
             MemoryMappedFileAccess.Read,
             HandleInheritability.None,
             leaveOpen: true);
+
         MemoryMappedViewAccessor accessor = file.CreateViewAccessor(0, length, MemoryMappedFileAccess.Read);
         try
         {

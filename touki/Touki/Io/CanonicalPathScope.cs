@@ -29,6 +29,7 @@ internal ref struct CanonicalPathScope
         ReadOnlySpan<char> relativeDirectory = currentDirectory.Length >= rootPrefixLength
             ? currentDirectory[rootPrefixLength..]
             : default;
+
         if (relativeDirectory.IsEmpty)
         {
             _buffer = default;

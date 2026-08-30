@@ -109,6 +109,7 @@ public static class Glob
                 normalizedRoot,
                 matcher,
                 snapshottedOptions);
+
             while (enumerator.MoveNext())
             {
                 yield return enumerator.Current;

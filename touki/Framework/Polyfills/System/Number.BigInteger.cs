@@ -674,6 +674,7 @@ internal static partial class Number
 
                     index++;
                 }
+
                 while (index < divisorLength);
 
                 // Remove all leading zero blocks from dividend
@@ -704,6 +705,7 @@ internal static partial class Number
 
                     index++;
                 }
+
                 while (index < divisorLength);
 
                 // Remove all leading zero blocks from dividend
@@ -844,6 +846,7 @@ internal static partial class Number
                         resultIndex++;
                         largeIndex++;
                     }
+
                     while (largeIndex < largeLength);
 
                     result._blocks[resultIndex] = (uint)(carry);

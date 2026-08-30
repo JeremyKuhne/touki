@@ -156,6 +156,7 @@ public static class InterlockedExtensions
                 {
                     return oldValue;
                 }
+
                 current = oldValue;
             }
         }
@@ -186,6 +187,7 @@ public static class InterlockedExtensions
                 {
                     return oldValue;
                 }
+
                 current = oldValue;
             }
         }
@@ -216,6 +218,7 @@ public static class InterlockedExtensions
                 {
                     return oldValue;
                 }
+
                 current = oldValue;
             }
         }
@@ -246,6 +249,7 @@ public static class InterlockedExtensions
                 {
                     return oldValue;
                 }
+
                 current = oldValue;
             }
         }

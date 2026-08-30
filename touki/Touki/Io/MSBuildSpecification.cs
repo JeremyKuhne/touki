@@ -113,6 +113,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
             && !Path.IsPathRooted(Normalized.AsSpan())
             && !(Normalized.StartsWith("..")
                 && (Normalized.Length == 2 || (Normalized.Length > 2 && Normalized[2] == Path.DirectorySeparatorChar)));
+
 #pragma warning restore TOUKI0033
 
         int lastSeparator = Normalized.LastIndexOf(Path.DirectorySeparatorChar);
@@ -270,6 +271,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
         // If we reach here, it means that the specification is a simple recursive match (e.g. "**").
         // This is a special case where the entire path is just "**", so we set the wild path to "**" and the filename to "*".
         WildPath = "**";
+
         FileName = "*";
         IsSimpleRecursiveMatch = true;
     }
@@ -711,6 +713,7 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
                     bool modified = Paths.RemoveRelativeSegments(
                         path[..(lastSeparator + 1)],
                         ref builder);
+
                     builder.Append(fileName);
                     return modified;
                 }

@@ -233,6 +233,7 @@ internal static class DateTimeFormat
         {
             return dtfi.GetAbbreviatedDayName((DayOfWeek)dayOfWeek);
         }
+
         // Call dtfi.GetDayName() here, instead of accessing DayNames property, because we don't
         // want a clone of DayNames, which will hurt perf.
         return dtfi.GetDayName((DayOfWeek)dayOfWeek);
@@ -245,6 +246,7 @@ internal static class DateTimeFormat
         {
             return dtfi.GetAbbreviatedMonthName(month);
         }
+
         // Call GetMonthName() here, instead of accessing MonthNames property, because we don't
         // want a clone of MonthNames, which will hurt perf.
         return dtfi.GetMonthName(month);
@@ -399,6 +401,7 @@ internal static class DateTimeFormat
             {
                 repeat++;
             }
+
             //
             // repeat == 0 means that we have one (patternToMatch)
             // repeat == 1 means that we have two (patternToMatch)
@@ -407,6 +410,7 @@ internal static class DateTimeFormat
             {
                 return true;
             }
+
             // Note that we can't just stop here.  We may find "ddd" while looking back, and we have to look
             // ahead to see if there is "d" or "dd".
         }
@@ -427,6 +431,7 @@ internal static class DateTimeFormat
             {
                 repeat++;
             }
+
             //
             // repeat == 0 means that we have one (patternToMatch)
             // repeat == 1 means that we have two (patternToMatch)
@@ -436,6 +441,7 @@ internal static class DateTimeFormat
                 return true;
             }
         }
+
         return false;
     }
 
@@ -481,6 +487,7 @@ internal static class DateTimeFormat
                     {
                         hour12 = 12;
                     }
+
                     FormatDigits(ref builder, hour12, tokenLen);
                     break;
                 case 'H':
@@ -522,6 +529,7 @@ internal static class DateTimeFormat
                                     break;
                                 }
                             }
+
                             if (effectiveDigits > 0)
                             {
                                 // CultureInfo.InvariantCulture
@@ -566,6 +574,7 @@ internal static class DateTimeFormat
                     {
                         builder.Append(dateTime.Hour < 12 ? dtfi.AMDesignator : dtfi.PMDesignator);
                     }
+
                     break;
                 case 'd':
                     //
@@ -639,6 +648,7 @@ internal static class DateTimeFormat
                             }
                         }
                     }
+
                     isTimeOnly = false;
                     break;
                 case 'y':
@@ -753,6 +763,7 @@ internal static class DateTimeFormat
                         //
                         throw new FormatException(SRF.Format_InvalidString);
                     }
+
                     break;
                 default:
                     // NOTENOTE : we can remove this rule if we enforce the enforced quote
@@ -796,6 +807,7 @@ internal static class DateTimeFormat
                 offset = TimeZoneInfo.Local.GetUtcOffset(dateTime);
             }
         }
+
         if (offset.Ticks >= 0)
         {
             builder.Append('+');
@@ -851,6 +863,7 @@ internal static class DateTimeFormat
                     return;
             }
         }
+
         if (offset.Ticks >= 0)
         {
             builder.Append('+');
@@ -1111,6 +1124,7 @@ internal static class DateTimeFormat
             charsWritten = 0;
             return false;
         }
+
         charsWritten = charsRequired;
 
         // Hoist most of the bounds checks on destination.

@@ -84,6 +84,7 @@ internal static class InternalDateTimeExtensions
             // Last 100-year period has an extra day, so decrement result if 4
             if (y100 == 4)
                 y100 = 3;
+
             // n = day number within 100-year period
             n -= y100 * DaysPer100Years;
             // y4 = number of whole 4-year periods within 100-year period
@@ -95,6 +96,7 @@ internal static class InternalDateTimeExtensions
             // Last year has an extra day, so decrement result if 4
             if (y1 == 4)
                 y1 = 3;
+
             // compute year
             year = (int)(y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1);
             // n = day number within year
@@ -109,6 +111,7 @@ internal static class InternalDateTimeExtensions
             // m = 1-based month number
             while (n >= days[m])
                 m++;
+
             // compute month and day
             month = (int)m;
             day = (int)(n - days[m - 1] + 1);

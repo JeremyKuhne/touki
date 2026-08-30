@@ -151,6 +151,7 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
 
         MSBuildEnumerator enumerator = plan.Enumerator
             ?? throw new InvalidOperationException("The MSBuild enumeration plan is invalid.");
+
         try
         {
             return new MSBuildSearchResult(enumerator, plan.InvalidExcludeSpecifications);
@@ -168,15 +169,18 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
     {
         string fileSpec = request.Include
             ?? throw new ArgumentException("The request must be initialized with an include specification.", nameof(request));
+
         ArgumentNullException.ThrowIfNull(fileSpec);
 
         EnumerationOptions enumOptions = request.EnumerationOptions is { } suppliedEnumerationOptions
             ? SnapshotEnumerationOptions(suppliedEnumerationOptions)
             : DefaultOptions;
+
         string? excludeSpecs = request.Excludes;
         string? projectDirectory = request.ProjectDirectory is null
             ? null
             : FileSystemMatchEnumeratorArguments.NormalizeRootDirectory(request.ProjectDirectory);
+
         string rootDirectory = projectDirectory
             ?? FileSystemMatchEnumeratorArguments.NormalizeRootDirectory(Environment.CurrentDirectory);
 
@@ -253,6 +257,7 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
                 enumOptions.MatchType,
                 enumOptions.MatchCasing,
                 rootDirectory);
+
             IFileSystemMatcherSession matcher = buildResult.Session;
 
             string startDirectoryString = buildResult.StartDirectory.ToString();

@@ -449,6 +449,7 @@ public sealed partial class Lock
 
     LockedOrWait:
         Debug.Assert(tryLockResult != TryLockResult.Spin);
+
         if (tryLockResult == TryLockResult.Wait)
         {
             goto Wait;
@@ -458,12 +459,14 @@ public sealed partial class Lock
 
     Locked:
         Debug.Assert(!new ThreadId(_owningThreadId).IsInitialized);
+
         Debug.Assert(_recursionCount == 0);
         _owningThreadId = currentThreadId.Id;
         return currentThreadId;
 
     Wait:
         AutoResetEvent waitEvent = _waitEvent ?? CreateWaitEvent();
+
         if (State.TryLockBeforeWait(this))
         {
             // Lock was acquired and a waiter was not registered
@@ -578,6 +581,7 @@ public sealed partial class Lock
             // Don't record zero, that value is reserved for indicating that a time is not recorded
             currentTimeMs--;
         }
+
         _waiterStartTimeMs = currentTimeMs;
     }
 

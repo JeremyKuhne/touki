@@ -41,6 +41,7 @@ internal sealed class GlobEnumeratorFileSystemMatcherSession(
         {
             includeResult = DirectoryMatchTypeOperations.Normalize(
                 include.MatchesDirectory(currentDirectory, directoryName));
+
             return includeResult == DirectoryMatchType.NoDescendantFilesMatch
                 ? DirectoryMatchType.NoDescendantFilesMatch
                 : DirectoryMatchType.MayContainMatchingFiles;
@@ -57,6 +58,7 @@ internal sealed class GlobEnumeratorFileSystemMatcherSession(
 
             DirectoryMatchType excludeResult = DirectoryMatchTypeOperations.Normalize(
                 exclude.MatchesDirectory(currentDirectory, directoryName));
+
             if (excludeResult == DirectoryMatchType.AllDescendantFilesMatch)
             {
                 return DirectoryMatchType.NoDescendantFilesMatch;
@@ -67,6 +69,7 @@ internal sealed class GlobEnumeratorFileSystemMatcherSession(
 
         includeResult = DirectoryMatchTypeOperations.Normalize(
             include.MatchesDirectory(currentDirectory, directoryName));
+
         return excludeMayMatch && includeResult != DirectoryMatchType.NoDescendantFilesMatch
             ? DirectoryMatchType.MayContainMatchingFiles
             : includeResult;

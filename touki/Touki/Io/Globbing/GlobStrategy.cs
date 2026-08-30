@@ -40,6 +40,7 @@ internal abstract class GlobStrategy : DisposableBase
         IgnoreCaseKind = dialect.DefaultIgnoreCaseKind(options);
         MatchLeadingDot = (options & GlobOptions.MatchLeadingDot) != 0
             || dialect.MatchesLeadingDotByDefault();
+
         Separator = dialect.IsPathAware() ? dialect.DefaultSeparator() : '\0';
     }
 

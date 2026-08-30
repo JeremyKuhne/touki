@@ -209,6 +209,7 @@ internal readonly struct MSBuildFileNamePattern
                     ref builder,
                     sourcePositions,
                     ref changed);
+
                 AppendCharacter(source[close], close, ref builder, sourcePositions);
                 index = close + 1;
                 continue;
@@ -297,6 +298,7 @@ internal readonly struct MSBuildFileNamePattern
                     ref builder,
                     sourcePositions,
                     ref changed);
+
                 AppendCharacter('|', index, ref builder, sourcePositions);
                 alternativeStart = index + 1;
             }
@@ -352,6 +354,7 @@ internal readonly struct MSBuildFileNamePattern
                 && effectiveRunLength >= 2
                 && index < end
                 && source[index] == '(';
+
             if (opensExtGlob)
             {
                 effectiveRunLength--;

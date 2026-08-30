@@ -42,6 +42,7 @@ internal static class MSBuildMatchBuilder
         using ListBase<MSBuildSpecification> excludes = MSBuildSpecification.Split(
             excludeSpecifications,
             ignoreCase: matchCasing == MatchCasing.CaseInsensitive);
+
         return FromSpecification(include, excludes, matchType, matchCasing, rootDirectory);
     }
 

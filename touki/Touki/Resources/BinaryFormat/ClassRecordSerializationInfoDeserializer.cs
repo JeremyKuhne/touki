@@ -81,6 +81,7 @@ internal sealed class ClassRecordSerializationInfoDeserializer : ClassRecordDese
 
                 _serializationInfo.AddValue(memberName, memberValue);
             }
+
             while (_memberNamesIterator.MoveNext());
 
             _canIterate = false;

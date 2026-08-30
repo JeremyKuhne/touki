@@ -37,7 +37,9 @@ internal static class WaitHandleExtensions
             // Check if the wait should be forwarded to a SynchronizationContext wait override. Trivial waits don't allow
             // reentrance or interruption, and are not forwarded.
             bool usedSyncContextWait = false;
-            if (!useTrivialWaits && SynchronizationContext.Current is { } context && context.IsWaitNotificationRequired())
+            if (!useTrivialWaits && SynchronizationContext.Current is
+            {
+            } context && context.IsWaitNotificationRequired())
             {
                 usedSyncContextWait = true;
                 waitResult = (WAIT_EVENT)context.Wait([waitHandle.DangerousGetHandle()], waitAll: false, millisecondsTimeout);

@@ -36,4 +36,10 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\touki.analyzers\AllmanFormatting.cs" Link="Shared\AllmanFormatting.cs" />
+    <Compile Include="..\touki.analyzers\AnalyzerConfigOptionsExtensions.cs"
+             Link="Shared\AnalyzerConfigOptionsExtensions.cs" />
+  </ItemGroup>
+
 </Project>

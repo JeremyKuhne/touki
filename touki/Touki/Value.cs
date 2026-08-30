@@ -1131,66 +1131,94 @@ public readonly partial struct Value
         // Explicit cast for types we don't box
         if (typeof(T) == typeof(bool))
             return new(Unsafe.As<T, bool>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(byte))
             return new(Unsafe.As<T, byte>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(sbyte))
             return new(Unsafe.As<T, sbyte>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(char))
             return new(Unsafe.As<T, char>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(short))
             return new(Unsafe.As<T, short>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(int))
             return new(Unsafe.As<T, int>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(long))
             return new(Unsafe.As<T, long>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(ushort))
             return new(Unsafe.As<T, ushort>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(uint))
             return new(Unsafe.As<T, uint>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(ulong))
             return new(Unsafe.As<T, ulong>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(float))
             return new(Unsafe.As<T, float>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(double))
             return new(Unsafe.As<T, double>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(DateTime))
             return new(Unsafe.As<T, DateTime>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(DateTimeOffset))
             return new(Unsafe.As<T, DateTimeOffset>(ref Unsafe.AsRef(in value)));
 
         if (typeof(T) == typeof(bool?))
             return new(Unsafe.As<T, bool?>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(byte?))
             return new(Unsafe.As<T, byte?>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(sbyte?))
             return new(Unsafe.As<T, sbyte?>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(char?))
             return new(Unsafe.As<T, char?>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(short?))
             return new(Unsafe.As<T, short?>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(int?))
             return new(Unsafe.As<T, int?>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(long?))
             return new(Unsafe.As<T, long?>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(ushort?))
             return new(Unsafe.As<T, ushort?>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(uint?))
             return new(Unsafe.As<T, uint?>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(ulong?))
             return new(Unsafe.As<T, ulong?>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(float?))
             return new(Unsafe.As<T, float?>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(double?))
             return new(Unsafe.As<T, double?>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(DateTime?))
             return new(Unsafe.As<T, DateTime?>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(DateTimeOffset?))
             return new(Unsafe.As<T, DateTimeOffset?>(ref Unsafe.AsRef(in value)));
 
         if (typeof(T) == typeof(ArraySegment<byte>))
             return new(Unsafe.As<T, ArraySegment<byte>>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(ArraySegment<char>))
             return new(Unsafe.As<T, ArraySegment<char>>(ref Unsafe.AsRef(in value)));
+
         if (typeof(T) == typeof(StringSegment))
             return new(Unsafe.As<T, StringSegment>(ref Unsafe.AsRef(in value)));
 
@@ -1308,6 +1336,7 @@ public readonly partial struct Value
                 StringSegment segment = bits != ulong.MaxValue
                     ? new(str, _union.Segment.Offset, _union.Segment.Count)
                     : new(str, 0, 0);
+
                 value = Unsafe.As<StringSegment, T>(ref segment);
                 result = true;
             }
@@ -1324,6 +1353,7 @@ public readonly partial struct Value
                 ArraySegment<byte> segment = bits != ulong.MaxValue
                     ? new(byteArray, _union.Segment.Offset, _union.Segment.Count)
                     : new(byteArray, 0, 0);
+
                 value = Unsafe.As<ArraySegment<byte>, T>(ref segment);
                 result = true;
             }
@@ -1340,6 +1370,7 @@ public readonly partial struct Value
                 ArraySegment<char> segment = bits != ulong.MaxValue
                     ? new(charArray, _union.Segment.Offset, _union.Segment.Count)
                     : new(charArray, 0, 0);
+
                 value = Unsafe.As<ArraySegment<char>, T>(ref segment);
                 result = true;
             }
@@ -1553,6 +1584,7 @@ public readonly partial struct Value
                 value = _union.UInt64 != ulong.MaxValue
                     ? (T)(object)new StringSegment(stringValue, _union.Segment.Offset, _union.Segment.Count)
                     : (T)(object)new StringSegment(stringValue, 0, 0);
+
                 result = true;
             }
             else if (_union.UInt64 != 0 && _object is char[] chars)
@@ -1560,6 +1592,7 @@ public readonly partial struct Value
                 value = _union.UInt64 != ulong.MaxValue
                     ? (T)(object)new ArraySegment<char>(chars, _union.Segment.Offset, _union.Segment.Count)
                     : (T)(object)new ArraySegment<char>(chars, 0, 0);
+
                 result = true;
             }
             else if (_union.UInt64 != 0 && _object is byte[] bytes)
@@ -1567,6 +1600,7 @@ public readonly partial struct Value
                 value = _union.UInt64 != ulong.MaxValue
                     ? (T)(object)new ArraySegment<byte>(bytes, _union.Segment.Offset, _union.Segment.Count)
                     : (T)(object)new ArraySegment<byte>(bytes, 0, 0);
+
                 result = true;
             }
             else
@@ -1604,6 +1638,7 @@ public readonly partial struct Value
 
         return value;
     }
+
     #endregion T
 
     #region Format
@@ -1774,5 +1809,6 @@ public readonly partial struct Value
             destination.AppendFormatted(typeFlag.ToObject(in this), format);
         }
     }
+
     #endregion
 }

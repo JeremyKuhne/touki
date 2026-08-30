@@ -104,7 +104,10 @@ internal static class CodeFixTestHarness
         FixAllScope fixAllScope = FixAllScope.Solution,
         bool addLinkedProject = false,
         IReadOnlyList<(string Name, string FilePath, string Source)>? additionalProjectSources = null,
-        CancellationToken fixAllCancellationToken = default)
+        CancellationToken fixAllCancellationToken = default,
+        CSharpParseOptions? parseOptions = null,
+        CSharpParseOptions? linkedProjectParseOptions = null,
+        IReadOnlyDictionary<string, string>? linkedProjectOptions = null)
     {
         using AdhocWorkspace workspace = workspaceKind is null
             ? new AdhocWorkspace()
@@ -117,6 +120,12 @@ internal static class CodeFixTestHarness
             .WithCompilationOptions(new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,
                 allowUnsafe: true));
+        ProjectId projectId = project.Id;
+        if (parseOptions is not null)
+        {
+            project = project.WithParseOptions(parseOptions);
+        }
+
         string temporaryRoot = Path.Combine(Path.GetTempPath(), $"touki-code-fix-{Guid.NewGuid():N}");
 
         foreach ((string name, string filePath, string source) in sources)
@@ -129,15 +138,21 @@ internal static class CodeFixTestHarness
         }
 
         Solution solution = project.Solution;
+        ProjectId? linkedProjectId = null;
         if (addLinkedProject)
         {
-            ProjectId linkedProjectId = ProjectId.CreateNewId();
+            linkedProjectId = ProjectId.CreateNewId();
             solution = solution
                 .AddProject(linkedProjectId, "LinkedProject", "LinkedProject", LanguageNames.CSharp)
                 .AddMetadataReferences(linkedProjectId, references)
                 .WithProjectCompilationOptions(
                     linkedProjectId,
                     new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
+            if (linkedProjectParseOptions is not null)
+            {
+                solution = solution.WithProjectParseOptions(linkedProjectId, linkedProjectParseOptions);
+            }
+
             foreach ((string name, string filePath, string source) in sources)
             {
                 solution = solution.AddDocument(
@@ -146,6 +161,22 @@ internal static class CodeFixTestHarness
                     SourceText.From(source),
                     filePath: GetAbsoluteTestPath(filePath, temporaryRoot));
             }
+        }
+
+        if (linkedProjectOptions is not null)
+        {
+            solution = AddGlobalAnalyzerConfig(
+                solution,
+                projectId,
+                options ?? new Dictionary<string, string>(),
+                temporaryRoot,
+                "TestProject");
+            solution = AddGlobalAnalyzerConfig(
+                solution,
+                linkedProjectId!,
+                linkedProjectOptions!,
+                temporaryRoot,
+                "LinkedProject");
         }
 
         if (additionalProjectSources is not null)
@@ -174,7 +205,10 @@ internal static class CodeFixTestHarness
             Compilation compilation =
                 (await currentProject.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false))!;
             compilation = RoslynTestEnvironment.ApplyDiagnosticOptions(compilation, diagnosticOptions);
-            CompilationWithAnalyzers withAnalyzers = compilation.WithAnalyzers([analyzer], analyzerOptions);
+            AnalyzerOptions currentAnalyzerOptions = currentProject.AnalyzerConfigDocuments.Any()
+                ? currentProject.AnalyzerOptions
+                : analyzerOptions;
+            CompilationWithAnalyzers withAnalyzers = compilation.WithAnalyzers([analyzer], currentAnalyzerOptions);
             diagnosticsBuilder.AddRange(
                 await withAnalyzers.GetAnalyzerDiagnosticsAsync(CancellationToken.None).ConfigureAwait(false));
         }
@@ -217,6 +251,7 @@ internal static class CodeFixTestHarness
                 analyzer,
                 analyzerOptions,
                 diagnosticOptions,
+                codeFixActionOffered: false,
                 initialAnalyzerDiagnosticCount: diagnostics.Length).ConfigureAwait(false);
         }
 
@@ -288,6 +323,7 @@ internal static class CodeFixTestHarness
             analyzer,
             analyzerOptions,
             diagnosticOptions,
+            codeFixActionOffered: actions.Count > 0,
             fixAllActionOffered: fixAll ? true : null,
             initialAnalyzerDiagnosticCount: diagnostics.Length).ConfigureAwait(false);
     }
@@ -297,6 +333,7 @@ internal static class CodeFixTestHarness
         DiagnosticAnalyzer analyzer,
         AnalyzerOptions analyzerOptions,
         IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions,
+        bool? codeFixActionOffered = null,
         bool? fixAllActionOffered = null,
         int initialAnalyzerDiagnosticCount = 0)
     {
@@ -317,7 +354,10 @@ internal static class CodeFixTestHarness
 
             compilerErrors.AddRange(
                 compilation.GetDiagnostics().Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
-            CompilationWithAnalyzers withAnalyzers = compilation.WithAnalyzers([analyzer], analyzerOptions);
+            AnalyzerOptions currentAnalyzerOptions = project.AnalyzerConfigDocuments.Any()
+                ? project.AnalyzerOptions
+                : analyzerOptions;
+            CompilationWithAnalyzers withAnalyzers = compilation.WithAnalyzers([analyzer], currentAnalyzerOptions);
             analyzerDiagnostics.AddRange(
                 await withAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false));
         }
@@ -326,6 +366,7 @@ internal static class CodeFixTestHarness
             documents.ToImmutable(),
             compilerErrors.ToImmutable(),
             analyzerDiagnostics.ToImmutable(),
+            codeFixActionOffered,
             fixAllActionOffered,
             initialAnalyzerDiagnosticCount);
     }
@@ -362,6 +403,27 @@ internal static class CodeFixTestHarness
         return Path.GetFullPath(Path.Combine(temporaryRoot, relativePath));
     }
 
+    private static Solution AddGlobalAnalyzerConfig(
+        Solution solution,
+        ProjectId projectId,
+        IReadOnlyDictionary<string, string> options,
+        string temporaryRoot,
+        string projectName)
+    {
+        List<string> lines = ["is_global = true"];
+        foreach (KeyValuePair<string, string> option in options.OrderBy(static pair => pair.Key, StringComparer.Ordinal))
+        {
+            lines.Add($"{option.Key} = {option.Value}");
+        }
+
+        string source = $"{string.Join("\n", lines)}\n";
+        return solution.AddAnalyzerConfigDocument(
+            DocumentId.CreateNewId(projectId),
+            $"{projectName}.globalconfig",
+            SourceText.From(source),
+            filePath: Path.Combine(temporaryRoot, $"{projectName}.globalconfig"));
+    }
+
     private sealed class TestDiagnosticProvider(
         Solution solution,
         ImmutableArray<Diagnostic> diagnostics)
@@ -396,6 +458,7 @@ internal sealed record CodeFixTestResult(
     ImmutableArray<CodeFixTestDocument> Documents,
     ImmutableArray<Diagnostic> CompilerErrors,
     ImmutableArray<Diagnostic> AnalyzerDiagnostics,
+    bool? CodeFixActionOffered,
     bool? FixAllActionOffered,
     int InitialAnalyzerDiagnosticCount);
 
