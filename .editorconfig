@@ -75,6 +75,10 @@ dotnet_diagnostic.TOUKI0027.severity = warning
 # which end their line.
 dotnet_diagnostic.TOUKI0028.severity = warning
 
+# TOUKI0029 ships disabled because named-argument usage is a house style. Touki uses the default
+# literal set: boolean, null, and default.
+dotnet_diagnostic.TOUKI0029.severity = warning
+
 # P/Invoke declarations keep the spelling of the native symbol they bind to, which is what makes
 # them greppable against the native header. Naming a rule two symbol groups gives the "either
 # attribute" match that a single required_attributes list cannot express.

@@ -1718,7 +1718,7 @@ public readonly partial struct Value
         }
         else
         {
-            destination.AppendFormatted((object?)null, format);
+            destination.AppendFormatted(value: (object?)null, format);
         }
     }
 

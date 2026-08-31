@@ -66,7 +66,7 @@ public sealed partial class GlobSpecification
             GlobDialect dialect,
             GlobOptions options,
             GlobPathSeparator separator,
-            [NotNullWhen(true)] out GlobStrategy? result,
+            [NotNullWhen(returnValue: true)] out GlobStrategy? result,
             out GlobCompileError error) =>
                 TryCreate(pattern, dialect, options, separator, DefaultMaxPatternLength, out result, out error);
 
@@ -81,7 +81,7 @@ public sealed partial class GlobSpecification
             GlobOptions options,
             GlobPathSeparator separator,
             int maxPatternLength,
-            [NotNullWhen(true)] out GlobStrategy? result,
+            [NotNullWhen(returnValue: true)] out GlobStrategy? result,
             out GlobCompileError error,
             bool markEffectiveDoubleStarRuns = false)
         {
@@ -461,7 +461,7 @@ public sealed partial class GlobSpecification
             bool directoryOnly,
             bool coalesceInputSeparators,
             bool disallowEmptyInput,
-            [NotNullWhen(true)] out GlobStrategy? result)
+            [NotNullWhen(returnValue: true)] out GlobStrategy? result)
         {
             result = null;
 
@@ -566,7 +566,7 @@ public sealed partial class GlobSpecification
             char escape,
             GlobDialect dialect,
             GlobOptions options,
-            [NotNullWhen(true)] out GlobStrategy? result)
+            [NotNullWhen(returnValue: true)] out GlobStrategy? result)
         {
             result = null;
 
@@ -1036,7 +1036,7 @@ public sealed partial class GlobSpecification
             GlobDialect dialect,
             GlobOptions options,
             char escape,
-            [NotNullWhen(true)] out GlobStrategy? result)
+            [NotNullWhen(returnValue: true)] out GlobStrategy? result)
         {
             if (shape.IsAllStars)
             {
@@ -1112,7 +1112,7 @@ public sealed partial class GlobSpecification
             bool directoryOnly,
             bool coalesceInputSeparators,
             bool markEffectiveDoubleStarRuns,
-            [NotNullWhen(true)] out GlobStrategy? result,
+            [NotNullWhen(returnValue: true)] out GlobStrategy? result,
             out GlobCompileError error)
         {
             // Globstar is opt-in via GlobOptions.AllowGlobStar for most dialects and

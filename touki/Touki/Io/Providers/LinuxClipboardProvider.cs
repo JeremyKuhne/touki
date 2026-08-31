@@ -82,7 +82,7 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
     public bool HasText => s_transport != Transport.None && TryGetText(out _);
 
     /// <inheritdoc/>
-    public bool TryGetText([NotNullWhen(true)] out string? text)
+    public bool TryGetText([NotNullWhen(returnValue: true)] out string? text)
     {
         text = null;
         return s_transport switch
@@ -204,7 +204,10 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
         return false;
     }
 
-    private static bool TryRunForOutput(string fileName, string arguments, [NotNullWhen(true)] out string? output)
+    private static bool TryRunForOutput(
+        string fileName,
+        string arguments,
+        [NotNullWhen(returnValue: true)] out string? output)
     {
         output = null;
         try

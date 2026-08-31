@@ -13,22 +13,23 @@ public static class Debugging
 {
     /// <inheritdoc cref="Debug.Assert(bool)"/>
     [Conditional("DEBUG")]
-    public static void Assert([DoesNotReturnIf(false)] bool condition) => Debug.Assert(condition);
+    public static void Assert([DoesNotReturnIf(parameterValue: false)] bool condition) => Debug.Assert(condition);
 
     /// <inheritdoc cref="Debug.Assert(bool,string?)"/>
     [Conditional("DEBUG")]
-    public static void Assert([DoesNotReturnIf(false)] bool condition, string? message) => Debug.Assert(condition, message);
+    public static void Assert([DoesNotReturnIf(parameterValue: false)] bool condition, string? message) =>
+        Debug.Assert(condition, message);
 
 #if NET9_0_OR_GREATER
     /// <inheritdoc cref="Debug.Assert(bool, ref Debug.AssertInterpolatedStringHandler)"/>
     [Conditional("DEBUG")]
-    public static void Assert([DoesNotReturnIf(false)] bool condition,
+    public static void Assert([DoesNotReturnIf(parameterValue: false)] bool condition,
         [InterpolatedStringHandlerArgument(nameof(condition))] ref Debug.AssertInterpolatedStringHandler message) =>
             Debug.Assert(condition, ref message);
 #else
     /// <inheritdoc cref="Debug.Assert(bool,string?)"/>
     [Conditional("DEBUG")]
-    public static void Assert([DoesNotReturnIf(false)] bool condition,
+    public static void Assert([DoesNotReturnIf(parameterValue: false)] bool condition,
         [InterpolatedStringHandlerArgument(nameof(condition))] ref AssertInterpolatedStringHandler message)
     {
         if (!condition)
@@ -40,20 +41,20 @@ public static class Debugging
 
     /// <inheritdoc cref="Debug.Assert(bool,string?,string?)"/>
     [Conditional("DEBUG")]
-    public static void Assert([DoesNotReturnIf(false)] bool condition, string? message, string? detailMessage) =>
+    public static void Assert([DoesNotReturnIf(parameterValue: false)] bool condition, string? message, string? detailMessage) =>
         Debug.Assert(condition, message, detailMessage);
 
 #if NET9_0_OR_GREATER
     /// <inheritdoc cref="Debug.Assert(bool,ref Debug.AssertInterpolatedStringHandler,ref Debug.AssertInterpolatedStringHandler)"/>
     [Conditional("DEBUG")]
-    public static void Assert([DoesNotReturnIf(false)] bool condition,
+    public static void Assert([DoesNotReturnIf(parameterValue: false)] bool condition,
         [InterpolatedStringHandlerArgument(nameof(condition))] ref Debug.AssertInterpolatedStringHandler message,
         [InterpolatedStringHandlerArgument(nameof(condition))] ref Debug.AssertInterpolatedStringHandler detailMessage) =>
             Debug.Assert(condition, ref message, ref detailMessage);
 #else
     /// <inheritdoc cref="Debug.Assert(bool,string?,string?)"/>
     [Conditional("DEBUG")]
-    public static void Assert([DoesNotReturnIf(false)] bool condition,
+    public static void Assert([DoesNotReturnIf(parameterValue: false)] bool condition,
         [InterpolatedStringHandlerArgument(nameof(condition))] ref AssertInterpolatedStringHandler message,
         [InterpolatedStringHandlerArgument(nameof(condition))] ref AssertInterpolatedStringHandler detailMessage)
     {
@@ -66,7 +67,7 @@ public static class Debugging
 
     /// <inheritdoc cref="Debug.Assert(bool,string?,string,object[])"/>
     [Conditional("DEBUG")]
-    public static void Assert([DoesNotReturnIf(false)] bool condition, string? message,
+    public static void Assert([DoesNotReturnIf(parameterValue: false)] bool condition, string? message,
         [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string detailMessageFormat, params object?[] args) =>
             Debug.Assert(condition, message, detailMessageFormat, args);
 

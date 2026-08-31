@@ -829,7 +829,7 @@ public readonly struct StringSegment :
         if (IsEmpty)
         {
             // Return a null ref so the compiler emits a null pointer.
-            return ref Unsafe.AsRef<char>(null);
+            return ref Unsafe.AsRef<char>(source: null);
         }
 
         return ref MemoryMarshal.GetReference(AsSpan());

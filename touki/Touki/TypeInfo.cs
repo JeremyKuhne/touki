@@ -47,7 +47,7 @@ public static partial class TypeInfo<T>
             try
             {
                 Type type = typeof(T);
-                GCHandle handle = GCHandle.Alloc(default(T), GCHandleType.Pinned);
+                GCHandle handle = GCHandle.Alloc(value: default(T), GCHandleType.Pinned);
                 handle.Free();
                 return false;
             }

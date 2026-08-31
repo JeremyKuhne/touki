@@ -46,7 +46,7 @@ public readonly struct MSBuildSpecificationResult
     ///   inspect <see cref="ErrorReason"/> should null-check explicitly.
     ///  </para>
     /// </remarks>
-    [MemberNotNullWhen(false, nameof(Specification))]
+    [MemberNotNullWhen(returnValue: false, nameof(Specification))]
     public bool IsError => Specification is null;
 
     private MSBuildSpecificationResult(StringSegment original, MSBuildSpecification? specification, string? errorReason)

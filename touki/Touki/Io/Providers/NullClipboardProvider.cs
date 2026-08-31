@@ -33,7 +33,7 @@ internal sealed class NullClipboardProvider : IClipboardProvider
     /// </summary>
     /// <param name="text">Receives <see langword="null"/>.</param>
     /// <returns><see langword="false"/>.</returns>
-    public bool TryGetText([NotNullWhen(true)] out string? text)
+    public bool TryGetText([NotNullWhen(returnValue: true)] out string? text)
     {
         text = null;
         return false;

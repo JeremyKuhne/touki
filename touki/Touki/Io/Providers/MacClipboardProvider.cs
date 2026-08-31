@@ -134,7 +134,7 @@ internal sealed unsafe partial class MacClipboardProvider : IClipboardProvider
     }
 
     /// <inheritdoc/>
-    public bool TryGetText([NotNullWhen(true)] out string? text)
+    public bool TryGetText([NotNullWhen(returnValue: true)] out string? text)
     {
         text = null;
 

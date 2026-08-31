@@ -121,7 +121,7 @@ internal abstract class ObjectRecordDeserializer
     ///  <see langword="true"/> if the value requires a later fixup; otherwise <see langword="false"/>.
     /// </returns>
     private protected bool DoesValueNeedUpdated(object value, SerializationRecordId valueRecord) =>
-        !valueRecord.Equals(default)
+        !valueRecord.Equals(other: default)
             && (value is IObjectReference
                 || (Deserializer.IncompleteObjects.Contains(valueRecord) && value.GetType().IsValueType));
 

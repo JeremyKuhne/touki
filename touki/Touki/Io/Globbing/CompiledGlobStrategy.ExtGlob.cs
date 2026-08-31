@@ -190,7 +190,7 @@ internal sealed partial class CompiledGlobStrategy
         second.CopyTo(input[first.Length..]);
         input[totalLength - 1] = separator;
 
-        EngineInputs inputs = new(input, default, program, separator, kind);
+        EngineInputs inputs = new(input, second: default, program, separator, kind);
         ExtGlobMatchState state = default;
         try
         {

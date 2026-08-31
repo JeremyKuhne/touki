@@ -222,7 +222,7 @@ public ref partial struct ValueStringBuilder
             }
             else
             {
-                return TryAppendFormattedPrimitives((int)ulongValue, default, null);
+                return TryAppendFormattedPrimitives((int)ulongValue, format: default, formatProvider: null);
             }
 
             return true;
@@ -280,8 +280,8 @@ public ref partial struct ValueStringBuilder
         {
             _length = startPosition;
             bool success = signed
-                ? TryAppendFormattedPrimitives((long)value, default, default)
-                : TryAppendFormattedPrimitives(value, default, default);
+                ? TryAppendFormattedPrimitives((long)value, format: default, formatProvider: default)
+                : TryAppendFormattedPrimitives(value, format: default, formatProvider: default);
 
             Debug.Assert(success, "Failed to format value as a primitive type.");
             return;

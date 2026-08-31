@@ -69,7 +69,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
             _arrayOfT.SetValue(memberValue, indices);
 
             ArrayUpdater? updater = null;
-            if (memberValue is not null && !reference.Equals(default) && memberValue.GetType().IsValueType)
+            if (memberValue is not null && !reference.Equals(other: default) && memberValue.GetType().IsValueType)
             {
                 updater = new ArrayUpdater(_arrayRecord.Id, reference, [.. indices]);
                 Deserializer.TrackValueTypeUpdater(updater);

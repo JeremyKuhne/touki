@@ -34,7 +34,7 @@ public class SimpleServiceProvider : ITypedServiceProvider
     public T? GetService<T>() where T : class => GetService(typeof(T)) as T;
 
     /// <inheritdoc cref="ITypedServiceProvider.TryGetService{T}"/>/>
-    public bool TryGetService<T>([NotNullWhen(true)] out T? service) where T : class
+    public bool TryGetService<T>([NotNullWhen(returnValue: true)] out T? service) where T : class
     {
         service = default;
 

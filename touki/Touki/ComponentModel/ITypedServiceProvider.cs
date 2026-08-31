@@ -24,5 +24,5 @@ public interface ITypedServiceProvider : IServiceProvider
     ///  When this method returns, contains the service instance, or <see langword="null"/> if not found.
     /// </param>
     /// <returns><see langword="true"/> if the service was found; otherwise, <see langword="false"/>.</returns>
-    bool TryGetService<T>([NotNullWhen(true)] out T? service) where T : class;
+    bool TryGetService<T>([NotNullWhen(returnValue: true)] out T? service) where T : class;
 }

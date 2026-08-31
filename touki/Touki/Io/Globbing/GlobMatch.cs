@@ -114,7 +114,7 @@ internal sealed partial class GlobMatch : FileSystemMatcherSession
             bool matched;
             if (relativeDirectory.IsEmpty)
             {
-                matched = _specification.MatchCore(default, directoryName);
+                matched = _specification.MatchCore(directoryPrefix: default, directoryName);
             }
             else
             {
@@ -149,7 +149,7 @@ internal sealed partial class GlobMatch : FileSystemMatcherSession
             MatchOutcome outcome;
             if (relativeDirectory.IsEmpty)
             {
-                outcome = _specification.MatchDirectory(default, directoryName);
+                outcome = _specification.MatchDirectory(directoryPrefix: default, directoryName);
             }
             else
             {
@@ -252,7 +252,7 @@ internal sealed partial class GlobMatch : FileSystemMatcherSession
         {
             _alignment = ClassifyAlignment(
                 relativeDirectory,
-                default,
+                child: default,
                 _specification.Strategy.LiteralPathPrefix,
                 _specification.Separator,
                 _specification.IgnoreCaseKind);
@@ -268,7 +268,7 @@ internal sealed partial class GlobMatch : FileSystemMatcherSession
         bool matched;
         if (relativeDirectory.IsEmpty)
         {
-            matched = _specification.MatchCore(default, fileName);
+            matched = _specification.MatchCore(directoryPrefix: default, fileName);
         }
         else
         {

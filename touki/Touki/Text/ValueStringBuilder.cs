@@ -64,7 +64,8 @@ public ref partial struct ValueStringBuilder
     private readonly bool _hasCustomFormatter;
 
     /// <inheritdoc cref="ValueStringBuilder(int, int, IFormatProvider?, Span{char})"/>
-    public ValueStringBuilder(int literalLength, int formattedCount) : this(literalLength, formattedCount, null)
+    public ValueStringBuilder(int literalLength, int formattedCount)
+        : this(literalLength, formattedCount, provider: null)
     {
     }
 
