@@ -22,8 +22,8 @@ internal static class SerializationExtensions
     ///  <paramref name="exception"/> when it is already a <see cref="SerializationException"/>; otherwise, a wrapper
     ///  that retains <paramref name="exception"/> as its inner exception.
     /// </returns>
-    internal static SerializationException ConvertToSerializationException(this Exception exception)
-        => exception is SerializationException serializationException
+    internal static SerializationException ConvertToSerializationException(this Exception exception) =>
+        exception is SerializationException serializationException
             ? serializationException
 #if NET
             : (SerializationException)System.Runtime.ExceptionServices.ExceptionDispatchInfo.SetRemoteStackTrace(

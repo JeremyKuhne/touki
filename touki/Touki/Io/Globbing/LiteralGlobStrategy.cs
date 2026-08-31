@@ -58,13 +58,13 @@ internal sealed class LiteralGlobStrategy : GlobStrategy
         {
             IgnoreCaseKind.Ascii =>
                 directoryPrefix.EqualsAsciiLetterIgnoreCase(literalPrefix)
-                && fileName.EqualsAsciiLetterIgnoreCase(literalFileName),
+                    && fileName.EqualsAsciiLetterIgnoreCase(literalFileName),
             IgnoreCaseKind.Unicode =>
                 directoryPrefix.EqualsOrdinalIgnoreCase(literalPrefix)
-                && fileName.EqualsOrdinalIgnoreCase(literalFileName),
+                    && fileName.EqualsOrdinalIgnoreCase(literalFileName),
             _ =>
                 directoryPrefix.SequenceEqual(literalPrefix)
-                && fileName.SequenceEqual(literalFileName),
+                    && fileName.SequenceEqual(literalFileName),
         };
     }
 

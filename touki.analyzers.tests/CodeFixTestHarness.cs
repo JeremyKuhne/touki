@@ -107,7 +107,10 @@ internal static class CodeFixTestHarness
         CancellationToken fixAllCancellationToken = default,
         CSharpParseOptions? parseOptions = null,
         CSharpParseOptions? linkedProjectParseOptions = null,
-        IReadOnlyDictionary<string, string>? linkedProjectOptions = null)
+        IReadOnlyDictionary<string, string>? linkedProjectOptions = null,
+        Func<ImmutableArray<Diagnostic>, ImmutableArray<Diagnostic>>? transformDiagnostics = null,
+        Func<ImmutableArray<Diagnostic>, ImmutableArray<Diagnostic>>? transformFixAllDiagnostics = null,
+        Action<DocumentId>? onFixAllDocumentDiagnosticsRequested = null)
     {
         if (linkedProjectOptions is not null && !addLinkedProject)
         {
@@ -220,7 +223,13 @@ internal static class CodeFixTestHarness
                 await withAnalyzers.GetAnalyzerDiagnosticsAsync(CancellationToken.None).ConfigureAwait(false));
         }
 
-        ImmutableArray<Diagnostic> diagnostics = diagnosticsBuilder.ToImmutable();
+        ImmutableArray<Diagnostic> analyzerDiagnostics = diagnosticsBuilder.ToImmutable();
+        ImmutableArray<Diagnostic> diagnostics = analyzerDiagnostics;
+        if (transformDiagnostics is not null)
+        {
+            diagnostics = transformDiagnostics(diagnostics);
+        }
+
         Diagnostic? target = GetFirstDiagnostic(diagnostics, diagnosticId);
         if (target is null || target.Location.SourceTree is null)
         {
@@ -277,7 +286,13 @@ internal static class CodeFixTestHarness
                     initialAnalyzerDiagnosticCount: diagnostics.Length).ConfigureAwait(false);
             }
 
-            TestDiagnosticProvider diagnosticProvider = new(solution, diagnostics);
+            ImmutableArray<Diagnostic> fixAllDiagnostics = transformFixAllDiagnostics is null
+                ? diagnostics
+                : transformFixAllDiagnostics(analyzerDiagnostics);
+            TestDiagnosticProvider diagnosticProvider = new(
+                solution,
+                fixAllDiagnostics,
+                onFixAllDocumentDiagnosticsRequested);
             FixAllContext fixAllContext = fixAllScope is FixAllScope.ContainingMember or FixAllScope.ContainingType
                 ? new(
                     triggerDocument,
@@ -433,13 +448,15 @@ internal static class CodeFixTestHarness
 
     private sealed class TestDiagnosticProvider(
         Solution solution,
-        ImmutableArray<Diagnostic> diagnostics)
+        ImmutableArray<Diagnostic> diagnostics,
+        Action<DocumentId>? onDocumentDiagnosticsRequested)
         : FixAllContext.DiagnosticProvider
     {
         public override async Task<IEnumerable<Diagnostic>> GetDocumentDiagnosticsAsync(
             Document document,
             CancellationToken cancellationToken)
         {
+            onDocumentDiagnosticsRequested?.Invoke(document.Id);
             SyntaxTree? syntaxTree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
             return diagnostics.Where(diagnostic => diagnostic.Location.SourceTree == syntaxTree);
         }

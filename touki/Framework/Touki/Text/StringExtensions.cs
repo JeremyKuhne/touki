@@ -120,7 +120,7 @@ public static partial class StringExtensions
         public static string Create(
             IFormatProvider? provider,
             [InterpolatedStringHandlerArgument("provider")] ref DefaultInterpolatedStringHandler handler) =>
-            handler.ToStringAndClear();
+                handler.ToStringAndClear();
 
         /// <summary>
         ///  Creates a new string by using the specified provider to control the formatting of the specified interpolated string.
@@ -138,7 +138,7 @@ public static partial class StringExtensions
             IFormatProvider? provider,
             Span<char> initialBuffer,
             [InterpolatedStringHandlerArgument("provider", "initialBuffer")] ref DefaultInterpolatedStringHandler handler) =>
-            handler.ToStringAndClear();
+                handler.ToStringAndClear();
 
         /// <summary>
         ///  Copies the contents of this string into the destination span.

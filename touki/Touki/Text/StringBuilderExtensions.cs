@@ -71,8 +71,8 @@ public static unsafe partial class StringBuilderExtensions
         }
 
         /// <inheritdoc cref="ValueStringBuilder.AppendFormat(ReadOnlySpan{char}, Value)" />
-        public StringBuilder AppendFormatted(string format, Value arg)
-            => AppendFormatted(builder, format.AsSpan(), arg);
+        public StringBuilder AppendFormatted(string format, Value arg) =>
+            AppendFormatted(builder, format.AsSpan(), arg);
 
         /// <inheritdoc cref="ValueStringBuilder.AppendFormat(ReadOnlySpan{char}, Value)" />
         [SkipLocalsInit]
@@ -118,7 +118,7 @@ public static unsafe partial class StringBuilderExtensions
             Value arg1,
             Value arg2,
             Value arg3) =>
-            AppendFormatted(builder, format.AsSpan(), arg1, arg2, arg3);
+                AppendFormatted(builder, format.AsSpan(), arg1, arg2, arg3);
 
         /// <inheritdoc cref="ValueStringBuilder.AppendFormat(ReadOnlySpan{char}, Value, Value, Value)" />
         [SkipLocalsInit]
@@ -141,7 +141,7 @@ public static unsafe partial class StringBuilderExtensions
             Value arg2,
             Value arg3,
             Value arg4) =>
-            AppendFormatted(builder, format.AsSpan(), arg1, arg2, arg3, arg4);
+                AppendFormatted(builder, format.AsSpan(), arg1, arg2, arg3, arg4);
 
         /// <inheritdoc cref="ValueStringBuilder.AppendFormat(ReadOnlySpan{char}, Value, Value, Value, Value)" />
         [SkipLocalsInit]

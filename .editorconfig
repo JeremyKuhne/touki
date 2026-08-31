@@ -70,6 +70,11 @@ dotnet_diagnostic.TOUKI0024.severity = warning
 # Touki uses all three default formatting policies and the standard 120-character line limit.
 dotnet_diagnostic.TOUKI0027.severity = warning
 
+# TOUKI0028 ships disabled because continuation indentation and operator placement are house style.
+# Touki uses precedence-aware leading operators, except assignment-family operators, is, and =>,
+# which end their line.
+dotnet_diagnostic.TOUKI0028.severity = warning
+
 # P/Invoke declarations keep the spelling of the native symbol they bind to, which is what makes
 # them greppable against the native header. Naming a rule two symbol groups gives the "either
 # attribute" match that a single required_attributes list cannot express.

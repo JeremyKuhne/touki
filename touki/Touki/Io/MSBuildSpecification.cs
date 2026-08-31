@@ -346,8 +346,8 @@ public class MSBuildSpecification : IEquatable<string>, IEquatable<StringSegment
             rootSpan = TrimTrailingSeparator(rootSpan);
             return rootSpan.Length > 0 && rootSpan.Length == fixedSpan.Length;
 
-            static ReadOnlySpan<char> TrimTrailingSeparator(ReadOnlySpan<char> span)
-                => span.Length > 1 && span[^1] == Path.DirectorySeparatorChar
+            static ReadOnlySpan<char> TrimTrailingSeparator(ReadOnlySpan<char> span) =>
+                span.Length > 1 && span[^1] == Path.DirectorySeparatorChar
                     ? span[..^1]
                     : span;
         }

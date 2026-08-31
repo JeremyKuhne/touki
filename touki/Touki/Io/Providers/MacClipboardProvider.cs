@@ -238,8 +238,8 @@ internal sealed unsafe partial class MacClipboardProvider : IClipboardProvider
         }
     }
 
-    private static nint GeneralPasteboard()
-        => objc_msgSend_id(s_nsPasteboardClass, s_selGeneralPasteboard);
+    private static nint GeneralPasteboard() =>
+        objc_msgSend_id(s_nsPasteboardClass, s_selGeneralPasteboard);
 
     /// <summary>
     ///  Encodes <paramref name="value"/> as a NUL-terminated UTF-8 byte sequence on the

@@ -383,8 +383,8 @@ internal sealed class BinaryFormatDeserializer : IDeserializer
         }
     }
 
-    private void ReapplyValueType(SerializationRecordId id)
-        => ReapplyValueType(id, []);
+    private void ReapplyValueType(SerializationRecordId id) =>
+        ReapplyValueType(id, []);
 
     private void ReapplyValueType(SerializationRecordId id, HashSet<SerializationRecordId> visited)
     {

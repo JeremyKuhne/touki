@@ -112,8 +112,8 @@ internal readonly struct MSBuildFileNamePattern
     /// <returns><see langword="true"/> if policy handling is required; otherwise <see langword="false"/>.</returns>
     public static bool RequiresPolicy(ReadOnlySpan<char> expression, MatchType matchType) =>
         ContainsStarDotStar(expression)
-        || UsesDosDotSemantics(expression)
-        || (matchType == MatchType.Win32 && ShouldEnforceLogicalMatch(expression));
+            || UsesDosDotSemantics(expression)
+            || (matchType == MatchType.Win32 && ShouldEnforceLogicalMatch(expression));
 
     /// <summary>
     ///  Rewrites effective filename-scope <c>*.*</c> sequences to <c>*</c>.
@@ -124,7 +124,7 @@ internal readonly struct MSBuildFileNamePattern
     internal static StringSegment RewriteStarDotStarSequences(
         StringSegment expression,
         bool allowExtGlob = false) =>
-        RewriteStarDotStarSequences(expression, allowExtGlob, out _);
+            RewriteStarDotStarSequences(expression, allowExtGlob, out _);
 
     /// <summary>
     ///  Rewrites effective filename-scope <c>*.*</c> sequences and records source positions.
@@ -391,29 +391,29 @@ internal readonly struct MSBuildFileNamePattern
     internal static bool ContainsEffectiveDoubleStar(
         ReadOnlySpan<char> expression,
         bool allowExtGlob) =>
-        ContainsDirectEffectiveDoubleStar(
-            expression,
-            start: 0,
-            expression.Length,
-            allowExtGlob);
+            ContainsDirectEffectiveDoubleStar(
+                expression,
+                start: 0,
+                expression.Length,
+                allowExtGlob);
 
     private static bool ShouldRewriteStarDotStarAt(
         ReadOnlySpan<char> expression,
         int index,
         int end,
         bool allowExtGlob) =>
-        index + 2 < end
-        && expression[index] == '*'
-        && expression[index + 1] == '.'
-        && expression[index + 2] == '*'
-        && (!allowExtGlob
-            || index + 3 >= end
-            || expression[index + 3] != '(');
+            index + 2 < end
+                && expression[index] == '*'
+                && expression[index + 1] == '.'
+                && expression[index + 2] == '*'
+                && (!allowExtGlob
+                    || index + 3 >= end
+                    || expression[index + 3] != '(');
 
     private static bool IsExtGlobOpener(ReadOnlySpan<char> source, int index, int end) =>
         index + 1 < end
-        && source[index + 1] == '('
-        && source[index] is '?' or '*' or '+' or '@' or '!';
+            && source[index + 1] == '('
+            && source[index] is '?' or '*' or '+' or '@' or '!';
 
     private static int FindExtGlobClose(ReadOnlySpan<char> source, int opener, int end)
     {
@@ -470,12 +470,12 @@ internal readonly struct MSBuildFileNamePattern
 
     private static bool UsesDosDotSemantics(ReadOnlySpan<char> expression) =>
         expression.Length >= 2
-        && (expression[^1] == '.' || (expression[^2] == '.' && expression[^1] == '*'));
+            && (expression[^1] == '.' || (expression[^2] == '.' && expression[^1] == '*'));
 
     private static bool IsSingleTrailingDotPattern(ReadOnlySpan<char> expression) =>
         !expression.IsEmpty
-        && expression[^1] == '.'
-        && expression[..^1].IndexOf("**".AsSpan(), StringComparison.Ordinal) < 0;
+            && expression[^1] == '.'
+            && expression[..^1].IndexOf("**".AsSpan(), StringComparison.Ordinal) < 0;
 
     private static bool ShouldEnforceLogicalMatch(ReadOnlySpan<char> expression)
     {

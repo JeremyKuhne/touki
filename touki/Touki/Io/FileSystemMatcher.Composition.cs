@@ -15,11 +15,11 @@ public static partial class FileSystemMatcher
     public static IFileSystemMatcher CreateExclusionWins(
         IReadOnlyList<IFileSystemMatcher> includes,
         IReadOnlyList<IFileSystemMatcher>? excludes = null) =>
-        new ExclusionWinsFileSystemMatcher(
-            SnapshotMatchers(includes, requireNonEmpty: true, nameof(includes)),
-            excludes is null
-                ? []
-                : SnapshotMatchers(excludes, requireNonEmpty: false, nameof(excludes)));
+            new ExclusionWinsFileSystemMatcher(
+                SnapshotMatchers(includes, requireNonEmpty: true, nameof(includes)),
+                excludes is null
+                    ? []
+                    : SnapshotMatchers(excludes, requireNonEmpty: false, nameof(excludes)));
 
     /// <summary>
     ///  Creates an immutable ordered matcher in which the last matching rule determines the result.

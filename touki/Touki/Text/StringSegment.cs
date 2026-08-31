@@ -861,8 +861,8 @@ public readonly struct StringSegment :
     };
 
     /// <inheritdoc cref="CompareTo(StringSegment)"/>
-    public int CompareTo(string? other)
-        => other is null ? 1 : CompareTo(other, StringComparison.Ordinal);
+    public int CompareTo(string? other) =>
+        other is null ? 1 : CompareTo(other, StringComparison.Ordinal);
 
     /// <inheritdoc cref="CompareTo(StringSegment, StringComparison)"/>
     public int CompareTo(string other, StringComparison comparison) => comparison switch

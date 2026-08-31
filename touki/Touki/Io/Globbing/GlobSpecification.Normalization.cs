@@ -166,9 +166,9 @@ public sealed partial class GlobSpecification
                         ReadOnlySpan<char> fileSegment = seg[1..];
                         bool isStarDotStar =
                             fileSegment.Length == 3
-                            && fileSegment[0] == '*'
-                            && fileSegment[1] == '.'
-                            && fileSegment[2] == '*';
+                                && fileSegment[0] == '*'
+                                && fileSegment[1] == '.'
+                                && fileSegment[2] == '*';
 
                         builder.Append(isStarDotStar ? "*" : fileSegment);
                         prevWasDoubleStar = false;

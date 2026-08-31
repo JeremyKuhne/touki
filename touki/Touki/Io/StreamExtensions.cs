@@ -131,8 +131,8 @@ public static partial class StreamExtensions
         /// <param name="buffer">The buffer to write from.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        public Task WriteAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken = default)
-            => buffer.Array is byte[] array
+        public Task WriteAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken = default) =>
+            buffer.Array is byte[] array
                 ? stream.WriteAsync(array, buffer.Offset, buffer.Count, cancellationToken)
                 : Task.CompletedTask;
 

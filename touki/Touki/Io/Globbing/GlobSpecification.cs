@@ -119,8 +119,8 @@ public sealed partial class GlobSpecification
             maxPatternLength,
             out GlobSpecification? result,
             out GlobCompileError error)
-            ? result
-            : throw new GlobFormatException(error);
+                ? result
+                : throw new GlobFormatException(error);
 
     /// <inheritdoc cref="TryCompile(string, GlobDialect, GlobOptions, GlobPathSeparator, int, out GlobSpecification, out GlobCompileError)"/>
     public static bool TryCompile(
@@ -189,7 +189,7 @@ public sealed partial class GlobSpecification
         GlobDialect dialect,
         [NotNullWhen(true)] out GlobSpecification? result,
         out GlobCompileError error) =>
-        TryCompile(pattern, dialect, GlobOptions.None, out result, out error);
+            TryCompile(pattern, dialect, GlobOptions.None, out result, out error);
 
     /// <inheritdoc cref="TryCompile(string, GlobDialect, GlobOptions, GlobPathSeparator, int, out GlobSpecification, out GlobCompileError)"/>
     public static bool TryCompile(
@@ -198,7 +198,7 @@ public sealed partial class GlobSpecification
         GlobOptions options,
         [NotNullWhen(true)] out GlobSpecification? result,
         out GlobCompileError error) =>
-        TryCompile(pattern, dialect, options, GlobPathSeparator.DialectDefault, maxPatternLength: -1, out result, out error);
+            TryCompile(pattern, dialect, options, GlobPathSeparator.DialectDefault, maxPatternLength: -1, out result, out error);
 
     /// <inheritdoc cref="TryCompile(string, GlobDialect, GlobOptions, GlobPathSeparator, int, out GlobSpecification, out GlobCompileError)"/>
     /// <remarks>
@@ -632,8 +632,8 @@ public sealed partial class GlobSpecification
 
     private static bool IsExtGlobOpenerAt(ReadOnlySpan<char> pattern, int index) =>
         index + 1 < pattern.Length
-        && pattern[index + 1] == '('
-        && pattern[index] is '?' or '*' or '+' or '@' or '!';
+            && pattern[index + 1] == '('
+            && pattern[index] is '?' or '*' or '+' or '@' or '!';
 
     private static bool ContainsExtGlobOpener(ReadOnlySpan<char> pattern)
     {
@@ -862,7 +862,7 @@ public sealed partial class GlobSpecification
     internal MatchOutcome MatchDirectory(
         ReadOnlySpan<char> directoryPrefix,
         ReadOnlySpan<char> directoryName) =>
-        _strategy.MatchDirectory(directoryPrefix, directoryName);
+            _strategy.MatchDirectory(directoryPrefix, directoryName);
 
     /// <summary>
     ///  Gets whether the compiled specification treats a path separator specially.

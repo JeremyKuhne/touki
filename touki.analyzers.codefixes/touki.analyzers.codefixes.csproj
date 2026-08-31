@@ -59,6 +59,22 @@
              Link="Shared\AllmanFormattingOptions.cs" />
     <Compile Include="..\touki.analyzers\AnalyzerConfigOptionsExtensions.cs"
              Link="Shared\AnalyzerConfigOptionsExtensions.cs" />
+    <Compile Include="..\touki.analyzers\StatementBreakChangeKind.cs"
+         Link="Shared\StatementBreakChangeKind.cs" />
+    <Compile Include="..\touki.analyzers\StatementBreakDiagnosticData.cs"
+         Link="Shared\StatementBreakDiagnosticData.cs" />
+    <Compile Include="..\touki.analyzers\StatementBreakFixAllBudget.cs"
+         Link="Shared\StatementBreakFixAllBudget.cs" />
+    <Compile Include="..\touki.analyzers\StatementBreakFormatting.cs"
+         Link="Shared\StatementBreakFormatting.cs" />
+    <Compile Include="..\touki.analyzers\StatementBreakFormatting.OperatorPrecedence.cs"
+         Link="Shared\StatementBreakFormatting.OperatorPrecedence.cs" />
+    <Compile Include="..\touki.analyzers\StatementBreakFormattingOptions.cs"
+         Link="Shared\StatementBreakFormattingOptions.cs" />
+    <Compile Include="..\touki.analyzers\StatementBreakIndentation.cs"
+         Link="Shared\StatementBreakIndentation.cs" />
+    <Compile Include="..\touki.analyzers\StatementBreakOperator.cs"
+         Link="Shared\StatementBreakOperator.cs" />
   </ItemGroup>
 
 </Project>

@@ -98,8 +98,8 @@ internal sealed class MatchMSBuildSubtree : DisposableBase, IFileSystemMatcherSe
         }
 
         return _hasDirectoryPattern && DirectoryMatchesPattern(directoryName)
-                    ? DirectoryMatchType.AllDescendantFilesMatch
-                    : DirectoryMatchType.MayContainMatchingFiles;
+            ? DirectoryMatchType.AllDescendantFilesMatch
+            : DirectoryMatchType.MayContainMatchingFiles;
     }
 
     /// <summary>

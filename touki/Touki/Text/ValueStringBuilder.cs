@@ -131,7 +131,7 @@ public ref partial struct ValueStringBuilder
         return
             // optimization to avoid GetFormat in the majority case
             provider.GetType() != typeof(CultureInfo)
-            && provider.GetFormat(typeof(ICustomFormatter)) is not null;
+                && provider.GetFormat(typeof(ICustomFormatter)) is not null;
     }
 
     /// <summary>
