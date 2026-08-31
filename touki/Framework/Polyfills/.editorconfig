@@ -20,6 +20,10 @@ dotnet_diagnostic.TOUKI0024.severity = none
 # easy to compare.
 dotnet_diagnostic.TOUKI0027.severity = none
 
+# TOUKI0028: Format statement breaks. Upstream operator placement is retained so future ports
+# remain easy to compare.
+dotnet_diagnostic.TOUKI0028.severity = none
+
 # TOUKI0026: Require member, parameter, and return XML documentation. Upstream documentation
 # coverage is retained so future ports remain easy to compare.
 dotnet_diagnostic.TOUKI0026.severity = none

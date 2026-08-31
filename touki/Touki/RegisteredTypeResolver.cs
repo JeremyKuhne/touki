@@ -102,8 +102,8 @@ public sealed partial class RegisteredTypeResolver : ITypeResolver
         "IL2111:UnrecognizedReflectionPattern",
         Justification = "The type is annotated before it passes through the resolver-bounded cache callback.")]
     internal SerializationEvents GetSerializationEvents(
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
-        => _serializationEvents.GetOrAdd(type, SerializationEvents.Create);
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
+            _serializationEvents.GetOrAdd(type, SerializationEvents.Create);
 
     [UnconditionalSuppressMessage(
         "Trimming",

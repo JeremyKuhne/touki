@@ -5,3 +5,4 @@
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
 TOUKI0027 | Maintainability | Disabled | Use configured Allman formatting
+TOUKI0028 | Maintainability | Disabled | Format statement breaks around operators

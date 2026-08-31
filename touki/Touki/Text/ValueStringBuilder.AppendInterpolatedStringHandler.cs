@@ -24,8 +24,8 @@ public ref partial struct ValueStringBuilder
         /// <param name="formattedCount">The number of formatted holes in the interpolated string.</param>
         /// <param name="builder">The builder receiving the interpolated string.</param>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public InterpolatedStringHandler(int literalLength, int formattedCount, ValueStringBuilder builder)
-            => _builder = new(literalLength, formattedCount, builder._formatProvider);
+        public InterpolatedStringHandler(int literalLength, int formattedCount, ValueStringBuilder builder) =>
+            _builder = new(literalLength, formattedCount, builder._formatProvider);
 
         /// <inheritdoc cref="ValueStringBuilder.AppendLiteral(string?)"/>
         public void AppendLiteral(string value) => _builder.AppendLiteral(value);

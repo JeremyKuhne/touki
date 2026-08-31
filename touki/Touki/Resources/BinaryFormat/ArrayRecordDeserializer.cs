@@ -113,8 +113,8 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
     /// </summary>
     /// <param name="record">The primitive array record to materialize.</param>
     /// <returns>The materialized primitive array.</returns>
-    internal static Array GetArraySinglePrimitive(SerializationRecord record)
-        => record switch
+    internal static Array GetArraySinglePrimitive(SerializationRecord record) =>
+        record switch
         {
             SZArrayRecord<bool> primitiveArray => primitiveArray.GetArray(),
             SZArrayRecord<byte> primitiveArray => primitiveArray.GetArray(),
@@ -169,22 +169,22 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
 
         return arrayRecord.GetArray(expectedArrayType);
 
-        static bool HasBuiltInSupport(Type type)
-            => type == typeof(string)
-            || type == typeof(bool)
-            || type == typeof(byte)
-            || type == typeof(sbyte)
-            || type == typeof(char)
-            || type == typeof(short)
-            || type == typeof(ushort)
-            || type == typeof(int)
-            || type == typeof(uint)
-            || type == typeof(long)
-            || type == typeof(ulong)
-            || type == typeof(float)
-            || type == typeof(double)
-            || type == typeof(decimal)
-            || type == typeof(DateTime)
-            || type == typeof(TimeSpan);
+        static bool HasBuiltInSupport(Type type) =>
+            type == typeof(string)
+                || type == typeof(bool)
+                || type == typeof(byte)
+                || type == typeof(sbyte)
+                || type == typeof(char)
+                || type == typeof(short)
+                || type == typeof(ushort)
+                || type == typeof(int)
+                || type == typeof(uint)
+                || type == typeof(long)
+                || type == typeof(ulong)
+                || type == typeof(float)
+                || type == typeof(double)
+                || type == typeof(decimal)
+                || type == typeof(DateTime)
+                || type == typeof(TimeSpan);
     }
 }

@@ -34,6 +34,6 @@ internal static class SerializationInfoExtensions
     /// <param name="value">The replacement value.</param>
     /// <param name="type">The serialized type to associate with the replacement value.</param>
     [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, typeof(SerializationInfo))]
-    internal static void UpdateValue(this SerializationInfo info, string name, object? value, Type type)
-        => s_updateValue(info, name, value!, type);
+    internal static void UpdateValue(this SerializationInfo info, string name, object? value, Type type) =>
+        s_updateValue(info, name, value!, type);
 }

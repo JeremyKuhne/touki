@@ -42,8 +42,8 @@ internal sealed class GlobStarFileNameStrategy : GlobStrategy
     /// </remarks>
     internal override bool MatchCore(
         ReadOnlySpan<char> directoryPrefix,
-        ReadOnlySpan<char> fileName)
-        => _segmentMatcher.MatchCore(default, fileName);
+        ReadOnlySpan<char> fileName) =>
+            _segmentMatcher.MatchCore(default, fileName);
 
     /// <inheritdoc/>
     /// <remarks>

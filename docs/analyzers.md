@@ -4,7 +4,7 @@
 `KlutzyNinja.Touki` depends on that package, so adding the main package reference is still
 enough: the rules start running on the next build and in the IDE. Reference the analyzer
 package directly when you want the rules without the Touki runtime library. TOUKI0012,
-TOUKI0022, TOUKI0024, TOUKI0027, and TOUKI0041 ship disabled unless a project opts in.
+TOUKI0022, TOUKI0024, TOUKI0027, TOUKI0028, and TOUKI0041 ship disabled unless a project opts in.
 
 The analyzer package is versioned independently from `KlutzyNinja.Touki`.
 Referencing Touki selects a tested minimum analyzer version; a direct analyzer
@@ -14,7 +14,7 @@ The analyzers encode the conventions this library is built on: avoid hidden stru
 copies, release resources deterministically, keep scratch buffers off the stack once
 they get large, write formatted text without temporary strings, compose paths without
 silently discarding segments, keep types easy to find by file name, keep whitespace out
-of the way, and name a field for what it actually is.
+of the way, format statement breaks consistently, and name a field for what it actually is.
 
 ## Rules
 
@@ -35,6 +35,7 @@ of the way, and name a field for what it actually is.
 | [TOUKI0025](#touki0025) | Document types | Maintainability | Warning | Yes | - |
 | [TOUKI0026](#touki0026) | Document members, parameters, and return values | Maintainability | Warning | Yes | - |
 | [TOUKI0027](#touki0027) | Use configured Allman formatting | Maintainability | **Disabled** | Yes | - |
+| [TOUKI0028](#touki0028) | Format statement breaks around operators | Maintainability | **Disabled** | Yes | - |
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
 | [TOUKI0031](#touki0031) | Use `WriteFormatted` for interpolated strings | Performance | Warning | - | C# 10, `TextWriterExtensions` |
 | [TOUKI0032](#touki0032) | Use `Path.Join` instead of `Path.Combine` | Reliability | Warning | - | - |
@@ -673,6 +674,119 @@ projection shows that formatting could add more than 4 MiB of text, the diagnost
 code fix is withheld. The fix is also withheld when moving a brace would relocate a line containing
 `#`, because malformed directive text can become active when moved to a new line.
 
+## TOUKI0028
+
+**Format statement breaks around operators.** When an expression is already split across
+physical lines, its operator begins the continuation line. Assignment-family operators, `is`,
+and `=>` instead end the preceding line, and their right-hand side or body starts on the next line.
+
+```csharp
+int sum = left +
+    right; // TOUKI0028
+
+int sum = left
+    + right;
+
+int product
+    = left * right; // TOUKI0028
+
+int product =
+    left * right;
+
+bool matches = value
+    is string; // TOUKI0028
+
+bool matches = value is
+    string;
+
+int Double(int value)
+    => value * 2; // TOUKI0028
+
+int Double(int value) =>
+    value * 2;
+```
+
+The rule covers arithmetic, shift, relational, equality, bitwise, logical, null-coalescing,
+assignment, member-access, conditional-access, range, `is`, `as`, relational and binary pattern,
+and ternary operators. Assignment expressions, declaration and initializer `=` tokens, query `let`
+equals tokens, name-equals tokens, and `is` use trailing placement. For this layout rule, `is`
+shares the equality precedence category. For `?.` and `?[`, the conditional-access token pair moves
+as one operator. Open-ended ranges do not participate because they have no operand on both sides of
+the break.
+
+Indentation follows the
+[C# operator-precedence hierarchy](https://learn.microsoft.com/dotnet/csharp/language-reference/operators/#operator-precedence).
+A leading operator begins one configured level beyond its left operand. Operators in the same
+connected precedence category remain aligned; each transition to another category adds a level.
+Parentheses and the other syntactic scopes listed below start another level even when the operator
+category matches the surrounding expression. Parentheses that begin an inline operator's
+continuation do not add that level again. A multiline invocation or explicit parenthesized left
+operand uses its structural first line as the anchor; argument and closing-delimiter indentation
+do not carry into the following operator. For example:
+
+```csharp
+bool result = first
+  && second
+    || third
+      == fourth;
+```
+
+Once one operator in a connected binary-expression or binary-pattern precedence group is broken,
+every operator in that group is broken and aligned. This completes existing wrapping; the rule does
+not initiate wrapping for an otherwise single-line group or collapse existing wrapping.
+
+A nested parenthesized expression or pattern, argument list, tuple, initializer, collection
+expression, interpolation, or catch filter adds a scope level. A ternary's `?` and `:` begin one
+level beyond the indentation of its condition's final physical line, including for a nested ternary.
+An expression body on a new line begins one level beyond the physical declaration line that ends
+before `=>`; for a multiline parameter list, this places the body beyond the parameter block.
+When the direct body or right-hand side is a collection expression or array initializer whose
+delimiters are each on their own line, its opening `[` or `{` instead aligns with the line containing
+the trailing operator, like a block-lambda brace. The contents remain indented within the delimiters.
+A coherently indented block that moves to this anchor shifts through its matching closing delimiter,
+preserving the relative indentation of its contents.
+A collection or initializer whose delimiters share one line is an ordinary continuation expression
+and keeps one continuation indent.
+Nested operators use the normalized indentation of their outer scope, so Fix All completes in one
+pass even when an outer correction moves an inner scope.
+
+Indentation follows the standard EditorConfig properties. `indent_style = tab` uses one tab.
+Otherwise, a positive `indent_size` from 1 through 16 supplies the number of spaces. When
+`indent_size = tab`, `tab_width` supplies that width when it is in the same range. Missing,
+invalid, non-positive, and larger values use four spaces.
+
+The rule ships **disabled** because statement layout is a house style. Enable it with:
+
+```ini
+dotnet_diagnostic.TOUKI0028.severity = warning
+```
+
+The analyzer only normalizes line breaks that already exist; it does not wrap long one-line
+expressions or collapse multiline expressions. It stays silent when relocating an operator would
+cross a comment, directive, or other non-whitespace trivia. It also stays silent when finding the
+indentation anchor would cross more than 256 syntax ancestors, when a scanned or replaced source
+span would exceed 4,096 characters, or when the prospective generated replacement would exceed
+4,096 characters.
+
+The diagnostic carries compact change metadata and source spans rather than replacement text. The
+code fix reparses the current document and recomputes the operator, change kind, replacement span,
+and indentation descriptor before materializing a change. It preserves the existing line-ending
+sequence. When moving or reindenting an expression body also moves a multiline invocation or switch
+expression, the fix shifts its dependent argument, comment, delimiter, and arm lines by the same
+amount. When a corrected leading operator begins a multiline invocation, the invocation's arguments
+are normalized one level beyond the operator. A coherently indented block-like collection or
+initializer moves through its matching delimiter. A fix is withheld when this dependent span exceeds
+4,096 characters or contains a multiline string whose indentation may be runtime data. A fix is also
+withheld when relocating an outer
+operator would make a currently leading nested operator trail its line. Fix All gives validated
+operator edits precedence over broader dependent shifts, combines the remaining non-overlapping
+edits once per document, and stops when the complete operation would materialize more than
+4,194,304 replacement characters or collect more than 65,536 diagnostics.
+It supports document, project, and solution scopes. A physical file linked into several projects
+is changed only when the source, parse context, and indentation settings agree. Fix All additionally
+requires every linked analyzer context to produce the same complete output, then updates all linked
+documents together.
+
 ## TOUKI0030
 
 **Use `ValueStringBuilder` to build strings.** Reports a `StringBuilder` that is only used
@@ -1048,6 +1162,10 @@ over the complete document. Fix All supports document, project, and solution sco
 documents are updated together only when their parse and analyzer-configuration contexts produce
 the same formatted text.
 
+`FormatStatementBreaksCodeFixProvider` fixes TOUKI0028 using the exact replacement and indentation
+computed by the analyzer. Its Fix All path validates and combines non-overlapping changes before
+updating each document, and coordinates linked documents as described under the rule.
+
 `UseTextWriterWriteFormattedCodeFixProvider` fixes TOUKI0031 by renaming the diagnosed
 `Write` call and importing `Touki.Io` when necessary. It supports Fix All.
 
@@ -1075,6 +1193,12 @@ conditional blank-line policies or a maximum-length gate for compact brace pairs
 lets a project enforce that bundle without raising every IDE0055 formatting preference to the
 same severity.
 
+The Roslyn formatter honors
+[`dotnet_style_operator_placement_when_wrapping`](https://learn.microsoft.com/visualstudio/ide/reference/code-styles-refactoring-options#dotnet_style_operator_placement_when_wrapping)
+when it rewrites code, but Microsoft classifies that setting as a refactoring option without a
+severity or diagnostic. TOUKI0028 makes placement enforceable and adds exact continuation
+indentation plus trailing assignment-family and `=>` placement.
+
 ## Marker attributes
 
 Two rules are opt-in through public attributes in the `Touki` namespace:
@@ -1088,7 +1212,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 
 | Release | Rules added |
 |---------|-------------|
-| Unreleased | TOUKI0027 |
+| Unreleased | TOUKI0027, TOUKI0028 |
 | 0.4.0 | TOUKI0001, TOUKI0002, TOUKI0003, TOUKI0004, TOUKI0010 |
 | 0.5.0 | TOUKI0020, TOUKI0030 |
 | 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |

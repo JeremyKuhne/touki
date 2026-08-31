@@ -73,7 +73,7 @@ internal sealed partial class GlobMatch : FileSystemMatcherSession
     /// </summary>
     internal bool CanMatchWholeSubtree =>
         !_specification.Negated
-        && _matchesDirectoryAncestors;
+            && _matchesDirectoryAncestors;
 
     /// <inheritdoc/>
     public override void DirectoryFinished(ReadOnlySpan<char> directory) => _cacheValid = false;

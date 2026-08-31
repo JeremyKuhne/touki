@@ -29,8 +29,8 @@ public ref partial struct ValueStringBuilder
     private static Value[] Values => t_values ??= new Value[4];
 
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
-    public unsafe void AppendFormat(ReadOnlySpan<char> format, ReadOnlySpan<Value> args)
-        => AppendFormat<Value>(format, args);
+    public unsafe void AppendFormat(ReadOnlySpan<char> format, ReadOnlySpan<Value> args) =>
+        AppendFormat<Value>(format, args);
 
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
     public unsafe void AppendFormat<TArgument>(ReadOnlySpan<char> format, TArgument arg) where TArgument : unmanaged

@@ -210,8 +210,8 @@ internal sealed partial class CompiledGlobStrategy
                             int literalLength = _program[programIndex + 1];
                             if (_useMSBuildAllDotInput
                                 && WorkInput + literalLength > _firstLength
-                                || WorkInput + literalLength > _totalLength
-                                || !LiteralMatchesAt(_first, _second, WorkInput, _program.Slice(programIndex + 2, literalLength), _kind))
+                                    || WorkInput + literalLength > _totalLength
+                                    || !LiteralMatchesAt(_first, _second, WorkInput, _program.Slice(programIndex + 2, literalLength), _kind))
                             {
                                 break;
                             }
@@ -890,7 +890,7 @@ internal sealed partial class CompiledGlobStrategy
                             {
                                 int litLen = _program[altBodyStart + 1];
                                 if ((!_useMSBuildAllDotInput
-                                    || savedInput + litLen <= _firstLength)
+                                        || savedInput + litLen <= _firstLength)
                                     && litLen == candidate
                                     && LiteralMatchesAt(_first, _second, savedInput, _program.Slice(altBodyStart + 2, litLen), _kind))
                                 {

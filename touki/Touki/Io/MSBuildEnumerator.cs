@@ -95,8 +95,8 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
         {
             _stripProjectDirectory = true;
             _projectDirectory = projectDirectory;
-            _projectDirectoryLength = projectDirectory.Length +
-                (Path.EndsInDirectorySeparator(_projectDirectory) ? 0 : 1);
+            _projectDirectoryLength = projectDirectory.Length
+                + (Path.EndsInDirectorySeparator(_projectDirectory) ? 0 : 1);
         }
 
         _invalidExcludeSpecs = invalidExcludeSpecs ?? Array.Empty<string>();
@@ -205,8 +205,8 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
         {
             return new(new MSBuildRejectedResult(
                 MSBuildRejectionReason.DriveEnumerationForbidden,
-                $"Drive enumeration is not allowed for '{fileSpec}'. Set " +
-                    $"{nameof(MSBuildEnumerationRequest)}.{nameof(MSBuildEnumerationRequest.AllowDriveEnumeration)} to true to override."));
+                $"Drive enumeration is not allowed for '{fileSpec}'. Set "
+                    + $"{nameof(MSBuildEnumerationRequest)}.{nameof(MSBuildEnumerationRequest.AllowDriveEnumeration)} to true to override."));
         }
 
         bool ignoreCase = Paths.GetFinalCasing(enumOptions.MatchCasing) == MatchCasing.CaseInsensitive;
@@ -314,8 +314,8 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
     /// <inheritdoc/>
     protected override bool ShouldIncludeEntry(ref FileSystemEntry entry) =>
         !entry.IsDirectory
-        && _session.MatchesFile(entry.Directory, entry.FileName)
-        && ShouldIncludeMatchedFile(ref entry);
+            && _session.MatchesFile(entry.Directory, entry.FileName)
+            && ShouldIncludeMatchedFile(ref entry);
 
     /// <inheritdoc/>
     protected override bool ShouldRecurseIntoEntry(ref FileSystemEntry entry) =>

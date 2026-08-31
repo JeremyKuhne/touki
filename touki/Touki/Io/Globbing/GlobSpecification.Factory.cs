@@ -68,7 +68,7 @@ public sealed partial class GlobSpecification
             GlobPathSeparator separator,
             [NotNullWhen(true)] out GlobStrategy? result,
             out GlobCompileError error) =>
-            TryCreate(pattern, dialect, options, separator, DefaultMaxPatternLength, out result, out error);
+                TryCreate(pattern, dialect, options, separator, DefaultMaxPatternLength, out result, out error);
 
         /// <summary>
         ///  Attempts to construct the appropriate matcher for <paramref name="pattern"/>.
@@ -211,7 +211,7 @@ public sealed partial class GlobSpecification
 
                     sourceShape.IsAllStars =
                         fileSystemGlobbingStarCount > 0
-                        && fileSystemGlobbingStarCount == pattern.Length;
+                            && fileSystemGlobbingStarCount == pattern.Length;
 
                     sourceShape.HasNoMetacharacters =
                         fileSystemGlobbingStarCount == 0;
@@ -255,8 +255,8 @@ public sealed partial class GlobSpecification
             // touki.tests/Touki/Io/Globbing/PortedTests.MSBuild.cs.
             bool disallowEmptyInput = dialect is
                 GlobDialect.Simple
-                or GlobDialect.FileSystemGlobbing
-                or GlobDialect.Git;
+                    or GlobDialect.FileSystemGlobbing
+                    or GlobDialect.Git;
 
             bool coalesceInputSeparators;
             bool normalizedRuns = TryNormalizeRuns(
@@ -267,8 +267,8 @@ public sealed partial class GlobSpecification
                 allowExtGlob,
                 asteriskRunKnown:
                     dialect == GlobDialect.FileSystemGlobbing
-                    && !fileSystemGlobbingPatternRewritten
-                    && !hasFileSystemGlobbingExtGlob,
+                        && !fileSystemGlobbingPatternRewritten
+                        && !hasFileSystemGlobbingExtGlob,
                 knownHasAsteriskRun: fileSystemGlobbingHasAsteriskRun,
                 out bool neverMatch,
                 out coalesceInputSeparators);
@@ -319,8 +319,9 @@ public sealed partial class GlobSpecification
                 {
                     bool startsWithGlobStarToken =
                         pattern.Length >= 2
-                        && pattern[0] == '*' && pattern[1] == '*'
-                        && (pattern.Length == 2 || pattern[2] == resolvedSeparator);
+                            && pattern[0] == '*'
+                            && pattern[1] == '*'
+                            && (pattern.Length == 2 || pattern[2] == resolvedSeparator);
 
                     if (!startsWithGlobStarToken)
                     {
@@ -374,7 +375,8 @@ public sealed partial class GlobSpecification
             // separator-aware semantics are honored. Extglob patterns also skip these
             // specializations - they fall through to the general path so the
             // bytecode interpreter handles the alternation.
-            if (!pathAware && !shape.HasExtGlob
+            if (!pathAware
+                && !shape.HasExtGlob
                 && TryCreatePathUnawareSpecialized(pattern, ref shape, dialect, options, escape, out result))
             {
                 result.DisallowEmptyInput = disallowEmptyInput;
@@ -864,7 +866,8 @@ public sealed partial class GlobSpecification
                 int scanStart = hasLeadingSeparatorRun ? 1 : 0;
                 for (int j = scanStart; j + 1 < pattern.Length; j++)
                 {
-                    if (pattern[j] == separator && pattern[j + 1] == separator
+                    if (pattern[j] == separator
+                        && pattern[j + 1] == separator
                         && !(hasLeadingSeparatorRun && j == 0))
                     {
                         hasInternalSeparatorRun = true;
@@ -875,16 +878,16 @@ public sealed partial class GlobSpecification
 
             bool needsAsteriskCollapse = hasAsteriskRun && dialect is
                 GlobDialect.FileSystemGlobbing
-                or GlobDialect.Simple
-                or GlobDialect.Posix
-                or GlobDialect.PosixPath
-                or GlobDialect.Git
-                or GlobDialect.Bash;
+                    or GlobDialect.Simple
+                    or GlobDialect.Posix
+                    or GlobDialect.PosixPath
+                    or GlobDialect.Git
+                    or GlobDialect.Bash;
 
             bool needsMsbuildSepTransform =
                 dialect == GlobDialect.MSBuild
-                && (hasInternalSeparatorRun
-                    || (hasLeadingSeparatorRun && Path.DirectorySeparatorChar != '\\'));
+                    && (hasInternalSeparatorRun
+                        || (hasLeadingSeparatorRun && Path.DirectorySeparatorChar != '\\'));
 
             if (!needsAsteriskCollapse && !needsMsbuildSepTransform)
             {
@@ -2486,7 +2489,7 @@ public sealed partial class GlobSpecification
                 int flagIndex = lastLiteral.GlobStarFlagIndex;
                 int merged =
                     (builder[flagIndex] & ~GlobOpCodes.GlobStarFlagTrail)
-                    | (flags & GlobOpCodes.GlobStarFlagTrail);
+                        | (flags & GlobOpCodes.GlobStarFlagTrail);
 
                 builder[flagIndex] = (char)merged;
                 return true;
@@ -2584,7 +2587,8 @@ public sealed partial class GlobSpecification
             while (i < pattern.Length)
             {
                 char current = pattern[i];
-                if (current == '*' || (questionMarkIsWildcard && current == '?')
+                if (current == '*'
+                    || (questionMarkIsWildcard && current == '?')
                     || (allowClasses && current == '['))
                 {
                     break;

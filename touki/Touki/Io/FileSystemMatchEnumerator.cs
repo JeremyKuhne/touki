@@ -51,8 +51,8 @@ public abstract class FileSystemMatchEnumerator<TResult> : FileSystemEnumerator<
     /// <inheritdoc/>
     protected sealed override bool ShouldIncludeEntry(ref FileSystemEntry entry) =>
         !entry.IsDirectory
-        && GetSession().MatchesFile(entry.Directory, entry.FileName)
-        && ShouldIncludeMatchedFile(ref entry);
+            && GetSession().MatchesFile(entry.Directory, entry.FileName)
+            && ShouldIncludeMatchedFile(ref entry);
 
     /// <inheritdoc/>
     protected sealed override bool ShouldRecurseIntoEntry(ref FileSystemEntry entry) =>

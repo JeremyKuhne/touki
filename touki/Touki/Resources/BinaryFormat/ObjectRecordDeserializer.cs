@@ -120,8 +120,8 @@ internal abstract class ObjectRecordDeserializer
     /// <returns>
     ///  <see langword="true"/> if the value requires a later fixup; otherwise <see langword="false"/>.
     /// </returns>
-    private protected bool DoesValueNeedUpdated(object value, SerializationRecordId valueRecord)
-        => !valueRecord.Equals(default)
+    private protected bool DoesValueNeedUpdated(object value, SerializationRecordId valueRecord) =>
+        !valueRecord.Equals(default)
             && (value is IObjectReference
                 || (Deserializer.IncompleteObjects.Contains(valueRecord) && value.GetType().IsValueType));
 
@@ -131,8 +131,8 @@ internal abstract class ObjectRecordDeserializer
     /// <param name="record">The object record to deserialize.</param>
     /// <param name="deserializer">The object-graph deserializer.</param>
     /// <returns>The record-specific deserializer.</returns>
-    internal static ObjectRecordDeserializer Create(SerializationRecord record, IDeserializer deserializer)
-        => record switch
+    internal static ObjectRecordDeserializer Create(SerializationRecord record, IDeserializer deserializer) =>
+        record switch
         {
             ClassRecord classRecord => ClassRecordDeserializer.Create(classRecord, deserializer),
             _ => new ArrayRecordDeserializer((ArrayRecord)record, deserializer)

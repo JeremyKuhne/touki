@@ -49,8 +49,8 @@ public readonly struct HandleRef<THandle> : IHandle<THandle>, IEquatable<HandleR
     }
 
     /// <inheritdoc/>
-    public bool Equals(HandleRef<THandle> other)
-        => other.Handle.Equals(Handle) && Equals(other.Wrapper, Wrapper);
+    public bool Equals(HandleRef<THandle> other) =>
+        other.Handle.Equals(Handle) && Equals(other.Wrapper, Wrapper);
 
     /// <inheritdoc/>
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is HandleRef<THandle> other && Equals(other);

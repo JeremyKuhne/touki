@@ -48,7 +48,7 @@ internal sealed class PrefixSuffixGlobStrategy : GlobStrategy
         {
             IgnoreCaseKind.Ascii =>
                 fileName.StartsWithAsciiLetterIgnoreCase(prefix)
-                && fileName.EndsWithAsciiLetterIgnoreCase(suffix),
+                    && fileName.EndsWithAsciiLetterIgnoreCase(suffix),
             IgnoreCaseKind.Unicode =>
                 fileName.StartsWithOrdinalIgnoreCase(prefix) && fileName.EndsWithOrdinalIgnoreCase(suffix),
             _ => fileName.StartsWith(prefix) && fileName.EndsWith(suffix),

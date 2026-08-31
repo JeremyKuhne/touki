@@ -433,7 +433,7 @@ internal sealed partial class CompiledGlobStrategy
         ReadOnlySpan<char> second,
         int firstLength,
         int inputIndex) =>
-        inputIndex < firstLength ? first[inputIndex] : second[inputIndex - firstLength];
+            inputIndex < firstLength ? first[inputIndex] : second[inputIndex - firstLength];
 
     /// <summary>
     ///  Serializes the walker entry state - <paramref name="inputIndex"/>,

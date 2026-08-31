@@ -205,10 +205,9 @@ public static partial class SpanExtensions
         ///  folding; otherwise, <see langword="false"/>.
         /// </returns>
         public bool EndsWithAsciiLetterIgnoreCase(ReadOnlySpan<char> suffix) =>
-            suffix.Length <= span1.Length
-                && OrdinalIgnoreCaseHelpers.EqualsAsciiLetterFold(
-                    span1[(span1.Length - suffix.Length)..],
-                    suffix);
+            suffix.Length <= span1.Length && OrdinalIgnoreCaseHelpers.EqualsAsciiLetterFold(
+                span1[(span1.Length - suffix.Length)..],
+                suffix);
     }
 
     /// <summary>
