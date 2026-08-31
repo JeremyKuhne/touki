@@ -24,6 +24,10 @@ dotnet_diagnostic.TOUKI0027.severity = none
 # remain easy to compare.
 dotnet_diagnostic.TOUKI0028.severity = none
 
+# TOUKI0029: Name literal arguments. Upstream call-site syntax is retained so future ports remain
+# easy to compare.
+dotnet_diagnostic.TOUKI0029.severity = none
+
 # TOUKI0026: Require member, parameter, and return XML documentation. Upstream documentation
 # coverage is retained so future ports remain easy to compare.
 dotnet_diagnostic.TOUKI0026.severity = none

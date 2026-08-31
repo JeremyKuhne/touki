@@ -31,5 +31,5 @@ public interface ITypeResolver
     /// </returns>
     bool TryBindToType(
         TypeName typeName,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All), NotNullWhen(true)] out Type? type);
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All), NotNullWhen(returnValue: true)] out Type? type);
 }

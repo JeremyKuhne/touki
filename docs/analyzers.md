@@ -4,7 +4,8 @@
 `KlutzyNinja.Touki` depends on that package, so adding the main package reference is still
 enough: the rules start running on the next build and in the IDE. Reference the analyzer
 package directly when you want the rules without the Touki runtime library. TOUKI0012,
-TOUKI0022, TOUKI0024, TOUKI0027, TOUKI0028, and TOUKI0041 ship disabled unless a project opts in.
+TOUKI0022, TOUKI0024, TOUKI0027, TOUKI0028, TOUKI0029, and TOUKI0041 ship disabled unless a
+project opts in.
 
 The analyzer package is versioned independently from `KlutzyNinja.Touki`.
 Referencing Touki selects a tested minimum analyzer version; a direct analyzer
@@ -36,6 +37,7 @@ of the way, format statement breaks consistently, and name a field for what it a
 | [TOUKI0026](#touki0026) | Document members, parameters, and return values | Maintainability | Warning | Yes | - |
 | [TOUKI0027](#touki0027) | Use configured Allman formatting | Maintainability | **Disabled** | Yes | - |
 | [TOUKI0028](#touki0028) | Format statement breaks around operators | Maintainability | **Disabled** | Yes | - |
+| [TOUKI0029](#touki0029) | Name literal arguments | Maintainability | **Disabled** | Yes | - |
 | [TOUKI0030](#touki0030) | Use `ValueStringBuilder` to build strings | Performance | Warning | - | - |
 | [TOUKI0031](#touki0031) | Use `WriteFormatted` for interpolated strings | Performance | Warning | - | C# 10, `TextWriterExtensions` |
 | [TOUKI0032](#touki0032) | Use `Path.Join` instead of `Path.Combine` | Reliability | Warning | - | - |
@@ -787,6 +789,49 @@ is changed only when the source, parse context, and indentation settings agree. 
 requires every linked analyzer context to produce the same complete output, then updates all linked
 documents together.
 
+## TOUKI0029
+
+**Name literal arguments.** Reports a selected literal passed without its parameter name. Naming
+values whose meaning is not evident at the call site makes calls easier to read and review:
+
+```csharp
+Connect(true, null, default); // TOUKI0029
+
+Connect(useTls: true, state: null, retryCount: default);
+```
+
+The rule ships **disabled** because the desired amount of argument naming is a house style. Enable
+it with:
+
+```ini
+dotnet_diagnostic.TOUKI0029.severity = warning
+```
+
+By default, the rule checks `boolean`, `null`, and `default`. The `boolean` kind includes both
+`true` and `false`. Replace that set with any comma-separated combination of the
+[C# literal syntax](https://learn.microsoft.com/dotnet/csharp/fundamentals/types/built-in-types#literal-syntax)
+kinds supported by the rule:
+
+```ini
+dotnet_code_quality.TOUKI0029.literals = integer, floating_point, character, string, boolean, null, default
+```
+
+Values are case-insensitive and surrounding whitespace is ignored. `integer` includes decimal,
+hexadecimal, and binary forms. `floating_point` includes `double`, `float`, and `decimal` forms.
+`string` includes regular, verbatim, raw, interpolated, and UTF-8 string literals. `default`
+includes both `default` and `default(T)`. If the configured list is empty or contains an unknown
+value, the complete setting is ignored and the default set is used.
+
+Parentheses, casts, checked expressions, a numeric sign, and the null-forgiving operator do not
+hide a literal from the rule. A named constant or another constant expression is not literal syntax
+at the call site and is not reported. Already named arguments are not reported. Expanded `params`
+arguments are also left alone because each expanded value cannot be named independently.
+
+The code fix inserts the parameter name selected by overload resolution. Fix All can name every
+eligible argument in a document, project, or solution. The fix is withheld before C# 4, in C# 4
+through C# 7.1 when a positional argument follows, inside an expression tree, and for source files
+linked into more than one project.
+
 ## TOUKI0030
 
 **Use `ValueStringBuilder` to build strings.** Reports a `StringBuilder` that is only used
@@ -1212,7 +1257,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 
 | Release | Rules added |
 |---------|-------------|
-| Unreleased | TOUKI0027, TOUKI0028 |
+| Unreleased | TOUKI0027, TOUKI0028, TOUKI0029 |
 | 0.4.0 | TOUKI0001, TOUKI0002, TOUKI0003, TOUKI0004, TOUKI0010 |
 | 0.5.0 | TOUKI0020, TOUKI0030 |
 | 0.6.0 | TOUKI0011, TOUKI0021, TOUKI0041 |

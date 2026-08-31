@@ -61,7 +61,7 @@ internal static partial class EnumDataCache
         t_params ??= [null!, true];
         object[] parameters = t_params;
         parameters[0] = type;
-        object? valuesAndNames = s_cachedNames.Invoke(null, parameters);
+        object? valuesAndNames = s_cachedNames.Invoke(obj: null, parameters);
         ulong[] values = (ulong[])s_valuesField.GetValue(valuesAndNames)!;
         string[] names = (string[])s_namesField.GetValue(valuesAndNames)!;
         return (values, names);

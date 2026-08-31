@@ -47,7 +47,7 @@ public class Cache<T> : DisposableBase where T : class, new()
         {
             for (int i = 0; i < _itemsCache.Length; i++)
             {
-                item = Interlocked.Exchange(ref _itemsCache[i], null);
+                item = Interlocked.Exchange(ref _itemsCache[i], value: null);
                 if (item is not null)
                 {
                     break;

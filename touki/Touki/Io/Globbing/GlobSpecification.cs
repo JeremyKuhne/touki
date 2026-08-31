@@ -126,7 +126,7 @@ public sealed partial class GlobSpecification
     public static bool TryCompile(
         string pattern,
         GlobDialect dialect,
-        [NotNullWhen(true)] out GlobSpecification? result,
+        [NotNullWhen(returnValue: true)] out GlobSpecification? result,
         out GlobCompileError error)
     {
         ArgumentNullException.ThrowIfNull(pattern);
@@ -138,7 +138,7 @@ public sealed partial class GlobSpecification
         string pattern,
         GlobDialect dialect,
         GlobOptions options,
-        [NotNullWhen(true)] out GlobSpecification? result,
+        [NotNullWhen(returnValue: true)] out GlobSpecification? result,
         out GlobCompileError error)
     {
         ArgumentNullException.ThrowIfNull(pattern);
@@ -169,7 +169,7 @@ public sealed partial class GlobSpecification
         GlobOptions options,
         GlobPathSeparator separator,
         int maxPatternLength,
-        [NotNullWhen(true)] out GlobSpecification? result,
+        [NotNullWhen(returnValue: true)] out GlobSpecification? result,
         out GlobCompileError error)
     {
         ArgumentNullException.ThrowIfNull(pattern);
@@ -187,7 +187,7 @@ public sealed partial class GlobSpecification
     public static bool TryCompile(
         StringSegment pattern,
         GlobDialect dialect,
-        [NotNullWhen(true)] out GlobSpecification? result,
+        [NotNullWhen(returnValue: true)] out GlobSpecification? result,
         out GlobCompileError error) =>
             TryCompile(pattern, dialect, GlobOptions.None, out result, out error);
 
@@ -196,7 +196,7 @@ public sealed partial class GlobSpecification
         StringSegment pattern,
         GlobDialect dialect,
         GlobOptions options,
-        [NotNullWhen(true)] out GlobSpecification? result,
+        [NotNullWhen(returnValue: true)] out GlobSpecification? result,
         out GlobCompileError error) =>
             TryCompile(pattern, dialect, options, GlobPathSeparator.DialectDefault, maxPatternLength: -1, out result, out error);
 
@@ -212,7 +212,7 @@ public sealed partial class GlobSpecification
         GlobOptions options,
         GlobPathSeparator separator,
         int maxPatternLength,
-        [NotNullWhen(true)] out GlobSpecification? result,
+        [NotNullWhen(returnValue: true)] out GlobSpecification? result,
         out GlobCompileError error)
     {
         result = null;
@@ -938,7 +938,7 @@ public sealed partial class GlobSpecification
         }
 
         matcher = new GlobFileSystemMatcher(this);
-        return Interlocked.CompareExchange(ref _fileSystemMatcher, matcher, null) ?? matcher;
+        return Interlocked.CompareExchange(ref _fileSystemMatcher, matcher, comparand: null) ?? matcher;
     }
 
     /// <summary>
@@ -958,12 +958,12 @@ public sealed partial class GlobSpecification
     {
         if (!IsPathAware)
         {
-            return MatchCore(default, input);
+            return MatchCore(directoryPrefix: default, input);
         }
 
         int lastSeparator = input.LastIndexOf(Separator);
         return lastSeparator < 0
-            ? MatchCore(default, input)
+            ? MatchCore(directoryPrefix: default, input)
             : MatchCore(input[..(lastSeparator + 1)], input[(lastSeparator + 1)..]);
     }
 

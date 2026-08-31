@@ -146,7 +146,7 @@ internal sealed class BinaryFormatDeserializer : IDeserializer
         {
             foreach ((SerializationRecordId id, IDeserializationCallback callback) in _onDeserializationCallbacks)
             {
-                callback.OnDeserialization(null);
+                callback.OnDeserialization(sender: null);
                 ReapplyValueType(id);
             }
         }
@@ -173,7 +173,7 @@ internal sealed class BinaryFormatDeserializer : IDeserializer
             ObjectRecordDeserializer currentParser = parserStack.Pop();
 
             SerializationRecordId requiredId;
-            while (!(requiredId = currentParser.Continue()).Equals(default))
+            while (!(requiredId = currentParser.Continue()).Equals(other: default))
             {
                 if (DeserializeNew(requiredId) is ObjectRecordDeserializer requiredParser)
                 {

@@ -90,7 +90,7 @@ public sealed partial class RegisteredTypeResolver : ITypeResolver
 
     bool ITypeResolver.TryBindToType(
         TypeName typeName,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All), NotNullWhen(true)] out Type? type)
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All), NotNullWhen(returnValue: true)] out Type? type)
     {
         ArgumentNullException.ThrowIfNull(typeName);
         return _types.TryGetValue(typeName, out type);

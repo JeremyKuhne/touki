@@ -161,7 +161,7 @@ internal sealed class CompositeFileSystemMatcherSession : FileSystemMatcherSessi
     {
         if (!_hasPathSessions)
         {
-            return MatchesFileCore(currentDirectory, fileName, default);
+            return MatchesFileCore(currentDirectory, fileName, canonicalPath: default);
         }
 
         using CanonicalPathScope path = new(
@@ -370,7 +370,7 @@ internal sealed class CompositeFileSystemMatcherSession : FileSystemMatcherSessi
         for (int index = 0; index < childCount; index++)
         {
             edges.Add(0);
-            actions.Add(default);
+            actions.Add(item: default);
         }
 
         for (int index = childCount - 1; index >= 0; index--)

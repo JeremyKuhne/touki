@@ -53,7 +53,8 @@ public readonly struct HandleRef<THandle> : IHandle<THandle>, IEquatable<HandleR
         other.Handle.Equals(Handle) && Equals(other.Wrapper, Wrapper);
 
     /// <inheritdoc/>
-    public override bool Equals([NotNullWhen(true)] object? obj) => obj is HandleRef<THandle> other && Equals(other);
+    public override bool Equals([NotNullWhen(returnValue: true)] object? obj) =>
+        obj is HandleRef<THandle> other && Equals(other);
 
     /// <inheritdoc/>
     public override int GetHashCode() => HashCode.Combine(Wrapper, Handle);
@@ -84,5 +85,5 @@ public readonly struct HandleRef<THandle> : IHandle<THandle>, IEquatable<HandleR
     /// <value>
     ///  <see langword="true"/> if the handle equals the default value; otherwise, <see langword="false"/>.
     /// </value>
-    public bool IsNull => Handle.Equals(default);
+    public bool IsNull => Handle.Equals(other: default);
 }

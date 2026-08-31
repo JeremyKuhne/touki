@@ -38,7 +38,7 @@ internal interface IClipboardProvider
     /// </summary>
     /// <param name="text">Receives the clipboard text on success; otherwise <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if text was read; otherwise <see langword="false"/>.</returns>
-    bool TryGetText([NotNullWhen(true)] out string? text);
+    bool TryGetText([NotNullWhen(returnValue: true)] out string? text);
 
     /// <summary>
     ///  Attempts to place <paramref name="text"/> on the clipboard as Unicode text.

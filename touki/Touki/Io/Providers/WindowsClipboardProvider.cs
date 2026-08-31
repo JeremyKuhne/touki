@@ -44,7 +44,7 @@ internal sealed unsafe class WindowsClipboardProvider : IClipboardProvider
     public bool HasText => PInvoke.IsClipboardFormatAvailable((uint)CLIPBOARD_FORMAT.CF_UNICODETEXT);
 
     /// <inheritdoc/>
-    public bool TryGetText([NotNullWhen(true)] out string? text)
+    public bool TryGetText([NotNullWhen(returnValue: true)] out string? text)
     {
         text = null;
 

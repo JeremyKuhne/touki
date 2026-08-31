@@ -88,7 +88,7 @@ public static class Clipboard
     ///  When <see langword="false"/>, contains <see langword="null"/>.
     /// </param>
     /// <returns><see langword="true"/> if text was successfully read; otherwise <see langword="false"/>.</returns>
-    public static bool TryGetText([NotNullWhen(true)] out string? text) => s_provider.TryGetText(out text);
+    public static bool TryGetText([NotNullWhen(returnValue: true)] out string? text) => s_provider.TryGetText(out text);
 
     /// <summary>
     ///  Attempts to place <paramref name="text"/> on the clipboard as Unicode text.

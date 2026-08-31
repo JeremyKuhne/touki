@@ -67,7 +67,7 @@ internal sealed class ClassRecordFieldInfoDeserializer : ClassRecordDeserializer
             field.SetValue(Object, memberValue);
 
             FieldValueUpdater? updater = null;
-            if (memberValue is not null && !reference.Equals(default) && memberValue.GetType().IsValueType)
+            if (memberValue is not null && !reference.Equals(other: default) && memberValue.GetType().IsValueType)
             {
                 updater = new FieldValueUpdater(_classRecord.Id, reference, field);
                 Deserializer.TrackValueTypeUpdater(updater);
