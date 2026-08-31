@@ -15,7 +15,8 @@ The analyzers encode the conventions this library is built on: avoid hidden stru
 copies, release resources deterministically, keep scratch buffers off the stack once
 they get large, write formatted text without temporary strings, compose paths without
 silently discarding segments, keep types easy to find by file name, keep whitespace out
-of the way, format statement breaks consistently, and name a field for what it actually is.
+of the way, format statement breaks consistently, name literal arguments, and name a field for
+what it actually is.
 
 ## Rules
 
@@ -151,10 +152,8 @@ Configure the threshold in bytes:
 dotnet_code_quality.TOUKI0011.max_stackalloc_bytes = 512
 ```
 
-The rule only reports what it can size from source: a compile-time constant length with a
-primitive, enum, pointer, or native-integer element type. A run-time length or a custom
-struct element is left alone, because the total is not knowable at compile time. Native
-integers and pointers are counted as 8 bytes.
+The rule reports allocations whose total byte size can be determined at compile time. Run-time
+lengths and element types with unknown size are left alone.
 
 ## TOUKI0012
 
@@ -174,9 +173,8 @@ sealed class StandardResource : DisposableBase
 }
 ```
 
-The rule deliberately stays silent for structs, generated code, and classes that only
-inherit an `IDisposable` implementation from a base class. It also does not run when the
-compilation cannot resolve `Touki.DisposableBase`.
+Structs, generated code, and classes that inherit an `IDisposable` implementation are ignored.
+The rule also requires a reference to `Touki.DisposableBase`.
 
 ## TOUKI0020
 
@@ -191,21 +189,12 @@ Value.cs                 // partial struct Value - its own members
 Value.TypeFlagOfT.cs     // partial struct Value { class TypeFlag<T> }
 ```
 
-The code fix moves the declaration to a new file and supports IDE solution Fix All. Nested
-types remain nested inside `partial` shells that preserve the containing types' modifiers and
-type parameters. Delegates are supported too. If `Type.cs` already exists, the fix tries the
-qualified nested name (`Container.Type.cs`) and then an approved detail separator; it never
-overwrites an existing document or file.
+The code fix moves extra declarations to new files and supports IDE solution Fix All. Nested
+types remain nested inside `partial` shells with the same modifiers and type parameters. The fix
+chooses an available file name and never overwrites an existing file.
 
-The fix is deliberately withheld for source files containing preprocessor directives,
-file-local types, declarations that reference file-local types, and linked source files. Those
-shapes cannot be moved independently without changing preprocessing or identity, editing
-several projects at once, or breaking symbol binding.
-
-File-local types are excluded from the rule entirely. The `file` modifier deliberately ties a
-type and everything nested within it to that source file, so moving either declaration would
-change its identity or accessibility. Other non-file-local types in the same file are still
-counted normally.
+File-local types are excluded. The fix is not offered for files with preprocessor directives,
+declarations tied to file-local types, or linked source files.
 
 To enforce top-level types now and defer nested types, set:
 
@@ -239,25 +228,18 @@ Configure the approved separators as the set of characters to allow. The default
 dotnet_code_quality.TOUKI0021.file_name_detail_separators = .-
 ```
 
-Comparison is ordinal, so `foo.cs` is reported for type `Foo` even on a case-insensitive
-file system. Files that declare no types - global usings, assembly-level attributes - are
-not reported. An empty partial shell containing conditional directives is also omitted, so a
-file for a conditionally compiled nested type does not disagree between build configurations.
+Comparison is case-sensitive, so `foo.cs` is reported for type `Foo` even on a case-insensitive
+file system. Files that declare no types are ignored.
 
-The diagnostic suggests an accepted name that is unoccupied in the current compilation. The
-code fix revalidates that name against the complete solution and filesystem before applying it.
-Nested types prefer `Container.Type.cs`. When a partial type has declarations in several files,
-the current stem is retained as detail, for example `Parser.SecurityTests.cs`, instead of
-colliding on `Parser.cs`. IDE solution Fix All allocates names across the complete solution
-before applying each rename. Linked source files are left unchanged because one physical rename
-would have to update every project that includes the file.
+The code fix selects an available accepted name, checks it against the solution and file system,
+and never overwrites an existing file. It supports IDE solution Fix All. Linked source files are
+left unchanged.
 
 ### Adopting TOUKI0020 and TOUKI0021
 
-Adopt TOUKI0020 first with IDE solution Fix All. Splitting declarations is what makes most
-file names satisfy TOUKI0021, so renaming first creates throwaway work. Both severities can be
-scoped by path in `.editorconfig`; keep unconverted directories at `none` and raise completed
-directories to `warning` when staging a large repository.
+Adopt TOUKI0020 first with IDE solution Fix All. Splitting declarations makes most file names
+satisfy TOUKI0021, so renaming first creates throwaway work. Both rules can be enabled by path in
+`.editorconfig` for a staged migration.
 
 After splitting, clean up imports through the built-in style lane, then use IDE solution Fix
 All for TOUKI0021:
@@ -266,19 +248,9 @@ All for TOUKI0021:
 dotnet format style <project> --diagnostics IDE0005 --severity warn
 ```
 
-`dotnet format analyzers` cannot safely apply either structural fix. Its `MSBuildWorkspace`
-persists added source documents as explicit `Compile` items that collide with SDK default
-globs, and it does not support document-info renames. The providers therefore decline Fix All
-and individual actions in that host instead of leaving a broken project. Rerun the IDE0005
-command until it produces no changes. When moving a nested type by hand, repeat the container's
-exact modifiers and type parameters on every `partial` shell; the TOUKI0020 fix does this
-automatically.
-
-For a large migration, compare the author-written metadata type names before and after in
-addition to building and testing. `PEReader` and `MetadataReader.TypeDefinitions` can produce
-the list; walk `GetDeclaringType()` for nested names and exclude compiler-generated names
-containing `<` or `>`. This catches a missing declaration even when the remaining assembly
-still builds and its tests pass.
+Use the IDE for TOUKI0020 and TOUKI0021 fixes because they add or rename files;
+`dotnet format analyzers` does not apply them. Rerun the IDE0005 cleanup until it produces no
+changes.
 
 ## TOUKI0022
 
@@ -323,6 +295,8 @@ This is not the same as the `trim_trailing_whitespace` EditorConfig property, wh
 editor-on-save setting: it does nothing for a file written by a tool, a merge, or an editor
 that does not honor it. This rule is checked on every build.
 
+The code fix removes the reported whitespace and supports Fix All.
+
 ### Whitespace that is not reported
 
 Whitespace whose exact bytes are part of the program is never reported, because deleting it
@@ -337,11 +311,6 @@ string value = """
 That covers verbatim, raw, and interpolated string literals, and character literals. It
 also covers text excluded by conditional compilation, which the parser never interprets -
 a raw string could be sitting inside an `#if` block that is currently false.
-
-A combining mark needs no special handling. The scan walks backwards from the end of the
-line and stops at the first character that is not whitespace; a combining mark is not
-whitespace, so a space that carries a following mark is never the last character on the
-line and is never reported.
 
 ## TOUKI0024
 
@@ -366,19 +335,10 @@ it fits:
 ```
 
 An element with two or more content lines is never compacted. Nested block elements are expanded
-and indented; inline elements such as `<see>`, `<paramref>`, and `<c>` remain in prose. The
-contents of `<code>` and CDATA sections retain their relative indentation. Self-closing elements
-remain self-closing. Malformed XML and `/** */` documentation comments are left alone.
-
-Indentation is evaluated per contiguous logical block, such as a start tag, end tag, or run of
-prose. When the first line is correctly indented, the rest of that block is left unchanged so
-deliberate hanging indentation survives. When the first line is misindented, every line in the
-block is shifted by the same amount.
-
-Compaction removes only ordinary ASCII spaces and tabs that belong to the `///` layout; Unicode
-whitespace such as NBSP remains documentation content. Content under effective
-`xml:space="preserve"` is opaque, including inherited preservation. A nested
-`xml:space="default"` element resumes normal formatting.
+and indented, while inline elements such as `<see>`, `<paramref>`, and `<c>` remain in prose.
+Existing prose wrapping and intentional hanging indentation are preserved. `<code>`, CDATA, and
+content under `xml:space="preserve"` retain their indentation. Malformed XML and `/** */`
+documentation comments are left alone.
 
 The rule ships **disabled** because documentation layout is a house style. Enable it with:
 
@@ -404,13 +364,7 @@ The maximum physical line length uses the first positive integer from this list:
 The physical length includes source indentation and the `/// ` prefix. Invalid and non-positive
 values fall through to the next source rather than failing the build.
 
-To keep analysis bounded on adversarial source, the rule stays silent for an individual comment
-larger than 1 MiB, containing more than 4,096 structured XML nodes, nested more than 128 XML
-elements deep, or whose formatted replacement would exceed 4 MiB.
-
-The code fix supports document, project, solution, containing-member, and containing-type Fix All.
-It groups diagnostics by document and applies the analyzer-computed replacements in one batched text
-update per document, avoiding the per-diagnostic changed-solution cost of Roslyn's generic batch provider.
+Fix All supports document, project, solution, containing-member, and containing-type scopes.
 
 ## TOUKI0025
 
@@ -427,29 +381,14 @@ class Undocumented { } // TOUKI0025
 class Documented { }
 ```
 
-For a partial type, the rule counts summaries across every declaration and reports once on the
-earliest user-authored declaration. Exactly one declaration may contain the summary, whether the
-parts are in one file or several. A summary in generated code participates in the count and can
-satisfy the rule, but a type declared only in generated code is not diagnosed. Generated files,
-`generated_code = true`, `#line hidden`, `[GeneratedCode]`, and `[CompilerGenerated]`
-declarations are recognized. Types lexically nested in a generated declaration are also excluded.
+For a partial type, one summary across its declarations is enough; duplicate summaries are
+reported. Documentation on a generated partial declaration can satisfy the user-authored type,
+while types declared only in generated code are ignored.
 
-Only well-formed `<summary>` and `<inheritdoc>` elements in documentation blocks associated with
-the declaration count. `<remarks>`, malformed XML, an unprocessed documentation block, and an
-element nested inside another XML element do not substitute for top-level documentation. The
-association follows the compiler: ordinary comments between the nearest documentation block and
-the declaration are allowed, while an ordinary comment between documentation blocks leaves the
-earlier block unprocessed. Duplicate summaries are still reported even when inheritdoc is present.
-
-An `<inheritdoc>` element is valid when its explicit `cref` resolves through any further
-inheritdoc elements to a declaration with a top-level `<summary>`. Without `cref`, the analyzer
-checks the type's declared base class and interfaces. The implicit `object`, `ValueType`, `Enum`,
-and `MulticastDelegate` bases are not documentation targets. Unresolved references, cycles, and
-inspectable targets with no summary do not satisfy the rule. When XML documentation for PE
-metadata is unavailable, the analyzer leaves the inheritdoc alone because it cannot determine
-whether the target is documented. An inheritdoc with a `path` attribute does not satisfy the rule;
-the analyzer does not evaluate XPath filters and therefore cannot establish that a summary is
-inherited.
+The `<summary>` or `<inheritdoc>` must be a well-formed top-level element. An `<inheritdoc>` is
+accepted when its target, base class, or interface ultimately provides a summary. Unresolved
+references and source targets without a summary do not count. Metadata without available XML
+documentation is left alone. XPath-filtered inheritdoc is not supported.
 
 Configure the analyzed declared visibility with a comma-separated list:
 
@@ -457,12 +396,10 @@ Configure the analyzed declared visibility with a comma-separated list:
 dotnet_code_quality.TOUKI0025.api_surface = public, internal
 ```
 
-Accepted values are `public`, `internal`, `private`, `file`, and `all`. The default is `all`.
-Values are case-insensitive and surrounding whitespace is ignored. A missing, empty, or invalid
-value falls back to `all`. A nested type is classified by its own declared accessibility, without
-being constrained by its containing types. A directly file-local type belongs to the `file`
-surface. Protected and protected-internal types belong to the `public` surface; private-protected
-types belong to the `internal` surface.
+Accepted values are `public`, `internal`, `private`, `file`, and `all`; the default is `all`.
+Values are case-insensitive, and invalid values use the default. `public` includes protected and
+protected-internal types, `internal` includes private-protected types, and directly file-local types
+use `file`. Nested types use their own declared accessibility for this setting.
 
 To use a different set for nested types based on their effective visibility, specify:
 
@@ -470,13 +407,8 @@ To use a different set for nested types based on their effective visibility, spe
 dotnet_code_quality.TOUKI0025.effective_api_surface = public, internal
 ```
 
-For nested types, `effective_api_surface` replaces `api_surface` when present and accepts the same
-values, with the same `all` fallback for an empty or invalid value. Top-level types continue using
-`api_surface`. Effective visibility accounts for containing types: a public type nested in an
-internal type is `internal`, a public type nested in a private type is `private`, and a non-private
-type nested in a file-local type is `file`. An explicitly private nested type remains `private`.
-For a partial type whose files receive different EditorConfig settings, the rule runs when any
-declaring file includes the type under the set selected for that declaration.
+For nested types, `effective_api_surface` replaces `api_surface` and accounts for the accessibility
+of containing types. It accepts the same values and defaults to `all`.
 
 ## TOUKI0026
 
@@ -494,21 +426,11 @@ public int Count { get; } // TOUKI0026
 public int Count { get; }
 ```
 
-Overrides and explicit interface implementations do not need local documentation when a
-documented member exists somewhere in their base or interface hierarchy. If every member in a
-source hierarchy can be inspected and none is documented, the implementation is reported. A
-metadata hierarchy with unavailable XML documentation is left alone because the rule cannot prove
-that documentation is absent. Implicit interface implementations remain ordinary members and must
-be documented locally.
-
-An explicit `<inheritdoc cref="...">` is valid only when the referenced declaration, or a further
-inheritdoc chain from that declaration, reaches a top-level `<summary>`. A bare `<inheritdoc/>`
-uses an overridden or implemented member; this includes an implicit interface implementation when
-the implementation declares the tag. Unresolved references, cycles, and inspectable source or
-project-reference targets with no summary do not satisfy the rule. PE metadata without an XML
-documentation entry remains unknown and is not diagnosed. An inheritdoc with a `path` attribute
-does not satisfy the rule; the analyzer does not evaluate XPath filters and therefore cannot
-establish that a summary is inherited.
+Overrides and explicit interface implementations may inherit documentation from a documented base
+or interface member. Implicit interface implementations still need local documentation unless
+they declare `<inheritdoc/>`. Explicit `cref` chains are followed to a documented member;
+unresolved or undocumented source targets do not count. Metadata without available XML
+documentation is left alone. XPath-filtered inheritdoc is not supported.
 
 Configure the declared member visibility with:
 
@@ -516,11 +438,10 @@ Configure the declared member visibility with:
 dotnet_code_quality.TOUKI0026.api_surface = public, internal
 ```
 
-Accepted values are `public`, `internal`, `private`, and `all`. The default is `public, internal`,
-which means every member whose own declared accessibility is non-private, regardless of its
-containing types. Protected and protected-internal members belong to the `public` surface;
-private-protected members belong to the `internal` surface. Missing, empty, or invalid values use
-the default. The `file` token is not accepted because `file` applies to types, not members.
+Accepted values are `public`, `internal`, `private`, and `all`; the default is `public, internal`.
+Values are case-insensitive, and invalid values use the default. `public` includes protected and
+protected-internal members, while `internal` includes private-protected members. Members use their
+own declared accessibility for this setting. The `file` value applies only to types.
 
 To use a different set for members declared in nested types, based on their effective visibility,
 specify:
@@ -529,20 +450,14 @@ specify:
 dotnet_code_quality.TOUKI0026.effective_api_surface = public, internal
 ```
 
-For members declared in nested types, `effective_api_surface` replaces `api_surface` when present
-and accepts the same values, with the same `public, internal` fallback for an empty or invalid
-value. Members declared in top-level types continue using `api_surface`. For example, a public
-member in a nested internal type is effectively `internal`, and a public member in a private nested
-type is effectively `private`.
+For members in nested types, `effective_api_surface` replaces `api_surface` and accounts for the
+accessibility of containing types. It accepts the same values and defaults to `public, internal`.
 
 ### Parameters
 
-TOUKI0026 reports a parameter without a matching top-level `<param>` element. Methods,
-constructors, operators, indexers, delegate signatures, and primary-constructor parameters
-participate. Named C# 14 extension-block receivers also participate; put their `<param>` element
-on the `extension(...)` block. Unnamed type-extension receivers have no source identifier and are
-skipped. For a partial member, documentation on either declaration is accepted and parameters are
-matched by ordinal when declaration-part names differ.
+TOUKI0026 reports parameters without matching top-level `<param>` elements. This includes methods,
+constructors, operators, indexers, delegates, primary constructors, and named C# 14 extension
+receivers. For a partial member, documentation on either declaration is accepted.
 
 ```csharp
 /// <summary>Transforms a value.</summary>
@@ -558,10 +473,7 @@ dotnet_code_quality.TOUKI0026.require_parameter_documentation = false
 The default is `true`. A valid top-level `<inheritdoc>` satisfies the complete inherited contract,
 including parameters.
 
-The compiler copies XML elements from an extension block to each member declared in that block.
-The analyzer follows that behavior, so a block-level summary or inheritdoc can document the
-contained members. Receiver visibility is derived from those members: a private-only extension
-block participates only when the `private` surface is selected.
+Documentation on a C# 14 extension block can document its contained members.
 
 ### Return values
 
@@ -624,32 +536,18 @@ dotnet_code_quality.TOUKI0027.allow_single_line_blocks = true
 dotnet_code_quality.TOUKI0027.require_blank_line_after_multiline_statement = true
 ```
 
-`require_blank_line_after_closing_brace` applies when `}` is the only code token on its line. It
-requires a blank line unless the next relevant line begins with another structural closing brace,
-the brace is followed by `else`, `catch`, `finally`, the `while` clause of the same `do` statement,
-or a sibling accessor, or the file ends. Continuation clauses must follow the preceding brace
-without a blank line; for a multiline construct, a same-line clause is moved to the next line.
-Sibling accessor bodies such as `get` and `set`, or `add` and `remove`, also have no blank line
-between them. This adjacency is enforced even when the blank-line option is disabled. A trailing
-comment means the brace is not alone.
-Preprocessor-directive-only lines and inactive conditional text are skipped when looking for a
-blank line or closing brace. A required blank is inserted after the skipped sequence. The check
-stops at `#else` and `#elif` because they begin an alternate source branch. A multiline `do`
-statement remains subject to the post-statement policy, so its terminating semicolon is followed by
-a blank line when more code follows.
+`require_blank_line_after_closing_brace` adds a blank line after a standalone `}`. It keeps
+continuation clauses (`else`, `catch`, `finally`, and `do`/`while`), sibling accessors, outer
+closing braces, and the end of the file adjacent. Continuation clauses are placed on the next line
+without an intervening blank.
 
-For a multiline switch expression whose closing brace is directly terminated by a semicolon, the
-semicolon is the structural terminator. The blank-line check therefore runs after `};`, including
-for expression-bodied members and declarations. Separator semicolons inside a `for` header do not
-terminate their owning syntax and do not participate.
+`require_blank_line_after_multiline_statement` adds a blank line after a statement whose
+terminating semicolon is on a later line than its first token. It does not add one before a closing
+brace or at the end of the file, and it does not apply to fields or other member declarations.
+For a switch expression ending in `};`, the semicolon is the terminator.
 
-`require_blank_line_after_multiline_statement` applies to a `StatementSyntax` whose terminating
-semicolon is on a later physical line than the statement's first token. It requires a blank line
-after the semicolon's physical line unless the next relevant line begins with a closing brace or
-the file ends. Preprocessor-directive-only lines and inactive conditional text are skipped, and the
-check stops at `#else` and `#elif`. A trailing comment stays on the statement line. A following
-statement on that same line is moved after the required blank line. Multiline fields and other
-member declarations are not statements and do not participate.
+Both blank-line policies skip preprocessor-only and inactive lines without carrying a requirement
+across `#else` or `#elif`.
 
 `allow_single_line_blocks` permits any complete structural brace pair to stay on one line. The
 maximum physical line length uses the first positive integer from this list:
@@ -662,19 +560,12 @@ The physical length includes indentation and any source before or after the brac
 `allow_single_line_blocks` to `false` expands every pair regardless of length. Invalid boolean
 values use the default. Invalid and non-positive lengths fall through to the next source.
 
-When the fixer creates a line, it follows `indent_style` and `indent_size`. Indentation sizes from
-1 through 16 are accepted; missing, invalid, non-positive, and larger values use four spaces.
-Existing lines are not otherwise reindented.
+New indentation follows the standard `indent_style` and `indent_size` EditorConfig properties,
+with four spaces as the fallback.
 
-The code fix formats the complete document in one deterministic text update so brace and spacing
-repairs cannot overlap. Fix All supports document, project, and solution scopes. The analyzer
-stores its resolved options on the diagnostic, so the fixer uses the same configuration that
-produced the report. For a physical file linked into several projects, the fix is offered only when
-every parse and analyzer-configuration context produces identical output; applying it updates every
-linked document. Diagnosis does not materialize the formatted document. When a conservative
-projection shows that formatting could add more than 4 MiB of text, the diagnostic remains but the
-code fix is withheld. The fix is also withheld when moving a brace would relocate a line containing
-`#`, because malformed directive text can become active when moved to a new line.
+Fix All supports document, project, and solution scopes. Linked files are changed only when their
+project contexts agree on the result. Trivia-sensitive layouts are left unchanged when they cannot
+be transformed safely.
 
 ## TOUKI0028
 
@@ -708,23 +599,13 @@ int Double(int value) =>
     value * 2;
 ```
 
-The rule covers arithmetic, shift, relational, equality, bitwise, logical, null-coalescing,
-assignment, member-access, conditional-access, range, `is`, `as`, relational and binary pattern,
-and ternary operators. Assignment expressions, declaration and initializer `=` tokens, query `let`
-equals tokens, name-equals tokens, and `is` use trailing placement. For this layout rule, `is`
-shares the equality precedence category. For `?.` and `?[`, the conditional-access token pair moves
-as one operator. Open-ended ranges do not participate because they have no operand on both sides of
-the break.
+The rule covers common expression operators, member and conditional access, ranges, patterns,
+declarations and initializers, query `let` clauses, and expression bodies. It treats `?.` and `?[`
+as single operators.
 
-Indentation follows the
-[C# operator-precedence hierarchy](https://learn.microsoft.com/dotnet/csharp/language-reference/operators/#operator-precedence).
-A leading operator begins one configured level beyond its left operand. Operators in the same
-connected precedence category remain aligned; each transition to another category adds a level.
-Parentheses and the other syntactic scopes listed below start another level even when the operator
-category matches the surrounding expression. Parentheses that begin an inline operator's
-continuation do not add that level again. A multiline invocation or explicit parenthesized left
-operand uses its structural first line as the anchor; argument and closing-delimiter indentation
-do not carry into the following operator. For example:
+Indentation follows the configured indentation, C# operator precedence, and the expression's
+existing syntactic nesting. Operators at the same precedence remain aligned, while nested
+expressions and precedence changes add another level. For example:
 
 ```csharp
 bool result = first
@@ -733,29 +614,16 @@ bool result = first
       == fourth;
 ```
 
-Once one operator in a connected binary-expression or binary-pattern precedence group is broken,
-every operator in that group is broken and aligned. This completes existing wrapping; the rule does
-not initiate wrapping for an otherwise single-line group or collapse existing wrapping.
+When one operator in a same-precedence chain is already wrapped, the rule wraps and aligns the
+remaining operators in that chain. It does not wrap an otherwise single-line expression or collapse
+an existing multiline expression.
 
-A nested parenthesized expression or pattern, argument list, tuple, initializer, collection
-expression, interpolation, or catch filter adds a scope level. A ternary's `?` and `:` begin one
-level beyond the indentation of its condition's final physical line, including for a nested ternary.
-An expression body on a new line begins one level beyond the physical declaration line that ends
-before `=>`; for a multiline parameter list, this places the body beyond the parameter block.
-When the direct body or right-hand side is a collection expression or array initializer whose
-delimiters are each on their own line, its opening `[` or `{` instead aligns with the line containing
-the trailing operator, like a block-lambda brace. The contents remain indented within the delimiters.
-A coherently indented block that moves to this anchor shifts through its matching closing delimiter,
-preserving the relative indentation of its contents.
-A collection or initializer whose delimiters share one line is an ordinary continuation expression
-and keeps one continuation indent.
-Nested operators use the normalized indentation of their outer scope, so Fix All completes in one
-pass even when an outer correction moves an inner scope.
+A direct collection expression or array initializer whose delimiters are each on their own lines
+aligns its opening delimiter like a block brace and keeps its contents nested. A collection or
+initializer that stays on one line uses ordinary continuation indentation.
 
-Indentation follows the standard EditorConfig properties. `indent_style = tab` uses one tab.
-Otherwise, a positive `indent_size` from 1 through 16 supplies the number of spaces. When
-`indent_size = tab`, `tab_width` supplies that width when it is in the same range. Missing,
-invalid, non-positive, and larger values use four spaces.
+Indentation follows the standard `indent_style`, `indent_size`, and `tab_width` EditorConfig
+properties, with four spaces as the fallback.
 
 The rule ships **disabled** because statement layout is a house style. Enable it with:
 
@@ -763,31 +631,11 @@ The rule ships **disabled** because statement layout is a house style. Enable it
 dotnet_diagnostic.TOUKI0028.severity = warning
 ```
 
-The analyzer only normalizes line breaks that already exist; it does not wrap long one-line
-expressions or collapse multiline expressions. It stays silent when relocating an operator would
-cross a comment, directive, or other non-whitespace trivia. It also stays silent when finding the
-indentation anchor would cross more than 256 syntax ancestors, when a scanned or replaced source
-span would exceed 4,096 characters, or when the prospective generated replacement would exceed
-4,096 characters.
+The fixer keeps related multiline content together when changing an operator's placement or
+indentation. Trivia-sensitive layouts are left unchanged when they cannot be transformed safely.
 
-The diagnostic carries compact change metadata and source spans rather than replacement text. The
-code fix reparses the current document and recomputes the operator, change kind, replacement span,
-and indentation descriptor before materializing a change. It preserves the existing line-ending
-sequence. When moving or reindenting an expression body also moves a multiline invocation or switch
-expression, the fix shifts its dependent argument, comment, delimiter, and arm lines by the same
-amount. When a corrected leading operator begins a multiline invocation, the invocation's arguments
-are normalized one level beyond the operator. A coherently indented block-like collection or
-initializer moves through its matching delimiter. A fix is withheld when this dependent span exceeds
-4,096 characters or contains a multiline string whose indentation may be runtime data. A fix is also
-withheld when relocating an outer
-operator would make a currently leading nested operator trail its line. Fix All gives validated
-operator edits precedence over broader dependent shifts, combines the remaining non-overlapping
-edits once per document, and stops when the complete operation would materialize more than
-4,194,304 replacement characters or collect more than 65,536 diagnostics.
-It supports document, project, and solution scopes. A physical file linked into several projects
-is changed only when the source, parse context, and indentation settings agree. Fix All additionally
-requires every linked analyzer context to produce the same complete output, then updates all linked
-documents together.
+Fix All supports document, project, and solution scopes. Linked files are changed only when their
+project contexts agree on the result.
 
 ## TOUKI0029
 
@@ -807,30 +655,23 @@ it with:
 dotnet_diagnostic.TOUKI0029.severity = warning
 ```
 
-By default, the rule checks `boolean`, `null`, and `default`. The `boolean` kind includes both
-`true` and `false`. Replace that set with any comma-separated combination of the
-[C# literal syntax](https://learn.microsoft.com/dotnet/csharp/fundamentals/types/built-in-types#literal-syntax)
-kinds supported by the rule:
+By default, the rule checks `boolean`, `null`, and `default`. Configure a comma-separated set of
+literal kinds to replace that default:
 
 ```ini
 dotnet_code_quality.TOUKI0029.literals = integer, floating_point, character, string, boolean, null, default
 ```
 
-Values are case-insensitive and surrounding whitespace is ignored. `integer` includes decimal,
-hexadecimal, and binary forms. `floating_point` includes `double`, `float`, and `decimal` forms.
-`string` includes regular, verbatim, raw, interpolated, and UTF-8 string literals. `default`
-includes both `default` and `default(T)`. If the configured list is empty or contains an unknown
-value, the complete setting is ignored and the default set is used.
+Values are case-insensitive. `integer`, `floating_point`, and `string` include their common C#
+forms; `boolean` includes `true` and `false`; and `default` includes both `default` and
+`default(T)`. An empty or invalid setting uses the default set.
 
-Parentheses, casts, checked expressions, a numeric sign, and the null-forgiving operator do not
-hide a literal from the rule. A named constant or another constant expression is not literal syntax
-at the call site and is not reported. Already named arguments are not reported. Expanded `params`
-arguments are also left alone because each expanded value cannot be named independently.
+Parentheses, casts, checked expressions, signs, and null-forgiving operators do not hide a literal.
+Named constants, already named arguments, and expanded `params` arguments are ignored.
 
-The code fix inserts the parameter name selected by overload resolution. Fix All can name every
-eligible argument in a document, project, or solution. The fix is withheld before C# 4, in C# 4
-through C# 7.1 when a positional argument follows, inside an expression tree, and for source files
-linked into more than one project.
+The code fix inserts the matching parameter name. Fix All supports document, project, and solution
+scopes. Fixes are withheld where language-version, expression-tree, or linked-file constraints make
+the change unsafe.
 
 ## TOUKI0030
 
@@ -852,34 +693,17 @@ rule cannot prove is safe to convert is left alone.
 
 ### The type needs `using Touki.Text;`
 
-The snippet above assumes that directive is in scope. Adding it is the whole fix, and it
-coexists with `using System.Text;` - the two do not collide, so no alias is needed.
-
-Leaving it out produces different errors on the two targets, and the .NET Framework one
-is misleading:
-
-- .NET: `CS0246: The type or namespace name 'ValueStringBuilder' could not be found`,
-  which points straight at the missing using.
-- .NET Framework: `CS0122: 'ValueStringBuilder' is inaccessible due to its protection
-  level`. `Microsoft.IO.Redist` carries an internal `System.Text.ValueStringBuilder`, and
-  Touki references that package on .NET Framework, so it reaches consumers. A file that
-  imports `System.Text` finds that type, and "inaccessible" reads like a broken package
-  reference rather than a missing using.
-
-Once `Touki.Text` is imported the accessible type wins and the internal one is ignored,
-including when `using System.Text;` sits in an inner scope.
+The snippet requires `using Touki.Text;`, which can coexist with `using System.Text;` without an
+alias. Without it, .NET reports `CS0246`; .NET Framework may instead report the misleading
+`CS0122` because it finds an internal `System.Text.ValueStringBuilder`. Adding the
+`Touki.Text` import resolves either error.
 
 ## TOUKI0031
 
-**Use `WriteFormatted` for interpolated strings.** Reports a non-constant interpolated
-string passed directly to the one-argument `TextWriter.Write(string)` method when the
-receiver is statically typed as `TextWriter`, `StringWriter`, or `StreamWriter`, or is a
-type parameter directly constrained to one of those types. `Write` first creates the complete string;
-`Touki.Io.TextWriterExtensions.WriteFormatted` instead formats through
-`ValueStringBuilder`. Exact `StringWriter` and `StreamWriter` instances receive the
-builder content directly, without allocating that intermediate string. Custom writer
-types receive a string through their virtual `Write(string)` method so overrides and
-their side effects are preserved.
+**Use `WriteFormatted` for interpolated strings.** Reports a non-constant interpolated string
+passed directly to `TextWriter.Write(string)`, including `StringWriter`, `StreamWriter`, and
+matching type parameters. `WriteFormatted` can avoid creating an intermediate string while
+preserving custom writer behavior.
 
 ```csharp
 writer.Write($"Rows written: {count}"); // TOUKI0031
@@ -887,21 +711,13 @@ writer.Write($"Rows written: {count}"); // TOUKI0031
 writer.WriteFormatted($"Rows written: {count}");
 ```
 
-The code fix renames the call and adds `using Touki.Io;` when needed. A named `value:`
-argument is changed to the handler parameter name, `builder:`. The fix is only offered
-after Roslyn proves that the changed call binds to Touki's exact handler overload, so a
-competing extension or instance method cannot silently capture it. Project-level global
-usings are honored. A required `using Touki.Io;` is added only when it introduces no
-compiler errors or binding changes elsewhere in the document. Fix All is supported.
+The code fix renames the call, adds `using Touki.Io;` when needed, and updates a named `value:`
+argument to `builder:`. It is offered only when the replacement binds safely. Fix All is
+supported.
 
-The rule deliberately stays silent for `WriteLine`, because a rename would lose the line
-terminator; compile-time-constant interpolated strings, which create no intermediate
-run-time string; string values built before the call; C# versions before 10; expression
-trees, which cannot contain handler conversions; `base.Write(...)`; applicable instance
-`WriteFormatted` methods; receivers statically known to be custom writer subclasses;
-conditional access; and calls without an explicit receiver. Those forms cannot be
-converted by the same behavior-preserving local edit or cannot use the optimized writer
-path.
+The rule does not report `WriteLine`, constant or prebuilt strings, C# versions before 10,
+expression trees, conditional access, calls without an explicit receiver, or calls where the
+same replacement cannot preserve behavior.
 
 ## TOUKI0032
 
@@ -935,22 +751,10 @@ Adopting `Join` also adopts its other argument semantics:
 These differences are why the rule is in the Reliability category. Suppress TOUKI0032 at
 an individual call only when the `Combine` behavior is deliberate and documented.
 
-The code fix preserves the existing `Path` spelling, alias, or static import when
-`System.IO.Path.Join` is available. Calls already bound to `Microsoft.IO.Path.Combine`
-retain that type and are renamed to its `Join` member. On .NET Framework, where the BCL
-member does not exist, calls to `System.IO.Path.Combine` are rewritten to the fully
-qualified `global::Microsoft.IO.Path.Join` provided by `Microsoft.IO.Redist`. Touki
-already references that package for its `net472` target. The fix is offered only when
-Roslyn proves that the rewritten overload binds successfully.
-
-Multi-targeted projects are analyzed once per target, so a shared source file can receive
-the diagnostic in both its modern .NET and .NET Framework project contexts. The fix is
-withheld when that physical source file appears in more than one project context: no
-single replacement is portable when one target exposes `System.IO.Path.Join` and another
-requires `Microsoft.IO.Path.Join`. TFM-specific files can be fixed normally. A downlevel
-fix is also withheld when comments or directives appear inside the original qualified
-method access, where replacing the qualifier would discard that trivia. Fix All is
-supported.
+The code fix uses `System.IO.Path.Join` on modern .NET and `Microsoft.IO.Path.Join` on .NET
+Framework while preserving existing aliases and static imports where possible. A shared file in
+a multi-targeted project is not fixed when the targets require different replacements; TFM-specific
+files can be fixed normally. Trivia-sensitive calls are left unchanged. Fix All is supported.
 
 ## TOUKI0033
 
@@ -1037,103 +841,29 @@ touki_naming_style.<style>.capitalization = pascal_case | camel_case | first_wor
     all_upper | all_lower
 ```
 
-An omitted `applicable_kinds`, `applicable_accessibilities` or modifier list matches
-everything, as does `*`. Attribute names may be written with or without the namespace, and
-the `Attribute` suffix is optional on either side - so `System.ThreadStaticAttribute`,
-`ThreadStaticAttribute` and `ThreadStatic` all select the same attribute, and a class
-declared as `MyThreadLocal : Attribute` is equally selected by `MyThreadLocal` or
-`MyThreadLocalAttribute`.
+Omitted symbol filters and `*` match everything. Attribute names may include or omit the namespace
+and `Attribute` suffix.
 
-Rules are consulted narrowest first: a group that matches on attributes beats one that
-matches on modifiers, which beats one that matches only on kind. Where two rules are
-equally narrow, a configured rule beats a built-in one, and beyond that the rule whose
-name sorts first wins - so renaming a rule can change which of two equally narrow rules
-governs a symbol.
+When several rules match, attribute filters are more specific than modifier filters, which are
+more specific than kind alone. Configured rules take precedence over built-in rules at the same
+specificity; remaining ties are resolved by rule name.
 
-### When a rule is ignored
+### Invalid rules
 
-An analyzer cannot report a diagnostic against an `.editorconfig`, and failing the build
-over a typo in a naming preference would be worse than ignoring it. So a rule that cannot
-be understood is dropped, and the built-in rules continue to apply. A rule is dropped when:
+Invalid or incomplete naming rules are ignored, and the built-in conventions continue to apply.
+Each rule needs `symbols`, `style`, and `severity`; each referenced group and style must be defined;
+and a style must specify `capitalization`. Unknown filter values invalidate the rule. Use `*`
+alone when a filter should match everything.
 
-- any of `symbols`, `style` or `severity` is missing;
-- `severity` is not one of the five accepted values;
-- the named style has no `touki_naming_style.<style>.*` keys, or has no `capitalization`
-  (the only mandatory key on a style - prefix, suffix and word separator all default to
-  empty);
-- a named symbol group has no `touki_naming_symbols.<group>.*` keys at all. This case
-  matters: every list on such a group would be empty, and an empty list matches
-  everything, so a misspelled group name would otherwise turn the rule into a catch-all
-  governing every symbol in the compilation;
-- any single token in `applicable_kinds`, `applicable_accessibilities`,
-  `required_modifiers` or `excluded_modifiers` is unrecognized. The whole rule is dropped,
-  not just the token, so a stray `record` or `operator` costs the entire rule.
+### Additional capabilities
 
-A `*` in `applicable_kinds` or `applicable_accessibilities` means "everything" and stops
-parsing that list, so any tokens beside it are neither honored nor validated.
+Compared with IDE1006, TOUKI0041:
 
-### What it fixes
-
-Each of these is a long-standing gap in IDE1006 that the touki codebase ran into.
-
-**Attributes can select a symbol group**
-([dotnet/roslyn#32955](https://github.com/dotnet/roslyn/issues/32955)). A symbol group can
-only match on kind, accessibility and modifier, and `[ThreadStatic]` is an attribute. So a
-`t_` prefix for thread statics is inexpressible, and thread statics fall into whatever rule
-covers ordinary statics and get told to use `s_`:
-
-```ini
-touki_naming_symbols.thread_static_fields.applicable_kinds = field
-touki_naming_symbols.thread_static_fields.required_modifiers = static
-touki_naming_symbols.thread_static_fields.required_attributes = System.ThreadStaticAttribute
-
-touki_naming_style.thread_static_prefix.required_prefix = t_
-touki_naming_style.thread_static_prefix.capitalization = camel_case
-```
-
-**Built-in conventions survive a custom rule**
-([dotnet/roslyn#71414](https://github.com/dotnet/roslyn/issues/71414)). Defining a single
-`dotnet_naming_rule` makes IDE1006 drop *all* of its defaults, so a project that only wanted
-to add a field convention silently stops checking types, methods, properties, events and
-interfaces. Here the defaults are always appended after the configured rules. Override one
-by configuring an equally or more specific rule, including one with `severity = none`.
-
-**`const` is not `static`**
-([dotnet/roslyn#23884](https://github.com/dotnet/roslyn/issues/23884),
-[#15428](https://github.com/dotnet/roslyn/issues/15428),
-[#23391](https://github.com/dotnet/roslyn/issues/23391)). A const field reports `IsStatic`
-as true because const implies static in the language, so `required_modifiers = static`
-silently demands `s_` on constants. Here `const` is only matched by `const`.
-
-**Modifiers can be excluded, not only required**
-([dotnet/roslyn#18354](https://github.com/dotnet/roslyn/issues/18354)). `excluded_modifiers`
-expresses "instance fields" as `excluded_modifiers = static` rather than needing a second
-rule to shadow the first.
-
-**More modifiers** ([dotnet/roslyn#13250](https://github.com/dotnet/roslyn/issues/13250),
-closed as not planned). `sealed`, `virtual`, `override`, `extern`, `volatile` and `required`
-join the five upstream supports.
-
-**`pascal_case` checks the whole name**
-([dotnet/roslyn#70709](https://github.com/dotnet/roslyn/issues/70709)). Upstream treats a
-name with no configured word separator as a single word, so `pascal_case` only validates
-the first character and `Do_Work` passes. A style that did not ask for a word separator now
-rejects an embedded underscore.
-
-**A leading `s_` is not invented as an error**
-([dotnet/roslyn#57706](https://github.com/dotnet/roslyn/issues/57706),
-[#55845](https://github.com/dotnet/roslyn/issues/55845)). Upstream strips the well known
-`m_`, `s_`, `t_` and `_` prefixes case-insensitively and fails when it finds one, even for a
-style that requires no prefix - so `S_MAX` fails an `all_upper` rule. That check now only
-runs when a prefix was actually required.
-
-**One rule can name several symbol groups**
-([dotnet/roslyn#20891](https://github.com/dotnet/roslyn/issues/20891)). This is how you get
-"either attribute" matching, which a single `required_attributes` list cannot express:
-
-```ini
-touki_naming_rule.native_methods.symbols = library_import_methods, dll_import_methods
-```
+- keeps the built-in conventions active when custom rules are added;
+- supports required and excluded attributes and modifiers;
+- distinguishes `const` from `static` and recognizes additional C# modifiers;
+- validates the complete name against the selected capitalization style; and
+- lets one rule reference several symbol groups.
 
 ### Severity
 
@@ -1182,67 +912,33 @@ turned off just for that folder.
 
 ## Code fixes
 
-`MakeMemberReadonlyCodeFixProvider` fixes TOUKI0002 and TOUKI0003 by marking the accessed
-member `readonly`, which tells the compiler it does not mutate and removes the need for
-the copy. It supports Fix All. The fix is only offered when the member is declared in
-source; if the member really does mutate, marking it `readonly` produces a compiler error
-you can act on.
+| Rule | Code fix | Fix All |
+|------|----------|---------|
+| TOUKI0002, TOUKI0003 | Mark the source member `readonly` | Yes |
+| TOUKI0020 | Move declarations to separate files | IDE only |
+| TOUKI0021 | Rename files to match their types | IDE only |
+| TOUKI0022 | Replace tabs with spaces | Yes |
+| TOUKI0023 | Remove trailing whitespace | Yes |
+| TOUKI0024 | Format XML documentation | Yes |
+| TOUKI0027 | Apply configured Allman formatting | Yes |
+| TOUKI0028 | Format statement breaks | Yes |
+| TOUKI0029 | Name literal arguments | Yes |
+| TOUKI0031 | Use `WriteFormatted` and add its import | Yes |
+| TOUKI0032 | Replace `Path.Combine` with the appropriate `Path.Join` | Yes |
+| TOUKI0041 | Rename the symbol and its references | No |
 
-`RenameToMatchNamingStyleCodeFixProvider` fixes TOUKI0041 by renaming the symbol to the
-name the analyzer suggests, updating every reference across the solution. It does not
-support Fix All, because applying several renames at once would have them fight over the
-same documents.
-
-`ReplaceTabsWithSpacesCodeFixProvider` fixes TOUKI0022, and
-`RemoveTrailingWhitespaceCodeFixProvider` fixes TOUKI0023. Both edit text rather than
-syntax and both support Fix All. The tab fix computes each run's spaces from the original
-columns, so several fixes on one line compose without having to be applied in order.
-
-`FormatXmlDocumentationCodeFixProvider` fixes TOUKI0024 by applying the complete replacement
-computed by the analyzer from the file's options. Its document-based Fix All path applies all
-non-overlapping replacements for a document together.
-
-`FormatAllmanCodeFixProvider` fixes TOUKI0027 by rerunning the analyzer's deterministic formatter
-over the complete document. Fix All supports document, project, and solution scopes. Linked
-documents are updated together only when their parse and analyzer-configuration contexts produce
-the same formatted text.
-
-`FormatStatementBreaksCodeFixProvider` fixes TOUKI0028 using the exact replacement and indentation
-computed by the analyzer. Its Fix All path validates and combines non-overlapping changes before
-updating each document, and coordinates linked documents as described under the rule.
-
-`UseTextWriterWriteFormattedCodeFixProvider` fixes TOUKI0031 by renaming the diagnosed
-`Write` call and importing `Touki.Io` when necessary. It supports Fix All.
-
-`UsePathJoinCodeFixProvider` fixes TOUKI0032 by selecting `System.IO.Path.Join` on modern
-.NET or `Microsoft.IO.Path.Join` from `Microsoft.IO.Redist` on .NET Framework. It
-preserves existing aliases and static imports where possible and supports Fix All.
+Rules not listed here do not provide a code fix.
 
 ## Relationship to IDE0055
 
 The .NET SDK's `IDE0055` ([Fix formatting](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0055))
-also reports tabs and trailing whitespace when `indent_style` and `trim_trailing_whitespace`
-are configured and `EnforceCodeStyleInBuild` is on. TOUKI0022 and TOUKI0023 are not novel
-detection.
+can also report tabs and trailing whitespace, but it gives every formatter preference one shared
+severity. TOUKI0022 and TOUKI0023 let projects enforce those checks independently.
 
-What they add is **granularity**. `IDE0055` is a single rule covering every formatting
-option there is, so its severity is all-or-nothing: raising it to `warning` to catch tabs
-also demands that every hand-aligned table and deliberate line break match the formatter's
-output. Enabling it at `warning` across this repository's own test project produced 306
-reports, two of which were tabs or trailing whitespace. Two narrow rules can each be set to
-`warning` or `error` on their own.
-
-TOUKI0027 overlaps `csharp_new_line_before_open_brace` and
-`csharp_preserve_single_line_blocks`, but IDE0055 does not independently enforce the two
-conditional blank-line policies or a maximum-length gate for compact brace pairs. TOUKI0027
-lets a project enforce that bundle without raising every IDE0055 formatting preference to the
-same severity.
-
-The Roslyn formatter honors
+TOUKI0027 adds configurable blank-line and line-length policies to the standard brace settings.
+TOUKI0028 makes operator placement enforceable; Roslyn's
 [`dotnet_style_operator_placement_when_wrapping`](https://learn.microsoft.com/visualstudio/ide/reference/code-styles-refactoring-options#dotnet_style_operator_placement_when_wrapping)
-when it rewrites code, but Microsoft classifies that setting as a refactoring option without a
-severity or diagnostic. TOUKI0028 makes placement enforceable and adds exact continuation
-indentation plus trailing assignment-family and `=>` placement.
+influences formatting but does not produce a diagnostic.
 
 ## Marker attributes
 
