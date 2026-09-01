@@ -2452,6 +2452,45 @@ internal static partial class StatementBreakFormatting
         return true;
     }
 
+    public static bool AreParseOptionsCompatible(ParseOptions first, ParseOptions second)
+    {
+        if (first.Equals(second))
+        {
+            return true;
+        }
+
+        return first is CSharpParseOptions firstCSharp
+            && second is CSharpParseOptions secondCSharp
+            && firstCSharp.WithPreprocessorSymbols(Array.Empty<string>()).Equals(
+                secondCSharp.WithPreprocessorSymbols(Array.Empty<string>()));
+    }
+
+    public static bool ContentEquals(
+        SourceText first,
+        SourceText second,
+        CancellationToken cancellationToken)
+    {
+        if (first.Length != second.Length)
+        {
+            return false;
+        }
+
+        for (int index = 0; index < first.Length; index++)
+        {
+            if ((index & 255) == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            if (first[index] != second[index])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static TextLine GetTokenEndLine(SourceText source, SyntaxToken token)
     {
         int position = token.Span.End > token.SpanStart ? token.Span.End - 1 : token.SpanStart;

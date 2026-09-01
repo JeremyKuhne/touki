@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
@@ -80,8 +81,11 @@ public sealed partial class FormatStatementBreaksCodeFixProvider : CodeFixProvid
                 context.CancellationToken);
             ImmutableArray<DocumentId> documentIds = await TryGetCompatibleDocumentIdsAsync(
                 context.Document,
+                root,
                 source,
                 relatedDocumentIds,
+                diagnostic,
+                changes,
                 context.CancellationToken).ConfigureAwait(false);
             if (documentIds.IsDefault)
             {
@@ -125,8 +129,11 @@ public sealed partial class FormatStatementBreaksCodeFixProvider : CodeFixProvid
 
     private static async Task<ImmutableArray<DocumentId>> TryGetCompatibleDocumentIdsAsync(
         Document document,
+        SyntaxNode documentRoot,
         SourceText source,
         ImmutableArray<DocumentId> documentIds,
+        Diagnostic? directDiagnostic,
+        ImmutableArray<TextChange> directChanges,
         CancellationToken cancellationToken)
     {
         if (documentIds.Length == 1)
@@ -147,12 +154,16 @@ public sealed partial class FormatStatementBreaksCodeFixProvider : CodeFixProvid
 
             SourceText candidateSource = await candidate.GetTextAsync(cancellationToken).ConfigureAwait(false);
             SyntaxNode? root = await candidate.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-            if (root is null || !source.ContentEquals(candidateSource))
+            if (root is null
+                || !StatementBreakFormatting.ContentEquals(source, candidateSource, cancellationToken))
             {
                 return default;
             }
 
-            if (parseOptions is not null && !parseOptions.Equals(root.SyntaxTree.Options))
+            if (parseOptions is not null
+                && !StatementBreakFormatting.AreParseOptionsCompatible(
+                    parseOptions,
+                    root.SyntaxTree.Options))
             {
                 return default;
             }
@@ -169,9 +180,95 @@ public sealed partial class FormatStatementBreaksCodeFixProvider : CodeFixProvid
             }
 
             indentationUnit = candidateIndentation;
+            if (directDiagnostic is not null
+                && !documentRoot.SyntaxTree.Options.Equals(root.SyntaxTree.Options)
+                && !IsDifferenceInDisabledText(
+                    root,
+                    source,
+                    source.WithChanges(directChanges),
+                    cancellationToken)
+                && (!TryGetChanges(
+                    directDiagnostic,
+                    root,
+                    source,
+                    candidateIndentation,
+                    cancellationToken,
+                    out ImmutableArray<TextChange> candidateChanges,
+                    out _)
+                    || !ChangesAreEquivalent(directChanges, candidateChanges, cancellationToken)))
+            {
+                return default;
+            }
         }
 
         return documentIds;
+    }
+
+    private static bool ChangesAreEquivalent(
+        ImmutableArray<TextChange> first,
+        ImmutableArray<TextChange> second,
+        CancellationToken cancellationToken)
+    {
+        if (first.Length != second.Length)
+        {
+            return false;
+        }
+
+        for (int index = 0; index < first.Length; index++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (first[index].Span != second[index].Span
+                || !string.Equals(first[index].NewText, second[index].NewText, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsDifferenceInDisabledText(
+        SyntaxNode root,
+        SourceText original,
+        SourceText formatted,
+        CancellationToken cancellationToken)
+    {
+        int commonLength = Math.Min(original.Length, formatted.Length);
+        int start = 0;
+        while (start < commonLength && original[start] == formatted[start])
+        {
+            if ((start & 255) == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            start++;
+        }
+
+        if (start == original.Length && start == formatted.Length)
+        {
+            return true;
+        }
+
+        int originalEnd = original.Length;
+        int formattedEnd = formatted.Length;
+        while (originalEnd > start
+            && formattedEnd > start
+            && original[originalEnd - 1] == formatted[formattedEnd - 1])
+        {
+            if (((original.Length - originalEnd) & 255) == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            originalEnd--;
+            formattedEnd--;
+        }
+
+        TextSpan difference = TextSpan.FromBounds(start, originalEnd);
+        SyntaxTrivia trivia = root.FindTrivia(start, findInsideTrivia: true);
+        return trivia.IsKind(SyntaxKind.DisabledTextTrivia)
+            && trivia.FullSpan.Contains(difference);
     }
 
     private static ImmutableArray<DocumentId> GetRelatedDocumentIds(
