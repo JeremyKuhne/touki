@@ -104,7 +104,7 @@ public sealed partial class FormatStatementBreaksCodeFixProvider
                     documentSource,
                     documentIds,
                     directDiagnostic: null,
-                    default,
+                    directChanges: default,
                     fixAllContext.CancellationToken).ConfigureAwait(false);
                 if (compatibleDocumentIds.IsDefault)
                 {

@@ -2470,6 +2470,17 @@ internal static partial class StatementBreakFormatting
         SourceText second,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (ReferenceEquals(first, second))
+        {
+            return true;
+        }
+
+        if (!cancellationToken.CanBeCanceled)
+        {
+            return first.ContentEquals(second);
+        }
+
         if (first.Length != second.Length)
         {
             return false;
