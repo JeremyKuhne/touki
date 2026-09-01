@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 
 namespace Touki.Analyzers;
@@ -14,14 +15,21 @@ internal static class DocumentFileUtilities
     ///  Determines whether another document in the solution has the same file path as
     ///  <paramref name="document"/>, using an ordinal case-insensitive comparison.
     /// </summary>
-    public static bool HasSharedFilePath(Solution solution, Document document)
+    public static bool HasSharedFilePath(
+        Solution solution,
+        Document document,
+        CancellationToken cancellationToken = default)
     {
-        string filePath = document.FilePath!;
+        if (document.FilePath is not { } filePath)
+        {
+            return false;
+        }
 
         foreach (Project project in solution.Projects)
         {
             foreach (Document candidate in project.Documents)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (candidate.Id != document.Id
                     && string.Equals(candidate.FilePath, filePath, StringComparison.OrdinalIgnoreCase))
                 {

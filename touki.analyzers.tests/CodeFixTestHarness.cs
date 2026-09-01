@@ -114,7 +114,8 @@ internal static class CodeFixTestHarness
         IReadOnlyCollection<AnalyzerReference>? analyzerReferences = null,
         Func<ImmutableArray<Diagnostic>, ImmutableArray<Diagnostic>>? transformDiagnostics = null,
         Func<ImmutableArray<Diagnostic>, ImmutableArray<Diagnostic>>? transformFixAllDiagnostics = null,
-        Action<DocumentId>? onFixAllDocumentDiagnosticsRequested = null)
+        Action<DocumentId>? onFixAllDocumentDiagnosticsRequested = null,
+        bool assignSourceFilePaths = true)
     {
         if (linkedProjectOptions is not null && !addLinkedProject)
         {
@@ -161,7 +162,9 @@ internal static class CodeFixTestHarness
             Document document = project.AddDocument(
                 name,
                 source,
-                filePath: GetAbsoluteTestPath(filePath, temporaryRoot));
+                filePath: assignSourceFilePaths
+                    ? GetAbsoluteTestPath(filePath, temporaryRoot)
+                    : null);
             project = document.Project;
         }
 
