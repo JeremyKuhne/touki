@@ -91,10 +91,20 @@ public sealed partial class FormatStatementBreaksCodeFixProvider
 
                 SourceText documentSource = await document.GetTextAsync(fixAllContext.CancellationToken)
                     .ConfigureAwait(false);
+                SyntaxNode? documentRoot = await document.GetSyntaxRootAsync(fixAllContext.CancellationToken)
+                    .ConfigureAwait(false);
+                if (documentRoot is null)
+                {
+                    continue;
+                }
+
                 ImmutableArray<DocumentId> compatibleDocumentIds = await TryGetCompatibleDocumentIdsAsync(
                     document,
+                    documentRoot,
                     documentSource,
                     documentIds,
+                    directDiagnostic: null,
+                    directChanges: default,
                     fixAllContext.CancellationToken).ConfigureAwait(false);
                 if (compatibleDocumentIds.IsDefault)
                 {
@@ -103,6 +113,7 @@ public sealed partial class FormatStatementBreaksCodeFixProvider
 
                 SourceText? original = null;
                 SourceText? compatible = null;
+                List<SyntaxNode> rootsWithoutDiagnostics = [];
                 foreach (DocumentId documentId in documentIds)
                 {
                     Document? candidate = fixAllContext.Solution.GetDocument(documentId);
@@ -122,7 +133,11 @@ public sealed partial class FormatStatementBreaksCodeFixProvider
                         break;
                     }
 
-                    if (original is not null && !original.ContentEquals(source))
+                    if (original is not null
+                        && !StatementBreakFormatting.ContentEquals(
+                            original,
+                            source,
+                            fixAllContext.CancellationToken))
                     {
                         compatible = null;
                         break;
@@ -143,6 +158,12 @@ public sealed partial class FormatStatementBreaksCodeFixProvider
                         }
 
                         diagnosticsByDocument.Add(documentId, candidateDiagnostics);
+                    }
+
+                    if (!ContainsStatementBreakDiagnostic(candidateDiagnostics))
+                    {
+                        rootsWithoutDiagnostics.Add(root);
+                        continue;
                     }
 
                     AnalyzerConfigOptions config = candidate.Project.AnalyzerOptions.AnalyzerConfigOptionsProvider
@@ -168,7 +189,11 @@ public sealed partial class FormatStatementBreaksCodeFixProvider
                         break;
                     }
 
-                    if (compatible is not null && !compatible.ContentEquals(formatted))
+                    if (compatible is not null
+                        && !StatementBreakFormatting.ContentEquals(
+                            compatible,
+                            formatted,
+                            fixAllContext.CancellationToken))
                     {
                         compatible = null;
                         break;
@@ -177,7 +202,28 @@ public sealed partial class FormatStatementBreaksCodeFixProvider
                     compatible ??= formatted;
                 }
 
-                if (original is null || compatible is null || original.ContentEquals(compatible))
+                if (original is not null && compatible is not null)
+                {
+                    foreach (SyntaxNode root in rootsWithoutDiagnostics)
+                    {
+                        if (!IsDifferenceInDisabledText(
+                            root,
+                            original,
+                            compatible,
+                            fixAllContext.CancellationToken))
+                        {
+                            compatible = null;
+                            break;
+                        }
+                    }
+                }
+
+                if (original is null
+                    || compatible is null
+                    || StatementBreakFormatting.ContentEquals(
+                        original,
+                        compatible,
+                        fixAllContext.CancellationToken))
                 {
                     continue;
                 }
@@ -197,8 +243,26 @@ public sealed partial class FormatStatementBreaksCodeFixProvider
 
             return CodeAction.Create(
                 Title,
-                _ => Task.FromResult(solution),
+                cancellationToken =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return Task.FromResult(solution);
+                },
                 nameof(FormatStatementBreaksCodeFixProvider));
         }
+
+        private static bool ContainsStatementBreakDiagnostic(List<Diagnostic> diagnostics)
+        {
+            foreach (Diagnostic diagnostic in diagnostics)
+            {
+                if (diagnostic.Id == StatementBreakFormattingId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
     }
 }

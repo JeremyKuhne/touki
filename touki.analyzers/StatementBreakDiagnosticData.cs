@@ -104,8 +104,13 @@ internal static class StatementBreakDiagnosticData
             indentationUnit,
             indentationLevels);
         SourceText diagnosticSource = diagnostic.Location.SourceTree.GetText();
-        if (!currentRoot.SyntaxTree.Options.Equals(diagnostic.Location.SourceTree.Options)
-            || !currentRoot.SyntaxTree.GetText(cancellationToken).ContentEquals(source)
+        if (!StatementBreakFormatting.AreParseOptionsCompatible(
+            currentRoot.SyntaxTree.Options,
+            diagnostic.Location.SourceTree.Options)
+            || !StatementBreakFormatting.ContentEquals(
+                currentRoot.SyntaxTree.GetText(cancellationToken),
+                source,
+                cancellationToken)
             || diagnosticSpan.Length > MaximumChangeCharacters
             || diagnosticSpan.End > source.Length
             || diagnosticSpan.End > diagnosticSource.Length
