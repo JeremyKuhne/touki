@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -32,14 +33,19 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
     private const string TextWriterExtensionsMetadataName = "Touki.Io.TextWriterExtensions";
     private const string InterpolatedStringHandlerAttributeMetadataName =
         "System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute";
+    private const string InvocationAnnotationKind =
+        "Touki.UseTextWriterWriteFormatted.Invocation";
+    private const string BindingAnnotationKind =
+        "Touki.UseTextWriterWriteFormatted.Binding";
 
     private static readonly ImmutableArray<string> s_fixableDiagnosticIds = [UseTextWriterWriteFormattedId];
+    private static readonly FixAllProvider s_fixAllProvider = new WriteFormattedFixAllProvider();
 
     /// <inheritdoc/>
     public override ImmutableArray<string> FixableDiagnosticIds => s_fixableDiagnosticIds;
 
     /// <inheritdoc/>
-    public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+    public override FixAllProvider GetFixAllProvider() => s_fixAllProvider;
 
     /// <inheritdoc/>
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
@@ -48,30 +54,25 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
             await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
         if (root is null
             || root.SyntaxTree.Options is not CSharpParseOptions parseOptions
-            || parseOptions.LanguageVersion < LanguageVersion.CSharp10)
+            || parseOptions.LanguageVersion < LanguageVersion.CSharp10
+            || DocumentFileUtilities.HasSharedFilePath(
+                context.Document.Project.Solution,
+                context.Document,
+                context.CancellationToken))
         {
             return;
         }
 
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
-            SyntaxNode node = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
-            SimpleNameSyntax? methodName = node as SimpleNameSyntax ?? node.FirstAncestorOrSelf<SimpleNameSyntax>();
-            InvocationExpressionSyntax? invocation = methodName?.Parent switch
-            {
-                MemberAccessExpressionSyntax memberAccess => memberAccess.Parent as InvocationExpressionSyntax,
-                MemberBindingExpressionSyntax memberBinding => memberBinding.Parent as InvocationExpressionSyntax,
-                _ => null
-            };
-
-            if (invocation is null)
+            if (FindInvocation(root, diagnostic.Location.SourceSpan) is not { } invocation)
             {
                 continue;
             }
 
             Document? changedDocument = await TryUseWriteFormattedAsync(
                 context.Document,
-                invocation.Span,
+                [invocation.Span],
                 context.CancellationToken).ConfigureAwait(false);
             if (changedDocument is null)
             {
@@ -87,9 +88,21 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
         }
     }
 
+    private static InvocationExpressionSyntax? FindInvocation(SyntaxNode root, TextSpan diagnosticSpan)
+    {
+        SyntaxNode node = root.FindNode(diagnosticSpan, getInnermostNodeForTie: true);
+        SimpleNameSyntax? methodName = node as SimpleNameSyntax ?? node.FirstAncestorOrSelf<SimpleNameSyntax>();
+        return methodName?.Parent switch
+        {
+            MemberAccessExpressionSyntax memberAccess => memberAccess.Parent as InvocationExpressionSyntax,
+            MemberBindingExpressionSyntax memberBinding => memberBinding.Parent as InvocationExpressionSyntax,
+            _ => null
+        };
+    }
+
     private static async Task<Document?> TryUseWriteFormattedAsync(
         Document document,
-        TextSpan invocationSpan,
+        IReadOnlyCollection<TextSpan> invocationSpans,
         CancellationToken cancellationToken)
     {
         SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
@@ -105,39 +118,55 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
             return null;
         }
 
-        SyntaxNode currentNode = compilationUnit.FindNode(invocationSpan, getInnermostNodeForTie: true);
-        InvocationExpressionSyntax? invocation = currentNode as InvocationExpressionSyntax
-            ?? currentNode.FirstAncestorOrSelf<InvocationExpressionSyntax>();
-        if (invocation is null || invocation.Span != invocationSpan)
+        List<InvocationExpressionSyntax> invocations = new(invocationSpans.Count);
+        HashSet<SyntaxNode> replacedBindingNodes = [];
+        foreach (TextSpan invocationSpan in invocationSpans)
         {
-            return null;
+            cancellationToken.ThrowIfCancellationRequested();
+            SyntaxNode currentNode = compilationUnit.FindNode(invocationSpan, getInnermostNodeForTie: true);
+            InvocationExpressionSyntax? invocation = currentNode as InvocationExpressionSyntax
+                ?? currentNode.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+            if (invocation is null
+                || invocation.Span != invocationSpan
+                || !IsEligibleInvocation(invocation, originalSemanticModel, cancellationToken))
+            {
+                continue;
+            }
+
+            SimpleNameSyntax? originalMethodName = invocation.Expression switch
+            {
+                MemberAccessExpressionSyntax memberAccess => memberAccess.Name,
+                MemberBindingExpressionSyntax memberBinding => memberBinding.Name,
+                _ => null
+            };
+            if (originalMethodName is null)
+            {
+                continue;
+            }
+
+            invocations.Add(invocation);
+            replacedBindingNodes.Add(invocation);
+            replacedBindingNodes.Add(originalMethodName);
+            if (invocation.ArgumentList.Arguments[0].NameColon?.Name is { } originalArgumentName)
+            {
+                replacedBindingNodes.Add(originalArgumentName);
+            }
         }
 
-        if (!IsEligibleInvocation(invocation, originalSemanticModel, cancellationToken))
-        {
-            return null;
-        }
-
-        SimpleNameSyntax? originalMethodName = invocation.Expression switch
-        {
-            MemberAccessExpressionSyntax memberAccess => memberAccess.Name,
-            MemberBindingExpressionSyntax memberBinding => memberBinding.Name,
-            _ => null
-        };
-        SimpleNameSyntax? originalArgumentName = invocation.ArgumentList.Arguments[0].NameColon?.Name;
-        if (originalMethodName is null)
+        if (invocations.Count == 0)
         {
             return null;
         }
 
         List<BindingSnapshot> bindingSnapshots = [];
         Dictionary<SyntaxNode, SyntaxAnnotation> bindingAnnotations = [];
-        foreach (SyntaxNode descendant in compilationUnit.DescendantNodes())
+        foreach (SyntaxNode descendant in compilationUnit.DescendantNodes(descendIntoTrivia: true))
         {
-            if (descendant is not SimpleNameSyntax and not InvocationExpressionSyntax
-                || ReferenceEquals(descendant, invocation)
-                || ReferenceEquals(descendant, originalMethodName)
-                || ReferenceEquals(descendant, originalArgumentName))
+            cancellationToken.ThrowIfCancellationRequested();
+            if (descendant is not SimpleNameSyntax
+                and not InvocationExpressionSyntax
+                and not CrefSyntax
+                || replacedBindingNodes.Contains(descendant))
             {
                 continue;
             }
@@ -148,22 +177,102 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
                 continue;
             }
 
-            SyntaxAnnotation annotation = new();
+            SyntaxAnnotation annotation = CreateIndexedAnnotation(
+                BindingAnnotationKind,
+                bindingSnapshots.Count);
             bindingAnnotations.Add(descendant, annotation);
-            bindingSnapshots.Add(new(annotation, GetSymbolIdentity(symbol)));
+            bindingSnapshots.Add(new(GetSymbolIdentity(symbol)));
         }
 
         compilationUnit = compilationUnit.ReplaceNodes(
             bindingAnnotations.Keys,
-            (original, rewritten) => rewritten.WithAdditionalAnnotations(bindingAnnotations[original]));
-        currentNode = compilationUnit.FindNode(invocationSpan, getInnermostNodeForTie: true);
-        invocation = currentNode as InvocationExpressionSyntax
-            ?? currentNode.FirstAncestorOrSelf<InvocationExpressionSyntax>();
-        if (invocation is null || invocation.Span != invocationSpan)
+            (original, rewritten) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return rewritten.WithAdditionalAnnotations(bindingAnnotations[original]);
+            });
+
+        Dictionary<InvocationExpressionSyntax, SyntaxAnnotation> invocationAnnotations = [];
+        foreach (InvocationExpressionSyntax originalInvocation in invocations)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            SyntaxNode currentNode = compilationUnit.FindNode(
+                originalInvocation.Span,
+                getInnermostNodeForTie: true);
+            InvocationExpressionSyntax? invocation = currentNode as InvocationExpressionSyntax
+                ?? currentNode.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+            if (invocation is null || invocation.Span != originalInvocation.Span)
+            {
+                continue;
+            }
+
+            SimpleNameSyntax? methodName = invocation.Expression switch
+            {
+                MemberAccessExpressionSyntax memberAccess => memberAccess.Name,
+                MemberBindingExpressionSyntax memberBinding => memberBinding.Name,
+                _ => null
+            };
+            if (methodName is null)
+            {
+                continue;
+            }
+
+            invocationAnnotations.Add(
+                invocation,
+                CreateIndexedAnnotation(
+                    InvocationAnnotationKind,
+                    invocationAnnotations.Count));
+        }
+
+        if (invocationAnnotations.Count == 0)
         {
             return null;
         }
 
+        CompilationUnitSyntax updatedRoot = compilationUnit.ReplaceNodes(
+            invocationAnnotations.Keys,
+            (original, rewritten) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return RewriteInvocation(
+                    (InvocationExpressionSyntax)rewritten,
+                    invocationAnnotations[original]);
+            });
+        Document changedDocument = document.WithSyntaxRoot(updatedRoot);
+        if (await ReplacementPreservesDocumentAsync(
+            originalSemanticModel,
+            changedDocument,
+            invocationAnnotations.Count,
+            bindingSnapshots,
+            cancellationToken).ConfigureAwait(false))
+        {
+            return changedDocument;
+        }
+
+        UsingDirectiveSyntax usingDirective = SyntaxFactory.UsingDirective(
+                SyntaxFactory.ParseName(ExtensionNamespace))
+            .WithAdditionalAnnotations(Formatter.Annotation);
+        changedDocument = document.WithSyntaxRoot(updatedRoot.AddUsings(usingDirective));
+        if (!await ReplacementPreservesDocumentAsync(
+            originalSemanticModel,
+            changedDocument,
+            invocationAnnotations.Count,
+            bindingSnapshots,
+            cancellationToken).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        return await Formatter.FormatAsync(
+            changedDocument,
+            Formatter.Annotation,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    private static InvocationExpressionSyntax RewriteInvocation(
+        InvocationExpressionSyntax invocation,
+        SyntaxAnnotation invocationAnnotation)
+    {
         SimpleNameSyntax? methodName = invocation.Expression switch
         {
             MemberAccessExpressionSyntax memberAccess => memberAccess.Name,
@@ -172,7 +281,7 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
         };
         if (methodName is null)
         {
-            return null;
+            return invocation;
         }
 
         IdentifierNameSyntax replacementName = SyntaxFactory.IdentifierName(
@@ -180,7 +289,6 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
                 methodName.Identifier.LeadingTrivia,
                 "WriteFormatted",
                 methodName.Identifier.TrailingTrivia));
-        SyntaxAnnotation invocationAnnotation = new();
         InvocationExpressionSyntax replacement = invocation
             .ReplaceNode(methodName, replacementName)
             .WithAdditionalAnnotations(invocationAnnotation);
@@ -193,49 +301,12 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
                     nameColon.Name.Identifier.LeadingTrivia,
                     "builder",
                     nameColon.Name.Identifier.TrailingTrivia));
-            replacement = replacement.ReplaceNode(argument, argument.WithNameColon(nameColon.WithName(builderName)));
+            replacement = replacement.ReplaceNode(
+                argument,
+                argument.WithNameColon(nameColon.WithName(builderName)));
         }
 
-        CompilationUnitSyntax updatedRoot = compilationUnit.ReplaceNode(invocation, replacement);
-        Document changedDocument = document.WithSyntaxRoot(updatedRoot);
-        if (await BindsToTextWriterExtensionAsync(
-            changedDocument,
-            invocationAnnotation,
-            cancellationToken).ConfigureAwait(false)
-            && await ReplacementPreservesDocumentAsync(
-                originalSemanticModel,
-                changedDocument,
-                bindingSnapshots,
-                cancellationToken).ConfigureAwait(false))
-        {
-            return changedDocument;
-        }
-
-        UsingDirectiveSyntax usingDirective = SyntaxFactory.UsingDirective(
-                SyntaxFactory.ParseName(ExtensionNamespace))
-            .WithAdditionalAnnotations(Formatter.Annotation);
-        changedDocument = document.WithSyntaxRoot(updatedRoot.AddUsings(usingDirective));
-        if (!await BindsToTextWriterExtensionAsync(
-            changedDocument,
-            invocationAnnotation,
-            cancellationToken).ConfigureAwait(false))
-        {
-            return null;
-        }
-
-        if (!await ReplacementPreservesDocumentAsync(
-            originalSemanticModel,
-            changedDocument,
-            bindingSnapshots,
-            cancellationToken).ConfigureAwait(false))
-        {
-            return null;
-        }
-
-        return await Formatter.FormatAsync(
-            changedDocument,
-            Formatter.Annotation,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+        return replacement;
     }
 
     private static bool IsEligibleInvocation(
@@ -346,69 +417,66 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
         return false;
     }
 
-    private static async Task<bool> BindsToTextWriterExtensionAsync(
-        Document document,
-        SyntaxAnnotation invocationAnnotation,
+    private static bool BindToTextWriterExtensions(
+        SemanticModel semanticModel,
+        SyntaxNode?[] invocationNodes,
         CancellationToken cancellationToken)
     {
-        SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-        SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-        if (root is null || semanticModel is null)
+        Compilation compilation = semanticModel.Compilation;
+        if (compilation.GetTypeByMetadataName(TextWriterMetadataName) is not { } textWriter
+            || compilation.GetTypeByMetadataName(TextWriterExtensionsMetadataName) is not { } extensions
+            || compilation.GetTypeByMetadataName(InterpolatedStringHandlerAttributeMetadataName)
+                is not { } handlerAttribute)
         {
             return false;
         }
 
-        InvocationExpressionSyntax? invocation = null;
-        foreach (SyntaxNode node in root.GetAnnotatedNodes(invocationAnnotation))
+        foreach (SyntaxNode? invocationNode in invocationNodes)
         {
-            if (node is InvocationExpressionSyntax candidate)
+            cancellationToken.ThrowIfCancellationRequested();
+            if (invocationNode is not InvocationExpressionSyntax invocation)
             {
-                invocation = candidate;
-                break;
+                return false;
+            }
+
+            SymbolInfo invocationSymbol = semanticModel.GetSymbolInfo(invocation, cancellationToken);
+            SymbolInfo expressionSymbol = semanticModel.GetSymbolInfo(invocation.Expression, cancellationToken);
+            IOperation? invocationOperation = semanticModel.GetOperation(invocation, cancellationToken);
+            IMethodSymbol? method = invocationSymbol.Symbol as IMethodSymbol;
+            method ??= expressionSymbol.Symbol as IMethodSymbol;
+            if (method is null
+                && invocationOperation is IInvocationOperation operation)
+            {
+                method = operation.TargetMethod;
+            }
+
+            if (method is null)
+            {
+                return false;
+            }
+
+            IMethodSymbol definition = method.ReducedFrom ?? method;
+            if (!SymbolEqualityComparer.Default.Equals(definition.ContainingType, extensions)
+                || !definition.IsExtensionMethod
+                || !definition.IsStatic
+                || !definition.ReturnsVoid
+                || definition.Parameters.Length != 2
+                || definition.Parameters[0].RefKind != RefKind.None
+                || !SymbolEqualityComparer.Default.Equals(definition.Parameters[0].Type, textWriter)
+                || definition.Parameters[1].RefKind != RefKind.Ref
+                || !HasAttribute(definition.Parameters[1].Type, handlerAttribute))
+            {
+                return false;
             }
         }
 
-        if (invocation is null)
-        {
-            return false;
-        }
-
-        SymbolInfo invocationSymbol = semanticModel.GetSymbolInfo(invocation, cancellationToken);
-        SymbolInfo expressionSymbol = semanticModel.GetSymbolInfo(invocation.Expression, cancellationToken);
-        IOperation? invocationOperation = semanticModel.GetOperation(invocation, cancellationToken);
-        IMethodSymbol? method = invocationSymbol.Symbol as IMethodSymbol;
-        method ??= expressionSymbol.Symbol as IMethodSymbol;
-        if (method is null
-            && invocationOperation is IInvocationOperation operation)
-        {
-            method = operation.TargetMethod;
-        }
-
-        if (method is null)
-        {
-            return false;
-        }
-
-        IMethodSymbol definition = method.ReducedFrom ?? method;
-        Compilation compilation = semanticModel.Compilation;
-        return compilation.GetTypeByMetadataName(TextWriterMetadataName) is { } textWriter
-            && compilation.GetTypeByMetadataName(TextWriterExtensionsMetadataName) is { } extensions
-            && compilation.GetTypeByMetadataName(InterpolatedStringHandlerAttributeMetadataName)
-                is { } handlerAttribute
-            && SymbolEqualityComparer.Default.Equals(definition.ContainingType, extensions)
-            && definition.IsExtensionMethod
-            && definition.IsStatic
-            && definition.ReturnsVoid
-            && definition.Parameters.Length == 2
-            && definition.Parameters[0].RefKind == RefKind.None
-            && SymbolEqualityComparer.Default.Equals(definition.Parameters[0].Type, textWriter)
-            && definition.Parameters[1].RefKind == RefKind.Ref
-            && HasAttribute(definition.Parameters[1].Type, handlerAttribute);
+        return true;
     }
 
     private static async Task<bool> ReplacementPreservesDocumentAsync(
         SemanticModel originalSemanticModel,
         Document changedDocument,
+        int invocationCount,
         List<BindingSnapshot> bindingSnapshots,
         CancellationToken cancellationToken)
     {
@@ -416,6 +484,21 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
             await changedDocument.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
         SyntaxNode? changedRoot = await changedDocument.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
         if (changedSemanticModel is null || changedRoot is null)
+        {
+            return false;
+        }
+
+        if (!TryCollectAnnotatedNodes(
+            changedRoot,
+            invocationCount,
+            bindingSnapshots.Count,
+            cancellationToken,
+            out SyntaxNode?[] invocationNodes,
+            out SyntaxNode?[] bindingNodes)
+            || !BindToTextWriterExtensions(
+                changedSemanticModel,
+                invocationNodes,
+                cancellationToken))
         {
             return false;
         }
@@ -447,19 +530,14 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
             originalErrors[key] = count - 1;
         }
 
-        foreach (BindingSnapshot snapshot in bindingSnapshots)
+        for (int index = 0; index < bindingSnapshots.Count; index++)
         {
-            SyntaxNode? changedNode = null;
-            foreach (SyntaxNode annotatedNode in changedRoot.GetAnnotatedNodes(snapshot.Annotation))
-            {
-                changedNode = annotatedNode;
-                break;
-            }
-
-            ISymbol? changedSymbol = changedNode is null
+            cancellationToken.ThrowIfCancellationRequested();
+            ISymbol? changedSymbol = bindingNodes[index] is not { } changedNode
                 ? null
                 : changedSemanticModel.GetSymbolInfo(changedNode, cancellationToken).Symbol;
-            if (changedSymbol is null || GetSymbolIdentity(changedSymbol) != snapshot.SymbolIdentity)
+            if (changedSymbol is null
+                || GetSymbolIdentity(changedSymbol) != bindingSnapshots[index].SymbolIdentity)
             {
                 return false;
             }
@@ -467,6 +545,74 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
 
         return true;
     }
+
+    private static bool TryCollectAnnotatedNodes(
+        SyntaxNode root,
+        int invocationCount,
+        int bindingCount,
+        CancellationToken cancellationToken,
+        out SyntaxNode?[] invocationNodes,
+        out SyntaxNode?[] bindingNodes)
+    {
+        invocationNodes = new SyntaxNode?[invocationCount];
+        bindingNodes = new SyntaxNode?[bindingCount];
+        int foundInvocationCount = 0;
+        int foundBindingCount = 0;
+        foreach (SyntaxNode node in root.DescendantNodesAndSelf(descendIntoTrivia: true))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!TryCollectAnnotations(
+                node,
+                InvocationAnnotationKind,
+                invocationNodes,
+                ref foundInvocationCount,
+                cancellationToken)
+                || !TryCollectAnnotations(
+                    node,
+                    BindingAnnotationKind,
+                    bindingNodes,
+                    ref foundBindingCount,
+                    cancellationToken))
+            {
+                return false;
+            }
+        }
+
+        return foundInvocationCount == invocationNodes.Length
+            && foundBindingCount == bindingNodes.Length;
+    }
+
+    private static bool TryCollectAnnotations(
+        SyntaxNode node,
+        string annotationKind,
+        SyntaxNode?[] nodes,
+        ref int foundCount,
+        CancellationToken cancellationToken)
+    {
+        foreach (SyntaxAnnotation annotation in node.GetAnnotations(annotationKind))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!int.TryParse(
+                annotation.Data,
+                NumberStyles.None,
+                CultureInfo.InvariantCulture,
+                out int index)
+                || index < 0
+                || index >= nodes.Length
+                || nodes[index] is not null)
+            {
+                return false;
+            }
+
+            nodes[index] = node;
+            foundCount++;
+        }
+
+        return true;
+    }
+
+    private static SyntaxAnnotation CreateIndexedAnnotation(string kind, int index) =>
+        new(kind, index.ToString(CultureInfo.InvariantCulture));
 
     private static string GetDiagnosticKey(Diagnostic diagnostic) =>
         $"{diagnostic.Id}\0{diagnostic.GetMessage()}";
