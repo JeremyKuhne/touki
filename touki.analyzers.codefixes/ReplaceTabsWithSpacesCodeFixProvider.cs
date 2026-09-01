@@ -41,6 +41,14 @@ public sealed class ReplaceTabsWithSpacesCodeFixProvider : CodeFixProvider
     /// <inheritdoc/>
     public override Task RegisterCodeFixesAsync(CodeFixContext context)
     {
+        if (DocumentFileUtilities.HasSharedFilePath(
+            context.Document.Project.Solution,
+            context.Document,
+            context.CancellationToken))
+        {
+            return Task.CompletedTask;
+        }
+
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
             if (!diagnostic.Properties.TryGetValue(ReplacementProperty, out string? replacement)

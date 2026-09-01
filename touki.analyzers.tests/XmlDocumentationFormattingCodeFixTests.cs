@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information
 
 using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Touki.Analyzers;
 
@@ -164,6 +165,356 @@ public class XmlDocumentationFormattingCodeFixTests
         result.AnalyzerDiagnostics.Should().BeEmpty();
         result.Documents.Should().HaveCount(2).And.OnlyContain(document =>
             document.Source == "/// <summary>\n///  Shared.\n/// </summary>\nclass Shared { }\n");
+    }
+
+    [TestMethod]
+    public async Task Format_LinkedDocument_FixesBothProjectCopies()
+    {
+        const string source = "/// <summary>Shared.</summary>\nclass Shared { }\n";
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            [("Shared.cs", "Shared.cs", source)],
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: false,
+            diagnosticOptions: s_enabled,
+            addLinkedProject: true).ConfigureAwait(false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(2);
+        result.CodeFixActionOffered.Should().BeTrue();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().BeEmpty();
+        result.Documents.Should().HaveCount(2).And.OnlyContain(document =>
+            document.Source == "/// <summary>\n///  Shared.\n/// </summary>\nclass Shared { }\n");
+    }
+
+    [TestMethod]
+    [DataRow(FixAllScope.Document)]
+    [DataRow(FixAllScope.Project)]
+    [DataRow(FixAllScope.ContainingMember)]
+    [DataRow(FixAllScope.ContainingType)]
+    public async Task FormatAll_LinkedDocumentNarrowScope_OffersNoFix(FixAllScope scope)
+    {
+        const string source = "/// <summary>Shared.</summary>\nclass Shared { }\n";
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            [("Shared.cs", "Shared.cs", source)],
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            fixAllScope: scope,
+            diagnosticOptions: s_enabled,
+            addLinkedProject: true).ConfigureAwait(false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(2);
+        result.FixAllActionOffered.Should().BeFalse();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().HaveCount(2);
+        result.Documents.Should().HaveCount(2).And.OnlyContain(document => document.Source == source);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task Format_LinkedDocumentWithDivergentIndentation_OffersNoFix(bool fixAll)
+    {
+        const string source = "/// <remarks><para>Text.</para></remarks>\nclass Shared { }\n";
+        Dictionary<string, string> options = new()
+        {
+            [XmlDocumentationFormattingAnalyzer.IndentSizeOption] = "1"
+        };
+        Dictionary<string, string> linkedOptions = new()
+        {
+            [XmlDocumentationFormattingAnalyzer.IndentSizeOption] = "2"
+        };
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            [("Shared.cs", "Shared.cs", source)],
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll,
+            options,
+            s_enabled,
+            addLinkedProject: true,
+            linkedProjectOptions: linkedOptions).ConfigureAwait(false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(2);
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().HaveCount(2);
+        result.Documents.Should().HaveCount(2).And.OnlyContain(document => document.Source == source);
+        if (fixAll)
+        {
+            result.FixAllActionOffered.Should().BeFalse();
+        }
+        else
+        {
+            result.CodeFixActionOffered.Should().BeFalse();
+        }
+    }
+
+    [TestMethod]
+    public async Task Format_LinkedDocumentWithDivergentSource_OffersNoFix()
+    {
+        const string primarySource = "/// <summary>Primary.</summary>\nclass Primary { }\n";
+        const string linkedSource = "/// <summary>Linked.</summary>\nclass Linked { }\n";
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            [],
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: false,
+            diagnosticOptions: s_enabled,
+            addLinkedProject: true,
+            primaryProjectSources: [("Shared.cs", "Shared.cs", primarySource)],
+            linkedProjectSources: [("Shared.cs", "Shared.cs", linkedSource)]).ConfigureAwait(false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(2);
+        result.CodeFixActionOffered.Should().BeFalse();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().HaveCount(2);
+        result.Documents.Single(document => document.Source == primarySource).Source.Should().Be(primarySource);
+        result.Documents.Single(document => document.Source == linkedSource).Source.Should().Be(linkedSource);
+    }
+
+    [TestMethod]
+    public async Task Format_ForeignLanguageDocumentWithSamePath_OffersNoFix()
+    {
+        const string source = "/// <summary>Shared.</summary>\nclass Shared { }\n";
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            [("Shared.cs", "Shared.cs", source)],
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: false,
+            diagnosticOptions: s_enabled,
+            visualBasicProjectSources: [("Shared.cs", "Shared.cs", source)]).ConfigureAwait(false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(1);
+        result.CodeFixActionOffered.Should().BeFalse();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().ContainSingle();
+        result.Documents.Should().HaveCount(2).And.OnlyContain(document => document.Source == source);
+    }
+
+    [TestMethod]
+    public async Task FormatAll_ForeignLanguageDocumentWithSamePath_SkipsPathAndFixesEligibleDocument()
+    {
+        const string blockedSource = "/// <summary>Blocked.</summary>\nclass Blocked { }\n";
+        const string eligibleSource = "/// <summary>Eligible.</summary>\nclass Eligible { }\n";
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            [("Blocked.cs", "Z-Blocked.cs", blockedSource)],
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            diagnosticOptions: s_enabled,
+            fixAllScope: FixAllScope.Solution,
+            additionalProjectSources: [("Eligible.cs", "A-Eligible.cs", eligibleSource)],
+            visualBasicProjectSources: [("Blocked.cs", "Z-Blocked.cs", blockedSource)]).ConfigureAwait(false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(2);
+        result.CodeFixActionOffered.Should().BeTrue();
+        result.FixAllActionOffered.Should().BeTrue();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().ContainSingle();
+        result.Documents.Where(document => document.Name == "Blocked.cs")
+            .Should().HaveCount(2).And.OnlyContain(document => document.Source == blockedSource);
+        result.Documents.Single(document => document.Name == "Eligible.cs").Source.Should().Be(
+            "/// <summary>\n///  Eligible.\n/// </summary>\nclass Eligible { }\n");
+    }
+
+    [TestMethod]
+    public async Task FormatAll_ProjectWithForeignLanguagePath_SkipsPathAndFixesEligibleDocument()
+    {
+        const string blockedSource = "/// <summary>Blocked.</summary>\nclass Blocked { }\n";
+        const string eligibleSource = "/// <summary>Eligible.</summary>\nclass Eligible { }\n";
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            [
+                ("Eligible.cs", "A-Eligible.cs", eligibleSource),
+                ("Blocked.cs", "Z-Blocked.cs", blockedSource)
+            ],
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            diagnosticOptions: s_enabled,
+            fixAllScope: FixAllScope.Project,
+            visualBasicProjectSources: [("Blocked.cs", "Z-Blocked.cs", blockedSource)]).ConfigureAwait(false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(2);
+        result.CodeFixActionOffered.Should().BeTrue();
+        result.FixAllActionOffered.Should().BeTrue();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().ContainSingle();
+        result.Documents.Where(document => document.Name == "Blocked.cs")
+            .Should().HaveCount(2).And.OnlyContain(document => document.Source == blockedSource);
+        result.Documents.Single(document => document.Name == "Eligible.cs").Source.Should().Be(
+            "/// <summary>\n///  Eligible.\n/// </summary>\nclass Eligible { }\n");
+    }
+
+    [TestMethod]
+    public async Task FormatAll_MissingLinkedDiagnosticWithKey_OffersNoFix()
+    {
+        const string linkedSource = "/// <summary>Linked.</summary>\nclass Linked { }\n";
+        const string triggerSource = "/// <summary>Trigger.</summary>\nclass Trigger { }\n";
+        string? equivalenceKey = null;
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            [("Linked.cs", "Z-Linked.cs", linkedSource)],
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            diagnosticOptions: s_enabled,
+            fixAllScope: FixAllScope.Solution,
+            addLinkedProject: true,
+            additionalProjectSources: [("Trigger.cs", "A-Trigger.cs", triggerSource)],
+            transformFixAllDiagnostics: diagnostics =>
+                [diagnostics.First(diagnostic => string.Equals(
+                    Path.GetFileName(diagnostic.Location.SourceTree?.FilePath),
+                    "Z-Linked.cs",
+                    StringComparison.OrdinalIgnoreCase))],
+            onFixAllEquivalenceKey: key => equivalenceKey = key).ConfigureAwait(false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(3);
+        equivalenceKey.Should().Be(nameof(FormatXmlDocumentationCodeFixProvider));
+        result.FixAllActionOffered.Should().BeFalse();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().HaveCount(3);
+        result.Documents.Where(document => document.Name == "Linked.cs")
+            .Should().HaveCount(2).And.OnlyContain(document => document.Source == linkedSource);
+        result.Documents.Single(document => document.Name == "Trigger.cs").Source.Should().Be(triggerSource);
+    }
+
+    [TestMethod]
+    public async Task FormatAll_DivergentLinkedDiagnosticsWithKey_OffersNoFix()
+    {
+        const string linkedSource =
+            "/// <remarks><para>Linked.</para></remarks>\nclass Linked { }\n";
+        const string triggerSource =
+            "/// <summary>Trigger.</summary>\nclass Trigger { }\n";
+        Dictionary<string, string> options = new()
+        {
+            [XmlDocumentationFormattingAnalyzer.IndentSizeOption] = "1"
+        };
+        Dictionary<string, string> linkedOptions = new()
+        {
+            [XmlDocumentationFormattingAnalyzer.IndentSizeOption] = "2"
+        };
+        string? equivalenceKey = null;
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            [("Linked.cs", "Z-Linked.cs", linkedSource)],
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            options,
+            s_enabled,
+            fixAllScope: FixAllScope.Solution,
+            addLinkedProject: true,
+            additionalProjectSources: [("Trigger.cs", "A-Trigger.cs", triggerSource)],
+            linkedProjectOptions: linkedOptions,
+            transformFixAllDiagnostics: diagnostics =>
+                [.. diagnostics.Where(diagnostic => string.Equals(
+                    Path.GetFileName(diagnostic.Location.SourceTree?.FilePath),
+                    "Z-Linked.cs",
+                    StringComparison.OrdinalIgnoreCase))],
+            onFixAllEquivalenceKey: key => equivalenceKey = key).ConfigureAwait(false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(3);
+        equivalenceKey.Should().Be(nameof(FormatXmlDocumentationCodeFixProvider));
+        result.FixAllActionOffered.Should().BeFalse();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().HaveCount(3);
+        result.Documents.Where(document => document.Name == "Linked.cs")
+            .Should().HaveCount(2).And.OnlyContain(document => document.Source == linkedSource);
+        result.Documents.Single(document => document.Name == "Trigger.cs").Source.Should().Be(triggerSource);
+    }
+
+    [TestMethod]
+    [DataRow("nested")]
+    [DataRow("partial")]
+    [DataRow("same-start")]
+    public async Task FormatAll_OverlappingReplacementSpans_OffersNoFix(string overlapKind)
+    {
+        const string source = "/// <summary>Sample.</summary>\nclass Sample { }\n";
+        string? equivalenceKey = null;
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            [("Sample.cs", "Sample.cs", source)],
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            diagnosticOptions: s_enabled,
+            transformFixAllDiagnostics: diagnostics => CreateOverlappingDiagnostics(
+                diagnostics,
+                overlapKind),
+            onFixAllEquivalenceKey: key => equivalenceKey = key).ConfigureAwait(false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(1);
+        equivalenceKey.Should().Be(nameof(FormatXmlDocumentationCodeFixProvider));
+        result.FixAllActionOffered.Should().BeFalse();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().ContainSingle();
+        result.Documents.Should().ContainSingle().Which.Source.Should().Be(source);
+    }
+
+    [TestMethod]
+    [DataRow(FixAllScope.Document)]
+    [DataRow(FixAllScope.Project)]
+    [DataRow(FixAllScope.Solution)]
+    public async Task FormatAll_ReplacementMatchesSource_OffersNoFix(FixAllScope scope)
+    {
+        const string source = "/// <summary>Sample.</summary>\nclass Sample { }\n";
+        string? equivalenceKey = null;
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            [("Sample.cs", "Sample.cs", source)],
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            diagnosticOptions: s_enabled,
+            fixAllScope: scope,
+            transformFixAllDiagnostics: diagnostics => [CreateNoOpDiagnostic(
+                diagnostics.Should().ContainSingle().Subject)],
+            onFixAllEquivalenceKey: key => equivalenceKey = key).ConfigureAwait(false);
+
+        equivalenceKey.Should().Be(nameof(FormatXmlDocumentationCodeFixProvider));
+        result.FixAllActionOffered.Should().BeFalse();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().ContainSingle();
+        result.Documents.Should().ContainSingle().Which.Source.Should().Be(source);
+    }
+
+    [TestMethod]
+    public async Task Format_ReplacementMatchesSource_OffersNoFix()
+    {
+        const string source = "/// <summary>Sample.</summary>\nclass Sample { }\n";
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            [("Sample.cs", "Sample.cs", source)],
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: false,
+            diagnosticOptions: s_enabled,
+            transformDiagnostics: diagnostics => [CreateNoOpDiagnostic(
+                diagnostics.Should().ContainSingle().Subject)]).ConfigureAwait(false);
+
+        result.CodeFixActionOffered.Should().BeFalse();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().ContainSingle();
+        result.Documents.Should().ContainSingle().Which.Source.Should().Be(source);
     }
 
     [TestMethod]
@@ -560,6 +911,41 @@ public class XmlDocumentationFormattingCodeFixTests
             source += new string('/', targetDocumentLength - source.Length - 1) + "\n";
             return ("Sample.cs", "Sample.cs", source);
         }
+    }
+
+    private static ImmutableArray<Diagnostic> CreateOverlappingDiagnostics(
+        ImmutableArray<Diagnostic> diagnostics,
+        string overlapKind)
+    {
+        Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
+        SyntaxTree tree = diagnostic.Location.SourceTree!;
+        TextSpan span = diagnostic.Location.SourceSpan;
+        TextSpan overlap = overlapKind switch
+        {
+            "nested" => TextSpan.FromBounds(span.Start + 1, span.End - 1),
+            "partial" => TextSpan.FromBounds(span.End - 1, span.End + 1),
+            "same-start" => TextSpan.FromBounds(span.Start, span.End - 1),
+            _ => throw new ArgumentOutOfRangeException(nameof(overlapKind))
+        };
+        Diagnostic overlapping = Diagnostic.Create(
+            diagnostic.Descriptor,
+            Location.Create(tree, overlap),
+            [],
+            diagnostic.Properties);
+        return [diagnostic, overlapping];
+    }
+
+    private static Diagnostic CreateNoOpDiagnostic(Diagnostic diagnostic)
+    {
+        SourceText source = diagnostic.Location.SourceTree!.GetText();
+        ImmutableDictionary<string, string?> properties = diagnostic.Properties.SetItem(
+            "Replacement",
+            source.ToString(diagnostic.Location.SourceSpan));
+        return Diagnostic.Create(
+            diagnostic.Descriptor,
+            diagnostic.Location,
+            diagnostic.AdditionalLocations,
+            properties);
     }
 
 }

@@ -109,13 +109,16 @@ public class OneTypePerFileCodeFixTests
         try
         {
             string currentPath = Path.Combine(directory, "First.cs");
+            string targetPath = Path.Combine(directory, "Second.cs");
             File.WriteAllText(currentPath, Source);
             File.WriteAllText(Path.Combine(directory, "second.cs"), "excluded");
+            bool targetNameIsOccupied = File.Exists(targetPath);
 
             CodeFixTestResult result = await ApplyFixAsync(
                 [("First.cs", currentPath, Source)]).ConfigureAwait(false);
 
-            result.Documents.Select(document => document.Name).Should().Contain("Second.First.cs");
+            result.Documents.Select(document => document.Name).Should().Contain(
+                targetNameIsOccupied ? "Second.First.cs" : "Second.cs");
         }
         finally
         {

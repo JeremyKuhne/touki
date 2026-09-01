@@ -115,7 +115,9 @@ internal static class CodeFixTestHarness
         Func<ImmutableArray<Diagnostic>, ImmutableArray<Diagnostic>>? transformDiagnostics = null,
         Func<ImmutableArray<Diagnostic>, ImmutableArray<Diagnostic>>? transformFixAllDiagnostics = null,
         Action<DocumentId>? onFixAllDocumentDiagnosticsRequested = null,
-        bool assignSourceFilePaths = true)
+        bool assignSourceFilePaths = true,
+        Action<string?>? onFixAllEquivalenceKey = null,
+        IReadOnlyList<(string Name, string FilePath, string Source)>? visualBasicProjectSources = null)
     {
         if (linkedProjectOptions is not null && !addLinkedProject)
         {
@@ -266,11 +268,36 @@ internal static class CodeFixTestHarness
             }
         }
 
+        if (visualBasicProjectSources is not null)
+        {
+            ProjectId visualBasicProjectId = ProjectId.CreateNewId();
+            solution = solution.AddProject(
+                ProjectInfo.Create(
+                    visualBasicProjectId,
+                    VersionStamp.Create(),
+                    "VisualBasicProject",
+                    "VisualBasicProject",
+                    LanguageNames.VisualBasic));
+            foreach ((string name, string filePath, string source) in visualBasicProjectSources)
+            {
+                solution = solution.AddDocument(
+                    DocumentId.CreateNewId(visualBasicProjectId),
+                    name,
+                    SourceText.From(source),
+                    filePath: GetAbsoluteTestPath(filePath, temporaryRoot));
+            }
+        }
+
         AnalyzerOptions analyzerOptions = RoslynTestEnvironment.CreateAnalyzerOptions(options);
         ImmutableArray<Diagnostic>.Builder diagnosticsBuilder = ImmutableArray.CreateBuilder<Diagnostic>();
         Dictionary<Diagnostic, DocumentId> diagnosticDocuments = [];
         foreach (Project currentProject in solution.Projects)
         {
+            if (currentProject.Language != LanguageNames.CSharp)
+            {
+                continue;
+            }
+
             Compilation compilation =
                 (await currentProject.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false))!;
             compilation = RoslynTestEnvironment.ApplyDiagnosticOptions(compilation, diagnosticOptions);
@@ -380,6 +407,7 @@ internal static class CodeFixTestHarness
                     [diagnosticId],
                     diagnosticProvider,
                     fixAllCancellationToken);
+                    onFixAllEquivalenceKey?.Invoke(actionToApply?.EquivalenceKey);
             CodeAction? fixAllAction = await fixAllProvider.GetFixAsync(fixAllContext).ConfigureAwait(false);
             if (fixAllAction is null)
             {
@@ -438,6 +466,11 @@ internal static class CodeFixTestHarness
             {
                 SourceText text = await document.GetTextAsync().ConfigureAwait(false);
                 documents.Add(new(document.Name, document.FilePath, text.ToString()));
+            }
+
+            if (project.Language != LanguageNames.CSharp)
+            {
+                continue;
             }
 
             Compilation compilation = (await project.GetCompilationAsync().ConfigureAwait(false))!;
@@ -516,8 +549,17 @@ internal static class CodeFixTestHarness
         string relativePath = filePath
             .Replace('\\', Path.DirectorySeparatorChar)
             .Replace('/', Path.DirectorySeparatorChar)
-            .Replace(':', '_');
-        return Path.GetFullPath(Path.Combine(temporaryRoot, relativePath));
+            .Replace(':', '_')
+            .TrimStart(Path.DirectorySeparatorChar);
+        string fullPath = Path.GetFullPath(Path.Combine(temporaryRoot, relativePath));
+        string relativeToRoot = Path.GetRelativePath(temporaryRoot, fullPath);
+        if (relativeToRoot == ".."
+            || relativeToRoot.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+        {
+            throw new ArgumentException("The test file path escapes the temporary root.", nameof(filePath));
+        }
+
+        return fullPath;
     }
 
     private static Solution AddGlobalAnalyzerConfig(

@@ -46,36 +46,34 @@ public sealed class XmlDocumentationFormattingAnalyzer : DiagnosticAnalyzer
     /// <summary>
     ///  The <c>.editorconfig</c> key that controls the spaces added for each nested XML level.
     /// </summary>
-    public const string IndentSizeOption = "dotnet_code_quality.TOUKI0024.indent_size";
+    public const string IndentSizeOption = XmlDocumentationFormattingOptions.IndentSizeOption;
 
     /// <summary>
     ///  The <c>.editorconfig</c> key that overrides the maximum physical line length.
     /// </summary>
-    public const string MaxLineLengthOption = "dotnet_code_quality.TOUKI0024.max_line_length";
+    public const string MaxLineLengthOption = XmlDocumentationFormattingOptions.MaxLineLengthOption;
 
     /// <summary>
     ///  The indentation added for each nested XML level when <see cref="IndentSizeOption"/> is not configured.
     /// </summary>
-    public const int DefaultIndentSize = 1;
+    public const int DefaultIndentSize = XmlDocumentationFormattingOptions.DefaultIndentSize;
 
     /// <summary>
     ///  The largest accepted XML indentation step. Larger configured values use
     ///  <see cref="DefaultIndentSize"/>.
     /// </summary>
-    public const int MaximumIndentSize = 16;
+    public const int MaximumIndentSize = XmlDocumentationFormattingOptions.MaximumIndentSize;
 
     /// <summary>
     ///  The maximum physical line length when neither <see cref="MaxLineLengthOption"/> nor the standard
     ///  <c>max_line_length</c> key supplies one.
     /// </summary>
-    public const int DefaultMaxLineLength = 120;
+    public const int DefaultMaxLineLength = XmlDocumentationFormattingOptions.DefaultMaxLineLength;
 
     /// <summary>
     ///  The diagnostic property carrying the complete replacement documentation comment.
     /// </summary>
     internal const string ReplacementProperty = "Replacement";
-
-    private const string StandardMaxLineLengthOption = "max_line_length";
 
     private static readonly DiagnosticDescriptor s_rule = new(
         id: DiagnosticId,
@@ -109,14 +107,7 @@ public sealed class XmlDocumentationFormattingAnalyzer : DiagnosticAnalyzer
         }
 
         AnalyzerConfigOptions options = context.Options.AnalyzerConfigOptionsProvider.GetOptions(context.Tree);
-        int indentSize = options.TryGetPositiveInteger(IndentSizeOption, out int configuredIndentSize)
-            && configuredIndentSize <= MaximumIndentSize
-                ? configuredIndentSize
-                : DefaultIndentSize;
-        int maxLineLength = options.TryGetPositiveInteger(MaxLineLengthOption, out int configuredMaxLineLength)
-            || options.TryGetPositiveInteger(StandardMaxLineLengthOption, out configuredMaxLineLength)
-                ? configuredMaxLineLength
-                : DefaultMaxLineLength;
+        (int indentSize, int maxLineLength) = XmlDocumentationFormattingOptions.GetOptions(options);
         SyntaxNode root = context.Tree.GetRoot(context.CancellationToken);
 
         foreach (SyntaxTrivia trivia in root.DescendantTrivia(descendIntoTrivia: true))

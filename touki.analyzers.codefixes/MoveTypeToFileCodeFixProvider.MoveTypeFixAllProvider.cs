@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Threading;
@@ -114,7 +113,7 @@ public sealed partial class MoveTypeToFileCodeFixProvider
 
             requests.Sort(static (left, right) =>
             {
-                int pathComparison = StringComparer.OrdinalIgnoreCase.Compare(
+                int pathComparison = DocumentFileUtilities.PathComparer.Compare(
                     left.OriginalFilePath,
                     right.OriginalFilePath);
                 if (pathComparison != 0)

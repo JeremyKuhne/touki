@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
@@ -79,7 +78,12 @@ public sealed partial class FormatAllmanCodeFixProvider : CodeFixProvider
     {
         if (relatedDocumentIds.IsDefault)
         {
-            relatedDocumentIds = GetRelatedDocumentIds(document, cancellationToken);
+            relatedDocumentIds = DocumentFileUtilities.GetRelatedDocumentIds(document, cancellationToken);
+        }
+
+        if (relatedDocumentIds.IsDefaultOrEmpty)
+        {
+            return null;
         }
 
         SourceText? original = null;
@@ -142,80 +146,6 @@ public sealed partial class FormatAllmanCodeFixProvider : CodeFixProvider
         return new(
             compatible,
             relatedDocumentIds);
-    }
-
-    private static ImmutableArray<DocumentId> GetRelatedDocumentIds(
-        Document document,
-        CancellationToken cancellationToken)
-    {
-        ImmutableArray<DocumentId>.Builder documentIds = ImmutableArray.CreateBuilder<DocumentId>();
-        string? filePath = document.FilePath;
-        foreach (Project project in document.Project.Solution.Projects)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (project.Language != LanguageNames.CSharp)
-            {
-                continue;
-            }
-
-            foreach (Document candidate in project.Documents)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (candidate.Id == document.Id
-                    || filePath is not null
-                        && string.Equals(candidate.FilePath, filePath, StringComparison.OrdinalIgnoreCase))
-                {
-                    documentIds.Add(candidate.Id);
-                }
-            }
-        }
-
-        return documentIds.ToImmutable();
-    }
-
-    private static Dictionary<DocumentId, ImmutableArray<DocumentId>> IndexRelatedDocuments(
-        Solution solution,
-        CancellationToken cancellationToken)
-    {
-        Dictionary<string, List<DocumentId>> documentsByPath = new(StringComparer.OrdinalIgnoreCase);
-        Dictionary<DocumentId, ImmutableArray<DocumentId>> relatedDocuments = [];
-        foreach (Project project in solution.Projects)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (project.Language != LanguageNames.CSharp)
-            {
-                continue;
-            }
-
-            foreach (Document document in project.Documents)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (document.FilePath is null)
-                {
-                    relatedDocuments.Add(document.Id, [document.Id]);
-                    continue;
-                }
-
-                if (!documentsByPath.TryGetValue(document.FilePath, out List<DocumentId>? documentIds))
-                {
-                    documentIds = [];
-                    documentsByPath.Add(document.FilePath, documentIds);
-                }
-
-                documentIds.Add(document.Id);
-            }
-        }
-
-        foreach (List<DocumentId> documentIds in documentsByPath.Values)
-        {
-            ImmutableArray<DocumentId> group = [.. documentIds];
-            foreach (DocumentId documentId in group)
-            {
-                relatedDocuments.Add(documentId, group);
-            }
-        }
-
-        return relatedDocuments;
     }
 
     private static Solution ApplyFormatting(

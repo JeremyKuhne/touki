@@ -59,7 +59,10 @@ public sealed partial class FormatAllmanCodeFixProvider
             }
 
             Dictionary<DocumentId, ImmutableArray<DocumentId>> relatedDocuments =
-                IndexRelatedDocuments(fixAllContext.Solution, fixAllContext.CancellationToken);
+                DocumentFileUtilities.IndexRelatedDocuments(
+                    fixAllContext.Solution,
+                    LanguageNames.CSharp,
+                    fixAllContext.CancellationToken);
             HashSet<DocumentId> formattedDocuments = [];
             foreach (Diagnostic diagnostic in diagnostics)
             {

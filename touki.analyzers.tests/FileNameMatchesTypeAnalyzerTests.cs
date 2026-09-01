@@ -136,6 +136,24 @@ public class FileNameMatchesTypeAnalyzerTests
     }
 
     [TestMethod]
+    public async Task AnalyzeSemanticModel_CaseVariantCandidate_UsesPlatformPathIdentity()
+    {
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new FileNameMatchesTypeAnalyzer(),
+            [
+                ("class Foo { }", "/src/Unrelated.cs"),
+                ("class Occupant { }", "/src/foo.cs")
+            ]).ConfigureAwait(false);
+
+        Diagnostic diagnostic = diagnostics.Single(
+            candidate => candidate.Location.SourceTree!.FilePath == "/src/Unrelated.cs");
+        string expected = FilePathIdentity.PathComparer.Equals("Foo.cs", "foo.cs")
+            ? "Foo.Unrelated.cs"
+            : "Foo.cs";
+        diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedFileNameProperty].Should().Be(expected);
+    }
+
+    [TestMethod]
     public async Task AnalyzeSyntaxTree_CaseDiffers_ReportsDiagnostic()
     {
         // Comparison is ordinal so that casing is right even on a case-insensitive file system.

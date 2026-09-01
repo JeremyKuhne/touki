@@ -66,7 +66,10 @@ public sealed partial class FormatStatementBreaksCodeFixProvider
 
             Solution solution = fixAllContext.Solution;
             Dictionary<DocumentId, ImmutableArray<DocumentId>> relatedDocuments =
-                IndexRelatedDocuments(solution, fixAllContext.CancellationToken);
+                DocumentFileUtilities.IndexRelatedDocuments(
+                    solution,
+                    LanguageNames.CSharp,
+                    fixAllContext.CancellationToken);
             Dictionary<DocumentId, List<Diagnostic>> diagnosticsByDocument =
                 IndexDocumentDiagnostics(solution, diagnostics.ToImmutable());
             HashSet<DocumentId> processedDocuments = [];
@@ -84,6 +87,12 @@ public sealed partial class FormatStatementBreaksCodeFixProvider
                 }
 
                 ImmutableArray<DocumentId> documentIds = relatedDocuments[document.Id];
+                if (documentIds.IsDefaultOrEmpty)
+                {
+                    processedDocuments.Add(document.Id);
+                    continue;
+                }
+
                 foreach (DocumentId documentId in documentIds)
                 {
                     processedDocuments.Add(documentId);
