@@ -14,7 +14,7 @@ namespace Touki.Analyzers;
 internal static class DocumentFileUtilities
 {
     /// <summary>
-    ///  Gets the path comparer for the current platform: ordinal-ignore-case on Windows and ordinal elsewhere.
+    ///  Gets the path comparer for the current platform: ordinal-ignore-case on Windows and macOS, and ordinal elsewhere.
     /// </summary>
     public static StringComparer PathComparer => FilePathIdentity.PathComparer;
 

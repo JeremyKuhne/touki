@@ -3,14 +3,16 @@
 // See LICENSE file in the project root for full license information
 
 using System;
-using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Touki.Analyzers;
 
 internal static class FilePathIdentity
 {
-    public static StringComparer PathComparer { get; } = GetPathComparer(Path.DirectorySeparatorChar);
+    public static StringComparer PathComparer { get; } = GetPathComparer(
+        RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
+        RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
 
-    public static StringComparer GetPathComparer(char directorySeparator) =>
-        directorySeparator == '\\' ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+    public static StringComparer GetPathComparer(bool isWindows, bool isMacOS) =>
+        isWindows || isMacOS ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 }

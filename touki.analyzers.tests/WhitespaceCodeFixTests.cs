@@ -144,7 +144,7 @@ public class WhitespaceCodeFixTests
             diagnosticOptions: s_tabsEnabled,
             additionalProjectSources: [("Lower.cs", "case.cs", source)]).ConfigureAwait(false);
 
-        bool pathsAreShared = Path.DirectorySeparatorChar == '\\';
+        bool pathsAreShared = FilePathIdentity.PathComparer.Equals("Case.cs", "case.cs");
         result.CodeFixActionOffered.Should().Be(!pathsAreShared);
         result.CompilerErrors.Should().BeEmpty();
         result.AnalyzerDiagnostics.Should().HaveCount(pathsAreShared ? 2 : 1);
