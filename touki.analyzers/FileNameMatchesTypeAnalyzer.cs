@@ -319,7 +319,7 @@ public sealed class FileNameMatchesTypeAnalyzer : DiagnosticAnalyzer
 
         string detailStem = $"{preferredStem}{detailSeparator}{currentStem}";
         string detailCandidate = detailStem + extension;
-        if (!string.Equals(firstCandidate, detailCandidate, StringComparison.OrdinalIgnoreCase)
+        if (!FilePathIdentity.PathComparer.Equals(firstCandidate, detailCandidate)
             && IsAvailableFileName(compilation, tree, detailCandidate))
         {
             return detailCandidate;
@@ -375,8 +375,8 @@ public sealed class FileNameMatchesTypeAnalyzer : DiagnosticAnalyzer
             }
 
             string directory = Path.GetDirectoryName(tree.FilePath) ?? string.Empty;
-            if (string.Equals(directory, currentDirectory, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(Path.GetFileName(tree.FilePath), candidate, StringComparison.OrdinalIgnoreCase))
+            if (FilePathIdentity.PathComparer.Equals(directory, currentDirectory)
+                && FilePathIdentity.PathComparer.Equals(Path.GetFileName(tree.FilePath), candidate))
             {
                 return false;
             }

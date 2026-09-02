@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -40,8 +39,6 @@ public sealed partial class FormatStatementBreaksCodeFixProvider : CodeFixProvid
 
     private static readonly ImmutableArray<string> s_fixableDiagnosticIds = [StatementBreakFormattingId];
     private static readonly FixAllProvider s_fixAllProvider = new StatementBreakFixAllProvider();
-    private static readonly StringComparer s_pathComparer =
-        StatementBreakFormattingOptions.GetPathComparer(Path.DirectorySeparatorChar);
 
     /// <inheritdoc/>
     public override ImmutableArray<string> FixableDiagnosticIds => s_fixableDiagnosticIds;
@@ -76,7 +73,7 @@ public sealed partial class FormatStatementBreaksCodeFixProvider : CodeFixProvid
                 continue;
             }
 
-            ImmutableArray<DocumentId> relatedDocumentIds = GetRelatedDocumentIds(
+            ImmutableArray<DocumentId> relatedDocumentIds = DocumentFileUtilities.GetRelatedDocumentIds(
                 context.Document,
                 context.CancellationToken);
             ImmutableArray<DocumentId> documentIds = await TryGetCompatibleDocumentIdsAsync(
@@ -136,6 +133,11 @@ public sealed partial class FormatStatementBreaksCodeFixProvider : CodeFixProvid
         ImmutableArray<TextChange> directChanges,
         CancellationToken cancellationToken)
     {
+        if (documentIds.IsDefaultOrEmpty)
+        {
+            return default;
+        }
+
         if (documentIds.Length == 1)
         {
             return documentIds;
@@ -269,80 +271,6 @@ public sealed partial class FormatStatementBreaksCodeFixProvider : CodeFixProvid
         SyntaxTrivia trivia = root.FindTrivia(start, findInsideTrivia: true);
         return trivia.IsKind(SyntaxKind.DisabledTextTrivia)
             && trivia.FullSpan.Contains(difference);
-    }
-
-    private static ImmutableArray<DocumentId> GetRelatedDocumentIds(
-        Document document,
-        CancellationToken cancellationToken)
-    {
-        ImmutableArray<DocumentId>.Builder documentIds = ImmutableArray.CreateBuilder<DocumentId>();
-        string? filePath = document.FilePath;
-        foreach (Project project in document.Project.Solution.Projects)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (project.Language != LanguageNames.CSharp)
-            {
-                continue;
-            }
-
-            foreach (Document candidate in project.Documents)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (candidate.Id == document.Id
-                    || filePath is not null
-                        && s_pathComparer.Equals(candidate.FilePath, filePath))
-                {
-                    documentIds.Add(candidate.Id);
-                }
-            }
-        }
-
-        return documentIds.ToImmutable();
-    }
-
-    private static Dictionary<DocumentId, ImmutableArray<DocumentId>> IndexRelatedDocuments(
-        Solution solution,
-        CancellationToken cancellationToken)
-    {
-        Dictionary<string, List<DocumentId>> documentsByPath = new(s_pathComparer);
-        Dictionary<DocumentId, ImmutableArray<DocumentId>> relatedDocuments = [];
-        foreach (Project project in solution.Projects)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (project.Language != LanguageNames.CSharp)
-            {
-                continue;
-            }
-
-            foreach (Document document in project.Documents)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (document.FilePath is null)
-                {
-                    relatedDocuments.Add(document.Id, [document.Id]);
-                    continue;
-                }
-
-                if (!documentsByPath.TryGetValue(document.FilePath, out List<DocumentId>? documentIds))
-                {
-                    documentIds = [];
-                    documentsByPath.Add(document.FilePath, documentIds);
-                }
-
-                documentIds.Add(document.Id);
-            }
-        }
-
-        foreach (List<DocumentId> documentIds in documentsByPath.Values)
-        {
-            ImmutableArray<DocumentId> group = [.. documentIds];
-            foreach (DocumentId documentId in group)
-            {
-                relatedDocuments.Add(documentId, group);
-            }
-        }
-
-        return relatedDocuments;
     }
 
     private static bool TryApplyDiagnostics(

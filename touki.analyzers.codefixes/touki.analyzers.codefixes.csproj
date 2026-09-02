@@ -59,6 +59,10 @@
              Link="Shared\AllmanFormattingOptions.cs" />
     <Compile Include="..\touki.analyzers\AnalyzerConfigOptionsExtensions.cs"
              Link="Shared\AnalyzerConfigOptionsExtensions.cs" />
+     <Compile Include="..\touki.analyzers\FilePathIdentity.cs"
+                Link="Shared\FilePathIdentity.cs" />
+     <Compile Include="..\touki.analyzers\XmlDocumentationFormattingOptions.cs"
+                Link="Shared\XmlDocumentationFormattingOptions.cs" />
     <Compile Include="..\touki.analyzers\StatementBreakChangeKind.cs"
          Link="Shared\StatementBreakChangeKind.cs" />
     <Compile Include="..\touki.analyzers\StatementBreakDiagnosticData.cs"

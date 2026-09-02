@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
@@ -413,32 +412,8 @@ public sealed partial class MakeMemberReadonlyCodeFixProvider : CodeFixProvider
 
     private static HashSet<DocumentId> IndexSharedDocuments(
         Solution solution,
-        CancellationToken cancellationToken)
-    {
-        Dictionary<string, DocumentId> documentsByPath = new(StringComparer.OrdinalIgnoreCase);
-        HashSet<DocumentId> sharedDocuments = [];
-        foreach (Project project in solution.Projects)
-        {
-            foreach (Document document in project.Documents)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (document.FilePath is null)
-                {
-                    continue;
-                }
-
-                if (documentsByPath.TryGetValue(document.FilePath, out DocumentId? relatedDocumentId))
-                {
-                    sharedDocuments.Add(relatedDocumentId);
-                    sharedDocuments.Add(document.Id);
-                }
-                else
-                {
-                    documentsByPath.Add(document.FilePath, document.Id);
-                }
-            }
-        }
-
-        return sharedDocuments;
-    }
+        CancellationToken cancellationToken) =>
+        DocumentFileUtilities.IndexSharedDocuments(
+            solution,
+            cancellationToken);
 }

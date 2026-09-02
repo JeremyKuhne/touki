@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Microsoft.CodeAnalysis.CodeFixes;
+
 namespace Touki.Analyzers;
 
 [TestClass]
@@ -67,6 +69,88 @@ public class WhitespaceCodeFixTests
         string fixedSource = await FixTabsAsync(source).ConfigureAwait(false);
 
         fixedSource.Should().Be(source);
+    }
+
+    [TestMethod]
+    public async Task ReplaceTabs_LinkedDocument_OffersNoFix()
+    {
+        const string source = "class Sample\n{\n\tint Value;\n}\n";
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new NoTabsAnalyzer(),
+            new ReplaceTabsWithSpacesCodeFixProvider(),
+            [("Shared.cs", "Shared.cs", source)],
+            NoTabsAnalyzer.DiagnosticId,
+            fixAll: false,
+            diagnosticOptions: s_tabsEnabled,
+            addLinkedProject: true).ConfigureAwait(false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(2);
+        result.CodeFixActionOffered.Should().BeFalse();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().HaveCount(2);
+        result.Documents.Should().HaveCount(2).And.OnlyContain(document => document.Source == source);
+    }
+
+    [TestMethod]
+    public async Task ReplaceTabs_FixAllSolution_SkipsDivergentLinkedDocumentAndFixesEligibleDocument()
+    {
+        const string linkedSource = "class Linked\n{\n\tint Value;\n}\n";
+        const string eligibleSource = "class Eligible\n{\n\tint Value;\n}\n";
+        Dictionary<string, string> options = new()
+        {
+            [NoTabsAnalyzer.SpacesPerTabOption] = "2"
+        };
+        Dictionary<string, string> linkedOptions = new()
+        {
+            [NoTabsAnalyzer.SpacesPerTabOption] = "4"
+        };
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new NoTabsAnalyzer(),
+            new ReplaceTabsWithSpacesCodeFixProvider(),
+            [("Linked.cs", "Z-Linked.cs", linkedSource)],
+            NoTabsAnalyzer.DiagnosticId,
+            fixAll: true,
+            options,
+            s_tabsEnabled,
+            fixAllScope: FixAllScope.Solution,
+            addLinkedProject: true,
+            additionalProjectSources: [("Eligible.cs", "A-Eligible.cs", eligibleSource)],
+            linkedProjectOptions: linkedOptions).ConfigureAwait(false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(3);
+        result.CodeFixActionOffered.Should().BeTrue();
+        result.FixAllActionOffered.Should().BeTrue();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().HaveCount(2);
+        result.Documents.Where(document => document.Name == "Linked.cs")
+            .Should().HaveCount(2).And.OnlyContain(document => document.Source == linkedSource);
+        result.Documents.Single(document => document.Name == "Eligible.cs").Source
+            .Should().Be("class Eligible\n{\n  int Value;\n}\n");
+    }
+
+    [TestMethod]
+    public async Task ReplaceTabs_CaseVariantPaths_UsesPlatformPathIdentity()
+    {
+        const string source = "class Sample\n{\n\tint Value;\n}\n";
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new NoTabsAnalyzer(),
+            new ReplaceTabsWithSpacesCodeFixProvider(),
+            [("Upper.cs", "Case.cs", source)],
+            NoTabsAnalyzer.DiagnosticId,
+            fixAll: false,
+            diagnosticOptions: s_tabsEnabled,
+            additionalProjectSources: [("Lower.cs", "case.cs", source)]).ConfigureAwait(false);
+
+        bool pathsAreShared = FilePathIdentity.PathComparer.Equals("Case.cs", "case.cs");
+        result.CodeFixActionOffered.Should().Be(!pathsAreShared);
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().HaveCount(pathsAreShared ? 2 : 1);
+        result.Documents.Single(document => document.Name == "Upper.cs").Source.Should().Be(
+            pathsAreShared ? source : "class Sample\n{\n    int Value;\n}\n");
+        result.Documents.Single(document => document.Name == "Lower.cs").Source.Should().Be(source);
     }
 
     [TestMethod]

@@ -316,14 +316,14 @@ public sealed partial class MoveTypeToFileCodeFixProvider : CodeFixProvider
 
         string qualifiedStem = GetQualifiedTypeStem(declaration);
         string qualifiedCandidate = qualifiedStem + extension;
-        if (!string.Equals(simpleCandidate, qualifiedCandidate, StringComparison.OrdinalIgnoreCase)
+        if (!DocumentFileUtilities.PathComparer.Equals(simpleCandidate, qualifiedCandidate)
             && IsDestinationAvailable(solution, document, qualifiedCandidate))
         {
             return qualifiedCandidate;
         }
 
         string currentStem = Path.GetFileNameWithoutExtension(document.FilePath!);
-        string detailStem = string.Equals(qualifiedStem, currentStem, StringComparison.OrdinalIgnoreCase)
+        string detailStem = DocumentFileUtilities.PathComparer.Equals(qualifiedStem, currentStem)
             ? qualifiedStem
             : $"{qualifiedStem}{detailSeparator}{currentStem}";
         string detailCandidate = detailStem + extension;

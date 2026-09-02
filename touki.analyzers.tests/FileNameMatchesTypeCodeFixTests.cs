@@ -76,6 +76,23 @@ public class FileNameMatchesTypeCodeFixTests
     }
 
     [TestMethod]
+    public async Task ApplyFix_RootRelativePath_NormalizesToIsolatedAbsolutePath()
+    {
+        CodeFixTestResult result = await ApplyFixAsync(
+            [("Other.cs", "\\relative\\Other.cs", "class Foo { }")]).ConfigureAwait(false);
+
+        CodeFixTestDocument document = result.Documents.Should().ContainSingle().Subject;
+        document.FilePath.Should().NotBeNull();
+        Path.IsPathFullyQualified(document.FilePath!).Should().BeTrue();
+        document.FilePath!.EndsWith(
+            Path.Combine("relative", "Foo.cs"),
+            StringComparison.Ordinal).Should().BeTrue();
+        document.FilePath.StartsWith(
+            Path.GetTempPath(),
+            StringComparison.OrdinalIgnoreCase).Should().BeTrue();
+    }
+
+    [TestMethod]
     public async Task ApplyFix_DirectoryOccupiesDestination_UsesSuffix()
     {
         const string Source = "class Foo { }";

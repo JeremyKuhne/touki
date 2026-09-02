@@ -59,7 +59,4 @@ internal static class StatementBreakFormattingOptions
 
         return s_spaceIndentationUnits[indentSize - 1];
     }
-
-    public static StringComparer GetPathComparer(char directorySeparator) =>
-        directorySeparator == '\\' ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 }

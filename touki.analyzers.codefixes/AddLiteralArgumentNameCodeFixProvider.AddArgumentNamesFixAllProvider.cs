@@ -278,32 +278,8 @@ public sealed partial class AddLiteralArgumentNameCodeFixProvider
         }
 
         private static HashSet<DocumentId> IndexSharedDocuments(Solution solution, CancellationToken cancellationToken)
-        {
-            Dictionary<string, DocumentId> documentsByPath = new(StringComparer.OrdinalIgnoreCase);
-            HashSet<DocumentId> sharedDocuments = [];
-            foreach (Project project in solution.Projects)
-            {
-                foreach (Document document in project.Documents)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    if (document.FilePath is null)
-                    {
-                        continue;
-                    }
-
-                    if (documentsByPath.TryGetValue(document.FilePath, out DocumentId? relatedDocumentId))
-                    {
-                        sharedDocuments.Add(relatedDocumentId);
-                        sharedDocuments.Add(document.Id);
-                    }
-                    else
-                    {
-                        documentsByPath.Add(document.FilePath, document.Id);
-                    }
-                }
-            }
-
-            return sharedDocuments;
-        }
+            => DocumentFileUtilities.IndexSharedDocuments(
+                solution,
+                cancellationToken);
     }
 }

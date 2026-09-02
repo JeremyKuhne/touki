@@ -36,13 +36,6 @@ public class StatementBreakFormattingCodeFixTests
     }
 
     [TestMethod]
-    public void GetPathComparer_DirectorySeparator_UsesPlatformPathIdentity()
-    {
-        StatementBreakFormattingOptions.GetPathComparer('\\').Equals("A.cs", "a.cs").Should().BeTrue();
-        StatementBreakFormattingOptions.GetPathComparer('/').Equals("A.cs", "a.cs").Should().BeFalse();
-    }
-
-    [TestMethod]
     public void TryReserveDiagnostics_AtAndOverLimit_EnforcesOperationBudget()
     {
         StatementBreakFixAllBudget exact = default;
