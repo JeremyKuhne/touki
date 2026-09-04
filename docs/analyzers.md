@@ -126,7 +126,7 @@ string? name = GetName();       // OK
 string name = GetName()
     ?? throw new Exception();   // OK
 
-void string? GetName();
+string? GetName();
 ```
 
 The rule ships **disabled** because forbidding the operator is a house style.
@@ -328,7 +328,7 @@ would change what the program does:
 
 ```csharp
 string value = """
-    trailing space here is part of the string
+    trailing space here is part of the string   
     """;
 ```
 
