@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Jeremy W Kuhne
+﻿// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -36,6 +36,21 @@ public partial class XmlDocumentationFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_CommentJustOverSafetyLimitImmediatelyAfterMember_ReportsLeadingBlankLine()
+    {
+        const int maximumCommentLength = 1024 * 1024;
+        const string prefix = "    /// <summary>";
+        const string suffix = "</summary>";
+        string content = new('x', maximumCommentLength - prefix.Length - suffix.Length + 1);
+        string source = $"class Sample\n{{\n    int First => 1;\n{prefix}{content}{suffix}\n}}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+        Replacement(diagnostics[0]).Should().Be("\n");
     }
 
     [TestMethod]
@@ -108,10 +123,26 @@ public partial class XmlDocumentationFormattingAnalyzerTests
     }
 
     [TestMethod]
-    public async Task Analyze_ReplacementAtSafetyLimit_ReportsDiagnostic()
+    public async Task Analyze_ReplacementAtSafetyLimitImmediatelyAfterCode_ReportsOnlyLeadingBlankLine()
     {
         string indentation = new(' ', 838_847);
-        string source = $"{indentation}/// <remarks><para>Text.more</para></remarks>\nclass Sample {{ }}\n";
+        string source =
+            $"class First {{ }}\n{indentation}/// <remarks><para>Text.more</para></remarks>\n"
+            + "class Sample { }\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+        Replacement(diagnostics[0]).Should().Be("\n");
+    }
+
+    [TestMethod]
+    public async Task Analyze_ReplacementAtSafetyLimitAfterBlankLine_ReportsFullReplacement()
+    {
+        string indentation = new(' ', 838_847);
+        string source =
+            $"class First {{ }}\n\n{indentation}/// <remarks><para>Text.more</para></remarks>\n"
+            + "class Sample { }\n";
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
@@ -131,6 +162,20 @@ public partial class XmlDocumentationFormattingAnalyzerTests
     }
 
     [TestMethod]
+    public async Task Analyze_ReplacementJustOverSafetyLimitImmediatelyAfterCode_ReportsOnlyLeadingBlankLine()
+    {
+        string indentation = new(' ', 838_847);
+        string source =
+            $"class First {{ }}\n{indentation}/// <remarks><para>Text.more!</para></remarks>\n"
+            + "class Sample { }\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+        Replacement(diagnostics[0]).Should().Be("\n");
+    }
+
+    [TestMethod]
     public async Task Analyze_ManyLinesBelowSafetyLimit_CompletesWithinBound()
     {
         string content = string.Concat(Enumerable.Repeat("/// Text.\n", 30_000));
@@ -144,6 +189,22 @@ public partial class XmlDocumentationFormattingAnalyzerTests
             diagnosticOptions: s_enabled).ConfigureAwait(false);
 
         diagnostics.Should().ContainSingle();
+        source.CharacterReads.Should().BeLessThan(source.Length * 20L);
+    }
+
+    [TestMethod]
+    public async Task Analyze_ManySeparatedComments_KeepsCharacterReadsLinear()
+    {
+        string comments = string.Concat(Enumerable.Repeat("/// <value>x</value>\n\n", 2_000));
+        CountingSourceText source = new(SourceText.From($"{comments}class Sample {{ }}\n"));
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            source,
+            source.Reset,
+            diagnosticOptions: s_enabled).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
         source.CharacterReads.Should().BeLessThan(source.Length * 20L);
     }
 

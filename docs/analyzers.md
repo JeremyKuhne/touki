@@ -33,7 +33,7 @@ what it actually is.
 | [TOUKI0021](#touki0021) | File name should match the type it declares | Maintainability | Warning | Yes | - |
 | [TOUKI0022](#touki0022) | Avoid tab characters | Maintainability | **Disabled** | Yes | - |
 | [TOUKI0023](#touki0023) | Remove trailing whitespace | Maintainability | Warning | - | - |
-| [TOUKI0024](#touki0024) | Format XML documentation as nested XML | Maintainability | **Disabled** | Yes | - |
+| [TOUKI0024](#touki0024) | Format XML documentation | Maintainability | **Disabled** | Yes | - |
 | [TOUKI0025](#touki0025) | Document types | Maintainability | Warning | Yes | - |
 | [TOUKI0026](#touki0026) | Document members, parameters, and return values | Maintainability | Warning | Yes | - |
 | [TOUKI0027](#touki0027) | Use configured Allman formatting | Maintainability | **Disabled** | Yes | - |
@@ -314,9 +314,20 @@ a raw string could be sitting inside an `#if` block that is currently false.
 
 ## TOUKI0024
 
-**Format XML documentation as nested XML.** Enforces the repository's one-space-per-XML-level
-layout for structured `///` comments while preserving documentation text and intentional prose
-line breaks.
+**Format XML documentation.** Enforces separation from a preceding non-whitespace physical line
+and the repository's one-space-per-XML-level layout for structured, line-leading `///` comments
+while preserving documentation text and intentional prose line breaks.
+
+The first line of a documentation comment is separated from preceding code by a blank line. No
+blank line is required at the start of a file, immediately after an opening brace that starts a
+block, or after a preprocessor directive:
+
+```csharp
+int First => 1;
+
+/// <value>The second value.</value>
+int Second => 2;
+```
 
 `<summary>` is always a block:
 
@@ -338,7 +349,8 @@ An element with two or more content lines is never compacted. Nested block eleme
 and indented, while inline elements such as `<see>`, `<paramref>`, and `<c>` remain in prose.
 Existing prose wrapping and intentional hanging indentation are preserved. `<code>`, CDATA, and
 content under `xml:space="preserve"` retain their indentation. Malformed XML and `/** */`
-documentation comments are left alone.
+documentation comments are not reflowed; the leading blank-line requirement still applies to
+`///` comments with malformed XML.
 
 The rule ships **disabled** because documentation layout is a house style. Enable it with:
 
@@ -361,8 +373,8 @@ The maximum physical line length uses the first positive integer from this list:
 2. `max_line_length` - the standard EditorConfig property
 3. 120
 
-The physical length includes source indentation and the `/// ` prefix. Invalid and non-positive
-values fall through to the next source rather than failing the build.
+The physical length includes source indentation, the `///` prefix, and its following space.
+Invalid and non-positive values fall through to the next source rather than failing the build.
 
 Fix All supports document, project, solution, containing-member, and containing-type scopes.
 

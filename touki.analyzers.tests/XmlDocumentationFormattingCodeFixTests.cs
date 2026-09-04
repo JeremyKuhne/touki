@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Jeremy W Kuhne
+﻿// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -165,6 +165,56 @@ public class XmlDocumentationFormattingCodeFixTests
         result.AnalyzerDiagnostics.Should().BeEmpty();
         result.Documents.Should().HaveCount(2).And.OnlyContain(document =>
             document.Source == "/// <summary>\n///  Shared.\n/// </summary>\nclass Shared { }\n");
+    }
+
+    [TestMethod]
+    public async Task FormatAll_LinkedDocumentWithCombinedChanges_FixesBothProjectCopies()
+    {
+        const string source =
+            "class Shared\n"
+            + "{\n"
+            + "    int First => 1;\n"
+            + "    /// <summary>Second.</summary>\n"
+            + "    int Second => 2;\n"
+            + "    int Third => 3;\n"
+            + "    /// <summary>Fourth.</summary>\n"
+            + "    int Fourth => 4;\n"
+            + "}\n";
+        const string expected =
+            "class Shared\n"
+            + "{\n"
+            + "    int First => 1;\n"
+            + "\n"
+            + "    /// <summary>\n"
+            + "    ///  Second.\n"
+            + "    /// </summary>\n"
+            + "    int Second => 2;\n"
+            + "    int Third => 3;\n"
+            + "\n"
+            + "    /// <summary>\n"
+            + "    ///  Fourth.\n"
+            + "    /// </summary>\n"
+            + "    int Fourth => 4;\n"
+            + "}\n";
+        (string Name, string FilePath, string Source)[] sources =
+        [
+            ("Shared.cs", "Shared.cs", source)
+        ];
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            sources,
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            diagnosticOptions: s_enabled,
+            addLinkedProject: true).ConfigureAwait(false);
+
+        result.FixAllActionOffered.Should().BeTrue();
+        result.InitialAnalyzerDiagnosticCount.Should().Be(4);
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().BeEmpty();
+        result.Documents.Should().HaveCount(2).And.OnlyContain(document => document.Source == expected);
     }
 
     [TestMethod]
@@ -549,6 +599,88 @@ public class XmlDocumentationFormattingCodeFixTests
         fixedSource.Should().Be(
             "class Sample\n{\n    /// <summary>\n    ///  The name.\n    /// </summary>\n"
             + "    string Name => \"name\";\n}\n");
+    }
+
+    [TestMethod]
+    public async Task Format_DocumentationImmediatelyAfterMember_InsertsBlankLine()
+    {
+        string source =
+            "class Sample\n{\n    int First => 1;\n"
+            + "    /// <value>The second value.</value>\n    int Second => 2;\n}\n";
+
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(false);
+
+        fixedSource.Should().Be(
+            "class Sample\n{\n    int First => 1;\n\n"
+            + "    /// <value>The second value.</value>\n    int Second => 2;\n}\n");
+        fixedAgain.Should().Be(fixedSource);
+    }
+
+    [TestMethod]
+    public async Task Format_InlineDocumentation_LeavesSourceUnchanged()
+    {
+        string source =
+            "class Sample\n{\n    int First => 1; /// <value>The second value.</value>\n"
+            + "    int Second => 2;\n}\n";
+
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+
+        fixedSource.Should().Be(source);
+    }
+
+    [TestMethod]
+    public async Task Format_UnformattedDocumentationImmediatelyAfterMember_InsertsBlankLineAndFormatsXml()
+    {
+        string source =
+            "class Sample\n{\n    int First => 1;\n"
+            + "    /// <summary>The second value.</summary>\n    int Second => 2;\n}\n";
+
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+
+        fixedSource.Should().Be(
+            "class Sample\n{\n    int First => 1;\n\n"
+            + "    /// <summary>\n    ///  The second value.\n    /// </summary>\n"
+            + "    int Second => 2;\n}\n");
+    }
+
+    [TestMethod]
+    public async Task Format_DocumentationImmediatelyAfterMemberInCrlfSource_InsertsCrlfBlankLine()
+    {
+        string source =
+            "class Sample\r\n{\r\n    int First => 1;\r\n"
+            + "    /// <value>The second value.</value>\r\n    int Second => 2;\r\n}\r\n";
+
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+
+        fixedSource.Should().Be(
+            "class Sample\r\n{\r\n    int First => 1;\r\n\r\n"
+            + "    /// <value>The second value.</value>\r\n    int Second => 2;\r\n}\r\n");
+    }
+
+    [TestMethod]
+    public async Task Format_UnterminatedDocumentationAtEndOfCrlfSource_PreservesCrlf()
+    {
+        string source = "class Sample { }\r\n/// <summary>Orphaned.</summary>";
+
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+
+        fixedSource.Should().Be(
+            "class Sample { }\r\n\r\n/// <summary>\r\n///  Orphaned.\r\n/// </summary>");
+    }
+
+    [TestMethod]
+    public async Task Format_MalformedDocumentationImmediatelyAfterMember_InsertsBlankLineWithoutReflowing()
+    {
+        string source =
+            "class Sample\n{\n    int First => 1;\n"
+            + "    /// <summary>Missing close tag.\n    int Second => 2;\n}\n";
+
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+
+        fixedSource.Should().Be(
+            "class Sample\n{\n    int First => 1;\n\n"
+            + "    /// <summary>Missing close tag.\n    int Second => 2;\n}\n");
     }
 
     [TestMethod]
