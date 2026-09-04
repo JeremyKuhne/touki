@@ -59,7 +59,15 @@ public class AvoidNullForgivingOperatorAnalyzerTests
 
         diagnostics.Should().ContainSingle();
         Location location = diagnostics[0].Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("!");
+        SyntaxTree? sourceTree = location.SourceTree;
+        sourceTree.Should().NotBeNull();
+
+        if (sourceTree is null)
+        {
+            return;
+        }
+
+        sourceTree.GetText().ToString(location.SourceSpan).Should().Be("!");
     }
 
     [TestMethod]
