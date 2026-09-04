@@ -3,9 +3,9 @@
 `KlutzyNinja.Touki.Analyzers` ships the Touki Roslyn analyzers and code fixes.
 `KlutzyNinja.Touki` depends on that package, so adding the main package reference is still
 enough: the rules start running on the next build and in the IDE. Reference the analyzer
-package directly when you want the rules without the Touki runtime library. TOUKI0012,
-TOUKI0022, TOUKI0024, TOUKI0027, TOUKI0028, TOUKI0029, and TOUKI0041 ship disabled unless a
-project opts in.
+package directly when you want the rules without the Touki runtime library. TOUKI0005,
+TOUKI0012, TOUKI0022, TOUKI0024, TOUKI0027, TOUKI0028, TOUKI0029, and TOUKI0041 ship disabled
+unless a project opts in.
 
 The analyzer package is versioned independently from `KlutzyNinja.Touki`.
 Referencing Touki selects a tested minimum analyzer version; a direct analyzer
@@ -26,6 +26,7 @@ what it actually is.
 | [TOUKI0002](#touki0002) | Defensive copy of a struct | Reliability | **Hidden** | - | - |
 | [TOUKI0003](#touki0003) | Defensive copy of a non-copyable struct | Reliability | Warning | - | `[NonCopyable]` |
 | [TOUKI0004](#touki0004) | By-value copy of a non-copyable struct | Reliability | Warning | - | `[NonCopyable]` |
+| [TOUKI0005](#touki0005) | Avoid the null-forgiving operator | Reliability | **Disabled** | - | - |
 | [TOUKI0010](#touki0010) | Dispose a `[MustDispose]` value deterministically | Reliability | Warning | - | `[MustDispose]` |
 | [TOUKI0011](#touki0011) | Avoid large `stackalloc` allocations | Reliability | Warning | Yes | - |
 | [TOUKI0012](#touki0012) | Derive disposable classes from `DisposableBase` | Reliability | **Disabled** | - | `DisposableBase` |
@@ -110,6 +111,29 @@ Apply the marker to a type that owns a resource whose duplication would be a bug
 ```csharp
 [NonCopyable]
 public ref struct BufferScope<T> { }
+```
+
+## TOUKI0005
+
+**Avoid the [null-forgiving operator](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/null-forgiving).**
+Reports the postfix `!` operator that suppresses nullable warnings. The operator
+has no run-time effect, so it can hide an invalid nullability assumption without
+protecting against a `NullReferenceException`.
+
+```csharp
+string name = GetName()!;       // TOUKI0005
+string? name = GetName();       // OK
+string name = GetName()
+    ?? throw new Exception();   // OK
+
+string? GetName();
+```
+
+The rule ships **disabled** because forbidding the operator is a house style.
+Enable it with:
+
+```ini
+dotnet_diagnostic.TOUKI0005.severity = error
 ```
 
 ## TOUKI0010
@@ -953,6 +977,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 
 | Release | Rules added |
 |---------|-------------|
+| Unshipped | TOUKI0005 |
 | 0.10.0 | TOUKI0027, TOUKI0028, TOUKI0029 |
 | 0.4.0 | TOUKI0001, TOUKI0002, TOUKI0003, TOUKI0004, TOUKI0010 |
 | 0.5.0 | TOUKI0020, TOUKI0030 |
