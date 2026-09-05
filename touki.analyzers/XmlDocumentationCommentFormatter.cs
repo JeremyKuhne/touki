@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Jeremy W Kuhne
+﻿// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -18,8 +18,8 @@ namespace Touki.Analyzers;
 internal static partial class XmlDocumentationCommentFormatter
 {
     internal const int MaximumCommentLength = 1024 * 1024;
+    internal const int MaximumReplacementLength = 4 * 1024 * 1024;
     private const int MaximumIndentationColumns = 4096;
-    private const int MaximumReplacementLength = 4 * 1024 * 1024;
     private const int MaximumStructuredNodeCount = 4096;
     private const int MaximumXmlNestingDepth = 128;
 

@@ -12,7 +12,7 @@ dotnet_diagnostic.TOUKI0001.severity = none
 # code that uses them; splitting them would make future ports harder to diff.
 dotnet_diagnostic.TOUKI0020.severity = none
 
-# TOUKI0024: Format XML documentation as nested XML. Upstream documentation layout is retained
+# TOUKI0024: Format XML documentation. Upstream documentation layout is retained
 # so future ports remain easy to compare.
 dotnet_diagnostic.TOUKI0024.severity = none
 

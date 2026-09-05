@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Jeremy W Kuhne
+﻿// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -44,10 +44,191 @@ public partial class XmlDocumentationFormattingAnalyzerTests
     }
 
     [TestMethod]
-    public async Task Analyze_SingleLineTopLevelElementWithinLimit_ReportsNothing()
+    public async Task Analyze_SingleLineTopLevelElementAfterOpeningBraceWithinLimit_ReportsNothing()
     {
         string source =
             "class Sample\n{\n    /// <returns>The name.</returns>\n    string Name() => \"name\";\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_DocumentationImmediatelyAfterOpeningBraceWithTrailingComment_ReportsNothing()
+    {
+        string source =
+            "class Sample\n{ // The block starts here.\n"
+            + "    /// <value>The value.</value>\n    int Value => 1;\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_DocumentationImmediatelyAfterOpeningBraceWithTrailingXmlComment_ReportsNothing()
+    {
+        string source =
+            "class Sample\n{ /** <summary>The block starts here.</summary> */\n"
+            + "    /// <value>The value.</value>\n    int Value => 1;\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_DocumentationImmediatelyAfterKAndROpeningBrace_ReportsNothing()
+    {
+        string source =
+            "class Sample {\n"
+            + "    /// <value>The value.</value>\n    int Value => 1;\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_DocumentationAfterAcceptedStructuralOpeningBraces_ReportsNothing()
+    {
+        string source =
+            "namespace Example\n{\n/// <value>The type.</value>\nclass Sample\n{\n"
+            + "    int Value\n    {\n        /// <value>The accessor.</value>\n        get => 1;\n    }\n\n"
+            + "    void Method(int value)\n    {\n        /// <value>The local.</value>\n"
+            + "        int Local() => 1;\n\n        switch (value)\n        {\n"
+            + "            /// <value>The case.</value>\n            case 0:\n                break;\n        }\n"
+            + "    }\n}\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_DocumentationImmediatelyAfterOpeningBraceAndStatement_ReportsLeadingBlankLine()
+    {
+        string source =
+            "class Sample\n{\n    void Method()\n    { int first = 1;\n"
+            + "        /// <returns>The second value.</returns>\n        int Local() => 2;\n    }\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+        Replacement(diagnostics[0]).Should().Be("\n");
+    }
+
+    [TestMethod]
+    public async Task Analyze_DocumentationImmediatelyAfterSingleLineBlock_ReportsLeadingBlankLine()
+    {
+        string source =
+            "class Sample\n{\n    void Method()\n    {\n        { }\n"
+            + "        /// <returns>The value.</returns>\n        int Local() => 1;\n    }\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+        Replacement(diagnostics[0]).Should().Be("\n");
+    }
+
+    [TestMethod]
+    public async Task Analyze_DocumentationImmediatelyAfterNonTokenOpeningBraceLine_ReportsLeadingBlankLine()
+    {
+        string source =
+            "class First { }\n/*\n{ not a block start */\n"
+            + "/// <summary>Sample.</summary>\nclass Sample { }\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+        Replacement(diagnostics[0]).Should().Be(
+            "\n/// <summary>\n///  Sample.\n/// </summary>");
+    }
+
+    [TestMethod]
+    public async Task Analyze_DocumentationImmediatelyAfterMember_ReportsLeadingBlankLine()
+    {
+        string source =
+            "class Sample\n{\n    int First => 1;\n"
+            + "    /// <value>The second value.</value>\n    int Second => 2;\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+        Replacement(diagnostics[0]).Should().Be("\n");
+    }
+
+    [TestMethod]
+    public async Task Analyze_InlineDocumentation_ReportsNothing()
+    {
+        string source =
+            "class Sample\n{\n    int First => 1; /// <value>The second value.</value>\n"
+            + "    int Second => 2;\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_DocumentationAfterInitializerOpeningBrace_ReportsLeadingBlankLine()
+    {
+        string source =
+            "class Sample\n{\n    int[] Values =\n    {\n"
+            + "        /// <value>The first value.</value>\n        1\n    };\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+        Replacement(diagnostics[0]).Should().Be("\n");
+    }
+
+    [TestMethod]
+    public async Task Analyze_DocumentationAfterPropertyPatternOpeningBrace_ReportsLeadingBlankLine()
+    {
+        string source =
+            "class Sample\n{\n    int Value { get; init; }\n\n"
+            + "    bool Matches(Sample value) => value is\n    {\n"
+            + "        /// <value>The required value.</value>\n        Value: 1\n    };\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+        Replacement(diagnostics[0]).Should().Be("\n");
+    }
+
+    [TestMethod]
+    public async Task Analyze_DocumentationImmediatelyAfterPreprocessorDirective_ReportsNothing()
+    {
+        string source =
+            "class Sample\n{\n    #if true\n"
+            + "    /// <value>The value.</value>\n    int Value => 1;\n    #endif\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_DocumentationImmediatelyAfterNonDirectiveHashLine_ReportsLeadingBlankLine()
+    {
+        string source =
+            "class Sample\n{\n    /*\n    # not a directive */\n"
+            + "    /// <value>The value.</value>\n    int Value => 1;\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+        Replacement(diagnostics[0]).Should().Be("\n");
+    }
+
+    [TestMethod]
+    public async Task Analyze_DocumentationAfterWhitespaceOnlyLine_ReportsNothing()
+    {
+        string source =
+            "class Sample\n{\n    int First => 1;\n    \n"
+            + "    /// <value>The second value.</value>\n    int Second => 2;\n}\n";
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
@@ -748,6 +929,19 @@ public partial class XmlDocumentationFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_MalformedXmlImmediatelyAfterMember_ReportsLeadingBlankLine()
+    {
+        string source =
+            "class Sample\n{\n    int First => 1;\n"
+            + "    /// <summary>Missing close tag.\n    int Second => 2;\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().ContainSingle();
+        Replacement(diagnostics[0]).Should().Be("\n");
     }
 
     [TestMethod]

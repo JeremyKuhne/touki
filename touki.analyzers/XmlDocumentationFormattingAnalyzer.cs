@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Jeremy W Kuhne
+﻿// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -13,9 +13,13 @@ using Microsoft.CodeAnalysis.Text;
 namespace Touki.Analyzers;
 
 /// <summary>
-///  Reports single-line XML documentation comments that do not follow the configured nested XML layout.
+///  Reports single-line XML documentation comments that do not follow the configured spacing and nested XML layout.
 /// </summary>
 /// <remarks>
+///  <para>
+///   Documentation comments are separated from preceding code by a blank line unless they immediately follow an
+///   opening brace that starts a block or a preprocessor directive.
+///  </para>
 ///  <para>
 ///   The rule formats paired XML elements as blocks, with one configurable indentation step for every XML
 ///   nesting level. A top-level element other than <c>summary</c> may stay on one line when it fits within the
@@ -77,12 +81,13 @@ public sealed class XmlDocumentationFormattingAnalyzer : DiagnosticAnalyzer
 
     private static readonly DiagnosticDescriptor s_rule = new(
         id: DiagnosticId,
-        title: "Format XML documentation as nested XML",
-        messageFormat: "Format XML documentation as nested XML",
+        title: "Format XML documentation",
+        messageFormat: "Format XML documentation",
         category: "Maintainability",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: false,
-        description: "XML documentation should use a consistent nested layout while preserving intentional prose line breaks.",
+        description: "XML documentation should be separated from preceding code and use a consistent nested layout "
+            + "while preserving intentional prose line breaks.",
         helpLinkUri: HelpLinks.ForRule(DiagnosticId));
 
     private static readonly ImmutableArray<DiagnosticDescriptor> s_supportedDiagnostics = [s_rule];
@@ -109,42 +114,99 @@ public sealed class XmlDocumentationFormattingAnalyzer : DiagnosticAnalyzer
         AnalyzerConfigOptions options = context.Options.AnalyzerConfigOptionsProvider.GetOptions(context.Tree);
         (int indentSize, int maxLineLength) = XmlDocumentationFormattingOptions.GetOptions(options);
         SyntaxNode root = context.Tree.GetRoot(context.CancellationToken);
+        int latestPreprocessorLineNumber = -1;
 
         foreach (SyntaxTrivia trivia in root.DescendantTrivia(descendIntoTrivia: true))
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
+            if (trivia.HasStructure
+                && trivia.GetStructure() is DirectiveTriviaSyntax directive)
+            {
+                latestPreprocessorLineNumber = source.Lines.GetLineFromPosition(directive.SpanStart).LineNumber;
+                continue;
+            }
+
             if (!trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia)
-                || trivia.GetStructure() is not DocumentationCommentTriviaSyntax documentation
-                || documentation.ContainsDiagnostics
-                || !TryGetCommentSpan(source, trivia, context.CancellationToken, out TextSpan span))
+                || trivia.GetStructure() is not DocumentationCommentTriviaSyntax documentation)
             {
                 continue;
             }
 
-            TextLine firstLine = source.Lines.GetLineFromPosition(span.Start);
-            string lineBreak = firstLine.EndIncludingLineBreak > firstLine.End
-                ? source.ToString(TextSpan.FromBounds(firstLine.End, firstLine.EndIncludingLineBreak))
-                : "\n";
-
-            if (!XmlDocumentationCommentFormatter.TryFormat(
-                source,
-                documentation,
-                span,
-                lineBreak,
-                indentSize,
-                maxLineLength,
-                context.CancellationToken,
-                out string replacement))
+            TextLine firstLine = source.Lines.GetLineFromPosition(trivia.FullSpan.Start);
+            SyntaxToken previousToken = trivia.Token.GetPreviousToken(
+                includeZeroWidth: false,
+                includeSkipped: false,
+                includeDirectives: false,
+                includeDocumentationComments: false);
+            int prefixLength = trivia.FullSpan.Start - firstLine.Start;
+            if ((previousToken.RawKind != 0 && previousToken.Span.End > firstLine.Start)
+                || prefixLength > XmlDocumentationCommentFormatter.MaximumCommentLength
+                || !XmlDocumentationCommentFormatter.TryGetExteriorIndex(source, firstLine, out _))
             {
                 continue;
+            }
+
+            bool requiresLeadingBlankLine = RequiresLeadingBlankLine(
+                source,
+                firstLine.LineNumber,
+                latestPreprocessorLineNumber,
+                previousToken,
+                context.CancellationToken);
+            bool hasCommentSpan = TryGetCommentSpan(
+                source,
+                trivia,
+                context.CancellationToken,
+                out TextSpan commentSpan);
+            string lineBreak = GetLineBreak(source, firstLine);
+            string? replacement = null;
+            if (hasCommentSpan && !documentation.ContainsDiagnostics)
+            {
+                if (XmlDocumentationCommentFormatter.TryFormat(
+                    source,
+                    documentation,
+                    commentSpan,
+                    lineBreak,
+                    indentSize,
+                    maxLineLength,
+                    context.CancellationToken,
+                    out string formattedComment))
+                {
+                    replacement = formattedComment;
+                }
+            }
+
+            if (replacement is null && !requiresLeadingBlankLine)
+            {
+                continue;
+            }
+
+            if (replacement is not null)
+            {
+                if (requiresLeadingBlankLine)
+                {
+                    if (replacement.Length <= XmlDocumentationCommentFormatter.MaximumReplacementLength - lineBreak.Length)
+                    {
+                        replacement = string.Concat(lineBreak, replacement);
+                    }
+                    else
+                    {
+                        commentSpan = new(firstLine.Start, 0);
+                        replacement = lineBreak;
+                    }
+                }
+            }
+            else
+            {
+                commentSpan = new(firstLine.Start, 0);
+                replacement = lineBreak;
             }
 
             ImmutableDictionary<string, string?> properties = ImmutableDictionary<string, string?>.Empty
                 .Add(ReplacementProperty, replacement);
 
             context.ReportDiagnostic(
-                Diagnostic.Create(s_rule, Location.Create(context.Tree, span), properties));
+                Diagnostic.Create(s_rule, Location.Create(context.Tree, commentSpan), properties));
         }
     }
 
@@ -166,6 +228,76 @@ public sealed class XmlDocumentationFormattingAnalyzer : DiagnosticAnalyzer
         }
 
         return false;
+    }
+
+    private static bool RequiresLeadingBlankLine(
+        SourceText source,
+        int firstLineNumber,
+        int latestPreprocessorLineNumber,
+        SyntaxToken previousToken,
+        CancellationToken cancellationToken)
+    {
+        if (firstLineNumber == 0)
+        {
+            return false;
+        }
+
+        int previousLineNumber = firstLineNumber - 1;
+        if (latestPreprocessorLineNumber == previousLineNumber)
+        {
+            return false;
+        }
+
+        TextLine previousLine = source.Lines[previousLineNumber];
+        int index = previousLine.Start;
+        while (index < previousLine.End && char.IsWhiteSpace(source[index]))
+        {
+            if (((index - previousLine.Start) & 0xFFF) == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            index++;
+        }
+
+        if (index == previousLine.End)
+        {
+            return false;
+        }
+
+        if (previousToken.SpanStart < previousLine.Start
+            || previousToken.Span.End > previousLine.End
+            || !previousToken.IsKind(SyntaxKind.OpenBraceToken))
+        {
+            return true;
+        }
+
+        return previousToken.Parent is not BlockSyntax
+            and not BaseNamespaceDeclarationSyntax
+            and not BaseTypeDeclarationSyntax
+            and not AccessorListSyntax
+            and not SwitchStatementSyntax;
+    }
+
+    private static string GetLineBreak(SourceText source, TextLine line)
+    {
+        if (line.EndIncludingLineBreak > line.End)
+        {
+            return source.ToString(TextSpan.FromBounds(line.End, line.EndIncludingLineBreak));
+        }
+
+        if (line.LineNumber > 0)
+        {
+            TextLine previousLine = source.Lines[line.LineNumber - 1];
+            if (previousLine.EndIncludingLineBreak > previousLine.End)
+            {
+                return source.ToString(TextSpan.FromBounds(
+                    previousLine.End,
+                    previousLine.EndIncludingLineBreak));
+            }
+        }
+
+        return "\n";
     }
 
     private static bool TryGetCommentSpan(
