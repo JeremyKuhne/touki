@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Jeremy W Kuhne
+﻿// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -871,12 +871,14 @@ public sealed partial class GlobSpecification
 
     // Internal so GlobMatch can route through the strategy directly and tests can
     // inspect the encoded form via TestAccessor.
+
     /// <summary>
     ///  The underlying strategy.
     /// </summary>
     internal GlobStrategy Strategy => _strategy;
 
     // Internal accessor used by GlobMatch when classifying alignment.
+
     /// <summary>
     ///  The strategy's <see cref="IgnoreCaseKind"/>.
     /// </summary>
