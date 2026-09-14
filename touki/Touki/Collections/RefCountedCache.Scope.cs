@@ -114,7 +114,7 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
 
             return scope._initialized
                 ? scope._object
-                : throw new InvalidOperationException();
+                : throw new InvalidOperationException("The scope is the default, uninitialized value.");
         }
 
         /// <inheritdoc cref="IDisposable.Dispose"/>

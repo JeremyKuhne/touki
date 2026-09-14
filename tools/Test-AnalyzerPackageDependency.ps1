@@ -196,23 +196,31 @@ finally {
 
 $repositoryRoot = Split-Path $PSScriptRoot -Parent
 $toukiProjectPath = Join-Path $repositoryRoot 'touki/touki.csproj'
-$referenceOutput = & dotnet msbuild $toukiProjectPath `
-    -nologo `
-    -target:ResolveReferences `
-    -getItem:ReferenceCopyLocalPaths `
-    -getItem:Analyzer `
-    -p:Configuration=Release `
-    -p:Platform=AnyCPU `
-    -p:Platforms=AnyCPU `
-    -p:TargetFramework=net10.0 2>&1 | Out-String
-$referenceExitCode = $LASTEXITCODE
+$referenceResultPath = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
+try {
+    $referenceOutput = & dotnet msbuild $toukiProjectPath `
+        -nologo `
+        -target:ResolveReferences `
+        -getItem:ReferenceCopyLocalPaths `
+        -getItem:Analyzer `
+        "-getResultOutputFile:$referenceResultPath" `
+        -p:Configuration=Release `
+        -p:Platform=AnyCPU `
+        -p:Platforms=AnyCPU `
+        -p:TargetFramework=net10.0 2>&1 | Out-String
+    $referenceExitCode = $LASTEXITCODE
 
-if ($referenceExitCode -ne 0) {
-    Write-Host $referenceOutput
-    throw "Resolving Touki project references failed with exit code $referenceExitCode."
+    if ($referenceExitCode -ne 0) {
+        Write-Host $referenceOutput
+        throw "Resolving Touki project references failed with exit code $referenceExitCode."
+    }
+
+    $resolvedReferences = Get-Content $referenceResultPath -Raw | ConvertFrom-Json
+}
+finally {
+    Remove-Item $referenceResultPath -Force -ErrorAction SilentlyContinue
 }
 
-$resolvedReferences = $referenceOutput | ConvertFrom-Json
 $copyLocalToukiAnalyzers = @(
     $resolvedReferences.Items.ReferenceCopyLocalPaths
         | Where-Object Identity -Match '[\\/]touki\.analyzers\.dll$'

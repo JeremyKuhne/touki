@@ -238,6 +238,7 @@ public class RefCountedCacheTests
         }
 
         exception.Should().NotBeNull();
+        exception.Message.Should().Be("The scope is the default, uninitialized value.");
     }
 
     [TestMethod]
@@ -256,6 +257,7 @@ public class RefCountedCacheTests
         }
 
         exception.Should().NotBeNull();
+        exception.Message.Should().Be("The scope is the default, uninitialized value.");
     }
 
     [TestMethod]

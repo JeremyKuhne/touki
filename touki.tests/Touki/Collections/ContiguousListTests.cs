@@ -224,7 +224,7 @@ public class ContiguousListTests
 
         property.Should().NotBeNull();
 
-    PropertyInfo propertyInfo = property;
+        PropertyInfo propertyInfo = property;
 
         // Check for EditorBrowsable attribute - use conditional compilation for compatibility
 #if NET5_0_OR_GREATER
