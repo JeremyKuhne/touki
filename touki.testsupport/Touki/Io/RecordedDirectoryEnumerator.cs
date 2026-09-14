@@ -73,7 +73,7 @@ public sealed class RecordedDirectoryEnumerator : IDisposable
         _stripRootDirectory = stripRootDirectory;
 
         _rootDirectory = RecordedFileSystem.Normalize(
-            string.IsNullOrEmpty(rootDirectory) ? fileSystem.Root : rootDirectory!);
+            rootDirectory is null || rootDirectory.Length == 0 ? fileSystem.Root : rootDirectory);
         _rootDirectoryLength = _rootDirectory.Length
             + (Path.EndsInDirectorySeparator(_rootDirectory) ? 0 : 1);
 

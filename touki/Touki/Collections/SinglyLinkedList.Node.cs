@@ -32,7 +32,8 @@ public sealed partial class SinglyLinkedList<T>
         /// </summary>
         /// <param name="node">The node to convert.</param>
         /// <returns>The node's value, or the default value of <typeparamref name="T"/> if the node is null.</returns>
-        public static implicit operator T(Node? node) => node is null ? default! : node.Value;
+        [return: MaybeNull]
+        public static implicit operator T(Node? node) => node is null ? default : node.Value;
     }
 }
 

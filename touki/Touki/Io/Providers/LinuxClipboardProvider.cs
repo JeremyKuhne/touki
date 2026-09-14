@@ -222,7 +222,11 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
                 CreateNoWindow = true,
             };
 
-            using Process process = Process.Start(info)!;
+            using Process? process = Process.Start(info);
+            if (process is null)
+            {
+                return false;
+            }
 
             // Read stdout / stderr asynchronously so a child that fills its pipe buffer
             // does not deadlock against a synchronous ReadToEnd here; the kernel pipe is
@@ -282,7 +286,11 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
                 StandardInputEncoding = Encoding.UTF8,
             };
 
-            using Process process = Process.Start(info)!;
+            using Process? process = Process.Start(info);
+            if (process is null)
+            {
+                return false;
+            }
 
             // Drain stderr asynchronously so a chatty helper can't fill the stderr pipe
             // and block its own exit while we're waiting.
@@ -361,7 +369,11 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
                 CreateNoWindow = true,
             };
 
-            using Process process = Process.Start(info)!;
+            using Process? process = Process.Start(info);
+            if (process is null)
+            {
+                return false;
+            }
 
             // Drain stderr asynchronously so a chatty helper can't fill the stderr pipe
             // and block its own exit while we're waiting for it.

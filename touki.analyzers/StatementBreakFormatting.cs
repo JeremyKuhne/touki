@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -651,7 +652,7 @@ internal static partial class StatementBreakFormatting
                     and not LambdaExpressionSyntax
                     and not SwitchExpressionArmSyntax
                 && !blockLikeContinuation
-            || !TryGetContinuationNode(operation, out SyntaxNode continuation))
+            || !TryGetContinuationNode(operation, out SyntaxNode? continuation))
         {
             return true;
         }
@@ -936,7 +937,7 @@ internal static partial class StatementBreakFormatting
 
     private static bool TryGetContinuationNode(
         StatementBreakOperator operation,
-        out SyntaxNode continuation)
+        [NotNullWhen(returnValue: true)] out SyntaxNode? continuation)
     {
         SyntaxNode? candidate = operation.Node switch
         {
@@ -952,7 +953,7 @@ internal static partial class StatementBreakFormatting
             _ => null
         };
 
-        continuation = candidate!;
+        continuation = candidate;
         return candidate is not null;
     }
 
@@ -1048,7 +1049,7 @@ internal static partial class StatementBreakFormatting
         if (TryGetPreviousPrimaryFormattingNode(
             node,
             cancellationToken,
-            out SyntaxNode previousPrimaryNode))
+            out SyntaxNode? previousPrimaryNode))
         {
             return TryGetExpectedIndentation(
                 previousPrimaryNode,
@@ -1177,7 +1178,7 @@ internal static partial class StatementBreakFormatting
             }
 
             if (current is LambdaExpressionSyntax lambdaExpression
-                && TryGetLambdaInvocationTarget(lambdaExpression, out SyntaxNode invocationTarget)
+                && TryGetLambdaInvocationTarget(lambdaExpression, out SyntaxNode? invocationTarget)
                 && root.FindToken(indentationEnd) is { } lineStartToken
                 && lineStartToken.SpanStart == indentationEnd
                 && IsInvocationTargetLineStart(lineStartToken, invocationTarget)
@@ -1214,8 +1215,9 @@ internal static partial class StatementBreakFormatting
                     source,
                     indentationUnit,
                     cancellationToken,
-                    out SyntaxNode containingContinuation,
+                    out SyntaxNode? containingContinuation,
                     out StatementBreakIndentation continuationIndentation)
+                && containingContinuation is not null
                 && TryGetRelativeIndentationLevels(
                     containingContinuation.GetFirstToken(),
                     anchorLine,
@@ -1275,7 +1277,7 @@ internal static partial class StatementBreakFormatting
                 }
 
                 if (anchorExpression is not null
-                    && TryGetFormattingNode(token, out SyntaxNode nestedFormattingNode)
+                    && TryGetFormattingNode(token, out SyntaxNode? nestedFormattingNode)
                     && nestedFormattingNode != current
                     && (anchorExpression.Span.Contains(nestedFormattingNode.Span)
                         || nestedFormattingNode.Span.Contains(current.Span)))
@@ -1332,7 +1334,7 @@ internal static partial class StatementBreakFormatting
                         source,
                         cancellationToken,
                         ref ancestorVisits,
-                        out SyntaxNode operatorFormattingNode);
+                        out SyntaxNode? operatorFormattingNode);
                     if (ancestorVisits > MaximumAncestorDepth)
                     {
                         expectedIndentation = default;
@@ -1340,6 +1342,7 @@ internal static partial class StatementBreakFormatting
                     }
 
                     if (normalizedOperator
+                        && operatorFormattingNode is not null
                         && operatorFormattingNode is ArrowExpressionClauseSyntax
                             or LambdaExpressionSyntax
                             or SwitchExpressionArmSyntax)
@@ -1375,14 +1378,14 @@ internal static partial class StatementBreakFormatting
                     source,
                     cancellationToken,
                     ref ancestorVisits,
-                    out SyntaxNode formattingNode);
+                    out SyntaxNode? formattingNode);
                 if (ancestorVisits > MaximumAncestorDepth)
                 {
                     expectedIndentation = default;
                     return false;
                 }
 
-                if (normalized)
+                if (normalized && formattingNode is not null)
                 {
                     if (indentationLevels == MaximumAncestorDepth)
                     {
@@ -1643,7 +1646,7 @@ internal static partial class StatementBreakFormatting
     private static bool TryGetPreviousPrimaryFormattingNode(
         SyntaxNode node,
         CancellationToken cancellationToken,
-        out SyntaxNode previousPrimaryNode)
+        [NotNullWhen(returnValue: true)] out SyntaxNode? previousPrimaryNode)
     {
         SyntaxNode? candidate = node switch
         {
@@ -1678,18 +1681,18 @@ internal static partial class StatementBreakFormatting
                     previousPrimaryNode = owner;
                     return true;
                 default:
-                    previousPrimaryNode = null!;
+                    previousPrimaryNode = null;
                     return false;
             }
         }
 
-        previousPrimaryNode = null!;
+        previousPrimaryNode = null;
         return false;
     }
 
     private static bool TryGetLambdaInvocationTarget(
         LambdaExpressionSyntax lambda,
-        out SyntaxNode invocationTarget)
+        [NotNullWhen(returnValue: true)] out SyntaxNode? invocationTarget)
     {
         if (lambda.Parent is ArgumentSyntax
             {
@@ -1704,7 +1707,7 @@ internal static partial class StatementBreakFormatting
             return true;
         }
 
-        invocationTarget = null!;
+        invocationTarget = null;
         return false;
     }
 
@@ -1721,7 +1724,7 @@ internal static partial class StatementBreakFormatting
         SyntaxToken token,
         SyntaxNode invocationTarget)
     {
-        if (TryGetFormattingNode(token, out SyntaxNode formattingNode))
+        if (TryGetFormattingNode(token, out SyntaxNode? formattingNode))
         {
             return formattingNode == invocationTarget;
         }
@@ -1742,7 +1745,7 @@ internal static partial class StatementBreakFormatting
         SourceText source,
         string indentationUnit,
         CancellationToken cancellationToken,
-        out SyntaxNode continuation,
+        [NotNullWhen(returnValue: true)] out SyntaxNode? continuation,
         out StatementBreakIndentation indentation)
     {
         SyntaxNode? candidate = node.Parent;
@@ -1770,7 +1773,7 @@ internal static partial class StatementBreakFormatting
             candidate = candidate.Parent;
         }
 
-        continuation = null!;
+        continuation = null;
         indentation = default;
         return false;
     }
@@ -1924,9 +1927,9 @@ internal static partial class StatementBreakFormatting
         SourceText source,
         CancellationToken cancellationToken,
         ref int ancestorVisits,
-        out SyntaxNode formattingNode)
+        [NotNullWhen(returnValue: true)] out SyntaxNode? formattingNode)
     {
-        if (TryGetFormattingNode(lineStartToken, out SyntaxNode operatorNode)
+        if (TryGetFormattingNode(lineStartToken, out SyntaxNode? operatorNode)
             && operatorNode != current
             && CanUseLineStartFormattingNode(operatorNode, source, cancellationToken))
         {
@@ -1954,7 +1957,7 @@ internal static partial class StatementBreakFormatting
         {
             if (!TryVisitAncestor(ref ancestorVisits))
             {
-                formattingNode = null!;
+                formattingNode = null;
                 return false;
             }
 
@@ -1988,7 +1991,7 @@ internal static partial class StatementBreakFormatting
             candidate = candidate.Parent;
         }
 
-        formattingNode = null!;
+        formattingNode = null;
         return false;
     }
 
@@ -2094,26 +2097,25 @@ internal static partial class StatementBreakFormatting
         SyntaxNode current,
         CancellationToken cancellationToken,
         ref int ancestorVisits,
-        out SyntaxNode owner)
+        [NotNullWhen(returnValue: true)] out SyntaxNode? owner)
     {
         owner = formattingNode;
         while (!owner.Span.Contains(current.Span))
         {
             if (!TryVisitAncestor(ref ancestorVisits))
             {
-                owner = null!;
+                owner = null;
                 return false;
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            SyntaxNode? parent = owner.Parent;
-            if (parent is not null && IsTransparentFormattingOwner(parent, owner))
+            if (owner.Parent is { } parent && IsTransparentFormattingOwner(parent, owner))
             {
                 owner = parent;
                 continue;
             }
 
-            owner = null!;
+            owner = null;
             return false;
         }
 
@@ -2319,7 +2321,9 @@ internal static partial class StatementBreakFormatting
         || parent is AnonymousObjectMemberDeclaratorSyntax anonymousMember
             && anonymousMember.NameEquals == nameEquals;
 
-    private static bool TryGetFormattingNode(SyntaxToken token, out SyntaxNode node)
+    private static bool TryGetFormattingNode(
+        SyntaxToken token,
+        [NotNullWhen(returnValue: true)] out SyntaxNode? node)
     {
         SyntaxNode? candidate = token.Parent switch
         {
@@ -2348,7 +2352,7 @@ internal static partial class StatementBreakFormatting
             return true;
         }
 
-        node = null!;
+        node = null;
         return false;
     }
 

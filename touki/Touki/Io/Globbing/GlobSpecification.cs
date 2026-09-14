@@ -38,33 +38,15 @@ public sealed partial class GlobSpecification
     private IFileSystemMatcher? _fileSystemMatcher;
 
     private readonly GlobStrategy _strategy;
-    private readonly StringSegment _msbuildTrailingDotFileNamePattern;
-    private readonly bool _hasMSBuildTrailingDotFileNamePattern;
-    private readonly CompiledGlobStrategy? _msbuildTrailingDotExtGlobStrategy;
-    private readonly CompiledGlobStrategy? _msbuildTrailingDotRawExtGlobStrategy;
-    private readonly GlobSpecification[]? _msbuildTrailingDotNegatedAlternatives;
-    private readonly GlobSpecification[]? _msbuildTrailingDotPositiveAlternatives;
-    private readonly bool _msbuildTrailingDotNeverMatches;
+    private readonly MSBuildTrailingDotState? _msbuildTrailingDotState;
 
     private GlobSpecification(
         GlobStrategy strategy,
         StringSegment pattern,
-        StringSegment msbuildTrailingDotFileNamePattern,
-        bool hasMSBuildTrailingDotFileNamePattern,
-        CompiledGlobStrategy? msbuildTrailingDotExtGlobStrategy,
-        CompiledGlobStrategy? msbuildTrailingDotRawExtGlobStrategy,
-        GlobSpecification[]? msbuildTrailingDotNegatedAlternatives,
-        GlobSpecification[]? msbuildTrailingDotPositiveAlternatives,
-        bool msbuildTrailingDotNeverMatches)
+        MSBuildTrailingDotState? msbuildTrailingDotState)
     {
         _strategy = strategy;
-        _msbuildTrailingDotFileNamePattern = msbuildTrailingDotFileNamePattern;
-        _hasMSBuildTrailingDotFileNamePattern = hasMSBuildTrailingDotFileNamePattern;
-        _msbuildTrailingDotExtGlobStrategy = msbuildTrailingDotExtGlobStrategy;
-        _msbuildTrailingDotRawExtGlobStrategy = msbuildTrailingDotRawExtGlobStrategy;
-        _msbuildTrailingDotNegatedAlternatives = msbuildTrailingDotNegatedAlternatives;
-        _msbuildTrailingDotPositiveAlternatives = msbuildTrailingDotPositiveAlternatives;
-        _msbuildTrailingDotNeverMatches = msbuildTrailingDotNeverMatches;
+        _msbuildTrailingDotState = msbuildTrailingDotState;
         Pattern = pattern.ToString();
     }
 
@@ -285,11 +267,7 @@ public sealed partial class GlobSpecification
             return false;
         }
 
-        CompiledGlobStrategy? msbuildTrailingDotExtGlobStrategy = null;
-        CompiledGlobStrategy? msbuildTrailingDotRawExtGlobStrategy = null;
-        GlobSpecification[]? msbuildTrailingDotNegatedAlternatives = null;
-        GlobSpecification[]? msbuildTrailingDotPositiveAlternatives = null;
-        bool msbuildTrailingDotNeverMatches = false;
+        MSBuildTrailingDotState? msbuildTrailingDotState = null;
         if (hasMSBuildTrailingDotFileNamePattern
             && (options & GlobOptions.AllowExtGlob) != 0
             && ContainsExtGlobOpener(msbuildTrailingDotFileNamePattern))
@@ -323,7 +301,7 @@ public sealed partial class GlobSpecification
                 pathPrefix,
                 options,
                 separator,
-                out msbuildTrailingDotNegatedAlternatives,
+                out GlobSpecification[]? negatedAlternatives,
                 out error))
             {
                 trailingDotStrategy.Dispose();
@@ -331,13 +309,14 @@ public sealed partial class GlobSpecification
                 return false;
             }
 
-            if (msbuildTrailingDotNegatedAlternatives is null
+            GlobSpecification[]? positiveAlternatives = null;
+            if (negatedAlternatives is null
                 && !TryCompileMSBuildTrailingDotPositiveAlternatives(
                     msbuildTrailingDotFileNamePattern,
                     pathPrefix,
                     options,
                     separator,
-                    out msbuildTrailingDotPositiveAlternatives,
+                    out positiveAlternatives,
                     out error))
             {
                 trailingDotStrategy.Dispose();
@@ -345,87 +324,94 @@ public sealed partial class GlobSpecification
                 return false;
             }
 
-            if (msbuildTrailingDotNegatedAlternatives is null
-                && msbuildTrailingDotPositiveAlternatives is null)
+            if (negatedAlternatives is not null)
             {
-                if (trailingDotStrategy is NeverMatchGlobStrategy)
+                trailingDotStrategy.Dispose();
+                msbuildTrailingDotState = new MSBuildTrailingDotAlternativesState(
+                    negatedAlternatives,
+                    negated: true);
+            }
+            else if (positiveAlternatives is not null)
+            {
+                trailingDotStrategy.Dispose();
+                msbuildTrailingDotState = new MSBuildTrailingDotAlternativesState(
+                    positiveAlternatives,
+                    negated: false);
+            }
+            else if (trailingDotStrategy is NeverMatchGlobStrategy)
+            {
+                trailingDotStrategy.Dispose();
+                msbuildTrailingDotState = MSBuildTrailingDotNeverMatchState.Instance;
+            }
+            else if (trailingDotStrategy is not CompiledGlobStrategy compiledTrailingDotStrategy)
+            {
+                trailingDotStrategy.Dispose();
+                strategy.Dispose();
+                error = new GlobCompileError(
+                    GlobCompileErrorCode.FeatureNotEnabled,
+                    position: -1,
+                    message: "MSBuild trailing-dot extglob requires the compiled matching strategy.");
+
+                return false;
+            }
+            else
+            {
+                compiledTrailingDotStrategy.EnableMSBuildTrailingDotMatching();
+
+                string rawFileNamePattern = $"{fullTrailingDotPattern}.";
+                if (!Factory.TryCreate(
+                    rawFileNamePattern,
+                    GlobDialect.MSBuild,
+                    options,
+                    separator,
+                    maxPatternLength,
+                    out GlobStrategy? rawTrailingDotStrategy,
+                    out error,
+                    markEffectiveDoubleStarRuns: true))
                 {
-                    trailingDotStrategy.Dispose();
-                    msbuildTrailingDotNeverMatches = true;
+                    compiledTrailingDotStrategy.Dispose();
+                    strategy.Dispose();
+                    if (error.Position >= 0)
+                    {
+                        error = new GlobCompileError(
+                            error.Code,
+                            error.Position,
+                            error.Message);
+                    }
+
+                    return false;
                 }
-                else if (trailingDotStrategy is not CompiledGlobStrategy compiledTrailingDotStrategy)
+
+                if (rawTrailingDotStrategy is not CompiledGlobStrategy compiledRawTrailingDotStrategy)
                 {
-                    trailingDotStrategy.Dispose();
+                    rawTrailingDotStrategy.Dispose();
+                    compiledTrailingDotStrategy.Dispose();
                     strategy.Dispose();
                     error = new GlobCompileError(
                         GlobCompileErrorCode.FeatureNotEnabled,
                         position: -1,
-                        message: "MSBuild trailing-dot extglob requires the compiled matching strategy.");
+                        message: "MSBuild raw trailing-dot extglob requires the compiled matching strategy.");
 
                     return false;
                 }
-                else
-                {
-                    compiledTrailingDotStrategy.EnableMSBuildTrailingDotMatching();
-                    msbuildTrailingDotExtGlobStrategy = compiledTrailingDotStrategy;
 
-                    string rawFileNamePattern = $"{fullTrailingDotPattern}.";
-                    if (!Factory.TryCreate(
-                        rawFileNamePattern,
-                        GlobDialect.MSBuild,
-                        options,
-                        separator,
-                        maxPatternLength,
-                        out GlobStrategy? rawTrailingDotStrategy,
-                        out error,
-                        markEffectiveDoubleStarRuns: true))
-                    {
-                        msbuildTrailingDotExtGlobStrategy.Dispose();
-                        strategy.Dispose();
-                        if (error.Position >= 0)
-                        {
-                            error = new GlobCompileError(
-                                error.Code,
-                                error.Position,
-                                error.Message);
-                        }
-
-                        return false;
-                    }
-
-                    if (rawTrailingDotStrategy is not CompiledGlobStrategy compiledRawTrailingDotStrategy)
-                    {
-                        rawTrailingDotStrategy.Dispose();
-                        msbuildTrailingDotExtGlobStrategy.Dispose();
-                        strategy.Dispose();
-                        error = new GlobCompileError(
-                            GlobCompileErrorCode.FeatureNotEnabled,
-                            position: -1,
-                            message: "MSBuild raw trailing-dot extglob requires the compiled matching strategy.");
-
-                        return false;
-                    }
-
-                    compiledRawTrailingDotStrategy.RequireEffectiveDoubleStar();
-                    msbuildTrailingDotRawExtGlobStrategy = compiledRawTrailingDotStrategy;
-                }
+                compiledRawTrailingDotStrategy.RequireEffectiveDoubleStar();
+                msbuildTrailingDotState = new MSBuildTrailingDotExtGlobState(
+                    compiledTrailingDotStrategy,
+                    compiledRawTrailingDotStrategy);
             }
-            else
-            {
-                trailingDotStrategy.Dispose();
-            }
+        }
+
+        if (hasMSBuildTrailingDotFileNamePattern && msbuildTrailingDotState is null)
+        {
+            msbuildTrailingDotState = new MSBuildTrailingDotFileNameState(
+                msbuildTrailingDotFileNamePattern);
         }
 
         result = new GlobSpecification(
             strategy,
             pattern,
-            msbuildTrailingDotFileNamePattern,
-            hasMSBuildTrailingDotFileNamePattern,
-            msbuildTrailingDotExtGlobStrategy,
-            msbuildTrailingDotRawExtGlobStrategy,
-            msbuildTrailingDotNegatedAlternatives,
-            msbuildTrailingDotPositiveAlternatives,
-            msbuildTrailingDotNeverMatches);
+            msbuildTrailingDotState);
 
         return true;
     }
@@ -518,7 +504,7 @@ public sealed partial class GlobSpecification
         StringSegment pathPrefix,
         GlobOptions options,
         GlobPathSeparator separator,
-        out GlobSpecification[]? alternatives,
+        [NotNullWhen(returnValue: true)] out GlobSpecification[]? alternatives,
         out GlobCompileError error)
     {
         alternatives = null;
@@ -931,8 +917,7 @@ public sealed partial class GlobSpecification
     /// <returns>The reusable matcher definition.</returns>
     public IFileSystemMatcher CreateFileSystemMatcher()
     {
-        IFileSystemMatcher? matcher = Volatile.Read(ref _fileSystemMatcher);
-        if (matcher is not null)
+        if (Volatile.Read(ref _fileSystemMatcher) is { } matcher)
         {
             return matcher;
         }
@@ -977,97 +962,12 @@ public sealed partial class GlobSpecification
     /// <returns><see langword="true"/> if the split input matches; otherwise <see langword="false"/>.</returns>
     internal bool MatchCore(ReadOnlySpan<char> directoryPrefix, ReadOnlySpan<char> fileName)
     {
-        if (TryMatchMSBuildTrailingDotComposition(directoryPrefix, fileName, out bool composedMatch))
+        if (_msbuildTrailingDotState is { } trailingDotState)
         {
-            return composedMatch;
+            return trailingDotState.Match(_strategy, directoryPrefix, fileName);
         }
 
-        if (_msbuildTrailingDotExtGlobStrategy is not null || _msbuildTrailingDotNeverMatches)
-        {
-            return MatchesMSBuildTrailingDotPattern(directoryPrefix, fileName);
-        }
-
-        return MatchesMSBuildTrailingDotPattern(directoryPrefix, fileName)
-            && _strategy.MatchCore(directoryPrefix, fileName);
-    }
-
-    private bool TryMatchMSBuildTrailingDotComposition(
-        ReadOnlySpan<char> directoryPrefix,
-        ReadOnlySpan<char> fileName,
-        out bool result)
-    {
-        if (_msbuildTrailingDotNegatedAlternatives is not null)
-        {
-            if (!_strategy.MatchCore(directoryPrefix, fileName))
-            {
-                result = false;
-                return true;
-            }
-
-            foreach (GlobSpecification alternative in _msbuildTrailingDotNegatedAlternatives)
-            {
-                if (alternative.MatchCore(directoryPrefix, fileName))
-                {
-                    result = false;
-                    return true;
-                }
-            }
-
-            result = true;
-            return true;
-        }
-
-        if (_msbuildTrailingDotPositiveAlternatives is not null)
-        {
-            foreach (GlobSpecification alternative in _msbuildTrailingDotPositiveAlternatives)
-            {
-                if (alternative.MatchCore(directoryPrefix, fileName))
-                {
-                    result = true;
-                    return true;
-                }
-            }
-
-            result = false;
-            return true;
-        }
-
-        result = false;
-        return false;
-    }
-
-    private bool MatchesMSBuildTrailingDotPattern(
-        ReadOnlySpan<char> directoryPrefix,
-        ReadOnlySpan<char> fileName)
-    {
-        if (!_hasMSBuildTrailingDotFileNamePattern)
-        {
-            return true;
-        }
-
-        if (_msbuildTrailingDotNeverMatches)
-        {
-            return false;
-        }
-
-        if (_msbuildTrailingDotExtGlobStrategy is null)
-        {
-            return MSBuildTrailingDotFileNameMatcher.Matches(
-                fileName,
-                _msbuildTrailingDotFileNamePattern,
-                IgnoreCaseKind);
-        }
-
-        ReadOnlySpan<char> normalized = MSBuildTrailingDotFileNameMatcher.NormalizeExtGlobInput(
-            fileName,
-            out bool isAllDotInput);
-
-        bool trailingDotMatch = isAllDotInput
-            ? _msbuildTrailingDotExtGlobStrategy.MatchesMSBuildTrailingDotAllDotInput(directoryPrefix)
-            : _msbuildTrailingDotExtGlobStrategy.MatchCore(directoryPrefix, normalized);
-
-        return trailingDotMatch
-            || _msbuildTrailingDotRawExtGlobStrategy!.MatchCore(directoryPrefix, fileName);
+        return _strategy.MatchCore(directoryPrefix, fileName);
     }
 
     private static bool ContainsSeparatorRun(ReadOnlySpan<char> input, char separator)

@@ -58,7 +58,10 @@ public class ArrayListTests
     public void Add_NullItem_ThrowsArgumentNullException()
     {
         using ArrayList<string> list = new();
-        Action act = () => list.Add(null!);
+        // Intentionally pass null to exercise item validation.
+    #pragma warning disable CS8625
+        Action act = () => list.Add(null);
+    #pragma warning restore CS8625
         act.Should().Throw<ArgumentNullException>();
     }
 }

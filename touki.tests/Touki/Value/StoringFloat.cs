@@ -110,7 +110,7 @@ public class StoringFloat
         value.TryGetValue(out float result).Should().BeTrue();
         result.Should().Be(@float);
         value.TryGetValue(out float? nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@float);
+        nullableResult.Should().Be(@float);
 
 
         float? n = @float;
@@ -121,7 +121,7 @@ public class StoringFloat
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@float);
         value.TryGetValue(out nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@float);
+        nullableResult.Should().Be(@float);
     }
 
     [TestMethod]
@@ -139,14 +139,12 @@ public class StoringFloat
     public void OutAsObject(float @float)
     {
         Value value = @float;
-        object o = value.As<object>();
-        o.GetType().Should().Be(typeof(float));
-        ((float)o).Should().Be(@float);
+        object? o = value.As<object>();
+        o.Should().BeOfType<float>().Which.Should().Be(@float);
 
         float? n = @float;
         value = n;
         o = value.As<object>();
-        o.GetType().Should().Be(typeof(float));
-        ((float)o).Should().Be(@float);
+        o.Should().BeOfType<float>().Which.Should().Be(@float);
     }
 }

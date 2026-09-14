@@ -31,7 +31,10 @@ public class StringSegmentTests
     [TestMethod]
     public void Constructor_WithNullString_ReturnsEmpty()
     {
-        StringSegment segment = new(null!, 0, 0);
+        // Intentionally pass null to pin the constructor's empty-segment compatibility behavior.
+    #pragma warning disable CS8625
+        StringSegment segment = new(null, 0, 0);
+    #pragma warning restore CS8625
         segment.IsEmpty.Should().BeTrue();
     }
 
@@ -715,7 +718,10 @@ public class StringSegmentTests
     {
         string hello = "Hello";
         hello.StartsWith("", StringComparison.Ordinal).Should().BeTrue();
-        Action action = () => hello.StartsWith(null!, StringComparison.Ordinal);
+        // Intentionally pass null to exercise value validation.
+    #pragma warning disable CS8625
+        Action action = () => hello.StartsWith(null, StringComparison.Ordinal);
+    #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
 
         "".StartsWith("", StringComparison.Ordinal).Should().BeTrue();
@@ -2074,7 +2080,10 @@ public class StringSegmentTests
     [TestMethod]
     public void GetHashCode_WithNull_ReturnsEmptyStringHashCode()
     {
-        StringSegment segment = new(null!);
+        // Intentionally pass null to pin the constructor's empty-segment compatibility behavior.
+    #pragma warning disable CS8625
+        StringSegment segment = new(null);
+    #pragma warning restore CS8625
         segment.GetHashCode().Should().Be(string.Empty.GetHashCode());
     }
 
@@ -2180,7 +2189,10 @@ public class StringSegmentTests
     [TestMethod]
     public void ImplicitConversion_ToReadOnlyMemory_WithNullValue_ReturnsEmptyMemory()
     {
-        StringSegment segment = new(null!);
+        // Intentionally pass null to pin the constructor's empty-segment compatibility behavior.
+    #pragma warning disable CS8625
+        StringSegment segment = new(null);
+    #pragma warning restore CS8625
         ReadOnlyMemory<char> memory = segment;
 
         memory.IsEmpty.Should().BeTrue();
@@ -2256,7 +2268,10 @@ public class StringSegmentTests
     public void WriteTo_NullWriter_Throws()
     {
         StringSegment segment = new("Hello");
-        Action action = () => segment.WriteTo(null!);
+        // Intentionally pass null to exercise writer validation.
+    #pragma warning disable CS8625
+        Action action = () => segment.WriteTo(null);
+    #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
 

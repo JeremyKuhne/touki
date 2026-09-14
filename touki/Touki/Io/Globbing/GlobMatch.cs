@@ -295,7 +295,7 @@ internal sealed partial class GlobMatch : FileSystemMatcherSession
             return;
         }
 
-        string root = _rootDirectory!;
+        string root = _rootDirectory ?? throw new InvalidOperationException("A path-aware match requires a root directory.");
         _rootPrefixLength = root.Length + (Path.EndsInDirectorySeparator(root) ? 0 : 1);
         _rootPrefixComputed = true;
     }

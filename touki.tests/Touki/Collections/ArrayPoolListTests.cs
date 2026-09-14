@@ -247,7 +247,10 @@ public class ArrayPoolListTests
     public void CopyTo_WithNullArray_ThrowsArgumentNullException()
     {
         using ArrayPoolList<int> list = [1];
-        Action act = () => list.CopyTo(null!, 0);
+        // Intentionally pass null to exercise array validation.
+    #pragma warning disable CS8625
+        Action act = () => list.CopyTo(null, 0);
+    #pragma warning restore CS8625
         act.Should().Throw<ArgumentNullException>();
     }
 

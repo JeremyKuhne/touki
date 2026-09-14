@@ -28,12 +28,16 @@ internal struct XmlDocumentationInfo
 
     public readonly bool HasParameter(string name) => _parameterNames?.Contains(name) == true;
 
-    public readonly InheritdocReference GetInheritdoc(int index) => _inheritdocReferences![index];
+    public readonly InheritdocReference GetInheritdoc(int index)
+    {
+        List<InheritdocReference> references = _inheritdocReferences
+            ?? throw new InvalidOperationException("No inheritdoc references have been collected.");
+        return references[index];
+    }
 
     public void AddDeclaration(SyntaxNode declaration)
     {
-        TypeDeclarationSyntax? extensionBlock = declaration.FirstAncestorOrSelf<TypeDeclarationSyntax>();
-        if (extensionBlock is not null
+        if (declaration.FirstAncestorOrSelf<TypeDeclarationSyntax>() is { } extensionBlock
             && extensionBlock != declaration
             && extensionBlock.Identifier.IsKind(SyntaxKind.None))
         {

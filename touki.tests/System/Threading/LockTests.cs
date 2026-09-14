@@ -204,18 +204,18 @@ public class LockTests
         // duration, release the lock and allow the background threads to acquire the lock.
         {
             var backgroundTestDelegates = new List<Action>();
-            Barrier? readyBarrier = null;
+            using Barrier readyBarrier = new(participantCount: 1);
 
             backgroundTestDelegates.Add(() =>
             {
-                readyBarrier!.SignalAndWait();
+                readyBarrier.SignalAndWait();
                 lockObj.Enter();
                 lockObj.Exit();
             });
 
             backgroundTestDelegates.Add(() =>
             {
-                readyBarrier!.SignalAndWait();
+                readyBarrier.SignalAndWait();
                 using (lockObj.EnterScope())
                 {
                 }
@@ -223,20 +223,20 @@ public class LockTests
 
             backgroundTestDelegates.Add(() =>
             {
-                readyBarrier!.SignalAndWait();
+                readyBarrier.SignalAndWait();
                 lockObj.TryEnter(ThreadTestHelpers.UnexpectedTimeoutMilliseconds).Should().BeTrue();
                 lockObj.Exit();
             });
 
             backgroundTestDelegates.Add(() =>
             {
-                readyBarrier!.SignalAndWait();
+                readyBarrier.SignalAndWait();
                 lockObj.TryEnter(TimeSpan.FromMilliseconds(ThreadTestHelpers.UnexpectedTimeoutMilliseconds)).Should().BeTrue();
                 lockObj.Exit();
             });
 
             int testCount = backgroundTestDelegates.Count;
-            readyBarrier = new Barrier(testCount + 1); // plus main thread
+            readyBarrier.AddParticipants(testCount);
             var waitForThreadArray = new Action[testCount];
             for (int i = 0; i < backgroundTestDelegates.Count; ++i)
             {
@@ -261,22 +261,22 @@ public class LockTests
         // after a short duration
         {
             var backgroundTestDelegates = new List<Action>();
-            Barrier? readyBarrier = null;
+            using Barrier readyBarrier = new(participantCount: 1);
 
             backgroundTestDelegates.Add(() =>
             {
-                readyBarrier!.SignalAndWait();
+                readyBarrier.SignalAndWait();
                 lockObj.TryEnter(ThreadTestHelpers.ExpectedTimeoutMilliseconds).Should().BeFalse();
             });
 
             backgroundTestDelegates.Add(() =>
             {
-                readyBarrier!.SignalAndWait();
+                readyBarrier.SignalAndWait();
                 lockObj.TryEnter(TimeSpan.FromMilliseconds(ThreadTestHelpers.ExpectedTimeoutMilliseconds)).Should().BeFalse();
             });
 
             int testCount = backgroundTestDelegates.Count;
-            readyBarrier = new Barrier(testCount + 1); // plus main thread
+            readyBarrier.AddParticipants(testCount);
             var waitForThreadArray = new Action[testCount];
             for (int i = 0; i < backgroundTestDelegates.Count; ++i)
             {

@@ -84,14 +84,12 @@ public class StoringDecimal
     public void OutAsObject(decimal @decimal)
     {
         Value value = Value.Create(@decimal);
-        object o = value.As<object>();
-        o.GetType().Should().Be(typeof(decimal));
-        ((decimal)o).Should().Be(@decimal);
+        object? o = value.As<object>();
+        o.Should().BeOfType<decimal>().Which.Should().Be(@decimal);
 
         decimal? n = @decimal;
         value = n;
         o = value.As<object>();
-        o.GetType().Should().Be(typeof(decimal));
-        ((decimal)o).Should().Be(@decimal);
+        o.Should().BeOfType<decimal>().Which.Should().Be(@decimal);
     }
 }

@@ -52,7 +52,8 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("{");
+        diagnostic.Location.GetRequiredSourceTree().GetText()
+            .ToString(diagnostic.Location.SourceSpan).Should().Be("{");
     }
 
     [TestMethod]
@@ -64,7 +65,8 @@ public partial class AllmanFormattingAnalyzerTests
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Id.Should().Be(AllmanFormattingAnalyzer.DiagnosticId);
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("{");
+        diagnostic.Location.GetRequiredSourceTree().GetText()
+            .ToString(diagnostic.Location.SourceSpan).Should().Be("{");
     }
 
     [TestMethod]
@@ -171,7 +173,7 @@ public partial class AllmanFormattingAnalyzerTests
             parseOptions: new CSharpParseOptions(LanguageVersion.Preview)).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("{");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("{");
     }
 
     [TestMethod]
@@ -334,7 +336,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
     }
 
     [TestMethod]
@@ -472,7 +474,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
     }
 
     [TestMethod]
@@ -493,7 +495,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
     }
 
     [TestMethod]
@@ -528,7 +530,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
     }
 
     [TestMethod]
@@ -551,7 +553,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
     }
 
     [TestMethod]
@@ -572,7 +574,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
     }
 
     [TestMethod]
@@ -595,7 +597,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
     }
 
     [TestMethod]
@@ -623,7 +625,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
     }
 
     [TestMethod]
@@ -650,7 +652,7 @@ public partial class AllmanFormattingAnalyzerTests
             parseOptions: new CSharpParseOptions(LanguageVersion.Preview)).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
     }
 
     [TestMethod]
@@ -726,7 +728,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
     }
 
     [TestMethod]
@@ -752,7 +754,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be(";");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be(";");
     }
 
     [TestMethod]
@@ -874,7 +876,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
     }
 
     [TestMethod]
@@ -901,7 +903,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be(";");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be(";");
     }
 
     [TestMethod]
@@ -971,7 +973,8 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be(";");
+        diagnostic.Location.GetRequiredSourceTree().GetText()
+            .ToString(diagnostic.Location.SourceSpan).Should().Be(";");
     }
 
     [TestMethod]
@@ -1049,7 +1052,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be(";");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be(";");
     }
 
     [TestMethod]
@@ -1072,7 +1075,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be(";");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be(";");
     }
 
     [TestMethod]
@@ -1170,6 +1173,6 @@ public partial class AllmanFormattingAnalyzerTests
             expectedCompilerDiagnosticIds: ["CS1513"]).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("{");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("{");
     }
 }

@@ -165,7 +165,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Id.Should().Be(MemberXmlDocumentationAnalyzer.DiagnosticId);
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Run");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Run");
     }
 
     [TestMethod]
@@ -229,7 +229,12 @@ public partial class MemberXmlDocumentationAnalyzerTests
             .Single();
         ISymbol? target = compilation.GetSemanticModel(tree).GetSymbolInfo(cref.Cref).Symbol;
         target.Should().BeAssignableTo<IMethodSymbol>();
-        target!.IsImplicitlyDeclared.Should().BeTrue();
+        if (target is not IMethodSymbol method)
+        {
+            return;
+        }
+
+        method.IsImplicitlyDeclared.Should().BeTrue();
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, apiSurface: "public")
             .ConfigureAwait(false);
@@ -260,7 +265,12 @@ public partial class MemberXmlDocumentationAnalyzerTests
             .Single();
         ISymbol? target = compilation.GetSemanticModel(tree).GetSymbolInfo(cref.Cref).Symbol;
         target.Should().BeAssignableTo<IFunctionPointerTypeSymbol>();
-        target!.ContainingAssembly.Should().BeNull();
+        if (target is not IFunctionPointerTypeSymbol functionPointer)
+        {
+            return;
+        }
+
+        functionPointer.ContainingAssembly.Should().BeNull();
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
@@ -286,7 +296,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.GetMessage().Should().Contain("<inheritdoc> does not resolve to a top-level <summary>");
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("None");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("None");
     }
 
     [TestMethod]
@@ -922,7 +932,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Id.Should().Be(MemberXmlDocumentationAnalyzer.DiagnosticId);
         IsParameterDocumentationDiagnostic(diagnostic).Should().BeTrue();
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("value");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("value");
     }
 
     [TestMethod]
@@ -1020,7 +1030,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             apiSurface: "private").ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan)
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan)
             .Should().Be("PrivateMethod");
     }
 
@@ -1042,7 +1052,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             apiSurface: " PUBLIC, internal ").ConfigureAwait(false);
 
         diagnostics.Should().HaveCount(3);
-        diagnostics.Select(diagnostic => diagnostic.Location.SourceTree!.GetText()
+        diagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
             .ToString(diagnostic.Location.SourceSpan)).Should().BeEquivalentTo(
                 "PublicMethod",
                 "ProtectedMethod",
@@ -1146,7 +1156,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             apiSurface: "file").ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan)
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan)
             .Should().Be("PublicMethod");
     }
 
@@ -1194,7 +1204,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             requireReturns: false).ConfigureAwait(false);
 
         diagnostics.Should().HaveCount(5);
-        diagnostics.Select(diagnostic => diagnostic.Location.SourceTree!.GetText()
+        diagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
             .ToString(diagnostic.Location.SourceSpan)).Should().BeEquivalentTo(
                 "Field",
                 "Property",
@@ -1517,7 +1527,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             optionsByFile: optionsByFile).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Run");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Run");
     }
 
     [TestMethod]
@@ -1577,7 +1587,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         IsParameterDocumentationDiagnostic(diagnostic).Should().BeTrue();
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("right");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("right");
     }
 
     [TestMethod]
@@ -1683,8 +1693,9 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         IsParameterDocumentationDiagnostic(diagnostic).Should().BeTrue();
-        diagnostic.Location.SourceTree!.FilePath.Should().Be("Sample.cs");
-        diagnostic.Location.SourceTree.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("input");
+        SyntaxTree sourceTree = diagnostic.Location.GetRequiredSourceTree();
+        sourceTree.FilePath.Should().Be("Sample.cs");
+        sourceTree.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("input");
         diagnostic.GetMessage().Should().Contain("parameter 'input'");
     }
 
@@ -2127,7 +2138,8 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         IsParameterDocumentationDiagnostic(diagnostic).Should().BeTrue();
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("receiver");
+        diagnostic.Location.GetRequiredSourceTree().GetText()
+            .ToString(diagnostic.Location.SourceSpan).Should().Be("receiver");
         diagnostic.GetMessage().Should().Contain("Member 'extension(receiver)'");
     }
 

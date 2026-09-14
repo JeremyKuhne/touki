@@ -98,7 +98,7 @@ public class PreferValueStringBuilderAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("new StringBuilder(64)");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("new StringBuilder(64)");
     }
 
     [TestMethod]

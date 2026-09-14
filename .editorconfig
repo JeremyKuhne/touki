@@ -79,6 +79,10 @@ dotnet_diagnostic.TOUKI0028.severity = warning
 # literal set: boolean, null, and default.
 dotnet_diagnostic.TOUKI0029.severity = warning
 
+# TOUKI0005 ships disabled because banning the null-forgiving operator is a house style. Touki
+# resolves or explicitly suppresses nullable-contract gaps instead of hiding them with postfix !.
+dotnet_diagnostic.TOUKI0005.severity = warning
+
 # P/Invoke declarations keep the spelling of the native symbol they bind to, which is what makes
 # them greppable against the native header. Naming a rule two symbol groups gives the "either
 # attribute" match that a single required_attributes list cannot express.

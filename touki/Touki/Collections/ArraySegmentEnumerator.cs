@@ -19,6 +19,7 @@ public struct ArraySegmentEnumerator<T> : IEnumerator<T>
     private readonly int _offset;
     private readonly int _count;
     private int _index;
+    [AllowNull]
     private T _current;
 
     /// <summary>
@@ -32,7 +33,7 @@ public struct ArraySegmentEnumerator<T> : IEnumerator<T>
         _offset = segment.Offset;
         _count = segment.Count;
         _index = 0;
-        _current = default!;
+        _current = default;
     }
 
     /// <summary>
@@ -63,7 +64,7 @@ public struct ArraySegmentEnumerator<T> : IEnumerator<T>
         }
 
         _index = _count + 1;
-        _current = default!;
+        _current = default;
         return false;
     }
 
@@ -73,6 +74,6 @@ public struct ArraySegmentEnumerator<T> : IEnumerator<T>
     public void Reset()
     {
         _index = 0;
-        _current = default!;
+        _current = default;
     }
 }

@@ -21,13 +21,17 @@ public partial class GlobSpecificationTests
         error.IsError.Should().BeFalse();
         error.Message.Should().BeEmpty();
         specification.Should().NotBeNull();
-        specification!.IsMatch("source.cs").Should().BeTrue();
+        specification.IsMatch("source.cs").Should().BeTrue();
     }
 
     [TestMethod]
     public void Compile_NullPattern_Throws()
     {
-        Action action = () => GlobSpecification.Compile((string)null!, GlobDialect.Posix);
+        string? pattern = null;
+        // Intentionally pass null to exercise pattern validation.
+    #pragma warning disable CS8604
+        Action action = () => GlobSpecification.Compile(pattern, GlobDialect.Posix);
+    #pragma warning restore CS8604
 
         action.Should().Throw<ArgumentNullException>().WithParameterName("pattern");
     }
@@ -35,25 +39,35 @@ public partial class GlobSpecificationTests
     [TestMethod]
     public void TryCompile_NullPattern_ThrowsForEveryStringOverload()
     {
+        string? pattern = null;
+        // Intentionally pass null to exercise pattern validation.
+#pragma warning disable CS8604
         Action defaultOptions = () => GlobSpecification.TryCompile(
-            (string)null!,
+            pattern,
             GlobDialect.Posix,
             out _,
             out _);
+#pragma warning restore CS8604
+        // Intentionally pass null to exercise pattern validation.
+#pragma warning disable CS8604
         Action suppliedOptions = () => GlobSpecification.TryCompile(
-            (string)null!,
+            pattern,
             GlobDialect.Posix,
             GlobOptions.None,
             out _,
             out _);
+#pragma warning restore CS8604
+        // Intentionally pass null to exercise pattern validation.
+#pragma warning disable CS8604
         Action allArguments = () => GlobSpecification.TryCompile(
-            (string)null!,
+            pattern,
             GlobDialect.Posix,
             GlobOptions.None,
             GlobPathSeparator.DialectDefault,
             maxPatternLength: -1,
             out _,
             out _);
+#pragma warning restore CS8604
 
         defaultOptions.Should().Throw<ArgumentNullException>().WithParameterName("pattern");
         suppliedOptions.Should().Throw<ArgumentNullException>().WithParameterName("pattern");
@@ -107,7 +121,10 @@ public partial class GlobSpecificationTests
     [TestMethod]
     public void Constructor_NullMessage_Throws()
     {
-        Action action = () => new GlobCompileError(GlobCompileErrorCode.PatternTooLarge, null!);
+        // Intentionally pass null to exercise message validation.
+    #pragma warning disable CS8625
+        Action action = () => new GlobCompileError(GlobCompileErrorCode.PatternTooLarge, null);
+    #pragma warning restore CS8625
 
         action.Should().Throw<ArgumentNullException>().WithParameterName("message");
     }

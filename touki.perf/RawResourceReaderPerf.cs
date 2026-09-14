@@ -32,17 +32,29 @@ public class RawResourceReaderPerf
 {
     private const int ResourceCount = 200;
 
-    private byte[] _bytes = null!;
-    private string _path = null!;
-    private string _lookupKey = null!;
+    [AllowNull]
+    private byte[] _bytes;
+
+    [AllowNull]
+    private string _path;
+
+    [AllowNull]
+    private string _lookupKey;
+
     private readonly byte[] _scratch = new byte[256];
 
-    private ResourceReader _cachedOracle = null!;
-    private RawResourceReader _cachedRaw = null!;
+    [AllowNull]
+    private ResourceReader _cachedOracle;
+
+    [AllowNull]
+    private RawResourceReader _cachedRaw;
 
     private unsafe byte* _nativePointer;
     private int _nativeLength;
-    private NativeMemoryManager _nativeManager = null!;
+
+    [AllowNull]
+    private NativeMemoryManager _nativeManager;
+
     private ReadOnlyMemory<byte> _nativeMemory;
 
     [GlobalSetup]

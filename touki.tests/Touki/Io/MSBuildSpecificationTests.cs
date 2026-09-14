@@ -719,13 +719,17 @@ public class MSBuildSpecificationTests
             results[0].Specification.Should().BeNull();
 
             results[1].IsError.Should().BeFalse();
-            results[1].Specification!.Normalized.ToString().Should().Be("file.txt");
+            MSBuildSpecification firstSpecification = results[1].Specification
+                ?? throw new AssertFailedException("Expected the second segment to have a specification.");
+            firstSpecification.Normalized.ToString().Should().Be("file.txt");
 
             results[2].IsError.Should().BeTrue();
             results[2].Original.ToString().Should().Be("\t");
 
             results[3].IsError.Should().BeFalse();
-            results[3].Specification!.Normalized.ToString().Should().Be("*.cs");
+            MSBuildSpecification secondSpecification = results[3].Specification
+                ?? throw new AssertFailedException("Expected the fourth segment to have a specification.");
+            secondSpecification.Normalized.ToString().Should().Be("*.cs");
         }
         finally
         {
@@ -744,7 +748,7 @@ public class MSBuildSpecificationTests
         {
             results.Count.Should().Be(3);
             results.Should().OnlyContain(r => !r.IsError);
-            results.Select(r => r.Specification!.Normalized.ToString()).Should().Equal(
+            results.Select(r => r.Specification?.Normalized.ToString()).Should().Equal(
                 "file.txt",
                 "*.cs",
                 Sep("docs/**"));

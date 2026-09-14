@@ -106,7 +106,7 @@ public class StoringUInt
         value.TryGetValue(out uint result).Should().BeTrue();
         result.Should().Be(@uint);
         value.TryGetValue(out uint? nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@uint);
+        nullableResult.Should().Be(@uint);
 
 
         uint? n = @uint;
@@ -117,7 +117,7 @@ public class StoringUInt
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@uint);
         value.TryGetValue(out nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@uint);
+        nullableResult.Should().Be(@uint);
     }
 
     [TestMethod]
@@ -135,14 +135,12 @@ public class StoringUInt
     public void OutAsObject(uint @uint)
     {
         Value value = @uint;
-        object o = value.As<object>();
-        o.GetType().Should().Be(typeof(uint));
-        ((uint)o).Should().Be(@uint);
+        object? o = value.As<object>();
+        o.Should().BeOfType<uint>().Which.Should().Be(@uint);
 
         uint? n = @uint;
         value = n;
         o = value.As<object>();
-        o.GetType().Should().Be(typeof(uint));
-        ((uint)o).Should().Be(@uint);
+        o.Should().BeOfType<uint>().Which.Should().Be(@uint);
     }
 }

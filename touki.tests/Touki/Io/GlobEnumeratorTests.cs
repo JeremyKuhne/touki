@@ -314,9 +314,12 @@ public class GlobEnumeratorTests
     {
         using TempFolder folder = CreateFixture();
 
+        // Intentionally pass null to exercise include pattern validation.
+#pragma warning disable CS8625
         FluentActions.Invoking(() =>
-            GlobEnumerator.Create(null!, folder.TempPath))
+            GlobEnumerator.Create(null, folder.TempPath))
             .Should().Throw<ArgumentNullException>();
+#pragma warning restore CS8625
     }
 
     [TestMethod]
@@ -324,7 +327,10 @@ public class GlobEnumeratorTests
     {
         using TempFolder folder = CreateFixture();
 
-        GlobEnumerationOptions options = new() { ExcludePatterns = null! };
+        // Intentionally pass null to exercise exclude list validation.
+    #pragma warning disable CS8625
+        GlobEnumerationOptions options = new() { ExcludePatterns = null };
+    #pragma warning restore CS8625
 
         FluentActions.Invoking(() => GlobEnumerator.Create("**/*.cs", folder.TempPath, options))
             .Should().Throw<ArgumentException>();
@@ -334,7 +340,10 @@ public class GlobEnumeratorTests
     public void Create_NullExcludeElement_Throws()
     {
         using TempFolder folder = CreateFixture();
-        GlobEnumerationOptions options = new() { ExcludePatterns = [null!] };
+        // Intentionally include null to exercise exclude element validation.
+    #pragma warning disable CS8625
+        GlobEnumerationOptions options = new() { ExcludePatterns = [null] };
+    #pragma warning restore CS8625
 
         FluentActions.Invoking(() => GlobEnumerator.Create("**/*.cs", folder.TempPath, options))
             .Should().Throw<ArgumentException>();
@@ -343,8 +352,11 @@ public class GlobEnumeratorTests
     [TestMethod]
     public void Create_NullRootDirectory_Throws()
     {
-        FluentActions.Invoking(() => GlobEnumerator.Create("**/*.cs", rootDirectory: null!))
+        // Intentionally pass null to exercise root directory validation.
+    #pragma warning disable CS8625
+        FluentActions.Invoking(() => GlobEnumerator.Create("**/*.cs", rootDirectory: null))
             .Should().Throw<ArgumentNullException>();
+    #pragma warning restore CS8625
     }
 
     [TestMethod]

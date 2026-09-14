@@ -146,7 +146,10 @@ public partial class StreamExtensionsTests
     {
         using ChunkedReadStream stream = new([], maximumReadSize: 1);
 
-        Action action = () => stream.TryReadExactly(null!, offset: 0, count: 0);
+        // Intentionally pass null to exercise buffer validation.
+    #pragma warning disable CS8625
+        Action action = () => stream.TryReadExactly(null, offset: 0, count: 0);
+    #pragma warning restore CS8625
 
         action.Should().Throw<ArgumentNullException>().WithParameterName("buffer");
     }
@@ -154,10 +157,13 @@ public partial class StreamExtensionsTests
     [TestMethod]
     public void TryReadExactly_NullStream_ThrowsArgumentNullException()
     {
-        System.IO.Stream stream = null!;
+        System.IO.Stream? stream = null;
         byte[] buffer = [];
 
+        // Intentionally invoke the extension on null to exercise stream validation.
+#pragma warning disable CS8604
         Action action = () => stream.TryReadExactly(buffer, offset: 0, count: 0);
+#pragma warning restore CS8604
 
         action.Should().Throw<ArgumentNullException>().WithParameterName("stream");
     }

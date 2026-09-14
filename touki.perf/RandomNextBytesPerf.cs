@@ -12,8 +12,11 @@ namespace touki.perf;
 [SimpleJob(RuntimeMoniker.HostProcess, warmupCount: 1, iterationCount: 3, launchCount: 1)]
 public class RandomNextBytesPerf
 {
-    private Random _random = null!;
-    private byte[] _buffer = null!;
+    [AllowNull]
+    private Random _random;
+
+    [AllowNull]
+    private byte[] _buffer;
 
     [Params(16, 64, 256, 1024)]
     public int N;

@@ -62,13 +62,13 @@ public sealed partial class MoveTypeToFileCodeFixProvider
 
             foreach (Diagnostic diagnostic in diagnostics)
             {
-                if (diagnostic.Location.SourceTree is null)
+                if (diagnostic.Location.SourceTree is not { } sourceTree)
                 {
                     continue;
                 }
 
-                Document? document = context.Solution.GetDocument(diagnostic.Location.SourceTree);
-                if (document?.FilePath is null)
+                if (context.Solution.GetDocument(sourceTree) is not
+                    { FilePath: { } originalFilePath } document)
                 {
                     continue;
                 }
@@ -79,9 +79,8 @@ public sealed partial class MoveTypeToFileCodeFixProvider
                     continue;
                 }
 
-                MemberDeclarationSyntax? originalDeclaration =
-                    FindDeclaration(documentRoot, diagnostic.Location.SourceSpan.Start);
-                if (originalDeclaration is null
+                if (FindDeclaration(documentRoot, diagnostic.Location.SourceSpan.Start)
+                        is not { } originalDeclaration
                     || !await CanMoveAsync(
                         document,
                         documentRoot,
@@ -94,8 +93,7 @@ public sealed partial class MoveTypeToFileCodeFixProvider
                 CompilationUnitSyntax root = annotatedRoots.TryGetValue(document.Id, out CompilationUnitSyntax? annotatedRoot)
                     ? annotatedRoot
                     : documentRoot;
-                MemberDeclarationSyntax? declaration = FindDeclaration(root, diagnostic.Location.SourceSpan.Start);
-                if (declaration is null)
+                if (FindDeclaration(root, diagnostic.Location.SourceSpan.Start) is not { } declaration)
                 {
                     continue;
                 }
@@ -105,7 +103,7 @@ public sealed partial class MoveTypeToFileCodeFixProvider
                 annotatedRoots[document.Id] = root;
                 requests.Add(new(
                     document.Id,
-                    document.FilePath,
+                    originalFilePath,
                     annotation,
                     GetNestingDepth(originalDeclaration),
                     diagnostic.Location.SourceSpan.Start));
@@ -136,16 +134,14 @@ public sealed partial class MoveTypeToFileCodeFixProvider
             foreach (MoveRequest request in requests)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                Document? document = solution.GetDocument(request.DocumentId);
-                if (document is null
+                if (solution.GetDocument(request.DocumentId) is not { } document
                     || await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false)
                         is not CompilationUnitSyntax root)
                 {
                     continue;
                 }
 
-                MemberDeclarationSyntax? declaration = GetAnnotatedDeclaration(root, request.Annotation);
-                if (declaration is null
+                if (GetAnnotatedDeclaration(root, request.Annotation) is not { } declaration
                     || !await CanMoveAsync(
                         document,
                         root,

@@ -95,7 +95,9 @@ public abstract class ArrayBackedList<T> : ContiguousList<T> where T : notnull
         }
 
         // Clear the last element to avoid potential memory leaks
-        _items[_count] = default!;
+#pragma warning disable CS8601 // An unused generic array slot must be reset without changing the direct-store hot path.
+        _items[_count] = default;
+#pragma warning restore CS8601
     }
 
     /// <inheritdoc/>
@@ -243,7 +245,9 @@ public abstract class ArrayBackedList<T> : ContiguousList<T> where T : notnull
         }
 
         // Delegate other error checking to Array.Copy.
-        Array.Copy(_items, 0, array!, index, _count);
+#pragma warning disable CS8604 // Preserve Array.Copy's null validation and exception behavior.
+        Array.Copy(_items, 0, array, index, _count);
+#pragma warning restore CS8604
     }
 
     /// <summary>

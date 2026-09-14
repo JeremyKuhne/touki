@@ -67,8 +67,7 @@ public sealed partial class MoveTypeToFileCodeFixProvider : CodeFixProvider
 
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
-            MemberDeclarationSyntax? declaration = FindDeclaration(root, diagnostic.Location.SourceSpan.Start);
-            if (declaration is null
+            if (FindDeclaration(root, diagnostic.Location.SourceSpan.Start) is not { } declaration
                 || !await CanMoveAsync(
                     context.Document,
                     root,
@@ -142,8 +141,7 @@ public sealed partial class MoveTypeToFileCodeFixProvider : CodeFixProvider
             }
         }
 
-        SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-        if (semanticModel is null
+        if (await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false) is not { } semanticModel
             || ContainsFileLocalType(semanticModel.GetDeclaredSymbol(declaration, cancellationToken)))
         {
             return false;
@@ -285,8 +283,9 @@ public sealed partial class MoveTypeToFileCodeFixProvider : CodeFixProvider
     {
         AnalyzerConfigOptions options = document.Project.AnalyzerOptions.AnalyzerConfigOptionsProvider.GetOptions(syntaxTree);
         string separators = options.TryGetValue(DetailSeparatorsOption, out string? configuredSeparators)
+            && configuredSeparators is not null
             && !string.IsNullOrWhiteSpace(configuredSeparators)
-                ? configuredSeparators!.Trim()
+                ? configuredSeparators.Trim()
                 : DefaultDetailSeparators;
 
         foreach (char separator in separators)
@@ -306,7 +305,9 @@ public sealed partial class MoveTypeToFileCodeFixProvider : CodeFixProvider
         MemberDeclarationSyntax declaration,
         char detailSeparator)
     {
-        string extension = Path.GetExtension(document.FilePath!);
+        string currentFilePath = document.FilePath
+            ?? throw new InvalidOperationException("A movable document must have a file path.");
+        string extension = Path.GetExtension(currentFilePath);
         string typeName = GetIdentifier(declaration).ValueText;
         string simpleCandidate = typeName + extension;
         if (IsDestinationAvailable(solution, document, simpleCandidate))
@@ -322,7 +323,7 @@ public sealed partial class MoveTypeToFileCodeFixProvider : CodeFixProvider
             return qualifiedCandidate;
         }
 
-        string currentStem = Path.GetFileNameWithoutExtension(document.FilePath!);
+        string currentStem = Path.GetFileNameWithoutExtension(currentFilePath);
         string detailStem = DocumentFileUtilities.PathComparer.Equals(qualifiedStem, currentStem)
             ? qualifiedStem
             : $"{qualifiedStem}{detailSeparator}{currentStem}";
@@ -360,9 +361,12 @@ public sealed partial class MoveTypeToFileCodeFixProvider : CodeFixProvider
 
     private static bool IsDestinationAvailable(Solution solution, Document document, string fileName)
     {
-        string targetFilePath = DocumentFileUtilities.GetTargetFilePath(document, fileName)!;
+        string targetFilePath = DocumentFileUtilities.GetTargetFilePath(document, fileName)
+            ?? throw new InvalidOperationException("A movable document must have a target file path.");
+        string currentFilePath = document.FilePath
+            ?? throw new InvalidOperationException("A movable document must have a file path.");
         return !DocumentFileUtilities.HasDocumentWithFilePath(solution, targetFilePath)
-            && DocumentFileUtilities.IsFileSystemDestinationAvailable(document.FilePath!, targetFilePath);
+            && DocumentFileUtilities.IsFileSystemDestinationAvailable(currentFilePath, targetFilePath);
     }
 
     private static async Task<Solution> MoveAsync(
@@ -382,8 +386,7 @@ public sealed partial class MoveTypeToFileCodeFixProvider : CodeFixProvider
             await GetDeclarationsToMoveAsync(document, root, declaration, cancellationToken).ConfigureAwait(false);
         CompilationUnitSyntax destinationRoot = CreateDestinationRoot(root, declarations, generator);
         CompilationUnitSyntax sourceRoot = CreateSourceRoot(root, declarations, generator);
-        string? targetFilePath = DocumentFileUtilities.GetTargetFilePath(document, fileName);
-        if (targetFilePath is null)
+        if (DocumentFileUtilities.GetTargetFilePath(document, fileName) is not { } targetFilePath)
         {
             return document.Project.Solution;
         }
@@ -408,9 +411,8 @@ public sealed partial class MoveTypeToFileCodeFixProvider : CodeFixProvider
             return [declaration];
         }
 
-        SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-        ISymbol? symbol = semanticModel?.GetDeclaredSymbol(typeDeclaration, cancellationToken);
-        if (symbol is null)
+        if (await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false) is not { } semanticModel
+            || semanticModel.GetDeclaredSymbol(typeDeclaration, cancellationToken) is not { } symbol)
         {
             return [declaration];
         }
@@ -581,7 +583,8 @@ public sealed partial class MoveTypeToFileCodeFixProvider : CodeFixProvider
                     : updatedContainer;
             });
         List<SyntaxNode> declarationsToRemove = [.. updatedRoot.GetAnnotatedNodes(declarationAnnotation)];
-        updatedRoot = updatedRoot.RemoveNodes(declarationsToRemove, SyntaxRemoveOptions.KeepNoTrivia)!;
+        updatedRoot = updatedRoot.RemoveNodes(declarationsToRemove, SyntaxRemoveOptions.KeepNoTrivia)
+            ?? throw new InvalidOperationException("Removing moved declarations must preserve the compilation root.");
 
         while (true)
         {
@@ -600,7 +603,8 @@ public sealed partial class MoveTypeToFileCodeFixProvider : CodeFixProvider
                 return (CompilationUnitSyntax)updatedRoot;
             }
 
-            updatedRoot = updatedRoot.RemoveNode(emptyShell, SyntaxRemoveOptions.KeepExteriorTrivia)!;
+            updatedRoot = updatedRoot.RemoveNode(emptyShell, SyntaxRemoveOptions.KeepExteriorTrivia)
+                ?? throw new InvalidOperationException("Pruning an empty type must preserve the compilation root.");
         }
     }
 

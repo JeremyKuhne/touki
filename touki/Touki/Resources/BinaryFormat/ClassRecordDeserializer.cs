@@ -74,7 +74,8 @@ internal abstract class ClassRecordDeserializer : ObjectRecordDeserializer
         Type type = value.GetType();
         if (type.IsArray)
         {
-            type = type.GetElementType()!;
+            type = type.GetElementType()
+                ?? throw new SerializationException($"Array type '{type}' has no element type.");
         }
 
         if (!type.IsPrimitive && !type.IsEnum && type != typeof(string))

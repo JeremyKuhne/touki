@@ -107,7 +107,7 @@ public class StoringShort
         value.TryGetValue(out short result).Should().BeTrue();
         result.Should().Be(@short);
         value.TryGetValue(out short? nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@short);
+        nullableResult.Should().Be(@short);
 
 
         short? n = @short;
@@ -118,7 +118,7 @@ public class StoringShort
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@short);
         value.TryGetValue(out nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@short);
+        nullableResult.Should().Be(@short);
     }
 
     [TestMethod]
@@ -136,14 +136,12 @@ public class StoringShort
     public void OutAsObject(short @short)
     {
         Value value = @short;
-        object o = value.As<object>();
-        o.GetType().Should().Be(typeof(short));
-        ((short)o).Should().Be(@short);
+        object? o = value.As<object>();
+        o.Should().BeOfType<short>().Which.Should().Be(@short);
 
         short? n = @short;
         value = n;
         o = value.As<object>();
-        o.GetType().Should().Be(typeof(short));
-        ((short)o).Should().Be(@short);
+        o.Should().BeOfType<short>().Which.Should().Be(@short);
     }
 }

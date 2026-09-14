@@ -62,7 +62,7 @@ public class ValueUnionPerf
     public int IsPattern_Int() => _valueInt is int value ? value : -1;
 
     [BenchmarkCategory("MatchString"), Benchmark(Baseline = true)]
-    public string TryGetValue_String() => _valueString.TryGetValue(out string value) ? value : "";
+    public string TryGetValue_String() => _valueString.TryGetValue<string>(out string? value) ? value : "";
 
     [BenchmarkCategory("MatchString"), Benchmark]
     public string IsPattern_String() => _valueString is string value ? value : "";

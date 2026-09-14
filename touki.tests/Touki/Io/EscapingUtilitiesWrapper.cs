@@ -40,7 +40,8 @@ public static class EscapingUtilitiesWrapper
         ArgumentNullException.ThrowIfNull(escaped);
         try
         {
-            return (string)s_unescapeAllMethod.Invoke(null, [escaped, false])!;
+            return (string?)s_unescapeAllMethod.Invoke(null, [escaped, false])
+                ?? throw new InvalidOperationException("UnescapeAll returned null.");
         }
         catch (TargetInvocationException tie) when (tie.InnerException is not null)
         {

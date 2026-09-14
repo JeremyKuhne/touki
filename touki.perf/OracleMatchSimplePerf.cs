@@ -38,11 +38,20 @@ public class OracleMatchSimplePerf
     private const string GeneralInput = "axxxxbycdef";
     private const string MissInput = "zzzzzzzzzzzzzzzz";
 
-    private GlobSpecification _toukiLiteral = null!;
-    private GlobSpecification _toukiPrefix = null!;
-    private GlobSpecification _toukiSuffix = null!;
-    private GlobSpecification _toukiContains = null!;
-    private GlobSpecification _toukiGeneral = null!;
+    [AllowNull]
+    private GlobSpecification _toukiLiteral;
+
+    [AllowNull]
+    private GlobSpecification _toukiPrefix;
+
+    [AllowNull]
+    private GlobSpecification _toukiSuffix;
+
+    [AllowNull]
+    private GlobSpecification _toukiContains;
+
+    [AllowNull]
+    private GlobSpecification _toukiGeneral;
 
     [GlobalSetup]
     public void Setup()

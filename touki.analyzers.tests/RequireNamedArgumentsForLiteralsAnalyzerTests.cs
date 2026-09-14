@@ -357,7 +357,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
 
         diagnostics.Should().ContainSingle();
         Location location = diagnostics[0].Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("(bool)true");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("(bool)true");
     }
 
     [TestMethod]
@@ -631,7 +631,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
 
         diagnostics.Should().HaveCount(2);
         Dictionary<string, string> messagesByFile = diagnostics.ToDictionary(
-            diagnostic => diagnostic.Location.SourceTree!.FilePath,
+            diagnostic => diagnostic.Location.GetRequiredSourceTree().FilePath,
             diagnostic => diagnostic.GetMessage());
         messagesByFile["Boolean.cs"].Should().Contain("enabled:");
         messagesByFile["Integer.cs"].Should().Contain("count:");

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Platforms>x64;AnyCPU</Platforms>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Touki.Analyzers</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The bootstrap cannot analyze its own output. Keep source in the analyzer project and link it below. -->
+    <_BootstrapOwnedSource Include="**\*.cs" Exclude="$(DefaultItemExcludes)" />
+    <Compile Include="..\touki.analyzers\AvoidNullForgivingOperatorAnalyzer.cs"
+             Link="AvoidNullForgivingOperatorAnalyzer.cs" />
+    <Compile Include="..\touki.analyzers\HelpLinks.cs" Link="HelpLinks.cs" />
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <Target Name="_RejectBootstrapOwnedSource"
+          BeforeTargets="CoreCompile"
+          Condition="'@(_BootstrapOwnedSource)' != ''">
+    <Error Text="Bootstrap-owned C# source cannot be analyzed by this project: @(_BootstrapOwnedSource)" />
+  </Target>
+
+</Project>

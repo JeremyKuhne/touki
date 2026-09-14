@@ -154,7 +154,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         diagnostics.Should().HaveCount(7);
-        diagnostics.Select(diagnostic => diagnostic.Location.SourceTree!.GetText()
+        diagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
             .ToString(diagnostic.Location.SourceSpan)).Should().BeEquivalentTo(
                 "ClassSample",
                 "StructSample",
@@ -174,7 +174,7 @@ public class TypeXmlSummaryAnalyzerTests
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Id.Should().Be(TypeXmlSummaryAnalyzer.DiagnosticId);
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Sample");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Sample");
         diagnostic.GetMessage().Should().Be(
             "Type 'Sample' must declare one XML <summary> element or a valid <inheritdoc> element; found 0 summaries");
     }
@@ -204,7 +204,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Nested");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Nested");
     }
 
     [TestMethod]
@@ -327,7 +327,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "public").ConfigureAwait(false);
 
         diagnostics.Should().HaveCount(7);
-        diagnostics.Select(diagnostic => diagnostic.Location.SourceTree!.GetText()
+        diagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
             .ToString(diagnostic.Location.SourceSpan)).Should().BeEquivalentTo(
                 "ClassSample",
                 "StructSample",
@@ -423,7 +423,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Sample");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Sample");
     }
 
     [TestMethod]
@@ -530,7 +530,8 @@ public class TypeXmlSummaryAnalyzerTests
             additionalReferences: [projectReference]).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("LocalType");
+        diagnostic.Location.GetRequiredSourceTree().GetText()
+            .ToString(diagnostic.Location.SourceSpan).Should().Be("LocalType");
     }
 
     [TestMethod]
@@ -661,7 +662,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.FilePath.Should().Be("A.cs");
+        diagnostic.Location.GetRequiredSourceTree().FilePath.Should().Be("A.cs");
         diagnostic.GetMessage().Should().EndWith("found 0 summaries");
     }
 
@@ -677,7 +678,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.FilePath.Should().Be("A.cs");
+        diagnostic.Location.GetRequiredSourceTree().FilePath.Should().Be("A.cs");
         diagnostic.GetMessage().Should().EndWith("found 2 summaries");
     }
 
@@ -760,7 +761,7 @@ public class TypeXmlSummaryAnalyzerTests
             optionsByFile: optionsByFile).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Nested");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Nested");
     }
 
     [TestMethod]
@@ -817,7 +818,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.FilePath.Should().Be("Sample.cs");
+        diagnostic.Location.GetRequiredSourceTree().FilePath.Should().Be("Sample.cs");
         diagnostic.GetMessage().Should().EndWith("found 2 summaries");
     }
 
@@ -835,7 +836,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.FilePath.Should().Be("B.cs");
+        diagnostic.Location.GetRequiredSourceTree().FilePath.Should().Be("B.cs");
     }
 
     [TestMethod]
@@ -852,7 +853,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.FilePath.Should().Be("B.cs");
+        diagnostic.Location.GetRequiredSourceTree().FilePath.Should().Be("B.cs");
     }
 
     [TestMethod]
@@ -945,8 +946,9 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.FilePath.Should().Be("Outer.cs");
-        diagnostic.Location.SourceTree.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Nested");
+        SyntaxTree sourceTree = diagnostic.Location.GetRequiredSourceTree();
+        sourceTree.FilePath.Should().Be("Outer.cs");
+        sourceTree.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Nested");
     }
 
     [TestMethod]
@@ -976,7 +978,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "public").ConfigureAwait(false);
 
         diagnostics.Should().HaveCount(2);
-        diagnostics.Select(diagnostic => diagnostic.Location.SourceTree!.GetText()
+        diagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
             .ToString(diagnostic.Location.SourceSpan)).Should().BeEquivalentTo("PublicSample", "Nested");
     }
 
@@ -1015,21 +1017,21 @@ public class TypeXmlSummaryAnalyzerTests
             source,
             effectiveApiSurface: "private").ConfigureAwait(false);
 
-        publicDiagnostics.Select(diagnostic => diagnostic.Location.SourceTree!.GetText()
+        publicDiagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
             .ToString(diagnostic.Location.SourceSpan)).Should().BeEquivalentTo(
                 "ProtectedNested",
                 "ProtectedInternalNested",
                 "PublicNested");
         internalDiagnostics.Should().ContainSingle()
-            .Which.Location.SourceTree!.GetText().ToString(
+            .Which.Location.GetRequiredSourceTree().GetText().ToString(
                 internalDiagnostics[0].Location.SourceSpan).Should().Be("PrivateProtectedNested");
-        effectivePublicDiagnostics.Select(diagnostic => diagnostic.Location.SourceTree!.GetText()
+        effectivePublicDiagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
             .ToString(diagnostic.Location.SourceSpan)).Should().BeEquivalentTo(
                 "ProtectedNested",
                 "ProtectedInternalNested");
         effectiveInternalDiagnostics.Should().ContainSingle();
         effectivePrivateDiagnostics.Should().ContainSingle()
-            .Which.Location.SourceTree!.GetText().ToString(
+            .Which.Location.GetRequiredSourceTree().GetText().ToString(
                 effectivePrivateDiagnostics[0].Location.SourceSpan).Should().Be("PublicNested");
     }
 
@@ -1053,7 +1055,7 @@ public class TypeXmlSummaryAnalyzerTests
 
         internalDiagnostics.Should().BeEmpty();
         Location location = effectiveInternalDiagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Nested");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Nested");
     }
 
     [TestMethod]
@@ -1134,7 +1136,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "private").ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Nested");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Nested");
     }
 
     [TestMethod]
@@ -1148,7 +1150,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "file").ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("FileSample");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("FileSample");
     }
 
     [TestMethod]
@@ -1171,7 +1173,7 @@ public class TypeXmlSummaryAnalyzerTests
 
         fileDiagnostics.Should().BeEmpty();
         Location location = effectiveFileDiagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Nested");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Nested");
     }
 
     [TestMethod]
@@ -1203,7 +1205,7 @@ public class TypeXmlSummaryAnalyzerTests
             await AnalyzeAsync(source, " PUBLIC, file ").ConfigureAwait(false);
 
         diagnostics.Should().HaveCount(2);
-        diagnostics.Select(diagnostic => diagnostic.Location.SourceTree!.GetText()
+        diagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
             .ToString(diagnostic.Location.SourceSpan)).Should().BeEquivalentTo("PublicSample", "FileSample");
     }
 

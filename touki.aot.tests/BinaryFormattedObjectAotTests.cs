@@ -75,7 +75,7 @@ public class BinaryFormattedObjectAotTests
     {
         RegisteredTypeResolver resolver = new();
         resolver.Register<RegisteredPayload>();
-        TypeName typeName = TypeName.Parse(typeof(RegisteredPayload).AssemblyQualifiedName!);
+        TypeName typeName = TypeName.Parse(typeof(RegisteredPayload).AssemblyQualifiedName);
 
         Type type = resolver.BindToType(typeName);
 

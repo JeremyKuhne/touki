@@ -135,7 +135,7 @@ public sealed class DefensiveCopyAnalyzer : DiagnosticAnalyzer
         IOperation? instance,
         ISymbol member)
     {
-        if (instance is null || !CopyAnalysis.IsCopyableStruct(instance.Type))
+        if (instance?.Type is not { } receiverType || !CopyAnalysis.IsCopyableStruct(receiverType))
         {
             return;
         }
@@ -150,7 +150,6 @@ public sealed class DefensiveCopyAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        ITypeSymbol receiverType = instance.Type!;
         bool isNonCopyable = nonCopyable is not null && CopyAnalysis.IsNonCopyable(receiverType, nonCopyable);
         DiagnosticDescriptor rule = isNonCopyable ? s_nonCopyableDefensiveCopy : s_defensiveCopy;
 

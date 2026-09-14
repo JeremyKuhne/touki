@@ -16,11 +16,20 @@ namespace touki.perf;
 [SimpleJob(RuntimeMoniker.HostProcess, warmupCount: 1, iterationCount: 5, launchCount: 1)]
 public class StartsWithPerf
 {
-    private byte[] _bytes = null!;
-    private short[] _shorts = null!;
-    private int[] _ints = null!;
-    private long[] _longs = null!;
-    private string[] _strings = null!;
+    [AllowNull]
+    private byte[] _bytes;
+
+    [AllowNull]
+    private short[] _shorts;
+
+    [AllowNull]
+    private int[] _ints;
+
+    [AllowNull]
+    private long[] _longs;
+
+    [AllowNull]
+    private string[] _strings;
 
     [GlobalSetup]
     public void Setup()

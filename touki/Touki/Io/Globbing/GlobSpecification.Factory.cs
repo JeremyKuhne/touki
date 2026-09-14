@@ -1053,22 +1053,14 @@ public sealed partial class GlobSpecification
                 string? prefix = prefixSource.IsEmpty ? null : UnescapeToString(prefixSource, escape);
                 string? suffix = suffixSource.IsEmpty ? null : UnescapeToString(suffixSource, escape);
 
-                if (prefix is null && suffix is null)
+                result = (prefix, suffix) switch
                 {
-                    result = new AnyGlobStrategy(dialect, options);
-                }
-                else if (prefix is null)
-                {
-                    result = new SuffixGlobStrategy(suffix!, dialect, options);
-                }
-                else if (suffix is null)
-                {
-                    result = new PrefixGlobStrategy(prefix, dialect, options);
-                }
-                else
-                {
-                    result = new PrefixSuffixGlobStrategy(prefix, suffix, dialect, options);
-                }
+                    (null, null) => new AnyGlobStrategy(dialect, options),
+                    (null, { } suffixValue) => new SuffixGlobStrategy(suffixValue, dialect, options),
+                    ({ } prefixValue, null) => new PrefixGlobStrategy(prefixValue, dialect, options),
+                    ({ } prefixValue, { } suffixValue) =>
+                        new PrefixSuffixGlobStrategy(prefixValue, suffixValue, dialect, options)
+                };
 
                 return true;
             }

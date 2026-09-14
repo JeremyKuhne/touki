@@ -56,7 +56,8 @@ public sealed partial class RegisteredTypeResolver : ITypeResolver
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
     {
         Type type = typeof(T);
-        TypeName typeName = TypeName.Parse(type.AssemblyQualifiedName!);
+        string assemblyQualifiedName = type.AssemblyQualifiedName ?? ThrowMissingAssemblyQualifiedName(type);
+        TypeName typeName = TypeName.Parse(assemblyQualifiedName);
 
         if (_types.TryGetValue(typeName, out Type? registeredType) && registeredType != type)
         {
@@ -67,6 +68,10 @@ public sealed partial class RegisteredTypeResolver : ITypeResolver
         _types[typeName] = type;
         return this;
     }
+
+    [DoesNotReturn]
+    private static string ThrowMissingAssemblyQualifiedName(Type type) =>
+        throw new InvalidOperationException($"Type '{type}' has no assembly-qualified name.");
 
     /// <summary>
     ///  Resolves <paramref name="typeName"/> to a registered type.

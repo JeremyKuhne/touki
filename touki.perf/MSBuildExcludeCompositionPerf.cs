@@ -21,7 +21,9 @@ public class MSBuildExcludeCompositionPerf
     private const int ModuleCount = 64;
 
     private string _root = string.Empty;
-    private RecordedFileSystem _fileSystem = null!;
+
+    [AllowNull]
+    private RecordedFileSystem _fileSystem;
 
     [GlobalSetup]
     public void GlobalSetup()

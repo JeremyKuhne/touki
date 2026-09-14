@@ -122,7 +122,11 @@ public class SpanExtensionsSortTests
         Action act = static () =>
         {
             Span<int> span = [1, 2];
-            span.Sort((Comparison<int>)null!);
+            Comparison<int>? comparison = null;
+            // Intentionally pass null to exercise comparison validation.
+#pragma warning disable CS8604
+            span.Sort(comparison);
+#pragma warning restore CS8604
         };
         act.Should().Throw<ArgumentNullException>();
     }

@@ -106,7 +106,7 @@ public class StoringByte
         value.TryGetValue(out byte result).Should().BeTrue();
         result.Should().Be(@byte);
         value.TryGetValue(out byte? nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@byte);
+        nullableResult.Should().Be(@byte);
 
 
         byte? n = @byte;
@@ -117,7 +117,7 @@ public class StoringByte
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@byte);
         value.TryGetValue(out nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@byte);
+        nullableResult.Should().Be(@byte);
     }
 
     [TestMethod]
@@ -135,14 +135,12 @@ public class StoringByte
     public void OutAsObject(byte @byte)
     {
         Value value = @byte;
-        object o = value.As<object>();
-        o.GetType().Should().Be(typeof(byte));
-        ((byte)o).Should().Be(@byte);
+        object? o = value.As<object>();
+        o.Should().BeOfType<byte>().Which.Should().Be(@byte);
 
         byte? n = @byte;
         value = n;
         o = value.As<object>();
-        o.GetType().Should().Be(typeof(byte));
-        ((byte)o).Should().Be(@byte);
+        o.Should().BeOfType<byte>().Which.Should().Be(@byte);
     }
 }

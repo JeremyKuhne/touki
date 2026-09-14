@@ -295,7 +295,10 @@ public class EnumExtensionsTests
     public void TryParse_NonGeneric_NullEnumType_Throws()
     {
         // BCL contract: invalid enumType throws even from TryParse.
-        Action action = () => Enum.TryParse(null!, "Red".AsSpan(), out object? _);
+        // Intentionally pass null to exercise enum type validation.
+    #pragma warning disable CS8625
+        Action action = () => Enum.TryParse(null, "Red".AsSpan(), out object? _);
+    #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
 
@@ -309,7 +312,10 @@ public class EnumExtensionsTests
     [TestMethod]
     public void TryParse_NonGeneric_IgnoreCase_NullEnumType_Throws()
     {
-        Action action = () => Enum.TryParse(null!, "Red".AsSpan(), ignoreCase: true, out object? _);
+        // Intentionally pass null to exercise enum type validation.
+    #pragma warning disable CS8625
+        Action action = () => Enum.TryParse(null, "Red".AsSpan(), ignoreCase: true, out object? _);
+    #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
 
@@ -483,7 +489,10 @@ public class EnumExtensionsTests
     [TestMethod]
     public void TryParse_NonGeneric_NullType_Throws()
     {
-        Action action = () => Enum.TryParse(null!, "Read".AsSpan(), out _);
+        // Intentionally pass null to exercise enum type validation.
+    #pragma warning disable CS8625
+        Action action = () => Enum.TryParse(null, "Read".AsSpan(), out _);
+    #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
 
@@ -518,7 +527,10 @@ public class EnumExtensionsTests
     [TestMethod]
     public void TryParse_NonGeneric_IgnoreCase_NullType_Throws()
     {
-        Action action = () => Enum.TryParse(null!, "Read".AsSpan(), ignoreCase: true, out _);
+        // Intentionally pass null to exercise enum type validation.
+    #pragma warning disable CS8625
+        Action action = () => Enum.TryParse(null, "Read".AsSpan(), ignoreCase: true, out _);
+    #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
 

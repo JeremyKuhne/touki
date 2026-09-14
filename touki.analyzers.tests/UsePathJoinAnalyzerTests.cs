@@ -64,7 +64,7 @@ public class UsePathJoinAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Combine");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Combine");
     }
 
     [TestMethod]

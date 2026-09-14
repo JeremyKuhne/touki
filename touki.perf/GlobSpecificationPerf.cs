@@ -49,21 +49,47 @@ public partial class GlobSpecificationPerf
     [Params(false, true)]
     public bool IgnoreCase { get; set; }
 
-    private GlobSpecification _literal = null!;
-    private GlobSpecification _prefix = null!;
-    private GlobSpecification _suffix = null!;
-    private GlobSpecification _contains = null!;
-    private GlobSpecification _prefixSuffix = null!;
-    private GlobSpecification _compiled = null!;
-    private GlobSpecification _compiledTail = null!;
-    private GlobSpecification _any = null!;
+    [AllowNull]
+    private GlobSpecification _literal;
 
-    private Regex _literalRegex = null!;
-    private Regex _suffixRegex = null!;
-    private Regex _compiledRegex = null!;
-    private Regex _literalRegexCompiled = null!;
-    private Regex _suffixRegexCompiled = null!;
-    private Regex _compiledRegexCompiled = null!;
+    [AllowNull]
+    private GlobSpecification _prefix;
+
+    [AllowNull]
+    private GlobSpecification _suffix;
+
+    [AllowNull]
+    private GlobSpecification _contains;
+
+    [AllowNull]
+    private GlobSpecification _prefixSuffix;
+
+    [AllowNull]
+    private GlobSpecification _compiled;
+
+    [AllowNull]
+    private GlobSpecification _compiledTail;
+
+    [AllowNull]
+    private GlobSpecification _any;
+
+    [AllowNull]
+    private Regex _literalRegex;
+
+    [AllowNull]
+    private Regex _suffixRegex;
+
+    [AllowNull]
+    private Regex _compiledRegex;
+
+    [AllowNull]
+    private Regex _literalRegexCompiled;
+
+    [AllowNull]
+    private Regex _suffixRegexCompiled;
+
+    [AllowNull]
+    private Regex _compiledRegexCompiled;
 
     [GlobalSetup]
     public void Setup()

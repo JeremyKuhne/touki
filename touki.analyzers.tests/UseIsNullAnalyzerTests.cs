@@ -90,7 +90,7 @@ public class UseIsNullAnalyzerTests
 
         diagnostics.Should().ContainSingle();
         Location location = diagnostics[0].Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("==");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("==");
     }
 
     [TestMethod]

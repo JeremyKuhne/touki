@@ -15,7 +15,7 @@ public class StoringObject
         value.Type.Should().Be(typeof(A));
         value.As<A>().Should().BeSameAs(a);
 
-        bool success = value.TryGetValue(out B result);
+        bool success = value.TryGetValue(out B? result);
         success.Should().BeFalse();
         result.Should().BeNull();
     }
@@ -29,7 +29,7 @@ public class StoringObject
         value.As<A>().Should().BeSameAs(b);
         value.As<B>().Should().BeSameAs(b);
 
-        bool success = value.TryGetValue(out C result);
+        bool success = value.TryGetValue(out C? result);
         success.Should().BeFalse();
         result.Should().BeNull();
 

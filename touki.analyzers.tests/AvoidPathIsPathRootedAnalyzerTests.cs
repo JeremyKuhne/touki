@@ -70,7 +70,8 @@ public class AvoidPathIsPathRootedAnalyzerTests
 
         diagnostics.Should().HaveCount(4);
         diagnostics.Should().OnlyContain(diagnostic =>
-            diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan) == "IsPathRooted");
+            diagnostic.Location.GetRequiredSourceTree().GetText()
+                .ToString(diagnostic.Location.SourceSpan) == "IsPathRooted");
     }
 
     [TestMethod]

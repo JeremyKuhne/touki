@@ -596,23 +596,25 @@ public class UsePathJoinCodeFixTests
         workspace.TryApplyChanges(secondProject.Solution).Should().BeTrue();
 
         string filePath = Path.Join(Path.GetTempPath(), "touki-linked", "Shared.cs");
-        firstProject = workspace.CurrentSolution.GetProject(firstProject.Id)!;
+        firstProject = workspace.CurrentSolution.GetRequiredProject(firstProject.Id);
         Document firstDocument = firstProject.AddDocument(
             "Shared.cs",
             SourceText.From(source),
             filePath: filePath);
         workspace.TryApplyChanges(firstDocument.Project.Solution).Should().BeTrue();
-        secondProject = workspace.CurrentSolution.GetProject(secondProject.Id)!;
+        secondProject = workspace.CurrentSolution.GetRequiredProject(secondProject.Id);
         Document secondDocument = secondProject.AddDocument(
             "Shared.cs",
             SourceText.From(source),
             filePath: filePath);
         workspace.TryApplyChanges(secondDocument.Project.Solution).Should().BeTrue();
-        firstDocument = workspace.CurrentSolution.GetDocument(firstDocument.Id)!;
-        secondDocument = workspace.CurrentSolution.GetDocument(secondDocument.Id)!;
+        firstDocument = workspace.CurrentSolution.GetRequiredDocument(firstDocument.Id);
+        secondDocument = workspace.CurrentSolution.GetRequiredDocument(secondDocument.Id);
 
-        Compilation firstCompilation = (await firstDocument.Project.GetCompilationAsync().ConfigureAwait(false))!;
-        Compilation secondCompilation = (await secondDocument.Project.GetCompilationAsync().ConfigureAwait(false))!;
+        Compilation firstCompilation =
+            await firstDocument.Project.GetRequiredCompilationAsync().ConfigureAwait(false);
+        Compilation secondCompilation =
+            await secondDocument.Project.GetRequiredCompilationAsync().ConfigureAwait(false);
         firstCompilation.GetDiagnostics().Should().NotContain(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
         secondCompilation.GetDiagnostics().Should().NotContain(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
         Diagnostic firstDiagnostic = (await firstCompilation

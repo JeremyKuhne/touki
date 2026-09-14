@@ -122,7 +122,12 @@ internal sealed partial class CompiledGlobStrategy
         ///  Returns <see langword="true"/> if <paramref name="key"/> has already
         ///  been recorded as a failed state.
         /// </summary>
-        public readonly bool IsKnownFailure(ReadOnlySpan<int> key) => _failures!.Contains(key);
+        public readonly bool IsKnownFailure(ReadOnlySpan<int> key)
+        {
+            SequenceSet<int>? failures = _failures;
+            Debugging.Assert(failures is not null);
+            return failures.Contains(key);
+        }
 
         /// <summary>
         ///  Records <paramref name="key"/> as a failed state so future
@@ -131,9 +136,11 @@ internal sealed partial class CompiledGlobStrategy
         /// </summary>
         public readonly void RecordFailure(ReadOnlySpan<int> key)
         {
-            if (_failures!.Count < MaxEntries)
+            SequenceSet<int>? failures = _failures;
+            Debugging.Assert(failures is not null);
+            if (failures.Count < MaxEntries)
             {
-                _failures.Add(key);
+                failures.Add(key);
             }
         }
 

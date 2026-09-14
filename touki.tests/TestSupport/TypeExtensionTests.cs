@@ -9,9 +9,6 @@
 
 namespace TestSupport;
 
-// Appears to be a flaw in the CS8620 analyzer with params ReadOnlySpan<>. Errors only show up in output.
-// To avoid PR and AI noise, we're using null-forgiving operator in the tests below to work around this.
-
 [TestClass]
 public class TypeExtensionTests
 {
@@ -27,7 +24,7 @@ public class TypeExtensionTests
     public void GetFullNestedType_GenericNestedWithParentGenerics_ReturnsConstructedNestedType()
     {
         Type parentType = typeof(OuterClass<int, string>);
-        Type nestedType = parentType.GetFullNestedType("GenericNested", typeof(double)!);
+        Type nestedType = parentType.GetFullNestedType("GenericNested", typeof(double));
         nestedType.Should().Be<OuterClass<int, string>.GenericNested<double>>();
     }
 
@@ -35,7 +32,7 @@ public class TypeExtensionTests
     public void GetFullNestedType_GenericNestedWithNonGenericParent_ReturnsConstructedNestedType()
     {
         Type parentType = typeof(OuterClass);
-        Type nestedType = parentType.GetFullNestedType("GenericNested", typeof(double)!);
+        Type nestedType = parentType.GetFullNestedType("GenericNested", typeof(double));
         nestedType.Should().Be<OuterClass.GenericNested<double>>();
     }
 
@@ -43,7 +40,7 @@ public class TypeExtensionTests
     public void GetFullNestedType_GenericNestedWithMultipleParameters_ReturnsConstructedNestedType()
     {
         Type parentType = typeof(OuterClass);
-        Type nestedType = parentType.GetFullNestedType("MultiGenericNested", typeof(int)!, typeof(string)!);
+        Type nestedType = parentType.GetFullNestedType("MultiGenericNested", typeof(int), typeof(string));
         nestedType.Should().Be<OuterClass.MultiGenericNested<int, string>>();
     }
 
@@ -95,7 +92,7 @@ public class TypeExtensionTests
     public void GetFullNestedType_GenericParentDefinition_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass<,>);
-        Action act = () => parentType.GetFullNestedType("GenericNested", typeof(double)!);
+        Action act = () => parentType.GetFullNestedType("GenericNested", typeof(double));
         act.Should().Throw<ArgumentException>()
             .WithMessage("The parent type cannot be a type definition.*")
             .WithParameterName("type");
@@ -105,7 +102,7 @@ public class TypeExtensionTests
     public void GetFullNestedType_WrongGenericParameterCount_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass<int, string>);
-        Action act = () => parentType.GetFullNestedType("GenericNested", typeof(double)!, typeof(float)!);
+        Action act = () => parentType.GetFullNestedType("GenericNested", typeof(double), typeof(float));
         act.Should().Throw<ArgumentException>()
             .WithMessage("Could not find GenericNested in OuterClass`2");
     }
@@ -123,7 +120,7 @@ public class TypeExtensionTests
     public void GetFullNestedType_TooFewGenericParametersForNonGenericParent_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass);
-        Action act = () => parentType.GetFullNestedType("MultiGenericNested", typeof(int)!);
+        Action act = () => parentType.GetFullNestedType("MultiGenericNested", typeof(int));
         act.Should().Throw<ArgumentException>();
     }
 
@@ -131,7 +128,7 @@ public class TypeExtensionTests
     public void GetFullNestedType_TooManyGenericParametersForNonGenericParent_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass);
-        Action act = () => parentType.GetFullNestedType("GenericNested", typeof(int)!, typeof(string)!, typeof(double)!);
+        Action act = () => parentType.GetFullNestedType("GenericNested", typeof(int), typeof(string), typeof(double));
         act.Should().Throw<ArgumentException>();
     }
 
@@ -165,7 +162,7 @@ public class TypeExtensionTests
     public void GetFullNestedType_ComplexGenericCombination_ReturnsConstructedNestedType()
     {
         Type parentType = typeof(OuterClass<List<int>, Dictionary<string, double>>);
-        Type nestedType = parentType.GetFullNestedType("GenericNested", typeof(HashSet<bool>)!);
+        Type nestedType = parentType.GetFullNestedType("GenericNested", typeof(HashSet<bool>));
         nestedType.Should().NotBeNull();
         nestedType.GenericTypeArguments.Should().HaveCount(3);
         nestedType.GenericTypeArguments[0].Should().Be<List<int>>();
@@ -177,7 +174,7 @@ public class TypeExtensionTests
     public void GetFullNestedType_NestedGenericDefinitionRequiresParameter_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClass);
-        Type nestedType = parentType.GetFullNestedType("GenericNested", typeof(int)!);
+        Type nestedType = parentType.GetFullNestedType("GenericNested", typeof(int));
         Action act = () => nestedType.GetFullNestedType("DeeplyNested");
         act.Should().Throw<ArgumentException>()
             .WithMessage("Could not find DeeplyNested in GenericNested`1");
@@ -187,7 +184,7 @@ public class TypeExtensionTests
     public void GetFullNestedType_ParameterCountMismatchWithParentGenerics_ThrowsArgumentException()
     {
         Type parentType = typeof(OuterClassWithInheritedGenerics<int, string>);
-        Action act = () => parentType.GetFullNestedType("GenericNested", typeof(double)!);
+        Action act = () => parentType.GetFullNestedType("GenericNested", typeof(double));
         act.Should().Throw<ArgumentException>()
             .WithMessage("Could not find GenericNested in OuterClassWithInheritedGenerics`2");
     }

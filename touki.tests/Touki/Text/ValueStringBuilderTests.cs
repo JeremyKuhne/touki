@@ -958,7 +958,9 @@ public unsafe class ValueStringBuilderTests
         string formatString = $"Value: {{{argIndex}}}";
 
         builder.AppendFormat(formatString.AsSpan(), args.AsSpan());
-        builder.ToString().Should().Be("Value: " + args[argIndex].As<object>().ToString());
+        object argument = args[argIndex].As<object>()
+            ?? throw new InvalidOperationException("Expected a non-null format argument.");
+        builder.ToString().Should().Be("Value: " + argument.ToString());
     }
 
     [TestMethod]
@@ -2481,12 +2483,16 @@ public unsafe class ValueStringBuilderTests
     {
         ValueStringBuilder builder = new(stackalloc char[8]);
         builder.Append("x");
+        System.IO.TextWriter? writer = null;
         bool threw = false;
         try
         {
             try
             {
-                builder.CopyTo((System.IO.TextWriter)null!);
+                // Intentionally pass null to exercise writer validation.
+#pragma warning disable CS8604
+                builder.CopyTo(writer);
+#pragma warning restore CS8604
             }
             catch (ArgumentNullException)
             {

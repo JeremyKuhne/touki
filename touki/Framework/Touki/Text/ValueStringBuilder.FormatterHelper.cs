@@ -13,30 +13,34 @@ public ref partial struct ValueStringBuilder
     /// </summary>
     private static class FormatterHelper<T>
     {
-        private static TryFormatDelegate<T>? s_tryFormatWithoutBoxing;
+        private static readonly TryFormatDelegate<T> s_tryFormatWithoutBoxing;
+
+        static FormatterHelper()
+        {
+            if (!typeof(ISpanFormattable).IsAssignableFrom(typeof(T)))
+            {
+                throw new InvalidOperationException();
+            }
+
+            Debug.Assert(typeof(T).IsValueType);
+
+            if (typeof(FormatterHelper<T>).GetMethod(
+                nameof(TryFormat),
+                BindingFlags.NonPublic | BindingFlags.Static) is not { } method)
+            {
+                throw new InvalidOperationException();
+            }
+
+            method = method.MakeGenericMethod(typeof(T));
+            s_tryFormatWithoutBoxing = (TryFormatDelegate<T>)Delegate.CreateDelegate(
+                typeof(TryFormatDelegate<T>),
+                method);
+        }
 
         /// <summary>
         ///  Delegate that can be used to format a value of type <typeparamref name="T"/> without boxing.
         /// </summary>
-        internal static TryFormatDelegate<T>? TryFormatWithoutBoxing => s_tryFormatWithoutBoxing ??= Init();
-
-        private static TryFormatDelegate<T>? Init()
-        {
-            // Dynamically check if T implements ISpanFormattable (e.g., via reflection or a known flag).
-            if (!typeof(ISpanFormattable).IsAssignableFrom(typeof(T)))
-            {
-                return null;
-            }
-
-            // Shouldn't be using this for reference types.
-            Debug.Assert(typeof(T).IsValueType);
-
-            MethodInfo method = typeof(FormatterHelper<T>).GetMethod(
-                nameof(TryFormat),
-                BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(typeof(T));
-
-            return (TryFormatDelegate<T>)Delegate.CreateDelegate(typeof(TryFormatDelegate<T>), method);
-        }
+        internal static TryFormatDelegate<T> TryFormatWithoutBoxing => s_tryFormatWithoutBoxing;
 
         private static bool TryFormat<TFormat>(
             in TFormat value,

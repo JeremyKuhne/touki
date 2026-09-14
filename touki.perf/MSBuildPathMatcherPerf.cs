@@ -17,8 +17,12 @@ namespace touki.perf;
 [SimpleJob(RuntimeMoniker.HostProcess, warmupCount: 1, iterationCount: 5, launchCount: 1)]
 public class MSBuildPathMatcherPerf
 {
-    private MatchMSBuild _directMatcher = null!;
-    private MatchMSBuild _repeatedMatcher = null!;
+    [AllowNull]
+    private MatchMSBuild _directMatcher;
+
+    [AllowNull]
+    private MatchMSBuild _repeatedMatcher;
+
     private string _directDirectory = string.Empty;
     private string _repeatedDirectory = string.Empty;
 

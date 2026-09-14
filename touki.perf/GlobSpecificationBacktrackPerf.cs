@@ -74,9 +74,14 @@ public class GlobSpecificationBacktrackPerf
     private const string CombinedHitInput = "x/y/z/aaaa-bbbb-cccc-final-axbxc.cs";
     private const string CombinedMissInput = "x/y/z/aaaa-bbbb-cccc-final-axbxd.cs";
 
-    private GlobSpecification _anyRun = null!;
-    private GlobSpecification _globStar = null!;
-    private GlobSpecification _combined = null!;
+    [AllowNull]
+    private GlobSpecification _anyRun;
+
+    [AllowNull]
+    private GlobSpecification _globStar;
+
+    [AllowNull]
+    private GlobSpecification _combined;
 
     [GlobalSetup]
     public void Setup()

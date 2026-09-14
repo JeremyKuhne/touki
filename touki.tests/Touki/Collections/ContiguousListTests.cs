@@ -111,7 +111,7 @@ public class ContiguousListTests
             {
                 Array.Copy(_array, index + 1, _array, index, _count - index);
             }
-            _array[_count] = default!;
+            Array.Clear(_array, _count, 1);
         }
 
         protected override void Dispose(bool disposing)
@@ -224,18 +224,18 @@ public class ContiguousListTests
 
         property.Should().NotBeNull();
 
-        PropertyInfo propertyInfo = property!;
+    PropertyInfo propertyInfo = property;
 
         // Check for EditorBrowsable attribute - use conditional compilation for compatibility
 #if NET5_0_OR_GREATER
         EditorBrowsableAttribute? editorBrowsable = propertyInfo.GetCustomAttribute<EditorBrowsableAttribute>();
         editorBrowsable.Should().NotBeNull();
-        editorBrowsable!.State.Should().Be(EditorBrowsableState.Never);
+        editorBrowsable.State.Should().Be(EditorBrowsableState.Never);
 
         // Check for Browsable attribute
         BrowsableAttribute? browsable = propertyInfo.GetCustomAttribute<BrowsableAttribute>();
         browsable.Should().NotBeNull();
-        browsable!.Browsable.Should().BeFalse();
+        browsable.Browsable.Should().BeFalse();
 #else
         // For .NET Framework, check attributes using standard reflection
         object[] editorBrowsableAttrs = propertyInfo.GetCustomAttributes(typeof(EditorBrowsableAttribute), false);

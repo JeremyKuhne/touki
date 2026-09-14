@@ -169,7 +169,7 @@ public class TextWriterExtensionsTests
     [TestMethod]
     public void WriteFormatted_NullWriter_ThrowsAndDisposesBuilder()
     {
-        System.IO.TextWriter writer = null!;
+        System.IO.TextWriter? writer = null;
         ValueStringBuilder builder = new(initialCapacity: 32);
         ArgumentNullException? exception = null;
         try
@@ -178,7 +178,10 @@ public class TextWriterExtensionsTests
 
             try
             {
+                // Intentionally invoke the extension on null to exercise writer validation.
+#pragma warning disable CS8604
                 writer.WriteFormatted(ref builder);
+#pragma warning restore CS8604
             }
             catch (ArgumentNullException caught)
             {
@@ -186,7 +189,7 @@ public class TextWriterExtensionsTests
             }
 
             exception.Should().NotBeNull();
-            exception!.ParamName.Should().Be("writer");
+            exception.ParamName.Should().Be("writer");
             builder.Capacity.Should().Be(0);
         }
         finally
@@ -413,12 +416,15 @@ public class TextWriterExtensionsTests
     [TestMethod]
     public void WriteFormatted_StringOverloadWithNullWriter_ThrowsArgumentNullException()
     {
-        System.IO.TextWriter writer = null!;
+        System.IO.TextWriter? writer = null;
         ArgumentNullException? exception = null;
 
         try
         {
+            // Intentionally invoke the extension on null to exercise writer validation.
+#pragma warning disable CS8604
             writer.WriteFormatted("Hello");
+#pragma warning restore CS8604
         }
         catch (ArgumentNullException caught)
         {
@@ -426,7 +432,7 @@ public class TextWriterExtensionsTests
         }
 
         exception.Should().NotBeNull();
-        exception!.ParamName.Should().Be("writer");
+        exception.ParamName.Should().Be("writer");
     }
 #endif
 

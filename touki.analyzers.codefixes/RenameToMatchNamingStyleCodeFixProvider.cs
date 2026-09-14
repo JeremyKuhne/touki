@@ -47,11 +47,13 @@ public sealed class RenameToMatchNamingStyleCodeFixProvider : CodeFixProvider
     /// <inheritdoc/>
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
-        SemanticModel? semanticModel =
-            await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-        SyntaxNode? root =
-            await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-        if (semanticModel is null || root is null)
+        if (await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false)
+            is not { } semanticModel)
+        {
+            return;
+        }
+
+        if (await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false) is not { } root)
         {
             return;
         }
@@ -59,15 +61,14 @@ public sealed class RenameToMatchNamingStyleCodeFixProvider : CodeFixProvider
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
             if (!diagnostic.Properties.TryGetValue(SuggestedNameProperty, out string? suggestedName)
-                || string.IsNullOrEmpty(suggestedName))
+                || suggestedName is not { Length: > 0 })
             {
                 continue;
             }
 
             SyntaxNode node = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
-            ISymbol? symbol = semanticModel.GetDeclaredSymbol(node, context.CancellationToken);
-
-            if (symbol is null || symbol.Name == suggestedName)
+            if (semanticModel.GetDeclaredSymbol(node, context.CancellationToken) is not { } symbol
+                || symbol.Name == suggestedName)
             {
                 continue;
             }
@@ -80,7 +81,7 @@ public sealed class RenameToMatchNamingStyleCodeFixProvider : CodeFixProvider
                     cancellationToken => RenameAsync(
                         context.Document,
                         symbol,
-                        suggestedName!,
+                        suggestedName,
                         cancellationToken),
                     equivalenceKey: $"{nameof(RenameToMatchNamingStyleCodeFixProvider)}:{suggestedName}"),
                 diagnostic);
