@@ -4,9 +4,10 @@
 
 .DESCRIPTION
     Checks the packed analyzer assets and Touki dependency metadata, verifies
-    that the repository's project reference is build-only, restores a temporary
-    project from the packed KlutzyNinja.Touki package only, and then builds
-    source that triggers TOUKI0001.
+    that the repository's project reference is build-only, proves that central
+    bootstrap wiring reports TOUKI0005 exactly once, restores a temporary project
+    from the packed KlutzyNinja.Touki package only, and then builds source that
+    triggers TOUKI0001.
 
 .PARAMETER PackageDirectory
     Directory containing matching KlutzyNinja.Touki and
@@ -238,6 +239,75 @@ if ($loadedToukiAnalyzers.Count -ne 1) {
     throw "Expected one build-only Touki analyzer reference, found $($loadedToukiAnalyzers.Count)."
 }
 
+$utf8WithoutBom = [System.Text.UTF8Encoding]::new($false)
+$bootstrapProbeName = "BootstrapAnalyzerProbe_$([Guid]::NewGuid().ToString('N'))"
+$bootstrapProbeDirectory = Join-Path $repositoryRoot ".$bootstrapProbeName"
+$bootstrapProbeProjectPath = Join-Path $bootstrapProbeDirectory "$bootstrapProbeName.csproj"
+$bootstrapProbeSourcePath = Join-Path $bootstrapProbeDirectory 'Probe.cs'
+$bootstrapProbeSarifPath = Join-Path $bootstrapProbeDirectory 'probe.sarif'
+New-Item -ItemType Directory -Path $bootstrapProbeDirectory | Out-Null
+
+try {
+    $bootstrapProbeProject = @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <ErrorLog>`$(MSBuildProjectDirectory)/probe.sarif</ErrorLog>
+  </PropertyGroup>
+</Project>
+"@
+    $bootstrapProbeSource = @'
+// Copyright (c) 2025 Jeremy W Kuhne
+// SPDX-License-Identifier: MIT
+// See LICENSE file in the project root for full license information
+
+#nullable enable
+
+internal static class BootstrapAnalyzerProbe
+{
+    internal static object Value => null!;
+}
+'@
+    [System.IO.File]::WriteAllText($bootstrapProbeProjectPath, $bootstrapProbeProject, $utf8WithoutBom)
+    [System.IO.File]::WriteAllText($bootstrapProbeSourcePath, $bootstrapProbeSource, $utf8WithoutBom)
+
+    $bootstrapProbeOutput = & dotnet build $bootstrapProbeProjectPath `
+        --configuration Release `
+        --nologo `
+        -p:Platform=AnyCPU `
+        -p:Platforms=AnyCPU 2>&1 | Out-String
+    $bootstrapProbeExitCode = $LASTEXITCODE
+    if ($bootstrapProbeExitCode -ne 0) {
+        Write-Host $bootstrapProbeOutput
+        throw "Bootstrap analyzer probe failed to build with exit code $bootstrapProbeExitCode."
+    }
+
+    $bootstrapProbeSarif = Get-Content $bootstrapProbeSarifPath -Raw | ConvertFrom-Json -Depth 100
+    $bootstrapDiagnostics = @(
+        $bootstrapProbeSarif.runs.results
+            | Where-Object ruleId -EQ 'TOUKI0005'
+    )
+    if ($bootstrapDiagnostics.Count -ne 1) {
+        Write-Host $bootstrapProbeOutput
+        throw "Expected one TOUKI0005 diagnostic from bootstrap wiring, found $($bootstrapDiagnostics.Count)."
+    }
+
+    Write-Host 'Central bootstrap wiring reported TOUKI0005 exactly once.'
+}
+finally {
+    Remove-Item $bootstrapProbeDirectory -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $repositoryRoot "artifacts/obj/$bootstrapProbeName") `
+        -Recurse `
+        -Force `
+        -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $repositoryRoot "artifacts/AnyCPU/Release/$bootstrapProbeName") `
+        -Recurse `
+        -Force `
+        -ErrorAction SilentlyContinue
+}
+
 $temporaryDirectory = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
 New-Item -ItemType Directory -Path $temporaryDirectory | Out-Null
 
@@ -247,7 +317,6 @@ try {
     New-Item -ItemType Directory -Path $projectReferenceDirectory | Out-Null
     New-Item -ItemType Directory -Path $packageReferenceDirectory | Out-Null
 
-    $utf8WithoutBom = [System.Text.UTF8Encoding]::new($false)
     $escapedToukiProjectPath = [System.Security.SecurityElement]::Escape($toukiProjectPath)
     $escapedPackageDirectoryPath = [System.Security.SecurityElement]::Escape($packageDirectoryPath)
 

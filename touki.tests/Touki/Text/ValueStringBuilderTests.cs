@@ -217,6 +217,16 @@ public unsafe class ValueStringBuilderTests
     }
 
     [TestMethod]
+    public void AppendFormatted_ISpanFormattableGrowingBuffer_GrowsToFit()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[1]);
+
+        builder.AppendFormatted(12345, format: "D10");
+
+        builder.ToString().Should().Be("0000012345");
+    }
+
+    [TestMethod]
     public void Insert_CharCount()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -2804,6 +2814,17 @@ public unsafe class ValueStringBuilderTests
     }
 
     [TestMethod]
+    public void AppendFormatted_IFormattableWithoutSpanFormatting_UsesIFormattable()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[16]);
+        FormattableOnly value = new("payload");
+
+        builder.AppendFormatted(value, format: "UPPER");
+
+        builder.ToString().Should().Be("UPPER:payload");
+    }
+
+    [TestMethod]
     public void AppendFormatted_NullStringValue_AppendsNothing()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -3112,6 +3133,15 @@ public unsafe class ValueStringBuilderTests
     {
         builder.Append(text);
         return result;
+    }
+
+    private sealed class FormattableOnly(string data) : IFormattable
+    {
+        public string ToString(string? format, IFormatProvider? formatProvider)
+        {
+            string prefix = format is null or "" ? "F" : format;
+            return $"{prefix}:{data}";
+        }
     }
 
     private sealed class UpperCaseFormatProvider : IFormatProvider, ICustomFormatter
