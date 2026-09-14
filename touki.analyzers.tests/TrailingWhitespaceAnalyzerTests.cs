@@ -15,7 +15,7 @@ public class TrailingWhitespaceAnalyzerTests
     private static string ReportedText(Diagnostic diagnostic)
     {
         Location location = diagnostic.Location;
-        return location.SourceTree!.GetText().ToString(location.SourceSpan);
+        return location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan);
     }
 
     [TestMethod]

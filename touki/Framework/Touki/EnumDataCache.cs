@@ -21,24 +21,31 @@ internal static partial class EnumDataCache
 {
     private static readonly ConcurrentDictionary<Type, EnumData> s_enumData = new();
 
-    private static readonly MethodInfo s_cachedNames = typeof(Enum).GetMethod(
-        "GetCachedValuesAndNames",
-        BindingFlags.NonPublic | BindingFlags.Static) ?? throw new InvalidOperationException();
-
-    private static readonly Type s_valuesAndNames = typeof(Enum).GetNestedType(
-        "ValuesAndNames",
-        BindingFlags.NonPublic)!;
-
-    private static readonly FieldInfo s_valuesField = s_valuesAndNames.GetField(
-        "Values",
-        BindingFlags.Public | BindingFlags.Instance)!;
-
-    private static readonly FieldInfo s_namesField = s_valuesAndNames.GetField(
-        "Names",
-        BindingFlags.Public | BindingFlags.Instance)!;
+    private static readonly MethodInfo s_cachedNames;
+    private static readonly FieldInfo s_valuesField;
+    private static readonly FieldInfo s_namesField;
 
     [ThreadStatic]
-    private static object[]? t_params;
+    private static object?[]? t_params;
+
+    static EnumDataCache()
+    {
+        s_cachedNames = typeof(Enum).GetMethod(
+            "GetCachedValuesAndNames",
+            BindingFlags.NonPublic | BindingFlags.Static) ?? throw new InvalidOperationException();
+
+        Type valuesAndNames = typeof(Enum).GetNestedType(
+            "ValuesAndNames",
+            BindingFlags.NonPublic) ?? throw new InvalidOperationException();
+
+        s_valuesField = valuesAndNames.GetField(
+            "Values",
+            BindingFlags.Public | BindingFlags.Instance) ?? throw new InvalidOperationException();
+
+        s_namesField = valuesAndNames.GetField(
+            "Names",
+            BindingFlags.Public | BindingFlags.Instance) ?? throw new InvalidOperationException();
+    }
 
     /// <summary>
     ///  Gets the values and names for the specified enum <paramref name="type"/>.
@@ -58,12 +65,12 @@ internal static partial class EnumDataCache
             throw new ArgumentException("Type must be an enum.", nameof(type));
         }
 
-        t_params ??= [null!, true];
-        object[] parameters = t_params;
+        t_params ??= [null, true];
+        object?[] parameters = t_params;
         parameters[0] = type;
-        object? valuesAndNames = s_cachedNames.Invoke(obj: null, parameters);
-        ulong[] values = (ulong[])s_valuesField.GetValue(valuesAndNames)!;
-        string[] names = (string[])s_namesField.GetValue(valuesAndNames)!;
+        object valuesAndNames = s_cachedNames.Invoke(obj: null, parameters) ?? throw new InvalidOperationException();
+        ulong[] values = s_valuesField.GetValue(valuesAndNames) as ulong[] ?? throw new InvalidOperationException();
+        string[] names = s_namesField.GetValue(valuesAndNames) as string[] ?? throw new InvalidOperationException();
         return (values, names);
     }
 

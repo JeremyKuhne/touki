@@ -26,7 +26,10 @@ public class ValueEnumeratorTests
             _index = -1;
         }
 
-        public readonly T Current => _index >= 0 && _index < _items.Length ? _items[_index] : default!;
+        // IEnumerator<T>.Current is undefined outside a successful MoveNext(), and this test enumerator returns default.
+    #pragma warning disable CS8603
+        public readonly T Current => _index >= 0 && _index < _items.Length ? _items[_index] : default;
+    #pragma warning restore CS8603
 
         readonly object? IEnumerator.Current => Current;
 

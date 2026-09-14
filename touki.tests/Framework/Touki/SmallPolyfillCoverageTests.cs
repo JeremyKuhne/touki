@@ -585,9 +585,8 @@ public class SmallPolyfillCoverageTests
     [TestMethod]
     public void AppendFormatted_NonISpanFormattableStruct_FallsBackToObjectFormat()
     {
-        // Exercises FormatterHelper<T>.Init's branch where T does not implement
-        // ISpanFormattable (the helper returns null and the builder falls back
-        // to boxed formatting).
+        // The caller skips FormatterHelper<T> when T does not implement
+        // ISpanFormattable and falls back to boxed formatting.
         ValueStringBuilder builder = new(stackalloc char[32]);
         try
         {

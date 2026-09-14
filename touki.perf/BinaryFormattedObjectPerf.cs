@@ -50,16 +50,25 @@ public class BinaryFormattedObjectPerf
     private const int GraphNodeCount = 128;
     private const int SerializableValueCount = 256;
 
-    private BinaryFormatter _binaryFormatter = null!;
-    private System.IO.MemoryStream _binaryFormatterStream = null!;
-    private System.IO.MemoryStream _binaryFormattedObjectStream = null!;
+    [AllowNull]
+    private BinaryFormatter _binaryFormatter;
+
+    [AllowNull]
+    private System.IO.MemoryStream _binaryFormatterStream;
+
+    [AllowNull]
+    private System.IO.MemoryStream _binaryFormattedObjectStream;
 #if BINARYFORMAT_UPSTREAM
-    private System.IO.MemoryStream _upstreamBinaryFormattedObjectStream = null!;
+    [AllowNull]
+    private System.IO.MemoryStream _upstreamBinaryFormattedObjectStream;
 #endif
 #if NET10_0
-    private BinaryFormattedObject[] _materializationBatch = null!;
+    [AllowNull]
+    private BinaryFormattedObject[] _materializationBatch;
 #endif
-    private RegisteredTypeResolver _resolver = null!;
+
+    [AllowNull]
+    private RegisteredTypeResolver _resolver;
 
     [Params(
         "Int32Array_1K",
@@ -68,7 +77,7 @@ public class BinaryFormattedObjectPerf
         "ObjectTree_127",
         "SharedCycle_128",
         "SerializableCallback")]
-    public string Scenario { get; set; } = null!;
+    public string? Scenario { get; set; }
 
     [GlobalSetup]
     public void Setup()
@@ -78,21 +87,18 @@ public class BinaryFormattedObjectPerf
 #endif
 #if BINARYFORMAT_UPSTREAM
         System.Reflection.Assembly upstreamAssembly = typeof(UpstreamBinaryFormattedObject).Assembly;
-        System.Reflection.AssemblyInformationalVersionAttribute? upstreamVersionAttribute =
-            System.Reflection.CustomAttributeExtensions.GetCustomAttribute<
-                System.Reflection.AssemblyInformationalVersionAttribute>(upstreamAssembly);
-        System.Reflection.AssemblyConfigurationAttribute? upstreamConfigurationAttribute =
-            System.Reflection.CustomAttributeExtensions.GetCustomAttribute<
-                System.Reflection.AssemblyConfigurationAttribute>(upstreamAssembly);
-        string? upstreamVersion = upstreamVersionAttribute?.InformationalVersion;
-        if (upstreamVersion is null
+        if (System.Reflection.CustomAttributeExtensions.GetCustomAttribute<
+                System.Reflection.AssemblyInformationalVersionAttribute>(upstreamAssembly)
+                is not { InformationalVersion: { } upstreamVersion }
             || !upstreamVersion.EndsWith($"+{BinaryFormatUpstreamCommit}", StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
                 $"The upstream BinaryFormat assembly must be built from commit '{BinaryFormatUpstreamCommit}'.");
         }
 
-        if (upstreamConfigurationAttribute?.Configuration != "Release")
+        if (System.Reflection.CustomAttributeExtensions.GetCustomAttribute<
+                System.Reflection.AssemblyConfigurationAttribute>(upstreamAssembly)
+                is not { Configuration: "Release" })
         {
             throw new InvalidOperationException("The upstream BinaryFormat assembly must be built in Release.");
         }
@@ -217,12 +223,12 @@ public class BinaryFormattedObjectPerf
     }
 
     [IterationCleanup(Target = nameof(BinaryFormattedObject_DeserializeRecords))]
-    public void CleanupMaterializationBatch() => _materializationBatch = null!;
+    public void CleanupMaterializationBatch() => _materializationBatch = null;
 
     [BenchmarkCategory("MaterializeOnly"), Benchmark(Baseline = true, OperationsPerInvoke = MaterializationBatchSize)]
-    public object BinaryFormattedObject_DeserializeRecords()
+    public object? BinaryFormattedObject_DeserializeRecords()
     {
-        object result = null!;
+        object? result = null;
         foreach (BinaryFormattedObject formattedObject in _materializationBatch)
         {
             result = formattedObject.Deserialize();
@@ -317,23 +323,18 @@ public class BinaryFormattedObjectPerf
     private static BinaryFormattedObjectTreeNode CreateObjectTree()
     {
         int nextValue = 0;
-        return CreateObjectTree(TreeDepth, ref nextValue)!;
+        return CreateObjectTree(TreeDepth, ref nextValue);
     }
 
-    private static BinaryFormattedObjectTreeNode? CreateObjectTree(int depth, ref int nextValue)
+    private static BinaryFormattedObjectTreeNode CreateObjectTree(int depth, ref int nextValue)
     {
-        if (depth == 0)
-        {
-            return null;
-        }
-
         int value = nextValue++;
         return new BinaryFormattedObjectTreeNode
         {
             Value = value,
             Name = $"node {value}",
-            Left = CreateObjectTree(depth - 1, ref nextValue),
-            Right = CreateObjectTree(depth - 1, ref nextValue)
+            Left = depth > 1 ? CreateObjectTree(depth - 1, ref nextValue) : null,
+            Right = depth > 1 ? CreateObjectTree(depth - 1, ref nextValue) : null
         };
     }
 
@@ -609,7 +610,7 @@ internal sealed class BinaryFormattedObjectTreeNode
 [Serializable]
 internal sealed class BinaryFormattedObjectGraph
 {
-    public BinaryFormattedObjectGraphNode Entry = null!;
+    public required BinaryFormattedObjectGraphNode Entry;
     public BinaryFormattedObjectGraphNode[] Nodes = [];
 }
 

@@ -24,4 +24,17 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+
+  <!--
+    Load the current null-forgiving analyzer in every first-party project. Touki already loads the full current
+    analyzer project through specialized build/package references. The bootstrap project links only TOUKI0005 so
+    analyzer producers can enforce the rule without referencing their own output or activating unrelated rules.
+  -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'touki'
+                        And '$(MSBuildProjectName)' != 'touki.analyzers.bootstrap'">
+    <ProjectReference Include="$(RepoDir)touki.analyzers.bootstrap\touki.analyzers.bootstrap.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
+  </ItemGroup>
 </Project>

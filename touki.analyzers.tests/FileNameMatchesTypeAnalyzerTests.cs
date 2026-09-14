@@ -92,7 +92,7 @@ public class FileNameMatchesTypeAnalyzerTests
             ]).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Single(
-            candidate => candidate.Location.SourceTree!.FilePath == "/src/FirstPart.cs");
+            candidate => candidate.Location.GetRequiredSourceTree().FilePath == "/src/FirstPart.cs");
         diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedFileNameProperty]
             .Should().Be("Foo.FirstPart.cs");
     }
@@ -112,7 +112,7 @@ public class FileNameMatchesTypeAnalyzerTests
             }).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Single(
-            candidate => candidate.Location.SourceTree!.FilePath == "/src/FirstPart.cs");
+            candidate => candidate.Location.GetRequiredSourceTree().FilePath == "/src/FirstPart.cs");
         diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedFileNameProperty]
             .Should().Be("Foo-FirstPart.cs");
         diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedDetailSeparatorProperty]
@@ -130,7 +130,7 @@ public class FileNameMatchesTypeAnalyzerTests
             ]).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Single(
-            candidate => candidate.Location.SourceTree!.FilePath == "/src/Unrelated.cs");
+            candidate => candidate.Location.GetRequiredSourceTree().FilePath == "/src/Unrelated.cs");
         diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedFileNameProperty]
             .Should().Be("Foo.Unrelated.cs");
     }
@@ -146,7 +146,7 @@ public class FileNameMatchesTypeAnalyzerTests
             ]).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Single(
-            candidate => candidate.Location.SourceTree!.FilePath == "/src/Unrelated.cs");
+            candidate => candidate.Location.GetRequiredSourceTree().FilePath == "/src/Unrelated.cs");
         string expected = FilePathIdentity.PathComparer.Equals("Foo.cs", "foo.cs")
             ? "Foo.Unrelated.cs"
             : "Foo.cs";

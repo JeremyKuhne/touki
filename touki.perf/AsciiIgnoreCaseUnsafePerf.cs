@@ -27,8 +27,11 @@ public class AsciiIgnoreCaseUnsafePerf
     [Params(5, 10, 20, 64)]
     public int Length { get; set; }
 
-    private string _a = null!;
-    private string _b = null!;
+    [AllowNull]
+    private string _a;
+
+    [AllowNull]
+    private string _b;
 
     [GlobalSetup]
     public void Setup()

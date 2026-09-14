@@ -86,14 +86,12 @@ public class StoringDateTime
     public void OutAsObject(DateTime dateTime)
     {
         Value value = dateTime;
-        object o = value.As<object>();
-        o.GetType().Should().Be(typeof(DateTime));
-        ((DateTime)o).Should().Be(dateTime);
+        object? o = value.As<object>();
+        o.Should().BeOfType<DateTime>().Which.Should().Be(dateTime);
 
         DateTime? n = dateTime;
         value = n;
         o = value.As<object>();
-        o.GetType().Should().Be(typeof(DateTime));
-        ((DateTime)o).Should().Be(dateTime);
+        o.Should().BeOfType<DateTime>().Which.Should().Be(dateTime);
     }
 }

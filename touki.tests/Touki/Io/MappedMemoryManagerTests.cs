@@ -27,7 +27,10 @@ public class MappedMemoryManagerTests
     [TestMethod]
     public void CreateFromFile_NullPath_ThrowsArgumentNullException()
     {
-        Action act = () => _ = MappedMemoryManager.CreateFromFile(null!);
+        // Intentionally pass null to exercise path validation.
+    #pragma warning disable CS8625
+        Action act = () => _ = MappedMemoryManager.CreateFromFile(null);
+    #pragma warning restore CS8625
         act.Should().Throw<ArgumentNullException>();
     }
 

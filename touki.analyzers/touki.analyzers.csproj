@@ -36,6 +36,10 @@
     <MinVerTagPrefix>analyzers-v</MinVerTagPrefix>
     <MinVerMinimumMajorMinor>0.9</MinVerMinimumMajorMinor>
 
+    <PolySharpIncludeGeneratedTypes>
+      System.Diagnostics.CodeAnalysis.NotNullWhenAttribute
+    </PolySharpIncludeGeneratedTypes>
+
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
@@ -52,6 +56,8 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
     <!-- Analyzers that validate analyzer authoring (the RS#### rules). -->
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+    <!-- Generates nullable-analysis attributes missing from netstandard2.0. -->
+    <PackageReference Include="PolySharp" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

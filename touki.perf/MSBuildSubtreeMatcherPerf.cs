@@ -16,7 +16,9 @@ namespace touki.perf;
 [SimpleJob(RuntimeMoniker.HostProcess, warmupCount: 1, iterationCount: 5, launchCount: 1)]
 public class MSBuildSubtreeMatcherPerf
 {
-    private IFileSystemMatcherSession _matcher = null!;
+    [AllowNull]
+    private IFileSystemMatcherSession _matcher;
+
     private string _root = string.Empty;
 
     [GlobalSetup]

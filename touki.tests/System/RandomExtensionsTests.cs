@@ -55,11 +55,14 @@ public class RandomExtensionsTests
     [TestMethod]
     public void NextBytes_NullRandom_Throws()
     {
-        Random r = null!;
+        Random? r = null;
         Action a = () =>
         {
             Span<byte> buffer = stackalloc byte[4];
+            // Intentionally invoke the extension on null to exercise receiver validation.
+#pragma warning disable CS8604
             r.NextBytes(buffer);
+#pragma warning restore CS8604
         };
 
         a.Should().Throw<ArgumentNullException>();

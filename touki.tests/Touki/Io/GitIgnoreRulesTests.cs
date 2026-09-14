@@ -10,7 +10,10 @@ namespace Touki.Io;
 [TestClass]
 public sealed class GitIgnoreRulesTests
 {
-    private static SequentialSeparatorGitOracleTests.RepoFixture s_fixture = null!;
+    private static SequentialSeparatorGitOracleTests.RepoFixture? s_fixture;
+
+    private static SequentialSeparatorGitOracleTests.RepoFixture Fixture => s_fixture
+        ?? throw new AssertFailedException("The repository fixture has not been initialized.");
 
     private static string Root => Path.Combine(Path.GetTempPath(), "gitignore-rules-root");
 
@@ -32,7 +35,10 @@ public sealed class GitIgnoreRulesTests
     [TestMethod]
     public void Parse_NullContent_Throws()
     {
-        Action action = () => GitIgnoreRules.Parse(null!);
+        // Intentionally pass null to exercise content validation.
+    #pragma warning disable CS8625
+        Action action = () => GitIgnoreRules.Parse(null);
+    #pragma warning restore CS8625
 
         action.Should().Throw<ArgumentNullException>();
     }
@@ -251,7 +257,7 @@ public sealed class GitIgnoreRulesTests
         string path)
     {
         GitIgnoreRules rules = GitIgnoreRules.Parse(string.Join("\n", patterns));
-        bool expected = s_fixture.IsIgnored(patterns, path);
+        bool expected = Fixture.IsIgnored(patterns, path);
 
         rules.IsIgnoredFile(path).Should().Be(
             expected,

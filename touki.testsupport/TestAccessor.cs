@@ -116,13 +116,16 @@ public class TestAccessor<T> : ITestAccessor
                 catch (AmbiguousMatchException)
                 {
                     // More than one match for the name, specify the arguments.
-                    // We currently do not have a scenario where we are trying to pass null as an argument
-                    // to an overloaded method. This will need to be updated once we have a scenario.
+                    // Reflection overload resolution requires a runtime type for every argument.
                     methodInfo = type?.GetMethod(
                         binder.Name,
                         BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
                         binder: null,
-                        [.. args.Select(a => a!.GetType())],
+                        [.. args.Select(a => a is not null
+                            ? a.GetType()
+                            : throw new ArgumentException(
+                                "Null arguments are not supported when resolving overloaded methods.",
+                                nameof(args)))],
                         modifiers: null);
                 }
 
@@ -157,8 +160,7 @@ public class TestAccessor<T> : ITestAccessor
 
         public override bool TrySetMember(SetMemberBinder binder, object? value)
         {
-            MemberInfo? memberInfo = TestAccessor<T>.DynamicWrapper.GetFieldOrPropertyInfo(binder.Name);
-            if (memberInfo is null)
+            if (TestAccessor<T>.DynamicWrapper.GetFieldOrPropertyInfo(binder.Name) is not { } memberInfo)
             {
                 return false;
             }
@@ -190,8 +192,7 @@ public class TestAccessor<T> : ITestAccessor
         {
             result = null;
 
-            MemberInfo? memberInfo = TestAccessor<T>.DynamicWrapper.GetFieldOrPropertyInfo(binder.Name);
-            if (memberInfo is null)
+            if (TestAccessor<T>.DynamicWrapper.GetFieldOrPropertyInfo(binder.Name) is not { } memberInfo)
             {
                 return false;
             }

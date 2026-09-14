@@ -42,7 +42,7 @@ public readonly partial struct Value
 
     bool IUnionMembers.TryGetValue(out DateTimeOffset value) => TryGetValue(out value);
 
-    bool IUnionMembers.TryGetValue(out string? value) => TryGetValue(out value);
+    bool IUnionMembers.TryGetValue([NotNullWhen(returnValue: true)] out string? value) => TryGetValue(out value);
 
     bool IUnionMembers.TryGetValue(out ArraySegment<byte> value) => TryGetValue(out value);
 

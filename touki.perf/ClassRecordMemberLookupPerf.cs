@@ -24,8 +24,11 @@ public class ClassRecordMemberLookupPerf
 {
     private const int ExpectedChecksum = 3696;
 
-    private ClassRecord _classRecord = null!;
-    private string[] _memberNames = null!;
+    [AllowNull]
+    private ClassRecord _classRecord;
+
+    [AllowNull]
+    private string[] _memberNames;
 
     [GlobalSetup]
     public void Setup()
@@ -68,7 +71,9 @@ public class ClassRecordMemberLookupPerf
         {
             if (_classRecord.HasMember(memberName))
             {
-                checksum += (int)_classRecord.GetRawValue(memberName)!;
+#pragma warning disable CS8605 // Setup validates that every requested member exists and stores an int.
+                checksum += (int)_classRecord.GetRawValue(memberName);
+#pragma warning restore CS8605
             }
         }
 
@@ -81,7 +86,9 @@ public class ClassRecordMemberLookupPerf
         int checksum = 0;
         foreach (string memberName in _memberNames)
         {
-            checksum += (int)_classRecord.GetRawValue(memberName)!;
+#pragma warning disable CS8605 // Setup validates that every requested member exists and stores an int.
+            checksum += (int)_classRecord.GetRawValue(memberName);
+#pragma warning restore CS8605
         }
 
         return checksum;

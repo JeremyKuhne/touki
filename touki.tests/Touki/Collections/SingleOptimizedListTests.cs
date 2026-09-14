@@ -22,7 +22,7 @@ public class SingleOptimizedListTests
         var accessor = list.TestAccessor();
         accessor.HasItem.Should().BeTrue();
         accessor.BackingList.Should().NotBeNull();
-        accessor.BackingList!.Count.Should().Be(5);
+        accessor.BackingList.Count.Should().Be(5);
 
         // Check contents
         for (int i = 0; i < 5; i++)
@@ -59,7 +59,7 @@ public class SingleOptimizedListTests
         var accessor = list.TestAccessor();
         accessor.HasItem.Should().BeTrue();
         accessor.BackingList.Should().NotBeNull();
-        accessor.BackingList!.Count.Should().Be(2);
+        accessor.BackingList.Count.Should().Be(2);
     }
 
     [TestMethod]
@@ -307,7 +307,7 @@ public class SingleOptimizedListTests
         var accessor = list.TestAccessor();
         accessor.HasItem.Should().BeTrue();
         accessor.BackingList.Should().NotBeNull();
-        accessor.BackingList!.Count.Should().Be(2);
+        accessor.BackingList.Count.Should().Be(2);
     }
 
     [TestMethod]
@@ -384,7 +384,7 @@ public class SingleOptimizedListTests
         var accessorAfter = list.TestAccessor();
         accessorAfter.HasItem.Should().BeTrue();
         accessorAfter.BackingList.Should().NotBeNull();
-        accessorAfter.BackingList!.Count.Should().Be(2);
+        accessorAfter.BackingList.Count.Should().Be(2);
     }
 
     [TestMethod]
@@ -456,7 +456,7 @@ public class SingleOptimizedListTests
         accessor.HasItem.Should().BeTrue();
         accessor.Item.Should().Be(0);
         accessor.BackingList.Should().NotBeNull();
-        accessor.BackingList!.Count.Should().Be(1);
+        accessor.BackingList.Count.Should().Be(1);
     }
 
     [TestMethod]
@@ -485,7 +485,7 @@ public class SingleOptimizedListTests
         var accessor = list.TestAccessor();
         accessor.HasItem.Should().BeTrue();
         accessor.BackingList.Should().NotBeNull();
-        accessor.BackingList!.Count.Should().Be(1);
+        accessor.BackingList.Count.Should().Be(1);
     }
 
     [TestMethod]
@@ -610,7 +610,11 @@ public class SingleOptimizedListTests
     public void CopyTo_NonGenericArray_NullArray_Throws()
     {
         using SingleOptimizedList<int, ArrayPoolList<int>> list = [1];
-        Action act = () => list.CopyTo((Array)null!, 0);
+        Array? array = null;
+        // Intentionally pass null to exercise array validation.
+    #pragma warning disable CS8604
+        Action act = () => list.CopyTo(array, 0);
+    #pragma warning restore CS8604
         act.Should().Throw<ArgumentNullException>();
     }
 

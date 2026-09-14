@@ -251,8 +251,8 @@ internal static partial class DocumentationInheritanceResolver
             }
 
             SemanticModel semanticModel = compilation.GetSemanticModel(inheritdoc.Target.SyntaxTree);
-            ISymbol? target = semanticModel.GetSymbolInfo(inheritdoc.Target, cancellationToken).Symbol;
-            if (target is not null && addedExplicitTargets.Add(target))
+            if (semanticModel.GetSymbolInfo(inheritdoc.Target, cancellationToken).Symbol is { } target
+                && addedExplicitTargets.Add(target))
             {
                 AddPending(target, compilation, pending, followHierarchy: false);
             }
@@ -326,7 +326,9 @@ internal static partial class DocumentationInheritanceResolver
                 out Compilation resolutionCompilation);
             if (resolution == DocumentationTargetResolution.Resolved)
             {
-                AddPending(target!, resolutionCompilation, pending, followHierarchy: false);
+                ISymbol resolvedTarget = target
+                    ?? throw new InvalidOperationException("A resolved documentation target must not be null.");
+                AddPending(resolvedTarget, resolutionCompilation, pending, followHierarchy: false);
             }
 
             unknown |= resolution == DocumentationTargetResolution.Ambiguous;
@@ -651,8 +653,8 @@ internal static partial class DocumentationInheritanceResolver
 
     private static Compilation GetOwningCompilation(ISymbol symbol, Compilation compilation)
     {
-        IAssemblySymbol? assembly = symbol.ContainingAssembly;
-        if (assembly is null || SymbolEqualityComparer.Default.Equals(assembly, compilation.Assembly))
+        if (symbol.ContainingAssembly is not { } assembly
+            || SymbolEqualityComparer.Default.Equals(assembly, compilation.Assembly))
         {
             return compilation;
         }
@@ -734,18 +736,15 @@ internal static partial class DocumentationInheritanceResolver
                                 break;
                             case "inheritdoc":
                                 documentation.HasInheritdoc = true;
-                                string? cref = reader.GetAttribute("cref");
                                 bool hasPath = reader.GetAttribute("path") is not null;
-                                if (cref is null)
+                                switch (reader.GetAttribute("cref"))
                                 {
-                                    if (!hasPath)
-                                    {
+                                    case null when !hasPath:
                                         documentation.HasImplicitInheritdoc = true;
-                                    }
-                                }
-                                else if (cref.Length > 0)
-                                {
-                                    (documentation.InheritdocReferences ??= []).Add(new(cref, hasPath));
+                                        break;
+                                    case { Length: > 0 } cref:
+                                        (documentation.InheritdocReferences ??= []).Add(new(cref, hasPath));
+                                        break;
                                 }
 
                                 break;

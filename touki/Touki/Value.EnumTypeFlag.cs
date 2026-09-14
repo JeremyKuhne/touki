@@ -10,7 +10,7 @@ public readonly partial struct Value
     ///  Identifies an inline enum value, reconstructs it from union storage, and exposes its underlying storage
     ///  metadata.
     /// </summary>
-    private sealed class EnumTypeFlag<T> : TypeFlag<T>, IEnumType
+    private sealed class EnumTypeFlag<T> : TypeFlag<T>, IEnumType where T : notnull
     {
         public static EnumTypeFlag<T> Instance { get; } = new();
         public override T To(in Value value) => Unsafe.As<Union, T>(ref Unsafe.AsRef(in value._union));

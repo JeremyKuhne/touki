@@ -205,10 +205,12 @@ public static class FileMatcherWrapper
             // Extract tuple values using cached property info
 
             // Get Item1 (FileList) - the actual results
-            string[] fileList = (string[])s_fileListField.GetValue(returnValue)!;
+            string[] fileList = (string[])(s_fileListField.GetValue(returnValue)
+                ?? throw new InvalidOperationException("GetFiles returned a null file list"));
 
             // Get Item2 (SearchAction)
-            object actionValue = s_searchActionField.GetValue(returnValue)!;
+            object actionValue = s_searchActionField.GetValue(returnValue)
+                ?? throw new InvalidOperationException("GetFiles returned a null search action");
             SearchAction action = (SearchAction)Enum.ToObject(typeof(SearchAction), Convert.ToInt32(actionValue));
 
             // Get Item3 (ExcludeFileSpec)
@@ -256,7 +258,8 @@ public static class FileMatcherWrapper
     {
         ArgumentNullException.ThrowIfNull(input);
         ArgumentNullException.ThrowIfNull(pattern);
-        return (bool)s_isMatchMethodInfo.Invoke(null, [input, pattern])!;
+        return (bool)(s_isMatchMethodInfo.Invoke(null, [input, pattern])
+            ?? throw new InvalidOperationException("IsMatch method returned null"));
     }
 
     /// <summary>

@@ -310,13 +310,16 @@ public partial class StreamExtensionsTests
     [TestMethod]
     public void Write_ByteSpanNullStream_ThrowsArgumentNullException()
     {
-        System.IO.Stream stream = null!;
+        System.IO.Stream? stream = null;
         ReadOnlySpan<byte> buffer = [];
         ArgumentNullException? exception = null;
 
         try
         {
+            // Intentionally invoke the extension on null to exercise stream validation.
+#pragma warning disable CS8604
             stream.Write(buffer);
+#pragma warning restore CS8604
         }
         catch (ArgumentNullException caught)
         {

@@ -21,7 +21,7 @@ public class RegisteredTypeResolverTests
         RegisteredTypeResolver result = resolver.Register<RegisteredPayload>();
 
         result.Should().BeSameAs(resolver);
-        resolver.BindToType(TypeName.Parse(typeof(RegisteredPayload).AssemblyQualifiedName!))
+        resolver.BindToType(GetTypeName(typeof(RegisteredPayload)))
             .Should().BeSameAs(typeof(RegisteredPayload));
     }
 
@@ -29,7 +29,7 @@ public class RegisteredTypeResolverTests
     public void BindToType_RegisteredType_ReturnsType()
     {
         ITypeResolver resolver = new RegisteredTypeResolver().Register<RegisteredPayload>();
-        TypeName typeName = TypeName.Parse(typeof(RegisteredPayload).AssemblyQualifiedName!);
+        TypeName typeName = GetTypeName(typeof(RegisteredPayload));
 
         resolver.BindToType(typeName).Should().BeSameAs(typeof(RegisteredPayload));
     }
@@ -99,7 +99,7 @@ public class RegisteredTypeResolverTests
 
         foreach (Type frameworkType in frameworkTypes)
         {
-            TypeName typeName = TypeName.Parse(frameworkType.AssemblyQualifiedName!);
+            TypeName typeName = GetTypeName(frameworkType);
             resolver.BindToType(typeName).Should().BeSameAs(frameworkType);
         }
     }
@@ -120,7 +120,10 @@ public class RegisteredTypeResolverTests
     {
         RegisteredTypeResolver resolver = new();
 
-        Action action = () => resolver.BindToType(null!);
+        // Intentionally pass null to exercise type name validation.
+    #pragma warning disable CS8625
+        Action action = () => resolver.BindToType(null);
+    #pragma warning restore CS8625
 
         action.Should().Throw<ArgumentNullException>();
     }
@@ -129,7 +132,7 @@ public class RegisteredTypeResolverTests
     public void BindToType_VariableBoundArrayWithRegisteredSzArray_ThrowsSerializationException()
     {
         RegisteredTypeResolver resolver = new();
-        TypeName variableBoundArray = TypeName.Parse(typeof(int).MakeArrayType(1).AssemblyQualifiedName!);
+        TypeName variableBoundArray = GetTypeName(typeof(int).MakeArrayType(1));
 
         Action action = () => resolver.BindToType(variableBoundArray);
 
@@ -151,7 +154,7 @@ public class RegisteredTypeResolverTests
     public void TryBindToType_RegisteredType_ReturnsTrueAndType()
     {
         ITypeResolver resolver = new RegisteredTypeResolver().Register<RegisteredPayload>();
-        TypeName typeName = TypeName.Parse(typeof(RegisteredPayload).AssemblyQualifiedName!);
+        TypeName typeName = GetTypeName(typeof(RegisteredPayload));
 
         bool result = resolver.TryBindToType(typeName, out Type? type);
 
@@ -169,5 +172,12 @@ public class RegisteredTypeResolverTests
 
         result.Should().BeFalse();
         type.Should().BeNull();
+    }
+
+    private static TypeName GetTypeName(Type type)
+    {
+        string assemblyQualifiedName = type.AssemblyQualifiedName
+            ?? throw new AssertFailedException($"Type '{type}' has no assembly-qualified name.");
+        return TypeName.Parse(assemblyQualifiedName);
     }
 }

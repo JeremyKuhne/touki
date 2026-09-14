@@ -65,12 +65,16 @@ public class FileNameMatchesTypeCodeFixTests
             [("Other.cs", Path.Combine("relative", "Other.cs"), "class Foo { }")]).ConfigureAwait(false);
 
         CodeFixTestDocument document = result.Documents.Should().ContainSingle().Subject;
-        document.FilePath.Should().NotBeNull();
-        Path.IsPathFullyQualified(document.FilePath!).Should().BeTrue();
-        document.FilePath!.EndsWith(
+        if (document.FilePath is not { } filePath)
+        {
+            throw new InvalidOperationException("Expected the changed document to have a file path.");
+        }
+
+        Path.IsPathFullyQualified(filePath).Should().BeTrue();
+        filePath.EndsWith(
             Path.Combine("relative", "Foo.cs"),
             StringComparison.Ordinal).Should().BeTrue();
-        document.FilePath.StartsWith(
+        filePath.StartsWith(
             Path.GetTempPath(),
             StringComparison.OrdinalIgnoreCase).Should().BeTrue();
     }
@@ -82,12 +86,16 @@ public class FileNameMatchesTypeCodeFixTests
             [("Other.cs", "\\relative\\Other.cs", "class Foo { }")]).ConfigureAwait(false);
 
         CodeFixTestDocument document = result.Documents.Should().ContainSingle().Subject;
-        document.FilePath.Should().NotBeNull();
-        Path.IsPathFullyQualified(document.FilePath!).Should().BeTrue();
-        document.FilePath!.EndsWith(
+        if (document.FilePath is not { } filePath)
+        {
+            throw new InvalidOperationException("Expected the changed document to have a file path.");
+        }
+
+        Path.IsPathFullyQualified(filePath).Should().BeTrue();
+        filePath.EndsWith(
             Path.Combine("relative", "Foo.cs"),
             StringComparison.Ordinal).Should().BeTrue();
-        document.FilePath.StartsWith(
+        filePath.StartsWith(
             Path.GetTempPath(),
             StringComparison.OrdinalIgnoreCase).Should().BeTrue();
     }

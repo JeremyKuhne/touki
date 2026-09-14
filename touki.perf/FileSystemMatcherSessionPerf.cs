@@ -18,14 +18,30 @@ public class FileSystemMatcherSessionPerf
     private readonly FileSystemMatchPredicate _predicate = MatchCSharpFile;
     private readonly PathMatchPredicate _pathPredicate = MatchCSharpPath;
 
-    private IFileSystemMatcherSession _predicateSession = null!;
-    private IFileSystemMatcherSession _compositeSession = null!;
-    private IFileSystemMatcherSession _nativeCompositeEight = null!;
-    private IFileSystemMatcherSession _nativeCompositeThirtyTwo = null!;
-    private IFileSystemMatcherSession _pathSession = null!;
-    private IFileSystemMatcherSession _pathCompositeSession = null!;
-    private IFileSystemMatcherSession _pathCompositeEight = null!;
-    private IFileSystemMatcherSession _pathCompositeThirtyTwo = null!;
+    [AllowNull]
+    private IFileSystemMatcherSession _predicateSession;
+
+    [AllowNull]
+    private IFileSystemMatcherSession _compositeSession;
+
+    [AllowNull]
+    private IFileSystemMatcherSession _nativeCompositeEight;
+
+    [AllowNull]
+    private IFileSystemMatcherSession _nativeCompositeThirtyTwo;
+
+    [AllowNull]
+    private IFileSystemMatcherSession _pathSession;
+
+    [AllowNull]
+    private IFileSystemMatcherSession _pathCompositeSession;
+
+    [AllowNull]
+    private IFileSystemMatcherSession _pathCompositeEight;
+
+    [AllowNull]
+    private IFileSystemMatcherSession _pathCompositeThirtyTwo;
+
     private string _root = string.Empty;
     private string _directory = string.Empty;
 

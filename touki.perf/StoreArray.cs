@@ -13,10 +13,10 @@ public class StoreArray
     private static readonly ArraySegment<byte> s_emptyByteSegment = new(s_byteArray, 0, 0);
 
     [Benchmark(Baseline = true)]
-    public byte[] InOutByteArray()
+    public byte[]? InOutByteArray()
     {
         Value value = Value.Create(s_byteArray);
-        value.TryGetValue(out byte[] result);
+        value.TryGetValue(out byte[]? result);
         return result;
     }
 

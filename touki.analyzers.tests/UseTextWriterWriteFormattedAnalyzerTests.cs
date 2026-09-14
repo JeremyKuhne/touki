@@ -80,7 +80,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Write");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Write");
     }
 
     [TestMethod]

@@ -58,7 +58,10 @@ public class StringExtensionsTests
     [TestMethod]
     public void Create_NullAction_Throws()
     {
-        Action action = () => string.Create<int>(5, 0, null!);
+        // Intentionally pass null to exercise action validation.
+    #pragma warning disable CS8625
+        Action action = () => string.Create<int>(5, 0, null);
+    #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
 

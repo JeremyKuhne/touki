@@ -54,7 +54,8 @@ public class UseDisposableBaseAnalyzerTests
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Id.Should().Be(UseDisposableBaseAnalyzer.DiagnosticId);
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Resource");
+        diagnostic.Location.GetRequiredSourceTree().GetText()
+            .ToString(diagnostic.Location.SourceSpan).Should().Be("Resource");
     }
 
     [TestMethod]
@@ -181,7 +182,7 @@ public class UseDisposableBaseAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
 
         diagnostics.Should().ContainSingle()
-            .Which.Location.SourceTree!.FilePath.Should().Be("Resource.cs");
+            .Which.Location.GetRequiredSourceTree().FilePath.Should().Be("Resource.cs");
     }
 
     [TestMethod]

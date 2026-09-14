@@ -215,9 +215,9 @@ public sealed class MSBuildEnumerator : FileSystemEnumerator<string>
         ListBase<MSBuildSpecification> excludes = EmptyList<MSBuildSpecification>.Instance;
         string[] invalidExcludeSpecs = [];
 
-        if (!string.IsNullOrEmpty(excludeSpecs))
+        if (excludeSpecs is { Length: > 0 } nonEmptyExcludeSpecs)
         {
-            excludeResults = MSBuildSpecification.SplitWithErrors(excludeSpecs!, ignoreCase);
+            excludeResults = MSBuildSpecification.SplitWithErrors(nonEmptyExcludeSpecs, ignoreCase);
             parsedExcludes = [];
             SingleOptimizedList<string, ArrayPoolList<string>> ignoredExcludes = [];
             try

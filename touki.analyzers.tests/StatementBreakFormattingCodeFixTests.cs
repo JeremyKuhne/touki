@@ -184,7 +184,7 @@ public class StatementBreakFormattingCodeFixTests
             addLinkedProject: true,
             additionalProjectSources: additionalProjectSources,
             transformDiagnostics: diagnostics =>
-                [diagnostics.First(diagnostic => diagnostic.Location.SourceTree!.FilePath.EndsWith(
+                [diagnostics.First(diagnostic => diagnostic.Location.GetRequiredSourceTree().FilePath.EndsWith(
                     "Shared.cs",
                     StringComparison.Ordinal))],
             transformFixAllDiagnostics: diagnostics => CreateRejectedLinkedBudgetDiagnostics(
@@ -233,7 +233,7 @@ public class StatementBreakFormattingCodeFixTests
 
         bool created = TryCreateTextChange(
             malformed,
-            diagnostic.Location.SourceTree!.GetText(),
+            diagnostic.Location.GetRequiredSourceTree().GetText(),
             out _);
 
         created.Should().BeFalse();
@@ -244,7 +244,7 @@ public class StatementBreakFormattingCodeFixTests
     {
         const string source = "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left\n              + right;\n    }\n}\n";
         Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
-        SyntaxTree tree = diagnostic.Location.SourceTree!;
+        SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
         ImmutableArray<Location> locations =
         [
             diagnostic.AdditionalLocations[0],
@@ -265,7 +265,7 @@ public class StatementBreakFormattingCodeFixTests
     {
         const string source = "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left\n              + right;\n    }\n}\n";
         Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
-        SyntaxTree tree = diagnostic.Location.SourceTree!;
+        SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
         int codeStart = source.IndexOf("left", StringComparison.Ordinal);
         ImmutableArray<Location> locations =
         [
@@ -287,7 +287,7 @@ public class StatementBreakFormattingCodeFixTests
     {
         const string source = "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left +\n            right;\n    }\n}\n";
         Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
-        SyntaxTree tree = diagnostic.Location.SourceTree!;
+        SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
         int leftStart = source.IndexOf("left +", StringComparison.Ordinal);
         ImmutableArray<Location> locations =
         [
@@ -312,7 +312,7 @@ public class StatementBreakFormattingCodeFixTests
         string source = new(' ', 4097);
         source += "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left\n              + right;\n    }\n}\n";
         Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
-        SyntaxTree tree = diagnostic.Location.SourceTree!;
+        SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
         Diagnostic malformed = Diagnostic.Create(
             diagnostic.Descriptor,
             Location.Create(tree, new TextSpan(0, 4097)),
@@ -344,7 +344,7 @@ public class StatementBreakFormattingCodeFixTests
             + "    string Read(string first, string second) => first + second;\n"
             + "}\n";
         Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
-        SyntaxTree tree = diagnostic.Location.SourceTree!;
+        SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
 
         bool created = StatementBreakDiagnosticData.TryCreateTextChanges(
             diagnostic,
@@ -385,7 +385,7 @@ public class StatementBreakFormattingCodeFixTests
         int rangeEnd = source.IndexOf(");", rangeStart, StringComparison.Ordinal) + 1;
         (rangeEnd - rangeStart).Should().Be(physicalRangeLength);
         Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
-        SyntaxTree tree = diagnostic.Location.SourceTree!;
+        SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
 
         bool created = StatementBreakDiagnosticData.TryCreateTextChanges(
             diagnostic,
@@ -421,7 +421,7 @@ public class StatementBreakFormattingCodeFixTests
             + $"{baseIndentation}        string fourth) => first;\n"
             + $"{baseIndentation}}}\n";
         Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
-        SyntaxTree tree = diagnostic.Location.SourceTree!;
+        SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
 
         bool created = StatementBreakDiagnosticData.TryCreateTextChanges(
             diagnostic,
@@ -493,7 +493,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """";
         Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
-        SyntaxTree tree = diagnostic.Location.SourceTree!;
+        SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
         int literalOperator = source.IndexOf("    +\n", StringComparison.Ordinal) + 4;
         Diagnostic malformed = Diagnostic.Create(
             diagnostic.Descriptor,
@@ -515,7 +515,7 @@ public class StatementBreakFormattingCodeFixTests
     {
         const string source = "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left\n              + right;\n    }\n}\n";
         Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
-        SyntaxTree tree = diagnostic.Location.SourceTree!;
+        SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
         ImmutableArray<Location> locations =
         [
             Location.Create(tree, new TextSpan(source.IndexOf("    int", StringComparison.Ordinal), 4)),
@@ -541,7 +541,7 @@ public class StatementBreakFormattingCodeFixTests
 
         Action action = () => TryCreateTextChange(
             diagnostic,
-            diagnostic.Location.SourceTree!.GetText(),
+            diagnostic.Location.GetRequiredSourceTree().GetText(),
             cancellation.Token,
             out _);
 
@@ -553,8 +553,9 @@ public class StatementBreakFormattingCodeFixTests
     {
         const string source = "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left\n              + right;\n    }\n}\n";
         Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
-        SourceText currentSource = diagnostic.Location.SourceTree!.GetText();
-        SyntaxNode currentRoot = diagnostic.Location.SourceTree.GetRoot();
+        SyntaxTree currentTree = diagnostic.Location.GetRequiredSourceTree();
+        SourceText currentSource = currentTree.GetText();
+        SyntaxNode currentRoot = currentTree.GetRoot();
 
         bool created = StatementBreakDiagnosticData.TryCreateTextChange(
             diagnostic,
@@ -576,7 +577,7 @@ public class StatementBreakFormattingCodeFixTests
             diagnosticOptions: s_enabled,
             parseOptions: new CSharpParseOptions(LanguageVersion.CSharp11)).ConfigureAwait(false);
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        SourceText currentSource = diagnostic.Location.SourceTree!.GetText();
+        SourceText currentSource = diagnostic.Location.GetRequiredSourceTree().GetText();
         SyntaxNode currentRoot = CSharpSyntaxTree.ParseText(
             currentSource,
             new CSharpParseOptions(LanguageVersion.CSharp10)).GetRoot();
@@ -3776,7 +3777,7 @@ public class StatementBreakFormattingCodeFixTests
         CancellationToken cancellationToken,
         out TextChange change)
     {
-        SyntaxTree currentTree = diagnostic.Location.SourceTree!.WithChangedText(source);
+        SyntaxTree currentTree = diagnostic.Location.GetRequiredSourceTree().WithChangedText(source);
         SyntaxNode currentRoot = currentTree.GetRoot(cancellationToken);
         return StatementBreakDiagnosticData.TryCreateTextChange(
             diagnostic,
@@ -3809,7 +3810,7 @@ public class StatementBreakFormattingCodeFixTests
         Diagnostic[] ordered =
         [
             .. diagnostics.OrderBy(
-                static diagnostic => diagnostic.Location.SourceTree!.FilePath,
+                static diagnostic => diagnostic.Location.GetRequiredSourceTree().FilePath,
                 StringComparer.Ordinal)
         ];
         ordered.Should().HaveCount(2);
@@ -3835,7 +3836,7 @@ public class StatementBreakFormattingCodeFixTests
         Diagnostic[][] sharedDiagnostics =
         [
             .. diagnostics
-                .Where(diagnostic => diagnostic.Location.SourceTree!.FilePath.EndsWith(
+                .Where(diagnostic => diagnostic.Location.GetRequiredSourceTree().FilePath.EndsWith(
                     "Shared.cs",
                     StringComparison.Ordinal))
                 .GroupBy(diagnostic => diagnostic.Location.SourceTree)
@@ -3843,7 +3844,7 @@ public class StatementBreakFormattingCodeFixTests
         ];
         sharedDiagnostics.Should().HaveCount(2);
         sharedDiagnostics.Should().OnlyContain(group => group.Length == 2);
-        Diagnostic later = diagnostics.Single(diagnostic => diagnostic.Location.SourceTree!.FilePath.EndsWith(
+        Diagnostic later = diagnostics.Single(diagnostic => diagnostic.Location.GetRequiredSourceTree().FilePath.EndsWith(
             "Later.cs",
             StringComparison.Ordinal));
         ImmutableArray<Diagnostic>.Builder selected = ImmutableArray.CreateBuilder<Diagnostic>(

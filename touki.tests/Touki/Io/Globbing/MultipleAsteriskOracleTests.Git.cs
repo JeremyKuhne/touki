@@ -14,7 +14,10 @@ namespace Touki.Io.Globbing;
 [TestClass]
 public sealed class MultipleAsteriskGitOracleTests
 {
-    private static SequentialSeparatorGitOracleTests.RepoFixture s_fixture = null!;
+    private static SequentialSeparatorGitOracleTests.RepoFixture? s_fixture;
+
+    private static SequentialSeparatorGitOracleTests.RepoFixture Fixture => s_fixture
+        ?? throw new AssertFailedException("The repository fixture has not been initialized.");
 
     [ClassInitialize]
     public static void ClassInit(TestContext context) => s_fixture = new SequentialSeparatorGitOracleTests.RepoFixture();
@@ -38,7 +41,7 @@ public sealed class MultipleAsteriskGitOracleTests
             return;
         }
 
-        bool oracle = s_fixture.IsIgnored(pattern, input);
+        bool oracle = Fixture.IsIgnored(pattern, input);
         bool actual = GlobSpecification.Compile(pattern, GlobDialect.Git).IsMatch(input);
         actual.Should().Be(
             oracle,
@@ -55,7 +58,7 @@ public sealed class MultipleAsteriskGitOracleTests
         string pattern,
         string input)
     {
-        bool oracle = s_fixture.IsIgnored(pattern, input);
+        bool oracle = Fixture.IsIgnored(pattern, input);
         GlobSpecification specification = GlobSpecification.Compile(pattern, GlobDialect.Git);
         bool actual = specification.IsMatch(input);
 

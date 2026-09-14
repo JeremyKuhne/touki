@@ -107,7 +107,7 @@ public class StoringLong
         value.TryGetValue(out long result).Should().BeTrue();
         result.Should().Be(@long);
         value.TryGetValue(out long? nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@long);
+        nullableResult.Should().Be(@long);
 
 
         long? n = @long;
@@ -118,7 +118,7 @@ public class StoringLong
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@long);
         value.TryGetValue(out nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@long);
+        nullableResult.Should().Be(@long);
     }
 
     [TestMethod]
@@ -136,14 +136,12 @@ public class StoringLong
     public void OutAsObject(long @long)
     {
         Value value = @long;
-        object o = value.As<object>();
-        o.GetType().Should().Be(typeof(long));
-        ((long)o).Should().Be(@long);
+        object? o = value.As<object>();
+        o.Should().BeOfType<long>().Which.Should().Be(@long);
 
         long? n = @long;
         value = n;
         o = value.As<object>();
-        o.GetType().Should().Be(typeof(long));
-        ((long)o).Should().Be(@long);
+        o.Should().BeOfType<long>().Which.Should().Be(@long);
     }
 }

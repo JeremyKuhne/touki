@@ -157,12 +157,16 @@ internal static class GlobSpecificationTarget
             return;
         }
 
-        // spec is non-null on success (NotNullWhen(true)); compiled mirrors it.
-        CheckSpecification(spec!, pattern, dialect, inputs);
+        if (spec is null)
+        {
+            throw new FuzzInvariantException("TryCompile returned true but produced no specification.");
+        }
+
+        CheckSpecification(spec, pattern, dialect, inputs);
 
         if (compiled is not null)
         {
-            AssertSameMatches(spec!, compiled, inputs, "Compile vs TryCompile");
+            AssertSameMatches(spec, compiled, inputs, "Compile vs TryCompile");
         }
 
         // Determinism: a second compile with identical inputs must behave identically.
@@ -180,7 +184,7 @@ internal static class GlobSpecificationTarget
             throw new FuzzInvariantException("Re-compiling a valid pattern failed.");
         }
 
-        AssertSameMatches(spec!, spec2, inputs, "Compile determinism");
+        AssertSameMatches(spec, spec2, inputs, "Compile determinism");
 
         // The 5-argument TryCompile must equal the 7-argument overload given the same defaults.
         CheckShortOverloadEquivalence(pattern, dialect, options, inputs);

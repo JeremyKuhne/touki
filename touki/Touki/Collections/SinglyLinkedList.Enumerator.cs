@@ -26,7 +26,7 @@ public sealed partial class SinglyLinkedList<T>
         /// <summary>
         ///  Current node in the enumeration. Only valid if <see cref="MoveNext"/> returned <see langword="true"/>.
         /// </summary>
-        public readonly Node Current => _current!;
+        public readonly Node? Current => _current;
 
         /// <summary>
         ///  Resets the enumerator.
@@ -119,18 +119,20 @@ public sealed partial class SinglyLinkedList<T>
             else if (_current == _list.Last)
             {
                 // End of list, set last to previous
-                Debug.Assert(_previous is not null);
-                _list.Last = _previous;
-                _previous!.Next = null;
-                _current = _previous;
+                Node? previous = _previous;
+                Debugging.Assert(previous is not null);
+                _list.Last = previous;
+                previous.Next = null;
+                _current = previous;
             }
             else
             {
                 // In the middle
-                Debug.Assert(_previous is not null);
+                Node? previous = _previous;
+                Debugging.Assert(previous is not null);
                 Node? next = _current.Next;
-                _current = _previous;
-                _previous!.Next = next;
+                _current = previous;
+                previous.Next = next;
             }
 
             _removed = true;
@@ -166,19 +168,20 @@ public sealed partial class SinglyLinkedList<T>
                 return;
             }
 
-            Debug.Assert(_previous is not null);
+            Node? previous = _previous;
+            Debugging.Assert(previous is not null);
 
             if (_current.Next is null)
             {
                 // End of the list, set last to the prior node and clear next
                 Debug.Assert(_list.Last == _current);
-                _list.Last = _previous;
-                _previous!.Next = null;
+                _list.Last = previous;
+                previous.Next = null;
             }
             else
             {
                 // In the middle, attach the prior node to the next node
-                _previous!.Next = _current.Next;
+                previous.Next = _current.Next;
             }
 
             // Set the current node's next node to the current first node and set to first.
@@ -186,7 +189,7 @@ public sealed partial class SinglyLinkedList<T>
             _list.First = _current;
 
             // Set current to the prior node so MoveNext moves to the next node
-            _current = _previous;
+            _current = previous;
             _removed = true;
         }
     }

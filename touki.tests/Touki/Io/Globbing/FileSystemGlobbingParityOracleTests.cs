@@ -126,8 +126,9 @@ public class FileSystemGlobbingParityOracleTests
         else
         {
             GlobFormatException exception = toukiException.Should().BeOfType<GlobFormatException>().Which;
+            ArgumentException oracleArgumentException = oracleException.Should().BeOfType<ArgumentException>().Which;
             exception.Error.Code.Should().Be(GlobCompileErrorCode.ParentSegmentNotAtBeginning);
-            exception.Error.Message.Should().Be(oracleException!.Message);
+            exception.Error.Message.Should().Be(oracleArgumentException.Message);
         }
     }
 

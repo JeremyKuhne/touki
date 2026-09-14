@@ -86,14 +86,12 @@ public class StoringDateTimeOffset
     public void OutAsObject(DateTimeOffset dateTimeOffset)
     {
         Value value = dateTimeOffset;
-        object o = value.As<object>();
-        o.GetType().Should().Be(typeof(DateTimeOffset));
-        ((DateTimeOffset)o).Should().Be(dateTimeOffset);
+        object? o = value.As<object>();
+        o.Should().BeOfType<DateTimeOffset>().Which.Should().Be(dateTimeOffset);
 
         DateTimeOffset? n = dateTimeOffset;
         value = n;
         o = value.As<object>();
-        o.GetType().Should().Be(typeof(DateTimeOffset));
-        ((DateTimeOffset)o).Should().Be(dateTimeOffset);
+        o.Should().BeOfType<DateTimeOffset>().Which.Should().Be(dateTimeOffset);
     }
 }

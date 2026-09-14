@@ -20,9 +20,14 @@ public class BinaryFormattedObjectFieldAssignmentPerf
 {
     private const int MaterializationBatchSize = 512;
 
-    private System.IO.MemoryStream _stream = null!;
-    private RegisteredTypeResolver _resolver = null!;
-    private BinaryFormattedObject[] _materializationBatch = null!;
+    [AllowNull]
+    private System.IO.MemoryStream _stream;
+
+    [AllowNull]
+    private RegisteredTypeResolver _resolver;
+
+    [AllowNull]
+    private BinaryFormattedObject[] _materializationBatch;
 
     [GlobalSetup]
     public void Setup()
@@ -69,12 +74,12 @@ public class BinaryFormattedObjectFieldAssignmentPerf
     }
 
     [IterationCleanup]
-    public void CleanupMaterializationBatch() => _materializationBatch = null!;
+    public void CleanupMaterializationBatch() => _materializationBatch = null;
 
     [Benchmark(Baseline = true, OperationsPerInvoke = MaterializationBatchSize)]
-    public object DeserializeRecords()
+    public object? DeserializeRecords()
     {
-        object result = null!;
+        object? result = null;
         foreach (BinaryFormattedObject formattedObject in _materializationBatch)
         {
             result = formattedObject.Deserialize();

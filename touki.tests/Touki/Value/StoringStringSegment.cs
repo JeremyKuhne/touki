@@ -100,10 +100,10 @@ public class StoringStringSegment
         StringSegment segment = new("Test Segment", 0, 4); // "Test"
         Value value = segment;
 
-        object o = value.As<object>();
-        o.GetType().Should().Be(typeof(StringSegment));
-        ((StringSegment)o).Should().Be(segment);
-        ((StringSegment)o).ToString().Should().Be("Test");
+        object? o = value.As<object>();
+        StringSegment actual = o.Should().BeOfType<StringSegment>().Which;
+        actual.Should().Be(segment);
+        actual.ToString().Should().Be("Test");
     }
 
     [TestMethod]

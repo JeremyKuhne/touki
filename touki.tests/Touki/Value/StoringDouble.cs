@@ -110,7 +110,7 @@ public class StoringDouble
         value.TryGetValue(out double result).Should().BeTrue();
         result.Should().Be(@double);
         value.TryGetValue(out double? nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@double);
+        nullableResult.Should().Be(@double);
 
 
         double? n = @double;
@@ -121,7 +121,7 @@ public class StoringDouble
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@double);
         value.TryGetValue(out nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@double);
+        nullableResult.Should().Be(@double);
     }
 
     [TestMethod]
@@ -139,14 +139,12 @@ public class StoringDouble
     public void OutAsObject(double @double)
     {
         Value value = @double;
-        object o = value.As<object>();
-        o.GetType().Should().Be(typeof(double));
-        ((double)o).Should().Be(@double);
+        object? o = value.As<object>();
+        o.Should().BeOfType<double>().Which.Should().Be(@double);
 
         double? n = @double;
         value = n;
         o = value.As<object>();
-        o.GetType().Should().Be(typeof(double));
-        ((double)o).Should().Be(@double);
+        o.Should().BeOfType<double>().Which.Should().Be(@double);
     }
 }

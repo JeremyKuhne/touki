@@ -349,7 +349,8 @@ internal sealed class BinaryFormatDeserializer : IDeserializer
                 continue;
             }
 
-            Debug.Assert(_pendingUpdates is not null);
+            HashSet<ValueUpdater>? pendingUpdates = _pendingUpdates;
+            Debugging.Assert(pendingUpdates is not null);
 
             foreach (KeyValuePair<SerializationRecordId, HashSet<SerializationRecordId>> pair
                 in _incompleteDependencies)
@@ -362,7 +363,7 @@ internal sealed class BinaryFormatDeserializer : IDeserializer
                     continue;
                 }
 
-                _pendingUpdates!.RemoveWhere((ValueUpdater updater) =>
+                pendingUpdates.RemoveWhere(updater =>
                 {
                     if (!updater.ValueId.Equals(completedId))
                     {

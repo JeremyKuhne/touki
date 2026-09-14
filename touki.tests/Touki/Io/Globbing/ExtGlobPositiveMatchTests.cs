@@ -637,6 +637,18 @@ public class ExtGlobPositiveMatchTests
         specification.IsMatch("anything.").Should().BeFalse();
     }
 
+    [TestMethod]
+    public void Match_MSBuildTripleStarDirectoryWithTrailingDotExtGlob_CompilesAndNeverMatches()
+    {
+        GlobSpecification specification = GlobSpecification.Compile(
+            "***/x@(a|b).",
+            GlobDialect.MSBuild,
+            GlobOptions.AllowExtGlob);
+
+        specification.IsMatch("directory/xa").Should().BeFalse();
+        specification.IsMatch("directory/xb.").Should().BeFalse();
+    }
+
     // -- IgnoreCase ------------------------------------------------------------------
 
     [TestMethod]
