@@ -38,7 +38,9 @@
     <PackageDownload Include="KlutzyNinja.Touki.Analyzers" Version="[$(ToukiBootstrapAnalyzerVersion)]" />
     <Analyzer Include="$(_ToukiBootstrapPackage)/analyzers/dotnet/cs/touki.analyzers.dll" />
     <!-- Brings CodeFixProvider, Document, CodeAction, and SyntaxGenerator (and CodeAnalysis.CSharp transitively). -->
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
+     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces"
+                           VersionOverride="$(ToukiAnalyzerRoslynVersion)"
+                           PrivateAssets="all" />
     <PackageReference Include="MinVer">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

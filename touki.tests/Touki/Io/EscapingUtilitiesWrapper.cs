@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Jeremy W Kuhne
+﻿// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -20,6 +20,8 @@ public static class EscapingUtilitiesWrapper
     private static MethodInfo ResolveUnescapeAll()
     {
         Type escapingUtilities = typeof(MSBuildGlob).Assembly.GetType("Microsoft.Build.Shared.EscapingUtilities")
+            ?? typeof(Microsoft.Build.Framework.BuildEventArgs).Assembly.GetType(
+                "Microsoft.Build.Shared.EscapingUtilities")
             ?? throw new InvalidOperationException("Could not find EscapingUtilities type.");
 
         return escapingUtilities.GetMethod(

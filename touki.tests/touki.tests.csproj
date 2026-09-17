@@ -10,6 +10,11 @@
     <!-- Make sure the main project builds against it's normal version. -->
     <DependencyTargetFramework Condition="'$(TargetFramework)' == 'net481'">$(DotNetFrameworkVersion)</DependencyTargetFramework>
 
+    <!-- Merge the manual redirects with redirects generated from the full net481 dependency graph. -->
+    <AppConfig Condition="'$(TargetFramework)' == 'net481'">App.config</AppConfig>
+    <AutoGenerateBindingRedirects Condition="'$(TargetFramework)' == 'net481'">true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType Condition="'$(TargetFramework)' == 'net481'">true</GenerateBindingRedirectsOutputType>
+
     <!--
      We don't want to have implicit usings as we're retargeting System.IO to Microsoft.IO
      in our GlobalUsings.cs file for .NET Framework.
