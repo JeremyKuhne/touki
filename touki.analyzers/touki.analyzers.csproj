@@ -53,7 +53,9 @@
     <PackageDownload Include="KlutzyNinja.Touki.Analyzers" Version="[$(ToukiBootstrapAnalyzerVersion)]" />
     <Analyzer Include="$(_ToukiBootstrapPackage)/analyzers/dotnet/cs/touki.analyzers.dll" />
     <!-- The Roslyn APIs the analyzer is built against. Compile-time only; the host provides these at run time. -->
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp"
+              VersionOverride="$(ToukiAnalyzerRoslynVersion)"
+              PrivateAssets="all" />
     <!-- Analyzers that validate analyzer authoring (the RS#### rules). -->
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
     <!-- Generates nullable-analysis attributes missing from netstandard2.0. -->
