@@ -89,6 +89,8 @@ public static class FileMatcherWrapper
         {
             // Get the FileMatcher type
             Type fileMatcherType = typeof(MSBuildGlob).Assembly.GetType("Microsoft.Build.Shared.FileMatcher")
+                ?? typeof(Microsoft.Build.Framework.BuildEventArgs).Assembly.GetType(
+                    "Microsoft.Build.Shared.FileMatcher")
                 ?? throw new InvalidOperationException("Could not find FileMatcher type");
 
             // Find the SearchAction enum type

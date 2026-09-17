@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Jeremy W Kuhne
+﻿// Copyright (c) 2025 Jeremy W Kuhne
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
@@ -453,6 +453,25 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
             if (method is null)
             {
                 return false;
+            }
+
+            if (method.ContainingType is { IsExtension: true } extensionType)
+            {
+                IParameterSymbol? extensionParameter = extensionType.ExtensionParameter;
+                if (!SymbolEqualityComparer.Default.Equals(extensionType.ContainingSymbol, extensions)
+                    || extensionParameter is null
+                    || extensionParameter.RefKind != RefKind.None
+                    || !SymbolEqualityComparer.Default.Equals(extensionParameter.Type, textWriter)
+                    || method.IsStatic
+                    || !method.ReturnsVoid
+                    || method.Parameters.Length != 1
+                    || method.Parameters[0].RefKind != RefKind.Ref
+                    || !HasAttribute(method.Parameters[0].Type, handlerAttribute))
+                {
+                    return false;
+                }
+
+                continue;
             }
 
             IMethodSymbol definition = method.ReducedFrom ?? method;

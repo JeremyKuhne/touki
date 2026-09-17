@@ -248,7 +248,12 @@ public sealed class UseTextWriterWriteFormattedAnalyzer : DiagnosticAnalyzer
             invocation.SpanStart,
             candidate,
             SpeculativeBindingOption.BindAsExpression);
-        return symbolInfo.Symbol is IMethodSymbol { IsStatic: false, ReducedFrom: null };
+        return symbolInfo.Symbol is IMethodSymbol
+        {
+            IsStatic: false,
+            ReducedFrom: null,
+            ContainingType.IsExtension: false
+        };
     }
 
     private static InterpolatedStringExpressionSyntax? GetInterpolatedString(ExpressionSyntax expression)
