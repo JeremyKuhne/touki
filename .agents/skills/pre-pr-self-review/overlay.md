@@ -57,7 +57,7 @@ The deep per-item detail for the core's section 2 - empty-span pinning, `checked
 sums, throw helpers, the allocation-free strategy catalog, BCL parity, JIT-naming -
 lives in [polyfill-correctness.md](polyfill-correctness.md). It is **not** part of
 the vendored core (it links touki source files under `touki/Framework/`,
-`touki/Touki/`, and `touki.tests/`), so it stays a touki overlay sibling that
+`touki/Touki/`, and `test/touki.tests/`), so it stays a touki overlay sibling that
 `gh skill update` leaves untouched. A repo adopting this skill writes its own
 equivalent rather than inheriting touki's source links.
 

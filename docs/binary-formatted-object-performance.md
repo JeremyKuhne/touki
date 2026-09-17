@@ -53,7 +53,7 @@ Run from the repository root in PowerShell:
 
 ```powershell
 # BinaryFormatter versus Touki on .NET Framework.
-dotnet run -c Release -f net481 --project touki.perf -- `
+dotnet run -c Release -f net481 --project test/touki.perf -- `
   --filter '*BinaryFormattedObjectPerf*' --allCategories EndToEnd
 
 # Exact-source three-way end-to-end comparisons.
@@ -69,7 +69,7 @@ dotnet run -c Release -f net481 --project touki.perf -- `
   -TargetFramework net11.0 -Category ParseOnly -Job Medium
 
 # Touki's net10 record-model-to-object materialization phase.
-dotnet run -c Release -f net10.0 --project touki.perf -- `
+dotnet run -c Release -f net10.0 --project test/touki.perf -- `
   --filter '*BinaryFormattedObjectPerf*' --allCategories MaterializeOnly --job medium
 ```
 
@@ -332,11 +332,11 @@ once. Fixed `MediumRun` results are:
 
 ```powershell
 foreach ($tfm in 'net10.0', 'net481') {
-    dotnet run -c Release -f $tfm --project touki.perf -- `
+    dotnet run -c Release -f $tfm --project test/touki.perf -- `
       --filter '*BinaryFormattedObjectFieldAssignmentPerf*' --job medium
-    dotnet run -c Release -f $tfm --project touki.perf -- `
+    dotnet run -c Release -f $tfm --project test/touki.perf -- `
       --filter '*ClassFieldAssignmentPerf*' --job medium
-    dotnet run -c Release -f $tfm --project touki.perf -- `
+    dotnet run -c Release -f $tfm --project test/touki.perf -- `
       --filter '*ClassRecordMemberLookupPerf*' --job medium
 }
 ```

@@ -23,7 +23,7 @@ if ($filtraceVersion -ne '0.6.3') {
 }
 
 $handoff = & ./.agents/skills/filtrace/scripts/Capture-BenchmarkTrace.ps1 `
-  -Project touki.perf/touki.perf.csproj `
+  -Project test/touki.perf/touki.perf.csproj `
   -Filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' `
   -Tfm net10.0 -Format Json | ConvertFrom-Json
 

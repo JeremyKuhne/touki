@@ -22,9 +22,9 @@ All code must compile and behave correctly on both targets.
 Top-level layout:
 
 - `touki/` - main library
-- `touki.tests/` - xUnit tests (uses FluentAssertions; access to internals via `InternalsVisibleTo`)
+- `test/` - test and validation projects (`touki.tests`, `touki.analyzers.tests`,
+  `touki.aot.tests`, `touki.fuzz`, `touki.perf`, and `touki.msbuildshim`)
 - `touki.testsupport/` - shared test helpers (`TestAccessor`, etc.)
-- `touki.perf/` - BenchmarkDotNet performance projects
 - `sample/` - usage samples
 - `docs/` - contributor and design documentation
 
@@ -115,12 +115,12 @@ Top-level layout:
 
 Detailed test conventions live in
 [.github/instructions/tests.instructions.md](instructions/tests.instructions.md)
-(applies to `touki.tests/**/*.cs`). Headline rules: place tests in `touki.tests`;
+(applies to `test/touki.tests/**/*.cs`). Headline rules: place tests in `touki.tests`;
 name them `MethodName_StateUnderTest_ExpectedBehavior`; use FluentAssertions (global
 using); access internals directly via `InternalsVisibleTo` and private members via
 `TestAccessor`; ref structs can't be used in lambdas - use `try`/`finally`.
 
-Performance-test conventions for `touki.perf/` (BenchmarkDotNet, Release-only,
+Performance-test conventions for `test/touki.perf/` (BenchmarkDotNet, Release-only,
 JIT-naming rule, regression thresholds) live in
 [.github/instructions/perf.instructions.md](instructions/perf.instructions.md).
 
@@ -357,6 +357,6 @@ Visual Studio) load them automatically based on each file's `applyTo` glob.
 Currently:
 
 - [.github/instructions/msbuild.instructions.md](instructions/msbuild.instructions.md) - rules for `*.csproj`, `*.props`, `*.targets`.
-- [.github/instructions/tests.instructions.md](instructions/tests.instructions.md) - conventions for `touki.tests/**/*.cs`.
-- [.github/instructions/perf.instructions.md](instructions/perf.instructions.md) - BenchmarkDotNet conventions and the JIT-naming rule for `touki.perf/**/*.cs`.
+- [.github/instructions/tests.instructions.md](instructions/tests.instructions.md) - conventions for `test/touki.tests/**/*.cs`.
+- [.github/instructions/perf.instructions.md](instructions/perf.instructions.md) - BenchmarkDotNet conventions and the JIT-naming rule for `test/touki.perf/**/*.cs`.
 - [.github/instructions/polyfills.instructions.md](instructions/polyfills.instructions.md) - the two non-negotiable rules for `touki/Framework/Polyfills/**/*.cs`.

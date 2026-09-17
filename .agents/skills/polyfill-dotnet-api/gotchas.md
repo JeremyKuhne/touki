@@ -25,7 +25,7 @@ instead of the requested byte (`0xFF`). The `movzx`-loaded byte is in
 `[0, 0xFF]` so the compare is *unconditionally false* - the loop runs
 silently doing nothing in Release. Debug passes (no inlining). Confirmed
 by disassembly in
-[ReplaceUnsafeAsPerf](../../../touki.perf/ReplaceUnsafeAsPerf.cs).
+[ReplaceUnsafeAsPerf](../../../test/touki.perf/ReplaceUnsafeAsPerf.cs).
 
 **Fix:** explicitly mask in the int domain so RyuJIT must fold the high
 bits to zero. The cast alone is not enough - the JIT's constant tracker
@@ -38,7 +38,7 @@ ushort oldShort = (ushort)(Unsafe.As<T, ushort>(ref oldValue) & 0xFFFF);
 
 See [SpanExtensions.Replace.cs](../../../touki/Framework/Polyfills/System/SpanExtensions.Replace.cs)
 for the in-place version, and the
-[ReplaceUnsafeAsPerf](../../../touki.perf/ReplaceUnsafeAsPerf.cs)
+[ReplaceUnsafeAsPerf](../../../test/touki.perf/ReplaceUnsafeAsPerf.cs)
 benchmark for the disassembly proof. The unsigned cases (`byte`,
 `ushort`, `char`) are unaffected because their int-promoted form already
 has the upper bits zero. Tests on signed inputs are essential - symmetric

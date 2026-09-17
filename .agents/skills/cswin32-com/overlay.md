@@ -40,7 +40,7 @@ bindings here rather than editing that payload.
 - Run [security-review](../security-review/SKILL.md) for every raw COM pointer,
   vtable call, ownership transfer, or marshalling boundary.
 - Put exact cross-target GUID value tests in
-  [touki.tests](../../../touki.tests/) for every manual `IComIID`
+  [touki.tests](../../../test/touki.tests/) for every manual `IComIID`
   implementation.
 - Keep public API documentation and C# style aligned with
   [AGENTS.md](../../../AGENTS.md).

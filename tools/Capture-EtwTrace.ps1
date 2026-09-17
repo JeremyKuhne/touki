@@ -13,7 +13,7 @@
          log, never redirected away with `*>`, so the window never looks hung.
       2. Verifies touki.perf references BenchmarkDotNet.Diagnostics.Windows (the
          package that provides `-p ETW`); without it the profiler silently no-ops.
-      3. Runs `dotnet run -c Release -f net481 --project touki.perf -- --filter
+    3. Runs `dotnet run -c Release -f net481 --project test/touki.perf -- --filter
          <Filter> -p ETW --keepFiles`, which writes an .etl into
          BenchmarkDotNet.Artifacts/.
       4. Locates the newest .etl and prints the next-step filtrace commands already
@@ -106,7 +106,7 @@ New-Item -ItemType Directory -Force -Path $artifacts | Out-Null
 if (-not $SkipRun) {
     # Without BenchmarkDotNet.Diagnostics.Windows the `-p ETW` profiler silently
     # resolves to UnresolvedDiagnoser and no .etl is written - fail fast with guidance.
-    $perfProj = Join-Path $repoRoot "touki.perf/touki.perf.csproj"
+    $perfProj = Join-Path $repoRoot "test/touki.perf/touki.perf.csproj"
     if (-not (Select-String -Path $perfProj -Pattern "BenchmarkDotNet.Diagnostics.Windows" -Quiet)) {
         Write-Error "touki.perf does not reference BenchmarkDotNet.Diagnostics.Windows; -p ETW will no-op. Add the package first."
         exit 1
@@ -117,7 +117,7 @@ if (-not $SkipRun) {
     try {
         # Tee, do not redirect: the elevated window shows BenchmarkDotNet's live
         # progress while the run is also logged for the parent window to surface.
-        dotnet run -c Release -f $Tfm --project touki.perf -- --filter $Filter -p ETW --keepFiles 2>&1 |
+        dotnet run -c Release -f $Tfm --project test/touki.perf -- --filter $Filter -p ETW --keepFiles 2>&1 |
             Tee-Object -FilePath $log
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Benchmark run failed (exit $LASTEXITCODE). See $log."

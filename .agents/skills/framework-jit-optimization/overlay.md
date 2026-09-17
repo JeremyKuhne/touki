@@ -39,13 +39,13 @@ touki-specific lives here instead.
 ## Touki source and conventions
 
 - The Framework-only tree the core refers to generically is `touki/Framework/`
-  (excluded from the modern build). The perf project is `touki.perf/`.
+  (excluded from the modern build). The perf project is `test/touki.perf/`.
 - The `IComparable<T>` specialization example is
   [SpanExtensions.InRange.cs](../../../touki/Framework/Polyfills/System/SpanExtensions.InRange.cs)
   (full byte/sbyte/char/short/ushort/int/uint/long/ulong specialization).
 - The signed-primitive constant-propagation pitfall in
   [specialization.md](specialization.md) was confirmed by disassembly in
-  [touki.perf/ReplaceUnsafeAsPerf.cs](../../../touki.perf/ReplaceUnsafeAsPerf.cs).
+  [touki.perf/ReplaceUnsafeAsPerf.cs](../../../test/touki.perf/ReplaceUnsafeAsPerf.cs).
 - The production helpers that resulted from the span-walking experiments are in
   [touki/Touki/Buffers/SpanExtensions.IgnoreCase.cs](../../../touki/Touki/Buffers/SpanExtensions.IgnoreCase.cs).
 
@@ -71,9 +71,9 @@ applies them.
   helpers (no `Enum.HasFlag` boxing).
 - **Branchless vs branchful** ([cross-tfm-codegen.md](cross-tfm-codegen.md) section 3
   and [antipatterns.md](antipatterns.md)) - the tuple-swap A/B is
-  [touki.perf/SpanSwapPerf.cs](../../../touki.perf/SpanSwapPerf.cs); the `Unsafe.As`
+  [touki.perf/SpanSwapPerf.cs](../../../test/touki.perf/SpanSwapPerf.cs); the `Unsafe.As`
   constant-propagation pitfall is
-  [touki.perf/ReplaceUnsafeAsPerf.cs](../../../touki.perf/ReplaceUnsafeAsPerf.cs).
+  [touki.perf/ReplaceUnsafeAsPerf.cs](../../../test/touki.perf/ReplaceUnsafeAsPerf.cs).
 - **BCL-first on `net10`** ([modern-net.md](modern-net.md)) - the `SearchValues<char>`
   class-membership matcher is tracked in
   [docs/dotnet-perf-discoveries.md](../../../docs/dotnet-perf-discoveries.md).
@@ -92,9 +92,9 @@ list. The deep case study with full disassembly is
 the running perf-observations list is
 [docs/dotnet-perf-discoveries.md](../../../docs/dotnet-perf-discoveries.md).
 The A/B/C span-vs-ref-vs-pinned harness is
-[touki.perf/AsciiIgnoreCaseUnsafePerf.cs](../../../touki.perf/AsciiIgnoreCaseUnsafePerf.cs);
+[touki.perf/AsciiIgnoreCaseUnsafePerf.cs](../../../test/touki.perf/AsciiIgnoreCaseUnsafePerf.cs);
 the `StringSegment.CompareTo` before/after baseline is
-[touki.perf/StringSegmentIgnoreCasePerf.cs](../../../touki.perf/StringSegmentIgnoreCasePerf.cs).
+[touki.perf/StringSegmentIgnoreCasePerf.cs](../../../test/touki.perf/StringSegmentIgnoreCasePerf.cs).
 
 ## Updating
 

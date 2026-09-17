@@ -21,18 +21,18 @@ the repo's trace analyzer).
 
 ## Concrete bindings for the core's placeholders
 
-- **Perf project**: the core's `<root>.perf` is [touki.perf](../../../touki.perf/touki.perf.csproj),
+- **Perf project**: the core's `<root>.perf` is [touki.perf](../../../test/touki.perf/touki.perf.csproj),
   namespace `touki.perf`. It multi-targets the current modern .NET version (see
   `$(DotNetCoreVersion)` in [Directory.Build.props](../../../Directory.Build.props),
   currently `net10.0`) and `net481`, and references both the main library and the
   test project (so internal helpers used in tests are available to perf code).
 - **Target frameworks**: `<tfm>` is `net10.0` or `net481`.
-- **Globals**: [touki.perf/GlobalUsings.cs](../../../touki.perf/GlobalUsings.cs)
+- **Globals**: [touki.perf/GlobalUsings.cs](../../../test/touki.perf/GlobalUsings.cs)
   already imports `BenchmarkDotNet.Attributes`, `BenchmarkDotNet.Jobs`, `Touki`,
   and `Microsoft.IO` (on NETFRAMEWORK) / `System.IO` otherwise. Do not re-import.
 - **Coding style**: follow [AGENTS.md](../../../AGENTS.md) (no `var`, target-typed
   `new()`, C# keyword type names, `is null` / `is not null`, indented XML docs).
-- **Example benchmark**: [StoreInteger.cs](../../../touki.perf/StoreInteger.cs)
+- **Example benchmark**: [StoreInteger.cs](../../../test/touki.perf/StoreInteger.cs)
   shows the layout and a `[SimpleJob]` example.
 
 ## Cross-references (the core's "Related skills")
@@ -48,7 +48,7 @@ the repo's trace analyzer).
 - [`polyfill-dotnet-api`](../polyfill-dotnet-api/SKILL.md) - reasons to add a
   polyfill (and therefore a benchmark) in the first place.
 - [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - requires a benchmark in
-  `touki.perf/` (or an explicit "not measured" note) for any perf claim that
+  `test/touki.perf/` (or an explicit "not measured" note) for any perf claim that
   drives a code change in `touki/Framework/`.
 
 ## Profiling (the trace-analyzer overlay pages)
@@ -95,7 +95,7 @@ those tool-specific details to `agent-skills`.
 
 `IDE0180` ("use tuple to swap values") is disabled globally in
 [.editorconfig](../../../.editorconfig) because the auto-fix is unsafe on
-`net481` - see [SpanSwapPerf.cs](../../../touki.perf/SpanSwapPerf.cs) for the
+`net481` - see [SpanSwapPerf.cs](../../../test/touki.perf/SpanSwapPerf.cs) for the
 measurements:
 
 | Form | net481 RyuJIT | .NET 10 RyuJIT |
@@ -105,7 +105,7 @@ measurements:
 | Single `Span<T>` indexed or `ref` local deconstruction | equivalent | equivalent |
 
 So a `#if NET` (modern-only) hot path that performs paired indexed swaps is one
-of the few cases where tuple swap is genuinely worth it. If a `touki.perf/`
+of the few cases where tuple swap is genuinely worth it. If a `test/touki.perf/`
 benchmark confirms the win for a specific call site, opt in with a localized
 pragma rather than re-enabling the rule globally:
 

@@ -41,7 +41,7 @@ The "older-JIT pitfall" in the `Unsafe.As<TFrom, TTo>` row of
 polyfill-side detail and the masking fix are in
 [`polyfill-dotnet-api`](../polyfill-dotnet-api/SKILL.md); the regression is pinned
 by
-[touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs](../../../touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs).
+[touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs](../../../test/touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs).
 
 ## Updating
 

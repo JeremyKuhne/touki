@@ -6,7 +6,7 @@
 .DESCRIPTION
     Wraps the full "profile a benchmark, then read where the time went" loop:
 
-      1. Runs `dotnet run -c Release -f <tfm> --project touki.perf -- --filter
+    1. Runs `dotnet run -c Release -f <tfm> --project test/touki.perf -- --filter
          <Filter> -p EP`, which exports a .speedscope.json into
          BenchmarkDotNet.Artifacts/.
       2. Locates the newest .speedscope.json matching the filter.
@@ -75,7 +75,7 @@ if (-not $SkipRun) {
     Write-Host "Running benchmark under EventPipe profiler: $Filter ($Tfm)..." -ForegroundColor Cyan
     Push-Location $repoRoot
     try {
-        dotnet run -c Release -f $Tfm --project touki.perf -- --filter $Filter -p EP
+        dotnet run -c Release -f $Tfm --project test/touki.perf -- --filter $Filter -p EP
         if ($LASTEXITCODE -ne 0) { Write-Error "Benchmark run failed (exit $LASTEXITCODE)."; exit $LASTEXITCODE }
     }
     finally {

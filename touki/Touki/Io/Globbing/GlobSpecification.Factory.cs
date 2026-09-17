@@ -243,7 +243,7 @@ public sealed partial class GlobSpecification
             //
             // The MSBuild path also flags `CoalesceInputSeparators = true` so the
             // matcher coalesces runs in inputs at IsMatch time. Oracle tests under
-            // touki.tests/Touki/Io/Globbing pin the per-dialect rules.
+            // test/touki.tests/Touki/Io/Globbing pin the per-dialect rules.
             //
             // `DisallowEmptyInput` mirrors the documented "empty input never matches"
             // behavior of `FileSystemName.MatchesSimpleExpression`,
@@ -252,7 +252,7 @@ public sealed partial class GlobSpecification
             // FileMatcher.IsMatch / MSBuildGlob.IsMatch do match empty input against
             // empty pattern and against `*`, so MSBuild is intentionally not in this
             // list - see the ported FileMatcher rows under
-            // touki.tests/Touki/Io/Globbing/PortedTests.MSBuild.cs.
+            // test/touki.tests/Touki/Io/Globbing/PortedTests.MSBuild.cs.
             bool disallowEmptyInput = dialect is
                 GlobDialect.Simple
                     or GlobDialect.FileSystemGlobbing
@@ -752,7 +752,7 @@ public sealed partial class GlobSpecification
         /// </summary>
         /// <remarks>
         ///  <para>
-        ///   Oracle tests under <c>touki.tests/Touki/Io/Globbing/</c> pin the
+        ///   Oracle tests under <c>test/touki.tests/Touki/Io/Globbing/</c> pin the
         ///   per-dialect rule each branch implements.
         ///  </para>
         /// </remarks>

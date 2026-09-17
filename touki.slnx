@@ -33,25 +33,25 @@
   <Project Path="touki.analyzers.bootstrap/touki.analyzers.bootstrap.csproj">
     <Platform Project="AnyCPU" />
   </Project>
-  <Project Path="touki.analyzers.tests/touki.analyzers.tests.csproj">
+  <Project Path="test/touki.analyzers.tests/touki.analyzers.tests.csproj">
     <Platform Project="x64" />
   </Project>
   <Project Path="touki.analyzers/touki.analyzers.csproj">
     <Platform Project="AnyCPU" />
   </Project>
-  <Project Path="touki.aot.tests/touki.aot.tests.csproj">
+  <Project Path="test/touki.aot.tests/touki.aot.tests.csproj">
     <Platform Project="x64" />
   </Project>
-  <Project Path="touki.fuzz/touki.fuzz.csproj">
+  <Project Path="test/touki.fuzz/touki.fuzz.csproj">
     <Platform Project="x64" />
   </Project>
-  <Project Path="touki.msbuildshim/touki.msbuildshim.csproj">
+  <Project Path="test/touki.msbuildshim/touki.msbuildshim.csproj">
     <Platform Project="x64" />
   </Project>
-  <Project Path="touki.perf/touki.perf.csproj">
+  <Project Path="test/touki.perf/touki.perf.csproj">
     <Platform Project="x64" />
   </Project>
-  <Project Path="touki.tests/touki.tests.csproj" Id="19ab971c-bbbf-45f9-8a09-11054caec775">
+  <Project Path="test/touki.tests/touki.tests.csproj" Id="19ab971c-bbbf-45f9-8a09-11054caec775">
     <Platform Project="x64" />
   </Project>
   <Project Path="touki.testsupport/touki.testsupport.csproj">

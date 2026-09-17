@@ -211,11 +211,11 @@ On path-aware dialects (`PosixPath`, `Bash`, `Git`, `MSBuild`,
 
 The `Bash` dialect with `AllowGlobStar | AllowExtGlob` set is compared
 row-by-row against `bash -O extglob -O globstar` in
-[`ExtGlobOracleTests.Bash`](../touki.tests/Touki/Io/Globbing/ExtGlobOracleTests.Bash.cs)
+[`ExtGlobOracleTests.Bash`](../test/touki.tests/Touki/Io/Globbing/ExtGlobOracleTests.Bash.cs)
 (~552 rows of 24 patterns x 23 inputs). The oracle runs on Linux
 and Windows Git Bash; macOS is skipped because Apple ships GNU bash 3.2,
 which predates several of the cases the oracle relies on
-([`BashInterop.cs`](../touki.tests/Touki/Io/Globbing/BashInterop.cs)
+([`BashInterop.cs`](../test/touki.tests/Touki/Io/Globbing/BashInterop.cs)
 short-circuits to `null` there).
 
 ### Documented divergence

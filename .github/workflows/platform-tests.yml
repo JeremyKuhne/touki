@@ -91,7 +91,7 @@ jobs:
           }
         }
         else {
-          dotnet restore touki.tests/touki.tests.csproj @platformArgs
+          dotnet restore test/touki.tests/touki.tests.csproj @platformArgs
         }
 
         if ($LASTEXITCODE -ne 0) {
@@ -115,9 +115,9 @@ jobs:
 
           if ($platformArgs.Count -gt 0) {
             foreach ($project in @(
-              'touki.tests/touki.tests.csproj',
-              'touki.analyzers.tests/touki.analyzers.tests.csproj',
-              'touki.aot.tests/touki.aot.tests.csproj'
+              'test/touki.tests/touki.tests.csproj',
+              'test/touki.analyzers.tests/touki.analyzers.tests.csproj',
+              'test/touki.aot.tests/touki.aot.tests.csproj'
             )) {
               dotnet restore $project @platformArgs
               if ($LASTEXITCODE -ne 0) {
@@ -125,7 +125,7 @@ jobs:
               }
             }
 
-            dotnet build touki.tests/touki.tests.csproj `
+            dotnet build test/touki.tests/touki.tests.csproj `
               --configuration '${{ inputs.configuration }}' `
               --framework '${{ inputs.tfm }}' `
               --no-restore `
@@ -134,7 +134,7 @@ jobs:
               throw "touki.tests build failed with exit code $LASTEXITCODE."
             }
 
-            dotnet build touki.analyzers.tests/touki.analyzers.tests.csproj `
+            dotnet build test/touki.analyzers.tests/touki.analyzers.tests.csproj `
               --configuration '${{ inputs.configuration }}' `
               --framework net10.0 `
               --no-restore `
@@ -143,7 +143,7 @@ jobs:
               throw "touki.analyzers.tests build failed with exit code $LASTEXITCODE."
             }
 
-            dotnet build touki.aot.tests/touki.aot.tests.csproj `
+            dotnet build test/touki.aot.tests/touki.aot.tests.csproj `
               --configuration '${{ inputs.configuration }}' `
               --framework net10.0 `
               --no-restore `
@@ -154,7 +154,7 @@ jobs:
           }
         }
         else {
-          dotnet build touki.tests/touki.tests.csproj `
+          dotnet build test/touki.tests/touki.tests.csproj `
             --configuration '${{ inputs.configuration }}' `
             --framework '${{ inputs.tfm }}' `
             --no-restore `
@@ -176,7 +176,7 @@ jobs:
         New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
 
         $testArgs = @(
-          'test', 'touki.tests/touki.tests.csproj',
+          'test', 'test/touki.tests/touki.tests.csproj',
           '--configuration', '${{ inputs.configuration }}',
           '--framework', '${{ inputs.tfm }}',
           '--no-build'
@@ -216,7 +216,7 @@ jobs:
           $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
         }
 
-        dotnet build touki.tests/touki.tests.csproj `
+        dotnet build test/touki.tests/touki.tests.csproj `
           --configuration '${{ inputs.configuration }}' `
           --framework '${{ inputs.additional-tfm }}' `
           --no-restore `
@@ -238,7 +238,7 @@ jobs:
           'artifacts/test-results/${{ inputs.artifact-name }}/${{ inputs.additional-tfm }}'
         New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
 
-        dotnet test touki.tests/touki.tests.csproj `
+        dotnet test test/touki.tests/touki.tests.csproj `
           --configuration '${{ inputs.configuration }}' `
           --framework '${{ inputs.additional-tfm }}' `
           --no-build `
@@ -261,13 +261,13 @@ jobs:
         }
 
         $projects = @(
-          'touki.analyzers.tests/touki.analyzers.tests.csproj',
-          'touki.aot.tests/touki.aot.tests.csproj'
+          'test/touki.analyzers.tests/touki.analyzers.tests.csproj',
+          'test/touki.aot.tests/touki.aot.tests.csproj'
         )
 
         foreach ($project in $projects) {
           $extraArgs = @()
-          if ('${{ inputs.collect-coverage }}' -eq 'true' -and $project -like 'touki.aot.tests/*') {
+          if ('${{ inputs.collect-coverage }}' -eq 'true' -and $project -like 'test/touki.aot.tests/*') {
             $extraArgs = @(
               '--coverage',
               '--coverage-output-format', 'cobertura',
@@ -294,7 +294,7 @@ jobs:
       if: inputs.native-aot-rid != ''
       shell: pwsh
       run: |
-        dotnet publish touki.aot.tests/touki.aot.tests.csproj `
+        dotnet publish test/touki.aot.tests/touki.aot.tests.csproj `
           --configuration Release `
           --runtime '${{ inputs.native-aot-rid }}' `
           --output 'artifacts/native-aot/${{ inputs.native-aot-rid }}'

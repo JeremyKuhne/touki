@@ -19,7 +19,7 @@ namespace Touki;
 ///  </para>
 ///  <para>
 ///   The result on both runtimes is essentially the same instructions you
-///   would write by hand. See <c>touki.perf/EnumExtensionsPerf.cs</c> and
+///   would write by hand. See <c>test/touki.perf/EnumExtensionsPerf.cs</c> and
 ///   <c>EnumExtensionsInliningPerf.cs</c> for the disassembly and numbers
 ///   that back that up.
 ///  </para>
@@ -37,7 +37,7 @@ public static unsafe partial class EnumExtensions
     //  for AreFlagsSet, for example), but the caller pays a real call/ret
     //  plus a stack spill - roughly +0.35 ns per call. AggressiveInlining
     //  overrides that heuristic so the call site gets the same flat code
-    //  as on modern .NET. Confirmed in touki.perf/EnumExtensionsInliningPerf.cs
+    //  as on modern .NET. Confirmed in test/touki.perf/EnumExtensionsInliningPerf.cs
     //  asm output: with the attribute the call disappears and the inlined
     //  body is ~3 extra instructions (load + and + cmp) over a hand-written
     //  bitwise expression; without it the inlined body is replaced by a

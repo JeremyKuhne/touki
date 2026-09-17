@@ -21,7 +21,7 @@
 
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\..\klutzyninja.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,8 +35,8 @@
 
   <ItemGroup>
     <!-- RecordedMSBuildFileSystem and the recording infrastructure live in test support. -->
-    <ProjectReference Include="..\touki.testsupport\touki.testsupport.csproj" />
-    <ProjectReference Include="..\touki\touki.csproj" />
+    <ProjectReference Include="..\..\touki.testsupport\touki.testsupport.csproj" />
+    <ProjectReference Include="..\..\touki\touki.csproj" />
   </ItemGroup>
 
 </Project>

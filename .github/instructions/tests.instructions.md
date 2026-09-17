@@ -1,11 +1,11 @@
 ---
-applyTo: 'touki.tests/**/*.cs'
+applyTo: 'test/touki.tests/**/*.cs'
 ---
 
 # Test conventions for `touki.tests`
 
 [AGENTS.md](../../AGENTS.md) is canonical. This file is a path-scoped
-elaboration of the same rules for `touki.tests/**/*.cs` - it adds detail
+elaboration of the same rules for `test/touki.tests/**/*.cs` - it adds detail
 that would bloat the canonical file but must not contradict it. If the two
 ever drift, AGENTS.md wins; update this file to match.
 
@@ -102,7 +102,7 @@ makes the test locale-dependent and flaky on non-en-US machines.
 
 ## Allocation assertions
 
-- Use [`Touki.TestSupport.MemoryWatch`](../../touki.tests/TestSupport/MemoryWatch.cs)
+- Use [`Touki.TestSupport.MemoryWatch`](../../test/touki.tests/TestSupport/MemoryWatch.cs)
   to assert that a region of code does not allocate. Open it in a
   `using` block on the same thread as the code under test; the watch
   records `GC.GetAllocatedBytesForCurrentThread()` on entry and throws

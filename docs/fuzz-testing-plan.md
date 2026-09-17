@@ -11,7 +11,7 @@
 ## Implementation status (as of 2026-07-01)
 
 This plan is **fully implemented** and has since grown past its original scope.
-The [`touki.fuzz`](../touki.fuzz/) harness targets `net10.0;net481` and is
+The [`touki.fuzz`](../test/touki.fuzz/) harness targets `net10.0;net481` and is
 excluded from the normal test run; the reusable instrument/run/crash-promotion
 workflow now lives in the [`fuzz-testing`](../.agents/skills/fuzz-testing/SKILL.md)
 skill.
@@ -22,13 +22,13 @@ skill.
 - **Phase 2** (net481 runs) - **DONE**. The harness multi-targets `net481`; the
   net481 Release `Unsafe.As` sign-extension divergence this phase was meant to
   hunt is pinned in
-  `touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs`.
+  `test/touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs`.
 - **Phase 3** (RLE encode/decode) - **DONE**. `RunLengthTarget` covers the
   round-trip, length-invariant, and malformed-decode scenarios.
 - **Phase 4** (promote findings to `touki.tests`) - **DONE / ongoing**. Glob
   fuzzing found real catastrophic-backtracking and stack-overflow DoS bugs, now
   pinned as deterministic cross-TFM cases in
-  `touki.tests/Touki/Io/Globbing/GlobSpecificationTests.Security.cs`.
+  `test/touki.tests/Touki/Io/Globbing/GlobSpecificationTests.Security.cs`.
 - **Cross-cutting skill** - **DONE**. The
   [`fuzz-testing`](../.agents/skills/fuzz-testing/SKILL.md) skill is the
   documented entry point for both engines and the crash-to-regression loop.
@@ -66,7 +66,7 @@ The phase narratives below are retained as the historical record of the rollout.
 
 ## Phase 1 - Stand up the cross-compiled SharpFuzz project; fuzz `SpanReader`/`SpanWriter` on .NET 10 locally
 
-1. Create `touki.fuzz/touki.fuzz.csproj` targeting **`net10.0;net481`** (use
+1. Create `test/touki.fuzz/touki.fuzz.csproj` targeting **`net10.0;net481`** (use
    the `$(DotNetCoreVersion)` property like the other projects). Reference
    `touki`. Add `PackageVersion Include="SharpFuzz"` to
    [Directory.Packages.props](../Directory.Packages.props) and a
@@ -84,8 +84,8 @@ The phase narratives below are retained as the historical record of the rollout.
    SharpFuzz.CommandLine`, instrument the net10 build, run under libFuzzer
    (native Windows) with a checked-in seed corpus. This is the **first
    workflow to enable**.
-4. Establish the repo layout the later phases reuse: `touki.fuzz/corpus/<target>/`,
-   `touki.fuzz/crashes/`, and a short README of the run commands.
+4. Establish the repo layout the later phases reuse: `test/touki.fuzz/corpus/<target>/`,
+   `test/touki.fuzz/crashes/`, and a short README of the run commands.
 
 **Exit criteria:** `SpanReader`/`SpanWriter` targets run clean locally on net10
 with a seed corpus; harness layout and corpus/crash dirs established.

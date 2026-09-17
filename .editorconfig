@@ -1505,7 +1505,7 @@ dotnet_diagnostic.IDE0078.severity = warning
 
 # IDE0180: Use tuple to swap values
 # Disabled globally because the auto-fix is unsafe on .NET Framework hot
-# paths. Measured by touki.perf/SpanSwapPerf.cs:
+# paths. Measured by test/touki.perf/SpanSwapPerf.cs:
 #   * net481 RyuJIT: tuple swap is ~9% slower for paired Span<T> indexed
 #     swaps and ~23% slower for plain-local swaps. Single-span indexed
 #     swap and `ref` local swap are unaffected.

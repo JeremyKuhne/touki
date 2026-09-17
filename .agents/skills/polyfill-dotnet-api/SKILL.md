@@ -41,7 +41,7 @@ member); [source-selection.md](source-selection.md) keeps the touki-specific
 bindings and the hand-rolled folder/namespace rules.
 
 1. **Microsoft-shipped NuGet package.** Probe first: write a tiny
-   `#if NETFRAMEWORK` snippet in `touki.tests/Framework/`, build `net472`,
+   `#if NETFRAMEWORK` snippet in `test/touki.tests/Framework/`, build `net472`,
    and if it compiles a referenced package already supplies the member.
    `System.Memory`, `Microsoft.Bcl.Memory`, `Microsoft.Bcl.HashCode`, and
    `Microsoft.IO.Redist` are already referenced.
@@ -78,7 +78,7 @@ TFM-phrasing foot-guns are in [gotchas.md](gotchas.md).
 2. If hand-rolling, place under `touki/Framework/Polyfills/<BclNamespace>/`
    using `extension(...)` blocks (only declare a new type when the BCL
    surface itself is a brand-new type). Apply [design-rules.md](design-rules.md).
-3. Add tests under [`touki.tests/`](../../../touki.tests/) running on both
+3. Add tests under [`touki.tests/`](../../../test/touki.tests/) running on both
    TFMs. Identical observable behavior to the modern BCL for matching
    inputs. Consult `dotnet/runtime` tests (`src/libraries/<AreaName>/tests/...`)
    for additional edge cases - via the microsoft-learn MCP server when

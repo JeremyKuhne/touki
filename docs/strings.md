@@ -129,7 +129,7 @@ overloads that format an interpolated value through `ValueStringBuilder`-backed
 storage ([`StreamExtensions.cs`](../touki/Touki/Io/StreamExtensions.cs) and
 [`TextWriterExtensions.cs`](../touki/Touki/Io/TextWriterExtensions.cs)). Unit tests
 demonstrate the pattern
-([`StreamExtensionsTests.cs`](../touki.tests/Touki/StreamExtensionsTests.cs)):
+([`StreamExtensionsTests.cs`](../test/touki.tests/Touki/StreamExtensionsTests.cs)):
 
 ```csharp
 using Touki.Io;

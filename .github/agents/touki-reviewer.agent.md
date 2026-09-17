@@ -65,10 +65,10 @@ tests, and API design.
    `[MethodImpl(MethodImplOptions.AggressiveInlining)]` method that takes a
    generic `T` and calls `Unsafe.As<T, byte/sbyte/short/ushort>(ref param)`
    without masking - the documented net481 codegen bug, pinned by
-   [touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs](../../touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs).
+   [touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs](../../test/touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs).
 
 4. **Public API additions.** XML doc comments on every new public member; at
-   least one test in `touki.tests/` covering the new surface; if the addition is
+   least one test in `test/touki.tests/` covering the new surface; if the addition is
    a polyfill, the `Examples` table in the
    [`polyfill-dotnet-api`](../../.agents/skills/polyfill-dotnet-api/SKILL.md)
    skill is updated.

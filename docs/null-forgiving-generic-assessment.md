@@ -91,7 +91,7 @@ The intent categories are:
   representation, or an invalid-state throw.
 - **Generic array-slot clearing: 2.** These occur in
   [`ArrayBackedList<T>`](../touki/Touki/Collections/ArrayBackedList.cs) and
-  [`ContiguousListTests`](../touki.tests/Touki/Collections/ContiguousListTests.cs).
+  [`ContiguousListTests`](../test/touki.tests/Touki/Collections/ContiguousListTests.cs).
   `Array.Clear` or another clearing helper avoids the direct assignment.
 - **`Try*` output assignment: 12.** These occur in
   [`Value.TryGetValue<T>`](../touki/Touki/Value.cs) and
@@ -120,11 +120,11 @@ The exact location reconciliation is:
   lines 34, 103, 114, 217, 233, 262, and 287;
   [`SpanExtensions.SpanSplitEnumerator.cs`](../touki/Framework/Polyfills/System/SpanExtensions.SpanSplitEnumerator.cs)
   line 65; and
-  [`ValueEnumeratorTests.cs`](../touki.tests/Touki/Collections/ValueEnumeratorTests.cs)
+  [`ValueEnumeratorTests.cs`](../test/touki.tests/Touki/Collections/ValueEnumeratorTests.cs)
   line 29.
 - Generic array-slot clearing (2):
   [`ArrayBackedList.cs`](../touki/Touki/Collections/ArrayBackedList.cs) line 98
-  and [`ContiguousListTests.cs`](../touki.tests/Touki/Collections/ContiguousListTests.cs)
+  and [`ContiguousListTests.cs`](../test/touki.tests/Touki/Collections/ContiguousListTests.cs)
   line 114.
 - `Try*` output assignment (12):
   [`RefCountedCache.cs`](../touki/Touki/Collections/RefCountedCache.cs) line 134

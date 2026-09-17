@@ -363,7 +363,7 @@ This abridged example matches manifest schema v1:
     "executable": "dotnet",
     "arguments": ["run", "-c", "Release", "..."]
   },
-  "project": "touki.perf/touki.perf.csproj",
+  "project": "test/touki.perf/touki.perf.csproj",
   "tfm": "net10.0",
   "filter": "*BinaryFormattedObjectPerf*",
   "profiler": "EP",

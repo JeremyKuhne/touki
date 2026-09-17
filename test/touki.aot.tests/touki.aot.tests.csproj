@@ -28,7 +28,7 @@
 
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\..\klutzyninja.snk</AssemblyOriginatorKeyFile>
 
     <!--
       Build-time trim/AOT analyzers are always on: IsAotCompatible turns on EnableAotAnalyzer,
@@ -37,7 +37,7 @@
       SatelliteStringResourceManager) fails the build.
 
       The full ILC whole-program gate turns on only for a RID publish (the AOT compiler always needs a
-      RID): "dotnet publish touki.aot.tests -r <rid> -c Release". PublishAot is gated on
+  RID): "dotnet publish test/touki.aot.tests -r <rid> -c Release". PublishAot is gated on
       RuntimeIdentifier rather than set unconditionally on purpose - a permanent PublishAot forces every
       build (including the coverage-instrumented solution "dotnet test") into an AOT shape, under which
       the code-coverage extension drops its "coverage-settings" option and the solution test run fails
@@ -70,7 +70,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\touki\touki.csproj" />
+    <ProjectReference Include="..\..\touki\touki.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PublishAot)' == 'true'">
