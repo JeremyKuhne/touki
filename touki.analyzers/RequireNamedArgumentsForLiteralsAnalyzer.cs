@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -94,7 +95,7 @@ public sealed partial class RequireNamedArgumentsForLiteralsAnalyzer : Diagnosti
             return;
         }
 
-        if (!TryGetSourceExpression(operation, out ExpressionSyntax expression, out bool isAttributeArgument)
+        if (!TryGetSourceExpression(operation, out ExpressionSyntax? expression, out bool isAttributeArgument)
             || (operation.Parent?.IsImplicit == true && !isAttributeArgument))
         {
             return;
@@ -131,8 +132,7 @@ public sealed partial class RequireNamedArgumentsForLiteralsAnalyzer : Diagnosti
         ExpressionSyntax expression,
         ConcurrentDictionary<SyntaxTree, CompilerErrorCache> compilerErrors)
     {
-        SemanticModel? semanticModel = context.Operation.SemanticModel;
-        if (semanticModel is null)
+        if (context.Operation.SemanticModel is not { } semanticModel)
         {
             return true;
         }
@@ -143,7 +143,7 @@ public sealed partial class RequireNamedArgumentsForLiteralsAnalyzer : Diagnosti
 
     private static bool TryGetSourceExpression(
         IArgumentOperation operation,
-        out ExpressionSyntax expression,
+        [NotNullWhen(returnValue: true)] out ExpressionSyntax? expression,
         out bool isAttributeArgument)
     {
         SyntaxNode syntax = operation.Syntax;
@@ -174,19 +174,22 @@ public sealed partial class RequireNamedArgumentsForLiteralsAnalyzer : Diagnosti
                     syntax = argument;
                     continue;
 
-                case ExpressionSyntax current when TryGetTransparentParent(current, out ExpressionSyntax parent):
+                case ExpressionSyntax current
+                    when TryGetTransparentParent(current, out ExpressionSyntax? parent):
                     syntax = parent;
                     continue;
 
                 default:
-                    expression = null!;
+                    expression = null;
                     isAttributeArgument = false;
                     return false;
             }
         }
     }
 
-    private static bool TryGetTransparentParent(ExpressionSyntax expression, out ExpressionSyntax parent)
+    private static bool TryGetTransparentParent(
+        ExpressionSyntax expression,
+        [NotNullWhen(returnValue: true)] out ExpressionSyntax? parent)
     {
         ExpressionSyntax? candidateParent = expression.Parent switch
         {
@@ -203,7 +206,7 @@ public sealed partial class RequireNamedArgumentsForLiteralsAnalyzer : Diagnosti
             _ => null
         };
 
-        parent = candidateParent!;
+        parent = candidateParent;
         return candidateParent is not null;
     }
 

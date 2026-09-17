@@ -27,7 +27,7 @@ public partial class XmlDocumentationFormattingAnalyzerTests
             .ConfigureAwait(false);
 
     private static string Replacement(Diagnostic diagnostic) =>
-        diagnostic.Properties[ReplacementProperty]!;
+        diagnostic.GetRequiredProperty(ReplacementProperty);
 
     [TestMethod]
     public async Task Analyze_SingleLineSummary_ReportsExpandedReplacement()

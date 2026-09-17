@@ -69,24 +69,24 @@ public class StoringEnum
         value.TryGetValue(out ByteEnum result).Should().BeTrue();
         result.Should().Be(@enum);
         value.TryGetValue(out ByteEnum? nullResult).Should().BeTrue();
-        nullResult!.Value.Should().Be(@enum);
+        nullResult.Should().Be(@enum);
         value = Value.Create((ByteEnum?)@enum);
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@enum);
         value.TryGetValue(out nullResult).Should().BeTrue();
-        nullResult!.Value.Should().Be(@enum);
+        nullResult.Should().Be(@enum);
 
         // Create boxed
         value = Value.Create((object)@enum);
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@enum);
         value.TryGetValue(out nullResult).Should().BeTrue();
-        nullResult!.Value.Should().Be(@enum);
+        nullResult.Should().Be(@enum);
         value = Value.Create((object)(ByteEnum?)@enum);
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@enum);
         value.TryGetValue(out nullResult).Should().BeTrue();
-        nullResult!.Value.Should().Be(@enum);
+        nullResult.Should().Be(@enum);
     }
 
     [TestMethod]
@@ -98,24 +98,24 @@ public class StoringEnum
         value.TryGetValue(out ShortEnum result).Should().BeTrue();
         result.Should().Be(@enum);
         value.TryGetValue(out ShortEnum? nullResult).Should().BeTrue();
-        nullResult!.Value.Should().Be(@enum);
+        nullResult.Should().Be(@enum);
         value = Value.Create((ShortEnum?)@enum);
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@enum);
         value.TryGetValue(out nullResult).Should().BeTrue();
-        nullResult!.Value.Should().Be(@enum);
+        nullResult.Should().Be(@enum);
 
         // Create boxed
         value = Value.Create((object)@enum);
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@enum);
         value.TryGetValue(out nullResult).Should().BeTrue();
-        nullResult!.Value.Should().Be(@enum);
+        nullResult.Should().Be(@enum);
         value = Value.Create((object)(ShortEnum?)@enum);
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@enum);
         value.TryGetValue(out nullResult).Should().BeTrue();
-        nullResult!.Value.Should().Be(@enum);
+        nullResult.Should().Be(@enum);
     }
 
     [TestMethod]
@@ -127,24 +127,24 @@ public class StoringEnum
         value.TryGetValue(out LongEnum result).Should().BeTrue();
         result.Should().Be(@enum);
         value.TryGetValue(out LongEnum? nullResult).Should().BeTrue();
-        nullResult!.Value.Should().Be(@enum);
+        nullResult.Should().Be(@enum);
         value = Value.Create((LongEnum?)@enum);
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@enum);
         value.TryGetValue(out nullResult).Should().BeTrue();
-        nullResult!.Value.Should().Be(@enum);
+        nullResult.Should().Be(@enum);
 
         // Create boxed
         value = Value.Create((object)@enum);
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@enum);
         value.TryGetValue(out nullResult).Should().BeTrue();
-        nullResult!.Value.Should().Be(@enum);
+        nullResult.Should().Be(@enum);
         value = Value.Create((object)(LongEnum?)@enum);
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@enum);
         value.TryGetValue(out nullResult).Should().BeTrue();
-        nullResult!.Value.Should().Be(@enum);
+        nullResult.Should().Be(@enum);
     }
 
     [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

@@ -111,7 +111,9 @@ internal static partial class XmlDocumentationCommentFormatter
                 continue;
             }
 
-            if (!TryReserveChange(change.NewText!.Length, change.Span.Length, ref projectedLength))
+            string newText = change.NewText
+                ?? throw new InvalidOperationException("XML documentation changes must provide replacement text.");
+            if (!TryReserveChange(newText.Length, change.Span.Length, ref projectedLength))
             {
                 replacement = string.Empty;
                 return false;
@@ -302,9 +304,11 @@ internal static partial class XmlDocumentationCommentFormatter
         for (int index = 0; index < changes.Count; index++)
         {
             TextChange change = changes[index];
+            string newText = change.NewText
+                ?? throw new InvalidOperationException("XML documentation changes must provide replacement text.");
             relativeChanges[index] = new(
                 new TextSpan(change.Span.Start - commentSpan.Start, change.Span.Length),
-                change.NewText!);
+                newText);
         }
 
         replacement = comment.WithChanges(relativeChanges).ToString();
@@ -867,8 +871,7 @@ internal static partial class XmlDocumentationCommentFormatter
             }
         }
 
-        SyntaxNode? attributeContainer = GetAttributeContainer(token.Parent);
-        if (attributeContainer is not null
+        if (GetAttributeContainer(token.Parent) is { } attributeContainer
             && HasAttributeAncestor(token.Parent)
             && lineNumber > GetLineNumber(source, attributeContainer.SpanStart))
         {
@@ -883,12 +886,15 @@ internal static partial class XmlDocumentationCommentFormatter
         Dictionary<int, string> cache,
         out string indentation)
     {
-        if (!cache.TryGetValue(count, out indentation!))
+        if (cache.TryGetValue(count, out string? cachedIndentation))
         {
-            indentation = new(' ', count);
-            cache.Add(count, indentation);
+            indentation = cachedIndentation
+                ?? throw new InvalidOperationException("Cached indentation must not be null.");
+            return true;
         }
 
+        indentation = new(' ', count);
+        cache.Add(count, indentation);
         return true;
     }
 

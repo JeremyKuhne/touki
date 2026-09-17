@@ -54,10 +54,17 @@ public class GlobExtGlobMatchPerf
     private const string RepeatHitInput = "ababababc.cs";
     private const string RepeatMissInput = "ababababd.cs";
 
-    private GlobSpecification _prefixAlt = null!;
-    private GlobSpecification _negation = null!;
-    private GlobSpecification _atAlt = null!;
-    private GlobSpecification _repeat = null!;
+    [AllowNull]
+    private GlobSpecification _prefixAlt;
+
+    [AllowNull]
+    private GlobSpecification _negation;
+
+    [AllowNull]
+    private GlobSpecification _atAlt;
+
+    [AllowNull]
+    private GlobSpecification _repeat;
 
     [GlobalSetup]
     public void Setup()

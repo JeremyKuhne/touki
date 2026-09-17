@@ -79,7 +79,10 @@ public sealed class SequentialSeparatorGitOracleTests
         }
     }
 
-    private static RepoFixture s_fixture = null!;
+    private static RepoFixture? s_fixture;
+
+    private static RepoFixture Fixture => s_fixture
+        ?? throw new AssertFailedException("The repository fixture has not been initialized.");
 
     [ClassInitialize]
     public static void ClassInit(TestContext context) => s_fixture = new RepoFixture();
@@ -120,7 +123,7 @@ public sealed class SequentialSeparatorGitOracleTests
     [DataRow("a//**//b", "a/x/y/b")]
     public void IsMatch_GitDialect_SequentialSeparators_AgreesWithLibGit2(string pattern, string input)
     {
-        bool oracle = s_fixture.IsIgnored(pattern, input);
+        bool oracle = Fixture.IsIgnored(pattern, input);
         bool actual = ToukiMatches(pattern, input);
         actual.Should().Be(
             oracle,

@@ -179,9 +179,10 @@ public class SimpleServiceProviderTests
         SimpleServiceProvider provider = new();
         TestService? nullService = null;
 
-        // This would be prevented by the compiler due to the constraint T : class
-        // But we can simulate it by using null! to satisfy the compiler
-        provider.AddService(nullService!);
+        // Intentionally pass null to verify that null services are treated as absent.
+    #pragma warning disable CS8604
+        provider.AddService<TestService>(nullService);
+    #pragma warning restore CS8604
 
         // When retrieving, we should get null back
         TestService? result = provider.GetService<TestService>();

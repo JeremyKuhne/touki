@@ -40,7 +40,10 @@ public class StringExtensionsPolyfillTests
     [TestMethod]
     public void Contains_String_NullValue_Throws()
     {
-        Action action = () => "x".Contains(null!, StringComparison.Ordinal);
+        // Intentionally pass null to exercise value validation.
+    #pragma warning disable CS8625
+        Action action = () => "x".Contains(null, StringComparison.Ordinal);
+    #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
 
@@ -167,7 +170,10 @@ public class StringExtensionsPolyfillTests
     [TestMethod]
     public void Replace_StringComparison_NullOldValue_Throws()
     {
-        Action action = () => "abc".Replace(null!, "x", StringComparison.Ordinal);
+        // Intentionally pass null to exercise oldValue validation.
+    #pragma warning disable CS8625
+        Action action = () => "abc".Replace(null, "x", StringComparison.Ordinal);
+    #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
 
@@ -210,7 +216,10 @@ public class StringExtensionsPolyfillTests
     [TestMethod]
     public void ReplaceLineEndings_NullReplacement_Throws()
     {
-        Action action = () => "a\nb".ReplaceLineEndings(null!);
+        // Intentionally pass null to exercise replacement validation.
+    #pragma warning disable CS8625
+        Action action = () => "a\nb".ReplaceLineEndings(null);
+    #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
 

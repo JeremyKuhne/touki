@@ -54,7 +54,10 @@ public class StringsTests
     [TestMethod]
     public void Create_NullAction_Throws()
     {
-        Action act = () => string.Create(10, 0, null!);
+        // Intentionally pass null to exercise action validation.
+    #pragma warning disable CS8625
+        Action act = () => string.Create(10, 0, null);
+    #pragma warning restore CS8625
         act.Should().Throw<ArgumentNullException>();
     }
 
@@ -871,7 +874,10 @@ public class StringsTests
     public void ReplaceLineEndings_WithNullReplacement_Throws()
     {
         string input = "Hello\nWorld";
-        Action action = () => input.ReplaceLineEndings(null!);
+        // Intentionally pass null to exercise replacement validation.
+    #pragma warning disable CS8625
+        Action action = () => input.ReplaceLineEndings(null);
+    #pragma warning restore CS8625
 
         action.Should().Throw<ArgumentNullException>();
     }

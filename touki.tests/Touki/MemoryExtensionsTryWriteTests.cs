@@ -309,7 +309,7 @@ public class MemoryExtensionsTryWriteTests
 
         public string ToString(string? format, IFormatProvider? formatProvider)
         {
-            string prefix = string.IsNullOrEmpty(format) ? "F" : format!;
+            string prefix = format is null or "" ? "F" : format;
             return $"{prefix}:{_data}";
         }
     }

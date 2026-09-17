@@ -24,15 +24,29 @@ public class OracleMatchMSBuildPerf
     private const string DeepGlobStarInput = "a/b/c/d/e/Program.cs";
     private const string MissInput = "zzzzzzzzzzzzzzzz";
 
-    private GlobSpecification _toukiLiteral = null!;
-    private GlobSpecification _toukiSuffix = null!;
-    private GlobSpecification _toukiGlobStar = null!;
-    private GlobSpecification _toukiDeepGlobStar = null!;
+    [AllowNull]
+    private GlobSpecification _toukiLiteral;
 
-    private MSBuildGlob _oracleLiteral = null!;
-    private MSBuildGlob _oracleSuffix = null!;
-    private MSBuildGlob _oracleGlobStar = null!;
-    private MSBuildGlob _oracleDeepGlobStar = null!;
+    [AllowNull]
+    private GlobSpecification _toukiSuffix;
+
+    [AllowNull]
+    private GlobSpecification _toukiGlobStar;
+
+    [AllowNull]
+    private GlobSpecification _toukiDeepGlobStar;
+
+    [AllowNull]
+    private MSBuildGlob _oracleLiteral;
+
+    [AllowNull]
+    private MSBuildGlob _oracleSuffix;
+
+    [AllowNull]
+    private MSBuildGlob _oracleGlobStar;
+
+    [AllowNull]
+    private MSBuildGlob _oracleDeepGlobStar;
 
     [GlobalSetup]
     public void Setup()

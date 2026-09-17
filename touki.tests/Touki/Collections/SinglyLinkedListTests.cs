@@ -26,7 +26,7 @@ public class SinglyLinkedListTests
         list.First.Should().NotBeNull();
         list.Last.Should().NotBeNull();
         list.Last.Should().BeSameAs(list.First);
-        list.First!.Next.Should().BeNull();
+        GetRequiredNode(list.First).Next.Should().BeNull();
         list.First.Value.Should().Be(1);
 
         list.AddFirst(2);
@@ -35,7 +35,7 @@ public class SinglyLinkedListTests
         list.Last.Should().NotBeNull();
         list.Last.Should().NotBeSameAs(list.First);
         list.Last.Should().BeSameAs(list.First.Next);
-        list.Last!.Next.Should().BeNull();
+        GetRequiredNode(list.Last).Next.Should().BeNull();
         list.First.Value.Should().Be(2);
         list.Last.Value.Should().Be(1);
     }
@@ -54,7 +54,7 @@ public class SinglyLinkedListTests
         list.First.Should().NotBeNull();
         list.Last.Should().NotBeNull();
         list.Last.Should().BeSameAs(list.First);
-        list.First!.Next.Should().BeNull();
+        GetRequiredNode(list.First).Next.Should().BeNull();
         list.First.Value.Should().Be(1);
 
         list.AddLast(2);
@@ -63,7 +63,7 @@ public class SinglyLinkedListTests
         list.Last.Should().NotBeNull();
         list.Last.Should().NotBeSameAs(list.First);
         list.Last.Should().BeSameAs(list.First.Next);
-        list.Last!.Next.Should().BeNull();
+        GetRequiredNode(list.Last).Next.Should().BeNull();
         list.First.Value.Should().Be(1);
         list.Last.Value.Should().Be(2);
     }
@@ -101,7 +101,7 @@ public class SinglyLinkedListTests
 
         enumerator.MoveNext().Should().BeFalse();
         enumerator.Current.Should().BeNull();
-        list!.First!.Value.Should().Be(5);
+        GetRequiredNode(list.First).Value.Should().Be(5);
 
         list.WalkToList().Should().Equal(5, 2, 1, 3, 4);
         list.EnumerateToList().Should().Equal(5, 2, 1, 3, 4);
@@ -208,7 +208,7 @@ public class SinglyLinkedListTests
         SinglyLinkedList<string> list = new();
         SinglyLinkedList<string>.Node node = list.AddFirst("test");
 
-        string value = node;
+        string? value = node;
 
         value.Should().Be("test");
     }
@@ -218,7 +218,7 @@ public class SinglyLinkedListTests
     {
         SinglyLinkedList<string>.Node? nullNode = null;
 
-        string value = nullNode;
+        string? value = nullNode;
 
         value.Should().BeNull();
     }
@@ -269,7 +269,7 @@ public class SinglyLinkedListTests
         var enumerator = list.GetEnumerator();
 
         enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Value.Should().Be(42);
+        GetRequiredNode(enumerator.Current).Value.Should().Be(42);
         enumerator.MoveNext().Should().BeFalse();
     }
 
@@ -286,7 +286,7 @@ public class SinglyLinkedListTests
 
         while (enumerator.MoveNext())
         {
-            values.Add(enumerator.Current.Value);
+            values.Add(GetRequiredNode(enumerator.Current).Value);
         }
 
         values.Should().Equal(1, 2, 3);
@@ -301,11 +301,11 @@ public class SinglyLinkedListTests
         var enumerator = list.GetEnumerator();
         enumerator.MoveNext();
         enumerator.MoveNext();
-        enumerator.Current.Value.Should().Be(2);
+        GetRequiredNode(enumerator.Current).Value.Should().Be(2);
 
         enumerator.Reset();
         enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Value.Should().Be(1);
+        GetRequiredNode(enumerator.Current).Value.Should().Be(1);
     }
 
     [TestMethod]
@@ -363,7 +363,7 @@ public class SinglyLinkedListTests
         list.Count.Should().Be(2);
         list.First.Should().BeSameAs(firstNode);
         list.Last.Should().BeSameAs(lastNode);
-        firstNode!.Next.Should().BeSameAs(lastNode);
+        GetRequiredNode(firstNode).Next.Should().BeSameAs(lastNode);
     }
 
     [TestMethod]
@@ -381,7 +381,7 @@ public class SinglyLinkedListTests
         list.Count.Should().Be(1);
         list.First.Should().BeSameAs(firstNode);
         list.Last.Should().BeSameAs(firstNode);
-        firstNode!.Next.Should().BeNull();
+        GetRequiredNode(firstNode).Next.Should().BeNull();
     }
 
     [TestMethod]
@@ -395,7 +395,7 @@ public class SinglyLinkedListTests
         enumerator.MoveCurrentToFront();
 
         enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Value.Should().Be(1);
+        GetRequiredNode(enumerator.Current).Value.Should().Be(1);
     }
 
     [TestMethod]
@@ -411,8 +411,8 @@ public class SinglyLinkedListTests
         enumerator.MoveCurrentToFront();
 
         list.First.Should().BeSameAs(middleNode);
-        list.First!.Value.Should().Be(2);
-        list.First.Next!.Value.Should().Be(1);
+        GetRequiredNode(list.First).Value.Should().Be(2);
+        GetRequiredNode(GetRequiredNode(list.First).Next).Value.Should().Be(1);
     }
 
     [TestMethod]
@@ -420,7 +420,7 @@ public class SinglyLinkedListTests
     {
         SinglyLinkedList<int> list = new();
         list.AddAll(1, 2, 3);
-        var middleNode = list.First!.Next;
+        SinglyLinkedList<int>.Node? middleNode = GetRequiredNode(list.First).Next;
 
         var enumerator = list.GetEnumerator();
         enumerator.MoveNext();
@@ -431,7 +431,7 @@ public class SinglyLinkedListTests
 
         list.First.Should().BeSameAs(lastNode);
         list.Last.Should().BeSameAs(middleNode);
-        list.Last!.Next.Should().BeNull();
+        GetRequiredNode(list.Last).Next.Should().BeNull();
     }
 
     [TestMethod]
@@ -459,16 +459,16 @@ public class SinglyLinkedListTests
         list.AddLast(null);
 
         list.Count.Should().Be(3);
-        list.First!.Value.Should().BeNull();
-        list.Last!.Value.Should().BeNull();
+        GetRequiredNode(list.First).Value.Should().BeNull();
+        GetRequiredNode(list.Last).Value.Should().BeNull();
 
         var enumerator = list.GetEnumerator();
         enumerator.MoveNext();
-        enumerator.Current.Value.Should().BeNull();
+        GetRequiredNode(enumerator.Current).Value.Should().BeNull();
         enumerator.MoveNext();
-        enumerator.Current.Value.Should().Be("test");
+        GetRequiredNode(enumerator.Current).Value.Should().Be("test");
         enumerator.MoveNext();
-        enumerator.Current.Value.Should().BeNull();
+        GetRequiredNode(enumerator.Current).Value.Should().BeNull();
     }
 
     [TestMethod]
@@ -484,7 +484,7 @@ public class SinglyLinkedListTests
 
         enumerator.Reset();
         enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Value.Should().Be(1);
+        GetRequiredNode(enumerator.Current).Value.Should().Be(1);
     }
 
     [TestMethod]
@@ -501,7 +501,7 @@ public class SinglyLinkedListTests
 
         enumerator.Reset();
         enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Value.Should().Be(1);
+        GetRequiredNode(enumerator.Current).Value.Should().Be(1);
     }
 
     [TestMethod]
@@ -533,9 +533,9 @@ public class SinglyLinkedListTests
 
         enumerator.Current.Should().BeNull();
         list.Count.Should().Be(1);
-        list.First!.Value.Should().Be(42);
+        GetRequiredNode(list.First).Value.Should().Be(42);
         enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Value.Should().Be(42);
+        GetRequiredNode(enumerator.Current).Value.Should().Be(42);
     }
 
     [TestMethod]
@@ -550,9 +550,9 @@ public class SinglyLinkedListTests
         enumerator.RemoveCurrent();
 
         enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Value.Should().Be(3);
+        GetRequiredNode(enumerator.Current).Value.Should().Be(3);
         enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Value.Should().Be(4);
+        GetRequiredNode(enumerator.Current).Value.Should().Be(4);
         enumerator.MoveNext().Should().BeFalse();
     }
 
@@ -568,9 +568,9 @@ public class SinglyLinkedListTests
         enumerator.MoveCurrentToFront();
 
         enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Value.Should().Be(3);
+        GetRequiredNode(enumerator.Current).Value.Should().Be(3);
         enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Value.Should().Be(4);
+        GetRequiredNode(enumerator.Current).Value.Should().Be(4);
         enumerator.MoveNext().Should().BeFalse();
     }
 
@@ -643,14 +643,14 @@ public class SinglyLinkedListTests
         enumerator1.MoveNext();
         enumerator2.MoveNext();
 
-        enumerator1.Current.Value.Should().Be(2);
-        enumerator2.Current.Value.Should().Be(1);
+        GetRequiredNode(enumerator1.Current).Value.Should().Be(2);
+        GetRequiredNode(enumerator2.Current).Value.Should().Be(1);
 
         enumerator1.RemoveCurrent();
         list.Count.Should().Be(2);
 
         enumerator2.MoveNext().Should().BeTrue();
-        enumerator2.Current.Value.Should().Be(3);
+        GetRequiredNode(enumerator2.Current).Value.Should().Be(3);
     }
 
     [TestMethod]
@@ -664,8 +664,8 @@ public class SinglyLinkedListTests
 
         list.WalkToList().Should().Equal(3, 2, 1);
         list.Count.Should().Be(3);
-        list.First!.Value.Should().Be(3);
-        list.Last!.Value.Should().Be(1);
+        GetRequiredNode(list.First).Value.Should().Be(3);
+        GetRequiredNode(list.Last).Value.Should().Be(1);
     }
 
     [TestMethod]
@@ -679,8 +679,8 @@ public class SinglyLinkedListTests
 
         list.WalkToList().Should().Equal(1, 2, 3);
         list.Count.Should().Be(3);
-        list.First!.Value.Should().Be(1);
-        list.Last!.Value.Should().Be(3);
+        GetRequiredNode(list.First).Value.Should().Be(1);
+        GetRequiredNode(list.Last).Value.Should().Be(3);
     }
 
     [TestMethod]
@@ -704,8 +704,8 @@ public class SinglyLinkedListTests
 
         list.WalkToList().Should().Equal(0, 1, 2, 3);
         list.Count.Should().Be(4);
-        list.First!.Value.Should().Be(0);
-        list.Last!.Value.Should().Be(3);
+        GetRequiredNode(list.First).Value.Should().Be(0);
+        GetRequiredNode(list.Last).Value.Should().Be(3);
     }
 
     [TestMethod]
@@ -763,14 +763,17 @@ public class SinglyLinkedListTests
         }
 
         list.Count.Should().Be(itemCount);
-        list.First!.Value.Should().Be(0);
-        list.Last!.Value.Should().Be(itemCount - 1);
+        GetRequiredNode(list.First).Value.Should().Be(0);
+        GetRequiredNode(list.Last).Value.Should().Be(itemCount - 1);
 
         List<int> walked = list.WalkToList();
         walked.Should().HaveCount(itemCount);
         walked[0].Should().Be(0);
         walked[itemCount - 1].Should().Be(itemCount - 1);
     }
+
+    private static SinglyLinkedList<T>.Node GetRequiredNode<T>(SinglyLinkedList<T>.Node? node)
+        => node ?? throw new AssertFailedException("Expected a non-null linked-list node.");
 }
 
 internal static class ListExtensions
@@ -789,7 +792,7 @@ internal static class ListExtensions
         var node = linkedList.First;
         while (node is not null)
         {
-            list.Add(node);
+            list.Add(node.Value);
             node = node.Next;
         }
 
@@ -802,7 +805,9 @@ internal static class ListExtensions
         var enumerator = linkedList.GetEnumerator();
         while (enumerator.MoveNext())
         {
-            list.Add(enumerator.Current);
+            SinglyLinkedList<T>.Node current = enumerator.Current
+                ?? throw new AssertFailedException("Expected a current linked-list node.");
+            list.Add(current.Value);
         }
 
         return list;

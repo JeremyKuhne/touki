@@ -15,7 +15,8 @@ public partial class FileSystemGlobbingCompilePerf
     [ParamsAllValues]
     public PatternKind Kind { get; set; }
 
-    private string _pattern = null!;
+    [AllowNull]
+    private string _pattern;
 
     [GlobalSetup]
     public void Setup()

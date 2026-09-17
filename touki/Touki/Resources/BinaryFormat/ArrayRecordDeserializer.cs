@@ -6,6 +6,7 @@
 // src/libraries/System.Resources.Extensions/src/System/Resources/Extensions/BinaryFormat/
 
 using System.Formats.Nrbf;
+using System.Runtime.Serialization;
 
 namespace Touki.Resources.BinaryFormat;
 
@@ -41,7 +42,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
 
         _arrayRecord = arrayRecord;
         Type expectedArrayType = deserializer.TypeResolver.BindToType(arrayRecord.TypeName);
-        _elementType = expectedArrayType.GetElementType()!;
+        _elementType = GetElementType(expectedArrayType);
 
         _arrayOfClassRecords = arrayRecord.GetArray(expectedArrayType);
         _lengths = arrayRecord.Lengths.ToArray();
@@ -156,10 +157,10 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
         }
 
         Type expectedArrayType = typeResolver.BindToType(arrayRecord.TypeName);
-        Type elementType = expectedArrayType.GetElementType()!;
+        Type elementType = GetElementType(expectedArrayType);
         while (elementType.IsArray)
         {
-            elementType = elementType.GetElementType()!;
+            elementType = GetElementType(elementType);
         }
 
         if (!HasBuiltInSupport(elementType))
@@ -186,5 +187,11 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
                 || type == typeof(decimal)
                 || type == typeof(DateTime)
                 || type == typeof(TimeSpan);
+    }
+
+    private static Type GetElementType(Type arrayType)
+    {
+        Type? elementType = arrayType.GetElementType();
+        return elementType ?? throw new SerializationException($"Resolved type '{arrayType}' is not an array.");
     }
 }

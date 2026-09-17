@@ -1227,6 +1227,8 @@ public readonly partial struct Value
             Debug.Assert(Unsafe.SizeOf<T>() <= sizeof(ulong));
 
             // There may or may not be extra garbage in the 64 bits with the arg, so we need to check the actual size.
+            // IsEnum guarantees T is non-nullable, but nullable analysis cannot infer constraints from runtime checks.
+#pragma warning disable CS8714
             return Unsafe.SizeOf<T>() switch
             {
                 1 => new Value(EnumTypeFlag<T>.Instance, Unsafe.As<T, byte>(ref value)),
@@ -1234,6 +1236,7 @@ public readonly partial struct Value
                 4 => new Value(EnumTypeFlag<T>.Instance, Unsafe.As<T, uint>(ref value)),
                 _ => new Value(EnumTypeFlag<T>.Instance, Unsafe.As<T, ulong>(ref value)),
             };
+#pragma warning restore CS8714
         }
 
         return new Value(value);
@@ -1260,7 +1263,7 @@ public readonly partial struct Value
     /// <returns>
     ///  <see langword="true"/> if the value was successfully retrieved; otherwise, <see langword="false"/>.
     /// </returns>
-    public readonly unsafe bool TryGetValue<T>(out T value)
+    public readonly unsafe bool TryGetValue<T>([MaybeNullWhen(returnValue: false)] out T value)
     {
         bool success;
 
@@ -1306,7 +1309,7 @@ public readonly partial struct Value
         return success;
     }
 
-    private readonly bool TryGetValueSlow<T>(out T value)
+    private readonly bool TryGetValueSlow<T>([MaybeNullWhen(returnValue: false)] out T value)
     {
         // Single return has a significant performance benefit.
 
@@ -1315,10 +1318,13 @@ public readonly partial struct Value
         if (_object is null)
         {
             // A null is stored, it can only be assigned to a reference type or nullable.
-            value = default!;
+            value = default;
             result = Nullable.GetUnderlyingType(typeof(T)) is not null;
         }
+        // IsEnum guarantees T is non-nullable, but nullable analysis cannot infer constraints from runtime checks.
+    #pragma warning disable CS8714
         else if (typeof(T).IsEnum && _object is TypeFlag<T> typeFlag)
+    #pragma warning restore CS8714
         {
             value = typeFlag.To(in this);
             result = true;
@@ -1342,7 +1348,7 @@ public readonly partial struct Value
             }
             else
             {
-                value = default!;
+                value = default;
             }
         }
         else if (typeof(T) == typeof(ArraySegment<byte>))
@@ -1359,7 +1365,7 @@ public readonly partial struct Value
             }
             else
             {
-                value = default!;
+                value = default;
             }
         }
         else if (typeof(T) == typeof(ArraySegment<char>))
@@ -1376,7 +1382,7 @@ public readonly partial struct Value
             }
             else
             {
-                value = default!;
+                value = default;
             }
         }
         else if (typeof(T) == typeof(int?) && _object == TypeFlags.Int32)
@@ -1505,21 +1511,21 @@ public readonly partial struct Value
                     break;
                 default:
                     ThrowInvalidOperation();
-                    value = default!;
+                    value = default;
                     result = false;
                     break;
             }
         }
         else
         {
-            value = default!;
+            value = default;
             result = false;
         }
 
         return result;
     }
 
-    private readonly bool TryGetObjectSlow<T>(out T value)
+    private readonly bool TryGetObjectSlow<T>([MaybeNullWhen(returnValue: false)] out T value)
     {
         // Single return has a significant performance benefit.
 
@@ -1527,7 +1533,7 @@ public readonly partial struct Value
 
         if (_object is null)
         {
-            value = default!;
+            value = default;
         }
         else if (typeof(T) == typeof(string))
         {
@@ -1539,7 +1545,7 @@ public readonly partial struct Value
             else
             {
                 // Don't allow "implicit" cast to string if we stored a segment.
-                value = default!;
+                value = default;
                 result = false;
             }
         }
@@ -1553,7 +1559,7 @@ public readonly partial struct Value
             else
             {
                 // Don't allow "implicit" cast to array if we stored a segment.
-                value = default!;
+                value = default;
                 result = false;
             }
         }
@@ -1567,7 +1573,7 @@ public readonly partial struct Value
             else
             {
                 // Don't allow "implicit" cast to array if we stored a segment.
-                value = default!;
+                value = default;
                 result = false;
             }
         }
@@ -1616,7 +1622,7 @@ public readonly partial struct Value
         }
         else
         {
-            value = default!;
+            value = default;
             result = false;
         }
 
@@ -1631,7 +1637,7 @@ public readonly partial struct Value
     /// <exception cref="InvalidCastException">The stored value cannot be converted to the specified type.</exception>
     public readonly T As<T>()
     {
-        if (!TryGetValue(out T value))
+        if (!TryGetValue<T>(out T? value))
         {
             ThrowInvalidCast();
         }

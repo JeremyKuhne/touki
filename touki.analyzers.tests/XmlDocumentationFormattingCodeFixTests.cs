@@ -1050,7 +1050,7 @@ public class XmlDocumentationFormattingCodeFixTests
         string overlapKind)
     {
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        SyntaxTree tree = diagnostic.Location.SourceTree!;
+        SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
         TextSpan span = diagnostic.Location.SourceSpan;
         TextSpan overlap = overlapKind switch
         {
@@ -1069,7 +1069,7 @@ public class XmlDocumentationFormattingCodeFixTests
 
     private static Diagnostic CreateNoOpDiagnostic(Diagnostic diagnostic)
     {
-        SourceText source = diagnostic.Location.SourceTree!.GetText();
+        SourceText source = diagnostic.Location.GetRequiredSourceTree().GetText();
         ImmutableDictionary<string, string?> properties = diagnostic.Properties.SetItem(
             "Replacement",
             source.ToString(diagnostic.Location.SourceSpan));

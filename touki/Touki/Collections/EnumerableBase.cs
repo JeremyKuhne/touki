@@ -11,6 +11,9 @@ namespace Touki.Collections;
 /// </summary>
 public abstract class EnumerableBase<T> : DisposableBase, IEnumerable<T>, IEnumerator<T>
 {
+    [AllowNull]
+    private T _current;
+
     /// <inheritdoc cref="IEnumerator.MoveNext"/>
     public abstract bool MoveNext();
 
@@ -18,7 +21,12 @@ public abstract class EnumerableBase<T> : DisposableBase, IEnumerable<T>, IEnume
     public virtual void Reset() => throw new NotSupportedException();
 
     /// <inheritdoc cref="IEnumerator{T}.Current"/>
-    public T Current { get; protected set; } = default!;
+    public T Current
+    {
+        get => _current;
+        protected set => _current = value;
+    }
+
     object? IEnumerator.Current => Current;
 
     /// <inheritdoc cref="IEnumerable{T}.GetEnumerator"/>

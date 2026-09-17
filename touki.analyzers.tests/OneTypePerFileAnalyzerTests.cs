@@ -96,7 +96,7 @@ public class OneTypePerFileAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Second");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Second");
     }
 
     [TestMethod]
@@ -179,7 +179,7 @@ public class OneTypePerFileAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Second");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Second");
     }
 
     [TestMethod]
@@ -302,7 +302,7 @@ public class OneTypePerFileAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "true").ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Second");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Second");
     }
 
     [TestMethod]
@@ -324,7 +324,7 @@ public class OneTypePerFileAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Nested");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Nested");
     }
 
     [TestMethod]
@@ -439,7 +439,7 @@ public class OneTypePerFileAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Other");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Other");
     }
 
     [TestMethod]
@@ -463,7 +463,7 @@ public class OneTypePerFileAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Second");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Second");
     }
 
     [TestMethod]
@@ -485,7 +485,7 @@ public class OneTypePerFileAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Nested");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Nested");
     }
 
     [TestMethod]
@@ -578,7 +578,7 @@ public class OneTypePerFileAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Kind");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Kind");
     }
 
     [TestMethod]
@@ -597,7 +597,7 @@ public class OneTypePerFileAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Handler");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Handler");
     }
 
     [TestMethod]
@@ -616,7 +616,7 @@ public class OneTypePerFileAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Owner");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Owner");
     }
 
     [TestMethod]
@@ -641,7 +641,7 @@ public class OneTypePerFileAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Two");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Two");
     }
 
     [TestMethod]
@@ -663,7 +663,7 @@ public class OneTypePerFileAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
-        location.SourceTree!.GetText().ToString(location.SourceSpan).Should().Be("Scoped");
+        location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Scoped");
     }
 
     [TestMethod]

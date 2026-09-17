@@ -78,8 +78,7 @@ internal static class BashInterop
         }
 
         string exeName = OperatingSystem.IsWindows() ? "bash.exe" : "bash";
-        string? pathVar = Environment.GetEnvironmentVariable("PATH");
-        if (pathVar is not null)
+        if (Environment.GetEnvironmentVariable("PATH") is { } pathVar)
         {
             foreach (string dir in pathVar.Split(Path.PathSeparator))
             {
@@ -140,7 +139,8 @@ internal static class BashInterop
         psi.Environment["PATTERN"] = pattern;
         psi.Environment["INPUT"] = input;
 
-        using Process p = Process.Start(psi)!;
+        using Process p = Process.Start(psi)
+            ?? throw new InvalidOperationException("Failed to start bash.");
         p.WaitForExit();
         return p.ExitCode == 0;
     }
@@ -189,7 +189,8 @@ internal static class BashInterop
         psi.Environment["ROOT"] = rootDirectory.Replace('\\', '/');
         psi.Environment["PATTERN"] = pattern;
 
-        using Process p = Process.Start(psi)!;
+        using Process p = Process.Start(psi)
+            ?? throw new InvalidOperationException("Failed to start bash.");
         string stdout = p.StandardOutput.ReadToEnd();
         p.WaitForExit();
 

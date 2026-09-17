@@ -109,12 +109,14 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        if (!CopyAnalysis.IsNonCopyable(argument.Value.Type, nonCopyable) || !CopyAnalysis.IsCopyOfExistingLocation(argument.Value))
+        if (argument.Value.Type is not { } valueType
+            || !CopyAnalysis.IsNonCopyable(valueType, nonCopyable)
+            || !CopyAnalysis.IsCopyOfExistingLocation(argument.Value))
         {
             return;
         }
 
-        Report(context, argument.Value, argument.Value.Type!, $"as an argument to parameter '{parameter.Name}'");
+        Report(context, argument.Value, valueType, $"as an argument to parameter '{parameter.Name}'");
     }
 
     private static void AnalyzeReturn(OperationAnalysisContext context, INamedTypeSymbol nonCopyable)
@@ -131,12 +133,14 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        if (!CopyAnalysis.IsNonCopyable(value.Type, nonCopyable) || !CopyAnalysis.IsCopyOfExistingLocation(value))
+        if (value.Type is not { } valueType
+            || !CopyAnalysis.IsNonCopyable(valueType, nonCopyable)
+            || !CopyAnalysis.IsCopyOfExistingLocation(value))
         {
             return;
         }
 
-        Report(context, value, value.Type!, "as a return value");
+        Report(context, value, valueType, "as a return value");
     }
 
     private static void AnalyzeAssignment(OperationAnalysisContext context, INamedTypeSymbol nonCopyable)
@@ -149,12 +153,14 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        if (!CopyAnalysis.IsNonCopyable(assignment.Value.Type, nonCopyable) || !CopyAnalysis.IsCopyOfExistingLocation(assignment.Value))
+        if (assignment.Value.Type is not { } valueType
+            || !CopyAnalysis.IsNonCopyable(valueType, nonCopyable)
+            || !CopyAnalysis.IsCopyOfExistingLocation(assignment.Value))
         {
             return;
         }
 
-        Report(context, assignment.Value, assignment.Value.Type!, "via assignment");
+        Report(context, assignment.Value, valueType, "via assignment");
     }
 
     private static void AnalyzeVariableDeclarator(OperationAnalysisContext context, INamedTypeSymbol nonCopyable)
@@ -172,12 +178,14 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        if (!CopyAnalysis.IsNonCopyable(value.Type, nonCopyable) || !CopyAnalysis.IsCopyOfExistingLocation(value))
+        if (value.Type is not { } valueType
+            || !CopyAnalysis.IsNonCopyable(valueType, nonCopyable)
+            || !CopyAnalysis.IsCopyOfExistingLocation(value))
         {
             return;
         }
 
-        Report(context, value, value.Type!, $"into local '{declarator.Symbol.Name}'");
+        Report(context, value, valueType, $"into local '{declarator.Symbol.Name}'");
     }
 
     private static void AnalyzeConversion(OperationAnalysisContext context, INamedTypeSymbol nonCopyable)
@@ -190,7 +198,8 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        if (!CopyAnalysis.IsNonCopyable(conversion.Operand.Type, nonCopyable))
+        if (conversion.Operand.Type is not { } operandType
+            || !CopyAnalysis.IsNonCopyable(operandType, nonCopyable))
         {
             return;
         }
@@ -198,7 +207,7 @@ public sealed class NonCopyableByValueAnalyzer : DiagnosticAnalyzer
         // Boxing converts a value type to a reference type (object, an interface, or dynamic).
         if (conversion.Type is { IsReferenceType: true })
         {
-            Report(context, conversion, conversion.Operand.Type!, "via a boxing conversion");
+            Report(context, conversion, operandType, "via a boxing conversion");
         }
     }
 

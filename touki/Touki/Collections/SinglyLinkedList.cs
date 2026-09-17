@@ -80,8 +80,9 @@ public sealed partial class SinglyLinkedList<T>
         else
         {
             // Add at the end
-            Debug.Assert(First is not null && Last is not null);
-            Last!.Next = node;
+            Node? last = Last;
+            Debugging.Assert(First is not null && last is not null);
+            last.Next = node;
             Last = node;
         }
 

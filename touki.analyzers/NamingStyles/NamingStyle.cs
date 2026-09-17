@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.CodeAnalysis.Text;
 
@@ -117,7 +118,9 @@ internal readonly partial struct NamingStyle
     ///  Returns <see langword="true"/> when <paramref name="name"/> satisfies this style, otherwise
     ///  <see langword="false"/> with <paramref name="failureReason"/> describing the first violation.
     /// </summary>
-    public bool IsNameCompliant(string name, out string? failureReason)
+    public bool IsNameCompliant(
+        string name,
+        [NotNullWhen(returnValue: false)] out string? failureReason)
     {
         if (!name.StartsWith(Prefix, StringComparison.Ordinal))
         {
@@ -227,7 +230,7 @@ internal readonly partial struct NamingStyle
         TextSpan nameSpan,
         Func<string, TextSpan, bool> wordCheck,
         string messageFormat,
-        out string? reason)
+        [NotNullWhen(returnValue: false)] out string? reason)
     {
         reason = null;
         List<string> violations = [];
@@ -248,21 +251,30 @@ internal readonly partial struct NamingStyle
         return reason is null;
     }
 
-    private bool CheckPascalCase(string name, TextSpan nameSpan, out string? reason) => CheckAllWords(
+    private bool CheckPascalCase(
+        string name,
+        TextSpan nameSpan,
+        [NotNullWhen(returnValue: false)] out string? reason) => CheckAllWords(
         name,
         nameSpan,
         FirstCharIsUpperCase,
         "These words must begin with upper case characters: ",
         out reason);
 
-    private bool CheckAllUpper(string name, TextSpan nameSpan, out string? reason) => CheckAllWords(
+    private bool CheckAllUpper(
+        string name,
+        TextSpan nameSpan,
+        [NotNullWhen(returnValue: false)] out string? reason) => CheckAllWords(
         name,
         nameSpan,
         WordIsAllUpperCase,
         "These words cannot contain lower case characters: ",
         out reason);
 
-    private bool CheckAllLower(string name, TextSpan nameSpan, out string? reason) => CheckAllWords(
+    private bool CheckAllLower(
+        string name,
+        TextSpan nameSpan,
+        [NotNullWhen(returnValue: false)] out string? reason) => CheckAllWords(
         name,
         nameSpan,
         WordIsAllLowerCase,
@@ -276,7 +288,7 @@ internal readonly partial struct NamingStyle
         Func<string, TextSpan, bool> restWordCheck,
         string firstMessageFormat,
         string restMessageFormat,
-        out string? reason)
+        [NotNullWhen(returnValue: false)] out string? reason)
     {
         reason = null;
         List<string> violations = [];
@@ -311,7 +323,10 @@ internal readonly partial struct NamingStyle
         return reason is null;
     }
 
-    private bool CheckCamelCase(string name, TextSpan nameSpan, out string? reason) => CheckFirstAndRestWords(
+    private bool CheckCamelCase(
+        string name,
+        TextSpan nameSpan,
+        [NotNullWhen(returnValue: false)] out string? reason) => CheckFirstAndRestWords(
         name,
         nameSpan,
         FirstCharIsLowerCase,
@@ -320,7 +335,10 @@ internal readonly partial struct NamingStyle
         "These non-leading words must begin with an upper case letter: ",
         out reason);
 
-    private bool CheckFirstUpper(string name, TextSpan nameSpan, out string? reason) => CheckFirstAndRestWords(
+    private bool CheckFirstUpper(
+        string name,
+        TextSpan nameSpan,
+        [NotNullWhen(returnValue: false)] out string? reason) => CheckFirstAndRestWords(
         name,
         nameSpan,
         FirstCharIsUpperCase,

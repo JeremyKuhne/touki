@@ -16,7 +16,10 @@ public class BinaryFormattedObjectTests
     [TestMethod]
     public void Constructor_NullStream_ThrowsArgumentNullException()
     {
-        Action action = () => _ = new BinaryFormattedObject(null!);
+        // Intentionally pass null to exercise stream validation.
+    #pragma warning disable CS8625
+        Action action = () => _ = new BinaryFormattedObject(null);
+    #pragma warning restore CS8625
 
         action.Should().Throw<ArgumentNullException>();
     }

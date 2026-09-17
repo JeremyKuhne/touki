@@ -110,14 +110,12 @@ public class StoringSByte
     public void OutAsObject(sbyte @sbyte)
     {
         Value value = @sbyte;
-        object o = value.As<object>();
-        o.GetType().Should().Be(typeof(sbyte));
-        ((sbyte)o).Should().Be(@sbyte);
+        object? o = value.As<object>();
+        o.Should().BeOfType<sbyte>().Which.Should().Be(@sbyte);
 
         sbyte? n = @sbyte;
         value = n;
         o = value.As<object>();
-        o.GetType().Should().Be(typeof(sbyte));
-        ((sbyte)o).Should().Be(@sbyte);
+        o.Should().BeOfType<sbyte>().Which.Should().Be(@sbyte);
     }
 }

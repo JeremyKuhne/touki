@@ -519,7 +519,10 @@ public class RawResourceReaderTests
     [TestMethod]
     public void CreateFromFile_NullPath_ThrowsArgumentNullException()
     {
-        Action act = () => _ = RawResourceReader.CreateFromFile(null!);
+        // Intentionally pass null to exercise path validation.
+    #pragma warning disable CS8625
+        Action act = () => _ = RawResourceReader.CreateFromFile(null);
+    #pragma warning restore CS8625
         act.Should().Throw<ArgumentNullException>();
     }
 

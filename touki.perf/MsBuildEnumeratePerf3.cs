@@ -65,8 +65,12 @@ public class MsBuildEnumeratePerf3
     private const string ExtGlobSingleIncludeWithRoot = "@(!(bin|obj)/**/*.cs|*.cs)";
 
     private string _directory = string.Empty;
-    private RecordedFileSystem _fileSystem = null!;
-    private MSBuildFileSystemPlayback _msbuildPlayback = null!;
+
+    [AllowNull]
+    private RecordedFileSystem _fileSystem;
+
+    [AllowNull]
+    private MSBuildFileSystemPlayback _msbuildPlayback;
 
     [GlobalSetup]
     public void GlobalSetup()

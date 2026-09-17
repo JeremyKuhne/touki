@@ -120,7 +120,7 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey> : I
         // NOTE: Measure carefully when changing logic in this method. Code has been optimized for performance.
         ArgumentNullException.ThrowIfNull(key);
 
-        if (!Find(key, out CacheEntry entry))
+        if (!Find(key, out CacheEntry? entry))
         {
             entry = Add(key);
         }
@@ -128,16 +128,18 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey> : I
         return entry;
 
         [SkipLocalsInit]
-        bool Find(TKey key, out CacheEntry entry)
+        bool Find(TKey key, [NotNullWhen(returnValue: true)] out CacheEntry? entry)
         {
             bool success = false;
-            entry = default!;
+            entry = null;
             int position = MoveToFront;
 
             var enumerator = _list.GetEnumerator();
             while (enumerator.MoveNext())
             {
-                var node = enumerator.Current;
+                SinglyLinkedList<CacheEntry>.Node? current = enumerator.Current;
+                Debugging.Assert(current is not null);
+                SinglyLinkedList<CacheEntry>.Node node = current;
                 CacheEntry currentEntry = node.Value;
 
                 if (IsMatch(key, currentEntry))
@@ -194,7 +196,7 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey> : I
 
             while (enumerator.MoveNext())
             {
-                var node = enumerator.Current;
+                SinglyLinkedList<CacheEntry>.Node node = enumerator.Current ?? throw new InvalidOperationException();
                 if (node.Value.RefCount == 0)
                 {
                     enumerator.RemoveCurrent();
@@ -221,7 +223,9 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey> : I
             var enumerator = _list.GetEnumerator();
             while (enumerator.MoveNext())
             {
-                enumerator.Current!.Value.Dispose();
+                SinglyLinkedList<CacheEntry>.Node? current = enumerator.Current;
+                Debugging.Assert(current is not null);
+                current.Value.Dispose();
                 enumerator.RemoveCurrent();
             }
         }

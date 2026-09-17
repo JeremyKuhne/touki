@@ -69,7 +69,11 @@ internal static class RoslynTestEnvironment
 
     private static ImmutableArray<MetadataReference> CreateReferences()
     {
-        string trustedAssemblies = (string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!;
+        if (AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") is not string trustedAssemblies)
+        {
+            throw new InvalidOperationException("Trusted platform assemblies are unavailable.");
+        }
+
         string toukiAssembly = typeof(Touki.Io.TextWriterExtensions).Assembly.Location;
 
         return
@@ -88,7 +92,9 @@ internal static class RoslynTestEnvironment
             .GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), inherit: false)
             .Cast<System.Reflection.AssemblyMetadataAttribute>()
             .Single(attribute => attribute.Key == "NuGetPackageRoot")
-            .Value!;
+            .Value
+            ?? throw new InvalidOperationException("NuGet package root metadata is unavailable.");
+
         string framework = Path.Join(
             packages,
             "microsoft.netframework.referenceassemblies.net472",

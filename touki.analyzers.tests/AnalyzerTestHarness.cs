@@ -176,3 +176,58 @@ internal static class AnalyzerTestHarness
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
     }
 }
+
+internal static class RoslynTestAssertions
+{
+    public static string GetRequiredProperty(this Diagnostic diagnostic, string propertyName)
+    {
+        if (diagnostic.Properties[propertyName] is not { } value)
+        {
+            throw new InvalidOperationException($"Expected diagnostic property '{propertyName}'.");
+        }
+
+        return value;
+    }
+
+    public static async Task<Compilation> GetRequiredCompilationAsync(
+        this Project project,
+        CancellationToken cancellationToken = default)
+    {
+        if (await project.GetCompilationAsync(cancellationToken).ConfigureAwait(false) is not { } compilation)
+        {
+            throw new InvalidOperationException("Expected a C# project compilation.");
+        }
+
+        return compilation;
+    }
+
+    public static Document GetRequiredDocument(this Solution solution, DocumentId documentId)
+    {
+        if (solution.GetDocument(documentId) is not { } document)
+        {
+            throw new InvalidOperationException("Expected the document to remain in the solution.");
+        }
+
+        return document;
+    }
+
+    public static Project GetRequiredProject(this Solution solution, ProjectId projectId)
+    {
+        if (solution.GetProject(projectId) is not { } project)
+        {
+            throw new InvalidOperationException("Expected the project to remain in the solution.");
+        }
+
+        return project;
+    }
+
+    public static SyntaxTree GetRequiredSourceTree(this Location location)
+    {
+        if (location.SourceTree is not { } sourceTree)
+        {
+            throw new InvalidOperationException("Expected a source-backed diagnostic location.");
+        }
+
+        return sourceTree;
+    }
+}

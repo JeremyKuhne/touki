@@ -80,12 +80,13 @@ public sealed partial class RenameFileToMatchTypeCodeFixProvider : CodeFixProvid
         out char detailSeparator)
     {
         if (diagnostic.Properties.TryGetValue(SuggestedFileNameProperty, out string? value)
+            && value is not null
             && !string.IsNullOrWhiteSpace(value)
             && string.Equals(Path.GetFileName(value), value, StringComparison.Ordinal)
             && diagnostic.Properties.TryGetValue(SuggestedDetailSeparatorProperty, out string? separatorValue)
             && separatorValue is { Length: 1 })
         {
-            suggestedFileName = value!;
+            suggestedFileName = value;
             detailSeparator = separatorValue[0];
             return true;
         }
@@ -127,8 +128,10 @@ public sealed partial class RenameFileToMatchTypeCodeFixProvider : CodeFixProvid
 
     private static bool IsDestinationAvailable(Solution solution, Document document, string fileName)
     {
-        string targetFilePath = DocumentFileUtilities.GetTargetFilePath(document, fileName)!;
-        string currentFilePath = document.FilePath!;
+        string targetFilePath = DocumentFileUtilities.GetTargetFilePath(document, fileName)
+            ?? throw new InvalidOperationException("A renamable document must have a target file path.");
+        string currentFilePath = document.FilePath
+            ?? throw new InvalidOperationException("A renamable document must have a file path.");
         return !DocumentFileUtilities.HasDocumentWithFilePath(solution, targetFilePath, document.Id)
             && DocumentFileUtilities.IsFileSystemDestinationAvailable(currentFilePath, targetFilePath);
     }
@@ -140,8 +143,7 @@ public sealed partial class RenameFileToMatchTypeCodeFixProvider : CodeFixProvid
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        string? targetFilePath = DocumentFileUtilities.GetTargetFilePath(document, fileName);
-        if (targetFilePath is null)
+        if (DocumentFileUtilities.GetTargetFilePath(document, fileName) is not { } targetFilePath)
         {
             return Task.FromResult(solution);
         }

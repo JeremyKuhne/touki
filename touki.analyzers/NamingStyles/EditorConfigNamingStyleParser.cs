@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -205,7 +206,7 @@ internal static class EditorConfigNamingStyleParser
             // matches every symbol in the compilation. A misspelled group name must drop the rule, not turn it
             // into a catch-all.
             if (!definedSymbolGroups.Contains(symbolName)
-                || !TryGetSymbolSpecification(options, symbolName, out SymbolSpecification specification))
+                || !TryGetSymbolSpecification(options, symbolName, out SymbolSpecification? specification))
             {
                 return false;
             }
@@ -225,9 +226,9 @@ internal static class EditorConfigNamingStyleParser
     private static bool TryGetSymbolSpecification(
         AnalyzerConfigOptions options,
         string symbolName,
-        out SymbolSpecification specification)
+        [NotNullWhen(returnValue: true)] out SymbolSpecification? specification)
     {
-        specification = null!;
+        specification = null;
         string prefix = $"{SymbolsPrefix}{symbolName}.";
 
         if (!TryParseSymbolKinds(
@@ -285,14 +286,14 @@ internal static class EditorConfigNamingStyleParser
 
     private static ImmutableArray<string> ParseNames(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value))
+        if (value is null || string.IsNullOrWhiteSpace(value))
         {
             return [];
         }
 
         ImmutableArray<string>.Builder names = ImmutableArray.CreateBuilder<string>();
 
-        foreach (string name in SplitList(value!))
+        foreach (string name in SplitList(value))
         {
             names.Add(name);
         }

@@ -415,7 +415,9 @@ internal sealed class SymbolSpecification(
                 return symbol is INamedTypeSymbol namedType && namedType.TypeKind == _typeKind.Value;
             }
 
-            return symbol is IMethodSymbol methodSymbol && methodSymbol.MethodKind == _methodKind!.Value;
+            MethodKind methodKind = _methodKind
+                ?? throw new InvalidOperationException("A symbol specification must define a symbol, type, or method kind.");
+            return symbol is IMethodSymbol methodSymbol && methodSymbol.MethodKind == methodKind;
         }
     }
 }

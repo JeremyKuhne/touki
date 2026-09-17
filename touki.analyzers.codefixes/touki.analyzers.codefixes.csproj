@@ -22,6 +22,10 @@
     <MinVerTagPrefix>analyzers-v</MinVerTagPrefix>
     <MinVerMinimumMajorMinor>0.9</MinVerMinimumMajorMinor>
 
+          <PolySharpIncludeGeneratedTypes>
+               System.Diagnostics.CodeAnalysis.NotNullWhenAttribute
+          </PolySharpIncludeGeneratedTypes>
+
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
@@ -39,6 +43,8 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+     <!-- Generates NotNullWhenAttribute, which is missing from netstandard2.0. -->
+     <PackageReference Include="PolySharp" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

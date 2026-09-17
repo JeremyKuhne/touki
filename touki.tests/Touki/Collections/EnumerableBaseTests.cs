@@ -56,6 +56,25 @@ public class EnumerableBaseTests
         protected override void Dispose(bool disposing) { }
     }
 
+    private sealed class ReferenceEnumerable : EnumerableBase<string>
+    {
+        private bool _moved;
+
+        public override bool MoveNext()
+        {
+            if (_moved)
+            {
+                return false;
+            }
+
+            Current = "value";
+            _moved = true;
+            return true;
+        }
+
+        protected override void Dispose(bool disposing) { }
+    }
+
     [TestMethod]
     public void EnumeratorAndEnumerableAreTheSameInstance()
     {
@@ -118,6 +137,17 @@ public class EnumerableBaseTests
 
         // Before any MoveNext calls, Current should be default
         enumerable.Current.Should().Be(default);
+    }
+
+    [TestMethod]
+    public void Current_ReferenceType_HasNonNullableContract()
+    {
+        using ReferenceEnumerable enumerable = new();
+        enumerable.MoveNext().Should().BeTrue();
+
+        string current = enumerable.Current;
+
+        current.Should().Be("value");
     }
 
     [TestMethod]

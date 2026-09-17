@@ -189,6 +189,9 @@ public class StringExtensionsTests
         public object? GetFormat(Type? formatType) =>
             formatType == typeof(ICustomFormatter) ? this : culture.GetFormat(formatType);
 
-        public string Format(string? format, object? arg, IFormatProvider? formatProvider) => null!;
+        // ICustomFormatter uses null to request fallback formatting despite its non-null return annotation.
+#pragma warning disable CS8603
+        public string Format(string? format, object? arg, IFormatProvider? formatProvider) => null;
+#pragma warning restore CS8603
     }
 }

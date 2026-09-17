@@ -30,6 +30,9 @@
   <Project Path="touki.analyzers.codefixes/touki.analyzers.codefixes.csproj">
     <Platform Project="AnyCPU" />
   </Project>
+  <Project Path="touki.analyzers.bootstrap/touki.analyzers.bootstrap.csproj">
+    <Platform Project="AnyCPU" />
+  </Project>
   <Project Path="touki.analyzers.tests/touki.analyzers.tests.csproj">
     <Platform Project="x64" />
   </Project>

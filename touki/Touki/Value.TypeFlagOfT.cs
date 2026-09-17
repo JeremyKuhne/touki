@@ -9,7 +9,7 @@ public readonly partial struct Value
     /// <summary>
     ///  Provides strongly typed reconstruction and runtime type metadata for an inline union value.
     /// </summary>
-    private abstract class TypeFlag<T> : TypeFlag
+    private abstract class TypeFlag<T> : TypeFlag where T : notnull
     {
         public sealed override Type Type
         {
@@ -17,7 +17,8 @@ public readonly partial struct Value
             get => typeof(T);
         }
 
-        public sealed override object ToObject(in Value value) => To(value)!;
+        public sealed override object ToObject(in Value value) => To(value);
+
         public abstract T To(in Value value);
     }
 }

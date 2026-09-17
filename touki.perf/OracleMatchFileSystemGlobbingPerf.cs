@@ -24,15 +24,29 @@ public class OracleMatchFileSystemGlobbingPerf
     private const string DeepGlobStarInput = "a/b/c/d/e/Program.cs";
     private const string MissInput = "zzzzzzzzzzzzzzzz";
 
-    private GlobSpecification _toukiLiteral = null!;
-    private GlobSpecification _toukiSuffix = null!;
-    private GlobSpecification _toukiGlobStar = null!;
-    private GlobSpecification _toukiDeepGlobStar = null!;
+    [AllowNull]
+    private GlobSpecification _toukiLiteral;
 
-    private Matcher _oracleLiteral = null!;
-    private Matcher _oracleSuffix = null!;
-    private Matcher _oracleGlobStar = null!;
-    private Matcher _oracleDeepGlobStar = null!;
+    [AllowNull]
+    private GlobSpecification _toukiSuffix;
+
+    [AllowNull]
+    private GlobSpecification _toukiGlobStar;
+
+    [AllowNull]
+    private GlobSpecification _toukiDeepGlobStar;
+
+    [AllowNull]
+    private Matcher _oracleLiteral;
+
+    [AllowNull]
+    private Matcher _oracleSuffix;
+
+    [AllowNull]
+    private Matcher _oracleGlobStar;
+
+    [AllowNull]
+    private Matcher _oracleDeepGlobStar;
 
     [GlobalSetup]
     public void Setup()

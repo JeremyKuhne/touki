@@ -106,7 +106,7 @@ public class StoringChar
         value.TryGetValue(out char result).Should().BeTrue();
         result.Should().Be(@char);
         value.TryGetValue(out char? nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@char);
+        nullableResult.Should().Be(@char);
 
 
         char? n = @char;
@@ -117,7 +117,7 @@ public class StoringChar
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@char);
         value.TryGetValue(out nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@char);
+        nullableResult.Should().Be(@char);
     }
 
     [TestMethod]
@@ -135,14 +135,12 @@ public class StoringChar
     public void OutAsObject(char @char)
     {
         Value value = @char;
-        object o = value.As<object>();
-        o.GetType().Should().Be(typeof(char));
-        ((char)o).Should().Be(@char);
+        object? o = value.As<object>();
+        o.Should().BeOfType<char>().Which.Should().Be(@char);
 
         char? n = @char;
         value = n;
         o = value.As<object>();
-        o.GetType().Should().Be(typeof(char));
-        ((char)o).Should().Be(@char);
+        o.Should().BeOfType<char>().Which.Should().Be(@char);
     }
 }

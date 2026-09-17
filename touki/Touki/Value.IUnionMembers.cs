@@ -268,7 +268,7 @@ public readonly partial struct Value : Value.IUnionMembers
         /// </summary>
         /// <param name="value">The held <see cref="string"/> value on success.</param>
         /// <returns><see langword="true"/> if that case is held; otherwise, <see langword="false"/>.</returns>
-        bool TryGetValue(out string? value);
+        bool TryGetValue([NotNullWhen(returnValue: true)] out string? value);
 
         /// <summary>
         ///  Non-boxing access for the <see cref="ArraySegment{T}"/> of <see cref="byte"/> case.

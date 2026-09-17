@@ -22,8 +22,10 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
     [MustDispose]
     public readonly ref struct Scope
     {
+        [AllowNull]
         private readonly TValue _object;
-        private readonly CacheEntry _entry;
+        private readonly CacheEntry? _entry;
+        private readonly bool _initialized;
 
         /// <summary>
         ///  Constructor to hold an uncached object. Used to wrap something not coming from the cache in a scope
@@ -38,8 +40,9 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
         /// <param name="object">The uncached object to hold.</param>
         public Scope(TValue @object)
         {
-            _entry = default!;
+            _entry = null;
             _object = @object;
+            _initialized = true;
         }
 
         /// <summary>
@@ -49,7 +52,7 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
         public Scope(CacheEntry entry)
         {
             ArgumentNullException.ThrowIfNull(entry);
-            _object = default!;
+            _object = default;
             _entry = entry;
             _entry.AddRef();
         }
@@ -61,7 +64,7 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
         /// <returns>
         ///  <see langword="true"/> if the scope has cache entry data; otherwise, <see langword="false"/>.
         /// </returns>
-        public bool TryGetCacheData(out TCacheEntryData? data)
+        public bool TryGetCacheData([MaybeNullWhen(returnValue: false)] out TCacheEntryData data)
         {
             if (_entry is null)
             {
@@ -76,6 +79,7 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
         /// <summary>
         ///  The scoped object.
         /// </summary>
+        /// <exception cref="InvalidOperationException">The scope is the default, uninitialized value.</exception>
         public TValue Object => this;
 
         /// <summary>
@@ -96,10 +100,21 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
         /// </remarks>
         /// <param name="scope">The scope whose target object to return.</param>
         /// <returns>The target object held by <paramref name="scope"/>.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///  <paramref name="scope"/> is the default, uninitialized value.
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator TValue(in Scope scope)
         {
-            CacheEntry entry = scope._entry;
-            return entry is null ? scope._object : entry.Object;
+            CacheEntry? entry = scope._entry;
+            if (entry is not null)
+            {
+                return entry.Object;
+            }
+
+            return scope._initialized
+                ? scope._object
+                : throw new InvalidOperationException("The scope is the default, uninitialized value.");
         }
 
         /// <inheritdoc cref="IDisposable.Dispose"/>

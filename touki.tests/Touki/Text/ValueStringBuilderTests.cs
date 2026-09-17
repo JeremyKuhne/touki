@@ -217,6 +217,16 @@ public unsafe class ValueStringBuilderTests
     }
 
     [TestMethod]
+    public void AppendFormatted_ISpanFormattableGrowingBuffer_GrowsToFit()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[1]);
+
+        builder.AppendFormatted(12345, format: "D10");
+
+        builder.ToString().Should().Be("0000012345");
+    }
+
+    [TestMethod]
     public void Insert_CharCount()
     {
         using ValueStringBuilder builder = new(stackalloc char[20]);
@@ -958,7 +968,9 @@ public unsafe class ValueStringBuilderTests
         string formatString = $"Value: {{{argIndex}}}";
 
         builder.AppendFormat(formatString.AsSpan(), args.AsSpan());
-        builder.ToString().Should().Be("Value: " + args[argIndex].As<object>().ToString());
+        object argument = args[argIndex].As<object>()
+            ?? throw new InvalidOperationException("Expected a non-null format argument.");
+        builder.ToString().Should().Be("Value: " + argument.ToString());
     }
 
     [TestMethod]
@@ -2481,12 +2493,16 @@ public unsafe class ValueStringBuilderTests
     {
         ValueStringBuilder builder = new(stackalloc char[8]);
         builder.Append("x");
+        System.IO.TextWriter? writer = null;
         bool threw = false;
         try
         {
             try
             {
-                builder.CopyTo((System.IO.TextWriter)null!);
+                // Intentionally pass null to exercise writer validation.
+#pragma warning disable CS8604
+                builder.CopyTo(writer);
+#pragma warning restore CS8604
             }
             catch (ArgumentNullException)
             {
@@ -2798,6 +2814,17 @@ public unsafe class ValueStringBuilderTests
     }
 
     [TestMethod]
+    public void AppendFormatted_IFormattableWithoutSpanFormatting_UsesIFormattable()
+    {
+        using ValueStringBuilder builder = new(stackalloc char[16]);
+        FormattableOnly value = new("payload");
+
+        builder.AppendFormatted(value, format: "UPPER");
+
+        builder.ToString().Should().Be("UPPER:payload");
+    }
+
+    [TestMethod]
     public void AppendFormatted_NullStringValue_AppendsNothing()
     {
         ValueStringBuilder builder = new(stackalloc char[16]);
@@ -3106,6 +3133,15 @@ public unsafe class ValueStringBuilderTests
     {
         builder.Append(text);
         return result;
+    }
+
+    private sealed class FormattableOnly(string data) : IFormattable
+    {
+        public string ToString(string? format, IFormatProvider? formatProvider)
+        {
+            string prefix = format is null or "" ? "F" : format;
+            return $"{prefix}:{data}";
+        }
     }
 
     private sealed class UpperCaseFormatProvider : IFormatProvider, ICustomFormatter

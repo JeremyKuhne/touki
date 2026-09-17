@@ -105,8 +105,23 @@ public partial class StatementBreakFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         diagnostics.Should().HaveCount(violationCount);
-        diagnostics.Should().OnlyContain(diagnostic =>
-            diagnostic.Properties.Values.Sum(value => value!.Length) < 64);
+        diagnostics.Should().OnlyContain(diagnostic => HasCompactProperties(diagnostic));
+    }
+
+    private static bool HasCompactProperties(Diagnostic diagnostic)
+    {
+        int totalLength = 0;
+        foreach (string? value in diagnostic.Properties.Values)
+        {
+            if (value is null || value.Length >= 64 - totalLength)
+            {
+                return false;
+            }
+
+            totalLength += value.Length;
+        }
+
+        return true;
     }
 
     [TestMethod]

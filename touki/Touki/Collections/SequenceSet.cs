@@ -71,15 +71,18 @@ public sealed partial class SequenceSet<T> : DisposableBase where T : unmanaged,
     private readonly int _minimumCapacity;
 
     // Element arena. All interned sequences are stored back to back here.
-    private T[]? _arena;
+    [AllowNull]
+    private T[] _arena;
     private int _arenaUsed;
 
     // Per-entry metadata, parallel to the bucket chain.
-    private Entry[]? _entries;
+    [AllowNull]
+    private Entry[] _entries;
     private int _count;
 
     // One-based entry indices; index is hash & _bucketMask.
-    private int[]? _buckets;
+    [AllowNull]
+    private int[] _buckets;
     private int _bucketCount;
     private int _bucketMask;
 
@@ -128,7 +131,7 @@ public sealed partial class SequenceSet<T> : DisposableBase where T : unmanaged,
                 ThrowHandleOutOfRange(handle);
             }
 
-            ref Entry entry = ref _entries![handle];
+            ref Entry entry = ref _entries[handle];
             return _arena.AsSpan(entry.Offset, entry.Length);
         }
     }
@@ -162,13 +165,19 @@ public sealed partial class SequenceSet<T> : DisposableBase where T : unmanaged,
             Initialize();
         }
 
+        T[]? arena = _arena;
+        Entry[]? entries = _entries;
+        int[]? buckets = _buckets;
+        Debugging.Assert(arena is not null);
+        Debugging.Assert(entries is not null);
+        Debugging.Assert(buckets is not null);
         int hash = Hash(sequence);
         int bucket = hash & _bucketMask;
-        for (int entry = _buckets![bucket] - 1; entry >= 0; entry = _entries![entry].Next - 1)
+        for (int entry = buckets[bucket] - 1; entry >= 0; entry = entries[entry].Next - 1)
         {
-            ref Entry candidate = ref _entries![entry];
+            ref Entry candidate = ref entries[entry];
             if (candidate.HashCode == hash
-                && _arena.AsSpan(candidate.Offset, candidate.Length).SequenceEqual(sequence))
+                && arena.AsSpan(candidate.Offset, candidate.Length).SequenceEqual(sequence))
             {
                 handle = entry;
                 return false;
@@ -193,9 +202,9 @@ public sealed partial class SequenceSet<T> : DisposableBase where T : unmanaged,
 
         int hash = Hash(sequence);
         int bucket = hash & _bucketMask;
-        for (int entry = _buckets[bucket] - 1; entry >= 0; entry = _entries![entry].Next - 1)
+        for (int entry = _buckets[bucket] - 1; entry >= 0; entry = _entries[entry].Next - 1)
         {
-            ref Entry candidate = ref _entries![entry];
+            ref Entry candidate = ref _entries[entry];
             if (candidate.HashCode == hash
                 && _arena.AsSpan(candidate.Offset, candidate.Length).SequenceEqual(sequence))
             {
@@ -222,13 +231,13 @@ public sealed partial class SequenceSet<T> : DisposableBase where T : unmanaged,
 
     private int AddNew(ReadOnlySpan<T> sequence, int hash)
     {
-        if (_count == _entries!.Length)
+        if (_count == _entries.Length)
         {
             GrowEntries();
         }
 
         int length = sequence.Length;
-        if (_arenaUsed + length > _arena!.Length)
+        if (_arenaUsed + length > _arena.Length)
         {
             GrowArena(length);
         }
@@ -242,7 +251,7 @@ public sealed partial class SequenceSet<T> : DisposableBase where T : unmanaged,
         entry.HashCode = hash;
 
         int bucket = hash & _bucketMask;
-        entry.Next = _buckets![bucket];
+        entry.Next = _buckets[bucket];
         _buckets[bucket] = index + 1;
 
         _arenaUsed += length;
@@ -270,7 +279,7 @@ public sealed partial class SequenceSet<T> : DisposableBase where T : unmanaged,
 
     private void GrowEntries()
     {
-        Entry[] grown = ArrayPool<Entry>.Shared.Rent(_entries!.Length * 2);
+        Entry[] grown = ArrayPool<Entry>.Shared.Rent(_entries.Length * 2);
         Array.Copy(_entries, grown, _count);
         ArrayPool<Entry>.Shared.Return(_entries);
         _entries = grown;
@@ -279,7 +288,7 @@ public sealed partial class SequenceSet<T> : DisposableBase where T : unmanaged,
     private void GrowArena(int additional)
     {
         int required = checked(_arenaUsed + additional);
-        int newSize = Math.Max(_arena!.Length * 2, required);
+        int newSize = Math.Max(_arena.Length * 2, required);
         T[] grown = ArrayPool<T>.Shared.Rent(newSize);
         Array.Copy(_arena, grown, _arenaUsed);
         ArrayPool<T>.Shared.Return(_arena);
@@ -295,12 +304,12 @@ public sealed partial class SequenceSet<T> : DisposableBase where T : unmanaged,
         int mask = newCount - 1;
         for (int i = 0; i < _count; i++)
         {
-            int bucket = _entries![i].HashCode & mask;
+            int bucket = _entries[i].HashCode & mask;
             _entries[i].Next = grown[bucket];
             grown[bucket] = i + 1;
         }
 
-        ArrayPool<int>.Shared.Return(_buckets!);
+        ArrayPool<int>.Shared.Return(_buckets);
         _buckets = grown;
         _bucketCount = newCount;
         _bucketMask = mask;

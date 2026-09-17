@@ -9,7 +9,7 @@ public readonly partial struct Value
     /// <summary>
     ///  Identifies an inline value whose bits can be reinterpreted directly from union storage.
     /// </summary>
-    private sealed class StraightCastFlag<T> : TypeFlag<T>
+    private sealed class StraightCastFlag<T> : TypeFlag<T> where T : notnull
     {
         public static StraightCastFlag<T> Instance { get; } = new();
 

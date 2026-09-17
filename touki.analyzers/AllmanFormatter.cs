@@ -846,9 +846,8 @@ internal static partial class AllmanFormatter
         {
             cancellationToken.ThrowIfCancellationRequested();
             SyntaxNodeOrToken item = pending.Pop();
-            if (item.IsNode)
+            if (item.AsNode() is { } node)
             {
-                SyntaxNode node = item.AsNode()!;
                 if (!supportsMultilineInterpolations && node is InterpolationSyntax
                     || node is PropertyPatternClauseSyntax { Subpatterns.Count: 0 })
                 {
@@ -916,7 +915,8 @@ internal static partial class AllmanFormatter
             return parentIndentation + indentation;
         }
 
-        SyntaxNode owner = pair.OpenBrace.Parent!;
+        SyntaxNode owner = pair.OpenBrace.Parent
+            ?? throw new InvalidOperationException("The opening brace must belong to a syntax node.");
         SyntaxToken anchor = owner.GetFirstToken();
         while (anchor == pair.OpenBrace && owner.Parent is SyntaxNode parent)
         {
@@ -951,7 +951,8 @@ internal static partial class AllmanFormatter
             return AddWithoutOverflow(parentLength, indentationLength);
         }
 
-        SyntaxNode owner = pair.OpenBrace.Parent!;
+        SyntaxNode owner = pair.OpenBrace.Parent
+            ?? throw new InvalidOperationException("The opening brace must belong to a syntax node.");
         SyntaxToken anchor = owner.GetFirstToken();
         while (anchor == pair.OpenBrace && owner.Parent is SyntaxNode parent)
         {

@@ -28,7 +28,11 @@ public class GlobAdditionalCoverageTests
     [TestMethod]
     public void IsMatch_NullPattern_Throws()
     {
-        Action action = () => Glob.IsMatch((string)null!, "input", GlobDialect.Posix);
+        string? pattern = null;
+        // Intentionally pass null to exercise pattern validation.
+    #pragma warning disable CS8604
+        Action action = () => Glob.IsMatch(pattern, "input", GlobDialect.Posix);
+    #pragma warning restore CS8604
 
         action.Should().Throw<ArgumentNullException>().WithParameterName("pattern");
     }
@@ -149,14 +153,22 @@ public class GlobAdditionalCoverageTests
     {
         using TempFolder folder = new();
 
+        string? rootDirectory = null;
+        // Intentionally pass null to exercise root directory validation.
+#pragma warning disable CS8604
         Func<IEnumerable<string>> nullRoot = () => Glob.EnumerateFiles(
-            null!,
+            rootDirectory,
             "*.cs",
             GlobDialect.PosixPath);
+#pragma warning restore CS8604
+        string? pattern = null;
+        // Intentionally pass null to exercise pattern validation.
+#pragma warning disable CS8604
         Func<IEnumerable<string>> nullPattern = () => Glob.EnumerateFiles(
             folder,
-            null!,
+            pattern,
             GlobDialect.PosixPath);
+#pragma warning restore CS8604
 
         nullRoot.Should().Throw<ArgumentNullException>().WithParameterName("rootDirectory");
         nullPattern.Should().Throw<ArgumentNullException>().WithParameterName("pattern");

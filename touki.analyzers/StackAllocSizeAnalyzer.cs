@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information
 
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -107,7 +108,7 @@ public sealed class StackAllocSizeAnalyzer : DiagnosticAnalyzer
 
     private static bool TryGetElementTypeAndCount(
         SyntaxNodeAnalysisContext context,
-        out ITypeSymbol? elementType,
+        [NotNullWhen(returnValue: true)] out ITypeSymbol? elementType,
         out long elementCount)
     {
         elementType = null;
@@ -117,12 +118,13 @@ public sealed class StackAllocSizeAnalyzer : DiagnosticAnalyzer
         {
             case StackAllocArrayCreationExpressionSyntax { Type: ArrayTypeSyntax arrayType } stackAlloc:
                 elementType = context.SemanticModel.GetTypeInfo(arrayType.ElementType, context.CancellationToken).Type;
-                return TryGetExplicitCount(context, arrayType, stackAlloc.Initializer, out elementCount);
+                return elementType is not null
+                    && TryGetExplicitCount(context, arrayType, stackAlloc.Initializer, out elementCount);
 
             case ImplicitStackAllocArrayCreationExpressionSyntax implicitStackAlloc:
                 elementType = GetImplicitElementType(context);
                 elementCount = implicitStackAlloc.Initializer.Expressions.Count;
-                return true;
+                return elementType is not null;
 
             default:
                 return false;
@@ -196,14 +198,9 @@ public sealed class StackAllocSizeAnalyzer : DiagnosticAnalyzer
         };
     }
 
-    private static bool TryGetElementSize(ITypeSymbol? elementType, out long elementSize)
+    private static bool TryGetElementSize(ITypeSymbol elementType, out long elementSize)
     {
         elementSize = 0;
-
-        if (elementType is null)
-        {
-            return false;
-        }
 
         // An enum occupies the same space as the primitive it is built on.
         if (elementType is INamedTypeSymbol { EnumUnderlyingType: { } underlyingType })

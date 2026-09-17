@@ -80,7 +80,7 @@ public partial class StatementBreakFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan)
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan)
             .Should().Be(expectedOperator);
     }
 
@@ -1632,7 +1632,7 @@ public partial class StatementBreakFormattingAnalyzerTests
     private static string GetDiagnosticText(Diagnostic diagnostic)
     {
         Location location = diagnostic.Location;
-        SourceText source = location.SourceTree!.GetText();
+        SourceText source = location.GetRequiredSourceTree().GetText();
         return source.ToString(location.SourceSpan);
     }
 }

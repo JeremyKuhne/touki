@@ -80,10 +80,10 @@ internal sealed class SerializablePayload : ISerializable
 [Serializable]
 internal sealed class SharedReferencePayload
 {
-#pragma warning disable CS0649 // Fields are populated by BinaryFormattedObject.
-    public RegisteredPayload First = null!;
-    public RegisteredPayload Second = null!;
-#pragma warning restore CS0649
+#pragma warning disable CS0649, CS8618 // Fields are populated by BinaryFormattedObject before the payload is returned.
+    public RegisteredPayload First;
+    public RegisteredPayload Second;
+#pragma warning restore CS0649, CS8618
 }
 
 #pragma warning disable CA5362 // Cycles are intentional test data for graph deserialization.
@@ -190,7 +190,10 @@ internal sealed class NullObjectReference : IObjectReference, ISerializable
 
     public int Marker;
 
-    public object GetRealObject(StreamingContext context) => null!;
+    // Intentionally return null to exercise null object-reference replacement.
+#pragma warning disable CS8603
+    public object GetRealObject(StreamingContext context) => null;
+#pragma warning restore CS8603
 
     public void GetObjectData(SerializationInfo info, StreamingContext context)
         => info.AddValue("Marker", Marker);
@@ -211,7 +214,10 @@ internal sealed class NullMemberObjectReference : IObjectReference
 [Serializable]
 internal sealed class NullObjectReferenceMember : IObjectReference
 {
-    public object GetRealObject(StreamingContext context) => null!;
+    // Intentionally return null to exercise null member replacement.
+#pragma warning disable CS8603
+    public object GetRealObject(StreamingContext context) => null;
+#pragma warning restore CS8603
 }
 
 #pragma warning restore CA5362
@@ -257,14 +263,18 @@ internal struct CallbackStruct
 [Serializable]
 internal sealed class FanOutPayload
 {
-    public FanOutOwner First = null!;
-    public FanOutOwner Second = null!;
+#pragma warning disable CS0649, CS8618 // Fields are populated by BinaryFormattedObject before the payload is returned.
+    public FanOutOwner First;
+    public FanOutOwner Second;
+#pragma warning restore CS0649, CS8618
 }
 
 [Serializable]
 internal sealed class FanOutOwner
 {
-    public object Value = null!;
+#pragma warning disable CS0649, CS8618 // Field is populated by BinaryFormattedObject before the payload is returned.
+    public object Value;
+#pragma warning restore CS0649, CS8618
 
     [NonSerialized]
     public bool CallbackCalled;

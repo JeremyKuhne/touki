@@ -22,6 +22,7 @@ public sealed class SingleOptimizedList<TItem, TList> : ContiguousList<TItem>
     // Once the backing list has been created, always use it.
 
     private bool _hasItem;
+    [AllowNull]
     private TItem _item;
     private TList? _backingList;
 
@@ -31,7 +32,7 @@ public sealed class SingleOptimizedList<TItem, TList> : ContiguousList<TItem>
     public SingleOptimizedList()
     {
         _hasItem = false;
-        _item = default!;
+        _item = default;
         _backingList = null;
     }
 
@@ -100,7 +101,7 @@ public sealed class SingleOptimizedList<TItem, TList> : ContiguousList<TItem>
             // If we have one item and no backing list, create a new backing list
             _backingList = [];
             _backingList.Add(_item);
-            _item = default!;
+            _item = default;
         }
 
         _hasItem = true;
@@ -111,7 +112,7 @@ public sealed class SingleOptimizedList<TItem, TList> : ContiguousList<TItem>
     public override void Clear()
     {
         _hasItem = false;
-        _item = default!;
+        _item = default;
         _backingList?.Clear();
     }
 
@@ -214,7 +215,7 @@ public sealed class SingleOptimizedList<TItem, TList> : ContiguousList<TItem>
             _backingList.Add(item);
         }
 
-        _item = default!;
+        _item = default;
     }
 
     /// <inheritdoc/>
@@ -230,7 +231,7 @@ public sealed class SingleOptimizedList<TItem, TList> : ContiguousList<TItem>
         }
 
         _hasItem = false;
-        _item = default!;
+        _item = default;
     }
 
     /// <inheritdoc/>
@@ -259,7 +260,7 @@ public sealed class SingleOptimizedList<TItem, TList> : ContiguousList<TItem>
 #else
                 _backingList = [];
                 _backingList.Add(_item);
-                _item = default!;
+                _item = default;
 #endif
             }
 
@@ -284,7 +285,7 @@ public sealed class SingleOptimizedList<TItem, TList> : ContiguousList<TItem>
 #else
                 _backingList = [];
                 _backingList.Add(_item);
-                _item = default!;
+                _item = default;
 #endif
             }
 

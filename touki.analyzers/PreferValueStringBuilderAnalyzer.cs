@@ -212,15 +212,9 @@ public sealed class PreferValueStringBuilderAnalyzer : DiagnosticAnalyzer
         // else - a 'ToString()' or a 'Length' - leaves the builder behind for good.
         IOperation value = creation;
 
-        while (true)
+        while (GetEffectiveParent(value) is { } consumer && IsFluentReceiver(consumer, value))
         {
-            IOperation? consumer = GetEffectiveParent(value);
-            if (!IsFluentReceiver(consumer, value))
-            {
-                break;
-            }
-
-            if (!SymbolEqualityComparer.Default.Equals(consumer!.Type, stringBuilder))
+            if (!SymbolEqualityComparer.Default.Equals(consumer.Type, stringBuilder))
             {
                 temporaries.Add(creation);
                 return;

@@ -29,6 +29,7 @@ The "Disambiguation" section below records every known overlap.
 | [publish-release](./publish-release/SKILL.md) | "publish a new version", "release alpha.N", "ship a beta", "cut a release", "promote alpha to beta", "tag and publish" - choosing the right `Major.Minor.Patch`, alpha/beta/rc/stable channel, tag stream (`v*`, `analyzers-v*`, or `ts-v*`), and GitHub release notes | repo-specific | `pre-pr-self-review`, `create-pr` |
 | [manage-skills](./manage-skills/SKILL.md) | "find a skill", "build/create a skill", "install/add/vendor one for a project or person", "review this skill", "update/sync the skill", "retire/remove this skill"; source ownership, runtime scope, host locations, and the six-verb lifecycle | vendored (portable core) + overlay | `technical-writing`, `agent-files-review` (via [overlay](./manage-skills/overlay.md)) |
 | [roslyn-analyzers](./roslyn-analyzers/SKILL.md) | "write an analyzer", "create a Roslyn/diagnostic analyzer", "add an analyzer rule", "add a code fix", "enforce a convention at build time", "flag a pattern in code"; find-first check of existing `CA`/`IDE` rules, `BannedApiAnalyzers`, EditorConfig, Roslynator/StyleCop/Meziantou before authoring; `touki.analyzers` layout, standalone `KlutzyNinja.Touki.Analyzers` packaging and transitive inclusion through `KlutzyNinja.Touki`, statelessness/`IOperation` design, the `Microsoft.CodeAnalysis.Testing` harness, in-IDE perf budget | vendored (portable core) + overlay | `performance-testing`, `security-review`, `pre-pr-self-review`, `il-copy-inspection`, `create-pr` (via [overlay](./roslyn-analyzers/overlay.md)) |
+| [csharp-nullability-remediation](./csharp-nullability-remediation/SKILL.md) | "remove null-forgiving operators", "fix TOUKI0005 / MA0191", "replace `null!` / `default!`", reduce suppressions, or resolve nullable warnings exposed after deleting `!`; captures the suppressed compiler diagnostic, classifies the runtime contract, selects a truthful remedy, and validates target, consumer, and performance impact | vendored (portable core) + overlay | `dotnet-polyfills`, `performance-testing`, `pre-pr-self-review`, `roslyn-analyzers`, `security-review` (via [overlay](./csharp-nullability-remediation/overlay.md)) |
 | [il-copy-inspection](./il-copy-inspection/SKILL.md) | "find struct copies", "where does the compiler copy this struct", "is this a defensive copy", "check for boxing in IL", "did the compiler emit a copy", "confirm the analyzer's defensive-copy warning", "audit a `[NonCopyable]` type's copies after build"; reading emitted IL (`ildasm`/`ilspycmd`/Cecil/`MetadataReader`) for the `ldobj`/`stloc`/`ldloca` defensive-copy signature, `box`, by-value field/arg/return copies, and PDB offset-to-source mapping | vendored (portable core) + overlay | `roslyn-analyzers`, `framework-jit-optimization`, `performance-testing`, `scratch-buffer-strategy` (via [overlay](./il-copy-inspection/overlay.md)) |
 | [code-comprehension](./code-comprehension/SKILL.md) | "review this for readability", "is this too complex", "reduce nesting / cognitive load", "reasonable method length / parameter count / nesting depth", judging whether code will be hard to understand | vendored (portable core) + overlay | `pre-pr-self-review`, `technical-writing` (via [overlay](./code-comprehension/overlay.md)) |
 | [technical-writing](./technical-writing/SKILL.md) | drafting, rewriting, tightening, or reviewing human-facing technical prose; any publishable prose; pre-publication review of commit messages, PR text, review replies, docs, issues, or notes | vendored (portable core) + overlay | `user-voice`, `create-pr`, `address-pr-feedback`, `pre-pr-self-review`, `agent-files-review`, `code-comprehension` (via [overlay](./technical-writing/overlay.md)) |
@@ -192,6 +193,37 @@ Both talk about "performance", but about different things:
 They share no harness and no budget. If the request is "make this analyzer faster
 to type against", it is `roslyn-analyzers`; if it is "make this method faster at
 run time", it is `performance-testing`.
+
+### `csharp-nullability-remediation` vs `roslyn-analyzers` vs `dotnet-polyfills`
+
+All three can mention nullable analysis, but they own different outcomes:
+
+- **Remove or audit existing `!`, `null!`, or `default!` sites** ->
+  `csharp-nullability-remediation`. It discovers the suppressed compiler warning
+  and repairs or records the underlying contract.
+- **Create or change the diagnostic rule that reports those sites** ->
+  `roslyn-analyzers`.
+- **Make `MaybeNull`, `NotNullWhen`, `MemberNotNull`, or another analysis attribute
+  available on a downlevel target** -> `dotnet-polyfills`.
+
+A broad request to enable nullable reference types across a repository is setup or
+baseline work unless it specifically asks to remediate null-forgiving operators.
+
+### `csharp-nullability-remediation` vs `performance-testing` vs `security-review`
+
+These workflows can meet at one suppression, but the requested outcome selects the
+primary owner:
+
+- **Remove or justify a null-forgiving operator in a hot path** -> start with
+  `csharp-nullability-remediation`, then hand measurement to `performance-testing`
+  before changing the measured shape.
+- **Benchmark an implementation choice without a suppression-removal request** ->
+  `performance-testing`.
+- **Remove or justify a suppression at an unsafe, reflection, deserialization,
+  interop, or untrusted-input boundary** -> start with
+  `csharp-nullability-remediation`, then run `security-review` over the boundary.
+- **Audit abusive or malformed input without a suppression-removal request** ->
+  `security-review`.
 
 ### `il-copy-inspection` vs `roslyn-analyzers` vs the perf skills
 

@@ -438,7 +438,7 @@ public ref partial struct ValueStringBuilder
         // value type.
         if (typeof(T).IsValueType && typeof(ISpanFormattable).IsAssignableFrom(typeof(T)))
         {
-            while (!FormatterHelper<T>.TryFormatWithoutBoxing!(in value, _chars[_length..], out charsWritten, format, _formatProvider))
+            while (!FormatterHelper<T>.TryFormatWithoutBoxing(in value, _chars[_length..], out charsWritten, format, _formatProvider))
             {
                 DoubleRemaining();
             }
@@ -455,7 +455,7 @@ public ref partial struct ValueStringBuilder
             {
 #pragma warning restore IDE0038
                 // This will be a constrained call on .NET (won't box value types).
-                while (!((ISpanFormattable)value!).TryFormat(_chars[_length..], out charsWritten, format, _formatProvider))
+                while (!((ISpanFormattable)value).TryFormat(_chars[_length..], out charsWritten, format, _formatProvider))
                 {
                     DoubleRemaining();
                 }
@@ -464,7 +464,7 @@ public ref partial struct ValueStringBuilder
                 return;
             }
 
-            Append(((IFormattable)value!).ToString(format.ToStringOrNull(), _formatProvider));
+            Append(((IFormattable)value).ToString(format.ToStringOrNull(), _formatProvider));
             return;
         }
 
@@ -560,14 +560,14 @@ public ref partial struct ValueStringBuilder
         // We do the cast here rather than in the ctor, even though this could be executed multiple times per
         // formatting, to make the cast pay for play.
         Debug.Assert(_hasCustomFormatter);
-        Debug.Assert(_formatProvider is not null);
+        if (_formatProvider is not { } formatProvider
+            || formatProvider.GetFormat(typeof(ICustomFormatter)) is not ICustomFormatter formatter)
+        {
+            Debug.Fail("An incorrectly written provider stopped supplying its custom formatter.");
+            return false;
+        }
 
-        ICustomFormatter? formatter = (ICustomFormatter?)_formatProvider!.GetFormat(typeof(ICustomFormatter));
-        Debug.Assert(
-            formatter is not null,
-            "An incorrectly written provider said it implemented ICustomFormatter, and then didn't");
-
-        if (formatter is not null && formatter.Format(format.ToStringOrNull(), value, _formatProvider) is string customFormatted)
+        if (formatter.Format(format.ToStringOrNull(), value, formatProvider) is string customFormatted)
         {
             AppendLiteral(customFormatted);
             return true;

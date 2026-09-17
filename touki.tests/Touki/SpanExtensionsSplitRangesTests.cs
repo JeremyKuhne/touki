@@ -187,7 +187,10 @@ public class SpanExtensionsSplitRangesTests
     {
         ReadOnlySpan<char> source = "a b c";
         Span<Range> ranges = new Range[8];
-        int count = source.SplitAny(ranges, new string?[] { null, "" }!.AsSpan()!);
+        // Intentionally include a null separator to verify that it is ignored.
+#pragma warning disable CS8620
+        int count = source.SplitAny(ranges, new string?[] { null, "" }.AsSpan());
+#pragma warning restore CS8620
         count.Should().Be(1);
         source[ranges[0]].ToString().Should().Be("a b c");
     }

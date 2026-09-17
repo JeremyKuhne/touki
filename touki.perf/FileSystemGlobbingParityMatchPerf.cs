@@ -17,10 +17,17 @@ public partial class FileSystemGlobbingParityMatchPerf
     [ParamsAllValues]
     public PatternKind Kind { get; set; }
 
-    private string _input = null!;
-    private GlobSpecification _touki = null!;
-    private Matcher _oracle = null!;
-    private string[] _oracleFiles = null!;
+    [AllowNull]
+    private string _input;
+
+    [AllowNull]
+    private GlobSpecification _touki;
+
+    [AllowNull]
+    private Matcher _oracle;
+
+    [AllowNull]
+    private string[] _oracleFiles;
 
     [GlobalSetup]
     public void Setup()

@@ -15,8 +15,11 @@ namespace touki.perf;
 [MemoryDiagnoser]
 public class ClassFieldAssignmentPerf
 {
-    private MemberInfo[] _members = null!;
-    private object?[] _values = null!;
+    [AllowNull]
+    private MemberInfo[] _members;
+
+    [AllowNull]
+    private object?[] _values;
 
     [GlobalSetup]
     public void Setup()

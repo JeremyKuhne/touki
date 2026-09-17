@@ -25,11 +25,11 @@ public class NoTabsAnalyzerTests
     private static string ReportedText(Diagnostic diagnostic)
     {
         Location location = diagnostic.Location;
-        return location.SourceTree!.GetText().ToString(location.SourceSpan);
+        return location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan);
     }
 
     private static string Replacement(Diagnostic diagnostic) =>
-        diagnostic.Properties[ReplacementProperty]!;
+        diagnostic.GetRequiredProperty(ReplacementProperty);
 
     [TestMethod]
     public async Task AnalyzeSyntaxTree_TabIndentedLine_ReportsTab()

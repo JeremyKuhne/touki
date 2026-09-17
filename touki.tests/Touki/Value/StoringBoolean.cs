@@ -128,7 +128,7 @@ public class StoringBoolean
         value.TryGetValue(out bool result).Should().BeTrue();
         result.Should().Be(@bool);
         value.TryGetValue(out bool? nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@bool);
+        nullableResult.Should().Be(@bool);
 
 
         bool? n = @bool;
@@ -139,7 +139,7 @@ public class StoringBoolean
         value.TryGetValue(out result).Should().BeTrue();
         result.Should().Be(@bool);
         value.TryGetValue(out nullableResult).Should().BeTrue();
-        nullableResult!.Value.Should().Be(@bool);
+        nullableResult.Should().Be(@bool);
     }
 
     [TestMethod]
@@ -163,14 +163,12 @@ public class StoringBoolean
     public void OutAsObject(bool @bool)
     {
         Value value = @bool;
-        object o = value.As<object>();
-        o.GetType().Should().Be(typeof(bool));
-        ((bool)o).Should().Be(@bool);
+        object? o = value.As<object>();
+        o.Should().BeOfType<bool>().Which.Should().Be(@bool);
 
         bool? n = @bool;
         value = n;
         o = value.As<object>();
-        o.GetType().Should().Be(typeof(bool));
-        ((bool)o).Should().Be(@bool);
+        o.Should().BeOfType<bool>().Which.Should().Be(@bool);
     }
 }

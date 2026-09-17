@@ -35,6 +35,18 @@ public class RefCountedCacheTests
         public override string Object => Data;
     }
 
+    private sealed class NullableDataCache : RefCountedCache<string, string?, string>
+    {
+        protected override CacheEntry CreateEntry(string key, bool cached) => new NullableDataCacheEntry(cached);
+
+        protected override bool IsMatch(string key, CacheEntry entry) => entry.Data is null;
+
+        private sealed class NullableDataCacheEntry(bool cached) : CacheEntry(data: null, cached)
+        {
+            public override string Object => "value";
+        }
+    }
+
     private class DisposableTestCache : RefCountedCache<DisposableValue, DisposableValue, string>
     {
         public DisposableTestCache(int softLimit = 20, int hardLimit = 40) : base(softLimit, hardLimit)
@@ -97,7 +109,10 @@ public class RefCountedCacheTests
     public void GetEntry_NullKey_ThrowsArgumentNullException()
     {
         TestCache cache = new();
-        Action action = () => cache.GetEntry(null!);
+        // Intentionally pass null to exercise key validation.
+    #pragma warning disable CS8625
+        Action action = () => cache.GetEntry(null);
+    #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
 
@@ -208,16 +223,80 @@ public class RefCountedCacheTests
     }
 
     [TestMethod]
+    public void Scope_ImplicitConversion_DefaultScope_ThrowsInvalidOperationException()
+    {
+        using RefCountedCache<string, string, string>.Scope scope = default;
+        InvalidOperationException? exception = null;
+
+        try
+        {
+            string value = scope;
+        }
+        catch (InvalidOperationException caught)
+        {
+            exception = caught;
+        }
+
+        exception.Should().NotBeNull();
+        exception.Message.Should().Be("The scope is the default, uninitialized value.");
+    }
+
+    [TestMethod]
+    public void Scope_Object_DefaultScope_ThrowsInvalidOperationException()
+    {
+        using RefCountedCache<string, string, string>.Scope scope = default;
+        InvalidOperationException? exception = null;
+
+        try
+        {
+            _ = scope.Object;
+        }
+        catch (InvalidOperationException caught)
+        {
+            exception = caught;
+        }
+
+        exception.Should().NotBeNull();
+        exception.Message.Should().Be("The scope is the default, uninitialized value.");
+    }
+
+    [TestMethod]
+    public void Scope_Object_UncachedNullableObject_ReturnsNull()
+    {
+        using RefCountedCache<string?, string, string>.Scope scope = new(@object: null);
+
+        scope.Object.Should().BeNull();
+        string? value = scope;
+        value.Should().BeNull();
+    }
+
+    [TestMethod]
     public void Scope_TryGetCacheData_ReturnsData()
     {
         TestCache cache = new();
         var entry = cache.GetEntry("test");
 
         using var scope = entry.CreateScope();
-        bool hasData = scope.TryGetCacheData(out string? data);
+        if (scope.TryGetCacheData(out string? data))
+        {
+            data.Length.Should().Be(4);
+            data.Should().Be("test");
+        }
+        else
+        {
+            Assert.Fail("The cached scope should expose its entry data.");
+        }
+    }
 
-        hasData.Should().BeTrue();
-        data.Should().Be("test");
+    [TestMethod]
+    public void TryGetCacheData_NullableCachedData_ReturnsTrueWithNull()
+    {
+        using NullableDataCache cache = new();
+        RefCountedCache<string, string?, string>.CacheEntry entry = cache.GetEntry("test");
+        using RefCountedCache<string, string?, string>.Scope scope = entry.CreateScope();
+
+        scope.TryGetCacheData(out string? data).Should().BeTrue();
+        data.Should().BeNull();
     }
 
     [TestMethod]

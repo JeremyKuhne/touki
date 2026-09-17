@@ -15,8 +15,11 @@ public class FileSystemGlobbingLiteralQuestionSuffixPerf
 {
     private const string Input = "src/generated/xbar?";
 
-    private GlobSpecification _specialized = null!;
-    private GlobSpecification _generic = null!;
+    [AllowNull]
+    private GlobSpecification _specialized;
+
+    [AllowNull]
+    private GlobSpecification _generic;
 
     [GlobalSetup]
     public void Setup()

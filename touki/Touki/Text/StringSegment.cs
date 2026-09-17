@@ -910,7 +910,7 @@ public readonly struct StringSegment :
         }
 
         return CompareInvariantIgnoreCaseTail(
-            _value!,
+            Value,
             _startIndex + scanned,
             _length - scanned,
             other,

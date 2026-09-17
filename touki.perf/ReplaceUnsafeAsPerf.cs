@@ -22,7 +22,8 @@ namespace touki.perf;
 [SimpleJob(RuntimeMoniker.Net481, warmupCount: 1, iterationCount: 1, launchCount: 1)]
 public class ReplaceUnsafeAsPerf
 {
-    private sbyte[] _data = null!;
+    [AllowNull]
+    private sbyte[] _data;
 
     [GlobalSetup]
     public void Setup() => _data = [-1, 2, -1, 4, -1, 6, -1, 8];
