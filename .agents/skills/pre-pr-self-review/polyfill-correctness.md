@@ -27,7 +27,7 @@ Before pinning:
 Any public API summing lengths before allocating wraps the sum in
 `checked()`. Unchecked overflow allocates the wrong-sized buffer and
 fails later from `CopyTo`. See
-[touki.tests/System/StringExtensionsConcatTests.cs](../../../touki.tests/System/StringExtensionsConcatTests.cs)
+[touki.tests/System/StringExtensionsConcatTests.cs](../../../test/touki.tests/System/StringExtensionsConcatTests.cs)
 for the canonical `OverflowException` test pattern.
 
 ## Throw helpers
@@ -104,11 +104,11 @@ skill catalogues which optimizations actually win on net481.
 
 For code changes in `touki/Framework/` driven by a perf claim:
 
-- Add a benchmark in `touki.perf/` per the
+- Add a benchmark in `test/touki.perf/` per the
   [`performance-testing`](../performance-testing/SKILL.md) skill, *or*
 - Include a statement in the commit message, the PR description, or the
   method's `<remarks>` explicitly indicating that no performance
   measurements were conducted.
 
 If a polyfill is slower than the array-taking BCL it shadows, quantify
-the overhead in `<remarks>` and keep the benchmark file in `touki.perf/`.
+the overhead in `<remarks>` and keep the benchmark file in `test/touki.perf/`.

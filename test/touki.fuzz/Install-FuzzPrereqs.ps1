@@ -29,10 +29,10 @@
     Reinstall / rebuild prerequisites even when they are already present.
 
 .EXAMPLE
-    pwsh touki.fuzz/Install-FuzzPrereqs.ps1
+    pwsh test/touki.fuzz/Install-FuzzPrereqs.ps1
 
 .EXAMPLE
-    pwsh touki.fuzz/Install-FuzzPrereqs.ps1 -Force
+    pwsh test/touki.fuzz/Install-FuzzPrereqs.ps1 -Force
 #>
 
 [CmdletBinding()]
@@ -158,4 +158,4 @@ Install-LibFuzzerDriver
 
 Write-Host ""
 Write-Host "All prerequisites are ready." -ForegroundColor Green
-Write-Host "See touki.fuzz/README.md for the instrument-and-run workflow." -ForegroundColor Green
+Write-Host "See test/touki.fuzz/README.md for the instrument-and-run workflow." -ForegroundColor Green

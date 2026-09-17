@@ -26,11 +26,11 @@ Repo-specific companion to the vendored [roslyn-analyzers](SKILL.md) skill. The
   and
   [AnalyzerReleases.Unshipped.md](../../../touki.analyzers/AnalyzerReleases.Unshipped.md).
 - **Test project** (`<root>.analyzers.tests`):
-  [touki.analyzers.tests](../../../touki.analyzers.tests/touki.analyzers.tests.csproj),
+  [touki.analyzers.tests](../../../test/touki.analyzers.tests/touki.analyzers.tests.csproj),
   with the lightweight
-  [AnalyzerTestHarness.cs](../../../touki.analyzers.tests/AnalyzerTestHarness.cs)
+  [AnalyzerTestHarness.cs](../../../test/touki.analyzers.tests/AnalyzerTestHarness.cs)
   and
-  [CodeFixTestHarness.cs](../../../touki.analyzers.tests/CodeFixTestHarness.cs).
+  [CodeFixTestHarness.cs](../../../test/touki.analyzers.tests/CodeFixTestHarness.cs).
 - **Code-fix project** (`<root>.analyzers.codefixes`):
   [touki.analyzers.codefixes](../../../touki.analyzers.codefixes/touki.analyzers.codefixes.csproj).
 - **Diagnostic-ID prefix** (`<PREFIX>`): `TOUKI`. `TOUKI0001` is the running
@@ -49,7 +49,7 @@ Repo-specific companion to the vendored [roslyn-analyzers](SKILL.md) skill. The
 - **Working example to copy**:
   [touki.analyzers/UseIsNullAnalyzer.cs](../../../touki.analyzers/UseIsNullAnalyzer.cs)
   and its tests
-  [touki.analyzers.tests/UseIsNullAnalyzerTests.cs](../../../touki.analyzers.tests/UseIsNullAnalyzerTests.cs).
+  [touki.analyzers.tests/UseIsNullAnalyzerTests.cs](../../../test/touki.analyzers.tests/UseIsNullAnalyzerTests.cs).
 - **Coding style**: follow [AGENTS.md](../../../AGENTS.md) (no `var`, target-typed
   `new()`, C# keyword type names, `is null` / `is not null`, indented XML docs).
 
@@ -80,12 +80,12 @@ visits every declared symbol in a compilation.
 
 ## Test harness gotchas
 
-[touki.analyzers.tests/AnalyzerTestHarness.cs](../../../touki.analyzers.tests/AnalyzerTestHarness.cs)
+[touki.analyzers.tests/AnalyzerTestHarness.cs](../../../test/touki.analyzers.tests/AnalyzerTestHarness.cs)
 compiles a snippet in memory and runs one analyzer over it. Two things it has to do that
 are easy to miss:
 
 - **`AnalyzerConfigOptions.Keys` throws in the base class.** The test double
-  [TestAnalyzerConfigOptions](../../../touki.analyzers.tests/TestAnalyzerConfigOptions.cs)
+  [TestAnalyzerConfigOptions](../../../test/touki.analyzers.tests/TestAnalyzerConfigOptions.cs)
   must override it, or any analyzer that *discovers* configuration by walking keys
   (rather than asking for a known one) fails only under test while working in a real build.
 - **A disabled-by-default rule produces nothing until the compilation enables it.** Pass
@@ -98,7 +98,7 @@ are easy to miss:
 is the worked example for `FixAllProvider.Create`. TOUKI0024 diagnostics carry the complete
 replacement for one XML comment, so the callback sorts those non-overlapping `TextChange`
 instances and calls `SourceText.WithChanges` once per document. Tests in
-[XmlDocumentationFormattingCodeFixTests.cs](../../../touki.analyzers.tests/XmlDocumentationFormattingCodeFixTests.cs)
+[XmlDocumentationFormattingCodeFixTests.cs](../../../test/touki.analyzers.tests/XmlDocumentationFormattingCodeFixTests.cs)
 cover document, project, solution, containing-member, and containing-type scopes, linked
 documents, pre-cancellation, and the observed per-document maximum of 136 diagnostics in an
 approximately 80 KiB source document. The full multi-document workload stays in the real
@@ -107,7 +107,7 @@ consumer probe rather than running in every CI matrix leg.
 Run the analyzer suite with:
 
 ```pwsh
-dotnet run --project touki.analyzers.tests/touki.analyzers.tests.csproj `
+dotnet run --project test/touki.analyzers.tests/touki.analyzers.tests.csproj `
   -c Release -- --timeout 15m
 ```
 

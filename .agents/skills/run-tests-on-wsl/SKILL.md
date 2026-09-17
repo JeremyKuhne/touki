@@ -1,6 +1,6 @@
 ---
 name: run-tests-on-wsl
-description: Run touki tests - especially the Unix-only oracle suites under `touki.tests/Touki/Io/Globbing/` - inside WSL Ubuntu on Windows. Use when the user asks to "run tests on Linux", "run the Posix/PosixPath/Bash oracles", or "iterate Unix tests locally", and for any fix that needs Linux verification before pushing.
+description: Run touki tests - especially the Unix-only oracle suites under `test/touki.tests/Touki/Io/Globbing/` - inside WSL Ubuntu on Windows. Use when the user asks to "run tests on Linux", "run the Posix/PosixPath/Bash oracles", or "iterate Unix tests locally", and for any fix that needs Linux verification before pushing.
 metadata:
   applicability: repo-local
   binding: none
@@ -85,13 +85,13 @@ wsl -- bash -ic 'rsync -a --delete `
 
 # 2. Build inside Linux (first time per sync).
 wsl --cd <LINUX_CHECKOUT> -- bash -ic `
-    'dotnet build touki.tests -c Release -f net10.0 --nologo'
+  'dotnet build test/touki.tests -c Release -f net10.0 --nologo'
 
 # 3. Run a filtered subset. `--filter-method` only allows wildcards at the
 #    start and/or end of the pattern and does not support `|` OR -
 #    run each suite separately.
 wsl --cd <LINUX_CHECKOUT> -- bash -ic `
-    'dotnet test touki.tests -c Release -f net10.0 --no-build --nologo -- --filter-method "*Posix*"'
+  'dotnet test test/touki.tests -c Release -f net10.0 --no-build --nologo -- --filter-method "*Posix*"'
 
 # 4. Read the test log (little-endian UTF-16; plain grep returns nothing).
 wsl --cd <LINUX_CHECKOUT> -- bash -ic `
@@ -108,8 +108,8 @@ installed) `Bash` oracle suites. The Linux run adds them and validates
 `GlobMatcher`'s multiple-asterisk and sequential-separator normalization
 against `fnmatch(3)` and native bash 5 with `extglob`/`globstar`. Known Bash
 and Git engine-level gaps remain explicit inconclusive rows in the
-[Bash](../../../touki.tests/Touki/Io/Globbing/MultipleAsteriskOracleTests.Bash.cs)
-and [Git](../../../touki.tests/Touki/Io/Globbing/MultipleAsteriskOracleTests.Git.cs)
+[Bash](../../../test/touki.tests/Touki/Io/Globbing/MultipleAsteriskOracleTests.Bash.cs)
+and [Git](../../../test/touki.tests/Touki/Io/Globbing/MultipleAsteriskOracleTests.Git.cs)
 oracle tests.
 
 The one OS-conditional row to expect is
@@ -121,8 +121,8 @@ documented platform divergence in the oracle, not in touki.
 ## Related skills
 
 - [`performance-testing`](../performance-testing/SKILL.md) - same
-  recipe runs `touki.perf` benchmarks on Linux; swap `touki.tests` for
-  `touki.perf`.
+  recipe runs `touki.perf` benchmarks on Linux; swap `test/touki.tests` for
+  `test/touki.perf`.
 - [`pre-pr-self-review`](../pre-pr-self-review/SKILL.md) - for
   changes touching `touki/Touki/Io/Globbing/`, run the Linux oracle suites
   before pushing so Unix-only regressions are caught locally instead of in CI.

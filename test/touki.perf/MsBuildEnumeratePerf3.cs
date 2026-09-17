@@ -12,7 +12,7 @@ namespace touki.perf;
 /// <summary>
 ///  Replay-based variant of <see cref="MsBuildEnumeratePerf2"/>. Instead of walking the real
 ///  file system, every scenario drives its matcher over recorded snapshots committed as
-///  compressed archives (<c>touki.perf/RecordedData/*.zip</c>), extracted to the build output
+///  compressed archives (<c>test/touki.perf/RecordedData/*.zip</c>), extracted to the build output
 ///  by <c>CompressedContent.targets</c> and reloaded from <see cref="AppContext.BaseDirectory"/>
 ///  during <see cref="GlobalSetup"/>. This isolates the matcher engine cost from file-system
 ///  I/O and makes the benchmark deterministic across runs.

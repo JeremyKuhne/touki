@@ -31,7 +31,7 @@
 
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\..\klutzyninja.snk</AssemblyOriginatorKeyFile>
 
     <!--
      Modifying default items to exclude the Framework items if not building for .NET Framework.
@@ -83,7 +83,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\touki.msbuildshim\touki.msbuildshim.csproj" />
-    <ProjectReference Include="..\touki.testsupport\touki.testsupport.csproj" />
-    <ProjectReference Include="..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
+    <ProjectReference Include="..\..\touki.testsupport\touki.testsupport.csproj" />
+    <ProjectReference Include="..\..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
   </ItemGroup>
 </Project>

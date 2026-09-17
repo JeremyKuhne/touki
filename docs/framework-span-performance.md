@@ -71,14 +71,14 @@ keeps the per-call overhead bounded.
 
 - [bcl-ignorecase-valley-rca.md](bcl-ignorecase-valley-rca.md) - the
   worked case study with full disassembly captures for both TFMs.
-- `touki.perf/AsciiIgnoreCaseUnsafePerf.cs` - the Span vs Ref vs
+- `test/touki.perf/AsciiIgnoreCaseUnsafePerf.cs` - the Span vs Ref vs
   Pinned A/B/C harness this document's measurements come from.
-- `touki.perf/StringSegmentIgnoreCasePerf.cs` - before/after baseline
+- `test/touki.perf/StringSegmentIgnoreCasePerf.cs` - before/after baseline
   for the `StringSegment.CompareTo OrdinalIgnoreCase` refactor that
   drove the Strategy-C decision in the worked example above.
 - `BenchmarkDotNet.Artifacts/results/touki.perf.AsciiIgnoreCaseUnsafePerf-asm.md`
   - generated disassembly. Regenerate with `[DisassemblyDiagnoser]`
-  on the perf class and `dotnet run -c Release --project touki.perf
+  on the perf class and `dotnet run -c Release --project test/touki.perf
   -f net481 -- --filter '*AsciiIgnoreCaseUnsafePerf*'`.
 - `docs/dotnet-perf-discoveries.md` - short-form running list of perf
   observations across the codebase.

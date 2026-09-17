@@ -1,10 +1,10 @@
 ---
-applyTo: 'touki.perf/**/*.cs'
+applyTo: 'test/touki.perf/**/*.cs'
 ---
 
 # Performance test conventions for `touki.perf`
 
-Rules for BenchmarkDotNet benchmarks under `touki.perf/`. See also the
+Rules for BenchmarkDotNet benchmarks under `test/touki.perf/`. See also the
 [`performance-testing`](../../.agents/skills/performance-testing/SKILL.md) and
 [`framework-jit-optimization`](../../.agents/skills/framework-jit-optimization/SKILL.md)
 skills for the workflow and net481-specific JIT details.
@@ -73,7 +73,7 @@ percentage. The procedure:
 ## Authoring conventions
 
 - One benchmark class per scenario; name it `<Subject>Perf` to match the
-  existing `touki.perf/*Perf.cs` files.
+  existing `test/touki.perf/*Perf.cs` files.
 - Use `[MemoryDiagnoser]` on every benchmark class.
 - Parameterize with `[Params]` only when the parameter changes the algorithmic
   shape; otherwise hard-code and add a second class.

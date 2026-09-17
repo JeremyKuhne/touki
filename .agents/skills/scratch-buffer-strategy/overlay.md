@@ -27,7 +27,7 @@ touki-specific lives here instead.
 
 - The stack-with-pool-fallback wrapper the core names generically is
   [`Touki.Buffers.BufferScope<T>`](../../../touki/Touki/Buffers/BufferScope.cs).
-- The benchmarks backing the reference's numbers live in `touki.perf/`
+- The benchmarks backing the reference's numbers live in `test/touki.perf/`
   (`StackZeroInitPerf.cs`, `ArrayPoolSeedRentPerf.cs`, `ArrayPoolCrossoverPerf.cs`,
   `BufferScopeOverheadPerf.cs`).
 - To confirm zeroing / pool overhead is actually the hot cost before acting, see

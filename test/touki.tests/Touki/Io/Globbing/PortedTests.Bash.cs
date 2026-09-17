@@ -28,7 +28,7 @@ namespace Touki.Io.Globbing;
 ///  </para>
 ///  <para>
 ///   Touki already has a live bash oracle suite
-///   (<see href="https://github.com/JeremyKuhne/touki/blob/main/touki.tests/Touki/Io/Globbing/BashInterop.cs"><c>BashInterop</c></see>)
+///   (<see href="https://github.com/JeremyKuhne/touki/blob/main/test/touki.tests/Touki/Io/Globbing/BashInterop.cs"><c>BashInterop</c></see>)
 ///   that runs <c>bash -O extglob -O globstar -c '[[ ... ]]'</c> on
 ///   Linux/macOS/Git Bash; this port captures the same scenarios as
 ///   compile-time-portable <c>[InlineData]</c> rows that run on every CI

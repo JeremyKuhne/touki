@@ -13,7 +13,7 @@ which API. The touki-specific bindings:
 - **Already referenced** (net472/net481 target only): `System.Memory`,
   `Microsoft.Bcl.Memory`, `Microsoft.Bcl.HashCode`, `Microsoft.IO.Redist`.
 - **Probe before polyfilling**: write a tiny `#if NETFRAMEWORK` snippet in
-  `touki.tests/Framework/` that calls the candidate API and try a `net472`
+  `test/touki.tests/Framework/` that calls the candidate API and try a `net472`
   build. If it compiles, a referenced package already supplies the member;
   delete the probe.
 - **When adding a package**, place the `<PackageReference>` inside the

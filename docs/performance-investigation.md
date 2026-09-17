@@ -124,13 +124,13 @@ the full authoring workflow; this section is the investigation-oriented summary.
 
 ```powershell
 # A/B on modern .NET, one class, full confidence
-dotnet run -c Release -f net10.0 --project touki.perf -- --filter *MySubjectPerf*
+dotnet run -c Release -f net10.0 --project test/touki.perf -- --filter *MySubjectPerf*
 
 # Same on .NET Framework 4.8.1 (ALWAYS run both for cross-TFM code)
-dotnet run -c Release -f net481 --project touki.perf -- --filter *MySubjectPerf*
+dotnet run -c Release -f net481 --project test/touki.perf -- --filter *MySubjectPerf*
 
 # Fast smoke pass while iterating
-dotnet run -c Release -f net10.0 --project touki.perf -- --filter *MySubjectPerf* --job short
+dotnet run -c Release -f net10.0 --project test/touki.perf -- --filter *MySubjectPerf* --job short
 ```
 
 `-c Release` is mandatory. `-f <tfm>` is mandatory (`touki.perf` multi-targets,
@@ -267,7 +267,7 @@ manifest or its traces - no GUI, no PerfView:
 
 ```powershell
 $handoff = & ./.agents/skills/filtrace/scripts/Capture-BenchmarkTrace.ps1 `
-  -Project touki.perf/touki.perf.csproj `
+  -Project test/touki.perf/touki.perf.csproj `
   -Filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' `
   -Tfm net10.0 -Format Json | ConvertFrom-Json
 
@@ -474,7 +474,7 @@ The top-down loop on a single captured trace:
 ```powershell
 # 0. Capture every parameterized case and verify exact generated-child symbols.
 $handoff = & ./.agents/skills/filtrace/scripts/Capture-BenchmarkTrace.ps1 `
-  -Project touki.perf/touki.perf.csproj `
+  -Project test/touki.perf/touki.perf.csproj `
   -Filter '*MsBuildEnumeratePerf3.GlobEnumeratorExtGlobSingleWithRoot' `
   -Tfm net10.0 -Format Json | ConvertFrom-Json
 $case = (Get-Content $handoff.manifest -Raw | ConvertFrom-Json).cases[0]
@@ -663,7 +663,7 @@ A concrete, token-efficient loop an agent should follow:
 2. **Search the catalog** ([dotnet-perf-discoveries.md](dotnet-perf-discoveries.md),
    [framework-span-performance.md](framework-span-performance.md)) for the API or
    pattern. Cite the existing measurement if found and stop.
-3. **Write or locate a benchmark** in `touki.perf/` (`<Subject>Perf` class,
+3. **Write or locate a benchmark** in `test/touki.perf/` (`<Subject>Perf` class,
    `[MemoryDiagnoser]`, a `Baseline`, every method returns a real value).
 4. **Smoke** with `--job short --filter *<Subject>Perf*` on `net10.0`. Confirm
    the benchmark is well-formed (stable Mean/Median, sane direction).
@@ -716,10 +716,10 @@ A concrete, token-efficient loop an agent should follow:
 ## 8. Quick reference card
 
 ```text
-A/B + allocations ............ dotnet run -c Release -f <tfm> --project touki.perf -- --filter *X*
+A/B + allocations ............ dotnet run -c Release -f <tfm> --project test/touki.perf -- --filter *X*
 Fast smoke ................... add --job short
 Read the result .............. BenchmarkDotNet.Artifacts/results/*-report-github.md
-Capture a trace .............. ./.agents/skills/filtrace/scripts/Capture-BenchmarkTrace.ps1 -Project touki.perf/touki.perf.csproj -Filter *X* -Tfm net10.0 -Format Json
+Capture a trace .............. ./.agents/skills/filtrace/scripts/Capture-BenchmarkTrace.ps1 -Project test/touki.perf/touki.perf.csproj -Filter *X* -Tfm net10.0 -Format Json
 Rank a capture manifest ...... filtrace batch <manifest.json> --metric cpu --benchmark
 Rank a whole BDN workload ..... filtrace cpu <trace> --benchmark
 Rank one phase instead ........ filtrace cpu <trace> --root <phase-frame>

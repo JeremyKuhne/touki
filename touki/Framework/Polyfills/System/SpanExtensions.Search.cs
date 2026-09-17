@@ -42,8 +42,8 @@ public static partial class SpanExtensions
                 // compare against a `movzx`-loaded ushort that is always false.
                 // Masking in the int domain forces a `conv.u2` and yields correct
                 // codegen on both net481 and modern .NET RyuJIT. See
-                // touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs
-                // and touki.perf/ReplaceUnsafeAsPerf.cs for the captured
+                // test/touki.tests/Framework/Regressions/UnsafeAsAggressiveInliningRegressionTests.cs
+                // and test/touki.perf/ReplaceUnsafeAsPerf.cs for the captured
                 // disassembly evidence.
                 ushort target = (ushort)(Unsafe.As<T, ushort>(ref value) & 0xFFFF);
                 fixed (T* p = span)

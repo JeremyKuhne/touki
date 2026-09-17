@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
+    <ProjectReference Include="..\..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
   </ItemGroup>
 
 </Project>

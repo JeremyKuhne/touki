@@ -30,8 +30,8 @@ comment:
 # uploads can be re-enabled later with separate flags once the workflow is
 # proven stable.
 ignore:
-  - "touki.tests/**"
+  - "test/touki.tests/**"
   - "touki.testsupport/**"
-  - "touki.perf/**"
+  - "test/touki.perf/**"
   - "sample/**"
   - "**/*.g.cs"

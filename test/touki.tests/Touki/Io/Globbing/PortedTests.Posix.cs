@@ -45,7 +45,7 @@ namespace Touki.Io.Globbing;
 ///   corpus (~100 rows asserting one character class member at a time) are
 ///   condensed here to a representative subset; the full ASCII enumeration
 ///   is covered indirectly by the
-///   <see href="https://github.com/JeremyKuhne/touki/blob/main/touki.tests/Touki/Io/Globbing/FnmatchInterop.cs"><c>FnmatchInterop</c></see>
+///   <see href="https://github.com/JeremyKuhne/touki/blob/main/test/touki.tests/Touki/Io/Globbing/FnmatchInterop.cs"><c>FnmatchInterop</c></see>
 ///   live oracle which runs on Linux/macOS.
 ///  </para>
 ///  <para>

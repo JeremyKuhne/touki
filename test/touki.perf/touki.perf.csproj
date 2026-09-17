@@ -19,7 +19,7 @@
 
     <!-- Not a security boundary, the strong name is for friend access to internal hot paths. -->
     <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\..\klutzyninja.snk</AssemblyOriginatorKeyFile>
 
     <!-- Turn off Microsoft Testing Platform's transitive test-app behavior -->
     <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
@@ -55,7 +55,7 @@
     <!-- The MSBuild shim (and, transitively, test support's recording infrastructure) without the
          test framework dependencies that referencing touki.tests would drag in. -->
     <ProjectReference Include="..\touki.msbuildshim\touki.msbuildshim.csproj" />
-    <ProjectReference Include="..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
+    <ProjectReference Include="..\..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
   </ItemGroup>
 
   <!--

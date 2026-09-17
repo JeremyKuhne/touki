@@ -122,7 +122,7 @@ try {
     Write-Host "Running $Category comparison on $TargetFramework..." -ForegroundColor Cyan
     Push-Location $repoRoot
     try {
-        dotnet run -c Release -f $TargetFramework --project touki.perf -- @benchmarkArguments
+        dotnet run -c Release -f $TargetFramework --project test/touki.perf -- @benchmarkArguments
         if ($LASTEXITCODE -ne 0) {
             throw "The benchmark run failed (exit $LASTEXITCODE)."
         }

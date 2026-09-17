@@ -13,7 +13,7 @@
 
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\..\klutzyninja.snk</AssemblyOriginatorKeyFile>
 
     <!-- Use the Microsoft Testing Platform -->
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
@@ -57,10 +57,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\touki.analyzers\touki.analyzers.csproj" />
-    <ProjectReference Include="..\touki.analyzers.codefixes\touki.analyzers.codefixes.csproj" />
+    <ProjectReference Include="..\..\touki.analyzers\touki.analyzers.csproj" />
+    <ProjectReference Include="..\..\touki.analyzers.codefixes\touki.analyzers.codefixes.csproj" />
     <!-- Used by consumer-style analyzer tests that bind against the real public API metadata. -->
-    <ProjectReference Include="..\touki\touki.csproj"
+    <ProjectReference Include="..\..\touki\touki.csproj"
                       AdditionalProperties="TargetFramework=$(DotNetCoreVersion)"
                       PrivateAssets="all" />
   </ItemGroup>

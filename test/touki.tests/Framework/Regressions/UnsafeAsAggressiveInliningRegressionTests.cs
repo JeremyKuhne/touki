@@ -8,7 +8,7 @@ namespace Touki.Framework.Regressions;
 
 /// <summary>
 ///  Regression coverage for the .NET Framework 4.8.1 RyuJIT codegen bug
-///  documented in <c>touki.perf/ReplaceUnsafeAsPerf.cs</c> and in the
+///  documented in <c>test/touki.perf/ReplaceUnsafeAsPerf.cs</c> and in the
 ///  <c>polyfill-dotnet-api</c> skill. Inside an
 ///  <see cref="MethodImplOptions.AggressiveInlining"/> method,
 ///  <c>Unsafe.As&lt;T, byte&gt;(ref methodParameter)</c> on a literal

@@ -48,7 +48,7 @@ own output, so its project rejects bootstrap-owned C# source; linked source rema
 owned by and analyzed in `touki.analyzers`. Validate that wiring with a normal
 solution build, not only a one-off injected analyzer path.
 
-Tests under `touki.tests/**/*.cs` follow
+Tests under `test/touki.tests/**/*.cs` follow
 [the test instructions](../../../.github/instructions/tests.instructions.md).
 Intentional invalid-null tests must continue to exercise the production validation
 path and expected parameter name.

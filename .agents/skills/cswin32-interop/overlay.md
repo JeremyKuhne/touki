@@ -45,7 +45,7 @@ the `metadata.github-*` provenance in `SKILL.md`). Do not hand-edit the core -
   [WindowsClipboardProvider.cs](../../../touki/Touki/Io/Providers/WindowsClipboardProvider.cs)
   calls the generated `Windows.Win32.PInvoke` surface identically on both TFMs;
   its tests are
-  [WindowsClipboardProviderTests.cs](../../../touki.tests/Touki/Io/Providers/WindowsClipboardProviderTests.cs).
+  [WindowsClipboardProviderTests.cs](../../../test/touki.tests/Touki/Io/Providers/WindowsClipboardProviderTests.cs).
 - **Non-Windows natives stay on `[LibraryImport]` / `[DllImport]`** per the core's
   rule 4: [LinuxClipboardProvider.cs](../../../touki/Touki/Io/Providers/LinuxClipboardProvider.cs)
   and [MacClipboardProvider.cs](../../../touki/Touki/Io/Providers/MacClipboardProvider.cs)

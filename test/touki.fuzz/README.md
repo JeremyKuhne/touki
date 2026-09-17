@@ -3,7 +3,7 @@
 Coverage-guided fuzzing harness for `touki`, built on
 [SharpFuzz](https://github.com/Metalnem/sharpfuzz). This is a stand-alone
 executable, not a test project - the normal `dotnet test` run does not execute
-it. See [docs/fuzz-testing-plan.md](../docs/fuzz-testing-plan.md) for the
+it. See [docs/fuzz-testing-plan.md](../../docs/fuzz-testing-plan.md) for the
 overall plan and phases.
 
 The project cross-targets `net10.0` and `net481` so the same fuzz targets can
@@ -53,7 +53,7 @@ Run the bundled script from the repo root. It checks each prerequisite and
 installs whatever is missing. No elevation is required:
 
 ```pwsh
-pwsh touki.fuzz/Install-FuzzPrereqs.ps1
+pwsh test/touki.fuzz/Install-FuzzPrereqs.ps1
 ```
 
 Add `-Force` to reinstall / re-download prerequisites that are already present.
@@ -72,7 +72,7 @@ dotnet tool install --global SharpFuzz.CommandLine
 # 2. Prebuilt libfuzzer-dotnet driver (Windows)
 $release = "v2025.05.02.0904"
 Invoke-WebRequest "https://github.com/Metalnem/libfuzzer-dotnet/releases/download/$release/libfuzzer-dotnet-windows.exe" `
-  -OutFile touki.fuzz/tools/libfuzzer-dotnet.exe
+  -OutFile test/touki.fuzz/tools/libfuzzer-dotnet.exe
 ```
 
 On Linux, download `libfuzzer-dotnet-ubuntu` (or `libfuzzer-dotnet-debian`)
@@ -91,7 +91,7 @@ of any crash or stall:
 ```pwsh
 $env:FUZZ_MODE = "sweep"
 $env:FUZZ_TARGET = "SpanReader"
-dotnet run --project touki.fuzz/touki.fuzz.csproj -c Release -f net10.0
+dotnet run --project test/touki.fuzz/touki.fuzz.csproj -c Release -f net10.0
 ```
 
 A watchdog flags any iteration that fails to make progress (for example an
@@ -113,7 +113,7 @@ libFuzzer run below; use it for a quick check or to reproduce a known input.
 1. Publish the harness for .NET 10:
 
    ```pwsh
-   dotnet publish touki.fuzz/touki.fuzz.csproj -c Release -f net10.0 -o artifacts/fuzz/net10
+  dotnet publish test/touki.fuzz/touki.fuzz.csproj -c Release -f net10.0 -o artifacts/fuzz/net10
    ```
 
 2. Instrument the assemblies under test. Instrument the `touki` assembly (the
@@ -129,9 +129,9 @@ libFuzzer run below; use it for a quick check or to reproduce a known input.
 
    ```pwsh
    $env:FUZZ_TARGET = "SpanReader"
-   touki.fuzz/tools/libfuzzer-dotnet.exe `
+   test/touki.fuzz/tools/libfuzzer-dotnet.exe `
      --target_path=artifacts/fuzz/net10/touki.fuzz.exe `
-     touki.fuzz/corpus/SpanReader
+     test/touki.fuzz/corpus/SpanReader
    ```
 
    Switch `FUZZ_TARGET` (and the corpus path) to `SpanWriter` or `RunLength`

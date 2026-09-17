@@ -31,7 +31,7 @@ public sealed partial class GlobSpecification
         ///   <see cref="ValueStringBuilder"/> seeded on the stack and produces
         ///   exactly one string via <see cref="ValueStringBuilder.ToString"/>.
         ///   End-to-end costs for no-op and rewrite patterns are tracked by
-        ///   <c>touki.perf/FileSystemGlobbingCompilePerf.cs</c> on modern .NET
+        ///   <c>test/touki.perf/FileSystemGlobbingCompilePerf.cs</c> on modern .NET
         ///   RyuJIT and .NET Framework 4.8.1 RyuJIT.
         ///  </para>
         /// </remarks>
