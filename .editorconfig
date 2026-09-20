@@ -55,6 +55,11 @@ dotnet_diagnostic.IDE1006.severity = none
 # as build failures; TOUKI0003 and TOUKI0004 keep their default Warning severity.
 dotnet_diagnostic.TOUKI0002.severity = warning
 
+# Keep production types isolated and easy to locate. Tests lower TOUKI0020 to informational
+# in test/.editorconfig because fixture and helper types commonly live beside their tests.
+dotnet_diagnostic.TOUKI0020.severity = warning
+dotnet_diagnostic.TOUKI0021.severity = warning
+
 # TOUKI0041 ships disabled, so this key is what turns naming enforcement on. When it is set it
 # also governs the severity of every rule below; a rule's own severity still decides whether it
 # is checked at all (severity = none opts a group out entirely). This is a warning because that

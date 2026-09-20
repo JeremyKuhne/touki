@@ -1,0 +1,11 @@
+[*.cs]
+
+# Loading the full local analyzer exposes existing TestSupport debt. Keep these rules visible while
+# migrating the package without blocking the file-layout analyzer rollout.
+dotnet_diagnostic.TOUKI0024.severity = suggestion
+dotnet_diagnostic.TOUKI0025.severity = suggestion
+dotnet_diagnostic.TOUKI0026.severity = suggestion
+dotnet_diagnostic.TOUKI0027.severity = suggestion
+dotnet_diagnostic.TOUKI0028.severity = suggestion
+dotnet_diagnostic.TOUKI0029.severity = suggestion
+dotnet_diagnostic.TOUKI0030.severity = suggestion

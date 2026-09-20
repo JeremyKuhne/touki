@@ -17,7 +17,7 @@ namespace Touki.Io.Globbing;
 ///   reporting - inspected directly via <c>TestAccessor</c>. Runtime
 ///   match behavior for the same opcodes is covered by
 ///   <c>ExtGlobPositiveMatchTests</c>, <c>ExtGlobNegationMatchTests</c>,
-///   <c>ExtGlobPathAwareMatchTests</c>, and <c>ExtGlobOracleTests.Bash</c>.
+///   <c>ExtGlobPathAwareMatchTests</c>, and <c>ExtGlobBashOracleTests</c>.
 ///  </para>
 /// </remarks>
 [TestClass]

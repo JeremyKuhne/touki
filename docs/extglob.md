@@ -211,7 +211,7 @@ On path-aware dialects (`PosixPath`, `Bash`, `Git`, `MSBuild`,
 
 The `Bash` dialect with `AllowGlobStar | AllowExtGlob` set is compared
 row-by-row against `bash -O extglob -O globstar` in
-[`ExtGlobOracleTests.Bash`](../test/touki.tests/Touki/Io/Globbing/ExtGlobOracleTests.Bash.cs)
+[`ExtGlobBashOracleTests`](../test/touki.tests/Touki/Io/Globbing/ExtGlobBashOracleTests.cs)
 (~552 rows of 24 patterns x 23 inputs). The oracle runs on Linux
 and Windows Git Bash; macOS is skipped because Apple ships GNU bash 3.2,
 which predates several of the cases the oracle relies on

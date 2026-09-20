@@ -302,7 +302,7 @@ public partial class GlobSpecificationTests
     public void Compile_UnterminatedClass_TreatedAsLiteral()
     {
         // Per fnmatch / glibc semantics: an unterminated '[' is treated as a
-        // literal character rather than rejected. See PortedTests.Posix.cs for
+        // literal character rather than rejected. See PortedTests_Posix.cs for
         // the row that pinned this down (B.6 031: "/[", "\\/[", 0).
         GlobSpecification matcher = GlobSpecification.Compile("[abc", GlobDialect.Posix);
         matcher.IsMatch("[abc").Should().BeTrue();

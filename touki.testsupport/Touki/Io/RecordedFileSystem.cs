@@ -9,34 +9,9 @@ namespace Touki.Io;
 ///  <see cref="DirectoryEnumerationRecorder"/>. Used to replay an enumeration without
 ///  touching the file system.
 /// </summary>
-public sealed class RecordedFileSystem
+public sealed partial class RecordedFileSystem
 {
     private readonly Dictionary<string, List<Entry>> _directories;
-
-    /// <summary>
-    ///  A single recorded entry: a file or subdirectory name within a directory.
-    /// </summary>
-    public readonly struct Entry
-    {
-        /// <summary>
-        ///  Initializes a new instance of the <see cref="Entry"/> struct.
-        /// </summary>
-        public Entry(string name, bool isDirectory)
-        {
-            Name = name;
-            IsDirectory = isDirectory;
-        }
-
-        /// <summary>
-        ///  The file or directory name.
-        /// </summary>
-        public string Name { get; }
-
-        /// <summary>
-        ///  <see langword="true"/> when the entry is a directory.
-        /// </summary>
-        public bool IsDirectory { get; }
-    }
 
     private RecordedFileSystem(Dictionary<string, List<Entry>> directories, string? root)
     {

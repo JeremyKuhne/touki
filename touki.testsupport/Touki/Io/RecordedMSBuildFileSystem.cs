@@ -28,7 +28,7 @@ namespace Touki.Io;
 ///   (<c>B,method,path,value</c>).
 ///  </para>
 /// </remarks>
-public sealed class RecordedMSBuildFileSystem
+public sealed partial class RecordedMSBuildFileSystem
 {
     /// <summary>Method code for <c>EnumerateFileSystemEntries</c>.</summary>
     public const string EnumerateFileSystemEntriesMethod = "FSE";
@@ -41,38 +41,6 @@ public sealed class RecordedMSBuildFileSystem
 
     /// <summary>Method code for <c>DirectoryExists</c>.</summary>
     public const string DirectoryExistsMethod = "DIR";
-
-    private readonly struct Enumeration
-    {
-        public Enumeration(string method, string path, string pattern, int option, string[] results)
-        {
-            Method = method;
-            Path = path;
-            Pattern = pattern;
-            Option = option;
-            Results = results;
-        }
-
-        public string Method { get; }
-        public string Path { get; }
-        public string Pattern { get; }
-        public int Option { get; }
-        public string[] Results { get; }
-    }
-
-    private readonly struct Existence
-    {
-        public Existence(string method, string path, bool value)
-        {
-            Method = method;
-            Path = path;
-            Value = value;
-        }
-
-        public string Method { get; }
-        public string Path { get; }
-        public bool Value { get; }
-    }
 
     private readonly Dictionary<string, Enumeration> _enumerations;
     private readonly Dictionary<string, Existence> _existence;

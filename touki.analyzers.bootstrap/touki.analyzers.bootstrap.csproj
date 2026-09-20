@@ -11,6 +11,10 @@
     <IsPackable>false</IsPackable>
     <IncludeBuildOutput>false</IncludeBuildOutput>
 
+    <PolySharpIncludeGeneratedTypes>
+      System.Diagnostics.CodeAnalysis.NotNullWhenAttribute
+    </PolySharpIncludeGeneratedTypes>
+
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\klutzyninja.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
@@ -20,16 +24,19 @@
                       VersionOverride="$(ToukiAnalyzerRoslynVersion)"
                       PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+    <PackageReference Include="PolySharp" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The bootstrap cannot analyze its own output. Keep source in the analyzer project and link it below. -->
+    <!-- The bootstrap cannot analyze its own output. Keep all source in the analyzer project and link it below. -->
     <_BootstrapOwnedSource Include="**\*.cs" Exclude="$(DefaultItemExcludes)" />
-    <Compile Include="..\touki.analyzers\AvoidNullForgivingOperatorAnalyzer.cs"
-             Link="AvoidNullForgivingOperatorAnalyzer.cs" />
-    <Compile Include="..\touki.analyzers\HelpLinks.cs" Link="HelpLinks.cs" />
-    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
-    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+    <Compile Include="..\touki.analyzers\**\*.cs"
+             Exclude="..\touki.analyzers\bin\**;..\touki.analyzers\obj\**"
+             Link="%(RecursiveDir)%(Filename)%(Extension)" />
+    <AdditionalFiles Include="..\touki.analyzers\AnalyzerReleases.Shipped.md"
+                     Link="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="..\touki.analyzers\AnalyzerReleases.Unshipped.md"
+                     Link="AnalyzerReleases.Unshipped.md" />
   </ItemGroup>
 
   <Target Name="_RejectBootstrapOwnedSource"

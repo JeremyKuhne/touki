@@ -1,0 +1,27 @@
+[*.cs]
+
+# Test fixtures and helper types commonly live beside the tests that use them.
+dotnet_diagnostic.TOUKI0020.severity = suggestion
+
+# Tests intentionally exercise these diagnostics and legacy framework metadata.
+dotnet_diagnostic.TOUKI0001.severity = suggestion
+dotnet_diagnostic.TOUKI0002.severity = suggestion
+dotnet_diagnostic.TOUKI0004.severity = suggestion
+dotnet_diagnostic.TOUKI0010.severity = suggestion
+dotnet_diagnostic.TOUKI0011.severity = suggestion
+dotnet_diagnostic.TOUKI0023.severity = suggestion
+
+# Tests are not package API and test method names intentionally use underscores.
+dotnet_diagnostic.TOUKI0025.severity = none
+dotnet_diagnostic.TOUKI0026.severity = none
+dotnet_diagnostic.TOUKI0041.severity = none
+
+# Production allocation guidance does not apply to test implementations.
+dotnet_diagnostic.TOUKI0030.severity = none
+
+# Keep existing test style and path-composition debt visible without blocking the full-analyzer rollout.
+dotnet_diagnostic.TOUKI0024.severity = suggestion
+dotnet_diagnostic.TOUKI0027.severity = suggestion
+dotnet_diagnostic.TOUKI0028.severity = suggestion
+dotnet_diagnostic.TOUKI0029.severity = suggestion
+dotnet_diagnostic.TOUKI0032.severity = suggestion

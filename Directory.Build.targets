@@ -26,9 +26,9 @@
   </ItemGroup>
 
   <!--
-    Load the current null-forgiving analyzer in every first-party project. Touki already loads the full current
-    analyzer project through specialized build/package references. The bootstrap project links only TOUKI0005 so
-    analyzer producers can enforce the rule without referencing their own output or activating unrelated rules.
+    Load the full current analyzer in every first-party project. Touki already loads the analyzer project through
+    specialized build/package references. The bootstrap project links the same analyzer sources so analyzer
+    producers can enforce every rule without referencing their own output.
   -->
   <ItemGroup Condition="'$(MSBuildProjectName)' != 'touki'
                         And '$(MSBuildProjectName)' != 'touki.analyzers.bootstrap'">
@@ -37,4 +37,15 @@
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all" />
   </ItemGroup>
+
+  <!-- In-repo package consumers can restore a published Touki analyzer transitively. Keep only the local build. -->
+  <Target Name="_RemovePackagedToukiAnalyzers"
+      AfterTargets="ResolveLockFileAnalyzers"
+          BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <_PackagedToukiAnalyzer Include="@(Analyzer)"
+                              Condition="'%(Analyzer.NuGetPackageId)' == 'KlutzyNinja.Touki.Analyzers'" />
+      <Analyzer Remove="@(_PackagedToukiAnalyzer)" />
+    </ItemGroup>
+  </Target>
 </Project>

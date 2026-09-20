@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Enable central package management, https://learn.microsoft.com/nuget/consume-packages/Central-Package-Management -->
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <ToukiBootstrapAnalyzerVersion>0.9.1</ToukiBootstrapAnalyzerVersion>
     <!-- Compiler extensions must load in compiler hosts as old as Roslyn 4.14. -->
     <ToukiAnalyzerRoslynVersion>4.14.0</ToukiAnalyzerRoslynVersion>
   </PropertyGroup>
