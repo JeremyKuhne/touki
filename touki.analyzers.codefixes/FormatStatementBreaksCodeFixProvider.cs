@@ -390,7 +390,7 @@ public sealed partial class FormatStatementBreaksCodeFixProvider : CodeFixProvid
                 ? startComparison
                 : right.Span.Length.CompareTo(left.Span.Length);
         });
-        normalized = new(changes.Count);
+        normalized = [with(changes.Count)];
         foreach (TextChange change in changes)
         {
             cancellationToken.ThrowIfCancellationRequested();

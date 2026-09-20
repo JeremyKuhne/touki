@@ -78,7 +78,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             return null;
         }
 
-        Dictionary<string, string> options = new();
+        Dictionary<string, string> options = [];
         if (apiSurface is not null)
         {
             options.Add(MemberXmlDocumentationAnalyzer.ApiSurfaceOption, apiSurface);

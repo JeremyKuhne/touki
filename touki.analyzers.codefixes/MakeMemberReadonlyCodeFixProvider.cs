@@ -243,7 +243,7 @@ public sealed partial class MakeMemberReadonlyCodeFixProvider : CodeFixProvider
             return false;
         }
 
-        HashSet<ISymbol> members = new(SymbolEqualityComparer.Default) { member };
+        HashSet<ISymbol> members = [with(SymbolEqualityComparer.Default), member];
 
         if (member is IMethodSymbol method)
         {
@@ -345,7 +345,7 @@ public sealed partial class MakeMemberReadonlyCodeFixProvider : CodeFixProvider
                 continue;
             }
 
-            List<SyntaxNode> declarations = new(entry.Value.Count);
+            List<SyntaxNode> declarations = [with(entry.Value.Count)];
             foreach (TextSpan span in entry.Value)
             {
                 cancellationToken.ThrowIfCancellationRequested();

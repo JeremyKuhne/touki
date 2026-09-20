@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using Touki.Io;
 using System.Linq;
-
+using Touki.Io;
 using Path = System.IO.Path;
 
 namespace touki.perf;

@@ -62,9 +62,9 @@ internal static partial class DocumentationInheritanceResolver
         Func<ISymbol, MemberDeclarationSyntax, Compilation, bool>? includeSourceDeclaration,
         CancellationToken cancellationToken)
     {
-        HashSet<ISymbol> inspected = new(SymbolEqualityComparer.Default);
-        HashSet<ISymbol> expandedHierarchies = new(SymbolEqualityComparer.Default);
-        Dictionary<Compilation, Compilation> aliasNormalizedCompilations = new();
+        HashSet<ISymbol> inspected = [with(SymbolEqualityComparer.Default)];
+        HashSet<ISymbol> expandedHierarchies = [with(SymbolEqualityComparer.Default)];
+        Dictionary<Compilation, Compilation> aliasNormalizedCompilations = [];
         bool unknown = false;
 
         for (int index = 0; index < pending.Count; index++)
@@ -221,7 +221,7 @@ internal static partial class DocumentationInheritanceResolver
         CancellationToken cancellationToken)
     {
         bool addedNaturalTargets = false;
-        HashSet<ISymbol> addedExplicitTargets = new(SymbolEqualityComparer.Default);
+        HashSet<ISymbol> addedExplicitTargets = [with(SymbolEqualityComparer.Default)];
         for (int index = 0; index < documentation.InheritdocCount; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -302,7 +302,7 @@ internal static partial class DocumentationInheritanceResolver
             return false;
         }
 
-        HashSet<string> resolvedDocumentationIds = new(StringComparer.Ordinal);
+        HashSet<string> resolvedDocumentationIds = [with(StringComparer.Ordinal)];
         foreach (MetadataInheritdocReference inheritdoc in documentation.InheritdocReferences)
         {
             cancellationToken.ThrowIfCancellationRequested();

@@ -437,7 +437,7 @@ public sealed partial class MoveTypeToFileCodeFixProvider : CodeFixProvider
         ImmutableArray<MemberDeclarationSyntax> declarations,
         SyntaxGenerator generator)
     {
-        HashSet<MemberDeclarationSyntax> declarationsToMove = new(declarations);
+        HashSet<MemberDeclarationSyntax> declarationsToMove = [with(declarations)];
         SyntaxList<MemberDeclarationSyntax> movedMembers = GetMovedMembers(
             root.Members,
             declarationsToMove,

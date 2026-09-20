@@ -201,7 +201,7 @@ public static partial class StringExtensions
             ArgumentOutOfRangeException.ThrowIfLessThan(maxLength, minLength, nameof(maxLength));
 
             random ??= s_defaultRandom ??= new Random();
-            List<string> result = new(count);
+            List<string> result = [with(count)];
             using BufferScope<char> buffer = new(stackalloc char[128], maxLength);
 
             for (int i = 0; i < count; i++)

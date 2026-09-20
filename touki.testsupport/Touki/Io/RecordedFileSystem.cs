@@ -46,7 +46,7 @@ public sealed partial class RecordedFileSystem
     {
         ArgumentNullException.ThrowIfNull(reader);
 
-        Dictionary<string, List<Entry>> directories = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, List<Entry>> directories = [with(StringComparer.OrdinalIgnoreCase)];
         string? root = null;
         List<Entry>? current = null;
 

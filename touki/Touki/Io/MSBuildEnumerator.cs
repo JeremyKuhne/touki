@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-using Touki.Collections;
 using System.Runtime.ExceptionServices;
 using System.Threading;
+using Touki.Collections;
 
 namespace Touki.Io;
 

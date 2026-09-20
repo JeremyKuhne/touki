@@ -128,7 +128,7 @@ public sealed class PreferValueStringBuilderAnalyzer : DiagnosticAnalyzer
 
         // Locals whose builder leaves the method, where a ref struct cannot be substituted. Only builder locals
         // are tracked, since those are the only ones ever looked up.
-        HashSet<ISymbol> escaped = new(SymbolEqualityComparer.Default);
+        HashSet<ISymbol> escaped = [with(SymbolEqualityComparer.Default)];
 
         // Creations left behind by an expression that yields something other than the builder.
         List<IOperation> temporaries = [];

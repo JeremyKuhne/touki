@@ -302,7 +302,7 @@ public class BinaryFormattedObjectPerf
 
     private static List<string> CreateStringList()
     {
-        List<string> values = new(StringListCount);
+        List<string> values = [with(StringListCount)];
         for (int index = 0; index < StringListCount; index++)
         {
             values.Add($"NRBF benchmark value {index}");

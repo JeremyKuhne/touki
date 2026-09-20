@@ -34,8 +34,8 @@ public sealed partial class MakeMemberReadonlyCodeFixProvider
                 fixAllContext.Solution,
                 fixAllContext.CancellationToken);
             Dictionary<DocumentId, HashSet<TextSpan>> declarationsByDocument = [];
-            HashSet<ISymbol> processedReboundMembers = new(SymbolEqualityComparer.Default);
-            HashSet<ISymbol> processedMembers = new(SymbolEqualityComparer.Default);
+            HashSet<ISymbol> processedReboundMembers = [with(SymbolEqualityComparer.Default)];
+            HashSet<ISymbol> processedMembers = [with(SymbolEqualityComparer.Default)];
             foreach (KeyValuePair<DocumentId, List<Diagnostic>> pair in diagnosticsByDocument)
             {
                 fixAllContext.CancellationToken.ThrowIfCancellationRequested();

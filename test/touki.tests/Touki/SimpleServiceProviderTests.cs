@@ -201,7 +201,7 @@ public class SimpleServiceProviderTests
         int threadCount = 10;
         int itemsPerThread = 100;
 
-        List<Task> tasks = new(threadCount);
+        List<Task> tasks = [with(threadCount)];
 
         for (int i = 0; i < threadCount; i++)
         {

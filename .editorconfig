@@ -252,7 +252,7 @@ dotnet_diagnostic.IDE0026.severity = silent
 dotnet_diagnostic.IDE0027.severity = silent
 
 # IDE0028: Simplify collection initialization
-dotnet_diagnostic.IDE0028.severity = suggestion
+dotnet_diagnostic.IDE0028.severity = warning
 
 # IDE0029: Use coalesce expression
 dotnet_diagnostic.IDE0029.severity = warning

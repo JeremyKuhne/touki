@@ -47,7 +47,7 @@ internal static class RoslynTestEnvironment
         Dictionary<string, TestAnalyzerConfigOptions>? treeOptions = null;
         if (optionsByFile is not null)
         {
-            treeOptions = new(StringComparer.Ordinal);
+            treeOptions = [with(StringComparer.Ordinal)];
             foreach (KeyValuePair<string, IReadOnlyDictionary<string, string>> pair in optionsByFile)
             {
                 treeOptions.Add(pair.Key, new TestAnalyzerConfigOptions(pair.Value));

@@ -118,7 +118,7 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
             return null;
         }
 
-        List<InvocationExpressionSyntax> invocations = new(invocationSpans.Count);
+        List<InvocationExpressionSyntax> invocations = [with(invocationSpans.Count)];
         HashSet<SyntaxNode> replacedBindingNodes = [];
         foreach (TextSpan invocationSpan in invocationSpans)
         {
