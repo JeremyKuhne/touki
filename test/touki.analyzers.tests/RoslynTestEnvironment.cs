@@ -9,6 +9,8 @@ namespace Touki.Analyzers;
 internal static class RoslynTestEnvironment
 {
     private static readonly Lazy<ImmutableArray<MetadataReference>> s_references = new(CreateReferences);
+    private static readonly Lazy<ImmutableArray<MetadataReference>> s_netStandard20References =
+        new(CreateNetStandard20References);
     private static readonly Lazy<ImmutableArray<MetadataReference>> s_net472References = new(CreateNet472References);
 
     /// <summary>
@@ -29,6 +31,11 @@ internal static class RoslynTestEnvironment
     ///  Gets the real net472 reference assemblies and the Microsoft.IO.Redist dependency closure.
     /// </summary>
     public static ImmutableArray<MetadataReference> Net472References => s_net472References.Value;
+
+    /// <summary>
+    ///  Gets the real netstandard2.0 reference assemblies.
+    /// </summary>
+    public static ImmutableArray<MetadataReference> NetStandard20References => s_netStandard20References.Value;
 
     /// <summary>
     ///  Creates analyzer options backed by the supplied EditorConfig values.
@@ -88,12 +95,7 @@ internal static class RoslynTestEnvironment
 
     private static ImmutableArray<MetadataReference> CreateNet472References()
     {
-        string packages = typeof(RoslynTestEnvironment).Assembly
-            .GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), inherit: false)
-            .Cast<System.Reflection.AssemblyMetadataAttribute>()
-            .Single(attribute => attribute.Key == "NuGetPackageRoot")
-            .Value
-            ?? throw new InvalidOperationException("NuGet package root metadata is unavailable.");
+        string packages = GetNuGetPackageRoot();
 
         string framework = Path.Join(
             packages,
@@ -128,4 +130,28 @@ internal static class RoslynTestEnvironment
 
         return [.. paths.Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))];
     }
+
+    private static ImmutableArray<MetadataReference> CreateNetStandard20References()
+    {
+        string references = Path.Join(
+            GetNuGetPackageRoot(),
+            "netstandard.library",
+            "2.0.3",
+            "build",
+            "netstandard2.0",
+            "ref");
+        IEnumerable<string> paths = Directory
+            .EnumerateFiles(references, "*.dll")
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
+
+        return [.. paths.Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))];
+    }
+
+    private static string GetNuGetPackageRoot() =>
+        typeof(RoslynTestEnvironment).Assembly
+            .GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), inherit: false)
+            .Cast<System.Reflection.AssemblyMetadataAttribute>()
+            .Single(attribute => attribute.Key == "NuGetPackageRoot")
+            .Value
+            ?? throw new InvalidOperationException("NuGet package root metadata is unavailable.");
 }
