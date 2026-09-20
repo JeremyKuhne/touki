@@ -810,7 +810,7 @@ internal static partial class AllmanFormatter
     private static List<TextChange> GetTextChanges(
         Dictionary<TextSpan, string> replacements)
     {
-        List<TextChange> changes = new(replacements.Count);
+        List<TextChange> changes = [with(replacements.Count)];
         foreach (KeyValuePair<TextSpan, string> replacement in replacements)
         {
             changes.Add(new(replacement.Key, replacement.Value));

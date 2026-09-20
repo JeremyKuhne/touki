@@ -788,7 +788,7 @@ internal static class ListExtensions
 
     public static List<T> WalkToList<T>(this SinglyLinkedList<T> linkedList)
     {
-        List<T> list = new(linkedList.Count);
+        List<T> list = [with(linkedList.Count)];
         var node = linkedList.First;
         while (node is not null)
         {
@@ -801,7 +801,7 @@ internal static class ListExtensions
 
     public static List<T> EnumerateToList<T>(this SinglyLinkedList<T> linkedList)
     {
-        List<T> list = new(linkedList.Count);
+        List<T> list = [with(linkedList.Count)];
         var enumerator = linkedList.GetEnumerator();
         while (enumerator.MoveNext())
         {

@@ -54,7 +54,7 @@ internal sealed class CompositeFileSystemMatcherSession : FileSystemMatcherSessi
         List<int> edges = [];
         List<FileSystemMatchAction> actions = [];
         List<IFileSystemMatcherSession> sessions = [];
-        HashSet<IFileSystemMatcherSession> sessionIdentities = new(MatcherSessionReferenceComparer.Instance);
+        HashSet<IFileSystemMatcherSession> sessionIdentities = [with(MatcherSessionReferenceComparer.Instance)];
         Stack<CompositeMatcherWorkItem> work = new();
         Stack<int> results = new();
         work.Push(new(matcher, expanded: false));

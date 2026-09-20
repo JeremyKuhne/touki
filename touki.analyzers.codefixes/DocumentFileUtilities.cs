@@ -93,8 +93,8 @@ internal static class DocumentFileUtilities
         string language,
         CancellationToken cancellationToken)
     {
-        Dictionary<string, List<DocumentId>> documentsByPath = new(PathComparer);
-        HashSet<string> pathsInOtherLanguages = new(PathComparer);
+        Dictionary<string, List<DocumentId>> documentsByPath = [with(PathComparer)];
+        HashSet<string> pathsInOtherLanguages = [with(PathComparer)];
         Dictionary<DocumentId, ImmutableArray<DocumentId>> relatedDocuments = [];
         foreach (Project project in solution.Projects)
         {
@@ -151,7 +151,7 @@ internal static class DocumentFileUtilities
         Solution solution,
         CancellationToken cancellationToken)
     {
-        Dictionary<string, DocumentId> documentsByPath = new(PathComparer);
+        Dictionary<string, DocumentId> documentsByPath = [with(PathComparer)];
         HashSet<DocumentId> sharedDocuments = [];
         foreach (Project project in solution.Projects)
         {

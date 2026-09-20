@@ -3,8 +3,8 @@
 // See LICENSE file in the project root for full license information
 
 using System.Diagnostics;
-using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Touki.Analyzers;
 

@@ -110,10 +110,10 @@ public sealed class MustDisposeAnalyzer : DiagnosticAnalyzer
     {
         // Owned, freshly produced [MustDispose] locals keyed by symbol -> the operation to report on (a declarator
         // or the receiving reference of an out argument).
-        Dictionary<ISymbol, IOperation> owned = new(SymbolEqualityComparer.Default);
+        Dictionary<ISymbol, IOperation> owned = [with(SymbolEqualityComparer.Default)];
 
         // Locals whose disposal obligation is discharged (disposed, returned, stored, aliased, or passed on).
-        HashSet<ISymbol> discharged = new(SymbolEqualityComparer.Default);
+        HashSet<ISymbol> discharged = [with(SymbolEqualityComparer.Default)];
 
         foreach (IOperation root in context.OperationBlocks)
         {

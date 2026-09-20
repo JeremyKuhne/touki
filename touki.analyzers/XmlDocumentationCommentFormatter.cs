@@ -242,7 +242,7 @@ internal static partial class XmlDocumentationCommentFormatter
             changes.Add(change);
         }
 
-        List<TextSpan> structuralChangeSpans = new(changes.Count);
+        List<TextSpan> structuralChangeSpans = [with(changes.Count)];
         foreach (TextChange change in changes)
         {
             structuralChangeSpans.Add(change.Span);

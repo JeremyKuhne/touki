@@ -379,8 +379,10 @@ public class ListBaseTests
     [TestMethod]
     public void IList_Indexer_Setter_AssignsItem()
     {
-        TestList<string> list = new();
-        list.Add("a");
+        TestList<string> list = new()
+        {
+            "a"
+        };
 
         IList iList = list;
         iList[0] = "b";
@@ -391,8 +393,10 @@ public class ListBaseTests
     [TestMethod]
     public void IList_Indexer_Setter_WrongType_Throws()
     {
-        TestList<string> list = new();
-        list.Add("a");
+        TestList<string> list = new()
+        {
+            "a"
+        };
 
         IList iList = list;
         Action action = () => iList[0] = 42;
@@ -402,9 +406,11 @@ public class ListBaseTests
     [TestMethod]
     public void IList_Remove_ExistingItem_RemovesIt()
     {
-        TestList<string> list = new();
-        list.Add("a");
-        list.Add("b");
+        TestList<string> list = new()
+        {
+            "a",
+            "b"
+        };
 
         IList iList = list;
         iList.Remove("a");
@@ -416,8 +422,10 @@ public class ListBaseTests
     [TestMethod]
     public void IList_Remove_WrongType_IsNoOp()
     {
-        TestList<string> list = new();
-        list.Add("a");
+        TestList<string> list = new()
+        {
+            "a"
+        };
 
         IList iList = list;
         iList.Remove(42);
@@ -428,8 +436,10 @@ public class ListBaseTests
     [TestMethod]
     public void IList_IndexOf_WrongType_ReturnsNegativeOne()
     {
-        TestList<string> list = new();
-        list.Add("a");
+        TestList<string> list = new()
+        {
+            "a"
+        };
 
         IList iList = list;
         iList.IndexOf(42).Should().Be(-1);
@@ -438,8 +448,10 @@ public class ListBaseTests
     [TestMethod]
     public void IList_Contains_WrongType_ReturnsFalse()
     {
-        TestList<string> list = new();
-        list.Add("a");
+        TestList<string> list = new()
+        {
+            "a"
+        };
 
         IList iList = list;
         iList.Contains(42).Should().BeFalse();

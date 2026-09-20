@@ -76,7 +76,7 @@ public sealed partial class AddLiteralArgumentNameCodeFixProvider
                     continue;
                 }
 
-                List<ArgumentNameCandidate> candidates = new(pair.Value.Count);
+                List<ArgumentNameCandidate> candidates = [with(pair.Value.Count)];
                 HashSet<int> insertionPoints = [];
                 foreach (Diagnostic diagnostic in pair.Value)
                 {
@@ -97,7 +97,7 @@ public sealed partial class AddLiteralArgumentNameCodeFixProvider
                     candidates,
                     insertionPoints,
                     fixAllContext.CancellationToken);
-                List<TextChange> changes = new(eligibleInsertionPoints.Count);
+                List<TextChange> changes = [with(eligibleInsertionPoints.Count)];
                 foreach (ArgumentNameCandidate candidate in candidates)
                 {
                     fixAllContext.CancellationToken.ThrowIfCancellationRequested();

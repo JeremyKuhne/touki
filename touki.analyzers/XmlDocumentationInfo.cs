@@ -161,7 +161,7 @@ internal struct XmlDocumentationInfo
                 && nameAttribute.Name.Prefix is null
                 && string.Equals(nameAttribute.Name.LocalName.ValueText, "name", StringComparison.Ordinal))
             {
-                (_parameterNames ??= new(StringComparer.Ordinal)).Add(nameAttribute.Identifier.Identifier.ValueText);
+                (_parameterNames ??= [with(StringComparer.Ordinal)]).Add(nameAttribute.Identifier.Identifier.ValueText);
                 return;
             }
         }

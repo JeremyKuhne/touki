@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
+using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Touki.Analyzers;
@@ -308,7 +308,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
                 }
             }
             """;
-        List<string> statements = new(unrelatedBindingCount + callCount);
+        List<string> statements = [with(unrelatedBindingCount + callCount)];
         for (int index = 0; index < unrelatedBindingCount; index++)
         {
             statements.Add($"        int unrelated{index} = System.Math.Abs(value);");

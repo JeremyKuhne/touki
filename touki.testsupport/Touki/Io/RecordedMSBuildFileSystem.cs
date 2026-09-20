@@ -51,8 +51,8 @@ public sealed partial class RecordedMSBuildFileSystem
     /// </summary>
     public RecordedMSBuildFileSystem()
     {
-        _enumerations = new(StringComparer.OrdinalIgnoreCase);
-        _existence = new(StringComparer.OrdinalIgnoreCase);
+        _enumerations = [with(StringComparer.OrdinalIgnoreCase)];
+        _existence = [with(StringComparer.OrdinalIgnoreCase)];
         Root = string.Empty;
     }
 
@@ -214,8 +214,8 @@ public sealed partial class RecordedMSBuildFileSystem
     {
         ArgumentNullException.ThrowIfNull(reader);
 
-        Dictionary<string, Enumeration> enumerations = new(StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, Existence> existence = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, Enumeration> enumerations = [with(StringComparer.OrdinalIgnoreCase)];
+        Dictionary<string, Existence> existence = [with(StringComparer.OrdinalIgnoreCase)];
         string root = string.Empty;
 
         string? line;

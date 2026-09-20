@@ -39,7 +39,7 @@ public class TypeXmlSummaryAnalyzerTests
             return null;
         }
 
-        Dictionary<string, string> options = new();
+        Dictionary<string, string> options = [];
         if (apiSurface is not null)
         {
             options.Add(TypeXmlSummaryAnalyzer.ApiSurfaceOption, apiSurface);
