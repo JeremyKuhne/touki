@@ -4,3 +4,10 @@ dotnet_code_quality.TOUKI0025.api_surface = public
 dotnet_code_quality.TOUKI0025.effective_api_surface = public
 dotnet_code_quality.TOUKI0026.api_surface = public
 dotnet_code_quality.TOUKI0026.effective_api_surface = public
+
+# Loading the full local analyzer exposes existing producer debt. Keep these rules visible while
+# migrating the analyzer implementation without blocking unrelated analyzer changes.
+dotnet_diagnostic.TOUKI0026.severity = suggestion
+dotnet_diagnostic.TOUKI0027.severity = suggestion
+dotnet_diagnostic.TOUKI0028.severity = suggestion
+dotnet_diagnostic.TOUKI0029.severity = suggestion

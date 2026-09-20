@@ -252,7 +252,7 @@ public sealed partial class GlobSpecification
             // FileMatcher.IsMatch / MSBuildGlob.IsMatch do match empty input against
             // empty pattern and against `*`, so MSBuild is intentionally not in this
             // list - see the ported FileMatcher rows under
-            // test/touki.tests/Touki/Io/Globbing/PortedTests.MSBuild.cs.
+            // test/touki.tests/Touki/Io/Globbing/PortedTests_MSBuild.cs.
             bool disallowEmptyInput = dialect is
                 GlobDialect.Simple
                     or GlobDialect.FileSystemGlobbing

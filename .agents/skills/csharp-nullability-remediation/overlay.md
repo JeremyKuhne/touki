@@ -40,13 +40,13 @@ dotnet test -c Release
 Start with the narrow project/target that exposes the warning, then run the full
 Release test command before declaring a fix done.
 
-All first-party projects except the bootstrap producer enforce TOUKI0005. `touki`
-loads the full current analyzer project; the other projects load
-`touki.analyzers.bootstrap`, which links only the rule and avoids both analyzer
-self-reference cycles and unrelated dogfood rules. The bootstrap cannot analyze its
-own output, so its project rejects bootstrap-owned C# source; linked source remains
-owned by and analyzed in `touki.analyzers`. Validate that wiring with a normal
-solution build, not only a one-off injected analyzer path.
+All first-party projects except the bootstrap producer load the full current Touki
+analyzer. `touki` loads the analyzer project directly; the other projects load
+`touki.analyzers.bootstrap`, which links the complete analyzer source set and avoids
+analyzer self-reference cycles. The bootstrap cannot analyze its own output, so its
+project rejects bootstrap-owned C# source; linked source remains owned by and analyzed
+in `touki.analyzers`. Validate that wiring with a normal solution build, not only a
+one-off injected analyzer path.
 
 Tests under `test/touki.tests/**/*.cs` follow
 [the test instructions](../../../.github/instructions/tests.instructions.md).

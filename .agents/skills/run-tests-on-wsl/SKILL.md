@@ -108,8 +108,8 @@ installed) `Bash` oracle suites. The Linux run adds them and validates
 `GlobMatcher`'s multiple-asterisk and sequential-separator normalization
 against `fnmatch(3)` and native bash 5 with `extglob`/`globstar`. Known Bash
 and Git engine-level gaps remain explicit inconclusive rows in the
-[Bash](../../../test/touki.tests/Touki/Io/Globbing/MultipleAsteriskOracleTests.Bash.cs)
-and [Git](../../../test/touki.tests/Touki/Io/Globbing/MultipleAsteriskOracleTests.Git.cs)
+[Bash](../../../test/touki.tests/Touki/Io/Globbing/MultipleAsteriskBashOracleTests.cs)
+and [Git](../../../test/touki.tests/Touki/Io/Globbing/MultipleAsteriskGitOracleTests.cs)
 oracle tests.
 
 The one OS-conditional row to expect is

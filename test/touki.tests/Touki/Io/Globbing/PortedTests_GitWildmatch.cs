@@ -34,7 +34,7 @@ namespace Touki.Io.Globbing;
 ///  <para>
 ///   Touki's existing live Git oracle suites
 ///   (<c>SequentialSeparatorGitOracleTests</c>,
-///   <c>MultipleAsteriskOracleTests.Git</c>) cover the gitignore-layer
+///   <c>MultipleAsteriskGitOracleTests</c>) cover the gitignore-layer
 ///   semantics via <c>LibGit2Sharp.Repository.Ignore.IsPathIgnored</c>; this
 ///   port instead pins the underlying wildmatch engine on every CI runner
 ///   without needing the native LibGit2Sharp binary or a real git binary on

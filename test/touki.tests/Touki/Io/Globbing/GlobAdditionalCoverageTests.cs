@@ -378,7 +378,7 @@ public class GlobAdditionalCoverageTests
         // Dangling escape produces a compile error; the TryCompile entry point
         // exposes the error path that the throwing Compile wraps. (An unterminated
         // '[' is no longer an error - fnmatch semantics treat it as a literal
-        // character; see PortedTests.Posix.cs.)
+        // character; see PortedTests_Posix.cs.)
         bool ok = GlobSpecification.TryCompile(
             "abc\\",
             GlobDialect.Posix,
