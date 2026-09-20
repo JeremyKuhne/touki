@@ -1067,11 +1067,10 @@ internal static partial class StatementBreakFormatting
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            SyntaxToken anchor;
             SyntaxNode? anchorExpression = null;
             bool useAnchorEndLine = false;
             bool alignWithAnchor = false;
-            if (TryGetTrailingOperatorAnchor(current, out anchor))
+            if (TryGetTrailingOperatorAnchor(current, out SyntaxToken anchor))
             {
                 useAnchorEndLine = true;
                 alignWithAnchor = HasBlockLikeContinuation(

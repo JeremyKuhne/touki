@@ -222,7 +222,7 @@ dotnet_diagnostic.IDE0016.severity = silent
 dotnet_diagnostic.IDE0017.severity = warning
 
 # IDE0018: Inline variable declaration
-dotnet_diagnostic.IDE0018.severity = suggestion
+dotnet_diagnostic.IDE0018.severity = warning
 
 # IDE0019: Use pattern matching to avoid as followed by a null check
 dotnet_diagnostic.IDE0019.severity = warning
