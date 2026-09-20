@@ -891,9 +891,6 @@ public readonly struct StringSegment :
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private unsafe int CompareToOrdinalIgnoreCase(string other, int otherStartIndex, int otherLength)
     {
-        int scanned;
-        int result;
-
         fixed (char* a = _value)
         fixed (char* b = other)
         {
@@ -902,20 +899,20 @@ public readonly struct StringSegment :
                 _length,
                 b + otherStartIndex,
                 otherLength,
-                out scanned,
-                out result))
+                out int scanned,
+                out int result))
             {
                 return result;
             }
-        }
 
-        return CompareInvariantIgnoreCaseTail(
-            Value,
-            _startIndex + scanned,
-            _length - scanned,
-            other,
-            otherStartIndex + scanned,
-            otherLength - scanned);
+            return CompareInvariantIgnoreCaseTail(
+                Value,
+                _startIndex + scanned,
+                _length - scanned,
+                other,
+                otherStartIndex + scanned,
+                otherLength - scanned);
+        }
     }
 
     /// <summary>

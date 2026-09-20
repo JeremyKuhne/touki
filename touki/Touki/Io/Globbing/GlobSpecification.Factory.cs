@@ -258,7 +258,6 @@ public sealed partial class GlobSpecification
                     or GlobDialect.FileSystemGlobbing
                     or GlobDialect.Git;
 
-            bool coalesceInputSeparators;
             bool normalizedRuns = TryNormalizeRuns(
                 ref pattern,
                 dialect,
@@ -271,7 +270,7 @@ public sealed partial class GlobSpecification
                         && !hasFileSystemGlobbingExtGlob,
                 knownHasAsteriskRun: fileSystemGlobbingHasAsteriskRun,
                 out bool neverMatch,
-                out coalesceInputSeparators);
+                    out bool coalesceInputSeparators);
 
             if (neverMatch)
             {

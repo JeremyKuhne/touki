@@ -122,14 +122,14 @@ public sealed partial class FormatAllmanCodeFixProvider : CodeFixProvider
                 candidateOptions = AllmanFormattingOptions.GetOptions(config);
             }
 
-            SourceText formatted;
             AllmanFormatter.TryFormat(
                 source,
                 root,
                 candidateOptions,
                 cancellationToken,
-                out formatted,
+                out SourceText formatted,
                 out _);
+
             if (compatible is not null && !compatible.ContentEquals(formatted))
             {
                 return null;
@@ -161,5 +161,4 @@ public sealed partial class FormatAllmanCodeFixProvider : CodeFixProvider
 
         return solution;
     }
-
 }
