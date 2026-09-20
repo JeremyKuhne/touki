@@ -75,7 +75,7 @@ internal static class CopyAnalysis
     /// </summary>
     public static bool MemberForcesDefensiveCopy(ISymbol member)
     {
-        if (member.IsStatic)
+        if (member.IsStatic || IsCompilerKnownReadOnlyNullableMember(member))
         {
             return false;
         }
@@ -84,6 +84,46 @@ internal static class CopyAnalysis
         {
             IMethodSymbol method => !method.IsReadOnly,
             IPropertySymbol property => property.GetMethod is { IsReadOnly: false },
+            _ => false,
+        };
+    }
+
+    private static bool IsCompilerKnownReadOnlyNullableMember(ISymbol member)
+    {
+        INamedTypeSymbol? nullableType = member.ContainingType;
+        if (nullableType?.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T
+            || nullableType.TypeArguments.Length != 1
+            || member.DeclaredAccessibility != Accessibility.Public)
+        {
+            return false;
+        }
+
+        ITypeSymbol underlyingType = nullableType.TypeArguments[0];
+
+        // Roslyn treats these legacy Nullable<T> members as readonly even when their metadata does not.
+        return member switch
+        {
+            IPropertySymbol
+            {
+                Name: "HasValue",
+                IsIndexer: false,
+                Type.SpecialType: SpecialType.System_Boolean,
+                GetMethod.DeclaredAccessibility: Accessibility.Public
+            } => true,
+            IPropertySymbol
+            {
+                Name: "Value",
+                IsIndexer: false,
+                GetMethod.DeclaredAccessibility: Accessibility.Public
+            } property => SymbolEqualityComparer.Default.Equals(property.Type, underlyingType),
+            IMethodSymbol
+            {
+                Name: "GetValueOrDefault",
+                MethodKind: MethodKind.Ordinary,
+                Arity: 0,
+                Parameters.Length: 0,
+                RefKind: RefKind.None
+            } method => SymbolEqualityComparer.Default.Equals(method.ReturnType, underlyingType),
             _ => false,
         };
     }

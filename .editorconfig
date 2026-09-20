@@ -51,6 +51,10 @@ dotnet_style_predefined_type_for_member_access = true:warning
 # and treats const fields as static (dotnet/roslyn#23884). See docs/analyzers.md#touki0041.
 dotnet_diagnostic.IDE1006.severity = none
 
+# TOUKI0002 ships Hidden because it is high volume for consumers. Touki treats defensive copies
+# as build failures; TOUKI0003 and TOUKI0004 keep their default Warning severity.
+dotnet_diagnostic.TOUKI0002.severity = warning
+
 # TOUKI0041 ships disabled, so this key is what turns naming enforcement on. When it is set it
 # also governs the severity of every rule below; a rule's own severity still decides whether it
 # is checked at all (severity = none opts a group out entirely). This is a warning because that
@@ -65,6 +69,10 @@ dotnet_diagnostic.TOUKI0022.severity = warning
 # TOUKI0024 ships disabled because XML documentation layout is a house style. Touki uses
 # one additional space for each XML nesting level and the rule's default 120-character limit.
 dotnet_diagnostic.TOUKI0024.severity = warning
+
+# TOUKI0026 defaults to declared member visibility. For members declared in nested types, Touki
+# documents its effective public and internal surface, excluding members hidden inside private implementation types.
+dotnet_code_quality.TOUKI0026.effective_api_surface = public, internal
 
 # TOUKI0027 ships disabled because Allman layout and blank-line separation are house style.
 # Touki uses all three default formatting policies and the standard 120-character line limit.
@@ -97,7 +105,7 @@ touki_naming_symbols.dll_import_methods.applicable_kinds = method
 touki_naming_symbols.dll_import_methods.required_attributes = System.Runtime.InteropServices.DllImportAttribute
 
 # name all constant fields using PascalCase
-touki_naming_rule.constant_fields_should_be_pascal_case.severity = suggestion
+touki_naming_rule.constant_fields_should_be_pascal_case.severity = warning
 touki_naming_rule.constant_fields_should_be_pascal_case.symbols = constant_fields
 touki_naming_rule.constant_fields_should_be_pascal_case.style = pascal_case_style
 
@@ -108,7 +116,7 @@ touki_naming_style.pascal_case_style.capitalization = pascal_case
 
 # thread-static fields should have a t_ prefix. This rule is the reason the analyzer exists:
 # required_attributes has no dotnet_naming_symbols equivalent.
-touki_naming_rule.thread_static_fields_should_have_prefix.severity = suggestion
+touki_naming_rule.thread_static_fields_should_have_prefix.severity = warning
 touki_naming_rule.thread_static_fields_should_have_prefix.symbols = thread_static_fields
 touki_naming_rule.thread_static_fields_should_have_prefix.style = thread_static_prefix_style
 
@@ -122,7 +130,7 @@ touki_naming_style.thread_static_prefix_style.capitalization = camel_case
 # static fields should have s_ prefix. const fields are excluded by the engine rather than by
 # this configuration: const implies static in the language, which is what makes IDE1006 demand
 # s_ on constants.
-touki_naming_rule.static_fields_should_have_prefix.severity = suggestion
+touki_naming_rule.static_fields_should_have_prefix.severity = warning
 touki_naming_rule.static_fields_should_have_prefix.symbols = static_fields
 touki_naming_rule.static_fields_should_have_prefix.style = static_prefix_style
 
@@ -133,7 +141,7 @@ touki_naming_style.static_prefix_style.required_prefix = s_
 touki_naming_style.static_prefix_style.capitalization = camel_case
 
 # internal and private fields should be _camelCase
-touki_naming_rule.camel_case_for_private_internal_fields.severity = suggestion
+touki_naming_rule.camel_case_for_private_internal_fields.severity = warning
 touki_naming_rule.camel_case_for_private_internal_fields.symbols = private_internal_fields
 touki_naming_rule.camel_case_for_private_internal_fields.style = camel_case_underscore_style
 

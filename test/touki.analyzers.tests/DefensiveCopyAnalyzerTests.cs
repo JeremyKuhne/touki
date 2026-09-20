@@ -160,6 +160,77 @@ public class DefensiveCopyAnalyzerTests
     }
 
     [TestMethod]
+    public async Task NullableMembers_OnReadonlyField_ReportNothing()
+    {
+        string source = Types + """
+            readonly struct Holder
+            {
+                private readonly int? _value;
+
+                public bool HasValue => _value.HasValue;
+                public int Value => _value.Value;
+                public int ValueOrDefault => _value.GetValueOrDefault();
+            }
+            """;
+
+        ImmutableArray<Diagnostic> netStandardDiagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new DefensiveCopyAnalyzer(),
+            source,
+            metadataReferences: RoslynTestEnvironment.NetStandard20References).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> netFrameworkDiagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new DefensiveCopyAnalyzer(),
+            source,
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+
+        netStandardDiagnostics.Should().BeEmpty();
+        netFrameworkDiagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task NullableGetValueOrDefaultWithArgument_OnReadonlyField_Reports()
+    {
+        string source = Types + """
+            readonly struct Holder
+            {
+                private readonly int? _value;
+
+                public int ValueOrDefault => _value.GetValueOrDefault(42);
+            }
+            """;
+
+        ImmutableArray<Diagnostic> netStandardDiagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new DefensiveCopyAnalyzer(),
+            source,
+            metadataReferences: RoslynTestEnvironment.NetStandard20References).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> netFrameworkDiagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new DefensiveCopyAnalyzer(),
+            source,
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+
+        netStandardDiagnostics.Should().ContainSingle()
+            .Which.Id.Should().Be(DefensiveCopyAnalyzer.DefensiveCopyId);
+        netFrameworkDiagnostics.Should().ContainSingle()
+            .Which.Id.Should().Be(DefensiveCopyAnalyzer.DefensiveCopyId);
+    }
+
+    [TestMethod]
+    public async Task NullableGetValueOrDefaultWithArgument_OnModernReadonlyField_ReportsNothing()
+    {
+        string source = Types + """
+            readonly struct Holder
+            {
+                private readonly int? _value;
+
+                public int ValueOrDefault => _value.GetValueOrDefault(42);
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
     public async Task NonReadonlyMethod_OnByValueParameter_ReportsNothing()
     {
         string source = Types + """
