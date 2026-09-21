@@ -1,6 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\touki.resources.generator\buildTransitive\KlutzyNinja.Touki.props" />
+
   <PropertyGroup>
     <!-- Targeting 4.8.1 for tests to get some extra GC functionality -->
     <TargetFrameworks>$(DotNetCoreVersion);$(DotNetCoreNextVersion);net481</TargetFrameworks>
@@ -50,6 +52,10 @@
      intentionally discard those results inside Action lambdas that assert on thrown exceptions.
     -->
     <NoWarn>$(NoWarn);MSTEST0055</NoWarn>
+
+    <!-- Required by GenerateResource for non-string resx entries on .NET Framework. -->
+    <GenerateResourceUsePreserializedResources
+      Condition="'$(TargetFramework)' == 'net481'">true</GenerateResourceUsePreserializedResources>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != 'net481'">
@@ -85,5 +91,17 @@
     <ProjectReference Include="..\touki.msbuildshim\touki.msbuildshim.csproj" />
     <ProjectReference Include="..\..\touki.testsupport\touki.testsupport.csproj" />
     <ProjectReference Include="..\..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(DependencyTargetFramework)" />
+    <ProjectReference Include="..\..\touki.resources.generator\touki.resources.generator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Touki\Resources\SatelliteTestStrings.resx"
+                      Generator="Touki"
+                      ClassName="Touki.Resources.GeneratedSatelliteTestStrings" />
+  </ItemGroup>
+
+  <Import Project="..\..\touki.resources.generator\buildTransitive\KlutzyNinja.Touki.targets" />
 </Project>

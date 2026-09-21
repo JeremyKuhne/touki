@@ -1,13 +1,12 @@
 <#
 .SYNOPSIS
-    Verify that KlutzyNinja.Touki brings in its analyzer package.
+    Verify the build-time assets carried by KlutzyNinja.Touki.
 
 .DESCRIPTION
-    Checks the packed analyzer assets and Touki dependency metadata, verifies
-    that the repository's project reference is build-only, proves that central
-    bootstrap wiring reports TOUKI0005 exactly once, restores a temporary project
-    from the packed KlutzyNinja.Touki package only, and then builds source that
-    triggers TOUKI0001.
+    Checks the analyzer package and embedded resource-generator assets, validates
+    Touki dependency metadata, verifies build-only project references, proves that
+    central bootstrap wiring reports TOUKI0005 exactly once, and exercises package
+    consumers of both analyzer integrations.
 
 .PARAMETER PackageDirectory
     Directory containing matching KlutzyNinja.Touki and
@@ -51,6 +50,13 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $expectedAnalyzerAssets = @(
     'analyzers/dotnet/cs/touki.analyzers.codefixes.dll'
     'analyzers/dotnet/cs/touki.analyzers.dll'
+)
+$expectedToukiAnalyzerAssets = @(
+    'analyzers/dotnet/cs/touki.resources.generator.dll'
+)
+$expectedToukiBuildTransitiveAssets = @(
+    'buildTransitive/KlutzyNinja.Touki.props'
+    'buildTransitive/KlutzyNinja.Touki.targets'
 )
 $toukiArchive = [System.IO.Compression.ZipFile]::OpenRead($toukiPackages[0].FullName)
 $analyzerArchive = [System.IO.Compression.ZipFile]::OpenRead($analyzerPackages[0].FullName)
@@ -123,12 +129,51 @@ try {
         throw 'KlutzyNinja.Touki.Analyzers is missing the Roslyn license notice.'
     }
 
+    $toukiThirdPartyNotice = $toukiArchive.GetEntry('THIRD-PARTY-NOTICES.TXT')
+    if ($null -eq $toukiThirdPartyNotice) {
+        throw 'KlutzyNinja.Touki is missing THIRD-PARTY-NOTICES.TXT.'
+    }
+
+    $toukiThirdPartyNoticeReader = [System.IO.StreamReader]::new($toukiThirdPartyNotice.Open())
+    try {
+        $toukiThirdPartyNoticeText = $toukiThirdPartyNoticeReader.ReadToEnd()
+    }
+    finally {
+        $toukiThirdPartyNoticeReader.Dispose()
+    }
+
+    $hasRoslynLicense = $toukiThirdPartyNoticeText `
+        -match 'License notice for \.NET Compiler Platform \("Roslyn"\)'
+    $hasGeneratorProvenance = $toukiThirdPartyNoticeText `
+        -match 'resource source generator under touki\.resources\.generator/'
+    if (!$hasRoslynLicense -or !$hasGeneratorProvenance) {
+        throw 'KlutzyNinja.Touki is missing the resource generator Roslyn attribution.'
+    }
+
     $embeddedAnalyzerAssets = @(
         $toukiArchive.Entries
             | Where-Object FullName -Match '^analyzers/'
+            | ForEach-Object FullName
+            | Sort-Object
     )
-    if ($embeddedAnalyzerAssets.Count -ne 0) {
-        throw 'KlutzyNinja.Touki still embeds analyzer assets.'
+    $embeddedAnalyzerDifferences = @(
+        Compare-Object $expectedToukiAnalyzerAssets $embeddedAnalyzerAssets
+    )
+    if ($embeddedAnalyzerDifferences.Count -ne 0) {
+        throw "Unexpected Touki analyzer payload:`n$($embeddedAnalyzerDifferences | Out-String)"
+    }
+
+    $buildTransitiveAssets = @(
+        $toukiArchive.Entries
+            | Where-Object FullName -Match '^buildTransitive/'
+            | ForEach-Object FullName
+            | Sort-Object
+    )
+    $buildTransitiveDifferences = @(
+        Compare-Object $expectedToukiBuildTransitiveAssets $buildTransitiveAssets
+    )
+    if ($buildTransitiveDifferences.Count -ne 0) {
+        throw "Unexpected Touki build-transitive payload:`n$($buildTransitiveDifferences | Out-String)"
     }
 
     $toukiNuspecEntry = $toukiArchive.GetEntry('KlutzyNinja.Touki.nuspec')
@@ -179,6 +224,15 @@ try {
         if ($hasWrongVersion -or $hasWrongAssetPolicy) {
             throw 'Touki has an incorrect analyzer package version or asset inclusion policy.'
         }
+
+        $resourceGeneratorDependencies = @(
+            $dependencyGroup.SelectNodes(
+                'n:dependency[contains(@id, "ResxSourceGenerator") or contains(@id, "resources.generator")] ',
+                $toukiNamespace)
+        )
+        if ($resourceGeneratorDependencies.Count -ne 0) {
+            throw 'Touki exposes an implementation dependency for its embedded resource generator.'
+        }
     }
 
     $analyzerNamespace = [System.Xml.XmlNamespaceManager]::new($analyzerNuspec.NameTable)
@@ -197,6 +251,11 @@ finally {
 
 $repositoryRoot = Split-Path $PSScriptRoot -Parent
 $toukiProjectPath = Join-Path $repositoryRoot 'touki/touki.csproj'
+[xml]$centralPackages = Get-Content (Join-Path $repositoryRoot 'Directory.Packages.props') -Raw
+$microsoftResxGeneratorVersion = @(
+    $centralPackages.Project.ItemGroup.PackageVersion
+        | Where-Object Include -EQ 'Microsoft.CodeAnalysis.ResxSourceGenerator'
+)[0].Version
 $referenceResultPath = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
 try {
     $referenceOutput = & dotnet msbuild $toukiProjectPath `
@@ -230,6 +289,14 @@ $loadedToukiAnalyzers = @(
     $resolvedReferences.Items.Analyzer
         | Where-Object Identity -Match '[\\/]touki\.analyzers\.dll$'
 )
+$copyLocalResourceGenerators = @(
+    $resolvedReferences.Items.ReferenceCopyLocalPaths
+        | Where-Object Identity -Match '[\\/]touki\.resources\.generator\.dll$'
+)
+$loadedResourceGenerators = @(
+    $resolvedReferences.Items.Analyzer
+        | Where-Object Identity -Match '[\\/]touki\.resources\.generator\.dll$'
+)
 
 if ($copyLocalToukiAnalyzers.Count -ne 0) {
     throw 'The Touki project reference copies touki.analyzers.dll into runtime output.'
@@ -237,6 +304,14 @@ if ($copyLocalToukiAnalyzers.Count -ne 0) {
 
 if ($loadedToukiAnalyzers.Count -ne 1) {
     throw "Expected one build-only Touki analyzer reference, found $($loadedToukiAnalyzers.Count)."
+}
+
+if ($copyLocalResourceGenerators.Count -ne 0) {
+    throw 'The Touki project reference copies touki.resources.generator.dll into runtime output.'
+}
+
+if ($loadedResourceGenerators.Count -ne 1) {
+    throw "Expected one build-only Touki resource generator reference, found $($loadedResourceGenerators.Count)."
 }
 
 $utf8WithoutBom = [System.Text.UTF8Encoding]::new($false)
@@ -314,8 +389,10 @@ New-Item -ItemType Directory -Path $temporaryDirectory | Out-Null
 try {
     $projectReferenceDirectory = Join-Path $temporaryDirectory 'project-reference'
     $packageReferenceDirectory = Join-Path $temporaryDirectory 'package-reference'
+    $resourceGeneratorDirectory = Join-Path $temporaryDirectory 'resource-generator'
     New-Item -ItemType Directory -Path $projectReferenceDirectory | Out-Null
     New-Item -ItemType Directory -Path $packageReferenceDirectory | Out-Null
+    New-Item -ItemType Directory -Path $resourceGeneratorDirectory | Out-Null
 
     $escapedToukiProjectPath = [System.Security.SecurityElement]::Escape($toukiProjectPath)
     $escapedPackageDirectoryPath = [System.Security.SecurityElement]::Escape($packageDirectoryPath)
@@ -504,6 +581,143 @@ public static class Probe
     }
 
     Write-Host "KlutzyNinja.Touki $toukiVersion transitively activated TOUKI0001."
+
+    $resourceDirectory = Join-Path $resourceGeneratorDirectory 'Resources'
+    New-Item -ItemType Directory -Path $resourceDirectory | Out-Null
+    $resourceGeneratorProjectPath = Join-Path $resourceGeneratorDirectory 'ResourceGeneratorProbe.csproj'
+    $resourceGeneratorSourcePath = Join-Path $resourceGeneratorDirectory 'Program.cs'
+    $toukiResourcePath = Join-Path $resourceDirectory 'ToukiStrings.resx'
+    $localizedToukiResourcePath = Join-Path $resourceDirectory 'ToukiStrings.fr.resx'
+    $microsoftResourcePath = Join-Path $resourceDirectory 'MicrosoftStrings.resx'
+
+    $resourceGeneratorProject = @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <RootNamespace>ResourceGeneratorPackageProbe</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="KlutzyNinja.Touki" Version="$toukiVersion" />
+    <PackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator"
+                      Version="$microsoftResxGeneratorVersion"
+                      PrivateAssets="all" />
+    <EmbeddedResource Update="Resources\ToukiStrings.resx"
+                      Generator="Touki"
+                      ClassName="ResourceGeneratorPackageProbe.ToukiStrings"
+                      ManifestResourceName="ResourceGeneratorPackageProbe.ToukiStrings" />
+    <EmbeddedResource Update="Resources\ToukiStrings.fr.resx"
+                      ManifestResourceName="ResourceGeneratorPackageProbe.ToukiStrings.fr" />
+    <EmbeddedResource Update="Resources\MicrosoftStrings.resx"
+                      ClassName="ResourceGeneratorPackageProbe.MicrosoftStrings" />
+  </ItemGroup>
+</Project>
+"@
+    $resourceGeneratorSource = @'
+using System;
+using System.Globalization;
+
+namespace ResourceGeneratorPackageProbe;
+
+/// <summary>
+/// Verifies both resource generators from a package-only consumer.
+/// </summary>
+internal static class Program
+{
+    private static void Main()
+    {
+        if (ToukiStrings.Greeting != "Neutral")
+        {
+            throw new InvalidOperationException("Touki neutral resource lookup failed.");
+        }
+
+        ToukiStrings.Culture = CultureInfo.GetCultureInfo("fr");
+        if (ToukiStrings.Greeting != "Bonjour")
+        {
+            throw new InvalidOperationException("Touki localized resource lookup failed.");
+        }
+
+        if (MicrosoftStrings.Greeting != "Microsoft")
+        {
+            throw new InvalidOperationException("Microsoft resource generation was not preserved.");
+        }
+
+        Console.WriteLine("Touki=Bonjour;Microsoft=Microsoft");
+    }
+}
+'@
+    $toukiResource = @'
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Greeting" xml:space="preserve"><value>Neutral</value></data>
+</root>
+'@
+    $localizedToukiResource = @'
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Greeting" xml:space="preserve"><value>Bonjour</value></data>
+</root>
+'@
+    $microsoftResource = @'
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Greeting" xml:space="preserve"><value>Microsoft</value></data>
+</root>
+'@
+
+    [System.IO.File]::WriteAllText($resourceGeneratorProjectPath, $resourceGeneratorProject, $utf8WithoutBom)
+    [System.IO.File]::WriteAllText($resourceGeneratorSourcePath, $resourceGeneratorSource, $utf8WithoutBom)
+    [System.IO.File]::WriteAllText($toukiResourcePath, $toukiResource, $utf8WithoutBom)
+    [System.IO.File]::WriteAllText($localizedToukiResourcePath, $localizedToukiResource, $utf8WithoutBom)
+    [System.IO.File]::WriteAllText($microsoftResourcePath, $microsoftResource, $utf8WithoutBom)
+
+    $resourceRestoreOutput = & dotnet restore $resourceGeneratorProjectPath `
+        --packages $restorePackagesPath `
+        --configfile $nugetConfigPath `
+        --no-cache 2>&1 | Out-String
+    $resourceRestoreExitCode = $LASTEXITCODE
+    if ($resourceRestoreExitCode -ne 0) {
+        Write-Host $resourceRestoreOutput
+        throw "Resource generator consumer restore failed with exit code $resourceRestoreExitCode."
+    }
+
+    $resourceRunOutput = & dotnet run `
+        --project $resourceGeneratorProjectPath `
+        --configuration Release `
+        --no-restore 2>&1 | Out-String
+    $resourceRunExitCode = $LASTEXITCODE
+    if ($resourceRunExitCode -ne 0 -or $resourceRunOutput -notmatch 'Touki=Bonjour;Microsoft=Microsoft') {
+        Write-Host $resourceRunOutput
+        $generatedAnalyzerConfigs = @(
+            Get-ChildItem `
+                (Join-Path $resourceGeneratorDirectory 'obj') `
+                -Filter '*.GeneratedMSBuildEditorConfig.editorconfig' `
+                -Recurse `
+                -ErrorAction SilentlyContinue
+        )
+        foreach ($generatedAnalyzerConfig in $generatedAnalyzerConfigs) {
+            Write-Host "Generated analyzer config: $($generatedAnalyzerConfig.FullName)"
+            Write-Host ([System.IO.File]::ReadAllText($generatedAnalyzerConfig.FullName))
+        }
+
+        throw "Resource generator package probe failed with exit code $resourceRunExitCode."
+    }
+
+    Write-Host 'The packaged Touki and Microsoft resource generators built and ran side by side.'
 }
 finally {
     Remove-Item -Recurse -Force $temporaryDirectory -ErrorAction SilentlyContinue
