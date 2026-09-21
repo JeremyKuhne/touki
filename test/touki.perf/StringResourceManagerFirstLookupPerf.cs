@@ -14,7 +14,15 @@ namespace touki.perf;
 ///  Measures construction plus the first lookup on .NET Framework 4.8.1 RyuJIT and modern .NET
 ///  RyuJIT.
 /// </summary>
+/// <remarks>
+///  <para>
+///   Manager release is intentionally excluded from the measured operation. BenchmarkDotNet forces
+///   collection between iterations so abandoned resource sets and file handles do not carry into the
+///   next iteration. Complete release cost is measured by <see cref="StringResourceManagerFileLifecyclePerf"/>.
+///  </para>
+/// </remarks>
 [MemoryDiagnoser]
+[GcForce(true)]
 public class StringResourceManagerFirstLookupPerf
 {
     [AllowNull]
