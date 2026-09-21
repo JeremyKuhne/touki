@@ -65,6 +65,8 @@
     <PackageReference Include="Microsoft.Bcl.HashCode" />
     <!-- This provides FrozenDictionary downlevel; the Frozen types ship in the Immutable assembly. -->
     <PackageReference Include="System.Collections.Immutable" />
+    <!-- This provides PE metadata reading for managed resource assemblies downlevel. -->
+    <PackageReference Include="System.Reflection.Metadata" />
   </ItemGroup>
 
   <ItemGroup>

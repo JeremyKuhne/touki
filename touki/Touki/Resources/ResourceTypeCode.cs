@@ -15,9 +15,10 @@ namespace Touki.Resources;
 ///   caller can inspect a resource's stored type without decoding or deserializing the value.
 ///  </para>
 ///  <para>
-///   Values <c>0x00</c> through <c>0x1F</c> are primitives and reserved values; <c>0x20</c> through
-///   <c>0x3F</c> are specially recognized types (<c>byte[]</c> and <see cref="System.IO.Stream"/>);
-///   values at or above <see cref="StartOfUserTypes"/> identify serialized user types, whose index
+///   Values <c>0x00</c> through <c>0x10</c> identify the defined primitive types. Values
+///   <c>0x11</c> through <c>0x1F</c> are reserved. <c>0x20</c> and <c>0x21</c> identify
+///   <c>byte[]</c> and <see cref="System.IO.Stream"/>; <c>0x22</c> through <c>0x3F</c> are reserved.
+///   Values at or above <see cref="StartOfUserTypes"/> identify serialized user types, whose index
 ///   into the file's type table is <c>typeCode - StartOfUserTypes</c>.
 ///  </para>
 /// </remarks>
