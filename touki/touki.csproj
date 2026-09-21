@@ -1,6 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\touki.resources.generator\buildTransitive\KlutzyNinja.Touki.props" />
+
   <PropertyGroup>
     <Platforms>x64;AnyCPU</Platforms>
 
@@ -104,6 +106,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="../README.md" Pack="true" PackagePath="" />
+    <None Include="../THIRD-PARTY-NOTICES.TXT" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <!--
@@ -141,11 +144,22 @@
     Resource related
   -->
   <ItemGroup>
-    <!-- This allows source generating the strongly typed resources -->
-    <PackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <ProjectReference Include="..\touki.resources.generator\touki.resources.generator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
+
+    <EmbeddedResource Update="Resources\SR.resx" Generator="Touki" />
+    <EmbeddedResource Update="Framework\Resources\SRF.resx"
+                      Generator="Touki"
+                      Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'" />
+
+    <None Include="..\touki.resources.generator\buildTransitive\KlutzyNinja.Touki.props"
+          Pack="true"
+          PackagePath="buildTransitive" />
+    <None Include="..\touki.resources.generator\buildTransitive\KlutzyNinja.Touki.targets"
+          Pack="true"
+          PackagePath="buildTransitive" />
   </ItemGroup>
 
   <!--
@@ -177,5 +191,21 @@
       </_ProjectReferencesWithVersions>
     </ItemGroup>
   </Target>
+
+  <Target Name="_AddToukiResourceGeneratorToPackage" BeforeTargets="GenerateNuspec">
+    <MSBuild Projects="..\touki.resources.generator\touki.resources.generator.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration);Platform=AnyCPU;TargetFramework=netstandard2.0">
+      <Output TaskParameter="TargetOutputs" ItemName="_ToukiResourceGeneratorAssembly" />
+    </MSBuild>
+    <ItemGroup>
+      <_PackageFiles Include="@(_ToukiResourceGeneratorAssembly)">
+        <BuildAction>None</BuildAction>
+        <PackagePath>analyzers/dotnet/cs</PackagePath>
+      </_PackageFiles>
+    </ItemGroup>
+  </Target>
+
+  <Import Project="..\touki.resources.generator\buildTransitive\KlutzyNinja.Touki.targets" />
 
 </Project>

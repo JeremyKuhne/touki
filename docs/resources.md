@@ -195,3 +195,38 @@ Direct satellite mode memory-maps assemblies and inspects them as PE files; it
 does not load or execute them. Only an absent file or runtime satellite continues
 fallback. A present unreadable file, unsupported format, malformed payload, or
 assembly missing the expected manifest resource throws.
+
+## Generated string accessors
+
+`KlutzyNinja.Touki` ships a C# source generator for strongly typed string
+resources. Select it per neutral resource item:
+
+```xml
+<ItemGroup>
+    <EmbeddedResource Update="Resources\Strings.resx" Generator="Touki" />
+</ItemGroup>
+```
+
+The generated static partial class exposes `ResourceManager`, `Culture`, and one
+non-null string property per supported entry. Each property stores its first
+resolved value in a generated field. Setting `Culture` replaces the complete
+cache in constant time. A localized sibling causes the generated class to use
+`SatelliteStringResourceManager.FromRuntimeSatellites`; exact, parent, missing,
+and neutral fallback then follow the runtime-satellite manager.
+
+When `Culture` is `null`, the first property read uses
+`CultureInfo.CurrentUICulture` and remains cached until the `Culture` setter is
+called. Calling `ResourceManager.ReleaseAllResources()` does not clear generated
+property fields. These are deliberate warmed-lookup optimizations.
+
+The generator retains `GenerateSource`, `ClassName`, `ManifestResourceName`,
+`Link`/`RelativeDir`, `WithCulture`, `Public`, `IncludeDefaultValues`, and
+`EmitFormatMethods`. `OmitGetResourceString`, `AsConstants`, and `NoWarn` are not
+supported and produce `TOUKIRESX0002`. Typed entries produce `TOUKIRESX0001` and
+are skipped while string entries continue generating. Generated-member conflicts
+produce `TOUKIRESX0004`, and multiple selected resources targeting the same class
+produce `TOUKIRESX0005`.
+
+Generation is bounded to 8 MiB of RESX source, 4,096 entries, and 64 format
+arguments per entry. Exceeding a bound produces `TOUKIRESX0003` instead of
+emitting unbounded source into the compiler host.

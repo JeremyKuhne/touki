@@ -545,6 +545,6 @@ internal static class ThrowHelper
         Debug.Assert(Enum.IsDefined(typeof(ExceptionArgument), resource),
             "The enum value is not defined, please check the ExceptionResource Enum.");
 
-        return SRF.GetResourceString(resource.ToString())!;
+        return SRF.GetResourceString(resource.ToString(), SRF.Culture);
     }
 }
