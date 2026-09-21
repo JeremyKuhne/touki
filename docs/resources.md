@@ -37,6 +37,74 @@ before the version field - throws `NotSupportedException`. Other malformed or
 truncated structures generally throw `BadImageFormatException`. The format
 reader supports little-endian systems.
 
+## `StringResourceTableLoader`
+
+[`StringResourceTableLoader`](../touki/Touki/Resources/StringResourceTableLoader.cs)
+turns an in-memory `.resources` file or an embedded `.resources` payload inside
+a managed assembly into a mutable, ordinal `Dictionary<string, string>`. It
+accepts only intrinsic strings by default. Pass
+`StringResourceManagerOptions.IgnoreNonStringResources` to skip other resource
+types without retaining their names or deserializing their values. A null
+resource always rejects the table.
+
+```csharp
+using Touki.Resources;
+
+ReadOnlyMemory<byte> resources = await File.ReadAllBytesAsync("Strings.resources");
+Dictionary<string, string> table =
+    StringResourceTableLoader.LoadStringTableFromResourcesFile(resources);
+
+ReadOnlyMemory<byte> satellite = await File.ReadAllBytesAsync("de/MyApp.resources.dll");
+Dictionary<string, string>? localized =
+    StringResourceTableLoader.LoadStringTableFromAssembly(
+        satellite,
+        "MyApp.Resources.Strings.de.resources");
+```
+
+`LoadStringTableFromAssembly` returns `null` when the named manifest resource is
+absent. Resource data is expected to be a trusted output of the application's
+build and deployment pipeline. Present malformed or unsupported data throws.
+Loaded-assembly paths parse the original backing directly rather than copying
+the complete stream. The returned dictionary materializes its keys and values.
+
+## `StringResourceManager`
+
+[`StringResourceManager`](../touki/Touki/Resources/StringResourceManager.cs)
+provides `ResourceManager`-style string lookup over exactly one resource table.
+Construct it with a `.resources` file path, an already-loaded assembly and base
+name, or a stream factory:
+
+```csharp
+StringResourceManager fromFile = new("Resources/Strings.resources");
+
+StringResourceManager fromAssembly = new(
+    "MyApp.Resources.Strings",
+    typeof(Program).Assembly);
+
+StringResourceManager fromStream = new(
+    "MyApp.Resources.Strings",
+    () => File.OpenRead("Resources/Strings.resources"));
+```
+
+Construction does not open or parse the source. The first lookup opens the
+source, validates its type codes, binary-searches the existing resource index,
+and decodes only the requested string. The indexed backing and last decoded
+string remain cached; warmed lookup allocates nothing. Files are memory-mapped,
+and loaded assemblies expose their manifest payload as unmanaged memory, so
+neither path copies the complete resource image. Other stream-factory sources
+must be readable and seekable. The stream is retained until
+`ReleaseAllResources()` and then disposed.
+An abandoned file manager releases its mapped view through the backing's
+finalizable lease; assembly and stream tables do not pay that finalization cost.
+
+By default a null or non-string entry rejects the table. Pass
+`StringResourceManagerOptions.IgnoreNonStringResources` to skip non-string
+entries; skipped names behave as missing. Null entries remain invalid. Resource
+data is expected to be trusted, compiler-produced application data. The manager
+does not convert bad resource compilation or deployment into a missing result.
+The manager represents one table, so the culture passed to `GetString` is
+ignored. Assigning `IgnoreCase` throws `NotSupportedException`.
+
 ## Inspecting NRBF payloads
 
 [`BinaryFormattedObject`](../touki/Touki/Resources/BinaryFormattedObject.cs)

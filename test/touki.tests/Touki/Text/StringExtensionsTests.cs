@@ -10,6 +10,23 @@ namespace Touki.Text;
 public class StringExtensionsTests
 {
     [TestMethod]
+    [DataRow("")]
+    [DataRow("a")]
+    [DataRow("resource_name")]
+    [DataRow("\0embedded\0null")]
+    [DataRow("\u00e9\u4e2d\ud83d\ude00")]
+    public void GetDJB2HashCode_Value_MatchesResourceHash(string value)
+    {
+        uint expected = 5381;
+        foreach (char character in value)
+        {
+            expected = ((expected << 5) + expected) ^ character;
+        }
+
+        string.GetDJB2HashCode(value).Should().Be((int)expected);
+    }
+
+    [TestMethod]
     public void FormatValue_Generic_FormatsUnmanagedArgument()
     {
         string result = string.FormatValue("{0:X4}".AsSpan(), 0x2A);

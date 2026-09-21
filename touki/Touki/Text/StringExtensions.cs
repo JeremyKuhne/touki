@@ -18,6 +18,26 @@ public static partial class StringExtensions
     extension(string)
     {
         /// <summary>
+        ///  Calculates the single-accumulator DJB2 hash used by binary <c>.resources</c> name indexes.
+        /// </summary>
+        /// <param name="value">The characters to hash.</param>
+        /// <returns>The DJB2 hash of <paramref name="value"/>.</returns>
+        /// <remarks>
+        ///  This deterministic hash is not collision resistant and must not be used for security purposes.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetDJB2HashCode(ReadOnlySpan<char> value)
+        {
+            uint hash = 5381;
+            for (int index = 0; index < value.Length; index++)
+            {
+                hash = ((hash << 5) + hash) ^ value[index];
+            }
+
+            return (int)hash;
+        }
+
+        /// <summary>
         ///  Allocates a string of the specified length filled with null characters.
         /// </summary>
         /// <param name="length">The length of the string to allocate.</param>

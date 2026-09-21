@@ -32,7 +32,7 @@ namespace Touki.Resources;
 ///   <see cref="TryGetResourceData(int, Span{byte}, out int)"/> yield exactly the value bytes.
 ///  </para>
 /// </remarks>
-public sealed class RawResourceReader : DisposableBase
+public sealed class RawResourceReader : DisposableBase, IStringResourceReader
 {
     // On-disk layout of a default-format (version 2) .resources file. All integers are little-endian
     // and "7-bit int" is a LEB128-style length prefix. The reader validates and indexes this in place
@@ -193,6 +193,28 @@ public sealed class RawResourceReader : DisposableBase
     }
 
     /// <summary>
+    ///  Creates a reader over memory and transfers ownership of <paramref name="owned"/> to it.
+    /// </summary>
+    /// <param name="resources">The resource image.</param>
+    /// <param name="owned">The object that keeps the image valid and releases it.</param>
+    /// <returns>A reader that owns the backing object.</returns>
+    internal static RawResourceReader CreateOwned(
+        ReadOnlyMemory<byte> resources,
+        IDisposable owned)
+    {
+        ArgumentNullException.ThrowIfNull(owned);
+        try
+        {
+            return new(resources, owned);
+        }
+        catch
+        {
+            owned.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>
     ///  Creates a <see cref="RawResourceReader"/> that memory-maps the file at <paramref name="path"/>.
     /// </summary>
     /// <remarks>
@@ -264,15 +286,7 @@ public sealed class RawResourceReader : DisposableBase
             return false;
         }
 
-        // The .resources name hash is djb2 over the UTF-16 code units; it is part of the file format
-        // and must never change.
-        uint nameHash = 5381;
-        for (int i = 0; i < name.Length; i++)
-        {
-            nameHash = ((nameHash << 5) + nameHash) ^ name[i];
-        }
-
-        int hash = (int)nameHash;
+        int hash = string.GetDJB2HashCode(name);
 
         // The header is validated as little-endian at construction, so the sorted int32 hash array can
         // be reinterpreted in place and searched directly - no per-probe reads.
@@ -332,7 +346,7 @@ public sealed class RawResourceReader : DisposableBase
                 ThrowBadImageFormatException("A resource name is corrupted.");
             }
 
-            if ((long)nameByteLength != (long)name.Length * 2)
+            if (nameByteLength != (long)name.Length * 2)
             {
                 continue;
             }
@@ -380,6 +394,74 @@ public sealed class RawResourceReader : DisposableBase
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _numResources);
         return BuildLocation(index, ReadDataPosition(index));
+    }
+
+    /// <inheritdoc/>
+    ResourceTypeCode IStringResourceReader.GetResourceTypeCode(int index)
+    {
+        ObjectDisposedException.ThrowIf(Disposed, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _numResources);
+
+        SpanReader<byte> reader = new(_resources.Span)
+        {
+            Position = GetDataOffset(ReadDataPosition(index))
+        };
+
+        if (!reader.TryRead7BitEncodedInt32(out int typeCodeValue) || typeCodeValue < 0)
+        {
+            ThrowBadImageFormatException("A resource type code is corrupted.");
+        }
+
+        return ResourceTypeCodeValidator.Validate(typeCodeValue, _numTypes);
+    }
+
+    /// <inheritdoc/>
+    string IStringResourceReader.GetResourceName(int index)
+    {
+        ObjectDisposedException.ThrowIf(Disposed, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _numResources);
+
+        SpanReader<byte> reader = new(_resources.Span)
+        {
+            Position = _nameSectionOffset + GetNamePosition(index)
+        };
+
+        if (!reader.TryRead7BitEncodedInt32(out int byteLength)
+            || byteLength < 0
+            || (byteLength & 1) != 0)
+        {
+            ThrowBadImageFormatException("A resource name is corrupted.");
+        }
+
+        if (!reader.TryRead(byteLength, out ReadOnlySpan<byte> nameBytes))
+        {
+            ThrowBadImageFormatException("A resource name is corrupted.");
+        }
+
+        return MemoryMarshal.Cast<byte, char>(nameBytes).ToString();
+    }
+
+    /// <inheritdoc/>
+    string IStringResourceReader.GetString(int index)
+    {
+        ResourceLocation location = GetLocation(index);
+        return GetString(location);
+    }
+
+    /// <inheritdoc/>
+    StringResourceLookupKind IStringResourceReader.Lookup(string name, out string? value)
+    {
+        if (!TryFindResource(name, out ResourceLocation location)
+            || location.TypeCode != ResourceTypeCode.String)
+        {
+            value = null;
+            return StringResourceLookupKind.Missing;
+        }
+
+        value = GetString(location);
+        return StringResourceLookupKind.Found;
     }
 
     /// <summary>
@@ -430,6 +512,23 @@ public sealed class RawResourceReader : DisposableBase
         ReadOnlyMemory<byte> content = _resources.Slice(location.ContentOffset, location.ByteLength);
         destination.Write(content.Span);
         return true;
+    }
+
+    /// <summary>
+    ///  Decodes the string at <paramref name="location"/> directly from the indexed resource image.
+    /// </summary>
+    /// <param name="location">The string resource location returned by this reader.</param>
+    /// <returns>The decoded string.</returns>
+    internal string GetString(ResourceLocation location)
+    {
+        ObjectDisposedException.ThrowIf(Disposed, this);
+        if (location.TypeCode != ResourceTypeCode.String)
+        {
+            throw new InvalidOperationException("The resource is not a string.");
+        }
+
+        return Encoding.UTF8.GetString(
+            _resources.Span.Slice(location.ContentOffset, location.ByteLength));
     }
 
     /// <summary>
@@ -554,18 +653,13 @@ public sealed class RawResourceReader : DisposableBase
     // Reads a resource's type code and computes its content offset and length.
     private ResourceLocation BuildLocation(int index, int dataPosition)
     {
-        if (dataPosition < 0 || dataPosition >= _resources.Length - _dataSectionOffset)
-        {
-            throw new BadImageFormatException("A resource data offset is out of range.");
-        }
-
-        SpanReader<byte> reader = new(_resources.Span) { Position = _dataSectionOffset + dataPosition };
+        SpanReader<byte> reader = new(_resources.Span) { Position = GetDataOffset(dataPosition) };
         if (!reader.TryRead7BitEncodedInt32(out int typeCodeValue))
         {
             ThrowBadImageFormatException("A resource type code is corrupted.");
         }
 
-        ResourceTypeCode typeCode = (ResourceTypeCode)typeCodeValue;
+        ResourceTypeCode typeCode = ResourceTypeCodeValidator.Validate(typeCodeValue, _numTypes);
 
         if (typeCodeValue >= (int)ResourceTypeCode.StartOfUserTypes)
         {
@@ -630,6 +724,16 @@ public sealed class RawResourceReader : DisposableBase
         }
 
         return new ResourceLocation(index, typeCode, contentLength, contentOffset);
+    }
+
+    private int GetDataOffset(int dataPosition)
+    {
+        if (dataPosition < 0 || dataPosition >= _resources.Length - _dataSectionOffset)
+        {
+            throw new BadImageFormatException("A resource data offset is out of range.");
+        }
+
+        return _dataSectionOffset + dataPosition;
     }
 
     private int GetNamePosition(int index)

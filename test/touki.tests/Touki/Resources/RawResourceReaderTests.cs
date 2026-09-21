@@ -349,6 +349,28 @@ public class RawResourceReaderTests
     }
 
     [TestMethod]
+    public void GetResourceTypeCode_NegativeDataPosition_ThrowsBadImageFormatException()
+    {
+        using RawResourceReader reader = new(WriteWithDataPosition(-1));
+        IStringResourceReader indexedReader = reader;
+
+        Action action = () => indexedReader.GetResourceTypeCode(0);
+
+        action.Should().Throw<BadImageFormatException>();
+    }
+
+    [TestMethod]
+    public void GetResourceTypeCode_DataPositionPastEnd_ThrowsBadImageFormatException()
+    {
+        using RawResourceReader reader = new(WriteWithDataPosition(int.MaxValue));
+        IStringResourceReader indexedReader = reader;
+
+        Action action = () => indexedReader.GetResourceTypeCode(0);
+
+        action.Should().Throw<BadImageFormatException>();
+    }
+
+    [TestMethod]
     public void UserType_ReportsTypeNameAndExposesNoData()
     {
         // A TypeConverter-backed resource switches the file to the DeserializingResourceReader format
@@ -549,6 +571,19 @@ public class RawResourceReaderTests
         }
 
         return stream.ToArray();
+    }
+
+    private static byte[] WriteWithDataPosition(int dataPosition)
+    {
+        const string ResourceName = "data_position_test";
+        byte[] resources = Write(static writer => writer.AddResource(ResourceName, "value"));
+        byte[] nameBytes = Encoding.Unicode.GetBytes(ResourceName);
+        int nameOffset = resources.AsSpan().IndexOf(nameBytes);
+        nameOffset.Should().BeGreaterThan(0);
+        BinaryPrimitives.WriteInt32LittleEndian(
+            resources.AsSpan(nameOffset + nameBytes.Length, sizeof(int)),
+            dataPosition);
+        return resources;
     }
 
     private sealed unsafe class NativeMemoryManager : MemoryManager<byte>
