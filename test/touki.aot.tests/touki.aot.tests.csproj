@@ -48,8 +48,8 @@
     <IncludeSatelliteFixture Condition="'$(IncludeSatelliteFixture)' == ''">true</IncludeSatelliteFixture>
 
     <!-- Native AOT publishes execute a direct smoke entry point; managed builds retain the MTP entry point. -->
-    <GenerateTestingPlatformEntryPoint Condition="'$(RuntimeIdentifier)' != ''">false</GenerateTestingPlatformEntryPoint>
-    <StartupObject Condition="'$(RuntimeIdentifier)' != ''">Touki.Resources.NativeAotSmoke</StartupObject>
+    <GenerateTestingPlatformEntryPoint Condition="'$(PublishAot)' == 'true'">false</GenerateTestingPlatformEntryPoint>
+    <StartupObject Condition="'$(PublishAot)' == 'true'">Touki.Resources.NativeAotSmoke</StartupObject>
 
     <!-- Microsoft Testing Platform + MSTest runner (managed run via `dotnet test`). -->
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
