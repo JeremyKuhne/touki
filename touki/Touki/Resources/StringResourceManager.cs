@@ -40,6 +40,7 @@ public class StringResourceManager
 {
     private string? _baseName;
     private readonly object _source;
+    private readonly bool _ownsNeutralResources;
     private readonly StringResourceManagerOptions _options;
     private object? _loadGate;
     private int _generation;
@@ -149,6 +150,30 @@ public class StringResourceManager
     }
 
     /// <summary>
+    ///  Initializes a manager that delegates neutral lookups to <paramref name="neutralResources"/>.
+    /// </summary>
+    /// <param name="baseName">The base name of the resource table.</param>
+    /// <param name="neutralResources">The manager that supplies neutral strings.</param>
+    /// <param name="ownsNeutralResources">
+    ///  Whether <see cref="ReleaseAllResources()"/> releases <paramref name="neutralResources"/>.
+    /// </param>
+    /// <param name="options">The resource loading options.</param>
+    protected StringResourceManager(
+        string baseName,
+        StringResourceManager neutralResources,
+        bool ownsNeutralResources,
+        StringResourceManagerOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(baseName);
+        ArgumentNullException.ThrowIfNull(neutralResources);
+        options.Validate();
+        _baseName = baseName;
+        _source = neutralResources;
+        _ownsNeutralResources = ownsNeutralResources;
+        _options = options;
+    }
+
+    /// <summary>
     ///  The base name of the resource table.
     /// </summary>
     public virtual string BaseName
@@ -246,6 +271,16 @@ public class StringResourceManager
 
     private void ReleaseAllResourcesCore(Action? waitingForLoad)
     {
+        if (_source is StringResourceManager neutralResources)
+        {
+            if (_ownsNeutralResources)
+            {
+                neutralResources.ReleaseAllResources();
+            }
+
+            return;
+        }
+
         object loadGate = GetLoadGate();
         bool lockTaken = Monitor.TryEnter(loadGate);
         if (!lockTaken)
@@ -271,6 +306,11 @@ public class StringResourceManager
     }
 
     /// <summary>
+    ///  The source assembly, if this manager is assembly-backed.
+    /// </summary>
+    internal Assembly? SourceAssembly => _source as Assembly;
+
+    /// <summary>
     ///  Looks up a name in this manager's single resource table.
     /// </summary>
     /// <param name="name">The resource name.</param>
@@ -279,6 +319,12 @@ public class StringResourceManager
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal StringResourceLookupKind LookupString(string name, out string? value)
     {
+        if (_source is StringResourceManager neutralResources)
+        {
+            value = neutralResources.GetString(name);
+            return value is null ? StringResourceLookupKind.Missing : StringResourceLookupKind.Found;
+        }
+
         while (true)
         {
             int generation = Volatile.Read(ref _generation);
