@@ -83,6 +83,12 @@ internal sealed class StreamStringResourceReader : IStringResourceReader
             long relativePosition = stream.Position - _resourceOffset;
             stream.Seek((8 - (relativePosition & 7)) & 7, SeekOrigin.Current);
 
+            long indexByteLength = ((long)ResourceCount * 2 + 1) * sizeof(int);
+            if (indexByteLength > stream.Length - stream.Position)
+            {
+                throw new BadImageFormatException("The resource index is truncated.");
+            }
+
             _nameHashes = new int[ResourceCount];
             for (int i = 0; i < _nameHashes.Length; i++)
             {
@@ -112,6 +118,15 @@ internal sealed class StreamStringResourceReader : IStringResourceReader
             if (_dataSectionOffset < _nameSectionOffset || _dataSectionOffset > stream.Length)
             {
                 throw new BadImageFormatException("The resource data section is invalid.");
+            }
+
+            long nameSectionLength = _dataSectionOffset - _nameSectionOffset;
+            for (int i = 0; i < _namePositions.Length; i++)
+            {
+                if (_namePositions[i] >= nameSectionLength)
+                {
+                    throw new BadImageFormatException("A resource name offset is invalid.");
+                }
             }
         }
         catch (EndOfStreamException exception)
@@ -159,6 +174,11 @@ internal sealed class StreamStringResourceReader : IStringResourceReader
         if (byteLength < 0 || (byteLength & 1) != 0)
         {
             throw new BadImageFormatException("A resource name is invalid.");
+        }
+
+        if (byteLength > _reader.BaseStream.Length - _reader.BaseStream.Position)
+        {
+            throw new BadImageFormatException("A resource name is truncated.");
         }
 
         byte[] bytes = _reader.ReadBytes(byteLength);
