@@ -145,23 +145,53 @@ a second call throws even when the first call failed.
 ## `SatelliteStringResourceManager`
 
 [`SatelliteStringResourceManager`](../touki/Touki/Resources/SatelliteStringResourceManager.cs)
-extends `ResourceManager` with loose side-file probing. It looks under
-`<probeRoot>/<culture>/<baseName>.resources`, merges specific and parent
-cultures, and falls back to the assembly's embedded neutral resources.
+derives from `StringResourceManager` and adds culture fallback. Each instance
+uses exactly one localized source selected by its factory:
+
+- `FromRuntimeSatellites` uses normal runtime satellite assembly binding;
+- `FromResourcesDirectory` reads
+    `<root>/<culture>/<baseName>.resources`; and
+- `FromSatelliteDirectory` parses
+    `<root>/<culture>/<assemblyName>.resources.dll` as data.
+
+Localized source modes are not mixed. Lookup walks from the requested culture
+through its parents, then falls back to the neutral manager.
 
 ```csharp
 using System.Globalization;
 using Touki.Resources;
 
-SatelliteStringResourceManager resources = new(
-    baseName: "MyApp.Resources.Strings",
-    assembly: typeof(Program).Assembly);
+Assembly assembly = typeof(Program).Assembly;
+SatelliteStringResourceManager resources =
+    SatelliteStringResourceManager.FromRuntimeSatellites(
+        "MyApp.Resources.Strings",
+        assembly);
 
 string? greeting = resources.GetString("Greeting", new CultureInfo("de-DE"));
 ```
 
-Only intrinsic string entries are loaded from side files. Other primitives,
-arrays, streams, and serialized user types are skipped without deserialization.
-Unreadable files, unsupported resource formats, and structurally malformed side
-files are treated as absent. The two-argument constructor uses the `resources`
-directory under `AppContext.BaseDirectory` as its probe root.
+Use an overload that accepts `StringResourceManager` to supply neutral resources
+from a file or stream. The supplied manager remains caller-owned, so releasing
+the satellite manager does not clear its cache.
+
+Null resources always reject a localized table. By default non-string resources
+also reject it. `IgnoreNonStringResources` skips non-string names and values, so
+a matching name behaves as missing and normal culture fallback continues.
+Resource names are matched ordinally and case-sensitively; assigning
+`IgnoreCase` throws `NotSupportedException`. Localized tables, runtime satellite
+binds, assembly metadata, and missing candidates are cached. Each file is opened
+at most once per cache generation, including during concurrent first lookup.
+`ReleaseAllResources()` starts a new table/file generation. Runtime assembly
+metadata and successful or missing satellite bind results remain cached per
+resource assembly for the process lifetime, matching the normal bundled-resource
+deployment model.
+
+Directory factories capture a fully qualified root during construction and
+require the resource base name, culture name, and satellite assembly name to be
+single path segments. These checks preserve deterministic probe layout and make
+relative roots independent of later current-directory changes.
+
+Direct satellite mode memory-maps assemblies and inspects them as PE files; it
+does not load or execute them. Only an absent file or runtime satellite continues
+fallback. A present unreadable file, unsupported format, malformed payload, or
+assembly missing the expected manifest resource throws.
