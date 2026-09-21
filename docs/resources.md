@@ -206,6 +206,9 @@ externalization remains future work.
 
 ## Generated string accessors
 
+For the executive design, performance, and memory analysis, see
+[Generated string resource solution](string-resource-manager-solution.md).
+
 `KlutzyNinja.Touki` ships a C# source generator for strongly typed string
 resources. Select it per neutral resource item:
 

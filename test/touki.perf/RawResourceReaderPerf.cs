@@ -20,9 +20,9 @@ namespace touki.perf;
 ///   reader - is measured for the oracle and for <see cref="RawResourceReader"/> over two backings: a
 ///   regular seekable stream (the oracle's array-allocating path) and an
 ///   <see cref="System.IO.UnmanagedMemoryStream"/> / native memory (its pointer fast path). The
-///   <c>[MemoryDiagnoser]</c> column is the point of the comparison: <see cref="RawResourceReader"/>
-///   allocates nothing for open, lookup, or read, where the oracle allocates its index arrays and a
-///   <c>byte[]</c> per value.
+///   <c>[MemoryDiagnoser]</c> column shows the remaining reader and backing-store allocation for open
+///   operations and verifies allocation-free repeated lookup and read. The oracle additionally
+///   allocates its index arrays and a <c>byte[]</c> per value.
 ///  </para>
 /// </remarks>
 [MemoryDiagnoser]

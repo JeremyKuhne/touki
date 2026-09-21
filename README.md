@@ -73,6 +73,7 @@ Some of the design goals include:
 - [Compiled Glob Matching and File-System Enumeration](https://github.com/JeremyKuhne/touki/blob/main/docs/globbing.md)
 - [IO Helpers (globs, gitignore, clipboard, paths, temp folders, streams)](https://github.com/JeremyKuhne/touki/blob/main/docs/io.md)
 - [Resources and Legacy Serialization](https://github.com/JeremyKuhne/touki/blob/main/docs/resources.md)
+- [Generated String Resource Solution](https://github.com/JeremyKuhne/touki/blob/main/docs/string-resource-manager-solution.md)
 - .NET Framework polyfill layout and disambiguation:
   [Polyfill guide](https://github.com/JeremyKuhne/touki/blob/main/.agents/skills/polyfill-dotnet-api/references/polyfill-layout.md)
 - Span performance on .NET Framework (net472+):
