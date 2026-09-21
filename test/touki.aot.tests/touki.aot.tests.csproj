@@ -12,10 +12,9 @@
           (Supplying a RID turns on PublishAot; see the IsAotCompatible comment below for why it is
           gated rather than always on.)
 
-      Executing the compiled MSTest runner as a native binary additionally requires the experimental,
-      closed-source MSTest.Engine + MSTest.SourceGeneration packages (the reflection-based
-      MSTest.TestAdapter cannot bootstrap under AOT). That dependency is deliberately left out; see the
-      "Testing" section of docs/aot-localized-resources-plan.md.
+      RID publishes use NativeAotSmoke as a small executable entry point instead of the reflection-based
+      MSTest runner. CI publishes without the localized fixture, then runs the native binary against
+      neutral, direct-satellite, and loose-resource deployments.
     -->
     <TargetFramework>$(DotNetCoreVersion)</TargetFramework>
     <OutputType>Exe</OutputType>
@@ -46,6 +45,11 @@
     -->
     <IsAotCompatible>true</IsAotCompatible>
     <PublishAot Condition="'$(RuntimeIdentifier)' != ''">true</PublishAot>
+    <IncludeSatelliteFixture Condition="'$(IncludeSatelliteFixture)' == ''">true</IncludeSatelliteFixture>
+
+    <!-- Native AOT publishes execute a direct smoke entry point; managed builds retain the MTP entry point. -->
+    <GenerateTestingPlatformEntryPoint Condition="'$(PublishAot)' == 'true'">false</GenerateTestingPlatformEntryPoint>
+    <StartupObject Condition="'$(PublishAot)' == 'true'">Touki.Resources.NativeAotSmoke</StartupObject>
 
     <!-- Microsoft Testing Platform + MSTest runner (managed run via `dotnet test`). -->
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
@@ -67,6 +71,14 @@
       publish step, which does not exercise these code paths. -->
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IncludeSatelliteFixture)' != 'true'">
+    <EmbeddedResource Remove="Resources\SatelliteTestStrings.de.resx" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PublishAot)' != 'true'">
+    <Compile Remove="NativeAotSmoke.cs" />
   </ItemGroup>
 
   <ItemGroup>

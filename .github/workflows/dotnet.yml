@@ -33,6 +33,7 @@ jobs:
       full-validation: ${{ matrix.configuration == 'Release' && matrix.tfm == 'net10.0' }}
       collect-coverage: ${{ matrix.configuration == 'Release' && matrix.tfm == 'net10.0' }}
       pack: ${{ matrix.configuration == 'Release' && matrix.tfm == 'net10.0' }}
+      native-aot-rid: ${{ matrix.configuration == 'Release' && matrix.tfm == 'net10.0' && 'linux-arm64' || '' }}
     secrets: inherit
 
   # Keep one Windows x64 smoke leg for platform-specific behavior. The complete

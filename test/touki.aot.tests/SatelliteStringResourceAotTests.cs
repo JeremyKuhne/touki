@@ -15,17 +15,16 @@ using Touki.Io;
 namespace Touki.Resources;
 
 /// <summary>
-///  End-to-end proof that <see cref="SatelliteStringResourceManager"/> loads localized strings from
-///  loose <c>.resources</c> files when this assembly is published with Native AOT. Stock
-///  <see cref="ResourceManager"/> cannot do this because the AOT runtime has no satellite
-///  assembly loader; see docs/aot-localized-resources-plan.md.
+///  Managed tests for <see cref="SatelliteStringResourceManager"/> behavior in the AOT validation
+///  project. Stock <see cref="ResourceManager"/> cannot load sidecar satellite assemblies under
+///  Native AOT; the published executable path is covered by <c>NativeAotSmoke</c>.
 /// </summary>
 /// <remarks>
 ///  <para>
-///   Assertions use MSTest's <see cref="Assert"/> rather than a reflection-based assertion
-///   library so the published binary stays trim-clean. The side files are produced at runtime
-///   with <see cref="ResourceWriter"/> (its string path is AOT-safe) and read back through the
-///   manager, exercising both the writer and reader under Native AOT.
+///   These methods run under the managed MSTest host and are rooted for Native AOT compilation.
+///   Assertions use MSTest's <see cref="Assert"/> rather than a reflection-based assertion library
+///   so the project remains trim-clean. <c>NativeAotSmoke</c> executes the localized reader
+///   directly from the published native binary.
 ///  </para>
 /// </remarks>
 [TestClass]
@@ -58,49 +57,72 @@ public class SatelliteStringResourceAotTests
     }
 
     [TestMethod]
-    public void GetString_LocalizedSideFile_LoadsUnderAot()
+    public void GetString_LocalizedSideFile_LoadsInManagedAotProject()
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
         WriteSideFile(folder.TempPath, "de", baseName, "Greeting", "Hallo");
 
-        SatelliteStringResourceManager manager = new(baseName, s_assembly, folder.TempPath);
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromResourcesDirectory(
+            baseName,
+            folder.TempPath,
+            s_assembly);
 
         Assert.AreEqual("Hallo", manager.GetString("Greeting", new CultureInfo("de")));
     }
 
     [TestMethod]
-    public void GetString_ParentCultureWalk_LoadsUnderAot()
+    public void GetString_RuntimeSatellite_LoadsInManagedAotProject()
+    {
+        string baseName = NeutralBaseName();
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromRuntimeSatellites(
+            baseName,
+            s_assembly);
+
+        Assert.AreEqual("Hallo", manager.GetString("Greeting", new CultureInfo("de")));
+    }
+
+    [TestMethod]
+    public void GetString_ParentCultureWalk_LoadsInManagedAotProject()
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
         WriteSideFile(folder.TempPath, "de", baseName, "Greeting", "Hallo");
 
-        SatelliteStringResourceManager manager = new(baseName, s_assembly, folder.TempPath);
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromResourcesDirectory(
+            baseName,
+            folder.TempPath,
+            s_assembly);
 
         // de-DE has no side file; resolution must walk up to the "de" file.
         Assert.AreEqual("Hallo", manager.GetString("Greeting", new CultureInfo("de-DE")));
     }
 
     [TestMethod]
-    public void GetString_NoSideFile_FallsBackToEmbeddedNeutralUnderAot()
+    public void GetString_NoSideFile_FallsBackToEmbeddedNeutralInManagedAotProject()
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
 
-        SatelliteStringResourceManager manager = new(baseName, s_assembly, folder.TempPath);
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromResourcesDirectory(
+            baseName,
+            folder.TempPath,
+            s_assembly);
 
         Assert.AreEqual("Hello", manager.GetString("Greeting", new CultureInfo("de")));
     }
 
     [TestMethod]
-    public void GetString_MissingKeyInSideFile_FallsBackToEmbeddedNeutralUnderAot()
+    public void GetString_MissingKeyInSideFile_FallsBackToEmbeddedNeutralInManagedAotProject()
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
         WriteSideFile(folder.TempPath, "de", baseName, "Farewell", "Tschuss");
 
-        SatelliteStringResourceManager manager = new(baseName, s_assembly, folder.TempPath);
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromResourcesDirectory(
+            baseName,
+            folder.TempPath,
+            s_assembly);
 
         Assert.AreEqual("Tschuss", manager.GetString("Farewell", new CultureInfo("de")));
         Assert.AreEqual("Hello", manager.GetString("Greeting", new CultureInfo("de")));
