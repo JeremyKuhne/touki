@@ -701,8 +701,8 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
             return metadata;
         }
 
-        Assembly? assembly = _resourceAssembly ?? _neutralResources.SourceAssembly;
-        if (assembly is null)
+        Assembly? resourceAssembly = _resourceAssembly ?? _neutralResources.SourceAssembly;
+        if (resourceAssembly is null)
         {
             metadata = new(
                 satelliteAssemblyFileName: null,
@@ -712,15 +712,15 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
         else
         {
             metadata = s_satelliteAssemblies
-                .GetOrCreateValue(assembly)
+                .GetOrCreateValue(resourceAssembly)
                 .GetMetadata(
-                    assembly,
+                    resourceAssembly,
                     includeContractVersion: _sourceKind == SatelliteStringResourceSourceKind.RuntimeSatellites);
 
             if (_sourceKind == SatelliteStringResourceSourceKind.SatelliteDirectory
                 && metadata.SatelliteAssemblyFileName is not null)
             {
-                ValidatePathSegment(metadata.SatelliteAssemblyFileName, nameof(assembly));
+                ValidatePathSegment(metadata.SatelliteAssemblyFileName, nameof(resourceAssembly));
             }
         }
 

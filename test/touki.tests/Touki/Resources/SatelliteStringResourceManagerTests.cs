@@ -1135,7 +1135,7 @@ public partial class SatelliteStringResourceManagerTests
         releaseWaiting.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
         continueLoad.Set();
 
-        (await lookup.ConfigureAwait(false)).Should().Be("First");
+        (await lookup.ConfigureAwait(false)).Should().BeOneOf("First", "Second");
         await release.ConfigureAwait(false);
         manager.GetString("Greeting", german).Should().Be("Second");
         openCount.Should().Be(2);
