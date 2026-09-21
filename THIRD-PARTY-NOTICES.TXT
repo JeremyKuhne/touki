@@ -59,7 +59,9 @@ License notice for .NET Compiler Platform ("Roslyn")
 ----------------------------------------------------
 
 The naming style engine under touki.analyzers/NamingStyles/ is ported from
-src/Workspaces/SharedUtilitiesAndExtensions/Compiler/Core/NamingStyles.
+src/Workspaces/SharedUtilitiesAndExtensions/Compiler/Core/NamingStyles. The
+resource source generator under touki.resources.generator/ adapts the C#
+behavior of Microsoft.CodeAnalysis.ResxSourceGenerator.
 
 The MIT License (MIT)
 
