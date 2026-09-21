@@ -278,9 +278,7 @@ jobs:
 
         foreach ($project in $projects) {
           $extraArgs = @()
-          if ('${{ inputs.collect-coverage }}' -eq 'true'
-              -and ($project -like 'test/touki.aot.tests/*'
-                -or $project -like 'test/touki.resources.generator.tests/*')) {
+          if ('${{ inputs.collect-coverage }}' -eq 'true' -and $project -notlike 'test/touki.analyzers.tests/*') {
             $extraArgs = @(
               '--coverage',
               '--coverage-output-format', 'cobertura',

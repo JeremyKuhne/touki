@@ -85,6 +85,53 @@ public class ResxSourceGeneratorTests
     }
 
     [TestMethod]
+    public void Generate_MixedNamedAndNumericFormatArguments_OmitsFormatMethod()
+    {
+        const string resource = """
+            <root>
+              <data name="Greeting"><value>Hello {name} {0}</value></data>
+            </root>
+            """;
+        Dictionary<string, string> metadata = new(StringComparer.Ordinal)
+        {
+            ["EmitFormatMethods"] = "true"
+        };
+
+        GeneratorTestResult result = GeneratorTestHarness.Run(
+            GeneratorTestResource.Selected(resource, metadata: metadata));
+
+        result.GeneratorDiagnostics.Should().BeEmpty();
+        result.CompilerErrors.Should().BeEmpty();
+        result.SingleSource.Should().Contain("string @Greeting");
+        result.SingleSource.Should().NotContain("FormatGreeting(");
+    }
+
+    [TestMethod]
+    public void Generate_EscapedFormatBraces_OmitsFormatMethods()
+    {
+        const string resource = """
+            <root>
+              <data name="Named"><value>Hello {{name}}</value></data>
+              <data name="Numeric"><value>Hello {{0}}</value></data>
+            </root>
+            """;
+        Dictionary<string, string> metadata = new(StringComparer.Ordinal)
+        {
+            ["EmitFormatMethods"] = "true"
+        };
+
+        GeneratorTestResult result = GeneratorTestHarness.Run(
+            GeneratorTestResource.Selected(resource, metadata: metadata));
+
+        result.GeneratorDiagnostics.Should().BeEmpty();
+        result.CompilerErrors.Should().BeEmpty();
+        result.SingleSource.Should().Contain("string @Named");
+        result.SingleSource.Should().Contain("string @Numeric");
+        result.SingleSource.Should().NotContain("FormatNamed(");
+        result.SingleSource.Should().NotContain("FormatNumeric(");
+    }
+
+    [TestMethod]
     public void Generate_LocalizedSibling_UsesRuntimeSatelliteManager()
     {
         GeneratorTestResult result = GeneratorTestHarness.Run(

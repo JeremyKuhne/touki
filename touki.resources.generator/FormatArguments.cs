@@ -56,9 +56,15 @@ internal sealed class FormatArguments
                 error: $"uses more than {ResxParser.MaxFormatArguments} named format arguments");
         }
 
-        return !namedArguments.IsDefaultOrEmpty
-            ? new(usesNames: true, namedArguments)
-            : ParseNumericArguments(value);
+        FormatArguments numericArguments = ParseNumericArguments(value);
+        if (numericArguments.Error is not null || namedArguments.IsDefaultOrEmpty)
+        {
+            return numericArguments;
+        }
+
+        return numericArguments.HasArguments
+            ? new(usesNames: false, arguments: [])
+            : new(usesNames: true, namedArguments);
     }
 
     private static ImmutableArray<string> FindNamedArguments(string value, out bool tooManyArguments)
@@ -71,6 +77,12 @@ internal sealed class FormatArguments
         {
             if (value[index] != '{')
             {
+                continue;
+            }
+
+            if (value[index + 1] == '{')
+            {
+                index++;
                 continue;
             }
 
@@ -115,7 +127,18 @@ internal sealed class FormatArguments
 
         for (int index = 0; index < value.Length - 2; index++)
         {
-            if (value[index] != '{' || !char.IsDigit(value[index + 1]))
+            if (value[index] != '{')
+            {
+                continue;
+            }
+
+            if (value[index + 1] == '{')
+            {
+                index++;
+                continue;
+            }
+
+            if (!char.IsDigit(value[index + 1]))
             {
                 continue;
             }
