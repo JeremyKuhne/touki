@@ -117,6 +117,7 @@ jobs:
             foreach ($project in @(
               'test/touki.tests/touki.tests.csproj',
               'test/touki.analyzers.tests/touki.analyzers.tests.csproj',
+              'test/touki.resources.generator.tests/touki.resources.generator.tests.csproj',
               'test/touki.aot.tests/touki.aot.tests.csproj'
             )) {
               dotnet restore $project @platformArgs
@@ -150,6 +151,15 @@ jobs:
               @platformArgs
             if ($LASTEXITCODE -ne 0) {
               throw "touki.aot.tests build failed with exit code $LASTEXITCODE."
+            }
+
+            dotnet build test/touki.resources.generator.tests/touki.resources.generator.tests.csproj `
+              --configuration '${{ inputs.configuration }}' `
+              --framework net10.0 `
+              --no-restore `
+              @platformArgs
+            if ($LASTEXITCODE -ne 0) {
+              throw "touki.resources.generator.tests build failed with exit code $LASTEXITCODE."
             }
           }
         }
@@ -262,12 +272,15 @@ jobs:
 
         $projects = @(
           'test/touki.analyzers.tests/touki.analyzers.tests.csproj',
+          'test/touki.resources.generator.tests/touki.resources.generator.tests.csproj',
           'test/touki.aot.tests/touki.aot.tests.csproj'
         )
 
         foreach ($project in $projects) {
           $extraArgs = @()
-          if ('${{ inputs.collect-coverage }}' -eq 'true' -and $project -like 'test/touki.aot.tests/*') {
+          if ('${{ inputs.collect-coverage }}' -eq 'true'
+              -and ($project -like 'test/touki.aot.tests/*'
+                -or $project -like 'test/touki.resources.generator.tests/*')) {
             $extraArgs = @(
               '--coverage',
               '--coverage-output-format', 'cobertura',

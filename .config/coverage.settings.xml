@@ -4,6 +4,7 @@
     <ModulePaths>
       <Include>
         <ModulePath>.*touki\.dll$</ModulePath>
+        <ModulePath>.*touki\.resources\.generator\.dll$</ModulePath>
       </Include>
       <Exclude>
         <ModulePath>.*touki\.tests\.dll$</ModulePath>

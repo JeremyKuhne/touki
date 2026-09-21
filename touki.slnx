@@ -24,6 +24,11 @@
     <File Path=".github/workflows/publish.yml" />
     <File Path=".github/workflows/publishtestsupport.yml" />
   </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/touki.resources.generator.tests/touki.resources.generator.tests.csproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
   <Project Path="sample/sample.csproj">
     <Platform Project="x64" />
   </Project>
@@ -53,6 +58,9 @@
   </Project>
   <Project Path="test/touki.tests/touki.tests.csproj" Id="19ab971c-bbbf-45f9-8a09-11054caec775">
     <Platform Project="x64" />
+  </Project>
+  <Project Path="touki.resources.generator/touki.resources.generator.csproj">
+    <Platform Project="AnyCPU" />
   </Project>
   <Project Path="touki.testsupport/touki.testsupport.csproj">
     <Platform Project="AnyCPU" />
