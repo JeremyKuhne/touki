@@ -301,17 +301,73 @@ jobs:
             throw "Tests for '$project' failed with exit code $LASTEXITCODE."
           }
         }
-    - name: Publish NativeAOT validation project
+    - name: Validate NativeAOT resource side-loading
       if: inputs.native-aot-rid != ''
       shell: pwsh
       run: |
+        $platformArgs = @()
+        if ('${{ inputs.anycpu }}' -eq 'true') {
+          $platformArgs = @('-p:Platform=AnyCPU', '-p:Platforms=AnyCPU')
+        }
+
+        $satelliteOutput = 'artifacts/native-aot/${{ inputs.native-aot-rid }}-satellite'
+        dotnet build test/touki.aot.tests/touki.aot.tests.csproj `
+          --configuration Release `
+          --framework net10.0 `
+          --output $satelliteOutput `
+          @platformArgs
+
+        if ($LASTEXITCODE -ne 0) {
+          throw "Satellite fixture build failed with exit code $LASTEXITCODE."
+        }
+
+        $publishOutput = 'artifacts/native-aot/${{ inputs.native-aot-rid }}'
         dotnet publish test/touki.aot.tests/touki.aot.tests.csproj `
           --configuration Release `
           --runtime '${{ inputs.native-aot-rid }}' `
-          --output 'artifacts/native-aot/${{ inputs.native-aot-rid }}'
+          --output $publishOutput `
+          -p:IncludeSatelliteFixture=false `
+          @platformArgs
 
         if ($LASTEXITCODE -ne 0) {
           throw "NativeAOT publish for '${{ inputs.native-aot-rid }}' failed with exit code $LASTEXITCODE."
+        }
+
+        $executableName = if ($IsWindows) { 'touki.aot.tests.exe' } else { 'touki.aot.tests' }
+        $executable = Join-Path $publishOutput $executableName
+        & $executable 'satellite' 'Hello'
+        if ($LASTEXITCODE -ne 0) {
+          throw "NativeAOT neutral resource smoke test failed with exit code $LASTEXITCODE."
+        }
+
+        $cultureOutput = Join-Path $publishOutput 'de'
+        New-Item -ItemType Directory -Path $cultureOutput -Force | Out-Null
+        Copy-Item `
+          (Join-Path $satelliteOutput 'de/touki.aot.tests.resources.dll') `
+          $cultureOutput
+
+        & $executable 'satellite' 'Hallo'
+        if ($LASTEXITCODE -ne 0) {
+          throw "NativeAOT satellite resource smoke test failed with exit code $LASTEXITCODE."
+        }
+
+        $intermediatePlatform = if ($platformArgs.Count -gt 0) { 'AnyCPU' } else { 'x64' }
+        $looseResource = Join-Path `
+          "artifacts/obj/touki.aot.tests/$intermediatePlatform/Release/net10.0" `
+          'Touki.Resources.SatelliteTestStrings.de.resources'
+        if (-not (Test-Path -LiteralPath $looseResource -PathType Leaf)) {
+          throw "Generated German .resources file was not found at '$looseResource'."
+        }
+
+        $looseCultureOutput = Join-Path $publishOutput 'loose/de'
+        New-Item -ItemType Directory -Path $looseCultureOutput -Force | Out-Null
+        Copy-Item `
+          $looseResource `
+          (Join-Path $looseCultureOutput 'Touki.Resources.SatelliteTestStrings.resources')
+
+        & $executable 'resources' 'Hallo'
+        if ($LASTEXITCODE -ne 0) {
+          throw "NativeAOT loose resource smoke test failed with exit code $LASTEXITCODE."
         }
     - name: Pack
       if: inputs.pack

@@ -196,6 +196,14 @@ does not load or execute them. Only an absent file or runtime satellite continue
 fallback. A present unreadable file, unsupported format, malformed payload, or
 assembly missing the expected manifest resource throws.
 
+The end-to-end NativeAOT smoke test covers embedded neutral lookup,
+`FromSatelliteDirectory`, and `FromResourcesDirectory`. For external NativeAOT
+localization, exclude localized `.resx` inputs from the native publish and deploy
+the culture directories after publishing. Otherwise those resources remain
+publish inputs and can be included in the native image. Direct satellite DLLs
+and loose resource files are trusted deployment artifacts. Automatic publish
+externalization remains future work.
+
 ## Generated string accessors
 
 `KlutzyNinja.Touki` ships a C# source generator for strongly typed string
