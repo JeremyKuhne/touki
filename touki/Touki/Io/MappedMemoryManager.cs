@@ -25,25 +25,21 @@ namespace Touki.Io;
 ///   consuming it as <see cref="ReadOnlyMemory{T}"/> / <see cref="ReadOnlySpan{T}"/>.
 ///  </para>
 ///  <para>
-///   Dispose the manager - directly, or through the owner returned by
-///   <see cref="MemoryManager{T}.Memory"/> - to unmap the view. Do not use the memory after disposing.
+///   Retain and dispose the manager itself to unmap the view. Do not use the memory after disposing.
 ///  </para>
 /// </remarks>
 public sealed unsafe class MappedMemoryManager : MemoryManager<byte>
 {
-    private readonly MemoryMappedViewAccessor _accessor;
+    private readonly MappedViewLease _lease;
     private readonly byte* _pointer;
     private readonly int _length;
     private bool _disposed;
 
-    private MappedMemoryManager(MemoryMappedViewAccessor accessor, int length)
+    private MappedMemoryManager(MappedViewLease lease, int length)
     {
-        _accessor = accessor;
+        _lease = lease;
+        _pointer = lease.Pointer;
         _length = length;
-
-        byte* pointer = null;
-        accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
-        _pointer = pointer + accessor.PointerOffset;
     }
 
     /// <summary>
@@ -75,15 +71,8 @@ public sealed unsafe class MappedMemoryManager : MemoryManager<byte>
             leaveOpen: true);
 
         MemoryMappedViewAccessor accessor = file.CreateViewAccessor(0, length, MemoryMappedFileAccess.Read);
-        try
-        {
-            return new MappedMemoryManager(accessor, (int)length);
-        }
-        catch
-        {
-            accessor.Dispose();
-            throw;
-        }
+        MappedViewLease lease = new(accessor);
+        return new MappedMemoryManager(lease, (int)length);
     }
 
     /// <inheritdoc/>
@@ -99,7 +88,7 @@ public sealed unsafe class MappedMemoryManager : MemoryManager<byte>
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(elementIndex);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(elementIndex, _length);
-        return new(_pointer + elementIndex);
+        return new(_pointer + elementIndex, handle: default, this);
     }
 
     /// <inheritdoc/>
@@ -116,7 +105,6 @@ public sealed unsafe class MappedMemoryManager : MemoryManager<byte>
         }
 
         _disposed = true;
-        _accessor.SafeMemoryMappedViewHandle.ReleasePointer();
-        _accessor.Dispose();
+        _lease.Dispose();
     }
 }

@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information
 
 using System.Buffers;
+using System.IO.MemoryMappedFiles;
 
 namespace Touki.Io;
 
@@ -129,5 +130,71 @@ public class MappedMemoryManagerTests
 
         // Pinning at the end (elementIndex == length) is allowed and yields an end pointer.
         using MemoryHandle endHandle = manager.Pin(bytes.Length);
+    }
+
+    [TestMethod]
+    public unsafe void Pin_ManagerOtherwiseUnreachable_KeepsMappingAlive()
+    {
+        using TempFolder folder = new();
+        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        System.IO.File.WriteAllBytes(path, [10, 20, 30]);
+        (MemoryHandle handle, WeakReference manager) = PinAndAbandon(path);
+
+        try
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            manager.IsAlive.Should().BeTrue();
+            ((byte*)handle.Pointer)[0].Should().Be((byte)20);
+        }
+        finally
+        {
+            if (manager.Target is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            handle.Dispose();
+        }
+    }
+
+    [TestMethod]
+    public void Finalize_ManagerAbandoned_ReleasesMappedView()
+    {
+        using TempFolder folder = new();
+        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        System.IO.File.WriteAllBytes(path, [10, 20, 30]);
+        SafeHandle viewHandle = CreateAndAbandon(path);
+
+        try
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            viewHandle.IsClosed.Should().BeTrue();
+        }
+        finally
+        {
+            viewHandle.Dispose();
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static (MemoryHandle Handle, WeakReference Manager) PinAndAbandon(string path)
+    {
+        MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
+        return (manager.Pin(1), new(manager));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static SafeHandle CreateAndAbandon(string path)
+    {
+        MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
+        MappedViewLease lease = manager.TestAccessor.Dynamic._lease;
+        MemoryMappedViewAccessor accessor = lease.TestAccessor.Dynamic._accessor;
+        return accessor.SafeMemoryMappedViewHandle;
     }
 }
