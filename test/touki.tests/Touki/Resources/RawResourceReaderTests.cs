@@ -105,7 +105,7 @@ public class RawResourceReaderTests
         RawResourceReader reader = new(Write(static w => w.AddResource("Greeting", "Hello")));
 
         reader.TryFindResource("Absent", out ResourceLocation location).Should().BeFalse();
-        location.Should().Be(default(ResourceLocation));
+        location.Should().Be(expected: default(ResourceLocation));
     }
 
     [TestMethod]
@@ -173,7 +173,7 @@ public class RawResourceReaderTests
     {
         (string Name, object Value, ResourceTypeCode Type, byte[] Expected)[] cases =
         [
-            ("bool", true, ResourceTypeCode.Boolean, PrimitiveBytes(w => w.Write(true))),
+            ("bool", true, ResourceTypeCode.Boolean, PrimitiveBytes(w => w.Write(value: true))),
             ("char", 'Z', ResourceTypeCode.Char, PrimitiveBytes(w => w.Write((ushort)'Z'))),
             ("byte", (byte)200, ResourceTypeCode.Byte, PrimitiveBytes(w => w.Write((byte)200))),
             ("sbyte", (sbyte)-5, ResourceTypeCode.SByte, PrimitiveBytes(w => w.Write((sbyte)-5))),
@@ -243,7 +243,7 @@ public class RawResourceReaderTests
     [TestMethod]
     public void TryGetResourceData_Null_ReturnsZeroLength()
     {
-        RawResourceReader reader = new(Write(static w => w.AddResource("nothing", (object?)null)));
+        RawResourceReader reader = new(Write(static w => w.AddResource("nothing", value: (object?)null)));
 
         reader.TryFindResource("nothing", out ResourceLocation location).Should().BeTrue();
         location.TypeCode.Should().Be(ResourceTypeCode.Null);
@@ -318,7 +318,7 @@ public class RawResourceReaderTests
     {
         byte[] bytes = Write(static w => w.AddResource("Greeting", "Hello"));
         using TempFolder folder = new();
-        string path = System.IO.Path.Combine(folder.TempPath, "afterdispose.resources");
+        string path = Path.Join(folder.TempPath, "afterdispose.resources");
         System.IO.File.WriteAllBytes(path, bytes);
 
         RawResourceReader reader = RawResourceReader.CreateFromFile(path);
@@ -417,7 +417,7 @@ public class RawResourceReaderTests
             w.AddResource("greeting", "Hello");
             w.AddResource("count", 42);
             w.AddResource("pi", 3.14159);
-            w.AddResource("flag", true);
+            w.AddResource("flag", value: true);
             w.AddResource("empty", "");
             w.AddResource("unicode", "\u00e9\u00e8\u00ea");
         });
@@ -526,7 +526,7 @@ public class RawResourceReaderTests
         });
 
         using TempFolder folder = new();
-        string path = System.IO.Path.Combine(folder.TempPath, "test.resources");
+        string path = Path.Join(folder.TempPath, "test.resources");
         System.IO.File.WriteAllBytes(path, bytes);
 
         using RawResourceReader reader = RawResourceReader.CreateFromFile(path);
@@ -543,7 +543,7 @@ public class RawResourceReaderTests
     {
         // Intentionally pass null to exercise path validation.
     #pragma warning disable CS8625
-        Action act = () => _ = RawResourceReader.CreateFromFile(null);
+        Action act = () => _ = RawResourceReader.CreateFromFile(path: null);
     #pragma warning restore CS8625
         act.Should().Throw<ArgumentNullException>();
     }
@@ -583,6 +583,7 @@ public class RawResourceReaderTests
         BinaryPrimitives.WriteInt32LittleEndian(
             resources.AsSpan(nameOffset + nameBytes.Length, sizeof(int)),
             dataPosition);
+
         return resources;
     }
 

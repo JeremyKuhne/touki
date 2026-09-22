@@ -20,6 +20,7 @@ public class MSBuildMatchBuilderTests
             matchType: MatchType.Simple,
             matchCasing: MatchCasing.PlatformDefault,
             rootDirectory: folder.TempPath);
+
         using IFileSystemMatcherSession matcher = result.Session;
 
         result.StartDirectory.ToString().Should().Be(folder.TempPath);
@@ -38,6 +39,7 @@ public class MSBuildMatchBuilderTests
             matchType: MatchType.Simple,
             matchCasing: MatchCasing.PlatformDefault,
             rootDirectory: folder.TempPath);
+
         using IFileSystemMatcherSession matcher = result.Session;
 
         result.StartDirectory.ToString().Should().Be(folder.TempPath);
@@ -59,6 +61,7 @@ public class MSBuildMatchBuilderTests
             matchType: MatchType.Win32,
             matchCasing: MatchCasing.PlatformDefault,
             rootDirectory: folder.TempPath);
+
         using IFileSystemMatcherSession matcher = result.Session;
 
         matcher.MatchesFile(folder.TempPath, Candidate).Should().BeTrue();
@@ -78,6 +81,7 @@ public class MSBuildMatchBuilderTests
             matchType: MatchType.Win32,
             matchCasing: MatchCasing.PlatformDefault,
             rootDirectory: folder.TempPath);
+
         using IFileSystemMatcherSession matcher = result.Session;
 
         matcher.MatchesDirectory(folder.TempPath, Candidate)
@@ -95,6 +99,7 @@ public class MSBuildMatchBuilderTests
             matchType: MatchType.Win32,
             matchCasing: MatchCasing.PlatformDefault,
             rootDirectory: folder.TempPath);
+
         using IFileSystemMatcherSession matcher = result.Session;
 
         matcher.MatchesFile(folder.TempPath, "fileA.txt").Should().BeFalse();
@@ -109,6 +114,7 @@ public class MSBuildMatchBuilderTests
             matchType: MatchType.Simple,
             matchCasing: MatchCasing.PlatformDefault,
             rootDirectory: null);
+
         using IFileSystemMatcherSession matcher = result.Session;
 
         matcher.Should().NotBeNull();
@@ -119,7 +125,7 @@ public class MSBuildMatchBuilderTests
     public void FromSpecification_WildcardedTerminalGlobstarExclude_PrunesAtAnyDepth()
     {
         using TempFolder folder = new();
-        string nested = Path.Combine(folder.TempPath, "src");
+        string nested = Path.Join(folder.TempPath, "src");
 
         MSBuildMatchBuildResult result = MSBuildMatchBuilder.FromSpecification(
             includeSpecification: "**/*",
@@ -127,15 +133,19 @@ public class MSBuildMatchBuilderTests
             matchType: MatchType.Simple,
             matchCasing: MatchCasing.PlatformDefault,
             rootDirectory: folder.TempPath);
+
         using IFileSystemMatcherSession matcher = result.Session;
 
         matcher.MatchesDirectory(folder.TempPath, "obj-one")
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+
         matcher.MatchesDirectory(folder.TempPath, "src")
             .Should().NotBe(DirectoryMatchType.NoDescendantFilesMatch);
+
         matcher.DirectoryFinished(folder.TempPath);
         matcher.MatchesDirectory(nested, "obj-two")
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+
         matcher.MatchesDirectory(nested, "lib")
             .Should().NotBe(DirectoryMatchType.NoDescendantFilesMatch);
     }
@@ -151,10 +161,12 @@ public class MSBuildMatchBuilderTests
             matchType: MatchType.Simple,
             matchCasing: MatchCasing.PlatformDefault,
             rootDirectory: folder.TempPath);
+
         using IFileSystemMatcherSession matcher = result.Session;
 
         matcher.MatchesDirectory(folder.TempPath, "obj")
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+
         matcher.MatchesDirectory(folder.TempPath, "src")
             .Should().NotBe(DirectoryMatchType.NoDescendantFilesMatch);
     }
@@ -172,11 +184,13 @@ public class MSBuildMatchBuilderTests
 
         matcher.MatchesDirectory(folder.TempPath, "obj-one")
             .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+
         matcher.DirectoryFinished(folder.TempPath);
-        matcher.MatchesFile(Path.Combine(folder.TempPath, "obj-one", "nested"), "file.cs")
+        matcher.MatchesFile(Path.Join(folder.TempPath, "obj-one", "nested"), "file.cs")
             .Should().BeTrue();
-        matcher.DirectoryFinished(Path.Combine(folder.TempPath, "obj-one", "nested"));
-        matcher.MatchesFile(Path.Combine(folder.TempPath, "src"), "file.cs")
+
+        matcher.DirectoryFinished(Path.Join(folder.TempPath, "obj-one", "nested"));
+        matcher.MatchesFile(Path.Join(folder.TempPath, "src"), "file.cs")
             .Should().BeFalse();
     }
 
@@ -190,16 +204,19 @@ public class MSBuildMatchBuilderTests
             matchType: MatchType.Simple,
             matchCasing: MatchCasing.PlatformDefault,
             rootDirectory: folder.TempPath);
+
         using IFileSystemMatcherSession matcher = result.Session;
 
         matcher.MatchesDirectory(folder.TempPath, "src")
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+
         matcher.DirectoryFinished(folder.TempPath);
-        string sourceDirectory = Path.Combine(folder.TempPath, "src");
+        string sourceDirectory = Path.Join(folder.TempPath, "src");
         matcher.MatchesDirectory(sourceDirectory, "obj")
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+
         matcher.DirectoryFinished(sourceDirectory);
-        matcher.MatchesFile(Path.Combine(sourceDirectory, "obj"), "file.cs")
+        matcher.MatchesFile(Path.Join(sourceDirectory, "obj"), "file.cs")
             .Should().BeFalse();
     }
 }

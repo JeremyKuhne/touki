@@ -17,6 +17,7 @@ public class TestAccessorTests
         ArgumentException exception = action.Should().Throw<ArgumentException>()
             .WithMessage("Null arguments are not supported when resolving overloaded methods.*")
             .Which;
+
         exception.ParamName.Should().Be("args");
     }
 

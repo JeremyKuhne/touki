@@ -60,7 +60,7 @@ public class StringExtensionsTests
     {
         // Intentionally pass null to exercise action validation.
     #pragma warning disable CS8625
-        Action action = () => string.Create<int>(5, 0, null);
+        Action action = () => string.Create<int>(5, 0, action: null);
     #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }

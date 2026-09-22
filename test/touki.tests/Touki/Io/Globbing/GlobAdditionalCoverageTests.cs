@@ -16,7 +16,7 @@ namespace Touki.Io.Globbing;
 [TestClass]
 public class GlobAdditionalCoverageTests
 {
-    private static string Root => Path.Combine(Path.GetTempPath(), "glob-coverage-root");
+    private static string Root => Path.Join(Path.GetTempPath(), "glob-coverage-root");
 
     [TestMethod]
     [DataRow("abc", "abc", true)]
@@ -41,9 +41,9 @@ public class GlobAdditionalCoverageTests
     public void EnumerateFiles_LazyRepeatableAndOptionsSnapshotted()
     {
         using TempFolder folder = new();
-        string sourceDirectory = Path.Combine(folder, "src");
+        string sourceDirectory = Path.Join(folder, "src");
         Directory.CreateDirectory(sourceDirectory);
-        File.WriteAllText(Path.Combine(folder, "top.cs"), string.Empty);
+        File.WriteAllText(Path.Join(folder, "top.cs"), string.Empty);
         EnumerationOptions enumerationOptions = new()
         {
             IgnoreInaccessible = true,
@@ -60,7 +60,7 @@ public class GlobAdditionalCoverageTests
             enumerationOptions);
 
         enumerationOptions.RecurseSubdirectories = false;
-        File.WriteAllText(Path.Combine(sourceDirectory, "nested.cs"), string.Empty);
+        File.WriteAllText(Path.Join(sourceDirectory, "nested.cs"), string.Empty);
 
         string[] expected = ["top.cs", "src/nested.cs"];
         files.Should().BeEquivalentTo(expected);
@@ -71,11 +71,11 @@ public class GlobAdditionalCoverageTests
     public void EnumerateFiles_InterleavedEnumerators_AreIndependent()
     {
         using TempFolder folder = new();
-        string sourceDirectory = Path.Combine(folder, "src");
-        string nestedDirectory = Path.Combine(sourceDirectory, "nested");
+        string sourceDirectory = Path.Join(folder, "src");
+        string nestedDirectory = Path.Join(sourceDirectory, "nested");
         Directory.CreateDirectory(nestedDirectory);
-        File.WriteAllText(Path.Combine(sourceDirectory, "first.cs"), string.Empty);
-        File.WriteAllText(Path.Combine(nestedDirectory, "second.cs"), string.Empty);
+        File.WriteAllText(Path.Join(sourceDirectory, "first.cs"), string.Empty);
+        File.WriteAllText(Path.Join(nestedDirectory, "second.cs"), string.Empty);
         IEnumerable<string> files = Glob.EnumerateFiles(
             folder,
             "src/**/*.cs",
@@ -109,11 +109,11 @@ public class GlobAdditionalCoverageTests
     public void EnumerateFiles_RelativeRoot_ResolvesAtCallTime()
     {
         using TempFolder parentFolder = new();
-        string sourceDirectory = Path.Combine(parentFolder, "source");
-        string otherDirectory = Path.Combine(parentFolder, "other");
+        string sourceDirectory = Path.Join(parentFolder, "source");
+        string otherDirectory = Path.Join(parentFolder, "other");
         Directory.CreateDirectory(sourceDirectory);
         Directory.CreateDirectory(otherDirectory);
-        File.WriteAllText(Path.Combine(sourceDirectory, "source.cs"), string.Empty);
+        File.WriteAllText(Path.Join(sourceDirectory, "source.cs"), string.Empty);
         string originalDirectory = Environment.CurrentDirectory;
         try
         {
@@ -161,6 +161,7 @@ public class GlobAdditionalCoverageTests
             "*.cs",
             GlobDialect.PosixPath);
 #pragma warning restore CS8604
+
         string? pattern = null;
         // Intentionally pass null to exercise pattern validation.
 #pragma warning disable CS8604
@@ -237,7 +238,7 @@ public class GlobAdditionalCoverageTests
     [DataRow("*.foobar*", ".foo", false)]
     public void ContainsGlobStrategy_LeadingDot_InputShorterThanNeedle(
         string pattern, string input, bool expected) =>
-        GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input).Should().Be(expected);
+            GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input).Should().Be(expected);
 
     [TestMethod]
     // Contains matcher Posix+IgnoreCase: only ASCII letters fold; non-ASCII chars
@@ -263,8 +264,8 @@ public class GlobAdditionalCoverageTests
     [DataRow("*.\u00E9*", ".\u00C9oo", false)]  // non-ASCII does not fold
     public void ContainsGlobStrategy_PosixIgnoreCase_LeadingDot_AsciiOnlyFold(
         string pattern, string input, bool expected) =>
-        GlobSpecification.Compile(pattern, GlobDialect.Posix, GlobOptions.IgnoreCase)
-            .IsMatch(input).Should().Be(expected);
+            GlobSpecification.Compile(pattern, GlobDialect.Posix, GlobOptions.IgnoreCase)
+                .IsMatch(input).Should().Be(expected);
 
     [TestMethod]
     // PrefixSuffix matcher Unicode ignore-case branch.
@@ -283,7 +284,7 @@ public class GlobAdditionalCoverageTests
 
         matcher.MatchesFile(Root, "anything".AsSpan()).Should().BeFalse();
         matcher.DirectoryFinished(Root);
-        matcher.MatchesFile(Path.Combine(Root, "sub"), "file.cs".AsSpan()).Should().BeFalse();
+        matcher.MatchesFile(Path.Join(Root, "sub"), "file.cs".AsSpan()).Should().BeFalse();
     }
 
     [TestMethod]
@@ -306,7 +307,7 @@ public class GlobAdditionalCoverageTests
             "a/b/file.cs",
             GlobDialect.PosixPath).CreateSession(Root);
 
-        string directory = Path.Combine(Root, "a", "b");
+        string directory = Path.Join(Root, "a", "b");
         matcher.MatchesFile(directory, "file.cs".AsSpan()).Should().BeTrue();
         matcher.DirectoryFinished(directory);
         matcher.MatchesFile(directory, "OTHER.cs".AsSpan()).Should().BeFalse();
@@ -321,7 +322,7 @@ public class GlobAdditionalCoverageTests
             GlobDialect.PosixPath,
             GlobOptions.IgnoreCase).CreateSession(Root);
 
-        string directory = Path.Combine(Root, "a", "b");
+        string directory = Path.Join(Root, "a", "b");
         matcher.MatchesFile(directory, "file.cs".AsSpan()).Should().BeTrue();
         matcher.DirectoryFinished(directory);
         matcher.MatchesFile(directory, "nope.cs".AsSpan()).Should().BeFalse();
@@ -336,7 +337,7 @@ public class GlobAdditionalCoverageTests
             "a/b/file.cs",
             GlobDialect.MSBuild).CreateSession(Root);
 
-        string directory = Path.Combine(Root, "a", "b");
+        string directory = Path.Join(Root, "a", "b");
         matcher.MatchesFile(directory, "FILE.cs".AsSpan()).Should().BeTrue();
         matcher.DirectoryFinished(directory);
         matcher.MatchesFile(directory, "different.cs".AsSpan()).Should().BeFalse();
@@ -351,7 +352,7 @@ public class GlobAdditionalCoverageTests
             GlobDialect.PosixPath).CreateSession(Root);
 
         // File name combined with the cached dir prefix doesn't have matching length.
-        matcher.MatchesFile(Path.Combine(Root, "a", "b"), "xy".AsSpan()).Should().BeFalse();
+        matcher.MatchesFile(Path.Join(Root, "a", "b"), "xy".AsSpan()).Should().BeFalse();
     }
 
     [TestMethod]

@@ -18,7 +18,7 @@ public class BinaryFormattedObjectTests
     {
         // Intentionally pass null to exercise stream validation.
     #pragma warning disable CS8625
-        Action action = () => _ = new BinaryFormattedObject(null);
+        Action action = () => _ = new BinaryFormattedObject(stream: null);
     #pragma warning restore CS8625
 
         action.Should().Throw<ArgumentNullException>();
@@ -104,6 +104,7 @@ public class BinaryFormattedObjectTests
         BinaryFormattedObject formatted = BinaryFormattedObjectFixtures.Parse(
             BinaryFormattedObjectFixtures.RegisteredPayloadArray,
             resolver);
+
         Action firstCall = () => formatted.Deserialize();
         firstCall.Should().Throw<SerializationException>();
 
@@ -122,7 +123,7 @@ public class BinaryFormattedObjectTests
         Task<(object? Result, Exception? Exception)> second = Task.Run(Deserialize);
         barrier.SignalAndWait();
 
-        (object? Result, Exception? Exception)[] outcomes = await Task.WhenAll(first, second).ConfigureAwait(false);
+        (object? Result, Exception? Exception)[] outcomes = await Task.WhenAll(first, second).ConfigureAwait(continueOnCapturedContext: false);
 
         outcomes.Count(static outcome => Equals(outcome.Result, 42) && outcome.Exception is null).Should().Be(1);
         outcomes.Count(static outcome => outcome.Result is null
@@ -332,18 +333,19 @@ public class BinaryFormattedObjectTests
     private sealed class CallbackTypeResolver : ITypeResolver
     {
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public Type BindToType(System.Reflection.Metadata.TypeName typeName)
-            => typeName.FullName == typeof(CallbackPayload).FullName
+        public Type BindToType(System.Reflection.Metadata.TypeName typeName) =>
+            typeName.FullName == typeof(CallbackPayload).FullName
                 ? typeof(CallbackPayload)
                 : throw new SerializationException($"Type '{typeName.AssemblyQualifiedName}' is not registered.");
 
         public bool TryBindToType(
             System.Reflection.Metadata.TypeName typeName,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All), NotNullWhen(true)] out Type? type)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All), NotNullWhen(returnValue: true)] out Type? type)
         {
             type = typeName.FullName == typeof(CallbackPayload).FullName
                 ? typeof(CallbackPayload)
                 : null;
+
             return type is not null;
         }
     }
@@ -355,8 +357,8 @@ public class BinaryFormattedObjectTests
 
         public bool TryBindToType(
             System.Reflection.Metadata.TypeName typeName,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All), NotNullWhen(true)] out Type? type)
-            => throw exception;
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All), NotNullWhen(returnValue: true)] out Type? type) =>
+                throw exception;
     }
 
     private sealed class ThrowingReadStream(Exception exception) : System.IO.Stream

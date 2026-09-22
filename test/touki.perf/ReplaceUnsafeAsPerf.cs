@@ -153,7 +153,7 @@ public class ReplaceUnsafeAsPerf
     // a constant fold to 0xFF for a literal -1 - never the buggy 32-bit
     // sign-extended compare immediate.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void ReplaceSplitBlocks<T>(Span<T> span, T oldValue, T newValue)
+    private static void ReplaceSplitBlocks<T>(Span<T> span, T oldValue, T newValue)
         where T : struct
     {
         if (typeof(T) == typeof(byte))
@@ -176,7 +176,7 @@ public class ReplaceUnsafeAsPerf
     // Forces the JIT to materialize the byte truncation by ANDing with 0xFF
     // even after the buggy <T, byte> Unsafe.As propagation.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void ReplaceExplicitMask<T>(Span<T> span, T oldValue, T newValue)
+    private static void ReplaceExplicitMask<T>(Span<T> span, T oldValue, T newValue)
         where T : struct
     {
         if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))

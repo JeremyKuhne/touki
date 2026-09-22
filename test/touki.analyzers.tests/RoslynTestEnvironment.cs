@@ -23,9 +23,9 @@ internal static class RoslynTestEnvironment
     /// </summary>
     public static ImmutableArray<MetadataReference> GetReferences(
         IReadOnlyCollection<MetadataReference>? additionalReferences) =>
-        additionalReferences is null || additionalReferences.Count == 0
-            ? References
-            : References.AddRange(additionalReferences);
+            additionalReferences is null || additionalReferences.Count == 0
+                ? References
+                : References.AddRange(additionalReferences);
 
     /// <summary>
     ///  Gets the real net472 reference assemblies and the Microsoft.IO.Redist dependency closure.
@@ -70,9 +70,9 @@ internal static class RoslynTestEnvironment
     public static Compilation ApplyDiagnosticOptions(
         Compilation compilation,
         IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions) =>
-        diagnosticOptions is null
-            ? compilation
-            : compilation.WithOptions(compilation.Options.WithSpecificDiagnosticOptions(diagnosticOptions));
+            diagnosticOptions is null
+                ? compilation
+                : compilation.WithOptions(compilation.Options.WithSpecificDiagnosticOptions(diagnosticOptions));
 
     private static ImmutableArray<MetadataReference> CreateReferences()
     {
@@ -104,6 +104,7 @@ internal static class RoslynTestEnvironment
             "build",
             ".NETFramework",
             "v4.7.2");
+
         string[] paths =
         [
             Path.Join(framework, "mscorlib.dll"),
@@ -140,6 +141,7 @@ internal static class RoslynTestEnvironment
             "build",
             "netstandard2.0",
             "ref");
+
         IEnumerable<string> paths = Directory
             .EnumerateFiles(references, "*.dll")
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
@@ -153,5 +155,5 @@ internal static class RoslynTestEnvironment
             .Cast<System.Reflection.AssemblyMetadataAttribute>()
             .Single(attribute => attribute.Key == "NuGetPackageRoot")
             .Value
-            ?? throw new InvalidOperationException("NuGet package root metadata is unavailable.");
+                ?? throw new InvalidOperationException("NuGet package root metadata is unavailable.");
 }

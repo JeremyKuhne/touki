@@ -19,6 +19,7 @@ public class ExtGlobExcludeProbeTests
         bool actual = GlobSpecification
             .Compile(pattern, GlobDialect.MSBuild, GlobOptions.AllowExtGlob)
             .IsMatch(input);
+
         actual.Should().Be(expected, $"pattern='{pattern}' input='{input}'");
     }
 }

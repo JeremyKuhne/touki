@@ -17,14 +17,14 @@ public class AllmanFormattingCodeFixTests
         string source,
         Dictionary<string, string>? options = null,
         CSharpParseOptions? parseOptions = null) =>
-        await CodeFixTestHarness.ApplyFixAsync(
-            new AllmanFormattingAnalyzer(),
-            new FormatAllmanCodeFixProvider(),
-            source,
-            AllmanFormattingAnalyzer.DiagnosticId,
-            options,
-            s_enabled,
-            parseOptions: parseOptions).ConfigureAwait(false);
+            await CodeFixTestHarness.ApplyFixAsync(
+                new AllmanFormattingAnalyzer(),
+                new FormatAllmanCodeFixProvider(),
+                source,
+                AllmanFormattingAnalyzer.DiagnosticId,
+                options,
+                s_enabled,
+                parseOptions: parseOptions).ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
     public void GetFixAllProvider_Default_IsDocumentBased()
@@ -51,6 +51,7 @@ public class AllmanFormattingCodeFixTests
                 void Use(int value) { }
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -68,8 +69,8 @@ public class AllmanFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
         fixedAgain.Should().Be(expected);
@@ -85,7 +86,7 @@ public class AllmanFormattingCodeFixTests
             [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "false"
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -95,28 +96,30 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void Method()\n"
-            + "    {\n"
-            + "        { int value = 0; }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method()\n"
+                + "    {\n"
+                + "        { int value = 0; }\n"
+                + "    }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    void Method()\n"
-            + "    {\n"
-            + "        {\n"
-            + "            int value = 0;\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method()\n"
+                + "    {\n"
+                + "        {\n"
+                + "            int value = 0;\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+
         Dictionary<string, string> options = new()
         {
             [AllmanFormattingAnalyzer.MaxLineLengthOption] = "25"
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -131,7 +134,7 @@ public class AllmanFormattingCodeFixTests
             [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "false"
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -145,7 +148,7 @@ public class AllmanFormattingCodeFixTests
             [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "false"
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -155,6 +158,7 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n{\n    string Format() => $\"{new int[] { 1 }}\";\n}\n";
+
         Dictionary<string, string> options = new()
         {
             [AllmanFormattingAnalyzer.MaxLineLengthOption] = "20"
@@ -163,7 +167,7 @@ public class AllmanFormattingCodeFixTests
         string fixedSource = await ApplyFixAsync(
             source,
             options,
-            new CSharpParseOptions(LanguageVersion.CSharp10)).ConfigureAwait(false);
+            new CSharpParseOptions(LanguageVersion.CSharp10)).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -173,8 +177,10 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n{\n    string Format() => $\"{new int[] { 1 }}\";\n}\n";
+
         const string expected =
             "class Sample\n{\n    string Format() => $\"{new int[]\n    {\n        1\n    }}\";\n}\n";
+
         Dictionary<string, string> options = new()
         {
             [AllmanFormattingAnalyzer.MaxLineLengthOption] = "20"
@@ -183,14 +189,14 @@ public class AllmanFormattingCodeFixTests
         string fixedSource = await ApplyFixAsync(
             source,
             options,
-            new CSharpParseOptions(LanguageVersion.CSharp11)).ConfigureAwait(false);
+            new CSharpParseOptions(LanguageVersion.CSharp11)).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
+    [DataRow(data: false)]
+    [DataRow(data: true)]
     public async Task Format_LinkedCSharp10And11DocumentsWithDivergentFormatting_OffersNoFix(bool fixAll)
     {
         const string source = "class Sample\n{\n    string Format() => $\"{new int[] { 1 }}\";\n}\n";
@@ -210,7 +216,7 @@ public class AllmanFormattingCodeFixTests
             s_enabled,
             addLinkedProject: true,
             parseOptions: new CSharpParseOptions(LanguageVersion.CSharp11),
-            linkedProjectParseOptions: new CSharpParseOptions(LanguageVersion.CSharp10)).ConfigureAwait(false);
+            linkedProjectParseOptions: new CSharpParseOptions(LanguageVersion.CSharp10)).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(1);
         result.CompilerErrors.Should().BeEmpty();
@@ -227,8 +233,8 @@ public class AllmanFormattingCodeFixTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
+    [DataRow(data: false)]
+    [DataRow(data: true)]
     public async Task Format_LinkedDocumentsWithCompatibleFormatting_UpdatesBothDocuments(bool fixAll)
     {
         const string source = "class Sample {\n}\n";
@@ -243,12 +249,13 @@ public class AllmanFormattingCodeFixTests
             diagnosticOptions: s_enabled,
             addLinkedProject: true,
             parseOptions: new CSharpParseOptions(LanguageVersion.CSharp11),
-            linkedProjectParseOptions: new CSharpParseOptions(LanguageVersion.CSharp10)).ConfigureAwait(false);
+            linkedProjectParseOptions: new CSharpParseOptions(LanguageVersion.CSharp10)).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CompilerErrors.Should().BeEmpty();
         result.Documents.Should().HaveCount(2)
             .And.OnlyContain(document => document.Source == "class Sample\n{\n}\n");
+
         result.CodeFixActionOffered.Should().BeTrue();
         if (fixAll)
         {
@@ -271,10 +278,12 @@ public class AllmanFormattingCodeFixTests
         {
             [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "false"
         };
+
         Dictionary<string, string> loose = new()
         {
             [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "true"
         };
+
         Dictionary<string, string> firstOptions = stricterProjectFirst ? strict : loose;
         Dictionary<string, string> linkedOptions = stricterProjectFirst ? loose : strict;
 
@@ -287,7 +296,7 @@ public class AllmanFormattingCodeFixTests
             firstOptions,
             s_enabled,
             addLinkedProject: true,
-            linkedProjectOptions: linkedOptions).ConfigureAwait(false);
+            linkedProjectOptions: linkedOptions).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(1);
         result.CompilerErrors.Should().BeEmpty();
@@ -310,6 +319,7 @@ public class AllmanFormattingCodeFixTests
         [
             ("Sample.cs", "Sample.cs", "class Sample { }\n")
         ];
+
         Dictionary<string, string> linkedProjectOptions = new()
         {
             [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "false"
@@ -322,11 +332,11 @@ public class AllmanFormattingCodeFixTests
             AllmanFormattingAnalyzer.DiagnosticId,
             fixAll: false,
             diagnosticOptions: s_enabled,
-            linkedProjectOptions: linkedProjectOptions).ConfigureAwait(false);
+            linkedProjectOptions: linkedProjectOptions).ConfigureAwait(continueOnCapturedContext: false);
 
         await action.Should().ThrowAsync<ArgumentException>()
             .WithParameterName("linkedProjectOptions")
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -340,7 +350,7 @@ public class AllmanFormattingCodeFixTests
             ["indent_style"] = "tab"
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -362,7 +372,7 @@ public class AllmanFormattingCodeFixTests
             ["indent_size"] = configured
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -381,7 +391,7 @@ public class AllmanFormattingCodeFixTests
             [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "false"
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -408,7 +418,7 @@ public class AllmanFormattingCodeFixTests
             AllmanFormattingAnalyzer.DiagnosticId,
             fixAll: false,
             options,
-            s_enabled).ConfigureAwait(false);
+            s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(1);
         result.CodeFixActionOffered.Should().BeFalse();
@@ -420,31 +430,32 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void First()\n"
-            + "    {\n"
-            + "        int value =\n"
-            + "            GetValue(); // Value.\n"
-            + "        Use(value);\n"
-            + "    } // First.\n"
-            + "    int GetValue() => 0;\n"
-            + "    void Use(int value) { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void First()\n"
+                + "    {\n"
+                + "        int value =\n"
+                + "            GetValue(); // Value.\n"
+                + "        Use(value);\n"
+                + "    } // First.\n"
+                + "    int GetValue() => 0;\n"
+                + "    void Use(int value) { }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    void First()\n"
-            + "    {\n"
-            + "        int value =\n"
-            + "            GetValue(); // Value.\n"
-            + "\n"
-            + "        Use(value);\n"
-            + "    } // First.\n"
-            + "    int GetValue() => 0;\n"
-            + "    void Use(int value) { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void First()\n"
+                + "    {\n"
+                + "        int value =\n"
+                + "            GetValue(); // Value.\n"
+                + "\n"
+                + "        Use(value);\n"
+                + "    } // First.\n"
+                + "    int GetValue() => 0;\n"
+                + "    void Use(int value) { }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -454,35 +465,36 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void Method()\n"
-            + "    {\n"
-            + "        int value =\n"
-            + "            GetValue(); /* Value\n"
-            + "                           details. */\n"
-            + "        Use(value);\n"
-            + "    }\n"
-            + "\n"
-            + "    int GetValue() => 0;\n"
-            + "    void Use(int value) { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method()\n"
+                + "    {\n"
+                + "        int value =\n"
+                + "            GetValue(); /* Value\n"
+                + "                           details. */\n"
+                + "        Use(value);\n"
+                + "    }\n"
+                + "\n"
+                + "    int GetValue() => 0;\n"
+                + "    void Use(int value) { }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    void Method()\n"
-            + "    {\n"
-            + "        int value =\n"
-            + "            GetValue(); /* Value\n"
-            + "                           details. */\n"
-            + "\n"
-            + "        Use(value);\n"
-            + "    }\n"
-            + "\n"
-            + "    int GetValue() => 0;\n"
-            + "    void Use(int value) { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method()\n"
+                + "    {\n"
+                + "        int value =\n"
+                + "            GetValue(); /* Value\n"
+                + "                           details. */\n"
+                + "\n"
+                + "        Use(value);\n"
+                + "    }\n"
+                + "\n"
+                + "    int GetValue() => 0;\n"
+                + "    void Use(int value) { }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -492,37 +504,38 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void Method()\n"
-            + "    {\n"
-            + "        int value =\n"
-            + "            GetValue(); /// <summary>\n"
-            + "                        ///  Value details.\n"
-            + "                        /// </summary>\n"
-            + "        Use(value);\n"
-            + "    }\n"
-            + "\n"
-            + "    int GetValue() => 0;\n"
-            + "    void Use(int value) { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method()\n"
+                + "    {\n"
+                + "        int value =\n"
+                + "            GetValue(); /// <summary>\n"
+                + "                        ///  Value details.\n"
+                + "                        /// </summary>\n"
+                + "        Use(value);\n"
+                + "    }\n"
+                + "\n"
+                + "    int GetValue() => 0;\n"
+                + "    void Use(int value) { }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    void Method()\n"
-            + "    {\n"
-            + "        int value =\n"
-            + "            GetValue(); /// <summary>\n"
-            + "                        ///  Value details.\n"
-            + "                        /// </summary>\n"
-            + "\n"
-            + "        Use(value);\n"
-            + "    }\n"
-            + "\n"
-            + "    int GetValue() => 0;\n"
-            + "    void Use(int value) { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method()\n"
+                + "    {\n"
+                + "        int value =\n"
+                + "            GetValue(); /// <summary>\n"
+                + "                        ///  Value details.\n"
+                + "                        /// </summary>\n"
+                + "\n"
+                + "        Use(value);\n"
+                + "    }\n"
+                + "\n"
+                + "    int GetValue() => 0;\n"
+                + "    void Use(int value) { }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -532,37 +545,38 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void Method()\n"
-            + "    {\n"
-            + "        int value =\n"
-            + "            GetValue(); /** <summary>\n"
-            + "                            Value details.\n"
-            + "                          </summary> */\n"
-            + "        Use(value);\n"
-            + "    }\n"
-            + "\n"
-            + "    int GetValue() => 0;\n"
-            + "    void Use(int value) { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method()\n"
+                + "    {\n"
+                + "        int value =\n"
+                + "            GetValue(); /** <summary>\n"
+                + "                            Value details.\n"
+                + "                          </summary> */\n"
+                + "        Use(value);\n"
+                + "    }\n"
+                + "\n"
+                + "    int GetValue() => 0;\n"
+                + "    void Use(int value) { }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    void Method()\n"
-            + "    {\n"
-            + "        int value =\n"
-            + "            GetValue(); /** <summary>\n"
-            + "                            Value details.\n"
-            + "                          </summary> */\n"
-            + "\n"
-            + "        Use(value);\n"
-            + "    }\n"
-            + "\n"
-            + "    int GetValue() => 0;\n"
-            + "    void Use(int value) { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method()\n"
+                + "    {\n"
+                + "        int value =\n"
+                + "            GetValue(); /** <summary>\n"
+                + "                            Value details.\n"
+                + "                          </summary> */\n"
+                + "\n"
+                + "        Use(value);\n"
+                + "    }\n"
+                + "\n"
+                + "    int GetValue() => 0;\n"
+                + "    void Use(int value) { }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -577,11 +591,13 @@ public class AllmanFormattingCodeFixTests
         string closingBraces = string.Concat(Enumerable.Repeat("} ", nestingDepth));
         string largeSource =
             $"{indentation}class Large {{ void Method() {openingBraces}{closingBraces}}}\n";
+
         (string Name, string FilePath, string Source)[] sources =
         [
             ("Large.cs", "A-Large.cs", largeSource),
             ("Small.cs", "B-Small.cs", "class Small {\n}\n")
         ];
+
         Dictionary<string, string> options = new()
         {
             [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "false"
@@ -594,12 +610,13 @@ public class AllmanFormattingCodeFixTests
             AllmanFormattingAnalyzer.DiagnosticId,
             fixAll: true,
             options,
-            s_enabled).ConfigureAwait(false);
+            s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.Documents.Single(document => document.Name == "Large.cs").Source.Should().Be(largeSource);
         result.Documents.Single(document => document.Name == "Small.cs").Source.Should().Be(
             "class Small\n{\n}\n");
+
         result.AnalyzerDiagnostics.Should().ContainSingle();
     }
 
@@ -608,32 +625,33 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void Method()\n"
-            + "    {\n"
-            + "        int value =\n"
-            + "            GetValue(); Use(value);\n"
-            + "    }\n"
-            + "\n"
-            + "    int GetValue() => 0;\n"
-            + "    void Use(int value) { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method()\n"
+                + "    {\n"
+                + "        int value =\n"
+                + "            GetValue(); Use(value);\n"
+                + "    }\n"
+                + "\n"
+                + "    int GetValue() => 0;\n"
+                + "    void Use(int value) { }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    void Method()\n"
-            + "    {\n"
-            + "        int value =\n"
-            + "            GetValue();\n"
-            + "\n"
-            + "        Use(value);\n"
-            + "    }\n"
-            + "\n"
-            + "    int GetValue() => 0;\n"
-            + "    void Use(int value) { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method()\n"
+                + "    {\n"
+                + "        int value =\n"
+                + "            GetValue();\n"
+                + "\n"
+                + "        Use(value);\n"
+                + "    }\n"
+                + "\n"
+                + "    int GetValue() => 0;\n"
+                + "    void Use(int value) { }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -643,29 +661,29 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void Method(bool condition)\n"
-            + "    {\n"
-            + "        if (condition)\n"
-            + "        {\n"
-            + "        }\n"
-            + "        else\n"
-            + "        {\n"
-            + "        }\n"
-            + "\n"
-            + "        try\n"
-            + "        {\n"
-            + "        }\n"
-            + "        catch (System.Exception)\n"
-            + "        {\n"
-            + "        }\n"
-            + "        finally\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method(bool condition)\n"
+                + "    {\n"
+                + "        if (condition)\n"
+                + "        {\n"
+                + "        }\n"
+                + "        else\n"
+                + "        {\n"
+                + "        }\n"
+                + "\n"
+                + "        try\n"
+                + "        {\n"
+                + "        }\n"
+                + "        catch (System.Exception)\n"
+                + "        {\n"
+                + "        }\n"
+                + "        finally\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -675,56 +693,57 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    int this[int index]\n"
-            + "    {\n"
-            + "        get\n"
-            + "        {\n"
-            + "            return index;\n"
-            + "        }\n"
-            + "\n"
-            + "        set\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "\n"
-            + "    event System.Action Changed\n"
-            + "    {\n"
-            + "        add\n"
-            + "        {\n"
-            + "        }\n"
-            + "\n"
-            + "        remove\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    int this[int index]\n"
+                + "    {\n"
+                + "        get\n"
+                + "        {\n"
+                + "            return index;\n"
+                + "        }\n"
+                + "\n"
+                + "        set\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "\n"
+                + "    event System.Action Changed\n"
+                + "    {\n"
+                + "        add\n"
+                + "        {\n"
+                + "        }\n"
+                + "\n"
+                + "        remove\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    int this[int index]\n"
-            + "    {\n"
-            + "        get\n"
-            + "        {\n"
-            + "            return index;\n"
-            + "        }\n"
-            + "        set\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "\n"
-            + "    event System.Action Changed\n"
-            + "    {\n"
-            + "        add\n"
-            + "        {\n"
-            + "        }\n"
-            + "        remove\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    int this[int index]\n"
+                + "    {\n"
+                + "        get\n"
+                + "        {\n"
+                + "            return index;\n"
+                + "        }\n"
+                + "        set\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "\n"
+                + "    event System.Action Changed\n"
+                + "    {\n"
+                + "        add\n"
+                + "        {\n"
+                + "        }\n"
+                + "        remove\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -734,45 +753,46 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void Method()\n"
-            + "    {\n"
-            + "        do\n"
-            + "        {\n"
-            + "        } while (false);\n"
-            + "        do\n"
-            + "        {\n"
-            + "        }\n"
-            + "\n"
-            + "        while (false);\n"
-            + "        Use();\n"
-            + "    }\n"
-            + "\n"
-            + "    void Use() { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method()\n"
+                + "    {\n"
+                + "        do\n"
+                + "        {\n"
+                + "        } while (false);\n"
+                + "        do\n"
+                + "        {\n"
+                + "        }\n"
+                + "\n"
+                + "        while (false);\n"
+                + "        Use();\n"
+                + "    }\n"
+                + "\n"
+                + "    void Use() { }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    void Method()\n"
-            + "    {\n"
-            + "        do\n"
-            + "        {\n"
-            + "        }\n"
-            + "        while (false);\n"
-            + "\n"
-            + "        do\n"
-            + "        {\n"
-            + "        }\n"
-            + "        while (false);\n"
-            + "\n"
-            + "        Use();\n"
-            + "    }\n"
-            + "\n"
-            + "    void Use() { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method()\n"
+                + "    {\n"
+                + "        do\n"
+                + "        {\n"
+                + "        }\n"
+                + "        while (false);\n"
+                + "\n"
+                + "        do\n"
+                + "        {\n"
+                + "        }\n"
+                + "        while (false);\n"
+                + "\n"
+                + "        Use();\n"
+                + "    }\n"
+                + "\n"
+                + "    void Use() { }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
         fixedAgain.Should().Be(expected);
@@ -783,55 +803,56 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void Method(bool condition)\n"
-            + "    {\n"
-            + "        if (condition)\n"
-            + "        {\n"
-            + "        }\n"
-            + "\n"
-            + "        else\n"
-            + "        {\n"
-            + "        }\n"
-            + "\n"
-            + "        try\n"
-            + "        {\n"
-            + "        }\n"
-            + "\n"
-            + "        catch (System.Exception)\n"
-            + "        {\n"
-            + "        }\n"
-            + "\n"
-            + "        finally\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method(bool condition)\n"
+                + "    {\n"
+                + "        if (condition)\n"
+                + "        {\n"
+                + "        }\n"
+                + "\n"
+                + "        else\n"
+                + "        {\n"
+                + "        }\n"
+                + "\n"
+                + "        try\n"
+                + "        {\n"
+                + "        }\n"
+                + "\n"
+                + "        catch (System.Exception)\n"
+                + "        {\n"
+                + "        }\n"
+                + "\n"
+                + "        finally\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    void Method(bool condition)\n"
-            + "    {\n"
-            + "        if (condition)\n"
-            + "        {\n"
-            + "        }\n"
-            + "        else\n"
-            + "        {\n"
-            + "        }\n"
-            + "\n"
-            + "        try\n"
-            + "        {\n"
-            + "        }\n"
-            + "        catch (System.Exception)\n"
-            + "        {\n"
-            + "        }\n"
-            + "        finally\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method(bool condition)\n"
+                + "    {\n"
+                + "        if (condition)\n"
+                + "        {\n"
+                + "        }\n"
+                + "        else\n"
+                + "        {\n"
+                + "        }\n"
+                + "\n"
+                + "        try\n"
+                + "        {\n"
+                + "        }\n"
+                + "        catch (System.Exception)\n"
+                + "        {\n"
+                + "        }\n"
+                + "        finally\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -841,49 +862,50 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void Method(bool condition)\n"
-            + "    {\n"
-            + "        if (condition)\n"
-            + "        {\n"
-            + "        } else\n"
-            + "        {\n"
-            + "        }\n"
-            + "\n"
-            + "        try\n"
-            + "        {\n"
-            + "        } catch (System.Exception)\n"
-            + "        {\n"
-            + "        } finally\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method(bool condition)\n"
+                + "    {\n"
+                + "        if (condition)\n"
+                + "        {\n"
+                + "        } else\n"
+                + "        {\n"
+                + "        }\n"
+                + "\n"
+                + "        try\n"
+                + "        {\n"
+                + "        } catch (System.Exception)\n"
+                + "        {\n"
+                + "        } finally\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    void Method(bool condition)\n"
-            + "    {\n"
-            + "        if (condition)\n"
-            + "        {\n"
-            + "        }\n"
-            + "        else\n"
-            + "        {\n"
-            + "        }\n"
-            + "\n"
-            + "        try\n"
-            + "        {\n"
-            + "        }\n"
-            + "        catch (System.Exception)\n"
-            + "        {\n"
-            + "        }\n"
-            + "        finally\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method(bool condition)\n"
+                + "    {\n"
+                + "        if (condition)\n"
+                + "        {\n"
+                + "        }\n"
+                + "        else\n"
+                + "        {\n"
+                + "        }\n"
+                + "\n"
+                + "        try\n"
+                + "        {\n"
+                + "        }\n"
+                + "        catch (System.Exception)\n"
+                + "        {\n"
+                + "        }\n"
+                + "        finally\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -893,27 +915,28 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void Method(bool condition)\n"
-            + "    {\n"
-            + "        if (condition) { } else\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method(bool condition)\n"
+                + "    {\n"
+                + "        if (condition) { } else\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    void Method(bool condition)\n"
-            + "    {\n"
-            + "        if (condition) { }\n"
-            + "        else\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method(bool condition)\n"
+                + "    {\n"
+                + "        if (condition) { }\n"
+                + "        else\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -923,31 +946,32 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void Method(bool condition)\n"
-            + "    {\n"
-            + "        if (condition)\n"
-            + "        {\n"
-            + "        } /* First branch. */ else\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method(bool condition)\n"
+                + "    {\n"
+                + "        if (condition)\n"
+                + "        {\n"
+                + "        } /* First branch. */ else\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    void Method(bool condition)\n"
-            + "    {\n"
-            + "        if (condition)\n"
-            + "        {\n"
-            + "        } /* First branch. */\n"
-            + "        else\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method(bool condition)\n"
+                + "    {\n"
+                + "        if (condition)\n"
+                + "        {\n"
+                + "        } /* First branch. */\n"
+                + "        else\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -957,38 +981,39 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void Method(bool condition)\n"
-            + "    {\n"
-            + "        if (condition)\n"
-            + "        {\n"
-            + "        }\n"
-            + "\n"
-            + "#if TRACE\n"
-            + "#endif\n"
-            + "\n"
-            + "        else\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method(bool condition)\n"
+                + "    {\n"
+                + "        if (condition)\n"
+                + "        {\n"
+                + "        }\n"
+                + "\n"
+                + "#if TRACE\n"
+                + "#endif\n"
+                + "\n"
+                + "        else\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    void Method(bool condition)\n"
-            + "    {\n"
-            + "        if (condition)\n"
-            + "        {\n"
-            + "        }\n"
-            + "#if TRACE\n"
-            + "#endif\n"
-            + "        else\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method(bool condition)\n"
+                + "    {\n"
+                + "        if (condition)\n"
+                + "        {\n"
+                + "        }\n"
+                + "#if TRACE\n"
+                + "#endif\n"
+                + "        else\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -998,31 +1023,32 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void First()\n"
-            + "    {\n"
-            + "    }\n"
-            + "#if HIDDEN\n"
-            + "    void Hidden() { }\n"
-            + "\n"
-            + "#endif\n"
-            + "    void Second() { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void First()\n"
+                + "    {\n"
+                + "    }\n"
+                + "#if HIDDEN\n"
+                + "    void Hidden() { }\n"
+                + "\n"
+                + "#endif\n"
+                + "    void Second() { }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    void First()\n"
-            + "    {\n"
-            + "    }\n"
-            + "#if HIDDEN\n"
-            + "    void Hidden() { }\n"
-            + "\n"
-            + "#endif\n"
-            + "\n"
-            + "    void Second() { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void First()\n"
+                + "    {\n"
+                + "    }\n"
+                + "#if HIDDEN\n"
+                + "    void Hidden() { }\n"
+                + "\n"
+                + "#endif\n"
+                + "\n"
+                + "    void Second() { }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -1032,30 +1058,30 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    int GetValue()\n"
-            + "#if true\n"
-            + "    {\n"
-            + "        return 0;\n"
-            + "    }\n"
-            + "#else\n"
-            + "    {\n"
-            + "        return 1;\n"
-            + "    }\n"
-            + "#endif\n"
-            + "\n"
-            + "    bool GetFlag()\n"
-            + "    {\n"
-            + "        return true\n"
-            + "#if true\n"
-            + "            && true;\n"
-            + "#else\n"
-            + "            && false;\n"
-            + "#endif\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    int GetValue()\n"
+                + "#if true\n"
+                + "    {\n"
+                + "        return 0;\n"
+                + "    }\n"
+                + "#else\n"
+                + "    {\n"
+                + "        return 1;\n"
+                + "    }\n"
+                + "#endif\n"
+                + "\n"
+                + "    bool GetFlag()\n"
+                + "    {\n"
+                + "        return true\n"
+                + "#if true\n"
+                + "            && true;\n"
+                + "#else\n"
+                + "            && false;\n"
+                + "#endif\n"
+                + "    }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -1065,48 +1091,49 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void First()\n"
-            + "    {\n"
-            + "    }\n"
-            + "#if true\n"
-            + "#endif\n"
-            + "    void Second()\n"
-            + "    {\n"
-            + "        int value =\n"
-            + "            GetValue();\n"
-            + "#if true\n"
-            + "#endif\n"
-            + "        Use(value);\n"
-            + "    }\n"
-            + "\n"
-            + "    int GetValue() => 0;\n"
-            + "    void Use(int value) { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void First()\n"
+                + "    {\n"
+                + "    }\n"
+                + "#if true\n"
+                + "#endif\n"
+                + "    void Second()\n"
+                + "    {\n"
+                + "        int value =\n"
+                + "            GetValue();\n"
+                + "#if true\n"
+                + "#endif\n"
+                + "        Use(value);\n"
+                + "    }\n"
+                + "\n"
+                + "    int GetValue() => 0;\n"
+                + "    void Use(int value) { }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    void First()\n"
-            + "    {\n"
-            + "    }\n"
-            + "#if true\n"
-            + "#endif\n"
-            + "\n"
-            + "    void Second()\n"
-            + "    {\n"
-            + "        int value =\n"
-            + "            GetValue();\n"
-            + "#if true\n"
-            + "#endif\n"
-            + "\n"
-            + "        Use(value);\n"
-            + "    }\n"
-            + "\n"
-            + "    int GetValue() => 0;\n"
-            + "    void Use(int value) { }\n"
-            + "}\n";
+                + "{\n"
+                + "    void First()\n"
+                + "    {\n"
+                + "    }\n"
+                + "#if true\n"
+                + "#endif\n"
+                + "\n"
+                + "    void Second()\n"
+                + "    {\n"
+                + "        int value =\n"
+                + "            GetValue();\n"
+                + "#if true\n"
+                + "#endif\n"
+                + "\n"
+                + "        Use(value);\n"
+                + "    }\n"
+                + "\n"
+                + "    int GetValue() => 0;\n"
+                + "    void Use(int value) { }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -1116,40 +1143,41 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    int MiniportIfIndex => 1;\n"
-            + "    int LowerIfIndex => 2;\n"
-            + "    int MetadataSize => 3;\n"
-            + "\n"
-            + "    object? PayloadValue(int index) => index switch\n"
-            + "    {\n"
-            + "        0 => MiniportIfIndex,\n"
-            + "        1 => LowerIfIndex,\n"
-            + "        2 => MetadataSize,\n"
-            + "        _ => null\n"
-            + "    };\n"
-            + "    void Next() { }\n"
-            + "}\n";
+                + "{\n"
+                + "    int MiniportIfIndex => 1;\n"
+                + "    int LowerIfIndex => 2;\n"
+                + "    int MetadataSize => 3;\n"
+                + "\n"
+                + "    object? PayloadValue(int index) => index switch\n"
+                + "    {\n"
+                + "        0 => MiniportIfIndex,\n"
+                + "        1 => LowerIfIndex,\n"
+                + "        2 => MetadataSize,\n"
+                + "        _ => null\n"
+                + "    };\n"
+                + "    void Next() { }\n"
+                + "}\n";
+
         const string expected =
             "class Sample\n"
-            + "{\n"
-            + "    int MiniportIfIndex => 1;\n"
-            + "    int LowerIfIndex => 2;\n"
-            + "    int MetadataSize => 3;\n"
-            + "\n"
-            + "    object? PayloadValue(int index) => index switch\n"
-            + "    {\n"
-            + "        0 => MiniportIfIndex,\n"
-            + "        1 => LowerIfIndex,\n"
-            + "        2 => MetadataSize,\n"
-            + "        _ => null\n"
-            + "    };\n"
-            + "\n"
-            + "    void Next() { }\n"
-            + "}\n";
+                + "{\n"
+                + "    int MiniportIfIndex => 1;\n"
+                + "    int LowerIfIndex => 2;\n"
+                + "    int MetadataSize => 3;\n"
+                + "\n"
+                + "    object? PayloadValue(int index) => index switch\n"
+                + "    {\n"
+                + "        0 => MiniportIfIndex,\n"
+                + "        1 => LowerIfIndex,\n"
+                + "        2 => MetadataSize,\n"
+                + "        _ => null\n"
+                + "    };\n"
+                + "\n"
+                + "    void Next() { }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
         fixedAgain.Should().Be(expected);
@@ -1160,21 +1188,21 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void Method(int index)\n"
-            + "    {\n"
-            + "        for (int value = index switch\n"
-            + "        {\n"
-            + "            _ => 0\n"
-            + "        };\n"
-            + "            value < 1;\n"
-            + "            value++)\n"
-            + "        {\n"
-            + "        }\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method(int index)\n"
+                + "    {\n"
+                + "        for (int value = index switch\n"
+                + "        {\n"
+                + "            _ => 0\n"
+                + "        };\n"
+                + "            value < 1;\n"
+                + "            value++)\n"
+                + "        {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -1184,25 +1212,26 @@ public class AllmanFormattingCodeFixTests
     {
         const string source =
             "class Item { public int Value; }\n"
-            + "\n"
-            + "class Sample\n"
-            + "{\n"
-            + "    Item Create() => new Item {\n"
-            + "        Value = 1\n"
-            + "    };\n"
-            + "}\n";
+                + "\n"
+                + "class Sample\n"
+                + "{\n"
+                + "    Item Create() => new Item {\n"
+                + "        Value = 1\n"
+                + "    };\n"
+                + "}\n";
+
         const string expected =
             "class Item { public int Value; }\n"
-            + "\n"
-            + "class Sample\n"
-            + "{\n"
-            + "    Item Create() => new Item\n"
-            + "    {\n"
-            + "        Value = 1\n"
-            + "    };\n"
-            + "}\n";
+                + "\n"
+                + "class Sample\n"
+                + "{\n"
+                + "    Item Create() => new Item\n"
+                + "    {\n"
+                + "        Value = 1\n"
+                + "    };\n"
+                + "}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -1218,6 +1247,7 @@ public class AllmanFormattingCodeFixTests
             ("First.cs", "A-First.cs", "class First {\n}\n"),
             ("Second.cs", "B-Second.cs", "class Second {\n}\n")
         ];
+
         (string Name, string FilePath, string Source)[] additionalProjectSources =
         [
             ("Additional.cs", "Z-Additional.cs", "class Additional {\n}\n")
@@ -1231,7 +1261,7 @@ public class AllmanFormattingCodeFixTests
             fixAll: true,
             diagnosticOptions: s_enabled,
             fixAllScope: scope,
-            additionalProjectSources: additionalProjectSources).ConfigureAwait(false);
+            additionalProjectSources: additionalProjectSources).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -1269,6 +1299,7 @@ public class AllmanFormattingCodeFixTests
         [
             ("Sample.cs", "Sample.cs", "class Sample {\n}\n")
         ];
+
         using CancellationTokenSource cancellation = new();
         cancellation.Cancel();
         Func<Task> action = async () => await CodeFixTestHarness.ApplyFixToSolutionAsync(
@@ -1278,8 +1309,8 @@ public class AllmanFormattingCodeFixTests
             AllmanFormattingAnalyzer.DiagnosticId,
             fixAll: true,
             diagnosticOptions: s_enabled,
-            fixAllCancellationToken: cancellation.Token).ConfigureAwait(false);
+            fixAllCancellationToken: cancellation.Token).ConfigureAwait(continueOnCapturedContext: false);
 
-        await action.Should().ThrowAsync<OperationCanceledException>().ConfigureAwait(false);
+        await action.Should().ThrowAsync<OperationCanceledException>().ConfigureAwait(continueOnCapturedContext: false);
     }
 }

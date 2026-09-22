@@ -11,16 +11,16 @@ public class SpanExtensionsStartsEndsWithPrimitiveTests
     public void StartsWith_Bool_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<bool> span = [true, false];
-        span.StartsWith(true).Should().BeTrue();
-        span.StartsWith(false).Should().BeFalse();
+        span.StartsWith(value: true).Should().BeTrue();
+        span.StartsWith(value: false).Should().BeFalse();
     }
 
     [TestMethod]
     public void EndsWith_Bool_RespectsPrimitiveFastPath()
     {
         ReadOnlySpan<bool> span = [true, false];
-        span.EndsWith(false).Should().BeTrue();
-        span.EndsWith(true).Should().BeFalse();
+        span.EndsWith(value: false).Should().BeTrue();
+        span.EndsWith(value: true).Should().BeFalse();
     }
 
     [TestMethod]

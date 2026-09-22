@@ -20,6 +20,7 @@ public partial class AllmanFormattingAnalyzerTests
         string closingBraces = string.Concat(Enumerable.Repeat("} ", nestingDepth));
         CountingSourceText source = new(SourceText.From(
             $"{indentation}class Sample {{ void Method() {openingBraces}{closingBraces}}}\n"));
+
         Dictionary<string, string> options = new()
         {
             [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "false"
@@ -30,7 +31,7 @@ public partial class AllmanFormattingAnalyzerTests
             source,
             source.Reset,
             options,
-            s_enabled).ConfigureAwait(false);
+            s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         source.CharacterReads.Should().BeLessThan(source.Length * 50L);
@@ -46,6 +47,7 @@ public partial class AllmanFormattingAnalyzerTests
         string closingBraces = string.Concat(Enumerable.Repeat("} ", nestingDepth));
         SourceText source = SourceText.From(
             $"{indentation}class Sample {{ void Method() {openingBraces}{closingBraces}}}\n");
+
         SyntaxNode root = CSharpSyntaxTree.ParseText(source).GetRoot();
         AllmanFormattingOptions options = new(
             requireBlankLineAfterClosingBrace: true,
@@ -62,6 +64,7 @@ public partial class AllmanFormattingAnalyzerTests
             CancellationToken.None,
             out _,
             out bool fixAvailable);
+
         long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
         found.Should().BeTrue();
@@ -74,6 +77,7 @@ public partial class AllmanFormattingAnalyzerTests
     {
         SourceText source = SourceText.From(
             "class Sample { #define ACTIVE\n#if ACTIVE\nclass Hidden { }\n#endif\n}\n");
+
         SyntaxNode root = CSharpSyntaxTree.ParseText(source).GetRoot();
         AllmanFormattingOptions options = new(
             requireBlankLineAfterClosingBrace: true,
@@ -89,6 +93,7 @@ public partial class AllmanFormattingAnalyzerTests
             CancellationToken.None,
             out _,
             out bool fixAvailable);
+
         bool formatted = AllmanFormatter.TryFormat(
             source,
             root,
@@ -109,6 +114,7 @@ public partial class AllmanFormattingAnalyzerTests
         const int inactiveLineCount = 128 * 1024;
         SourceText source = SourceText.From(
             $"class Sample\n{{\n#if HIDDEN\n{new string('\n', inactiveLineCount)}#endif\n}}\n");
+
         _ = source.Lines.Count;
         SyntaxNode root = CSharpSyntaxTree.ParseText(source).GetRoot();
         AllmanFormattingOptions options = new(
@@ -126,6 +132,7 @@ public partial class AllmanFormattingAnalyzerTests
             CancellationToken.None,
             out _,
             out _);
+
         long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
         found.Should().BeFalse();
@@ -140,20 +147,21 @@ public partial class AllmanFormattingAnalyzerTests
         string nestedStatements = string.Concat(Enumerable.Repeat("        if (true)\n", nestingDepth));
         SourceText source = SourceText.From(
             "class Sample\n"
-            + "{\n"
-            + "    void Method()\n"
-            + "    {\n"
-            + nestedStatements
-            + "        Use(\n"
-            + "            0);\n"
-            + "#if HIDDEN\n"
-            + new string('\n', inactiveLineCount)
-            + "#endif\n"
-            + "        Use(1);\n"
-            + "    }\n"
-            + "\n"
-            + "    void Use(int value) { }\n"
-            + "}\n");
+                + "{\n"
+                + "    void Method()\n"
+                + "    {\n"
+                + nestedStatements
+                + "        Use(\n"
+                + "            0);\n"
+                + "#if HIDDEN\n"
+                + new string('\n', inactiveLineCount)
+                + "#endif\n"
+                + "        Use(1);\n"
+                + "    }\n"
+                + "\n"
+                + "    void Use(int value) { }\n"
+                + "}\n");
+
         _ = source.Lines.Count;
         SyntaxNode root = CSharpSyntaxTree.ParseText(source).GetRoot();
         AllmanFormattingOptions options = new(
@@ -171,6 +179,7 @@ public partial class AllmanFormattingAnalyzerTests
             CancellationToken.None,
             out _,
             out _);
+
         stopwatch.Stop();
 
         found.Should().BeTrue();

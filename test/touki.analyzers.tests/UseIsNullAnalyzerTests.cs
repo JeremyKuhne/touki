@@ -18,7 +18,7 @@ public class UseIsNullAnalyzerTests
             """;
 
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(false);
+            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(UseIsNullAnalyzer.DiagnosticId);
@@ -35,7 +35,7 @@ public class UseIsNullAnalyzerTests
             """;
 
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(false);
+            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(UseIsNullAnalyzer.DiagnosticId);
@@ -52,7 +52,7 @@ public class UseIsNullAnalyzerTests
             """;
 
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(false);
+            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(UseIsNullAnalyzer.DiagnosticId);
@@ -69,7 +69,7 @@ public class UseIsNullAnalyzerTests
             """;
 
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(false);
+            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(UseIsNullAnalyzer.DiagnosticId);
@@ -86,7 +86,7 @@ public class UseIsNullAnalyzerTests
             """;
 
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(false);
+            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         Location location = diagnostics[0].Location;
@@ -104,7 +104,7 @@ public class UseIsNullAnalyzerTests
             """;
 
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(false);
+            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -120,7 +120,7 @@ public class UseIsNullAnalyzerTests
             """;
 
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(false);
+            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -139,7 +139,7 @@ public class UseIsNullAnalyzerTests
             """;
 
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(false);
+            await AnalyzerTestHarness.GetDiagnosticsAsync(new UseIsNullAnalyzer(), source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }

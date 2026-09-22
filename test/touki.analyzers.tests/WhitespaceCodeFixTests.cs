@@ -13,28 +13,28 @@ public class WhitespaceCodeFixTests
     private static readonly Dictionary<string, ReportDiagnostic> s_tabsEnabled =
         new() { [NoTabsAnalyzer.DiagnosticId] = ReportDiagnostic.Warn };
 
-    private static async Task<string> FixTabsAsync(string source, Dictionary<string, string>? options = null)
-        => await CodeFixTestHarness.ApplyFixAsync(
+    private static async Task<string> FixTabsAsync(string source, Dictionary<string, string>? options = null) =>
+        await CodeFixTestHarness.ApplyFixAsync(
             new NoTabsAnalyzer(),
             new ReplaceTabsWithSpacesCodeFixProvider(),
             source,
             NoTabsAnalyzer.DiagnosticId,
             options,
-            s_tabsEnabled).ConfigureAwait(false);
+            s_tabsEnabled).ConfigureAwait(continueOnCapturedContext: false);
 
-    private static async Task<string> FixTrailingAsync(string source)
-        => await CodeFixTestHarness.ApplyFixAsync(
+    private static async Task<string> FixTrailingAsync(string source) =>
+        await CodeFixTestHarness.ApplyFixAsync(
             new TrailingWhitespaceAnalyzer(),
             new RemoveTrailingWhitespaceCodeFixProvider(),
             source,
-            TrailingWhitespaceAnalyzer.DiagnosticId).ConfigureAwait(false);
+            TrailingWhitespaceAnalyzer.DiagnosticId).ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
     public async Task ReplaceTabs_IndentedLine_UsesDefaultWidth()
     {
         string source = "class Sample\n{\n\tint Value;\n}\n";
 
-        string fixedSource = await FixTabsAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixTabsAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be("class Sample\n{\n    int Value;\n}\n");
     }
@@ -45,7 +45,7 @@ public class WhitespaceCodeFixTests
         string source = "class Sample\n{\n\tint Value;\n}\n";
         Dictionary<string, string> options = new() { [NoTabsAnalyzer.SpacesPerTabOption] = "2" };
 
-        string fixedSource = await FixTabsAsync(source, options).ConfigureAwait(false);
+        string fixedSource = await FixTabsAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be("class Sample\n{\n  int Value;\n}\n");
     }
@@ -56,7 +56,7 @@ public class WhitespaceCodeFixTests
         // The tab sits at column 5 and must land the '=' on column 8, so it becomes three spaces.
         string source = "class Sample\n{\n    int x\t= 1;\n}\n";
 
-        string fixedSource = await FixTabsAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixTabsAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be("class Sample\n{\n    int x   = 1;\n}\n");
     }
@@ -66,7 +66,7 @@ public class WhitespaceCodeFixTests
     {
         string source = "class Sample\n{\n    string Value = \"a\tb\";\n}\n";
 
-        string fixedSource = await FixTabsAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixTabsAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -83,7 +83,7 @@ public class WhitespaceCodeFixTests
             NoTabsAnalyzer.DiagnosticId,
             fixAll: false,
             diagnosticOptions: s_tabsEnabled,
-            addLinkedProject: true).ConfigureAwait(false);
+            addLinkedProject: true).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CodeFixActionOffered.Should().BeFalse();
@@ -101,6 +101,7 @@ public class WhitespaceCodeFixTests
         {
             [NoTabsAnalyzer.SpacesPerTabOption] = "2"
         };
+
         Dictionary<string, string> linkedOptions = new()
         {
             [NoTabsAnalyzer.SpacesPerTabOption] = "4"
@@ -117,7 +118,7 @@ public class WhitespaceCodeFixTests
             fixAllScope: FixAllScope.Solution,
             addLinkedProject: true,
             additionalProjectSources: [("Eligible.cs", "A-Eligible.cs", eligibleSource)],
-            linkedProjectOptions: linkedOptions).ConfigureAwait(false);
+            linkedProjectOptions: linkedOptions).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(3);
         result.CodeFixActionOffered.Should().BeTrue();
@@ -126,6 +127,7 @@ public class WhitespaceCodeFixTests
         result.AnalyzerDiagnostics.Should().HaveCount(2);
         result.Documents.Where(document => document.Name == "Linked.cs")
             .Should().HaveCount(2).And.OnlyContain(document => document.Source == linkedSource);
+
         result.Documents.Single(document => document.Name == "Eligible.cs").Source
             .Should().Be("class Eligible\n{\n  int Value;\n}\n");
     }
@@ -142,7 +144,7 @@ public class WhitespaceCodeFixTests
             NoTabsAnalyzer.DiagnosticId,
             fixAll: false,
             diagnosticOptions: s_tabsEnabled,
-            additionalProjectSources: [("Lower.cs", "case.cs", source)]).ConfigureAwait(false);
+            additionalProjectSources: [("Lower.cs", "case.cs", source)]).ConfigureAwait(continueOnCapturedContext: false);
 
         bool pathsAreShared = FilePathIdentity.PathComparer.Equals("Case.cs", "case.cs");
         result.CodeFixActionOffered.Should().Be(!pathsAreShared);
@@ -150,6 +152,7 @@ public class WhitespaceCodeFixTests
         result.AnalyzerDiagnostics.Should().HaveCount(pathsAreShared ? 2 : 1);
         result.Documents.Single(document => document.Name == "Upper.cs").Source.Should().Be(
             pathsAreShared ? source : "class Sample\n{\n    int Value;\n}\n");
+
         result.Documents.Single(document => document.Name == "Lower.cs").Source.Should().Be(source);
     }
 
@@ -158,7 +161,7 @@ public class WhitespaceCodeFixTests
     {
         string source = "class Sample\n{\n    int Value;   \n}\n";
 
-        string fixedSource = await FixTrailingAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixTrailingAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be("class Sample\n{\n    int Value;\n}\n");
     }
@@ -168,7 +171,7 @@ public class WhitespaceCodeFixTests
     {
         string source = "class Sample\n{\n    \n    int Value;\n}\n";
 
-        string fixedSource = await FixTrailingAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixTrailingAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be("class Sample\n{\n\n    int Value;\n}\n");
     }
@@ -178,7 +181,7 @@ public class WhitespaceCodeFixTests
     {
         string source = "class Sample\n{\n    string Value = \"\"\"\n        a   \n        b\n        \"\"\";\n}\n";
 
-        string fixedSource = await FixTrailingAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixTrailingAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }

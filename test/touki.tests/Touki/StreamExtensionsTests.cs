@@ -33,11 +33,11 @@ public partial class StreamExtensionsTests
         byte[] data = [6, 7, 8, 9, 10];
 
         // Write asynchronously using ArraySegment
-        await memory.WriteAsync(new ArraySegment<byte>(data, 2, 2), CancellationToken.None).ConfigureAwait(false);
+        await memory.WriteAsync(new ArraySegment<byte>(data, 2, 2), CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
         memory.Position = 0;
 
         byte[] readBuffer = new byte[2];
-        int read = await memory.ReadAsync(new ArraySegment<byte>(readBuffer), CancellationToken.None).ConfigureAwait(false);
+        int read = await memory.ReadAsync(new ArraySegment<byte>(readBuffer), CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
         read.Should().Be(2);
         readBuffer.Should().BeEquivalentTo([8, 9]);
     }
@@ -47,7 +47,7 @@ public partial class StreamExtensionsTests
     {
         using MemoryStream memory = new();
 
-        memory.Write(default);
+        memory.Write(buffer: default);
         memory.Length.Should().Be(0);
 
         byte[] data = [1, 2, 3];
@@ -65,16 +65,16 @@ public partial class StreamExtensionsTests
     {
         using MemoryStream memory = new();
 
-        await memory.WriteAsync(new ArraySegment<byte>(), CancellationToken.None).ConfigureAwait(false);
+        await memory.WriteAsync(new ArraySegment<byte>(), CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
         memory.Length.Should().Be(0);
 
         byte[] data = [4, 5];
-        await memory.WriteAsync(new ArraySegment<byte>(data), CancellationToken.None).ConfigureAwait(false);
+        await memory.WriteAsync(new ArraySegment<byte>(data), CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
 
         memory.Position = 0;
 
         long initial = memory.Position;
-        int read = await memory.ReadAsync(new ArraySegment<byte>(), CancellationToken.None).ConfigureAwait(false);
+        int read = await memory.ReadAsync(new ArraySegment<byte>(), CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
         read.Should().Be(0);
         memory.Position.Should().Be(initial);
     }
@@ -148,7 +148,7 @@ public partial class StreamExtensionsTests
 
         // Intentionally pass null to exercise buffer validation.
     #pragma warning disable CS8625
-        Action action = () => stream.TryReadExactly(null, offset: 0, count: 0);
+        Action action = () => stream.TryReadExactly(buffer: null, offset: 0, count: 0);
     #pragma warning restore CS8625
 
         action.Should().Throw<ArgumentNullException>().WithParameterName("buffer");

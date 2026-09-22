@@ -145,6 +145,7 @@ public class MSBuildStringResourceManagerLookupPerf
             {
                 string value = manager.GetString(key, CultureInfo.InvariantCulture)
                     ?? throw new InvalidOperationException("The benchmark resource is missing.");
+
                 totalLength += value.Length;
             }
 
@@ -170,6 +171,7 @@ public class MSBuildStringResourceManagerLookupPerf
             {
                 string value = manager.GetString(key, CultureInfo.InvariantCulture)
                     ?? throw new InvalidOperationException("The benchmark resource is missing.");
+
                 totalLength += value.Length;
             }
 

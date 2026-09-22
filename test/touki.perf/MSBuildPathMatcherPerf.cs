@@ -4,8 +4,6 @@
 
 using System.Linq;
 using Touki.Io;
-using Path = System.IO.Path;
-
 namespace touki.perf;
 
 /// <summary>
@@ -28,15 +26,16 @@ public class MSBuildPathMatcherPerf
     [GlobalSetup]
     public void GlobalSetup()
     {
-        string root = Path.Combine(Path.GetTempPath(), "touki-msbuild-path-perf");
-        _directDirectory = Path.Combine(
+        string root = Path.Join(Path.GetTempPath(), "touki-msbuild-path-perf");
+        _directDirectory = Path.Join(
             root,
             string.Join(Path.DirectorySeparatorChar.ToString(), Enumerable.Repeat("x", 62)),
             "a",
             "y",
             "a",
             "b");
-        _repeatedDirectory = Path.Combine(
+
+        _repeatedDirectory = Path.Join(
             root,
             string.Join(Path.DirectorySeparatorChar.ToString(), Enumerable.Repeat("a", 64)),
             "a",
@@ -82,7 +81,7 @@ public class MSBuildPathMatcherPerf
 
     private static MatchMSBuild CreateMatcher(string root)
     {
-        string specificationPath = Path.Combine(root, "**/a/**/a/b/*.cs");
+        string specificationPath = Path.Join(root, "**/a/**/a/b/*.cs");
         MSBuildSpecification specification = new(specificationPath);
         return new MatchMSBuild(
             specification,

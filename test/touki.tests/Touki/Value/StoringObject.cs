@@ -72,7 +72,7 @@ public class StoringObject
     public void Box_NullObject_HasNoStoredValue()
     {
         // Per Value docs, a Type of null means "no value is stored".
-        Value value = Value.Box(null);
+        Value value = Value.Box(value: null);
         value.Type.Should().BeNull();
         Assert.Throws<InvalidCastException>(() => value.As<object>());
     }

@@ -269,6 +269,7 @@ public class TextWriterExtensionsTests
     {
         (Type? ExceptionType, long StreamLength) expected =
             WriteToDisposedStreamWriter("Value: 42", formatted: false);
+
         (Type? ExceptionType, long StreamLength) actual =
             WriteToDisposedStreamWriter("Value: 42", formatted: true);
 
@@ -280,6 +281,7 @@ public class TextWriterExtensionsTests
     {
         (Type? ExceptionType, long StreamLength) expected =
             WriteToDisposedStreamWriter(string.Empty, formatted: false);
+
         (Type? ExceptionType, long StreamLength) actual =
             WriteToDisposedStreamWriter(string.Empty, formatted: true);
 
@@ -291,6 +293,7 @@ public class TextWriterExtensionsTests
     {
         (Type? ExceptionType, int FlushCount, string Content) expected =
             WriteToAutoFlushStreamWriter("Value: 42", formatted: false, throwOnFlush: false);
+
         (Type? ExceptionType, int FlushCount, string Content) actual =
             WriteToAutoFlushStreamWriter("Value: 42", formatted: true, throwOnFlush: false);
 
@@ -302,6 +305,7 @@ public class TextWriterExtensionsTests
     {
         (Type? ExceptionType, int FlushCount, string Content) expected =
             WriteToAutoFlushStreamWriter("Value: 42", formatted: false, throwOnFlush: true);
+
         (Type? ExceptionType, int FlushCount, string Content) actual =
             WriteToAutoFlushStreamWriter("Value: 42", formatted: true, throwOnFlush: true);
 
@@ -355,6 +359,7 @@ public class TextWriterExtensionsTests
             new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
             1024,
             leaveOpen: true);
+
         try
         {
             writer.AutoFlush = true;

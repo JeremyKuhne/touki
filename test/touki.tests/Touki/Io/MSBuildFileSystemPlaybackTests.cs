@@ -12,7 +12,7 @@ public class MSBuildFileSystemPlaybackTests
         string? directory = AppContext.BaseDirectory;
         while (directory is not null)
         {
-            if (System.IO.File.Exists(System.IO.Path.Combine(directory, "touki.slnx")))
+            if (System.IO.File.Exists(Path.Join(directory, "touki.slnx")))
             {
                 return directory;
             }
@@ -85,6 +85,6 @@ public class MSBuildFileSystemPlaybackTests
     public void GetFiles_NoExcludes_DiskAndPlaybackMatch()
     {
         string root = LocateRepoRoot();
-        AssertDiskMatchesPlayback(System.IO.Path.Combine(root, "touki"), "**/*.cs", excludes: null);
+        AssertDiskMatchesPlayback(Path.Join(root, "touki"), "**/*.cs", excludes: null);
     }
 }

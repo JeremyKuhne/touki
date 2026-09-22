@@ -68,43 +68,43 @@ public class MSBuildGeneratedResourceWrapperPerf
 
     private static int ReadBclProperties() =>
         BclResources.AbortingBuild.Length
-        + BclResources.BuildCheck_BC0106_MessageFmt.Length
-        + BclResources.ConflictingValuesOfMSBuildToolsPath.Length
-        + BclResources.IllFormedPropertyCloseParenthesisInCondition.Length
-        + BclResources.OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove.Length
-        + BclResources.ProjectImportSkippedExpressionEvaluatedToEmpty.Length
-        + BclResources.SdkEnvironmentVariableAlreadySetBySdk.Length
-        + BclResources.UsingDifferentToolsVersionFromProjectFile.Length;
+            + BclResources.BuildCheck_BC0106_MessageFmt.Length
+            + BclResources.ConflictingValuesOfMSBuildToolsPath.Length
+            + BclResources.IllFormedPropertyCloseParenthesisInCondition.Length
+            + BclResources.OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove.Length
+            + BclResources.ProjectImportSkippedExpressionEvaluatedToEmpty.Length
+            + BclResources.SdkEnvironmentVariableAlreadySetBySdk.Length
+            + BclResources.UsingDifferentToolsVersionFromProjectFile.Length;
 
     private static int ReadToukiProperties() =>
         ToukiResources.AbortingBuild.Length
-        + ToukiResources.BuildCheck_BC0106_MessageFmt.Length
-        + ToukiResources.ConflictingValuesOfMSBuildToolsPath.Length
-        + ToukiResources.IllFormedPropertyCloseParenthesisInCondition.Length
-        + ToukiResources.OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove.Length
-        + ToukiResources.ProjectImportSkippedExpressionEvaluatedToEmpty.Length
-        + ToukiResources.SdkEnvironmentVariableAlreadySetBySdk.Length
-        + ToukiResources.UsingDifferentToolsVersionFromProjectFile.Length;
+            + ToukiResources.BuildCheck_BC0106_MessageFmt.Length
+            + ToukiResources.ConflictingValuesOfMSBuildToolsPath.Length
+            + ToukiResources.IllFormedPropertyCloseParenthesisInCondition.Length
+            + ToukiResources.OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove.Length
+            + ToukiResources.ProjectImportSkippedExpressionEvaluatedToEmpty.Length
+            + ToukiResources.SdkEnvironmentVariableAlreadySetBySdk.Length
+            + ToukiResources.UsingDifferentToolsVersionFromProjectFile.Length;
 
     private static int ReadCachedToukiProperties() =>
         CachedToukiResources.AbortingBuild.Length
-        + CachedToukiResources.BuildCheck_BC0106_MessageFmt.Length
-        + CachedToukiResources.ConflictingValuesOfMSBuildToolsPath.Length
-        + CachedToukiResources.IllFormedPropertyCloseParenthesisInCondition.Length
-        + CachedToukiResources.OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove.Length
-        + CachedToukiResources.ProjectImportSkippedExpressionEvaluatedToEmpty.Length
-        + CachedToukiResources.SdkEnvironmentVariableAlreadySetBySdk.Length
-        + CachedToukiResources.UsingDifferentToolsVersionFromProjectFile.Length;
+            + CachedToukiResources.BuildCheck_BC0106_MessageFmt.Length
+            + CachedToukiResources.ConflictingValuesOfMSBuildToolsPath.Length
+            + CachedToukiResources.IllFormedPropertyCloseParenthesisInCondition.Length
+            + CachedToukiResources.OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove.Length
+            + CachedToukiResources.ProjectImportSkippedExpressionEvaluatedToEmpty.Length
+            + CachedToukiResources.SdkEnvironmentVariableAlreadySetBySdk.Length
+            + CachedToukiResources.UsingDifferentToolsVersionFromProjectFile.Length;
 
     private static int ReadCompactCachedToukiProperties() =>
         CompactCachedToukiResources.AbortingBuild.Length
-        + CompactCachedToukiResources.BuildCheck_BC0106_MessageFmt.Length
-        + CompactCachedToukiResources.ConflictingValuesOfMSBuildToolsPath.Length
-        + CompactCachedToukiResources.IllFormedPropertyCloseParenthesisInCondition.Length
-        + CompactCachedToukiResources.OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove.Length
-        + CompactCachedToukiResources.ProjectImportSkippedExpressionEvaluatedToEmpty.Length
-        + CompactCachedToukiResources.SdkEnvironmentVariableAlreadySetBySdk.Length
-        + CompactCachedToukiResources.UsingDifferentToolsVersionFromProjectFile.Length;
+            + CompactCachedToukiResources.BuildCheck_BC0106_MessageFmt.Length
+            + CompactCachedToukiResources.ConflictingValuesOfMSBuildToolsPath.Length
+            + CompactCachedToukiResources.IllFormedPropertyCloseParenthesisInCondition.Length
+            + CompactCachedToukiResources.OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove.Length
+            + CompactCachedToukiResources.ProjectImportSkippedExpressionEvaluatedToEmpty.Length
+            + CompactCachedToukiResources.SdkEnvironmentVariableAlreadySetBySdk.Length
+            + CompactCachedToukiResources.UsingDifferentToolsVersionFromProjectFile.Length;
 
     private static class BclResources
     {

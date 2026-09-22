@@ -5,7 +5,7 @@
 namespace Touki;
 
 [TestClass]
-public unsafe class InterpolatedStringHandlerTests
+public class InterpolatedStringHandlerTests
 {
     [TestMethod]
     public void MinimalInteropolateStringHandler_BasicFunctionality()

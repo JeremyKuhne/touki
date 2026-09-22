@@ -22,22 +22,30 @@ namespace Touki.Io.Globbing;
 ///  <para>
 ///   Flag mapping between <c>tst-fnmatch.input</c> and touki:
 ///   <list type="bullet">
-///    <item><description>
-///     No flag and <c>NOESCAPE</c> rows -&gt; <see cref="GlobDialect.Posix"/>.
-///     Because <c>fnmatch</c> without <c>FNM_PERIOD</c> matches a leading
-///     <c>.</c>, those rows pass <see cref="GlobOptions.MatchLeadingDot"/>;
-///     touki's <see cref="GlobDialect.Posix"/> defaults to "leading dot must
-///     be literal" (FNM_PERIOD on).
-///    </description></item>
-///    <item><description>
-///     <c>PATHNAME</c> rows -&gt; <see cref="GlobDialect.PosixPath"/>.
-///    </description></item>
-///    <item><description>
-///     <c>PERIOD</c> rows -&gt; the dialect's default (no extra option).
-///    </description></item>
-///    <item><description>
-///     <c>NOESCAPE</c> rows -&gt; <see cref="GlobOptions.NoEscape"/>.
-///    </description></item>
+///    <item>
+///     <description>
+///      No flag and <c>NOESCAPE</c> rows -&gt; <see cref="GlobDialect.Posix"/>.
+///      Because <c>fnmatch</c> without <c>FNM_PERIOD</c> matches a leading
+///      <c>.</c>, those rows pass <see cref="GlobOptions.MatchLeadingDot"/>;
+///      touki's <see cref="GlobDialect.Posix"/> defaults to "leading dot must
+///      be literal" (FNM_PERIOD on).
+///     </description>
+///    </item>
+///    <item>
+///     <description>
+///      <c>PATHNAME</c> rows -&gt; <see cref="GlobDialect.PosixPath"/>.
+///     </description>
+///    </item>
+///    <item>
+///     <description>
+///      <c>PERIOD</c> rows -&gt; the dialect's default (no extra option).
+///     </description>
+///    </item>
+///    <item>
+///     <description>
+///      <c>NOESCAPE</c> rows -&gt; <see cref="GlobOptions.NoEscape"/>.
+///     </description>
+///    </item>
 ///   </list>
 ///  </para>
 ///  <para>

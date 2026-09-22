@@ -69,7 +69,7 @@ public class ValueUnionTests
     [TestMethod]
     public void Match_Bool_UnwrapsContents()
     {
-        Value value = Value.Create(true);
+        Value value = Value.Create(value: true);
         (value is bool matched && matched).Should().BeTrue();
     }
 
@@ -86,7 +86,7 @@ public class ValueUnionTests
     {
         Describe(Value.Create(42)).Should().Be("int:42");
         Describe(Value.Create("hi")).Should().Be("string:hi");
-        Describe(Value.Create(true)).Should().Be("bool:True");
+        Describe(Value.Create(value: true)).Should().Be("bool:True");
 
         static string Describe(Value value) => value switch
         {

@@ -31,7 +31,7 @@ public class AddLiteralArgumentNameCodeFixTests
             source,
             RequireNamedArgumentsForLiteralsAnalyzer.DiagnosticId,
             options,
-            s_enabled).ConfigureAwait(false);
+            s_enabled).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -45,9 +45,10 @@ public class AddLiteralArgumentNameCodeFixTests
                 void Use() => Target(true);
             }
             """;
+
         string expected = source.Replace("Target(true)", "Target(enabled: true)");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -64,9 +65,10 @@ public class AddLiteralArgumentNameCodeFixTests
                     /* keep */ true);
             }
             """;
+
         string expected = source.Replace("/* keep */ true", "/* keep */ enabled: true");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -82,9 +84,10 @@ public class AddLiteralArgumentNameCodeFixTests
                 void Use() => Target(false);
             }
             """;
+
         string expected = source.Replace("Target(false)", "Target(@event: false)");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -100,9 +103,10 @@ public class AddLiteralArgumentNameCodeFixTests
                 void Use() => Target(42);
             }
             """;
+
         string expected = source.Replace("Target(42)", "Target(count: 42)");
 
-        string fixedSource = await FixAsync(source, "integer").ConfigureAwait(false);
+        string fixedSource = await FixAsync(source, "integer").ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -121,9 +125,10 @@ public class AddLiteralArgumentNameCodeFixTests
             [Flag(true)]
             class Sample { }
             """;
+
         string expected = source.Replace("Flag(true)", "Flag(enabled: true)");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -147,7 +152,7 @@ public class AddLiteralArgumentNameCodeFixTests
             RequireNamedArgumentsForLiteralsAnalyzer.DiagnosticId,
             fixAll: false,
             diagnosticOptions: s_enabled,
-            parseOptions: new CSharpParseOptions(LanguageVersion.CSharp7_1)).ConfigureAwait(false);
+            parseOptions: new CSharpParseOptions(LanguageVersion.CSharp7_1)).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(1);
         result.CodeFixActionOffered.Should().BeFalse();
@@ -174,7 +179,7 @@ public class AddLiteralArgumentNameCodeFixTests
             [("Test.cs", "Test.cs", source)],
             RequireNamedArgumentsForLiteralsAnalyzer.DiagnosticId,
             fixAll: false,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(1);
         result.CodeFixActionOffered.Should().BeFalse();
@@ -199,7 +204,7 @@ public class AddLiteralArgumentNameCodeFixTests
             RequireNamedArgumentsForLiteralsAnalyzer.DiagnosticId,
             fixAll: false,
             diagnosticOptions: s_enabled,
-            parseOptions: new CSharpParseOptions(LanguageVersion.CSharp3)).ConfigureAwait(false);
+            parseOptions: new CSharpParseOptions(LanguageVersion.CSharp3)).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(1);
         result.CodeFixActionOffered.Should().BeFalse();
@@ -224,7 +229,7 @@ public class AddLiteralArgumentNameCodeFixTests
             RequireNamedArgumentsForLiteralsAnalyzer.DiagnosticId,
             fixAll: false,
             diagnosticOptions: s_enabled,
-            addLinkedProject: true).ConfigureAwait(false);
+            addLinkedProject: true).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CodeFixActionOffered.Should().BeFalse();
@@ -248,7 +253,7 @@ public class AddLiteralArgumentNameCodeFixTests
             [("Test.cs", "Test.cs", source)],
             RequireNamedArgumentsForLiteralsAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -268,6 +273,7 @@ public class AddLiteralArgumentNameCodeFixTests
                 void Use() => Target(true);
             }
             """;
+
         const string suffixSource = """
             class Suffix
             {
@@ -288,14 +294,16 @@ public class AddLiteralArgumentNameCodeFixTests
             fixAll: true,
             diagnosticOptions: s_enabled,
             fixAllScope: FixAllScope.Project,
-            parseOptions: new CSharpParseOptions(LanguageVersion.CSharp7_1)).ConfigureAwait(false);
+            parseOptions: new CSharpParseOptions(LanguageVersion.CSharp7_1)).ConfigureAwait(continueOnCapturedContext: false);
 
         result.CompilerErrors.Should().BeEmpty();
         result.InitialAnalyzerDiagnosticCount.Should().Be(3);
         result.Documents.Single(document => document.Name == "Trigger.cs").Source
             .Should().Contain("Target(enabled: true)");
+
         result.Documents.Single(document => document.Name == "Suffix.cs").Source
             .Should().Contain("Target(enabled: true, visible: false)");
+
         result.AnalyzerDiagnostics.Should().BeEmpty();
     }
 
@@ -310,6 +318,7 @@ public class AddLiteralArgumentNameCodeFixTests
             ("First.cs", "First.cs", "partial class Sample { void First(bool enabled) { } void A() => First(true); }"),
             ("Second.cs", "Second.cs", "partial class Sample { void Second(bool enabled) { } void B() => Second(false); }")
         ];
+
         (string Name, string FilePath, string Source)[] additionalProjectSources =
         [
             ("Additional.cs", "Z-Additional.cs", "class Other { void Target(bool enabled) { } void Use() => Target(true); }")
@@ -323,7 +332,7 @@ public class AddLiteralArgumentNameCodeFixTests
             fixAll: true,
             diagnosticOptions: s_enabled,
             fixAllScope: scope,
-            additionalProjectSources: additionalProjectSources).ConfigureAwait(false);
+            additionalProjectSources: additionalProjectSources).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -338,13 +347,16 @@ public class AddLiteralArgumentNameCodeFixTests
             case FixAllScope.Project:
                 result.Documents.Single(document => document.Name == "Second.cs").Source
                     .Should().Contain("Second(enabled: false)");
+
                 result.AnalyzerDiagnostics.Should().ContainSingle();
                 break;
             case FixAllScope.Solution:
                 result.Documents.Single(document => document.Name == "Second.cs").Source
                     .Should().Contain("Second(enabled: false)");
+
                 result.Documents.Single(document => document.Name == "Additional.cs").Source
                     .Should().Contain("Target(enabled: true)");
+
                 result.AnalyzerDiagnostics.Should().BeEmpty();
                 break;
         }
@@ -363,9 +375,9 @@ public class AddLiteralArgumentNameCodeFixTests
             RequireNamedArgumentsForLiteralsAnalyzer.DiagnosticId,
             fixAll: true,
             diagnosticOptions: s_enabled,
-            fixAllCancellationToken: cancellation.Token).ConfigureAwait(false);
+            fixAllCancellationToken: cancellation.Token).ConfigureAwait(continueOnCapturedContext: false);
 
-        await action.Should().ThrowAsync<OperationCanceledException>().ConfigureAwait(false);
+        await action.Should().ThrowAsync<OperationCanceledException>().ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -383,14 +395,16 @@ public class AddLiteralArgumentNameCodeFixTests
             diagnosticOptions: s_enabled,
             fixAllScope: FixAllScope.Solution,
             addLinkedProject: true,
-            additionalProjectSources: [("Ordinary.cs", "A-Ordinary.cs", ordinarySource)]).ConfigureAwait(false);
+            additionalProjectSources: [("Ordinary.cs", "A-Ordinary.cs", ordinarySource)]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.CompilerErrors.Should().BeEmpty();
         result.InitialAnalyzerDiagnosticCount.Should().Be(3);
         result.Documents.Where(document => document.Name == "Shared.cs")
             .Should().OnlyContain(document => document.Source == linkedSource);
+
         result.Documents.Single(document => document.Name == "Ordinary.cs").Source
             .Should().Contain("Target(enabled: false)");
+
         result.AnalyzerDiagnostics.Should().HaveCount(2);
     }
 }

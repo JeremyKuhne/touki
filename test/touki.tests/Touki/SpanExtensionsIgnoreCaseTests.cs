@@ -149,7 +149,7 @@ public class SpanExtensionsIgnoreCaseTests
     [TestMethod]
     public void EqualsOrdinalIgnoreCase_NullVsEmpty_Equal() =>
         // ReadOnlySpan<char>.Empty equals "".AsSpan() under all comparisons.
-        "".AsSpan().EqualsOrdinalIgnoreCase(default).Should().BeTrue();
+        "".AsSpan().EqualsOrdinalIgnoreCase(span2: default).Should().BeTrue();
 
     // -- EqualsAsciiLetterIgnoreCase / StartsWith / EndsWith (POSIX-style fold) --------
 

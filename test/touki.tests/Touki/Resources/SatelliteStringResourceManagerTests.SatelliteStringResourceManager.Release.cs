@@ -14,6 +14,7 @@ public partial class SatelliteStringResourceManagerTests
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromRuntimeSatellites(
             NeutralBaseName(),
             s_assembly);
+
         manager.GetString("Greeting", CultureInfo.InvariantCulture).Should().Be("Hello");
         StringResourceManager neutralResources = manager.TestAccessor.Dynamic._neutralResources;
         ((object?)neutralResources.TestAccessor.Dynamic._cache).Should().NotBeNull();
@@ -30,6 +31,7 @@ public partial class SatelliteStringResourceManagerTests
                 succeedingReader,
                 StringResourceManagerOptions.None))
         };
+
         manager.TestAccessor.Dynamic._sourceTables = sourceTables;
 
         Action action = manager.ReleaseAllResources;

@@ -17,7 +17,7 @@ public class StringSpanTests
     [TestMethod]
     public void Constructor_NullString_IsEmpty()
     {
-        StringSpan span = new((string?)null);
+        StringSpan span = new(value: (string?)null);
         span.IsEmpty.Should().BeTrue();
     }
 
@@ -108,7 +108,7 @@ public class StringSpanTests
     [TestMethod]
     public void ToString_FromNullString_ReturnsEmptyString()
     {
-        StringSpan span = new((string?)null);
+        StringSpan span = new(value: (string?)null);
         span.ToString().Should().BeSameAs(string.Empty);
     }
 
@@ -130,7 +130,7 @@ public class StringSpanTests
     [TestMethod]
     public void ToStringOrNull_FromNullString_ReturnsNull()
     {
-        StringSpan span = new((string?)null);
+        StringSpan span = new(value: (string?)null);
         span.ToStringOrNull().Should().BeNull();
     }
 

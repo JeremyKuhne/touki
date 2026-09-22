@@ -52,7 +52,7 @@ public class TypeExtensionsTests
     [TestMethod]
     public void IsAssignableTo_NullTargetType_ReturnsFalse()
     {
-        typeof(string).IsAssignableTo(null).Should().BeFalse();
+        typeof(string).IsAssignableTo(targetType: null).Should().BeFalse();
     }
 
     [TestMethod]

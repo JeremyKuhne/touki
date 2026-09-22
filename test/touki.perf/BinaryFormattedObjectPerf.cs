@@ -83,7 +83,7 @@ public class BinaryFormattedObjectPerf
     public void Setup()
     {
 #if NET
-        AppContext.SetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", true);
+        AppContext.SetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", isEnabled: true);
 #endif
 #if BINARYFORMAT_UPSTREAM
         System.Reflection.Assembly upstreamAssembly = typeof(UpstreamBinaryFormattedObject).Assembly;
@@ -125,6 +125,7 @@ public class BinaryFormattedObjectPerf
         ValidateRepeatedDeserialization(
             DeserializeWithBinaryFormatterForValidation(),
             DeserializeWithBinaryFormatterForValidation());
+
         ValidateRepeatedDeserialization(
             DeserializeWithBinaryFormattedObjectForValidation(),
             DeserializeWithBinaryFormattedObjectForValidation());
@@ -250,8 +251,8 @@ public class BinaryFormattedObjectPerf
         }
     }
 
-    private object CreatePayload()
-        => Scenario switch
+    private object CreatePayload() =>
+        Scenario switch
         {
             "Int32Array_1K" => CreateInt32Array(PrimitiveArrayLength),
             "StringList_128" => CreateStringList(),
@@ -311,8 +312,8 @@ public class BinaryFormattedObjectPerf
         return values;
     }
 
-    private static BinaryFormattedObjectCustomPayload CreateCustomObject()
-        => new()
+    private static BinaryFormattedObjectCustomPayload CreateCustomObject() =>
+        new()
         {
             Id = 42,
             Name = "representative custom payload",
@@ -515,8 +516,8 @@ public class BinaryFormattedObjectPerf
         return true;
     }
 
-    private bool AreResultsIndependent(object first, object second)
-        => Scenario switch
+    private bool AreResultsIndependent(object first, object second) =>
+        Scenario switch
         {
             "Int32Array_1K" => !ReferenceEquals(first, second),
             "StringList_128" => first is List<string> firstValues

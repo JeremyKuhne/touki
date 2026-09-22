@@ -15,10 +15,10 @@ public class NamingStyleAnalyzerTests
 
     private static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(
         string source,
-        Dictionary<string, string>? options = null)
-        => await AnalyzerTestHarness
-            .GetDiagnosticsAsync(new NamingStyleAnalyzer(), source, options, fileName: null, s_enabled)
-            .ConfigureAwait(false);
+        Dictionary<string, string>? options = null) =>
+            await AnalyzerTestHarness
+                .GetDiagnosticsAsync(new NamingStyleAnalyzer(), source, options, fileName: null, s_enabled)
+                .ConfigureAwait(continueOnCapturedContext: false);
 
     /// <summary>
     ///  A private-field rule, matching the shape a project would write to get <c>_camelCase</c> fields.
@@ -46,7 +46,7 @@ public class NamingStyleAnalyzerTests
                 private int _value;
             }
             """,
-            PrivateFieldRule()).ConfigureAwait(false);
+            PrivateFieldRule()).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Location.GetLineSpan().StartLinePosition.Line.Should().Be(0);
@@ -62,7 +62,7 @@ public class NamingStyleAnalyzerTests
                 private int value;
             }
             """,
-            PrivateFieldRule()).ConfigureAwait(false);
+            PrivateFieldRule()).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("Missing prefix: '_'");
@@ -71,7 +71,7 @@ public class NamingStyleAnalyzerTests
     [TestMethod]
     public async Task Analyze_NoConfiguration_InterfaceWithoutIPrefix_Reports()
     {
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("interface Thing { }").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("interface Thing { }").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("Missing prefix: 'I'");
@@ -81,7 +81,7 @@ public class NamingStyleAnalyzerTests
     public async Task Analyze_NoConfiguration_TypeParameterWithoutTPrefix_Reports()
     {
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzeAsync("class Thing<Item> { }").ConfigureAwait(false);
+            await AnalyzeAsync("class Thing<Item> { }").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("Missing prefix: 'T'");
@@ -98,7 +98,7 @@ public class NamingStyleAnalyzerTests
                 public int Value { get; set; }
                 public void Work() { }
             }
-            """).ConfigureAwait(false);
+            """).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -141,7 +141,7 @@ public class NamingStyleAnalyzerTests
                 private static int values;
             }
             """,
-            ThreadStaticAndStaticRules()).ConfigureAwait(false);
+            ThreadStaticAndStaticRules()).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("Missing prefix: 't_'");
@@ -158,7 +158,7 @@ public class NamingStyleAnalyzerTests
                 private static int t_values;
             }
             """,
-            ThreadStaticAndStaticRules()).ConfigureAwait(false);
+            ThreadStaticAndStaticRules()).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -173,7 +173,7 @@ public class NamingStyleAnalyzerTests
                 private static int values;
             }
             """,
-            ThreadStaticAndStaticRules()).ConfigureAwait(false);
+            ThreadStaticAndStaticRules()).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("Missing prefix: 's_'");
@@ -193,7 +193,7 @@ public class NamingStyleAnalyzerTests
                 private static int values;
             }
             """,
-            options).ConfigureAwait(false);
+            options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("Missing prefix: 't_'");
@@ -219,7 +219,7 @@ public class NamingStyleAnalyzerTests
                 private static int values;
             }
             """,
-            options).ConfigureAwait(false);
+            options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("Missing prefix: 't_'");
@@ -247,7 +247,7 @@ public class NamingStyleAnalyzerTests
                 private static int values;
             }
             """,
-            options).ConfigureAwait(false);
+            options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("Missing prefix: 't_'");
@@ -273,7 +273,7 @@ public class NamingStyleAnalyzerTests
                 private static int values;
             }
             """,
-            options).ConfigureAwait(false);
+            options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("Missing prefix: 's_'");
@@ -292,7 +292,7 @@ public class NamingStyleAnalyzerTests
                 private const int MaxValue = 1;
             }
             """,
-            ThreadStaticAndStaticRules()).ConfigureAwait(false);
+            ThreadStaticAndStaticRules()).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -313,7 +313,7 @@ public class NamingStyleAnalyzerTests
                 private int other;
             }
             """,
-            options).ConfigureAwait(false);
+            options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Location.GetLineSpan().StartLinePosition.Line.Should().Be(3);
@@ -345,7 +345,7 @@ public class NamingStyleAnalyzerTests
                 private event System.Action changed;
             }
             """,
-            options).ConfigureAwait(false);
+            options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
     }
@@ -361,7 +361,7 @@ public class NamingStyleAnalyzerTests
             {
                 public void Do_Work() { }
             }
-            """).ConfigureAwait(false);
+            """).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("must not contain word separators");
@@ -391,7 +391,7 @@ public class NamingStyleAnalyzerTests
                 private const int MAX_VALUE = 2;
             }
             """,
-            options).ConfigureAwait(false);
+            options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -409,7 +409,7 @@ public class NamingStyleAnalyzerTests
                 private int value;
             }
             """,
-            options).ConfigureAwait(false);
+            options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -423,7 +423,7 @@ public class NamingStyleAnalyzerTests
             {
                 public int this[int index] => index;
             }
-            """).ConfigureAwait(false);
+            """).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -442,7 +442,7 @@ public class NamingStyleAnalyzerTests
             {
                 public override void doWork() { }
             }
-            """).ConfigureAwait(false);
+            """).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Location.GetLineSpan().StartLinePosition.Line.Should().Be(2);
@@ -462,7 +462,7 @@ public class NamingStyleAnalyzerTests
             {
                 void IThing.doWork() { }
             }
-            """).ConfigureAwait(false);
+            """).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Location.GetLineSpan().StartLinePosition.Line.Should().Be(2);
@@ -478,7 +478,7 @@ public class NamingStyleAnalyzerTests
                 private int value;
             }
             """,
-            PrivateFieldRule()).ConfigureAwait(false);
+            PrivateFieldRule()).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Properties["SuggestedName"].Should().Be("_value");
@@ -505,7 +505,7 @@ public class NamingStyleAnalyzerTests
                 ["touki_naming_rule.local_functions.style"] = "pascal_case_style",
                 ["touki_naming_symbols.local_functions.applicable_kinds"] = "local_function",
                 ["touki_naming_style.pascal_case_style.capitalization"] = "pascal_case"
-            }).ConfigureAwait(false);
+            }).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("These words must begin with upper case characters: doMore");
@@ -521,7 +521,7 @@ public class NamingStyleAnalyzerTests
                 ["touki_naming_rule.broken.severity"] = "warning",
                 ["touki_naming_rule.broken.symbols"] = "missing_group",
                 ["touki_naming_rule.broken.style"] = "missing_style"
-            }).ConfigureAwait(false);
+            }).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("Missing prefix: 'I'");
@@ -544,7 +544,7 @@ public class NamingStyleAnalyzerTests
                 public void Work() { }
             }
             """,
-            options).ConfigureAwait(false);
+            options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -562,7 +562,7 @@ public class NamingStyleAnalyzerTests
                 private int value;
             }
             """,
-            options).ConfigureAwait(false);
+            options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -572,7 +572,7 @@ public class NamingStyleAnalyzerTests
     {
         // "_" is reported under the built-in PascalCase type rule, but every candidate MakeCompliant produces
         // is still "_", which the rule would report again. A suggestion the fix cannot clear is worse than none.
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("class _ { }").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("class _ { }").ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Which;
         diagnostic.Properties.ContainsKey("SuggestedName").Should().BeFalse();
@@ -593,7 +593,7 @@ public class NamingStyleAnalyzerTests
                     private static int {{name}};
                 }
                 """,
-                options).ConfigureAwait(false);
+                options).ConfigureAwait(continueOnCapturedContext: false);
 
             foreach (Diagnostic diagnostic in diagnostics)
             {
@@ -630,7 +630,7 @@ public class NamingStyleAnalyzerTests
                 private const int s_max = 1;
             }
             """,
-            options).ConfigureAwait(false);
+            options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Properties["SuggestedName"].Should().Be("SMAX");
@@ -657,7 +657,7 @@ public class NamingStyleAnalyzerTests
                 private const int maxValue = 1;
             }
             """,
-            options).ConfigureAwait(false);
+            options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Properties["SuggestedName"].Should().Be("MAX_VALUE");

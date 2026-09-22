@@ -30,7 +30,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             source,
             options,
             diagnosticOptions: s_enabled,
-            expectedCompilerDiagnosticIds: expectedCompilerDiagnosticIds).ConfigureAwait(false);
+            expectedCompilerDiagnosticIds: expectedCompilerDiagnosticIds).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -45,7 +45,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(4);
         diagnostics.Select(diagnostic => diagnostic.GetMessage()).Should().Equal(
@@ -67,7 +67,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -87,7 +87,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -106,7 +106,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            "integer, floating_point, character, string").ConfigureAwait(false);
+            "integer, floating_point, character, string").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(4);
         diagnostics.Select(diagnostic => diagnostic.GetMessage()).Should().Equal(
@@ -128,7 +128,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "integer").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "integer").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(3);
         diagnostics.Select(diagnostic => diagnostic.GetMessage()).Should().OnlyContain(
@@ -147,7 +147,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "floating_point").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "floating_point").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(3);
         diagnostics.Select(diagnostic => diagnostic.GetMessage()).Should().OnlyContain(
@@ -166,7 +166,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, " BoOlEaN ").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, " BoOlEaN ").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
     }
@@ -206,7 +206,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            "integer, floating_point, character, string, boolean, null, default").ConfigureAwait(false);
+            "integer, floating_point, character, string, boolean, null, default").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(9);
     }
@@ -223,7 +223,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
     }
@@ -242,7 +242,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "integer").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "integer").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
         diagnostics.Select(diagnostic => diagnostic.GetMessage()).Should().NotContain(
@@ -263,7 +263,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            "integer, string, boolean").ConfigureAwait(false);
+            "integer, string, boolean").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -280,7 +280,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -299,7 +299,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -316,7 +316,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "integer, typo").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "integer, typo").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("enabled:");
@@ -333,9 +333,10 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
                 void Use() => Target(true, 42);
             }
             """;
+
         string literals = string.Join(",", Enumerable.Repeat("integer", 4096));
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, literals).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, literals).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("count:");
@@ -353,7 +354,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         Location location = diagnostics[0].Location;
@@ -373,7 +374,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -400,7 +401,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "string").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "string").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("handler:");
@@ -419,7 +420,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "string").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "string").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("text:");
@@ -443,7 +444,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "integer").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "integer").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -462,7 +463,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            expectedCompilerDiagnosticIds: ["CS1503"]).ConfigureAwait(false);
+            expectedCompilerDiagnosticIds: ["CS1503"]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -481,7 +482,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            expectedCompilerDiagnosticIds: ["CS0030"]).ConfigureAwait(false);
+            expectedCompilerDiagnosticIds: ["CS0030"]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -501,7 +502,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
             "integer",
-            expectedCompilerDiagnosticIds: ["CS0221"]).ConfigureAwait(false);
+            expectedCompilerDiagnosticIds: ["CS0221"]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -512,6 +513,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
         string invalidFields = string.Join(
             Environment.NewLine,
             Enumerable.Range(0, 256).Select(index => $"    MissingType{index} Field{index};"));
+
         string source = $$"""
             class Sample
             {
@@ -524,7 +526,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            expectedCompilerDiagnosticIds: Enumerable.Repeat("CS0246", 256).ToArray()).ConfigureAwait(false);
+            expectedCompilerDiagnosticIds: Enumerable.Repeat("CS0246", 256).ToArray()).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("enabled:");
@@ -548,7 +550,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             class Named { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("enabled:");
@@ -581,7 +583,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(5);
         diagnostics.Select(diagnostic => diagnostic.GetMessage()).Should().OnlyContain(
@@ -611,6 +613,7 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
                 """,
                 "Integer.cs")
         ];
+
         Dictionary<string, IReadOnlyDictionary<string, string>> optionsByFile = new()
         {
             ["Boolean.cs"] = new Dictionary<string, string>
@@ -627,12 +630,13 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             new RequireNamedArgumentsForLiteralsAnalyzer(),
             sources,
             diagnosticOptions: s_enabled,
-            optionsByFile: optionsByFile).ConfigureAwait(false);
+            optionsByFile: optionsByFile).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
         Dictionary<string, string> messagesByFile = diagnostics.ToDictionary(
             diagnostic => diagnostic.Location.GetRequiredSourceTree().FilePath,
             diagnostic => diagnostic.GetMessage());
+
         messagesByFile["Boolean.cs"].Should().Contain("enabled:");
         messagesByFile["Integer.cs"].Should().Contain("count:");
     }

@@ -56,7 +56,7 @@ internal static class NativeAotSmoke
         {
             manager = SatelliteStringResourceManager.FromResourcesDirectory(
                 baseName,
-                Path.Combine(AppContext.BaseDirectory, "loose"),
+                Path.Join(AppContext.BaseDirectory, "loose"),
                 assembly);
         }
         else

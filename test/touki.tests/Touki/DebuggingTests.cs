@@ -11,7 +11,7 @@ public class DebuggingTests
     public void Assert_ExpressionNotEvaluated_WhenConditionTrue()
     {
         int value = 0;
-        Debugging.Assert(true, $"Value {++value}");
+        Debugging.Assert(condition: true, $"Value {++value}");
         value.Should().Be(0);
     }
 
@@ -20,7 +20,7 @@ public class DebuggingTests
     public void Assert_Elided_InRelease()
     {
         int value = 0;
-        Debugging.Assert(true, $"Value {++value}");
+        Debugging.Assert(condition: true, $"Value {++value}");
         value.Should().Be(0);
     }
 #endif

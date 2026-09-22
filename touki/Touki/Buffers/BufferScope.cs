@@ -76,7 +76,7 @@ public ref struct BufferScope<T>
     /// </remarks>
     /// <param name="capacity">The minimum number of elements the buffer must hold.</param>
     /// <param name="copy">True to copy the existing elements when new space is allocated.</param>
-    public unsafe void EnsureCapacity(int capacity, bool copy = false)
+    public void EnsureCapacity(int capacity, bool copy = false)
     {
         if (_span.Length >= capacity)
         {

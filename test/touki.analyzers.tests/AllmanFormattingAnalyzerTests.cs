@@ -16,11 +16,11 @@ public partial class AllmanFormattingAnalyzerTests
     private static Task<ImmutableArray<Diagnostic>> AnalyzeAsync(
         string source,
         Dictionary<string, string>? options = null) =>
-        AnalyzerTestHarness.GetDiagnosticsAsync(
-            new AllmanFormattingAnalyzer(),
-            source,
-            options,
-            diagnosticOptions: s_enabled);
+            AnalyzerTestHarness.GetDiagnosticsAsync(
+                new AllmanFormattingAnalyzer(),
+                source,
+                options,
+                diagnosticOptions: s_enabled);
 
     [TestMethod]
     public async Task Analyze_DiagnosticNotExplicitlyEnabled_ReportsNothing()
@@ -29,7 +29,7 @@ public partial class AllmanFormattingAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new AllmanFormattingAnalyzer(),
-            source).ConfigureAwait(false);
+            source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -49,7 +49,7 @@ public partial class AllmanFormattingAnalyzerTests
     public async Task Analyze_MultilineBraceDelimitedConstructWithSameLineOpeningBrace_ReportsDiagnostic(
         string source)
     {
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText()
@@ -61,7 +61,7 @@ public partial class AllmanFormattingAnalyzerTests
     {
         const string source = "class Sample {\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Id.Should().Be(AllmanFormattingAnalyzer.DiagnosticId);
@@ -74,7 +74,7 @@ public partial class AllmanFormattingAnalyzerTests
     {
         const string source = "class Sample { }\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -84,7 +84,7 @@ public partial class AllmanFormattingAnalyzerTests
     {
         const string source = "class Sample\n{\n    string Format(int value) => $\"{value}\";\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -95,7 +95,7 @@ public partial class AllmanFormattingAnalyzerTests
         const string source =
             "class Sample\n{\n    string Format(int value) => $$\"\"\"{{value}}\"\"\";\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -109,7 +109,7 @@ public partial class AllmanFormattingAnalyzerTests
             [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "false"
         };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -119,6 +119,7 @@ public partial class AllmanFormattingAnalyzerTests
     {
         const string source =
             "class Sample\n{\n    string Format() => $\"{new int[] { 1 }}\";\n}\n";
+
         Dictionary<string, string> options = new()
         {
             [AllmanFormattingAnalyzer.MaxLineLengthOption] = "20"
@@ -129,7 +130,7 @@ public partial class AllmanFormattingAnalyzerTests
             source,
             options,
             diagnosticOptions: s_enabled,
-            parseOptions: new CSharpParseOptions(LanguageVersion.CSharp10)).ConfigureAwait(false);
+            parseOptions: new CSharpParseOptions(LanguageVersion.CSharp10)).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -139,6 +140,7 @@ public partial class AllmanFormattingAnalyzerTests
     {
         const string source =
             "class Sample\n{\n    string Format() => $\"{new int[] { 1 }}\";\n}\n";
+
         Dictionary<string, string> options = new()
         {
             [AllmanFormattingAnalyzer.MaxLineLengthOption] = "20"
@@ -149,7 +151,7 @@ public partial class AllmanFormattingAnalyzerTests
             source,
             options,
             diagnosticOptions: s_enabled,
-            parseOptions: new CSharpParseOptions(LanguageVersion.CSharp11)).ConfigureAwait(false);
+            parseOptions: new CSharpParseOptions(LanguageVersion.CSharp11)).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -170,7 +172,7 @@ public partial class AllmanFormattingAnalyzerTests
             new AllmanFormattingAnalyzer(),
             source,
             diagnosticOptions: s_enabled,
-            parseOptions: new CSharpParseOptions(LanguageVersion.Preview)).ConfigureAwait(false);
+            parseOptions: new CSharpParseOptions(LanguageVersion.Preview)).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("{");
@@ -185,7 +187,7 @@ public partial class AllmanFormattingAnalyzerTests
             [AllmanFormattingAnalyzer.MaxLineLengthOption] = "16"
         };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -199,7 +201,7 @@ public partial class AllmanFormattingAnalyzerTests
             [AllmanFormattingAnalyzer.MaxLineLengthOption] = "15"
         };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -214,7 +216,7 @@ public partial class AllmanFormattingAnalyzerTests
             ["max_line_length"] = "15"
         };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -225,7 +227,7 @@ public partial class AllmanFormattingAnalyzerTests
         const string source = "class Sample { }\n";
         Dictionary<string, string> options = new() { ["max_line_length"] = "15" };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -244,7 +246,7 @@ public partial class AllmanFormattingAnalyzerTests
             ["max_line_length"] = "15"
         };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -258,7 +260,7 @@ public partial class AllmanFormattingAnalyzerTests
             [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "invalid"
         };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -273,7 +275,7 @@ public partial class AllmanFormattingAnalyzerTests
             [AllmanFormattingAnalyzer.RequireBlankLineAfterMultilineStatementOption] = "false"
         };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -295,13 +297,14 @@ public partial class AllmanFormattingAnalyzerTests
                 void Use(int value) { }
             }
             """;
+
         Dictionary<string, string> options = new()
         {
             [AllmanFormattingAnalyzer.RequireBlankLineAfterClosingBraceOption] = "false",
             [AllmanFormattingAnalyzer.RequireBlankLineAfterMultilineStatementOption] = "invalid"
         };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -315,7 +318,7 @@ public partial class AllmanFormattingAnalyzerTests
             [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "false"
         };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -333,7 +336,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
@@ -351,7 +354,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -368,12 +371,13 @@ public partial class AllmanFormattingAnalyzerTests
                 void Second() { }
             }
             """;
+
         Dictionary<string, string> options = new()
         {
             [AllmanFormattingAnalyzer.RequireBlankLineAfterClosingBraceOption] = "false"
         };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -396,7 +400,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -422,7 +426,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -449,7 +453,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -471,7 +475,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
@@ -492,7 +496,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
@@ -503,7 +507,7 @@ public partial class AllmanFormattingAnalyzerTests
     {
         const string source = "class Sample\n{\n    void Method()\n    {\n        do { } while (false);\n    }\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -527,7 +531,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
@@ -550,7 +554,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
@@ -571,7 +575,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
@@ -594,7 +598,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
@@ -622,7 +626,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
@@ -649,7 +653,7 @@ public partial class AllmanFormattingAnalyzerTests
             new AllmanFormattingAnalyzer(),
             source,
             diagnosticOptions: s_enabled,
-            parseOptions: new CSharpParseOptions(LanguageVersion.Preview)).ConfigureAwait(false);
+            parseOptions: new CSharpParseOptions(LanguageVersion.Preview)).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
@@ -670,6 +674,7 @@ public partial class AllmanFormattingAnalyzerTests
             #endif
             }
             """;
+
         CSharpParseOptions parseOptions = new(
             LanguageVersion.Preview,
             preprocessorSymbols: ["ACTIVE"]);
@@ -678,7 +683,7 @@ public partial class AllmanFormattingAnalyzerTests
             new AllmanFormattingAnalyzer(),
             source,
             diagnosticOptions: s_enabled,
-            parseOptions: parseOptions).ConfigureAwait(false);
+            parseOptions: parseOptions).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -705,7 +710,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -725,7 +730,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
@@ -751,7 +756,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be(";");
@@ -786,7 +791,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -804,7 +809,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -814,7 +819,7 @@ public partial class AllmanFormattingAnalyzerTests
     {
         const string source = "class Sample\n{\n    int First { get; }\n    int Second { get; }\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -848,7 +853,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -873,7 +878,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
@@ -900,7 +905,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be(";");
@@ -922,7 +927,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -947,7 +952,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -970,7 +975,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText()
@@ -982,22 +987,22 @@ public partial class AllmanFormattingAnalyzerTests
     {
         const string source =
             "class Sample\n"
-            + "{\n"
-            + "    void Method()\n"
-            + "    {\n"
-            + "        int value =\n"
-            + "            GetValue();\n"
-            + "        Use(value);\n"
-            + "    }\n"
-            + "\n"
-            + "    int GetValue() => 0;\n"
-            + "    void Use(int value) { }\n"
-            + "\n"
-            + "    void Later() {\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    void Method()\n"
+                + "    {\n"
+                + "        int value =\n"
+                + "            GetValue();\n"
+                + "        Use(value);\n"
+                + "    }\n"
+                + "\n"
+                + "    int GetValue() => 0;\n"
+                + "    void Use(int value) { }\n"
+                + "\n"
+                + "    void Later() {\n"
+                + "    }\n"
+                + "}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         int expectedStart = source.IndexOf(";\n        Use(value)", StringComparison.Ordinal);
@@ -1021,12 +1026,13 @@ public partial class AllmanFormattingAnalyzerTests
                 void Use(int value) { }
             }
             """;
+
         Dictionary<string, string> options = new()
         {
             [AllmanFormattingAnalyzer.RequireBlankLineAfterMultilineStatementOption] = "false"
         };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1049,7 +1055,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be(";");
@@ -1072,7 +1078,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be(";");
@@ -1094,7 +1100,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1110,7 +1116,7 @@ public partial class AllmanFormattingAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1120,13 +1126,13 @@ public partial class AllmanFormattingAnalyzerTests
     {
         const string source =
             "class Sample\r\n"
-            + "{\r\n"
-            + "    void First() { }\r\n"
-            + "\r\n"
-            + "    void Second() { }\r\n"
-            + "}\r\n";
+                + "{\r\n"
+                + "    void First() { }\r\n"
+                + "\r\n"
+                + "    void Second() { }\r\n"
+                + "}\r\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1136,7 +1142,7 @@ public partial class AllmanFormattingAnalyzerTests
     {
         const string source = "class Sample\n{\n}";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1146,7 +1152,7 @@ public partial class AllmanFormattingAnalyzerTests
     {
         const string source = "// <auto-generated/>\nclass Sample {\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1156,7 +1162,7 @@ public partial class AllmanFormattingAnalyzerTests
     {
         const string source = "class Sample\n{\n#if false\n    if (true) {\n#endif\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1170,7 +1176,7 @@ public partial class AllmanFormattingAnalyzerTests
             new AllmanFormattingAnalyzer(),
             source,
             diagnosticOptions: s_enabled,
-            expectedCompilerDiagnosticIds: ["CS1513"]).ConfigureAwait(false);
+            expectedCompilerDiagnosticIds: ["CS1513"]).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("{");

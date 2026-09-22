@@ -4,8 +4,6 @@
 
 using Touki.Io;
 
-using Path = System.IO.Path;
-
 namespace touki.perf;
 
 /// <summary>
@@ -48,11 +46,12 @@ public class FileSystemMatcherSessionPerf
     [GlobalSetup]
     public void GlobalSetup()
     {
-        _root = Path.Combine(Path.GetTempPath(), "touki-session-perf");
-        _directory = Path.Combine(_root, "src");
+        _root = Path.Join(Path.GetTempPath(), "touki-session-perf");
+        _directory = Path.Join(_root, "src");
         _predicateSession = FileSystemMatcher.Create(_predicate).CreateSession(_root);
         _compositeSession = FileSystemMatcher.CreateExclusionWins(
             [FileSystemMatcher.Create(_predicate)]).CreateSession(_root);
+
         _nativeCompositeEight = CreateNativeComposite(8);
         _nativeCompositeThirtyTwo = CreateNativeComposite(32);
         _pathSession = FileSystemMatcher.CreatePath(_pathPredicate).CreateSession(_root);

@@ -454,9 +454,9 @@ public class SinglyLinkedListTests
     public void List_WithNullValues_HandlesCorrectly()
     {
         SinglyLinkedList<string?> list = new();
-        list.AddFirst(null);
+        list.AddFirst(value: null);
         list.AddLast("test");
-        list.AddLast(null);
+        list.AddLast(value: null);
 
         list.Count.Should().Be(3);
         GetRequiredNode(list.First).Value.Should().BeNull();
@@ -772,8 +772,8 @@ public class SinglyLinkedListTests
         walked[itemCount - 1].Should().Be(itemCount - 1);
     }
 
-    private static SinglyLinkedList<T>.Node GetRequiredNode<T>(SinglyLinkedList<T>.Node? node)
-        => node ?? throw new AssertFailedException("Expected a non-null linked-list node.");
+    private static SinglyLinkedList<T>.Node GetRequiredNode<T>(SinglyLinkedList<T>.Node? node) =>
+        node ?? throw new AssertFailedException("Expected a non-null linked-list node.");
 }
 
 internal static class ListExtensions
@@ -807,6 +807,7 @@ internal static class ListExtensions
         {
             SinglyLinkedList<T>.Node current = enumerator.Current
                 ?? throw new AssertFailedException("Expected a current linked-list node.");
+
             list.Add(current.Value);
         }
 

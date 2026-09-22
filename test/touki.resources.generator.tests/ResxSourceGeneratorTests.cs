@@ -30,6 +30,7 @@ public class ResxSourceGeneratorTests
         result.SingleSource.Should().Contain("private sealed class __ToukiResourceCache");
         result.SingleSource.Should().Contain(
             "private static string GetCachedResourceString(ref string? value, string resourceKey)");
+
         result.SingleSource.Should().Contain("get => GetCachedResourceString(");
         result.SingleSource.Should().Contain("ref s_cache._value0");
         result.SingleSource.Should().Contain("nameof(@Greeting)");
@@ -41,11 +42,14 @@ public class ResxSourceGeneratorTests
     {
         GeneratorTestResult result = GeneratorTestHarness.Run(
             GeneratorTestResource.Selected(SimpleResource));
+
         INamedTypeSymbol type = result.OutputCompilation.GetTypeByMetadataName("Test.Resources.Strings")
             ?? throw new InvalidOperationException("The generated resource type was not found.");
+
         IPropertySymbol property = type.GetMembers("Greeting").OfType<IPropertySymbol>().Single();
         IMethodSymbol getter = property.GetMethod
             ?? throw new InvalidOperationException("The generated property getter was not found.");
+
         IMethodSymbol helper = type.GetMembers("GetCachedResourceString")
             .OfType<IMethodSymbol>()
             .Single(method => method.Parameters.Length == 2);
@@ -64,6 +68,7 @@ public class ResxSourceGeneratorTests
               </data>
             </root>
             """;
+
         Dictionary<string, string> metadata = new(StringComparer.Ordinal)
         {
             ["IncludeDefaultValues"] = "true",
@@ -77,11 +82,12 @@ public class ResxSourceGeneratorTests
         result.CompilerErrors.Should().BeEmpty();
         result.SingleSource.Should().Contain(
             "private static string GetCachedResourceString(ref string? value, string resourceKey, string defaultValue)");
+
         result.SingleSource.Should().Contain("ref s_cache._value0");
         result.SingleSource.Should().Contain("@\"Hello {name}\"");
         result.SingleSource.Should().Contain(
             "global::System.String.Format(global::@Test.@Resources.@Strings.Culture, "
-            + "global::@Test.@Resources.@Strings.@Greeting.Replace(@\"{name}\", @\"{0}\"), @name)");
+                + "global::@Test.@Resources.@Strings.@Greeting.Replace(@\"{name}\", @\"{0}\"), @name)");
     }
 
     [TestMethod]
@@ -92,6 +98,7 @@ public class ResxSourceGeneratorTests
               <data name="Greeting"><value>Hello {name} {0}</value></data>
             </root>
             """;
+
         Dictionary<string, string> metadata = new(StringComparer.Ordinal)
         {
             ["EmitFormatMethods"] = "true"
@@ -115,6 +122,7 @@ public class ResxSourceGeneratorTests
               <data name="Numeric"><value>Hello {{0}}</value></data>
             </root>
             """;
+
         Dictionary<string, string> metadata = new(StringComparer.Ordinal)
         {
             ["EmitFormatMethods"] = "true"
@@ -151,6 +159,7 @@ public class ResxSourceGeneratorTests
             ["ManifestResourceName"] = "Company.Messages.fr",
             ["ToukiResourceFamily"] = "Company.Messages.fr"
         };
+
         GeneratorTestResult result = GeneratorTestHarness.Run(
             GeneratorTestResource.Selected(SimpleResource, metadata: metadata),
             GeneratorTestResource.Sibling(
@@ -204,6 +213,7 @@ public class ResxSourceGeneratorTests
 
         result.GeneratorDiagnostics.Should().ContainSingle()
             .Which.Id.Should().Be("TOUKIRESX0001");
+
         result.CompilerErrors.Should().BeEmpty();
         result.SingleSource.Should().Contain("public static string @Greeting");
         result.SingleSource.Should().NotContain("public static string @Blob");
@@ -225,6 +235,7 @@ public class ResxSourceGeneratorTests
 
         result.GeneratorDiagnostics.Should().ContainSingle()
             .Which.Id.Should().Be("TOUKIRESX0002");
+
         result.GeneratedSources.Should().BeEmpty();
     }
 
@@ -245,6 +256,7 @@ public class ResxSourceGeneratorTests
 
         result.GeneratorDiagnostics.Should().ContainSingle()
             .Which.Id.Should().Be("TOUKIRESX0003");
+
         result.GeneratedSources.Should().BeEmpty();
     }
 
@@ -273,6 +285,7 @@ public class ResxSourceGeneratorTests
 
         result.GeneratorDiagnostics.Should().ContainSingle()
             .Which.Id.Should().Be("TOUKIRESX0003");
+
         result.GeneratedSources.Should().BeEmpty();
     }
 
@@ -298,6 +311,7 @@ public class ResxSourceGeneratorTests
 
         result.GeneratorDiagnostics.Should().ContainSingle()
             .Which.Id.Should().Be("TOUKIRESX0003");
+
         result.GeneratedSources.Should().BeEmpty();
     }
 
@@ -333,6 +347,7 @@ public class ResxSourceGeneratorTests
 
         result.GeneratorDiagnostics.Should().ContainSingle()
             .Which.Id.Should().Be("TOUKIRESX0003");
+
         result.GeneratedSources.Should().BeEmpty();
     }
 
@@ -352,6 +367,7 @@ public class ResxSourceGeneratorTests
 
         result.GeneratorDiagnostics.Should().ContainSingle()
             .Which.Id.Should().Be("TOUKIRESX0003");
+
         result.GeneratedSources.Should().BeEmpty();
     }
 
@@ -362,6 +378,7 @@ public class ResxSourceGeneratorTests
         {
             ["IncludeDefaultValues"] = "true"
         };
+
         GeneratorTestResult result = GeneratorTestHarness.RunNet472(
             GeneratorTestResource.Selected(SimpleResource, metadata: metadata));
 
@@ -450,6 +467,7 @@ public class ResxSourceGeneratorTests
 
         result.GeneratorDiagnostics.Should().ContainSingle()
             .Which.Id.Should().Be("TOUKIRESX0004");
+
         result.CompilerErrors.Should().BeEmpty();
         result.SingleSource.Should().Contain("public static string @Greeting_Text", Exactly.Once());
     }
@@ -473,6 +491,7 @@ public class ResxSourceGeneratorTests
 
         result.GeneratorDiagnostics.Should().ContainSingle()
             .Which.Id.Should().Be("TOUKIRESX0004");
+
         result.CompilerErrors.Should().BeEmpty();
     }
 
@@ -484,6 +503,7 @@ public class ResxSourceGeneratorTests
               <data name="Greeting"><value>Hello {Greeting} from {Culture}</value></data>
             </root>
             """;
+
         Dictionary<string, string> metadata = new(StringComparer.Ordinal)
         {
             ["EmitFormatMethods"] = "true"
@@ -507,6 +527,7 @@ public class ResxSourceGeneratorTests
 
         result.GeneratorDiagnostics.Should().ContainSingle()
             .Which.Id.Should().Be("TOUKIRESX0005");
+
         result.GeneratedSources.Should().BeEmpty();
     }
 
@@ -530,11 +551,13 @@ public class ResxSourceGeneratorTests
             ["ManifestResourceName"] = "Test.Resources.Other",
             ["ToukiResourceFamily"] = "Test.Resources.Other"
         };
+
         GeneratorTestResource changedResource = GeneratorTestResource.Selected(SimpleResource);
         GeneratorTestResource unchangedResource = GeneratorTestResource.Selected(
             SimpleResource,
             path: "Resources/Other.resx",
             metadata: otherMetadata);
+
         const string changedContent = """
             <root>
               <data name="Greeting"><value>Changed</value></data>
@@ -599,10 +622,12 @@ public class ResxSourceGeneratorTests
             "Touki.Resources.Generator." + typeName,
             throwOnError: false)
             ?? throw new InvalidOperationException($"Generator type '{typeName}' was not found.");
+
         System.Reflection.FieldInfo field = type.GetField(
             fieldName,
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
             ?? throw new InvalidOperationException($"Generator field '{fieldName}' was not found.");
+
         object? value = field.GetRawConstantValue();
         return value is int result
             ? result
@@ -614,6 +639,7 @@ public class ResxSourceGeneratorTests
         AttributeData attribute = method.GetAttributes().Single(attribute =>
             attribute.AttributeClass?.ToDisplayString()
                 == "System.Runtime.CompilerServices.MethodImplAttribute");
+
         object? value = attribute.ConstructorArguments.Single().Value;
 
         Convert.ToInt32(value, System.Globalization.CultureInfo.InvariantCulture)

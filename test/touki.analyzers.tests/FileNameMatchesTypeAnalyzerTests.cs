@@ -18,7 +18,7 @@ public class FileNameMatchesTypeAnalyzerTests
 
         return await AnalyzerTestHarness
             .GetDiagnosticsAsync(new FileNameMatchesTypeAnalyzer(), source, options, fileName)
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
     }
 
     private const string SimpleType = """
@@ -39,7 +39,7 @@ public class FileNameMatchesTypeAnalyzerTests
     [TestMethod]
     public async Task AnalyzeSyntaxTree_NameMatches_ReportsNothing()
     {
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "Foo.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "Foo.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -47,7 +47,7 @@ public class FileNameMatchesTypeAnalyzerTests
     [TestMethod]
     public async Task AnalyzeSyntaxTree_NameDiffers_ReportsDiagnostic()
     {
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "Other.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "Other.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(FileNameMatchesTypeAnalyzer.DiagnosticId);
@@ -56,7 +56,7 @@ public class FileNameMatchesTypeAnalyzerTests
     [TestMethod]
     public async Task AnalyzeSyntaxTree_MessageNamesFileAndType()
     {
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "Other.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "Other.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Be("Rename file 'Other' to 'Foo.cs' to match type 'Foo'");
@@ -65,7 +65,7 @@ public class FileNameMatchesTypeAnalyzerTests
     [TestMethod]
     public async Task AnalyzeSyntaxTree_NameDiffers_ProvidesSuggestedFileName()
     {
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "Other.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "Other.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Properties[FileNameMatchesTypeAnalyzer.SuggestedFileNameProperty].Should().Be("Foo.cs");
@@ -74,7 +74,7 @@ public class FileNameMatchesTypeAnalyzerTests
     [TestMethod]
     public async Task AnalyzeSyntaxTree_NestedNameDiffers_SuggestsQualifiedFileName()
     {
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(NestedType, "Unrelated.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(NestedType, "Unrelated.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.GetMessage().Should().Be("Rename file 'Unrelated' to 'Foo.Bar.cs' to match type 'Bar'");
@@ -89,10 +89,11 @@ public class FileNameMatchesTypeAnalyzerTests
             [
                 ("partial class Foo { int First; }", "/src/FirstPart.cs"),
                 ("partial class Foo { int Second; }", "/src/SecondPart.cs")
-            ]).ConfigureAwait(false);
+            ]).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Single(
             candidate => candidate.Location.GetRequiredSourceTree().FilePath == "/src/FirstPart.cs");
+
         diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedFileNameProperty]
             .Should().Be("Foo.FirstPart.cs");
     }
@@ -109,12 +110,14 @@ public class FileNameMatchesTypeAnalyzerTests
             new Dictionary<string, string>
             {
                 [FileNameMatchesTypeAnalyzer.DetailSeparatorsOption] = "-"
-            }).ConfigureAwait(false);
+            }).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Single(
             candidate => candidate.Location.GetRequiredSourceTree().FilePath == "/src/FirstPart.cs");
+
         diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedFileNameProperty]
             .Should().Be("Foo-FirstPart.cs");
+
         diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedDetailSeparatorProperty]
             .Should().Be("-");
     }
@@ -127,10 +130,11 @@ public class FileNameMatchesTypeAnalyzerTests
             [
                 ("class Foo { }", "/src/Unrelated.cs"),
                 ("class Occupant { }", "/src/Foo.cs")
-            ]).ConfigureAwait(false);
+            ]).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Single(
             candidate => candidate.Location.GetRequiredSourceTree().FilePath == "/src/Unrelated.cs");
+
         diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedFileNameProperty]
             .Should().Be("Foo.Unrelated.cs");
     }
@@ -143,13 +147,15 @@ public class FileNameMatchesTypeAnalyzerTests
             [
                 ("class Foo { }", "/src/Unrelated.cs"),
                 ("class Occupant { }", "/src/foo.cs")
-            ]).ConfigureAwait(false);
+            ]).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Single(
             candidate => candidate.Location.GetRequiredSourceTree().FilePath == "/src/Unrelated.cs");
+
         string expected = FilePathIdentity.PathComparer.Equals("Foo.cs", "foo.cs")
             ? "Foo.Unrelated.cs"
             : "Foo.cs";
+
         diagnostic.Properties[FileNameMatchesTypeAnalyzer.SuggestedFileNameProperty].Should().Be(expected);
     }
 
@@ -157,7 +163,7 @@ public class FileNameMatchesTypeAnalyzerTests
     public async Task AnalyzeSyntaxTree_CaseDiffers_ReportsDiagnostic()
     {
         // Comparison is ordinal so that casing is right even on a case-insensitive file system.
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "foo.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "foo.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -168,7 +174,7 @@ public class FileNameMatchesTypeAnalyzerTests
     [DataRow("Foo_Windows.cs")]
     public async Task AnalyzeSyntaxTree_DetailAfterDefaultSeparator_ReportsNothing(string fileName)
     {
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, fileName).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, fileName).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -177,7 +183,7 @@ public class FileNameMatchesTypeAnalyzerTests
     public async Task AnalyzeSyntaxTree_DetailWithoutSeparator_ReportsDiagnostic()
     {
         // 'FooWindows' is a different name, not 'Foo' with detail.
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "FooWindows.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "FooWindows.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -187,7 +193,7 @@ public class FileNameMatchesTypeAnalyzerTests
     [DataRow("Bar.cs")]
     public async Task AnalyzeSyntaxTree_NestedType_AcceptsEitherName(string fileName)
     {
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(NestedType, fileName).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(NestedType, fileName).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -210,7 +216,7 @@ public class FileNameMatchesTypeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, fileName).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, fileName).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -218,7 +224,7 @@ public class FileNameMatchesTypeAnalyzerTests
     [TestMethod]
     public async Task AnalyzeSyntaxTree_NestedNameUnrelatedToFile_ReportsDiagnostic()
     {
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(NestedType, "Unrelated.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(NestedType, "Unrelated.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -234,7 +240,7 @@ public class FileNameMatchesTypeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Foo.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Foo.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -248,7 +254,7 @@ public class FileNameMatchesTypeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Foo.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Foo.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -264,7 +270,7 @@ public class FileNameMatchesTypeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, fileName).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, fileName).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -278,7 +284,7 @@ public class FileNameMatchesTypeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Pair{TKey,TValue}.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Pair{TKey,TValue}.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -292,7 +298,7 @@ public class FileNameMatchesTypeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Foo{U}.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Foo{U}.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -300,7 +306,7 @@ public class FileNameMatchesTypeAnalyzerTests
     [TestMethod]
     public async Task AnalyzeSyntaxTree_NonGenericType_BracedTypeParameterSuffix_ReportsDiagnostic()
     {
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "Foo{T}.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, "Foo{T}.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -315,7 +321,7 @@ public class FileNameMatchesTypeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Color.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Color.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -325,7 +331,7 @@ public class FileNameMatchesTypeAnalyzerTests
     {
         string source = "delegate void Handler();";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Handler.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Handler.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -339,7 +345,7 @@ public class FileNameMatchesTypeAnalyzerTests
             [assembly: CLSCompliant(false)]
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "GlobalUsings.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "GlobalUsings.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -357,7 +363,7 @@ public class FileNameMatchesTypeAnalyzerTests
             """;
 
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzeAsync(source, "ClassicTemplateCacheEntry.cs").ConfigureAwait(false);
+            await AnalyzeAsync(source, "ClassicTemplateCacheEntry.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -371,7 +377,7 @@ public class FileNameMatchesTypeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Other.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Other.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -391,7 +397,7 @@ public class FileNameMatchesTypeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Other.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Other.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -411,7 +417,7 @@ public class FileNameMatchesTypeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Other.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Other.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -420,7 +426,7 @@ public class FileNameMatchesTypeAnalyzerTests
     public async Task AnalyzeSyntaxTree_NoFilePath_ReportsNothing()
     {
         // An in-memory tree has no name to match against.
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, fileName: null).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(SimpleType, fileName: null).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -430,7 +436,7 @@ public class FileNameMatchesTypeAnalyzerTests
     {
         string source = "// <auto-generated/>\n" + SimpleType;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Other.cs").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Other.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -440,7 +446,7 @@ public class FileNameMatchesTypeAnalyzerTests
     {
         // Underscore is dropped from the approved set, so 'Foo_Windows' no longer reads as detail.
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzeAsync(SimpleType, "Foo_Windows.cs", separators: ".-").ConfigureAwait(false);
+            await AnalyzeAsync(SimpleType, "Foo_Windows.cs", separators: ".-").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -449,7 +455,7 @@ public class FileNameMatchesTypeAnalyzerTests
     public async Task AnalyzeSyntaxTree_ConfiguredSeparatorsWidened_ReportsNothing()
     {
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzeAsync(SimpleType, "Foo+Windows.cs", separators: "+").ConfigureAwait(false);
+            await AnalyzeAsync(SimpleType, "Foo+Windows.cs", separators: "+").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -459,7 +465,7 @@ public class FileNameMatchesTypeAnalyzerTests
     {
         // Padding around the set must not silently drop the setting back to the default.
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzeAsync(SimpleType, "Foo+Windows.cs", separators: "  +  ").ConfigureAwait(false);
+            await AnalyzeAsync(SimpleType, "Foo+Windows.cs", separators: "  +  ").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -470,7 +476,7 @@ public class FileNameMatchesTypeAnalyzerTests
     public async Task AnalyzeSyntaxTree_UnusableConfiguredSeparators_FallsBackToDefault(string separators)
     {
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzeAsync(SimpleType, "Foo.Windows.cs", separators).ConfigureAwait(false);
+            await AnalyzeAsync(SimpleType, "Foo.Windows.cs", separators).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -479,7 +485,7 @@ public class FileNameMatchesTypeAnalyzerTests
     public async Task AnalyzeSyntaxTree_ConfiguredInvalidSeparators_FallsBackToDefault()
     {
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzeAsync(SimpleType, "Foo.Windows.cs", separators: "/").ConfigureAwait(false);
+            await AnalyzeAsync(SimpleType, "Foo.Windows.cs", separators: "/").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -490,7 +496,7 @@ public class FileNameMatchesTypeAnalyzerTests
         // With '.' dropped from the approved set, 'Foo.Bar' can no longer read as 'Foo' plus detail, so this
         // only passes because the nested type's dotted path is itself a candidate.
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzeAsync(NestedType, "Foo.Bar.cs", separators: "-").ConfigureAwait(false);
+            await AnalyzeAsync(NestedType, "Foo.Bar.cs", separators: "-").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -500,7 +506,7 @@ public class FileNameMatchesTypeAnalyzerTests
     {
         // Same configuration, but 'Other' is not a nested type, so there is no candidate to match.
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzeAsync(NestedType, "Foo.Other.cs", separators: "-").ConfigureAwait(false);
+            await AnalyzeAsync(NestedType, "Foo.Other.cs", separators: "-").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -509,7 +515,7 @@ public class FileNameMatchesTypeAnalyzerTests
     public async Task AnalyzeSyntaxTree_PathWithDirectories_MatchesOnFileNameOnly()
     {
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzeAsync(SimpleType, "/src/deep/path/Foo.cs").ConfigureAwait(false);
+            await AnalyzeAsync(SimpleType, "/src/deep/path/Foo.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }

@@ -42,7 +42,7 @@ public class StringExtensionsPolyfillTests
     {
         // Intentionally pass null to exercise value validation.
     #pragma warning disable CS8625
-        Action action = () => "x".Contains(null, StringComparison.Ordinal);
+        Action action = () => "x".Contains(value: null, StringComparison.Ordinal);
     #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
@@ -158,7 +158,7 @@ public class StringExtensionsPolyfillTests
     [TestMethod]
     public void Replace_StringComparison_NullNewValue_TreatedAsEmpty()
     {
-        "abcabc".Replace("ab", null, StringComparison.OrdinalIgnoreCase).Should().Be("cc");
+        "abcabc".Replace("ab", newValue: null, StringComparison.OrdinalIgnoreCase).Should().Be("cc");
     }
 
     [TestMethod]
@@ -172,7 +172,7 @@ public class StringExtensionsPolyfillTests
     {
         // Intentionally pass null to exercise oldValue validation.
     #pragma warning disable CS8625
-        Action action = () => "abc".Replace(null, "x", StringComparison.Ordinal);
+        Action action = () => "abc".Replace(oldValue: null, "x", StringComparison.Ordinal);
     #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
@@ -218,7 +218,7 @@ public class StringExtensionsPolyfillTests
     {
         // Intentionally pass null to exercise replacement validation.
     #pragma warning disable CS8625
-        Action action = () => "a\nb".ReplaceLineEndings(null);
+        Action action = () => "a\nb".ReplaceLineEndings(replacementText: null);
     #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
@@ -259,7 +259,7 @@ public class StringExtensionsPolyfillTests
     public void Split_String_NullSeparator_ReturnsSingleSourceElement()
     {
         // BCL behavior for Split((string?)null, opts): treats as no separator, returns the source unchanged.
-        "a b\tc".Split((string?)null, StringSplitOptions.None).Should().Equal("a b\tc");
+        "a b\tc".Split(separator: (string?)null, StringSplitOptions.None).Should().Equal("a b\tc");
     }
 
     [TestMethod]
@@ -361,7 +361,7 @@ public class StringExtensionsPolyfillTests
     [TestMethod]
     public void Replace_StringComparison_OrdinalNullNewValue_TreatedAsEmpty()
     {
-        "abc".Replace("b", null, StringComparison.Ordinal).Should().Be("ac");
+        "abc".Replace("b", newValue: null, StringComparison.Ordinal).Should().Be("ac");
     }
 
     // ---- ReplaceLineEndings negative & boundary ----
@@ -463,6 +463,7 @@ public class StringExtensionsPolyfillTests
             Span<char> dest = new char[2];
             "abc".CopyTo(dest);
         };
+
         act.Should().Throw<ArgumentException>();
     }
 

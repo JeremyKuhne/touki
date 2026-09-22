@@ -42,11 +42,13 @@ public class StringResourceManagerConstructionPerf
         _assembly = typeof(StringResourceManagerConstructionPerf).Assembly;
         _resourceName = _assembly.GetManifestResourceNames()
             .Single(name => name.EndsWith("SatelliteStringResourceManagerPerfStrings.resources", StringComparison.Ordinal));
+
         _baseName = _resourceName[..^".resources".Length];
         _resourcesFile = WriteResourcesFile(nameof(StringResourceManagerConstructionPerf));
         _fileBaseName = Path.GetFileNameWithoutExtension(_resourcesFile);
         _resourcesDirectory = Path.GetDirectoryName(_resourcesFile)
             ?? throw new InvalidOperationException("The benchmark resource path must have a directory.");
+
         byte[] resources = System.IO.File.ReadAllBytes(_resourcesFile);
         _streamFactory = () => new System.IO.MemoryStream(resources, writable: false);
     }

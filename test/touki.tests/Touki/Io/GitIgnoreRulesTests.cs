@@ -15,7 +15,7 @@ public sealed class GitIgnoreRulesTests
     private static SequentialSeparatorGitOracleTests.RepoFixture Fixture => s_fixture
         ?? throw new AssertFailedException("The repository fixture has not been initialized.");
 
-    private static string Root => Path.Combine(Path.GetTempPath(), "gitignore-rules-root");
+    private static string Root => Path.Join(Path.GetTempPath(), "gitignore-rules-root");
 
     [ClassInitialize]
     public static void ClassInitialize(TestContext context) =>
@@ -37,7 +37,7 @@ public sealed class GitIgnoreRulesTests
     {
         // Intentionally pass null to exercise content validation.
     #pragma warning disable CS8625
-        Action action = () => GitIgnoreRules.Parse(null);
+        Action action = () => GitIgnoreRules.Parse(content: null);
     #pragma warning restore CS8625
 
         action.Should().Throw<ArgumentNullException>();
@@ -166,6 +166,7 @@ public sealed class GitIgnoreRulesTests
     {
         GitIgnoreRules rules = GitIgnoreRules.Parse(
             "bin/\nobj/\n*.log\n!keep.log\n/node_modules");
+
         using IFileSystemMatcherSession included = rules.CreateIncludedMatcher().CreateSession(Root);
 
         rules.IsIgnoredFile("trace.log").Should().BeTrue();
@@ -174,6 +175,7 @@ public sealed class GitIgnoreRulesTests
         rules.IsIgnoredFile("node_modules/package/index.js").Should().BeTrue();
         included.MatchesDirectory(Root, "obj")
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+
         included.MatchesDirectory(Root, "src")
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
     }
@@ -200,8 +202,10 @@ public sealed class GitIgnoreRulesTests
 
         included.MatchesDirectory(Root, "node_modules")
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+
         ignored.MatchesDirectory(Root, "node_modules")
             .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+
         included.MatchesDirectory(Root, "src")
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
     }
@@ -212,16 +216,18 @@ public sealed class GitIgnoreRulesTests
         GitIgnoreRules rules = GitIgnoreRules.Parse("src/generated/\n*.log");
         using IFileSystemMatcherSession included = rules.CreateIncludedMatcher().CreateSession(Root);
         using IFileSystemMatcherSession ignored = rules.CreateIgnoredMatcher().CreateSession(Root);
-        string sourceDirectory = Path.Combine(Root, "src");
-        string generatedDirectory = Path.Combine(sourceDirectory, "generated");
+        string sourceDirectory = Path.Join(Root, "src");
+        string generatedDirectory = Path.Join(sourceDirectory, "generated");
 
         included.MatchesFile(sourceDirectory, "trace.log").Should().BeFalse();
         ignored.MatchesFile(sourceDirectory, "trace.log").Should().BeTrue();
         included.MatchesFile(sourceDirectory, "source.cs").Should().BeTrue();
         included.MatchesDirectory(sourceDirectory, "generated")
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+
         ignored.MatchesDirectory(sourceDirectory, "generated")
             .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+
         included.MatchesDirectory(generatedDirectory, "nested")
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
     }
@@ -235,6 +241,7 @@ public sealed class GitIgnoreRulesTests
 
         included.MatchesDirectory(Root, "src")
             .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+
         ignored.MatchesDirectory(Root, "src")
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
     }

@@ -41,6 +41,7 @@ public sealed class MSBuildFileSystemRecorder : MSBuildFileSystemBase
         List<string> results = [.. base.EnumerateFileSystemEntries(path, searchPattern, searchOption)];
         _data.RecordEnumeration(
             RecordedMSBuildFileSystem.EnumerateFileSystemEntriesMethod, path, searchPattern, (int)searchOption, results);
+
         return results;
     }
 
@@ -53,6 +54,7 @@ public sealed class MSBuildFileSystemRecorder : MSBuildFileSystemBase
         List<string> results = [.. base.EnumerateFiles(path, searchPattern, searchOption)];
         _data.RecordEnumeration(
             RecordedMSBuildFileSystem.EnumerateFilesMethod, path, searchPattern, (int)searchOption, results);
+
         return results;
     }
 
@@ -65,6 +67,7 @@ public sealed class MSBuildFileSystemRecorder : MSBuildFileSystemBase
         List<string> results = [.. base.EnumerateDirectories(path, searchPattern, searchOption)];
         _data.RecordEnumeration(
             RecordedMSBuildFileSystem.EnumerateDirectoriesMethod, path, searchPattern, (int)searchOption, results);
+
         return results;
     }
 

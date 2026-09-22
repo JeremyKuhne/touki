@@ -1191,7 +1191,7 @@ internal static partial class Number
             }
         }
 
-        public static unsafe void SetValue(out BigInteger result, ref BigInteger value)
+        public static void SetValue(out BigInteger result, ref BigInteger value)
         {
             int rhsLength = value._length;
             result._length = rhsLength;

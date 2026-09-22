@@ -62,10 +62,11 @@ internal static class BashInterop
         {
             string[] preferredCandidates =
             [
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Git", "bin", "bash.exe"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Git", "bin", "bash.exe"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "Git", "bin", "bash.exe"),
+                Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Git", "bin", "bash.exe"),
+                Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Git", "bin", "bash.exe"),
+                Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "Git", "bin", "bash.exe"),
             ];
+
             foreach (string candidate in preferredCandidates)
             {
                 if (File.Exists(candidate))
@@ -89,7 +90,7 @@ internal static class BashInterop
 
                 try
                 {
-                    string candidate = Path.Combine(dir, exeName);
+                    string candidate = Path.Join(dir, exeName);
                     if (File.Exists(candidate))
                     {
                         // Skip the WSL launcher stub even if encountered through PATH
@@ -136,11 +137,13 @@ internal static class BashInterop
             RedirectStandardError = true,
             UseShellExecute = false,
         };
+
         psi.Environment["PATTERN"] = pattern;
         psi.Environment["INPUT"] = input;
 
         using Process p = Process.Start(psi)
             ?? throw new InvalidOperationException("Failed to start bash.");
+
         p.WaitForExit();
         return p.ExitCode == 0;
     }
@@ -191,6 +194,7 @@ internal static class BashInterop
 
         using Process p = Process.Start(psi)
             ?? throw new InvalidOperationException("Failed to start bash.");
+
         string stdout = p.StandardOutput.ReadToEnd();
         p.WaitForExit();
 

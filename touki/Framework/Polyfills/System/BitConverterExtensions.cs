@@ -17,7 +17,7 @@ public static unsafe class BitConverterExtensions
         /// <param name="value">The number to convert.</param>
         /// <returns>A 32-bit signed integer whose bits are identical to <paramref name="value"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int SingleToInt32Bits(float value) => *(int*)&value;
+        public static int SingleToInt32Bits(float value) => *(int*)&value;
 
         /// <summary>
         /// Converts the specified single-precision floating point number to a 32-bit unsigned integer.

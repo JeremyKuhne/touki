@@ -31,7 +31,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             new UseTextWriterWriteFormattedCodeFixProvider(),
             source,
             UseTextWriterWriteFormattedAnalyzer.DiagnosticId,
-            additionalReferences: [s_toukiReference]).ConfigureAwait(false);
+            additionalReferences: [s_toukiReference]).ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
     public async Task UseWriteFormatted_MissingNamespaceImport_AddsImportAndRenamesMethod()
@@ -47,13 +47,14 @@ public class UseTextWriterWriteFormattedCodeFixTests
                 }
             }
             """;
+
         string expected = source
             .Replace(
                 "using System.IO;",
                 $"using System.IO;{Environment.NewLine}using Touki.Io;")
             .Replace("writer.Write(", "writer.WriteFormatted(");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -73,9 +74,10 @@ public class UseTextWriterWriteFormattedCodeFixTests
                 }
             }
             """;
+
         string expected = source.Replace("writer.Write(", "writer.WriteFormatted(");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -95,11 +97,12 @@ public class UseTextWriterWriteFormattedCodeFixTests
                 }
             }
             """;
+
         string expected = source.Replace(
             "writer.Write(value:",
             "writer.WriteFormatted(builder:");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -120,7 +123,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             }
             """;
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Contain("writer.WriteFormatted($\"Value: {value,4:x}\");");
     }
@@ -140,7 +143,8 @@ public class UseTextWriterWriteFormattedCodeFixTests
                 }
             }
             """;
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -167,7 +171,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             [("Test.cs", "Test.cs", source)],
             UseTextWriterWriteFormattedAnalyzer.DiagnosticId,
             fixAll: true,
-            additionalReferences: [s_toukiReference]).ConfigureAwait(false);
+            additionalReferences: [s_toukiReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -207,7 +211,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             [("Test.cs", "Test.cs", source)],
             UseTextWriterWriteFormattedAnalyzer.DiagnosticId,
             fixAll: true,
-            additionalReferences: [s_toukiReference]).ConfigureAwait(false);
+            additionalReferences: [s_toukiReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.FixAllActionOffered.Should().BeTrue();
@@ -237,6 +241,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
                 }
             }
             """;
+
         const string secondSource = """
             using System.IO;
 
@@ -248,6 +253,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
                 }
             }
             """;
+
         const string additionalSource = """
             using System.IO;
 
@@ -273,7 +279,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             fixAllScope: scope,
             additionalProjectSources: [
                 ("Additional.cs", "C-Additional.cs", additionalSource)
-            ]).ConfigureAwait(false);
+            ]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(3);
         result.FixAllActionOffered.Should().BeTrue();
@@ -281,10 +287,12 @@ public class UseTextWriterWriteFormattedCodeFixTests
         result.AnalyzerDiagnostics.Should().HaveCount(remainingDiagnostics);
         result.Documents.Single(document => document.Name == "First.cs").Source
             .Should().Contain("writer.WriteFormatted($\"First: {value}\");");
+
         result.Documents.Single(document => document.Name == "Second.cs").Source.Should().Contain(
             scope is FixAllScope.Project or FixAllScope.Solution
                 ? "writer.WriteFormatted($\"Second: {value}\");"
                 : "writer.Write($\"Second: {value}\");");
+
         result.Documents.Single(document => document.Name == "Additional.cs").Source.Should().Contain(
             scope == FixAllScope.Solution
                 ? "writer.WriteFormatted($\"Additional: {value}\");"
@@ -308,6 +316,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
                 }
             }
             """;
+
         List<string> statements = [with(unrelatedBindingCount + callCount)];
         for (int index = 0; index < unrelatedBindingCount; index++)
         {
@@ -324,13 +333,14 @@ public class UseTextWriterWriteFormattedCodeFixTests
         string source = template
             .Replace("UNRELATED", unrelated)
             .Replace("CALLS", string.Join(Environment.NewLine, statements));
+
         CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
             new UseTextWriterWriteFormattedAnalyzer(),
             new UseTextWriterWriteFormattedCodeFixProvider(),
             [("Test.cs", "Test.cs", source)],
             UseTextWriterWriteFormattedAnalyzer.DiagnosticId,
             fixAll: true,
-            additionalReferences: [s_toukiReference]).ConfigureAwait(false);
+            additionalReferences: [s_toukiReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(callCount);
         result.FixAllActionOffered.Should().BeTrue();
@@ -339,6 +349,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
         string fixedSource = result.Documents.Should().ContainSingle().Subject.Source;
         fixedSource.Split(["writer.WriteFormatted("], StringSplitOptions.None)
             .Should().HaveCount(callCount + 1);
+
         fixedSource.Split(["using Touki.Io;"], StringSplitOptions.None).Should().HaveCount(2);
     }
 
@@ -371,7 +382,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             }
             """;
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -401,7 +412,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             ],
             UseTextWriterWriteFormattedAnalyzer.DiagnosticId,
             fixAll: false,
-            additionalReferences: [s_toukiReference]).ConfigureAwait(false);
+            additionalReferences: [s_toukiReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.CompilerErrors.Should().BeEmpty();
         result.AnalyzerDiagnostics.Should().BeEmpty();
@@ -434,7 +445,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             }
             """;
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -453,6 +464,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
                 }
             }
             """;
+
         const string ambiguousSource = """
             using System.IO;
             using Other;
@@ -484,7 +496,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             ],
             UseTextWriterWriteFormattedAnalyzer.DiagnosticId,
             fixAll: true,
-            additionalReferences: [s_toukiReference]).ConfigureAwait(false);
+            additionalReferences: [s_toukiReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(3);
         result.CodeFixActionOffered.Should().BeTrue();
@@ -493,6 +505,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
         result.AnalyzerDiagnostics.Should().HaveCount(2);
         result.Documents.Single(document => document.Name == "Trigger.cs").Source
             .Should().Contain("writer.WriteFormatted($\"Trigger: {value}\");");
+
         result.Documents.Single(document => document.Name == "Ambiguous.cs").Source.Should().Be(ambiguousSource);
     }
 
@@ -526,7 +539,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             }
             """;
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -544,6 +557,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
                 }
             }
             """;
+
         const string source = """
             using System.IO;
 
@@ -568,7 +582,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             ],
             UseTextWriterWriteFormattedAnalyzer.DiagnosticId,
             fixAll: false,
-            additionalReferences: [s_toukiReference]).ConfigureAwait(false);
+            additionalReferences: [s_toukiReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.CodeFixActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -598,7 +612,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             new UseTextWriterWriteFormattedCodeFixProvider(),
             source,
             UseTextWriterWriteFormattedAnalyzer.DiagnosticId,
-            additionalReferences: [s_toukiReference]).ConfigureAwait(false);
+            additionalReferences: [s_toukiReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -630,7 +644,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             [("Test.cs", "Test.cs", source)],
             UseTextWriterWriteFormattedAnalyzer.DiagnosticId,
             fixAll: true,
-            additionalReferences: [s_toukiReference]).ConfigureAwait(false);
+            additionalReferences: [s_toukiReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -656,7 +670,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             }
             """;
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Contain(
             "writer.WriteFormatted($\"Value: {await Task.FromResult(42)}\");");
@@ -683,7 +697,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             new UseTextWriterWriteFormattedCodeFixProvider(),
             source,
             UseTextWriterWriteFormattedAnalyzer.DiagnosticId,
-            additionalReferences: [s_toukiReference]).ConfigureAwait(false);
+            additionalReferences: [s_toukiReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -714,7 +728,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             new UseTextWriterWriteFormattedCodeFixProvider(),
             source,
             UseTextWriterWriteFormattedAnalyzer.DiagnosticId,
-            additionalReferences: [s_toukiReference]).ConfigureAwait(false);
+            additionalReferences: [s_toukiReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -741,7 +755,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             source,
             UseTextWriterWriteFormattedAnalyzer.DiagnosticId,
             additionalReferences: [s_toukiReference],
-            parseOptions: new CSharpParseOptions(LanguageVersion.CSharp10)).ConfigureAwait(false);
+            parseOptions: new CSharpParseOptions(LanguageVersion.CSharp10)).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Contain("writer.WriteFormatted($\"Value: {value}\");");
     }
@@ -760,6 +774,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
                 }
             }
             """;
+
         const string secondSource = """
             class SecondSample
             {
@@ -776,7 +791,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             UseTextWriterWriteFormattedAnalyzer.DiagnosticId,
             fixAll: false,
             additionalReferences: [s_toukiReference],
-            assignSourceFilePaths: false).ConfigureAwait(false);
+            assignSourceFilePaths: false).ConfigureAwait(continueOnCapturedContext: false);
 
         result.CodeFixActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -800,6 +815,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
                 }
             }
             """;
+
         const string competingExtension = """
             global using Other;
 
@@ -826,12 +842,13 @@ public class UseTextWriterWriteFormattedCodeFixTests
             addLinkedProject: true,
             linkedProjectSources: [
                 ("CompetingExtension.cs", "CompetingExtension.cs", competingExtension)
-            ]).ConfigureAwait(false);
+            ]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CompilerErrors.Should().BeEmpty();
         result.Documents.Where(document => document.Name == "Shared.cs")
             .Should().HaveCount(2).And.OnlyContain(document => document.Source == source);
+
         result.CodeFixActionOffered.Should().BeFalse();
     }
 
@@ -849,6 +866,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
                 }
             }
             """;
+
         const string eligibleSource = """
             using System.IO;
 
@@ -872,7 +890,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
             addLinkedProject: true,
             additionalProjectSources: [
                 ("Eligible.cs", "A-Eligible.cs", eligibleSource)
-            ]).ConfigureAwait(false);
+            ]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(3);
         result.CodeFixActionOffered.Should().BeTrue();
@@ -881,6 +899,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
         result.AnalyzerDiagnostics.Should().HaveCount(2);
         result.Documents.Where(document => document.Name == "Linked.cs")
             .Should().HaveCount(2).And.OnlyContain(document => document.Source == linkedSource);
+
         result.Documents.Single(document => document.Name == "Eligible.cs").Source
             .Should().Contain("writer.WriteFormatted($\"Eligible: {value}\");");
     }
@@ -899,6 +918,7 @@ public class UseTextWriterWriteFormattedCodeFixTests
                 }
             }
             """;
+
         using CancellationTokenSource cancellation = new();
         cancellation.Cancel();
         Func<Task> action = async () => await CodeFixTestHarness.ApplyFixToSolutionAsync(
@@ -908,9 +928,9 @@ public class UseTextWriterWriteFormattedCodeFixTests
             UseTextWriterWriteFormattedAnalyzer.DiagnosticId,
             fixAll: true,
             additionalReferences: [s_toukiReference],
-            fixAllCancellationToken: cancellation.Token).ConfigureAwait(false);
+            fixAllCancellationToken: cancellation.Token).ConfigureAwait(continueOnCapturedContext: false);
 
-        await action.Should().ThrowAsync<OperationCanceledException>().ConfigureAwait(false);
+        await action.Should().ThrowAsync<OperationCanceledException>().ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -939,7 +959,8 @@ public class UseTextWriterWriteFormattedCodeFixTests
                         {
                             Expression: MemberAccessExpressionSyntax memberAccess
                         }
-                        && memberAccess.Name.Identifier.ValueText is "Write" or "WriteLine")
+
+                            && memberAccess.Name.Identifier.ValueText is "Write" or "WriteLine")
                     {
                         syntaxContext.ReportDiagnostic(
                             Diagnostic.Create(s_rule, memberAccess.Name.GetLocation()));

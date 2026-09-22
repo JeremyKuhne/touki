@@ -49,9 +49,9 @@ public class SatelliteStringResourceAotTests
 
     private static void WriteSideFile(string probeRoot, string culture, string baseName, string key, string value)
     {
-        string directory = Path.Combine(probeRoot, culture);
+        string directory = Path.Join(probeRoot, culture);
         Directory.CreateDirectory(directory);
-        using ResourceWriter writer = new(Path.Combine(directory, $"{baseName}.resources"));
+        using ResourceWriter writer = new(Path.Join(directory, $"{baseName}.resources"));
         writer.AddResource(key, value);
         writer.Generate();
     }

@@ -13,7 +13,7 @@ public class MappedViewLeaseTests
     public void Constructor_DisposedAccessor_DisposesAccessorAndThrows()
     {
         using TempFolder folder = new();
-        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        string path = Path.Join(folder.TempPath, "data.bin");
         System.IO.File.WriteAllBytes(path, [10, 20, 30]);
         using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         using MemoryMappedFile file = MemoryMappedFile.CreateFromFile(
@@ -23,10 +23,12 @@ public class MappedViewLeaseTests
             MemoryMappedFileAccess.Read,
             HandleInheritability.None,
             leaveOpen: true);
+
         using MemoryMappedViewAccessor accessor = file.CreateViewAccessor(
             offset: 0,
             size: stream.Length,
             MemoryMappedFileAccess.Read);
+
         accessor.Dispose();
 
         Action action = () => _ = new MappedViewLease(accessor);

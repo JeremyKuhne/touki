@@ -10,7 +10,7 @@ public class StoringNull
     [TestMethod]
     public void TryGetValue_EmptyAsNullableValue_ReturnsTrueWithNoValue()
     {
-        Value value = Value.Create((int?)null);
+        Value value = Value.Create(value: (int?)null);
 
         value.TryGetValue(out int? result).Should().BeTrue();
         result.Should().BeNull();
@@ -44,12 +44,12 @@ public class StoringNull
     [TestMethod]
     public void GetIntFromStoredNull()
     {
-        Value nullFastValue = Value.Create((object?)null);
+        Value nullFastValue = Value.Create(value: (object?)null);
         Assert.Throws<InvalidCastException>(() => _ = nullFastValue.As<int>());
 
         bool success = nullFastValue.TryGetValue(out int result);
         success.Should().BeFalse();
 
-        result.Should().Be(default);
+        result.Should().Be(expected: default);
     }
 }

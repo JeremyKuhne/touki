@@ -7,8 +7,6 @@ using Touki.Io.Globbing;
 using Touki.Text;
 
 using File = System.IO.File;
-using Path = System.IO.Path;
-
 namespace touki.perf;
 
 /// <summary>
@@ -82,7 +80,7 @@ public class GlobEnumerateExtGlobPerf
     public void GlobalSetup()
     {
         string? dir = AppContext.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "touki.slnx")))
+        while (dir is not null && !File.Exists(Path.Join(dir, "touki.slnx")))
         {
             dir = Path.GetDirectoryName(dir);
         }
@@ -133,6 +131,7 @@ public class GlobEnumerateExtGlobPerf
                 _directory,
                 matcher,
                 s_options);
+
             return Count(enumerator);
         }
         finally
@@ -154,10 +153,12 @@ public class GlobEnumerateExtGlobPerf
             _extGlobPattern,
             GlobDialect.Bash,
             GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
+
         using FileSystemPathEnumerator enumerator = FileSystemPathEnumerator.Create(
             _directory,
             include.CreateFileSystemMatcher(),
             s_options);
+
         return Count(enumerator);
     }
 

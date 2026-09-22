@@ -7,7 +7,7 @@ namespace System.Runtime.CompilerServices;
 /// <summary>
 ///  <see cref="Unsafe"/> methods that don't have a direct equivalent in the .NET Framework build.
 /// </summary>
-public static unsafe class UnsafeExtensions
+public static class UnsafeExtensions
 {
     extension(Unsafe)
     {

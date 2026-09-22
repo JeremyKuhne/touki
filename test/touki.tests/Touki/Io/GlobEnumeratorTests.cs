@@ -19,18 +19,18 @@ public class GlobEnumeratorTests
     {
         TempFolder folder = new();
         string root = folder.TempPath;
-        Directory.CreateDirectory(Path.Combine(root, "src"));
-        Directory.CreateDirectory(Path.Combine(root, "src", "nested"));
-        Directory.CreateDirectory(Path.Combine(root, "obj", "Debug"));
-        Directory.CreateDirectory(Path.Combine(root, "bin", "Release"));
+        Directory.CreateDirectory(Path.Join(root, "src"));
+        Directory.CreateDirectory(Path.Join(root, "src", "nested"));
+        Directory.CreateDirectory(Path.Join(root, "obj", "Debug"));
+        Directory.CreateDirectory(Path.Join(root, "bin", "Release"));
 
-        File.WriteAllText(Path.Combine(root, "top.cs"), "");
-        File.WriteAllText(Path.Combine(root, "top.txt"), "");
-        File.WriteAllText(Path.Combine(root, "src", "a.cs"), "");
-        File.WriteAllText(Path.Combine(root, "src", "b.user"), "");
-        File.WriteAllText(Path.Combine(root, "src", "nested", "c.cs"), "");
-        File.WriteAllText(Path.Combine(root, "obj", "Debug", "obj.cs"), "");
-        File.WriteAllText(Path.Combine(root, "bin", "Release", "bin.cs"), "");
+        File.WriteAllText(Path.Join(root, "top.cs"), "");
+        File.WriteAllText(Path.Join(root, "top.txt"), "");
+        File.WriteAllText(Path.Join(root, "src", "a.cs"), "");
+        File.WriteAllText(Path.Join(root, "src", "b.user"), "");
+        File.WriteAllText(Path.Join(root, "src", "nested", "c.cs"), "");
+        File.WriteAllText(Path.Join(root, "obj", "Debug", "obj.cs"), "");
+        File.WriteAllText(Path.Join(root, "bin", "Release", "bin.cs"), "");
         return folder;
     }
 
@@ -107,10 +107,10 @@ public class GlobEnumeratorTests
         GlobOptions globOptions)
     {
         using TempFolder folder = new();
-        string objDirectory = Path.Combine(folder.TempPath, "obj");
+        string objDirectory = Path.Join(folder.TempPath, "obj");
         Directory.CreateDirectory(objDirectory);
-        File.WriteAllText(Path.Combine(objDirectory, "excluded.txt"), string.Empty);
-        File.WriteAllText(Path.Combine(objDirectory, "included.cs"), string.Empty);
+        File.WriteAllText(Path.Join(objDirectory, "excluded.txt"), string.Empty);
+        File.WriteAllText(Path.Join(objDirectory, "included.cs"), string.Empty);
 
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*",
@@ -220,7 +220,7 @@ public class GlobEnumeratorTests
     public void Create_MSBuildCaseInsensitiveExclude_IsNotDropped()
     {
         using TempFolder folder = new();
-        File.WriteAllText(Path.Combine(folder.TempPath, "source.cs"), string.Empty);
+        File.WriteAllText(Path.Join(folder.TempPath, "source.cs"), string.Empty);
 
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "**/*.CS",
@@ -234,9 +234,9 @@ public class GlobEnumeratorTests
     public void Create_PosixPathWithoutGlobstar_AppliesBothDoubleStarExcludes()
     {
         using TempFolder folder = new();
-        string directory = Path.Combine(folder.TempPath, "foo", "bar");
+        string directory = Path.Join(folder.TempPath, "foo", "bar");
         Directory.CreateDirectory(directory);
-        File.WriteAllText(Path.Combine(directory, "source.cs"), string.Empty);
+        File.WriteAllText(Path.Join(directory, "source.cs"), string.Empty);
 
         using GlobEnumerator enumerator = GlobEnumerator.Create(
             "foo/bar/*",
@@ -317,7 +317,7 @@ public class GlobEnumeratorTests
         // Intentionally pass null to exercise include pattern validation.
 #pragma warning disable CS8625
         FluentActions.Invoking(() =>
-            GlobEnumerator.Create(null, folder.TempPath))
+            GlobEnumerator.Create(includePattern: null, folder.TempPath))
             .Should().Throw<ArgumentNullException>();
 #pragma warning restore CS8625
     }
@@ -368,6 +368,7 @@ public class GlobEnumeratorTests
             GlobOptions = GlobOptions.AllowGlobStar,
             EnumerationOptions = null
         };
+
         using GlobEnumerator enumerator = GlobEnumerator.Create("**/*.cs", folder.TempPath, options);
 
         Collect(enumerator).Should().Contain(JoinSep("src", "nested", "c.cs"));
@@ -383,12 +384,14 @@ public class GlobEnumeratorTests
             RecurseSubdirectories = true,
             IgnoreInaccessible = true
         };
+
         GlobEnumerationOptions options = new()
         {
             ExcludePatterns = excludes,
             GlobOptions = GlobOptions.AllowGlobStar,
             EnumerationOptions = enumerationOptions
         };
+
         using GlobEnumerator enumerator = GlobEnumerator.Create("**/*.cs", folder.TempPath, options);
 
         excludes.Clear();

@@ -296,6 +296,7 @@ public class DateTimeFormatTests
     {
         Format(s_sample, "ddd", CultureInfo.InvariantCulture)
             .Should().Be(s_sample.ToString("ddd", CultureInfo.InvariantCulture));
+
         Format(s_sample, "dddd", CultureInfo.InvariantCulture)
             .Should().Be(s_sample.ToString("dddd", CultureInfo.InvariantCulture));
     }

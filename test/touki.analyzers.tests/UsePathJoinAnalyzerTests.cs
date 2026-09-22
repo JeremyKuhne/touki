@@ -8,7 +8,17 @@ namespace Touki.Analyzers;
 public class UsePathJoinAnalyzerTests
 {
     private static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(string source) =>
-        await AnalyzerTestHarness.GetDiagnosticsAsync(new UsePathJoinAnalyzer(), source).ConfigureAwait(false);
+        await AnalyzerTestHarness.GetDiagnosticsAsync(new UsePathJoinAnalyzer(), source).ConfigureAwait(continueOnCapturedContext: false);
+
+    [TestMethod]
+    public void SupportedDiagnostics_Always_EnablesWarningByDefault()
+    {
+        UsePathJoinAnalyzer analyzer = new();
+
+        DiagnosticDescriptor descriptor = analyzer.SupportedDiagnostics.Should().ContainSingle().Subject;
+        descriptor.DefaultSeverity.Should().Be(DiagnosticSeverity.Warning);
+        descriptor.IsEnabledByDefault.Should().BeTrue();
+    }
 
     [TestMethod]
     public async Task AnalyzeInvocation_PathCombine_ReportsDiagnostic()
@@ -22,7 +32,7 @@ public class UsePathJoinAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(UsePathJoinAnalyzer.DiagnosticId);
@@ -45,7 +55,7 @@ public class UsePathJoinAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(5);
         diagnostics.Should().OnlyContain(diagnostic => diagnostic.Id == UsePathJoinAnalyzer.DiagnosticId);
@@ -61,7 +71,7 @@ public class UsePathJoinAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Combine");
@@ -79,7 +89,7 @@ public class UsePathJoinAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(UsePathJoinAnalyzer.DiagnosticId);
@@ -97,7 +107,7 @@ public class UsePathJoinAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(UsePathJoinAnalyzer.DiagnosticId);
@@ -115,7 +125,7 @@ public class UsePathJoinAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -135,7 +145,7 @@ public class UsePathJoinAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -160,7 +170,7 @@ public class UsePathJoinAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new UsePathJoinAnalyzer(),
             source,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(4);
         diagnostics.Should().OnlyContain(diagnostic => diagnostic.Id == UsePathJoinAnalyzer.DiagnosticId);
@@ -184,7 +194,7 @@ public class UsePathJoinAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -202,7 +212,7 @@ public class UsePathJoinAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }

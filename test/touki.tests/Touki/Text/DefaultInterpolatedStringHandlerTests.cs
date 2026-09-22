@@ -5,7 +5,7 @@
 namespace Touki;
 
 [TestClass]
-public unsafe class DefaultInterpolatedStringHandlerTests
+public class DefaultInterpolatedStringHandlerTests
 {
     // On .NET Framework this is our implementation. On .NET we're getting built-in.
     // Testing both so we can validate behavior and expected allocations.

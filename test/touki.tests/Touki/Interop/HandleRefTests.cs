@@ -30,7 +30,7 @@ public class HandleRefTests
     [TestMethod]
     public void Ctor_NullWrapper_AssignsNull()
     {
-        HandleRef<int> reference = new(null, 42);
+        HandleRef<int> reference = new(wrapper: null, 42);
         reference.Wrapper.Should().BeNull();
         reference.Handle.Should().Be(42);
     }
@@ -47,7 +47,7 @@ public class HandleRefTests
     [TestMethod]
     public void Ctor_FromNullIHandle_HandleDefaultsToZero()
     {
-        HandleRef<int> reference = new((IHandle<int>?)null);
+        HandleRef<int> reference = new(handle: (IHandle<int>?)null);
         reference.Wrapper.Should().BeNull();
         reference.Handle.Should().Be(0);
     }
@@ -106,7 +106,7 @@ public class HandleRefTests
         // Regression test: previously the override was `obj is THandle other`,
         // which would (a) never match a HandleRef and (b) be true for a bare
         // THandle with an unrelated comparison path. Both are wrong.
-        HandleRef<int> a = new(null, 5);
+        HandleRef<int> a = new(wrapper: null, 5);
         object boxedHandle = 5;
         a.Equals(boxedHandle).Should().BeFalse();
     }
@@ -114,14 +114,14 @@ public class HandleRefTests
     [TestMethod]
     public void Equals_Null_ReturnsFalse()
     {
-        HandleRef<int> a = new(null, 5);
-        a.Equals((object?)null).Should().BeFalse();
+        HandleRef<int> a = new(wrapper: null, 5);
+        a.Equals(obj: (object?)null).Should().BeFalse();
     }
 
     [TestMethod]
     public void Equals_DifferentType_ReturnsFalse()
     {
-        HandleRef<int> a = new(null, 5);
+        HandleRef<int> a = new(wrapper: null, 5);
         a.Equals("not a HandleRef").Should().BeFalse();
     }
 
@@ -137,14 +137,14 @@ public class HandleRefTests
     [TestMethod]
     public void IsNull_DefaultHandle_ReturnsTrue()
     {
-        HandleRef<int> a = new(null, default);
+        HandleRef<int> a = new(wrapper: null, handle: default);
         a.IsNull.Should().BeTrue();
     }
 
     [TestMethod]
     public void IsNull_NonDefaultHandle_ReturnsFalse()
     {
-        HandleRef<int> a = new(null, 1);
+        HandleRef<int> a = new(wrapper: null, 1);
         a.IsNull.Should().BeFalse();
     }
 }

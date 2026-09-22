@@ -56,6 +56,7 @@ public class StreamStringResourceReaderTests
         BinaryPrimitives.WriteInt32LittleEndian(
             resources.AsSpan(namePositionOffset),
             dataSectionOffset - nameSectionOffset);
+
         using StringResourceManagerTestStream stream = new(
             resources,
             maximumReadSize: 3,
@@ -78,6 +79,7 @@ public class StreamStringResourceReaderTests
             resources,
             maximumReadSize: 3,
             canSeek: true);
+
         using StreamStringResourceReader reader = new(stream);
 
         Action action = () => reader.GetResourceName(0);
@@ -93,6 +95,7 @@ public class StreamStringResourceReaderTests
             resources,
             maximumReadSize: 3,
             canSeek: true);
+
         using StreamStringResourceReader reader = new(stream);
 
         reader.ResourceCount.Should().Be(1);

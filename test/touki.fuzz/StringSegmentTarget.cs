@@ -66,6 +66,7 @@ internal static class StringSegmentTarget
                         subject = sliced;
                         break;
                     }
+
                 case 1:
                     {
                         // Slice(start, length) in range must match AsSpan(start, length).
@@ -81,6 +82,7 @@ internal static class StringSegmentTarget
                         subject = sliced;
                         break;
                     }
+
                 case 2:
                     {
                         // The Range indexer must match the equivalent AsSpan slice.
@@ -96,6 +98,7 @@ internal static class StringSegmentTarget
                         subject = ranged;
                         break;
                     }
+
                 case 3:
                     {
                         // Trim() must match string.Trim() and stay a sub-range.
@@ -108,6 +111,7 @@ internal static class StringSegmentTarget
                         subject = trimmed;
                         break;
                     }
+
                 case 4:
                     {
                         char c = (char)NextByte(ref ops);
@@ -120,6 +124,7 @@ internal static class StringSegmentTarget
                         subject = trimmed;
                         break;
                     }
+
                 case 5:
                     {
                         char c = (char)NextByte(ref ops);
@@ -132,6 +137,7 @@ internal static class StringSegmentTarget
                         subject = trimmed;
                         break;
                     }
+
                 case 6:
                     {
                         char c = (char)NextByte(ref ops);
@@ -144,6 +150,7 @@ internal static class StringSegmentTarget
                         subject = trimmed;
                         break;
                     }
+
                 case 7:
                     {
                         // IndexOf(char) must match the span result.
@@ -157,6 +164,7 @@ internal static class StringSegmentTarget
 
                         break;
                     }
+
                 case 8:
                     {
                         // LastIndexOf(char) must match the span result.
@@ -170,6 +178,7 @@ internal static class StringSegmentTarget
 
                         break;
                     }
+
                 case 9:
                     {
                         // TrySplit must partition the segment around the first delimiter.
@@ -200,6 +209,7 @@ internal static class StringSegmentTarget
 
                         break;
                     }
+
                 case 10:
                     {
                         // Replace must match string.Replace and keep the length stable.
@@ -215,6 +225,7 @@ internal static class StringSegmentTarget
                         subject = replaced;
                         break;
                     }
+
                 case 11:
                     {
                         // A fresh segment over the current ToString() must be equal and share a hash code.
@@ -231,6 +242,7 @@ internal static class StringSegmentTarget
 
                         break;
                     }
+
                 case 12:
                     {
                         // The indexer must match the span at a sampled position.
@@ -245,6 +257,7 @@ internal static class StringSegmentTarget
 
                         break;
                     }
+
                 default:
                     // Reset to the full backing segment so later opcodes can explore from the top again.
                     subject = new(backing);

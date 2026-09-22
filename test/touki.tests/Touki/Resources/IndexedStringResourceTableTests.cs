@@ -82,6 +82,7 @@ public class IndexedStringResourceTableTests
         IndexedStringResourceTable table = IndexedStringResourceTable.Create(
             reader,
             StringResourceManagerOptions.None);
+
         try
         {
             table.Lookup("Greeting", out string? first).Should().Be(StringResourceLookupKind.Found);
@@ -107,9 +108,11 @@ public class IndexedStringResourceTableTests
             lookupStarted,
             continueLookup,
             backingDisposed);
+
         IndexedStringResourceTable table = IndexedStringResourceTable.Create(
             reader,
             StringResourceManagerOptions.None);
+
         try
         {
             Task<(StringResourceLookupKind Result, string? Value)> lookup = Task.Run(() =>
@@ -123,12 +126,13 @@ public class IndexedStringResourceTableTests
             SpinWait.SpinUntil(
                 () => (bool)table.TestAccessor.Dynamic.Disposed,
                 TimeSpan.FromSeconds(10)).Should().BeTrue();
+
             backingDisposed.Wait(TimeSpan.FromMilliseconds(100)).Should().BeFalse();
 
             continueLookup.Set();
 
-            (StringResourceLookupKind result, string? value) = await lookup.ConfigureAwait(false);
-            await dispose.ConfigureAwait(false);
+            (StringResourceLookupKind result, string? value) = await lookup.ConfigureAwait(continueOnCapturedContext: false);
+            await dispose.ConfigureAwait(continueOnCapturedContext: false);
             result.Should().Be(StringResourceLookupKind.Found);
             value.Should().Be("Hello");
             backingDisposed.IsSet.Should().BeTrue();
@@ -161,9 +165,11 @@ public class IndexedStringResourceTableTests
             readStarted,
             continueRead,
             backingDisposed);
+
         IndexedStringResourceTable table = IndexedStringResourceTable.Create(
             new StreamStringResourceReader(stream),
             StringResourceManagerOptions.None);
+
         try
         {
             stream.BlockReads = true;
@@ -178,12 +184,13 @@ public class IndexedStringResourceTableTests
             SpinWait.SpinUntil(
                 () => (bool)table.TestAccessor.Dynamic.Disposed,
                 TimeSpan.FromSeconds(10)).Should().BeTrue();
+
             backingDisposed.Wait(TimeSpan.FromMilliseconds(100)).Should().BeFalse();
 
             continueRead.Set();
 
-            (StringResourceLookupKind result, string? value) = await lookup.ConfigureAwait(false);
-            await dispose.ConfigureAwait(false);
+            (StringResourceLookupKind result, string? value) = await lookup.ConfigureAwait(continueOnCapturedContext: false);
+            await dispose.ConfigureAwait(continueOnCapturedContext: false);
             result.Should().Be(StringResourceLookupKind.Found);
             value.Should().Be("Hello");
             backingDisposed.IsSet.Should().BeTrue();

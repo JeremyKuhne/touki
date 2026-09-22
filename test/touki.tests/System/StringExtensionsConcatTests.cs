@@ -16,19 +16,19 @@ public class StringExtensionsConcatTests
     [TestMethod]
     public void Concat_TwoSpans_BothEmpty_ReturnsEmpty()
     {
-        string.Concat(default, default(ReadOnlySpan<char>)).Should().BeEmpty();
+        string.Concat(str0: default, str1: default(ReadOnlySpan<char>)).Should().BeEmpty();
     }
 
     [TestMethod]
     public void Concat_TwoSpans_FirstEmpty_ReturnsSecond()
     {
-        string.Concat(default, "abc".AsSpan()).Should().Be("abc");
+        string.Concat(str0: default, "abc".AsSpan()).Should().Be("abc");
     }
 
     [TestMethod]
     public void Concat_TwoSpans_SecondEmpty_ReturnsFirst()
     {
-        string.Concat("abc".AsSpan(), default).Should().Be("abc");
+        string.Concat("abc".AsSpan(), str1: default).Should().Be("abc");
     }
 
     [TestMethod]

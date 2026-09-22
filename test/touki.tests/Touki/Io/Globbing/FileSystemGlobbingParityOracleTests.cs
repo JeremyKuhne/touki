@@ -53,6 +53,7 @@ public class FileSystemGlobbingParityOracleTests
         oracle.Should().Be(
             expected,
             because: $"the oracle fixture must pin trailing-separator behavior for '{pattern}' against '{input}'");
+
         ToukiMatches(pattern, input).Should().Be(
             oracle,
             because: $"FileSystemGlobbing trailing-separator semantics must agree for '{pattern}' against '{input}'");

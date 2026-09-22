@@ -102,7 +102,7 @@ public unsafe class NativeMemoryTests
     [TestMethod]
     public void Free_NullPointer_DoesNotThrow()
     {
-        Action action = () => NativeMemory.Free(null);
+        Action action = () => NativeMemory.Free(ptr: null);
         action.Should().NotThrow();
     }
 
@@ -110,7 +110,7 @@ public unsafe class NativeMemoryTests
     public void Realloc_NullPointer_AllocatesNewMemory()
     {
         nuint size = 100;
-        void* ptr = NativeMemory.Realloc(null, size);
+        void* ptr = NativeMemory.Realloc(ptr: null, size);
         (ptr is null).Should().BeFalse("Pointer should not be null");
         NativeMemory.Free(ptr);
     }
@@ -248,7 +248,7 @@ public unsafe class NativeMemoryTests
     [TestMethod]
     public void AlignedFree_NullPointer_DoesNotThrow()
     {
-        Action action = () => NativeMemory.AlignedFree(null);
+        Action action = () => NativeMemory.AlignedFree(ptr: null);
         action.Should().NotThrow();
     }
 

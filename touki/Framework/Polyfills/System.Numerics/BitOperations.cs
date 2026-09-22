@@ -108,7 +108,7 @@ public static class BitOperations
 
     /// <inheritdoc cref="RoundUpToPowerOf2(uint)"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe nuint RoundUpToPowerOf2(nuint value) => (nuint)RoundUpToPowerOf2((ulong)value);
+    public static nuint RoundUpToPowerOf2(nuint value) => (nuint)RoundUpToPowerOf2((ulong)value);
 
     /// <summary>
     ///  Count the number of leading zero bits in a mask.

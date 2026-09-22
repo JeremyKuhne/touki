@@ -128,6 +128,7 @@ public class SpanExtensionsSortTests
             span.Sort(comparison);
 #pragma warning restore CS8604
         };
+
         act.Should().Throw<ArgumentNullException>();
     }
 
@@ -147,7 +148,7 @@ public class SpanExtensionsSortTests
     public void Sort_NullComparer_UsesDefault()
     {
         Span<int> span = [3, 1, 2];
-        span.Sort((IComparer<int>?)null);
+        span.Sort(comparer: (IComparer<int>?)null);
         span.ToArray().Should().Equal(1, 2, 3);
     }
 
@@ -197,6 +198,7 @@ public class SpanExtensionsSortTests
             Span<int> items = new int[2];
             keys.Sort(items);
         };
+
         act.Should().Throw<ArgumentException>();
     }
 
@@ -215,7 +217,7 @@ public class SpanExtensionsSortTests
     {
         Span<int> keys = [3, 1, 2];
         Span<int> items = [30, 10, 20];
-        keys.Sort(items, (IComparer<int>?)null);
+        keys.Sort(items, comparer: (IComparer<int>?)null);
         keys.ToArray().Should().Equal(1, 2, 3);
         items.ToArray().Should().Equal(10, 20, 30);
     }

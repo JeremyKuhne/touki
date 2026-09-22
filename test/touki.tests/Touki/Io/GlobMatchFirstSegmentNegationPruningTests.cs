@@ -22,21 +22,21 @@ public class GlobMatchFirstSegmentNegationPruningTests
     {
         TempFolder folder = new();
         string root = folder.TempPath;
-        Directory.CreateDirectory(Path.Combine(root, "src", "nested"));
-        Directory.CreateDirectory(Path.Combine(root, "src", "bin"));
-        Directory.CreateDirectory(Path.Combine(root, "src", "lib"));
-        Directory.CreateDirectory(Path.Combine(root, "obj", "Debug"));
-        Directory.CreateDirectory(Path.Combine(root, "bin", "Release"));
-        Directory.CreateDirectory(Path.Combine(root, "binx"));
+        Directory.CreateDirectory(Path.Join(root, "src", "nested"));
+        Directory.CreateDirectory(Path.Join(root, "src", "bin"));
+        Directory.CreateDirectory(Path.Join(root, "src", "lib"));
+        Directory.CreateDirectory(Path.Join(root, "obj", "Debug"));
+        Directory.CreateDirectory(Path.Join(root, "bin", "Release"));
+        Directory.CreateDirectory(Path.Join(root, "binx"));
 
-        File.WriteAllText(Path.Combine(root, "top.cs"), "");
-        File.WriteAllText(Path.Combine(root, "src", "a.cs"), "");
-        File.WriteAllText(Path.Combine(root, "src", "nested", "c.cs"), "");
-        File.WriteAllText(Path.Combine(root, "src", "bin", "d.cs"), "");
-        File.WriteAllText(Path.Combine(root, "src", "lib", "f.cs"), "");
-        File.WriteAllText(Path.Combine(root, "obj", "Debug", "obj.cs"), "");
-        File.WriteAllText(Path.Combine(root, "bin", "Release", "bin.cs"), "");
-        File.WriteAllText(Path.Combine(root, "binx", "e.cs"), "");
+        File.WriteAllText(Path.Join(root, "top.cs"), "");
+        File.WriteAllText(Path.Join(root, "src", "a.cs"), "");
+        File.WriteAllText(Path.Join(root, "src", "nested", "c.cs"), "");
+        File.WriteAllText(Path.Join(root, "src", "bin", "d.cs"), "");
+        File.WriteAllText(Path.Join(root, "src", "lib", "f.cs"), "");
+        File.WriteAllText(Path.Join(root, "obj", "Debug", "obj.cs"), "");
+        File.WriteAllText(Path.Join(root, "bin", "Release", "bin.cs"), "");
+        File.WriteAllText(Path.Join(root, "binx", "e.cs"), "");
         return folder;
     }
 
@@ -55,6 +55,7 @@ public class GlobMatchFirstSegmentNegationPruningTests
         // are pruned: no file beneath them can match.
         matcher.MatchesDirectory(root, "bin".AsSpan())
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+
         matcher.MatchesDirectory(root, "obj".AsSpan())
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
 
@@ -77,7 +78,7 @@ public class GlobMatchFirstSegmentNegationPruningTests
         // A `bin` directory nested under another segment can still contribute
         // matches (e.g. src/bin/d.cs matches !(bin|obj)/**/*.cs), so it must not
         // be pruned.
-        string srcDir = Path.Combine(root, "src");
+        string srcDir = Path.Join(root, "src");
         matcher.MatchesDirectory(srcDir, "bin".AsSpan())
             .Should().NotBe(DirectoryMatchType.NoDescendantFilesMatch);
     }
@@ -106,9 +107,10 @@ public class GlobMatchFirstSegmentNegationPruningTests
         // src/!(bin)/**/*.cs excludes src/bin entirely but descends src/lib.
         using GlobMatch matcher = CreateMSBuildExtGlob("src/!(bin)/**/*.cs", root);
 
-        string srcDir = Path.Combine(root, "src");
+        string srcDir = Path.Join(root, "src");
         matcher.MatchesDirectory(srcDir, "bin".AsSpan())
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+
         matcher.MatchesDirectory(srcDir, "lib".AsSpan())
             .Should().NotBe(DirectoryMatchType.NoDescendantFilesMatch);
 

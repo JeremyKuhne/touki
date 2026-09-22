@@ -20,6 +20,7 @@ public class MicrosoftGeneratorOracleTests
               </data>
             </root>
             """;
+
         Dictionary<string, string> metadata = new(StringComparer.Ordinal)
         {
             ["GenerateSource"] = "true",
@@ -27,6 +28,7 @@ public class MicrosoftGeneratorOracleTests
             ["EmitFormatMethods"] = "true",
             ["Public"] = "true"
         };
+
         GeneratorTestResource testResource = GeneratorTestResource.Selected(resource, metadata: metadata);
         GeneratorTestResult toukiResult = GeneratorTestHarness.Run(testResource);
         using OracleGenerator oracle = OracleGenerator.Load();
@@ -49,8 +51,10 @@ public class MicrosoftGeneratorOracleTests
             "the pinned oracle generated:{0}{1}",
             Environment.NewLine,
             oracleResult.SingleSource);
+
         GetRequiredProperty(toukiType, "ResourceManager").Type.ToDisplayString(s_typeDisplayFormat)
             .Should().Be("global::Touki.Resources.StringResourceManager");
+
         GetRequiredProperty(oracleType, "ResourceManager").Type.ToDisplayString(s_typeDisplayFormat)
             .Should().Be("global::System.Resources.ResourceManager");
     }
@@ -67,10 +71,12 @@ public class MicrosoftGeneratorOracleTests
             ["RelativeDir"] = "Features/",
             ["ToukiResourceFamily"] = string.Empty
         };
+
         GeneratorTestResource testResource = GeneratorTestResource.Selected(
             resource,
             path: "../shared/Messages.resx",
             metadata: metadata);
+
         GeneratorTestResult toukiResult = GeneratorTestHarness.Run(testResource);
         using OracleGenerator oracle = OracleGenerator.Load();
         GeneratorTestResult oracleResult = GeneratorTestHarness.Run(oracle.Generator, testResource);
@@ -91,6 +97,7 @@ public class MicrosoftGeneratorOracleTests
             ["ToukiGenerateSource"] = "false",
             ["WithCulture"] = "true"
         };
+
         GeneratorTestResource testResource = GeneratorTestResource.Selected(resource, metadata: metadata);
         GeneratorTestResult toukiResult = GeneratorTestHarness.Run(testResource);
         using OracleGenerator oracle = OracleGenerator.Load();
@@ -110,6 +117,7 @@ public class MicrosoftGeneratorOracleTests
             ["ToukiGenerateSource"] = "true",
             ["WithCulture"] = "true"
         };
+
         GeneratorTestResource testResource = GeneratorTestResource.Selected(resource, metadata: metadata);
         GeneratorTestResult toukiResult = GeneratorTestHarness.Run(testResource);
         using OracleGenerator oracle = OracleGenerator.Load();
@@ -132,6 +140,7 @@ public class MicrosoftGeneratorOracleTests
             ["RelativeDir"] = "Resources/",
             ["ToukiResourceFamily"] = "Company.Custom.Manifest"
         };
+
         GeneratorTestResource testResource = GeneratorTestResource.Selected(resource, metadata: metadata);
         GeneratorTestResult toukiResult = GeneratorTestHarness.Run(testResource);
         using OracleGenerator oracle = OracleGenerator.Load();
@@ -141,11 +150,12 @@ public class MicrosoftGeneratorOracleTests
         oracleResult.CompilerErrors.Should().BeEmpty();
         GetGeneratedResourceType(toukiResult).ToDisplayString()
             .Should().Be(GetGeneratedResourceType(oracleResult).ToDisplayString());
+
         toukiResult.SingleSource.Should().Contain("@\"Company.Custom.Manifest\"");
     }
 
-    private static INamedTypeSymbol GetGeneratedType(GeneratorTestResult result)
-        => GetGeneratedType(result, "Test.Resources.Strings");
+    private static INamedTypeSymbol GetGeneratedType(GeneratorTestResult result) =>
+        GetGeneratedType(result, "Test.Resources.Strings");
 
     private static INamedTypeSymbol GetGeneratedType(GeneratorTestResult result, string metadataName)
     {
@@ -220,11 +230,13 @@ public class MicrosoftGeneratorOracleTests
                             </data>
                         </root>
                         """;
+
                 Dictionary<string, string> metadata = new(StringComparer.Ordinal)
                 {
                         ["GenerateSource"] = "true",
                         ["IncludeDefaultValues"] = "true"
                 };
+
                 GeneratorTestResource testResource = GeneratorTestResource.Selected(resource, metadata: metadata);
                 GeneratorTestResult toukiResult = GeneratorTestHarness.Run(testResource);
                 using OracleGenerator oracle = OracleGenerator.Load();

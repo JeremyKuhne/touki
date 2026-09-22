@@ -19,7 +19,7 @@ public class OneTypePerFileCodeFixTests
             new MoveTypeToFileCodeFixProvider(),
             sources,
             OneTypePerFileAnalyzer.DiagnosticId,
-            fixAll).ConfigureAwait(false);
+            fixAll).ConfigureAwait(continueOnCapturedContext: false);
 
         result.CompilerErrors.Should().BeEmpty();
         if (expectFix)
@@ -52,7 +52,7 @@ public class OneTypePerFileCodeFixTests
             """;
 
         CodeFixTestResult result = await ApplyFixAsync(
-            [("Owner.cs", "C:\\src\\Owner.cs", Source)]).ConfigureAwait(false);
+            [("Owner.cs", "C:\\src\\Owner.cs", Source)]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.Documents.Should().HaveCount(2);
         CodeFixTestDocument source = result.Documents.Single(document => document.Name == "Owner.cs");
@@ -66,11 +66,11 @@ public class OneTypePerFileCodeFixTests
     public async Task ApplyFix_TypeNameMatchesCurrentStem_UsesNumericSuffix()
     {
         const string Source = "class First { } class Bar { }";
-        string directory = Path.Combine(Path.GetTempPath(), $"touki-duplicate-stem-{Guid.NewGuid():N}");
-        string sourcePath = Path.Combine(directory, "Bar.cs");
+        string directory = Path.Join(Path.GetTempPath(), $"touki-duplicate-stem-{Guid.NewGuid():N}");
+        string sourcePath = Path.Join(directory, "Bar.cs");
 
         CodeFixTestResult result = await ApplyFixAsync(
-            [("Bar.cs", sourcePath, Source)]).ConfigureAwait(false);
+            [("Bar.cs", sourcePath, Source)]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.Documents.Select(document => document.Name).Should().Contain("Bar.2.cs");
     }
@@ -79,17 +79,17 @@ public class OneTypePerFileCodeFixTests
     public async Task ApplyFix_DirectoryOccupiesDestination_UsesDetailName()
     {
         const string Source = "class First { } class Second { }";
-        string directory = Path.Combine(Path.GetTempPath(), $"touki-move-fix-{Guid.NewGuid():N}");
+        string directory = Path.Join(Path.GetTempPath(), $"touki-move-fix-{Guid.NewGuid():N}");
         Directory.CreateDirectory(directory);
 
         try
         {
-            string currentPath = Path.Combine(directory, "First.cs");
+            string currentPath = Path.Join(directory, "First.cs");
             File.WriteAllText(currentPath, Source);
-            Directory.CreateDirectory(Path.Combine(directory, "Second.cs"));
+            Directory.CreateDirectory(Path.Join(directory, "Second.cs"));
 
             CodeFixTestResult result = await ApplyFixAsync(
-                [("First.cs", currentPath, Source)]).ConfigureAwait(false);
+                [("First.cs", currentPath, Source)]).ConfigureAwait(continueOnCapturedContext: false);
 
             result.Documents.Select(document => document.Name).Should().Contain("Second.First.cs");
         }
@@ -103,19 +103,19 @@ public class OneTypePerFileCodeFixTests
     public async Task ApplyFix_CaseVariantOccupiesDestination_UsesDetailName()
     {
         const string Source = "class First { } class Second { }";
-        string directory = Path.Combine(Path.GetTempPath(), $"touki-move-case-{Guid.NewGuid():N}");
+        string directory = Path.Join(Path.GetTempPath(), $"touki-move-case-{Guid.NewGuid():N}");
         Directory.CreateDirectory(directory);
 
         try
         {
-            string currentPath = Path.Combine(directory, "First.cs");
-            string targetPath = Path.Combine(directory, "Second.cs");
+            string currentPath = Path.Join(directory, "First.cs");
+            string targetPath = Path.Join(directory, "Second.cs");
             File.WriteAllText(currentPath, Source);
-            File.WriteAllText(Path.Combine(directory, "second.cs"), "excluded");
+            File.WriteAllText(Path.Join(directory, "second.cs"), "excluded");
             bool targetNameIsOccupied = File.Exists(targetPath);
 
             CodeFixTestResult result = await ApplyFixAsync(
-                [("First.cs", currentPath, Source)]).ConfigureAwait(false);
+                [("First.cs", currentPath, Source)]).ConfigureAwait(continueOnCapturedContext: false);
 
             result.Documents.Select(document => document.Name).Should().Contain(
                 targetNameIsOccupied ? "Second.First.cs" : "Second.cs");
@@ -143,7 +143,7 @@ public class OneTypePerFileCodeFixTests
             [
                 ("Base.cs", "C:\\src\\Base.cs", "class Base { }"),
                 ("Outer.cs", "C:\\src\\Outer.cs", Source)
-            ]).ConfigureAwait(false);
+            ]).ConfigureAwait(continueOnCapturedContext: false);
 
         CodeFixTestDocument source = result.Documents.Single(document => document.Name == "Outer.cs");
         CodeFixTestDocument destination = result.Documents.Single(document => document.Name == "Nested.cs");
@@ -173,7 +173,7 @@ public class OneTypePerFileCodeFixTests
 
         CodeFixTestResult result = await ApplyFixAsync(
             [("Owner.cs", "C:\\src\\Owner.cs", Source)],
-            expectFix: false).ConfigureAwait(false);
+            expectFix: false).ConfigureAwait(continueOnCapturedContext: false);
 
         CodeFixTestDocument document = result.Documents.Should().ContainSingle().Subject;
         document.Name.Should().Be("Owner.cs");
@@ -199,7 +199,7 @@ public class OneTypePerFileCodeFixTests
 
         CodeFixTestResult result = await ApplyFixAsync(
             [("Owner.cs", "C:\\src\\Owner.cs", Source)],
-            expectFix: false).ConfigureAwait(false);
+            expectFix: false).ConfigureAwait(continueOnCapturedContext: false);
 
         CodeFixTestDocument document = result.Documents.Should().ContainSingle().Subject;
         document.Source.Should().Be(Source);
@@ -229,7 +229,7 @@ public class OneTypePerFileCodeFixTests
 
         CodeFixTestResult result = await ApplyFixAsync(
             [("Owner.cs", "C:\\src\\Owner.cs", Source)],
-            expectFix: false).ConfigureAwait(false);
+            expectFix: false).ConfigureAwait(continueOnCapturedContext: false);
 
         CodeFixTestDocument document = result.Documents.Should().ContainSingle().Subject;
         document.Source.Should().Be(Source);
@@ -254,7 +254,7 @@ public class OneTypePerFileCodeFixTests
 
         CodeFixTestResult result = await ApplyFixAsync(
             [("Owner.cs", "C:\\src\\Owner.cs", Source)],
-            expectFix: false).ConfigureAwait(false);
+            expectFix: false).ConfigureAwait(continueOnCapturedContext: false);
 
         CodeFixTestDocument document = result.Documents.Should().ContainSingle().Subject;
         document.Source.Should().Be(Source);
@@ -278,7 +278,7 @@ public class OneTypePerFileCodeFixTests
             [
                 ("Marker.cs", "C:\\src\\Marker.cs", "class MarkerAttribute : System.Attribute { }"),
                 ("Outer.cs", "C:\\src\\Outer.cs", Source)
-            ]).ConfigureAwait(false);
+            ]).ConfigureAwait(continueOnCapturedContext: false);
 
         CodeFixTestDocument source = result.Documents.Single(document => document.Name == "Outer.cs");
         CodeFixTestDocument destination = result.Documents.Single(document => document.Name == "Nested.cs");
@@ -307,7 +307,7 @@ public class OneTypePerFileCodeFixTests
             """;
 
         CodeFixTestResult result = await ApplyFixAsync(
-            [("First.cs", "C:\\src\\First.cs", Source)]).ConfigureAwait(false);
+            [("First.cs", "C:\\src\\First.cs", Source)]).ConfigureAwait(continueOnCapturedContext: false);
 
         CodeFixTestDocument source = result.Documents.Single(document => document.Name == "First.cs");
         CodeFixTestDocument destination = result.Documents.Single(document => document.Name == "Second.cs");
@@ -333,7 +333,7 @@ public class OneTypePerFileCodeFixTests
             """;
 
         CodeFixTestResult result = await ApplyFixAsync(
-            [("First.cs", "C:\\src\\First.cs", Source)]).ConfigureAwait(false);
+            [("First.cs", "C:\\src\\First.cs", Source)]).ConfigureAwait(continueOnCapturedContext: false);
 
         CodeFixTestDocument source = result.Documents.Single(document => document.Name == "First.cs");
         CodeFixTestDocument destination = result.Documents.Single(document => document.Name == "Nested.cs");
@@ -359,10 +359,11 @@ public class OneTypePerFileCodeFixTests
 
         CodeFixTestResult result = await ApplyFixAsync(
             [("First.cs", "C:\\src\\First.cs", Source)],
-            fixAll: true).ConfigureAwait(false);
+            fixAll: true).ConfigureAwait(continueOnCapturedContext: false);
 
         result.Documents.Select(document => document.Name).Should().BeEquivalentTo(
             ["First.cs", "Second.cs", "Third.cs"]);
+
         result.Documents.Single(document => document.Name == "First.cs").Source
             .Should().NotContain("class Second").And.NotContain("delegate void Third");
     }
@@ -384,10 +385,11 @@ public class OneTypePerFileCodeFixTests
 
         CodeFixTestResult result = await ApplyFixAsync(
             [("Outer.cs", "C:\\src\\Outer.cs", Source)],
-            fixAll: true).ConfigureAwait(false);
+            fixAll: true).ConfigureAwait(continueOnCapturedContext: false);
 
         result.Documents.Select(document => document.Name).Should().BeEquivalentTo(
             ["Outer.cs", "Middle.cs", "Leaf.cs"]);
+
         CodeFixTestDocument source = result.Documents.Single(document => document.Name == "Outer.cs");
         source.Source.Should().Contain("partial class Outer");
         CodeFixTestDocument leaf = result.Documents.Single(document => document.Name == "Leaf.cs");
@@ -412,7 +414,7 @@ public class OneTypePerFileCodeFixTests
             """;
 
         CodeFixTestResult result = await ApplyFixAsync(
-            [("Outer.cs", "C:\\src\\Outer.cs", Source)]).ConfigureAwait(false);
+            [("Outer.cs", "C:\\src\\Outer.cs", Source)]).ConfigureAwait(continueOnCapturedContext: false);
 
         CodeFixTestDocument source = result.Documents.Single(document => document.Name == "Outer.cs");
         source.Source.Should().Contain("/// <summary>Owns nested types.</summary>");
@@ -440,7 +442,7 @@ public class OneTypePerFileCodeFixTests
 
         CodeFixTestResult result = await ApplyFixAsync(
             [("First.cs", "C:\\src\\First.cs", Source)],
-            fixAll: true).ConfigureAwait(false);
+            fixAll: true).ConfigureAwait(continueOnCapturedContext: false);
 
         result.Documents.Select(document => document.Name).Should().BeEquivalentTo(
             ["First.cs", "BitReader.cs", "Second.cs", "Second.BitReader.cs"]);
@@ -457,7 +459,7 @@ public class OneTypePerFileCodeFixTests
             [("First.cs", "C:\\src\\First.cs", Source)],
             OneTypePerFileAnalyzer.DiagnosticId,
             fixAll: true,
-            workspaceKind: WorkspaceKind.MSBuild).ConfigureAwait(false);
+            workspaceKind: WorkspaceKind.MSBuild).ConfigureAwait(continueOnCapturedContext: false);
 
         CodeFixTestDocument document = result.Documents.Should().ContainSingle().Subject;
         document.Name.Should().Be("First.cs");
@@ -465,6 +467,7 @@ public class OneTypePerFileCodeFixTests
         result.CompilerErrors.Should().BeEmpty();
         result.AnalyzerDiagnostics.Should().Contain(
             diagnostic => diagnostic.Id == OneTypePerFileAnalyzer.DiagnosticId);
+
         result.FixAllActionOffered.Should().BeFalse();
     }
 
@@ -479,7 +482,7 @@ public class OneTypePerFileCodeFixTests
             [("First.cs", "C:\\src\\First.cs", Source)],
             OneTypePerFileAnalyzer.DiagnosticId,
             fixAll: false,
-            workspaceKind: WorkspaceKind.MSBuild).ConfigureAwait(false);
+            workspaceKind: WorkspaceKind.MSBuild).ConfigureAwait(continueOnCapturedContext: false);
 
         CodeFixTestDocument document = result.Documents.Should().ContainSingle().Subject;
         document.Name.Should().Be("First.cs");

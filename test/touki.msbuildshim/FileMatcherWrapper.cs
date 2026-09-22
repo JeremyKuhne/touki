@@ -20,22 +20,34 @@ public static class FileMatcherWrapper
     /// </summary>
     public enum SearchAction
     {
-        /// <summary>No action.</summary>
+        /// <summary>
+        ///  No action.
+        /// </summary>
         None = 0,
 
-        /// <summary>Run the file-system search.</summary>
+        /// <summary>
+        ///  Run the file-system search.
+        /// </summary>
         RunSearch = 1,
 
-        /// <summary>Return the file specification verbatim.</summary>
+        /// <summary>
+        ///  Return the file specification verbatim.
+        /// </summary>
         ReturnFileSpec = 2,
 
-        /// <summary>Return an empty list.</summary>
+        /// <summary>
+        ///  Return an empty list.
+        /// </summary>
         ReturnEmptyList = 3,
 
-        /// <summary>Fail because the wildcard would enumerate a drive root.</summary>
+        /// <summary>
+        ///  Fail because the wildcard would enumerate a drive root.
+        /// </summary>
         FailOnDriveEnumeratingWildcard = 4,
 
-        /// <summary>Log that the wildcard would enumerate a drive root.</summary>
+        /// <summary>
+        ///  Log that the wildcard would enumerate a drive root.
+        /// </summary>
         LogDriveEnumeratingWildcard = 5,
     }
 
@@ -44,16 +56,24 @@ public static class FileMatcherWrapper
     /// </summary>
     public readonly struct GetFilesResult
     {
-        /// <summary>List of files found</summary>
+        /// <summary>
+        ///  List of files found
+        /// </summary>
         public string[] FileList { get; }
 
-        /// <summary>Action returned by the search</summary>
+        /// <summary>
+        ///  Action returned by the search
+        /// </summary>
         public SearchAction Action { get; }
 
-        /// <summary>Exclude file specification if any</summary>
+        /// <summary>
+        ///  Exclude file specification if any
+        /// </summary>
         public string ExcludeFileSpec { get; }
 
-        /// <summary>Glob failure message if any</summary>
+        /// <summary>
+        ///  Glob failure message if any
+        /// </summary>
         public string GlobFailure { get; }
 
         internal GetFilesResult(string[] fileList, SearchAction action, string excludeFileSpec, string globFailure)
@@ -105,7 +125,7 @@ public static class FileMatcherWrapper
                 ?? throw new InvalidOperationException("Could not find Default field on FileMatcher");
 
             // Get the Default instance
-            s_defaultInstance = s_defaultFieldInfo.GetValue(null)
+            s_defaultInstance = s_defaultFieldInfo.GetValue(obj: null)
                 ?? throw new InvalidOperationException("Default instance of FileMatcher is null");
 
             // Find the internal IFileSystem type and the constructor that accepts it, so a matcher
@@ -115,27 +135,27 @@ public static class FileMatcherWrapper
 
             s_fileSystemConstructor = fileMatcherType.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
                 .FirstOrDefault(c =>
-                {
-                    ParameterInfo[] parameters = c.GetParameters();
-                    return parameters.Length >= 1 && parameters[0].ParameterType == fileSystemType;
-                })
+                    {
+                        ParameterInfo[] parameters = c.GetParameters();
+                        return parameters.Length >= 1 && parameters[0].ParameterType == fileSystemType;
+                    })
                 ?? throw new InvalidOperationException("Could not find FileMatcher(IFileSystem, ...) constructor");
 
             // Get the GetFiles method
             s_getFilesMethodInfo = fileMatcherType.GetMethod("GetFiles",
                 BindingFlags.NonPublic | BindingFlags.Instance,
-                null,
+                binder: null,
                 [typeof(string), typeof(string), typeof(List<string>)],
-                null)
+                modifiers: null)
                 ?? throw new InvalidOperationException(
                     "Could not find GetFiles(string, string, List<string>) method on FileMatcher");
 
             s_isMatchMethodInfo = fileMatcherType.GetMethod(
                 "IsMatch",
                 BindingFlags.NonPublic | BindingFlags.Static,
-                null,
+                binder: null,
                 [typeof(string), typeof(string)],
-                null)
+                modifiers: null)
                 ?? throw new InvalidOperationException(
                     "Could not find IsMatch(string, string) method on FileMatcher");
 
@@ -194,6 +214,7 @@ public static class FileMatcherWrapper
 #pragma warning disable CA1510 // Use ArgumentNullException throw helper
         if (directoryPath is null)
             throw new ArgumentNullException(nameof(directoryPath));
+
         if (filespec is null)
             throw new ArgumentNullException(nameof(filespec));
 #pragma warning restore CA1510 // Use ArgumentNullException throw helper
@@ -208,11 +229,12 @@ public static class FileMatcherWrapper
 
             // Get Item1 (FileList) - the actual results
             string[] fileList = (string[])(s_fileListField.GetValue(returnValue)
-                ?? throw new InvalidOperationException("GetFiles returned a null file list"));
+                    ?? throw new InvalidOperationException("GetFiles returned a null file list"));
 
             // Get Item2 (SearchAction)
             object actionValue = s_searchActionField.GetValue(returnValue)
                 ?? throw new InvalidOperationException("GetFiles returned a null search action");
+
             SearchAction action = (SearchAction)Enum.ToObject(typeof(SearchAction), Convert.ToInt32(actionValue));
 
             // Get Item3 (ExcludeFileSpec)
@@ -260,8 +282,8 @@ public static class FileMatcherWrapper
     {
         ArgumentNullException.ThrowIfNull(input);
         ArgumentNullException.ThrowIfNull(pattern);
-        return (bool)(s_isMatchMethodInfo.Invoke(null, [input, pattern])
-            ?? throw new InvalidOperationException("IsMatch method returned null"));
+        return (bool)(s_isMatchMethodInfo.Invoke(obj: null, [input, pattern])
+                ?? throw new InvalidOperationException("IsMatch method returned null"));
     }
 
     /// <summary>
@@ -273,13 +295,13 @@ public static class FileMatcherWrapper
         string filespec,
         List<string>? excludeSpecs,
         MSBuildFileSystemBase fileSystem) =>
-        GetFiles(directoryPath, filespec, excludeSpecs, fileSystem).FileList;
+            GetFiles(directoryPath, filespec, excludeSpecs, fileSystem).FileList;
 
     /// <summary>
     ///  Checks if FileMatcher reflection initialization was successful.
     /// </summary>
     public static bool IsAvailable =>
         s_getFilesMethodInfo is not null
-        && s_isMatchMethodInfo is not null
-        && s_defaultInstance is not null;
+            && s_isMatchMethodInfo is not null
+            && s_defaultInstance is not null;
 }

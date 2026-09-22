@@ -14,7 +14,7 @@ public class CharsTests
 
         for (int i = 0; i < samples; i++)
         {
-            char c = char.GetRandomSimpleChar(null);
+            char c = char.GetRandomSimpleChar(random: null);
             int code = c;
 
             bool inAsciiPrintable = code is >= 0x0020 and <= 0x007E;

@@ -34,7 +34,7 @@ public class ClassRecordMemberLookupPerf
     public void Setup()
     {
 #if NET
-        AppContext.SetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", true);
+        AppContext.SetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", isEnabled: true);
 #endif
 
         byte[] payloadBytes;

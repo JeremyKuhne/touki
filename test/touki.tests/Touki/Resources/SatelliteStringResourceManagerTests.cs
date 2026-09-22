@@ -50,6 +50,7 @@ public partial class SatelliteStringResourceManagerTests
     {
         string resourceName = s_assembly.GetManifestResourceNames()
             .Single(name => name.EndsWith("SatelliteTestStrings.resources", StringComparison.Ordinal));
+
         return resourceName[..^".resources".Length];
     }
 
@@ -57,17 +58,18 @@ public partial class SatelliteStringResourceManagerTests
     {
         string assemblyName = s_assembly.GetName().Name
             ?? throw new InvalidOperationException("The test assembly must have a name.");
+
         return $"{assemblyName}.resources.dll";
     }
 
     private static string CopySatelliteAssembly(string probeRoot, string culture)
     {
-        string directory = Path.Combine(probeRoot, culture);
+        string directory = Path.Join(probeRoot, culture);
         Directory.CreateDirectory(directory);
 
         string fileName = SatelliteAssemblyFileName();
-        string source = Path.Combine(AppContext.BaseDirectory, culture, fileName);
-        string destination = Path.Combine(directory, fileName);
+        string source = Path.Join(AppContext.BaseDirectory, culture, fileName);
+        string destination = Path.Join(directory, fileName);
         System.IO.File.Copy(source, destination);
         return destination;
     }
@@ -78,9 +80,9 @@ public partial class SatelliteStringResourceManagerTests
         string baseName,
         params (string Key, object? Value)[] entries)
     {
-        string directory = Path.Combine(probeRoot, culture);
+        string directory = Path.Join(probeRoot, culture);
         Directory.CreateDirectory(directory);
-        using ResourceWriter writer = new(Path.Combine(directory, $"{baseName}.resources"));
+        using ResourceWriter writer = new(Path.Join(directory, $"{baseName}.resources"));
         foreach ((string key, object? value) in entries)
         {
             writer.AddResource(key, value);
@@ -92,9 +94,9 @@ public partial class SatelliteStringResourceManagerTests
     // Writes a default-format file mixing a string with an intrinsic non-string (an int).
     private static void WriteMixedSideFile(string probeRoot, string culture, string baseName)
     {
-        string directory = Path.Combine(probeRoot, culture);
+        string directory = Path.Join(probeRoot, culture);
         Directory.CreateDirectory(directory);
-        using ResourceWriter writer = new(Path.Combine(directory, $"{baseName}.resources"));
+        using ResourceWriter writer = new(Path.Join(directory, $"{baseName}.resources"));
         writer.AddResource("Greeting", "Hallo");
         writer.AddResource("Count", 42);
         writer.Generate();
@@ -104,9 +106,9 @@ public partial class SatelliteStringResourceManagerTests
     // TypeConverter (reflection) to materialize, which switches the file to the non-default reader type.
     private static void WriteReflectionSideFile(string probeRoot, string culture, string baseName)
     {
-        string directory = Path.Combine(probeRoot, culture);
+        string directory = Path.Join(probeRoot, culture);
         Directory.CreateDirectory(directory);
-        using PreserializedResourceWriter writer = new(Path.Combine(directory, $"{baseName}.resources"));
+        using PreserializedResourceWriter writer = new(Path.Join(directory, $"{baseName}.resources"));
         writer.AddResource("Greeting", "Hallo");
         writer.AddResource("Fancy", "10,20", "System.Drawing.Point, System.Drawing.Primitives");
         writer.Generate();
@@ -386,7 +388,7 @@ public partial class SatelliteStringResourceManagerTests
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
-        string neutralPath = Path.Combine(folder.TempPath, "Neutral.resources");
+        string neutralPath = Path.Join(folder.TempPath, "Neutral.resources");
         using (ResourceWriter writer = new(neutralPath))
         {
             writer.AddResource("Greeting", "Neutral File");
@@ -412,6 +414,7 @@ public partial class SatelliteStringResourceManagerTests
             baseName,
             folder.TempPath,
             neutralResources);
+
         CultureInfo culture = new("de-DE");
 
         manager.GetString("Greeting", culture).Should().Be("Override");
@@ -479,9 +482,11 @@ public partial class SatelliteStringResourceManagerTests
         ConstructorInfo constructor = typeof(NeutralResourcesLanguageAttribute).GetConstructor(
             [typeof(string), typeof(UltimateResourceFallbackLocation)])
             ?? throw new InvalidOperationException("The neutral resources attribute constructor is missing.");
+
         CustomAttributeBuilder attribute = new(
             constructor,
             ["en-US", UltimateResourceFallbackLocation.Satellite]);
+
         assembly.SetCustomAttribute(attribute);
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromRuntimeSatellites(
             "Strings",
@@ -499,6 +504,7 @@ public partial class SatelliteStringResourceManagerTests
         AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
         ConstructorInfo constructor = typeof(SatelliteContractVersionAttribute).GetConstructor([typeof(string)])
             ?? throw new InvalidOperationException("The satellite contract attribute constructor is missing.");
+
         assembly.SetCustomAttribute(new CustomAttributeBuilder(constructor, ["invalid"]));
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromRuntimeSatellites(
             "Strings",
@@ -519,6 +525,7 @@ public partial class SatelliteStringResourceManagerTests
         AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
         ConstructorInfo constructor = typeof(SatelliteContractVersionAttribute).GetConstructor([typeof(string)])
             ?? throw new InvalidOperationException("The satellite contract attribute constructor is missing.");
+
         assembly.SetCustomAttribute(new CustomAttributeBuilder(constructor, ["invalid"]));
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromResourcesDirectory(
             baseName,
@@ -533,9 +540,9 @@ public partial class SatelliteStringResourceManagerTests
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
-        string directory = Path.Combine(folder.TempPath, "de");
+        string directory = Path.Join(folder.TempPath, "de");
         Directory.CreateDirectory(directory);
-        System.IO.File.WriteAllBytes(Path.Combine(directory, $"{baseName}.resources"), [0x00, 0x01, 0x02, 0x03]);
+        System.IO.File.WriteAllBytes(Path.Join(directory, $"{baseName}.resources"), [0x00, 0x01, 0x02, 0x03]);
 
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromResourcesDirectory(
             baseName,
@@ -552,11 +559,12 @@ public partial class SatelliteStringResourceManagerTests
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
-        string directory = Path.Combine(folder.TempPath, "de");
+        string directory = Path.Join(folder.TempPath, "de");
         Directory.CreateDirectory(directory);
         System.IO.File.WriteAllBytes(
-            Path.Combine(directory, $"{baseName}.resources"),
+            Path.Join(directory, $"{baseName}.resources"),
             [0x00, 0x01, 0x02, 0x03]);
+
         int openCount = 0;
 
         MappedMemoryManager OpenFile(string path)
@@ -570,6 +578,7 @@ public partial class SatelliteStringResourceManagerTests
             folder.TempPath,
             s_assembly,
             OpenFile);
+
         Action action = () => manager.GetString("Greeting", new CultureInfo("de"));
 
         action.Should().Throw<ArgumentException>();
@@ -587,9 +596,9 @@ public partial class SatelliteStringResourceManagerTests
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
-        string directory = Path.Combine(folder.TempPath, "de");
+        string directory = Path.Join(folder.TempPath, "de");
         Directory.CreateDirectory(directory);
-        System.IO.File.WriteAllBytes(Path.Combine(directory, $"{baseName}.resources"), [0x00, 0x01, 0x02, 0x03]);
+        System.IO.File.WriteAllBytes(Path.Join(directory, $"{baseName}.resources"), [0x00, 0x01, 0x02, 0x03]);
         CopySatelliteAssembly(folder.TempPath, "de");
 
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromResourcesDirectory(
@@ -607,9 +616,9 @@ public partial class SatelliteStringResourceManagerTests
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
-        string directory = Path.Combine(folder.TempPath, "de");
+        string directory = Path.Join(folder.TempPath, "de");
         Directory.CreateDirectory(directory);
-        System.IO.File.WriteAllBytes(Path.Combine(directory, SatelliteAssemblyFileName()), [0x00, 0x01, 0x02, 0x03]);
+        System.IO.File.WriteAllBytes(Path.Join(directory, SatelliteAssemblyFileName()), [0x00, 0x01, 0x02, 0x03]);
 
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromSatelliteDirectory(
             baseName,
@@ -626,11 +635,11 @@ public partial class SatelliteStringResourceManagerTests
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
-        string directory = Path.Combine(folder.TempPath, "de");
+        string directory = Path.Join(folder.TempPath, "de");
         Directory.CreateDirectory(directory);
         System.IO.File.Copy(
             typeof(SatelliteStringResourceManager).Assembly.Location,
-            Path.Combine(directory, SatelliteAssemblyFileName()));
+            Path.Join(directory, SatelliteAssemblyFileName()));
 
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromSatelliteDirectory(
             baseName,
@@ -720,12 +729,13 @@ public partial class SatelliteStringResourceManagerTests
             baseName,
             folder.TempPath,
             s_assembly);
+
         CultureInfo german = new("de");
 
         manager.GetString("Greeting", german).Should().Be("Hallo");
 
         // Delete the backing file; the cached table must still answer for the same culture.
-        System.IO.File.Delete(Path.Combine(folder.TempPath, "de", $"{baseName}.resources"));
+        System.IO.File.Delete(Path.Join(folder.TempPath, "de", $"{baseName}.resources"));
 
         manager.GetString("Greeting", german).Should().Be("Hallo");
     }
@@ -741,6 +751,7 @@ public partial class SatelliteStringResourceManagerTests
             baseName,
             folder.TempPath,
             s_assembly);
+
         CultureInfo german = new("de");
 
         manager.GetString("Greeting", german).Should().Be("Hallo");
@@ -768,6 +779,7 @@ public partial class SatelliteStringResourceManagerTests
             folder.TempPath,
             s_assembly,
             OpenFile);
+
         CultureInfo german = new("de");
 
         manager.GetString("Greeting", german).Should().Be("Hallo");
@@ -801,11 +813,12 @@ public partial class SatelliteStringResourceManagerTests
             folder.TempPath,
             s_assembly,
             OpenFile);
+
         CultureInfo german = new("de");
 
         manager.GetString("Greeting", german).Should().Be("Hallo");
         manager.GetString("Farewell", german).Should().Be("Tschuss");
-        string satellitePath = Path.Combine(folder.TempPath, "de", SatelliteAssemblyFileName());
+        string satellitePath = Path.Join(folder.TempPath, "de", SatelliteAssemblyFileName());
         openCounts[satellitePath].Should().Be(1);
         openCounts.Should().ContainSingle();
 
@@ -837,12 +850,13 @@ public partial class SatelliteStringResourceManagerTests
             folder.TempPath,
             s_assembly,
             OpenFile);
+
         CultureInfo german = new("de-DE");
 
         manager.GetString("Greeting", german).Should().Be("Hallo");
         manager.GetString("Farewell", german).Should().Be("Tschuss");
-        string specificPath = Path.Combine(folder.TempPath, "de-DE", $"{baseName}.resources");
-        string parentPath = Path.Combine(folder.TempPath, "de", $"{baseName}.resources");
+        string specificPath = Path.Join(folder.TempPath, "de-DE", $"{baseName}.resources");
+        string parentPath = Path.Join(folder.TempPath, "de", $"{baseName}.resources");
         openCounts[specificPath].Should().Be(1);
         openCounts[parentPath].Should().Be(1);
         openCounts.Should().HaveCount(2);
@@ -879,6 +893,7 @@ public partial class SatelliteStringResourceManagerTests
             folder.TempPath,
             s_assembly,
             OpenFile);
+
         CultureInfo german = new("de");
 
         Task<string?> first = Task.Run(GetString);
@@ -886,7 +901,7 @@ public partial class SatelliteStringResourceManagerTests
         openStarted.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
         continueOpen.Set();
 
-        string?[] values = await Task.WhenAll(first, second).ConfigureAwait(false);
+        string?[] values = await Task.WhenAll(first, second).ConfigureAwait(continueOnCapturedContext: false);
         values.Should().Equal("Hallo", "Hallo");
         openCount.Should().Be(1);
 
@@ -909,6 +924,7 @@ public partial class SatelliteStringResourceManagerTests
             baseName,
             folder.TempPath,
             s_assembly);
+
         CultureInfo german = new("de");
         manager.GetString("Greeting", german).Should().Be("Hallo");
 
@@ -931,6 +947,7 @@ public partial class SatelliteStringResourceManagerTests
             baseName,
             folder.TempPath,
             s_assembly);
+
         CultureInfo german = new("de");
         manager.GetString("Greeting", german).Should().Be("Hallo");
 
@@ -950,6 +967,7 @@ public partial class SatelliteStringResourceManagerTests
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromRuntimeSatellites(
             baseName,
             s_assembly);
+
         CultureInfo german = new("de");
         manager.GetString("Greeting", german).Should().Be("Hallo");
 
@@ -996,7 +1014,7 @@ public partial class SatelliteStringResourceManagerTests
         Task<bool> german = Task.Run(() => RepeatedlyReturns("de", "Hallo"));
         Task<bool> french = Task.Run(() => RepeatedlyReturns("fr", "Bonjour"));
 
-        bool[] results = await Task.WhenAll(german, french).ConfigureAwait(false);
+        bool[] results = await Task.WhenAll(german, french).ConfigureAwait(continueOnCapturedContext: false);
         results.Should().OnlyContain(result => result);
 
         bool RepeatedlyReturns(string cultureName, string expected)
@@ -1028,6 +1046,7 @@ public partial class SatelliteStringResourceManagerTests
             baseName,
             folder.TempPath,
             s_assembly);
+
         CultureInfo german = new("de");
         manager.GetString("Greeting", german).Should().Be("Hallo");
 
@@ -1042,7 +1061,7 @@ public partial class SatelliteStringResourceManagerTests
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
-        string neutralPath = Path.Combine(folder.TempPath, "Neutral.resources");
+        string neutralPath = Path.Join(folder.TempPath, "Neutral.resources");
         using (ResourceWriter writer = new(neutralPath))
         {
             writer.AddResource("Greeting", "First");
@@ -1054,6 +1073,7 @@ public partial class SatelliteStringResourceManagerTests
             baseName,
             folder.TempPath,
             neutralResources);
+
         CultureInfo german = new("de");
         manager.GetString("Greeting", german).Should().Be("First");
 
@@ -1069,7 +1089,7 @@ public partial class SatelliteStringResourceManagerTests
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
-        string neutralPath = Path.Combine(folder.TempPath, "Neutral.resources");
+        string neutralPath = Path.Join(folder.TempPath, "Neutral.resources");
         using (ResourceWriter writer = new(neutralPath))
         {
             writer.AddResource("Greeting", "First");
@@ -1082,6 +1102,7 @@ public partial class SatelliteStringResourceManagerTests
             folder.TempPath,
             s_assembly,
             neutralResources);
+
         CultureInfo german = new("de");
         manager.GetString("Greeting", german).Should().Be("First");
 
@@ -1097,8 +1118,8 @@ public partial class SatelliteStringResourceManagerTests
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
-        string firstRoot = Path.Combine(folder.TempPath, "first");
-        string secondRoot = Path.Combine(folder.TempPath, "second");
+        string firstRoot = Path.Join(folder.TempPath, "first");
+        string secondRoot = Path.Join(folder.TempPath, "second");
         WriteSideFile(firstRoot, "de", baseName, ("Greeting", "First"));
         WriteSideFile(secondRoot, "de", baseName, ("Greeting", "Second"));
         using ManualResetEventSlim loadStarted = new();
@@ -1109,10 +1130,11 @@ public partial class SatelliteStringResourceManagerTests
         MappedMemoryManager OpenFile(string path)
         {
             int invocation = Interlocked.Increment(ref openCount);
-            string selectedPath = Path.Combine(
+            string selectedPath = Path.Join(
                 invocation == 1 ? firstRoot : secondRoot,
                 "de",
                 $"{baseName}.resources");
+
             MappedMemoryManager memory = MappedMemoryManager.CreateFromFile(selectedPath);
             if (invocation == 1)
             {
@@ -1128,6 +1150,7 @@ public partial class SatelliteStringResourceManagerTests
             folder.TempPath,
             s_assembly,
             OpenFile);
+
         CultureInfo german = new("de");
         Task<string?> lookup = Task.Run(() => manager.GetString("Greeting", german));
         loadStarted.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
@@ -1135,8 +1158,8 @@ public partial class SatelliteStringResourceManagerTests
         releaseWaiting.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
         continueLoad.Set();
 
-        (await lookup.ConfigureAwait(false)).Should().BeOneOf("First", "Second");
-        await release.ConfigureAwait(false);
+        (await lookup.ConfigureAwait(continueOnCapturedContext: false)).Should().BeOneOf("First", "Second");
+        await release.ConfigureAwait(continueOnCapturedContext: false);
         manager.GetString("Greeting", german).Should().Be("Second");
         openCount.Should().Be(2);
     }
@@ -1148,6 +1171,7 @@ public partial class SatelliteStringResourceManagerTests
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromRuntimeSatellites(
             baseName,
             s_assembly);
+
         manager.GetString("Greeting", CultureInfo.InvariantCulture).Should().Be("Hello");
         StringResourceManager neutralResources = manager.TestAccessor.Dynamic._neutralResources;
         ((object?)neutralResources.TestAccessor.Dynamic._cache).Should().NotBeNull();

@@ -36,6 +36,7 @@ public static class ThreadTestHelpers
                     Interlocked.MemoryBarrier();
                 }
             });
+
         Action localCheckForThreadErrors = checkForThreadErrors = // cannot use ref or out parameters in lambda
             () =>
             {
@@ -45,12 +46,14 @@ public static class ThreadTestHelpers
                     throw new AggregateException(backgroundEx);
                 }
             };
+
         waitForThread =
             () =>
             {
                 t.Join(s_unexpectedThreadTimeoutMilliseconds).Should().BeTrue();
                 localCheckForThreadErrors();
             };
+
         return t;
     }
 }

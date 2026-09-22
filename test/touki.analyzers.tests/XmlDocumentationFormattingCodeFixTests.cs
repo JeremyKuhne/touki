@@ -15,14 +15,14 @@ public class XmlDocumentationFormattingCodeFixTests
 
     private static async Task<string> ApplyFixAsync(
         string source,
-        Dictionary<string, string>? options = null)
-        => await CodeFixTestHarness.ApplyFixAsync(
-            new XmlDocumentationFormattingAnalyzer(),
-            new FormatXmlDocumentationCodeFixProvider(),
-            source,
-            XmlDocumentationFormattingAnalyzer.DiagnosticId,
-            options,
-            s_enabled).ConfigureAwait(false);
+        Dictionary<string, string>? options = null) =>
+            await CodeFixTestHarness.ApplyFixAsync(
+                new XmlDocumentationFormattingAnalyzer(),
+                new FormatXmlDocumentationCodeFixProvider(),
+                source,
+                XmlDocumentationFormattingAnalyzer.DiagnosticId,
+                options,
+                s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
     public void GetFixAllProvider_Default_IsDocumentBased()
@@ -50,47 +50,52 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         const string bothOriginal =
             "class Sample\n"
-            + "{\n"
-            + "    /// <summary>One.</summary>\n"
-            + "    int One => 1;\n"
-            + "\n"
-            + "    /// <summary>Two.</summary>\n"
-            + "    int Two => 2;\n"
-            + "}\n";
+                + "{\n"
+                + "    /// <summary>One.</summary>\n"
+                + "    int One => 1;\n"
+                + "\n"
+                + "    /// <summary>Two.</summary>\n"
+                + "    int Two => 2;\n"
+                + "}\n";
+
         const string bothMemberFixed =
             "class Sample\n"
-            + "{\n"
-            + "    /// <summary>\n"
-            + "    ///  One.\n"
-            + "    /// </summary>\n"
-            + "    int One => 1;\n"
-            + "\n"
-            + "    /// <summary>Two.</summary>\n"
-            + "    int Two => 2;\n"
-            + "}\n";
+                + "{\n"
+                + "    /// <summary>\n"
+                + "    ///  One.\n"
+                + "    /// </summary>\n"
+                + "    int One => 1;\n"
+                + "\n"
+                + "    /// <summary>Two.</summary>\n"
+                + "    int Two => 2;\n"
+                + "}\n";
+
         const string bothFixed =
             "class Sample\n"
-            + "{\n"
-            + "    /// <summary>\n"
-            + "    ///  One.\n"
-            + "    /// </summary>\n"
-            + "    int One => 1;\n"
-            + "\n"
-            + "    /// <summary>\n"
-            + "    ///  Two.\n"
-            + "    /// </summary>\n"
-            + "    int Two => 2;\n"
-            + "}\n";
+                + "{\n"
+                + "    /// <summary>\n"
+                + "    ///  One.\n"
+                + "    /// </summary>\n"
+                + "    int One => 1;\n"
+                + "\n"
+                + "    /// <summary>\n"
+                + "    ///  Two.\n"
+                + "    /// </summary>\n"
+                + "    int Two => 2;\n"
+                + "}\n";
+
         const string otherOriginal = "/// <summary>Other.</summary>\nclass Other { }\n";
         const string otherFixed = "/// <summary>\n///  Other.\n/// </summary>\nclass Other { }\n";
         const string additionalOriginal = "/// <summary>Additional.</summary>\nclass Additional { }\n";
         const string additionalFixed =
             "/// <summary>\n///  Additional.\n/// </summary>\nclass Additional { }\n";
+
         (string Name, string FilePath, string Source)[] sources =
         [
             ("Both.cs", "A-Both.cs", bothOriginal),
             ("Other.cs", "B-Other.cs", otherOriginal)
         ];
+
         (string Name, string FilePath, string Source)[] additionalProjectSources =
         [
             ("Additional.cs", "Z-Additional.cs", additionalOriginal)
@@ -104,7 +109,7 @@ public class XmlDocumentationFormattingCodeFixTests
             fixAll: true,
             fixAllScope: scope,
             diagnosticOptions: s_enabled,
-            additionalProjectSources: additionalProjectSources).ConfigureAwait(false);
+            additionalProjectSources: additionalProjectSources).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -158,7 +163,7 @@ public class XmlDocumentationFormattingCodeFixTests
             XmlDocumentationFormattingAnalyzer.DiagnosticId,
             fixAll: true,
             diagnosticOptions: s_enabled,
-            addLinkedProject: true).ConfigureAwait(false);
+            addLinkedProject: true).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -172,30 +177,32 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         const string source =
             "class Shared\n"
-            + "{\n"
-            + "    int First => 1;\n"
-            + "    /// <summary>Second.</summary>\n"
-            + "    int Second => 2;\n"
-            + "    int Third => 3;\n"
-            + "    /// <summary>Fourth.</summary>\n"
-            + "    int Fourth => 4;\n"
-            + "}\n";
+                + "{\n"
+                + "    int First => 1;\n"
+                + "    /// <summary>Second.</summary>\n"
+                + "    int Second => 2;\n"
+                + "    int Third => 3;\n"
+                + "    /// <summary>Fourth.</summary>\n"
+                + "    int Fourth => 4;\n"
+                + "}\n";
+
         const string expected =
             "class Shared\n"
-            + "{\n"
-            + "    int First => 1;\n"
-            + "\n"
-            + "    /// <summary>\n"
-            + "    ///  Second.\n"
-            + "    /// </summary>\n"
-            + "    int Second => 2;\n"
-            + "    int Third => 3;\n"
-            + "\n"
-            + "    /// <summary>\n"
-            + "    ///  Fourth.\n"
-            + "    /// </summary>\n"
-            + "    int Fourth => 4;\n"
-            + "}\n";
+                + "{\n"
+                + "    int First => 1;\n"
+                + "\n"
+                + "    /// <summary>\n"
+                + "    ///  Second.\n"
+                + "    /// </summary>\n"
+                + "    int Second => 2;\n"
+                + "    int Third => 3;\n"
+                + "\n"
+                + "    /// <summary>\n"
+                + "    ///  Fourth.\n"
+                + "    /// </summary>\n"
+                + "    int Fourth => 4;\n"
+                + "}\n";
+
         (string Name, string FilePath, string Source)[] sources =
         [
             ("Shared.cs", "Shared.cs", source)
@@ -208,7 +215,7 @@ public class XmlDocumentationFormattingCodeFixTests
             XmlDocumentationFormattingAnalyzer.DiagnosticId,
             fixAll: true,
             diagnosticOptions: s_enabled,
-            addLinkedProject: true).ConfigureAwait(false);
+            addLinkedProject: true).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.InitialAnalyzerDiagnosticCount.Should().Be(4);
@@ -229,7 +236,7 @@ public class XmlDocumentationFormattingCodeFixTests
             XmlDocumentationFormattingAnalyzer.DiagnosticId,
             fixAll: false,
             diagnosticOptions: s_enabled,
-            addLinkedProject: true).ConfigureAwait(false);
+            addLinkedProject: true).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CodeFixActionOffered.Should().BeTrue();
@@ -256,7 +263,7 @@ public class XmlDocumentationFormattingCodeFixTests
             fixAll: true,
             fixAllScope: scope,
             diagnosticOptions: s_enabled,
-            addLinkedProject: true).ConfigureAwait(false);
+            addLinkedProject: true).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.FixAllActionOffered.Should().BeFalse();
@@ -266,8 +273,8 @@ public class XmlDocumentationFormattingCodeFixTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
+    [DataRow(data: false)]
+    [DataRow(data: true)]
     public async Task Format_LinkedDocumentWithDivergentIndentation_OffersNoFix(bool fixAll)
     {
         const string source = "/// <remarks><para>Text.</para></remarks>\nclass Shared { }\n";
@@ -275,6 +282,7 @@ public class XmlDocumentationFormattingCodeFixTests
         {
             [XmlDocumentationFormattingAnalyzer.IndentSizeOption] = "1"
         };
+
         Dictionary<string, string> linkedOptions = new()
         {
             [XmlDocumentationFormattingAnalyzer.IndentSizeOption] = "2"
@@ -289,7 +297,7 @@ public class XmlDocumentationFormattingCodeFixTests
             options,
             s_enabled,
             addLinkedProject: true,
-            linkedProjectOptions: linkedOptions).ConfigureAwait(false);
+            linkedProjectOptions: linkedOptions).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CompilerErrors.Should().BeEmpty();
@@ -320,7 +328,7 @@ public class XmlDocumentationFormattingCodeFixTests
             diagnosticOptions: s_enabled,
             addLinkedProject: true,
             primaryProjectSources: [("Shared.cs", "Shared.cs", primarySource)],
-            linkedProjectSources: [("Shared.cs", "Shared.cs", linkedSource)]).ConfigureAwait(false);
+            linkedProjectSources: [("Shared.cs", "Shared.cs", linkedSource)]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CodeFixActionOffered.Should().BeFalse();
@@ -342,7 +350,7 @@ public class XmlDocumentationFormattingCodeFixTests
             XmlDocumentationFormattingAnalyzer.DiagnosticId,
             fixAll: false,
             diagnosticOptions: s_enabled,
-            visualBasicProjectSources: [("Shared.cs", "Shared.cs", source)]).ConfigureAwait(false);
+            visualBasicProjectSources: [("Shared.cs", "Shared.cs", source)]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(1);
         result.CodeFixActionOffered.Should().BeFalse();
@@ -366,7 +374,7 @@ public class XmlDocumentationFormattingCodeFixTests
             diagnosticOptions: s_enabled,
             fixAllScope: FixAllScope.Solution,
             additionalProjectSources: [("Eligible.cs", "A-Eligible.cs", eligibleSource)],
-            visualBasicProjectSources: [("Blocked.cs", "Z-Blocked.cs", blockedSource)]).ConfigureAwait(false);
+            visualBasicProjectSources: [("Blocked.cs", "Z-Blocked.cs", blockedSource)]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CodeFixActionOffered.Should().BeTrue();
@@ -375,6 +383,7 @@ public class XmlDocumentationFormattingCodeFixTests
         result.AnalyzerDiagnostics.Should().ContainSingle();
         result.Documents.Where(document => document.Name == "Blocked.cs")
             .Should().HaveCount(2).And.OnlyContain(document => document.Source == blockedSource);
+
         result.Documents.Single(document => document.Name == "Eligible.cs").Source.Should().Be(
             "/// <summary>\n///  Eligible.\n/// </summary>\nclass Eligible { }\n");
     }
@@ -396,7 +405,7 @@ public class XmlDocumentationFormattingCodeFixTests
             fixAll: true,
             diagnosticOptions: s_enabled,
             fixAllScope: FixAllScope.Project,
-            visualBasicProjectSources: [("Blocked.cs", "Z-Blocked.cs", blockedSource)]).ConfigureAwait(false);
+            visualBasicProjectSources: [("Blocked.cs", "Z-Blocked.cs", blockedSource)]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CodeFixActionOffered.Should().BeTrue();
@@ -405,6 +414,7 @@ public class XmlDocumentationFormattingCodeFixTests
         result.AnalyzerDiagnostics.Should().ContainSingle();
         result.Documents.Where(document => document.Name == "Blocked.cs")
             .Should().HaveCount(2).And.OnlyContain(document => document.Source == blockedSource);
+
         result.Documents.Single(document => document.Name == "Eligible.cs").Source.Should().Be(
             "/// <summary>\n///  Eligible.\n/// </summary>\nclass Eligible { }\n");
     }
@@ -431,7 +441,7 @@ public class XmlDocumentationFormattingCodeFixTests
                     Path.GetFileName(diagnostic.Location.SourceTree?.FilePath),
                     "Z-Linked.cs",
                     StringComparison.OrdinalIgnoreCase))],
-            onFixAllEquivalenceKey: key => equivalenceKey = key).ConfigureAwait(false);
+            onFixAllEquivalenceKey: key => equivalenceKey = key).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(3);
         equivalenceKey.Should().Be(nameof(FormatXmlDocumentationCodeFixProvider));
@@ -440,6 +450,7 @@ public class XmlDocumentationFormattingCodeFixTests
         result.AnalyzerDiagnostics.Should().HaveCount(3);
         result.Documents.Where(document => document.Name == "Linked.cs")
             .Should().HaveCount(2).And.OnlyContain(document => document.Source == linkedSource);
+
         result.Documents.Single(document => document.Name == "Trigger.cs").Source.Should().Be(triggerSource);
     }
 
@@ -448,16 +459,20 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         const string linkedSource =
             "/// <remarks><para>Linked.</para></remarks>\nclass Linked { }\n";
+
         const string triggerSource =
             "/// <summary>Trigger.</summary>\nclass Trigger { }\n";
+
         Dictionary<string, string> options = new()
         {
             [XmlDocumentationFormattingAnalyzer.IndentSizeOption] = "1"
         };
+
         Dictionary<string, string> linkedOptions = new()
         {
             [XmlDocumentationFormattingAnalyzer.IndentSizeOption] = "2"
         };
+
         string? equivalenceKey = null;
 
         CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
@@ -477,7 +492,7 @@ public class XmlDocumentationFormattingCodeFixTests
                     Path.GetFileName(diagnostic.Location.SourceTree?.FilePath),
                     "Z-Linked.cs",
                     StringComparison.OrdinalIgnoreCase))],
-            onFixAllEquivalenceKey: key => equivalenceKey = key).ConfigureAwait(false);
+            onFixAllEquivalenceKey: key => equivalenceKey = key).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(3);
         equivalenceKey.Should().Be(nameof(FormatXmlDocumentationCodeFixProvider));
@@ -486,6 +501,7 @@ public class XmlDocumentationFormattingCodeFixTests
         result.AnalyzerDiagnostics.Should().HaveCount(3);
         result.Documents.Where(document => document.Name == "Linked.cs")
             .Should().HaveCount(2).And.OnlyContain(document => document.Source == linkedSource);
+
         result.Documents.Single(document => document.Name == "Trigger.cs").Source.Should().Be(triggerSource);
     }
 
@@ -508,7 +524,7 @@ public class XmlDocumentationFormattingCodeFixTests
             transformFixAllDiagnostics: diagnostics => CreateOverlappingDiagnostics(
                 diagnostics,
                 overlapKind),
-            onFixAllEquivalenceKey: key => equivalenceKey = key).ConfigureAwait(false);
+            onFixAllEquivalenceKey: key => equivalenceKey = key).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(1);
         equivalenceKey.Should().Be(nameof(FormatXmlDocumentationCodeFixProvider));
@@ -537,7 +553,7 @@ public class XmlDocumentationFormattingCodeFixTests
             fixAllScope: scope,
             transformFixAllDiagnostics: diagnostics => [CreateNoOpDiagnostic(
                 diagnostics.Should().ContainSingle().Subject)],
-            onFixAllEquivalenceKey: key => equivalenceKey = key).ConfigureAwait(false);
+            onFixAllEquivalenceKey: key => equivalenceKey = key).ConfigureAwait(continueOnCapturedContext: false);
 
         equivalenceKey.Should().Be(nameof(FormatXmlDocumentationCodeFixProvider));
         result.FixAllActionOffered.Should().BeFalse();
@@ -559,7 +575,7 @@ public class XmlDocumentationFormattingCodeFixTests
             fixAll: false,
             diagnosticOptions: s_enabled,
             transformDiagnostics: diagnostics => [CreateNoOpDiagnostic(
-                diagnostics.Should().ContainSingle().Subject)]).ConfigureAwait(false);
+                diagnostics.Should().ContainSingle().Subject)]).ConfigureAwait(continueOnCapturedContext: false);
 
         result.CodeFixActionOffered.Should().BeFalse();
         result.CompilerErrors.Should().BeEmpty();
@@ -574,6 +590,7 @@ public class XmlDocumentationFormattingCodeFixTests
         [
             ("Sample.cs", "Sample.cs", "/// <summary>Sample.</summary>\nclass Sample { }\n")
         ];
+
         using CancellationTokenSource source = new();
         source.Cancel();
         Func<Task> action = async () => await CodeFixTestHarness.ApplyFixToSolutionAsync(
@@ -583,9 +600,9 @@ public class XmlDocumentationFormattingCodeFixTests
             XmlDocumentationFormattingAnalyzer.DiagnosticId,
             fixAll: true,
             diagnosticOptions: s_enabled,
-            fixAllCancellationToken: source.Token).ConfigureAwait(false);
+            fixAllCancellationToken: source.Token).ConfigureAwait(continueOnCapturedContext: false);
 
-        await action.Should().ThrowAsync<OperationCanceledException>().ConfigureAwait(false);
+        await action.Should().ThrowAsync<OperationCanceledException>().ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -594,11 +611,11 @@ public class XmlDocumentationFormattingCodeFixTests
         string source =
             "class Sample\n{\n    /// <summary>The name.</summary>\n    string Name => \"name\";\n}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "class Sample\n{\n    /// <summary>\n    ///  The name.\n    /// </summary>\n"
-            + "    string Name => \"name\";\n}\n");
+                + "    string Name => \"name\";\n}\n");
     }
 
     [TestMethod]
@@ -606,14 +623,15 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source =
             "class Sample\n{\n    int First => 1;\n"
-            + "    /// <value>The second value.</value>\n    int Second => 2;\n}\n";
+                + "    /// <value>The second value.</value>\n    int Second => 2;\n}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "class Sample\n{\n    int First => 1;\n\n"
-            + "    /// <value>The second value.</value>\n    int Second => 2;\n}\n");
+                + "    /// <value>The second value.</value>\n    int Second => 2;\n}\n");
+
         fixedAgain.Should().Be(fixedSource);
     }
 
@@ -622,9 +640,9 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source =
             "class Sample\n{\n    int First => 1; /// <value>The second value.</value>\n"
-            + "    int Second => 2;\n}\n";
+                + "    int Second => 2;\n}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -634,14 +652,14 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source =
             "class Sample\n{\n    int First => 1;\n"
-            + "    /// <summary>The second value.</summary>\n    int Second => 2;\n}\n";
+                + "    /// <summary>The second value.</summary>\n    int Second => 2;\n}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "class Sample\n{\n    int First => 1;\n\n"
-            + "    /// <summary>\n    ///  The second value.\n    /// </summary>\n"
-            + "    int Second => 2;\n}\n");
+                + "    /// <summary>\n    ///  The second value.\n    /// </summary>\n"
+                + "    int Second => 2;\n}\n");
     }
 
     [TestMethod]
@@ -649,13 +667,13 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source =
             "class Sample\r\n{\r\n    int First => 1;\r\n"
-            + "    /// <value>The second value.</value>\r\n    int Second => 2;\r\n}\r\n";
+                + "    /// <value>The second value.</value>\r\n    int Second => 2;\r\n}\r\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "class Sample\r\n{\r\n    int First => 1;\r\n\r\n"
-            + "    /// <value>The second value.</value>\r\n    int Second => 2;\r\n}\r\n");
+                + "    /// <value>The second value.</value>\r\n    int Second => 2;\r\n}\r\n");
     }
 
     [TestMethod]
@@ -663,7 +681,7 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source = "class Sample { }\r\n/// <summary>Orphaned.</summary>";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "class Sample { }\r\n\r\n/// <summary>\r\n///  Orphaned.\r\n/// </summary>");
@@ -674,13 +692,13 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source =
             "class Sample\n{\n    int First => 1;\n"
-            + "    /// <summary>Missing close tag.\n    int Second => 2;\n}\n";
+                + "    /// <summary>Missing close tag.\n    int Second => 2;\n}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "class Sample\n{\n    int First => 1;\n\n"
-            + "    /// <summary>Missing close tag.\n    int Second => 2;\n}\n");
+                + "    /// <summary>Missing close tag.\n    int Second => 2;\n}\n");
     }
 
     [TestMethod]
@@ -688,17 +706,18 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source =
             "/// <summary>First line\n"
-            + "///     hanging continuation.\n"
-            + "/// </summary>\nclass Sample { }\n";
+                + "///     hanging continuation.\n"
+                + "/// </summary>\nclass Sample { }\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "/// <summary>\n"
-            + "///  First line\n"
-            + "///     hanging continuation.\n"
-            + "/// </summary>\nclass Sample { }\n");
+                + "///  First line\n"
+                + "///     hanging continuation.\n"
+                + "/// </summary>\nclass Sample { }\n");
+
         fixedAgain.Should().Be(fixedSource);
     }
 
@@ -707,22 +726,23 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source =
             "/// <remarks>First line\n"
-            + "///     hanging before child.<para>Nested.</para>\n"
-            + "/// Trailing block.\n"
-            + "/// </remarks>\nclass Sample { }\n";
+                + "///     hanging before child.<para>Nested.</para>\n"
+                + "/// Trailing block.\n"
+                + "/// </remarks>\nclass Sample { }\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "/// <remarks>\n"
-            + "///  First line\n"
-            + "///     hanging before child.\n"
-            + "///  <para>\n"
-            + "///   Nested.\n"
-            + "///  </para>\n"
-            + "///  Trailing block.\n"
-            + "/// </remarks>\nclass Sample { }\n");
+                + "///  First line\n"
+                + "///     hanging before child.\n"
+                + "///  <para>\n"
+                + "///   Nested.\n"
+                + "///  </para>\n"
+                + "///  Trailing block.\n"
+                + "/// </remarks>\nclass Sample { }\n");
+
         fixedAgain.Should().Be(fixedSource);
     }
 
@@ -731,20 +751,21 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source =
             "/// <remarks><para>Nested.</para>Trailing first\n"
-            + "///      hanging continuation.\n"
-            + "/// </remarks>\nclass Sample { }\n";
+                + "///      hanging continuation.\n"
+                + "/// </remarks>\nclass Sample { }\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "/// <remarks>\n"
-            + "///  <para>\n"
-            + "///   Nested.\n"
-            + "///  </para>\n"
-            + "///  Trailing first\n"
-            + "///      hanging continuation.\n"
-            + "/// </remarks>\nclass Sample { }\n");
+                + "///  <para>\n"
+                + "///   Nested.\n"
+                + "///  </para>\n"
+                + "///  Trailing first\n"
+                + "///      hanging continuation.\n"
+                + "/// </remarks>\nclass Sample { }\n");
+
         fixedAgain.Should().Be(fixedSource);
     }
 
@@ -753,13 +774,13 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source =
             "class Sample\n{\n    /// <returns>\n    ///  The name.\n    /// </returns>\n"
-            + "    string Name() => \"name\";\n}\n";
+                + "    string Name() => \"name\";\n}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "class Sample\n{\n    /// <returns>The name.</returns>\n"
-            + "    string Name() => \"name\";\n}\n");
+                + "    string Name() => \"name\";\n}\n");
     }
 
     [TestMethod]
@@ -767,16 +788,17 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source =
             "/// <remarks><para>Text.</para></remarks>\nclass Sample { }\n";
+
         Dictionary<string, string> options = new()
         {
             [XmlDocumentationFormattingAnalyzer.IndentSizeOption] = "2"
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "/// <remarks>\n///   <para>\n///     Text.\n///   </para>\n/// </remarks>\n"
-            + "class Sample { }\n");
+                + "class Sample { }\n");
     }
 
     [TestMethod]
@@ -785,7 +807,7 @@ public class XmlDocumentationFormattingCodeFixTests
         string source =
             "/// <summary>Text.</summary>\r\nclass Sample { }\r\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "/// <summary>\r\n///  Text.\r\n/// </summary>\r\nclass Sample { }\r\n");
@@ -796,13 +818,13 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source =
             "/// <example>\n/// <code>\n///       if (ready)\n///       {\n///           Run();\n///       }\n"
-            + "/// </code>\n/// </example>\nclass Sample { }\n";
+                + "/// </code>\n/// </example>\nclass Sample { }\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "/// <example>\n///  <code>\n///       if (ready)\n///       {\n///           Run();\n///       }\n"
-            + "///  </code>\n/// </example>\nclass Sample { }\n");
+                + "///  </code>\n/// </example>\nclass Sample { }\n");
     }
 
     [TestMethod]
@@ -810,8 +832,8 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source = "/// <summary>Text.</summary>\nclass Sample { }\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedAgain.Should().Be(fixedSource);
     }
@@ -825,8 +847,8 @@ public class XmlDocumentationFormattingCodeFixTests
             [XmlDocumentationFormattingAnalyzer.MaxLineLengthOption] = "32"
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be("/// <returns>The name.</returns>\nclass Sample { }\n");
         fixedAgain.Should().Be(fixedSource);
@@ -841,8 +863,8 @@ public class XmlDocumentationFormattingCodeFixTests
             [XmlDocumentationFormattingAnalyzer.MaxLineLengthOption] = "32"
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be("/// <returns>The name.</returns>\nclass Sample { }\n");
         fixedAgain.Should().Be(fixedSource);
@@ -857,8 +879,8 @@ public class XmlDocumentationFormattingCodeFixTests
             [XmlDocumentationFormattingAnalyzer.MaxLineLengthOption] = "32"
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be("/// <returns>\n///  The name.\n/// </returns> \nclass Sample { }\n");
         fixedAgain.Should().Be(fixedSource);
@@ -869,19 +891,21 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source =
             "/// <param name=\"value\">The value.</param><returns>The result.</returns>\n"
-            + "class Sample { string Method(string value) => value; }\n";
+                + "class Sample { string Method(string value) => value; }\n";
+
         Dictionary<string, string> options = new()
         {
             [XmlDocumentationFormattingAnalyzer.MaxLineLengthOption] = "50"
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "/// <param name=\"value\">The value.</param>\n"
-            + "/// <returns>The result.</returns>\n"
-            + "class Sample { string Method(string value) => value; }\n");
+                + "/// <returns>The result.</returns>\n"
+                + "class Sample { string Method(string value) => value; }\n");
+
         fixedAgain.Should().Be(fixedSource);
     }
 
@@ -890,19 +914,21 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source =
             "/// <param name=\"v\">x</param><returns>x</returns>          \n"
-            + "class Sample { string Method(string v) => v; }\n";
+                + "class Sample { string Method(string v) => v; }\n";
+
         Dictionary<string, string> options = new()
         {
             [XmlDocumentationFormattingAnalyzer.MaxLineLengthOption] = "30"
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "/// <param name=\"v\">x</param>\n"
-            + "/// <returns>\n///  x\n/// </returns>          \n"
-            + "class Sample { string Method(string v) => v; }\n");
+                + "/// <returns>\n///  x\n/// </returns>          \n"
+                + "class Sample { string Method(string v) => v; }\n");
+
         fixedAgain.Should().Be(fixedSource);
     }
 
@@ -911,19 +937,21 @@ public class XmlDocumentationFormattingCodeFixTests
     {
         string source =
             "/// <param name=\"v\">x</param><returns> x </returns>\n"
-            + "class Sample { string Method(string v) => v; }\n";
+                + "class Sample { string Method(string v) => v; }\n";
+
         Dictionary<string, string> options = new()
         {
             [XmlDocumentationFormattingAnalyzer.MaxLineLengthOption] = "35"
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "/// <param name=\"v\">x</param>\n"
-            + "/// <returns>x</returns>\n"
-            + "class Sample { string Method(string v) => v; }\n");
+                + "/// <returns>x</returns>\n"
+                + "class Sample { string Method(string v) => v; }\n");
+
         fixedAgain.Should().Be(fixedSource);
     }
 
@@ -936,11 +964,12 @@ public class XmlDocumentationFormattingCodeFixTests
             [XmlDocumentationFormattingAnalyzer.MaxLineLengthOption] = "30"
         };
 
-        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource, options).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource, options).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(
             "/// <returns>x</returns>\n/// <inheritdoc/>\nclass Sample { }\n");
+
         fixedAgain.Should().Be(fixedSource);
     }
 
@@ -959,7 +988,7 @@ public class XmlDocumentationFormattingCodeFixTests
             sources,
             XmlDocumentationFormattingAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -979,7 +1008,7 @@ public class XmlDocumentationFormattingCodeFixTests
                 "Both.cs",
                 "Both.cs",
                 "/// <summary>One.</summary>\nclass One { }\n\n"
-                + "/// <summary>Two.</summary>\nclass Two { }\n")
+                    + "/// <summary>Two.</summary>\nclass Two { }\n")
         ];
 
         CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
@@ -988,7 +1017,7 @@ public class XmlDocumentationFormattingCodeFixTests
             sources,
             XmlDocumentationFormattingAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -996,7 +1025,7 @@ public class XmlDocumentationFormattingCodeFixTests
         result.Documents.Should().ContainSingle()
             .Which.Source.Should().Be(
                 "/// <summary>\n///  One.\n/// </summary>\nclass One { }\n\n"
-                + "/// <summary>\n///  Two.\n/// </summary>\nclass Two { }\n");
+                    + "/// <summary>\n///  Two.\n/// </summary>\nclass Two { }\n");
     }
 
     [TestMethod]
@@ -1015,7 +1044,7 @@ public class XmlDocumentationFormattingCodeFixTests
             sources,
             XmlDocumentationFormattingAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.InitialAnalyzerDiagnosticCount.Should().Be(commentCount);
@@ -1033,13 +1062,15 @@ public class XmlDocumentationFormattingCodeFixTests
                 "\n",
                 Enumerable.Range(0, commentCount - 1).Select(member =>
                     $"    /// <summary>Member {member}.</summary>\n"
-                    + $"    int Value{member} => {member};"));
+                        + $"    int Value{member} => {member};"));
+
             string source =
                 "/// <summary>Type.</summary>\n"
-                + "class Sample\n"
-                + "{\n"
-                + members
-                + "\n}\n";
+                    + "class Sample\n"
+                    + "{\n"
+                    + members
+                    + "\n}\n";
+
             source += new string('/', targetDocumentLength - source.Length - 1) + "\n";
             return ("Sample.cs", "Sample.cs", source);
         }
@@ -1059,11 +1090,13 @@ public class XmlDocumentationFormattingCodeFixTests
             "same-start" => TextSpan.FromBounds(span.Start, span.End - 1),
             _ => throw new ArgumentOutOfRangeException(nameof(overlapKind))
         };
+
         Diagnostic overlapping = Diagnostic.Create(
             diagnostic.Descriptor,
             Location.Create(tree, overlap),
             [],
             diagnostic.Properties);
+
         return [diagnostic, overlapping];
     }
 
@@ -1073,6 +1106,7 @@ public class XmlDocumentationFormattingCodeFixTests
         ImmutableDictionary<string, string?> properties = diagnostic.Properties.SetItem(
             "Replacement",
             source.ToString(diagnostic.Location.SourceSpan));
+
         return Diagnostic.Create(
             diagnostic.Descriptor,
             diagnostic.Location,

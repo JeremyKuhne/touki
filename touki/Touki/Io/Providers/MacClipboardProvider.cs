@@ -31,7 +31,7 @@ namespace Touki.Io.Providers;
 // branches always show as uncovered there. Functional coverage comes from the
 // dedicated macOS CI job, which runs the ClipboardTests against NSPasteboard.
 [ExcludeFromCodeCoverage]
-internal sealed unsafe partial class MacClipboardProvider : IClipboardProvider
+internal sealed partial class MacClipboardProvider : IClipboardProvider
 {
     /// <summary>
     ///  Shared instance.

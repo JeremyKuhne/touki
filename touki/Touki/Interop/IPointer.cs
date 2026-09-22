@@ -12,7 +12,7 @@ namespace Windows.Support;
 ///   This should never be put on a struct.
 ///  </para>
 /// </remarks>
-public unsafe interface IPointer<TPointer> where TPointer : unmanaged
+public interface IPointer<TPointer> where TPointer : unmanaged
 {
     /// <summary>
     ///  The pointer to the native resource.

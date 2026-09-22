@@ -7,8 +7,6 @@ using Touki.Io;
 using Touki.Io.Globbing;
 
 using File = System.IO.File;
-using Path = System.IO.Path;
-
 namespace touki.perf;
 
 [MemoryDiagnoser]
@@ -77,7 +75,7 @@ public class MsBuildEnumeratePerf2
         // Walk up from the perf assembly's location until we find the repo root (touki.slnx anchor).
         // Keeps the benchmark portable across machines without hardcoding an absolute path.
         string? dir = AppContext.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "touki.slnx")))
+        while (dir is not null && !File.Exists(Path.Join(dir, "touki.slnx")))
         {
             dir = Path.GetDirectoryName(dir);
         }
@@ -113,8 +111,8 @@ public class MsBuildEnumeratePerf2
 
         throw new InvalidOperationException(
             $"Benchmark '{name}' result set differs from baseline: "
-            + $"{missingFromActual.Length} missing (e.g. {Sample(missingFromActual)}), "
-            + $"{extraInActual.Length} extra (e.g. {Sample(extraInActual)}).");
+                + $"{missingFromActual.Length} missing (e.g. {Sample(missingFromActual)}), "
+                + $"{extraInActual.Length} extra (e.g. {Sample(extraInActual)}).");
     }
 
     private static string Sample(IReadOnlyList<string> items) => string.Join(
@@ -147,6 +145,7 @@ public class MsBuildEnumeratePerf2
     {
         using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(
             new(Filespec, _directory, UnsplitExcludes));
+
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -161,6 +160,7 @@ public class MsBuildEnumeratePerf2
     {
         MSBuildSearchResult result = (MSBuildSearchResult)MSBuildEnumerator.CreateResult(
             new(Filespec, _directory, UnsplitExcludes));
+
         using MSBuildEnumerator enumerator = result.Enumerator;
         List<string> results = [];
         while (enumerator.MoveNext())
@@ -182,6 +182,7 @@ public class MsBuildEnumeratePerf2
                 ExcludePatterns = s_excludes,
                 Dialect = GlobDialect.MSBuild
             });
+
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -207,6 +208,7 @@ public class MsBuildEnumeratePerf2
                 ExcludePatterns = s_reducedExcludes,
                 Dialect = GlobDialect.MSBuild
             });
+
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -233,6 +235,7 @@ public class MsBuildEnumeratePerf2
                 Dialect = GlobDialect.MSBuild,
                 GlobOptions = GlobOptions.AllowExtGlob
             });
+
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -258,6 +261,7 @@ public class MsBuildEnumeratePerf2
                 Dialect = GlobDialect.MSBuild,
                 GlobOptions = GlobOptions.AllowExtGlob
             });
+
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -286,6 +290,7 @@ public class MsBuildEnumeratePerf2
                 Dialect = GlobDialect.MSBuild,
                 GlobOptions = GlobOptions.AllowExtGlob
             });
+
         List<string> results = [];
         while (enumerator.MoveNext())
         {

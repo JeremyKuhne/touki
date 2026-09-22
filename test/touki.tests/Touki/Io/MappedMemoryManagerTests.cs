@@ -15,7 +15,7 @@ public class MappedMemoryManagerTests
     {
         byte[] bytes = [10, 20, 30, 40, 50];
         using TempFolder folder = new();
-        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        string path = Path.Join(folder.TempPath, "data.bin");
         System.IO.File.WriteAllBytes(path, bytes);
 
         using MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
@@ -30,7 +30,7 @@ public class MappedMemoryManagerTests
     {
         // Intentionally pass null to exercise path validation.
     #pragma warning disable CS8625
-        Action act = () => _ = MappedMemoryManager.CreateFromFile(null);
+        Action act = () => _ = MappedMemoryManager.CreateFromFile(path: null);
     #pragma warning restore CS8625
         act.Should().Throw<ArgumentNullException>();
     }
@@ -39,7 +39,7 @@ public class MappedMemoryManagerTests
     public void CreateFromFile_EmptyFile_ThrowsIOException()
     {
         using TempFolder folder = new();
-        string path = System.IO.Path.Combine(folder.TempPath, "empty.bin");
+        string path = Path.Join(folder.TempPath, "empty.bin");
         System.IO.File.WriteAllBytes(path, []);
 
         Action act = () => _ = MappedMemoryManager.CreateFromFile(path);
@@ -51,7 +51,7 @@ public class MappedMemoryManagerTests
     {
         byte[] bytes = [1, 2, 3];
         using TempFolder folder = new();
-        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        string path = Path.Join(folder.TempPath, "data.bin");
         System.IO.File.WriteAllBytes(path, bytes);
 
         MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
@@ -63,7 +63,7 @@ public class MappedMemoryManagerTests
     public void GetSpan_AfterDispose_ThrowsObjectDisposedException()
     {
         using TempFolder folder = new();
-        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        string path = Path.Join(folder.TempPath, "data.bin");
         System.IO.File.WriteAllBytes(path, [1, 2, 3]);
 
         MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
@@ -77,7 +77,7 @@ public class MappedMemoryManagerTests
     public void Pin_AfterDispose_ThrowsObjectDisposedException()
     {
         using TempFolder folder = new();
-        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        string path = Path.Join(folder.TempPath, "data.bin");
         System.IO.File.WriteAllBytes(path, [1, 2, 3]);
 
         MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
@@ -91,7 +91,7 @@ public class MappedMemoryManagerTests
     public void Pin_NegativeIndex_ThrowsArgumentOutOfRangeException()
     {
         using TempFolder folder = new();
-        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        string path = Path.Join(folder.TempPath, "data.bin");
         System.IO.File.WriteAllBytes(path, [1, 2, 3]);
 
         using MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
@@ -104,7 +104,7 @@ public class MappedMemoryManagerTests
     public void Pin_IndexBeyondLength_ThrowsArgumentOutOfRangeException()
     {
         using TempFolder folder = new();
-        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        string path = Path.Join(folder.TempPath, "data.bin");
         System.IO.File.WriteAllBytes(path, [1, 2, 3]);
 
         using MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
@@ -118,7 +118,7 @@ public class MappedMemoryManagerTests
     {
         byte[] bytes = [10, 20, 30];
         using TempFolder folder = new();
-        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        string path = Path.Join(folder.TempPath, "data.bin");
         System.IO.File.WriteAllBytes(path, bytes);
 
         using MappedMemoryManager manager = MappedMemoryManager.CreateFromFile(path);
@@ -136,7 +136,7 @@ public class MappedMemoryManagerTests
     public unsafe void Pin_ManagerOtherwiseUnreachable_KeepsMappingAlive()
     {
         using TempFolder folder = new();
-        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        string path = Path.Join(folder.TempPath, "data.bin");
         System.IO.File.WriteAllBytes(path, [10, 20, 30]);
         (MemoryHandle handle, WeakReference manager) = PinAndAbandon(path);
 
@@ -164,7 +164,7 @@ public class MappedMemoryManagerTests
     public void Finalize_ManagerAbandoned_ReleasesMappedView()
     {
         using TempFolder folder = new();
-        string path = System.IO.Path.Combine(folder.TempPath, "data.bin");
+        string path = Path.Join(folder.TempPath, "data.bin");
         System.IO.File.WriteAllBytes(path, [10, 20, 30]);
         SafeHandle viewHandle = CreateAndAbandon(path);
 

@@ -23,22 +23,26 @@ internal sealed class OracleGenerator : IDisposable
     internal static OracleGenerator Load()
     {
         string packagePath = GetPackagePath();
-        string analyzerPath = Path.Combine(packagePath, "analyzers", "dotnet", "cs");
+        string analyzerPath = Path.Join(packagePath, "analyzers", "dotnet", "cs");
         AssemblyLoadContext loadContext = new(
             "Touki.Resources.Generator.Oracle." + Guid.NewGuid(),
             isCollectible: true);
+
         loadContext.Resolving += ResolveRoslyn;
 
-        loadContext.LoadFromAssemblyPath(Path.Combine(
+        loadContext.LoadFromAssemblyPath(Path.Join(
             analyzerPath,
             "Microsoft.CodeAnalysis.ResxSourceGenerator.dll"));
-        Assembly csharpGenerator = loadContext.LoadFromAssemblyPath(Path.Combine(
+
+        Assembly csharpGenerator = loadContext.LoadFromAssemblyPath(Path.Join(
             analyzerPath,
             "Microsoft.CodeAnalysis.ResxSourceGenerator.CSharp.dll"));
+
         Type generatorType = csharpGenerator.GetType(
             "Microsoft.CodeAnalysis.ResxSourceGenerator.CSharp.CSharpResxGenerator",
             throwOnError: false)
             ?? throw new InvalidOperationException("The Microsoft C# RESX generator type was not found.");
+
         object instance = Activator.CreateInstance(generatorType, nonPublic: true)
             ?? throw new InvalidOperationException("The Microsoft C# RESX generator could not be created.");
 

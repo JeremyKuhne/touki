@@ -31,6 +31,7 @@ public class StoringBoolean
         {
             value = source;
         }
+
         value.As<bool?>().Should().Be(source);
         value.Type.Should().Be(typeof(bool));
     }

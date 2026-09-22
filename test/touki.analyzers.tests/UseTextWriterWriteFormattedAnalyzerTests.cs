@@ -17,7 +17,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             new UseTextWriterWriteFormattedAnalyzer(),
             source,
             additionalReferences: [s_toukiReference])
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
     public async Task AnalyzeInvocation_TextWriterWriteInterpolatedString_ReportsDiagnostic()
@@ -34,7 +34,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(UseTextWriterWriteFormattedAnalyzer.DiagnosticId);
@@ -56,7 +56,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(UseTextWriterWriteFormattedAnalyzer.DiagnosticId);
@@ -77,7 +77,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Write");
@@ -98,7 +98,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(UseTextWriterWriteFormattedAnalyzer.DiagnosticId);
@@ -119,7 +119,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -139,7 +139,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -162,7 +162,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -182,7 +182,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -202,7 +202,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -222,7 +222,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -247,7 +247,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -272,7 +272,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -297,7 +297,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -322,7 +322,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -344,7 +344,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new UseTextWriterWriteFormattedAnalyzer(),
-            source).ConfigureAwait(false);
+            source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -374,7 +374,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new UseTextWriterWriteFormattedAnalyzer(),
-            source).ConfigureAwait(false);
+            source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -398,7 +398,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             new UseTextWriterWriteFormattedAnalyzer(),
             source,
             parseOptions: new CSharpParseOptions(LanguageVersion.CSharp9),
-            additionalReferences: [s_toukiReference]).ConfigureAwait(false);
+            additionalReferences: [s_toukiReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -422,7 +422,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             new UseTextWriterWriteFormattedAnalyzer(),
             source,
             parseOptions: new CSharpParseOptions(LanguageVersion.CSharp10),
-            additionalReferences: [s_toukiReference]).ConfigureAwait(false);
+            additionalReferences: [s_toukiReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(UseTextWriterWriteFormattedAnalyzer.DiagnosticId);
@@ -443,7 +443,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -464,7 +464,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(UseTextWriterWriteFormattedAnalyzer.DiagnosticId);
@@ -489,7 +489,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -509,7 +509,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(UseTextWriterWriteFormattedAnalyzer.DiagnosticId);
@@ -531,7 +531,7 @@ public class UseTextWriterWriteFormattedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }

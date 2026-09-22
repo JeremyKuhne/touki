@@ -84,6 +84,7 @@ public class NegationPruningBashOracleTests
                 Dialect = GlobDialect.Bash,
                 GlobOptions = Options
             });
+
         while (enumerator.MoveNext())
         {
             pruned.Add(ToForwardSlash(enumerator.Current));
@@ -98,35 +99,35 @@ public class NegationPruningBashOracleTests
     {
         TempFolder folder = new();
         string root = folder.TempPath;
-        Directory.CreateDirectory(Path.Combine(root, "src", "nested"));
-        Directory.CreateDirectory(Path.Combine(root, "src", "bin"));
-        Directory.CreateDirectory(Path.Combine(root, "src", "lib"));
-        Directory.CreateDirectory(Path.Combine(root, "src", "obj"));
-        Directory.CreateDirectory(Path.Combine(root, "obj", "Debug"));
-        Directory.CreateDirectory(Path.Combine(root, "bin", "Release"));
-        Directory.CreateDirectory(Path.Combine(root, "binx"));
-        Directory.CreateDirectory(Path.Combine(root, "lib", "bin"));
-        Directory.CreateDirectory(Path.Combine(root, "a", "bin"));
-        Directory.CreateDirectory(Path.Combine(root, "a", "lib"));
-        Directory.CreateDirectory(Path.Combine(root, "a", "a", "b"));
-        Directory.CreateDirectory(Path.Combine(root, "a", "b"));
+        Directory.CreateDirectory(Path.Join(root, "src", "nested"));
+        Directory.CreateDirectory(Path.Join(root, "src", "bin"));
+        Directory.CreateDirectory(Path.Join(root, "src", "lib"));
+        Directory.CreateDirectory(Path.Join(root, "src", "obj"));
+        Directory.CreateDirectory(Path.Join(root, "obj", "Debug"));
+        Directory.CreateDirectory(Path.Join(root, "bin", "Release"));
+        Directory.CreateDirectory(Path.Join(root, "binx"));
+        Directory.CreateDirectory(Path.Join(root, "lib", "bin"));
+        Directory.CreateDirectory(Path.Join(root, "a", "bin"));
+        Directory.CreateDirectory(Path.Join(root, "a", "lib"));
+        Directory.CreateDirectory(Path.Join(root, "a", "a", "b"));
+        Directory.CreateDirectory(Path.Join(root, "a", "b"));
 
-        File.WriteAllText(Path.Combine(root, "top.cs"), "");
-        File.WriteAllText(Path.Combine(root, "src", "a.cs"), "");
-        File.WriteAllText(Path.Combine(root, "src", "nested", "c.cs"), "");
-        File.WriteAllText(Path.Combine(root, "src", "bin", "d.cs"), "");
-        File.WriteAllText(Path.Combine(root, "src", "lib", "f.cs"), "");
-        File.WriteAllText(Path.Combine(root, "src", "obj", "g.cs"), "");
-        File.WriteAllText(Path.Combine(root, "obj", "Debug", "obj.cs"), "");
-        File.WriteAllText(Path.Combine(root, "bin", "Release", "bin.cs"), "");
-        File.WriteAllText(Path.Combine(root, "bin", "a.cs"), "");
-        File.WriteAllText(Path.Combine(root, "binx", "e.cs"), "");
-        File.WriteAllText(Path.Combine(root, "lib", "bin", "h.cs"), "");
-        File.WriteAllText(Path.Combine(root, "lib", "k.cs"), "");
-        File.WriteAllText(Path.Combine(root, "a", "bin", "x.cs"), "");
-        File.WriteAllText(Path.Combine(root, "a", "lib", "y.cs"), "");
-        File.WriteAllText(Path.Combine(root, "a", "a", "b", "repeated.cs"), "");
-        File.WriteAllText(Path.Combine(root, "a", "b", "direct.cs"), "");
+        File.WriteAllText(Path.Join(root, "top.cs"), "");
+        File.WriteAllText(Path.Join(root, "src", "a.cs"), "");
+        File.WriteAllText(Path.Join(root, "src", "nested", "c.cs"), "");
+        File.WriteAllText(Path.Join(root, "src", "bin", "d.cs"), "");
+        File.WriteAllText(Path.Join(root, "src", "lib", "f.cs"), "");
+        File.WriteAllText(Path.Join(root, "src", "obj", "g.cs"), "");
+        File.WriteAllText(Path.Join(root, "obj", "Debug", "obj.cs"), "");
+        File.WriteAllText(Path.Join(root, "bin", "Release", "bin.cs"), "");
+        File.WriteAllText(Path.Join(root, "bin", "a.cs"), "");
+        File.WriteAllText(Path.Join(root, "binx", "e.cs"), "");
+        File.WriteAllText(Path.Join(root, "lib", "bin", "h.cs"), "");
+        File.WriteAllText(Path.Join(root, "lib", "k.cs"), "");
+        File.WriteAllText(Path.Join(root, "a", "bin", "x.cs"), "");
+        File.WriteAllText(Path.Join(root, "a", "lib", "y.cs"), "");
+        File.WriteAllText(Path.Join(root, "a", "a", "b", "repeated.cs"), "");
+        File.WriteAllText(Path.Join(root, "a", "b", "direct.cs"), "");
         return folder;
     }
 

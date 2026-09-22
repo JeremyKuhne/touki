@@ -52,7 +52,7 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("**/@(*.cs)", "touki/", "GlobalUsings.md", false)]
     public void MatchCore_GlobStar_AtConstruct_WithDirectoryPrefix(
         string pattern, string prefix, string fileName, bool expected) =>
-        MatchCore(pattern, prefix, fileName).Should().Be(expected);
+            MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
     // Same backtracking shape for every positive extglob kind, ensuring
@@ -71,7 +71,7 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("**/!(skip)", "touki/", "skip", false)]
     public void MatchCore_GlobStar_BeforeEachExtGlobKind(
         string pattern, string prefix, string fileName, bool expected) =>
-        MatchCore(pattern, prefix, fileName).Should().Be(expected);
+            MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
     // AnyRun (single `*` outside a path segment) had the same bug shape:
@@ -85,7 +85,7 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("prefix*@(a|b)suffix", "", "prefixxxcsuffix", false)]
     public void MatchCore_AnyRun_BeforeExtGlob_BacktracksCorrectly(
         string pattern, string prefix, string fileName, bool expected) =>
-        MatchCore(pattern, prefix, fileName).Should().Be(expected);
+            MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
     // Negation followed by a backtracking `**/` or extglob continuation:
@@ -96,7 +96,7 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("!(skip)/**/*.cs", "", "skip/foo.cs", false)]
     public void MatchCore_Negation_BeforeBacktrackingRest(
         string pattern, string prefix, string fileName, bool expected) =>
-        MatchCore(pattern, prefix, fileName).Should().Be(expected);
+            MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
     // Two extglob constructs separated by a `*` that must backtrack: the
@@ -107,7 +107,7 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("@(a|b)*@(x|y)", "", "az", false)]
     public void MatchCore_TwoAlternations_AnyRunBetween(
         string pattern, string prefix, string fileName, bool expected) =>
-        MatchCore(pattern, prefix, fileName).Should().Be(expected);
+            MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
     // Deeper path prefixes exercise the path-aware backtracking length
@@ -119,7 +119,7 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("**/@(foo|bar).cs", "a/b/c/", "baz.cs", false)]
     public void MatchCore_GlobStar_MultiSegmentPrefix(
         string pattern, string prefix, string fileName, bool expected) =>
-        MatchCore(pattern, prefix, fileName).Should().Be(expected);
+            MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
     // Leading-dot rule with extglob alternations. The non-extglob fast paths
@@ -153,7 +153,7 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("@(*.cs|README)", "", "README", true)]
     public void MatchCore_LeadingDotRule_WithExtGlob(
         string pattern, string prefix, string fileName, bool expected) =>
-        MatchCore(pattern, prefix, fileName).Should().Be(expected);
+            MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
     // Boundary invariant: the two-span walker addresses the virtual input
@@ -227,7 +227,7 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("**/@(foo|bar|baz).cs", "a/b/", "qux.cs", false)]
     public void MatchCore_OffsetTable_MultipleAlternatives(
         string pattern, string prefix, string fileName, bool expected) =>
-        MatchCore(pattern, prefix, fileName).Should().Be(expected);
+            MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
     // A nested extglob sitting in a NON-first alternative, followed by further
@@ -248,7 +248,7 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("**/@(keep|@(foo|bar)|skip).cs", "a/b/", "nope.cs", false)]
     public void MatchCore_OffsetTable_NestedInNonFirstAlternative(
         string pattern, string prefix, string fileName, bool expected) =>
-        MatchCore(pattern, prefix, fileName).Should().Be(expected);
+            MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
     // Empty alternatives inside the repeating constructs (+ and *) drive the

@@ -197,6 +197,7 @@ public class TypeExtensionTests
         {
             internal class DeeplyNested<U> { }
         }
+
         internal class MultiGenericNested<T1, T2> { }
         public class PublicNested { }
         private class PrivateNested { }

@@ -288,7 +288,7 @@ public class SpanReaderTests
         reader.Position.Should().Be(3);
 
         reader.TryRead(out value).Should().BeFalse();
-        value.Should().Be(default);
+        value.Should().Be(expected: default);
         reader.Position.Should().Be(3);
     }
 
@@ -299,7 +299,7 @@ public class SpanReaderTests
         SpanReader<byte> reader = new(span);
 
         reader.TryRead(out byte value).Should().BeFalse();
-        value.Should().Be(default);
+        value.Should().Be(expected: default);
         reader.Position.Should().Be(0);
     }
 
@@ -316,7 +316,7 @@ public class SpanReaderTests
         value.Should().Be(new Point(3, 4));
 
         reader.TryRead(out value).Should().BeFalse();
-        value.Should().Be(default(Point));
+        value.Should().Be(expected: default(Point));
         reader.Position.Should().Be(4);
     }
 
@@ -1174,7 +1174,7 @@ public class SpanReaderTests
         SpanReader<byte> reader = new(span);
 
         reader.TryPeek(out byte value).Should().BeFalse();
-        value.Should().Be(default);
+        value.Should().Be(expected: default);
         reader.Position.Should().Be(0);
     }
 
@@ -1186,7 +1186,7 @@ public class SpanReaderTests
 
         reader.Advance(1);
         reader.TryPeek(out byte value).Should().BeFalse();
-        value.Should().Be(default);
+        value.Should().Be(expected: default);
         reader.Position.Should().Be(1);
     }
 

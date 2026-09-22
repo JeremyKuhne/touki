@@ -15,20 +15,20 @@ public class TypeXmlSummaryAnalyzerTests
         string? apiSurface = null,
         IReadOnlyCollection<MetadataReference>? additionalReferences = null,
         string? effectiveApiSurface = null) =>
-        AnalyzerTestHarness.GetDiagnosticsAsync(
-            new TypeXmlSummaryAnalyzer(),
-            source,
-            options: CreateOptions(apiSurface, effectiveApiSurface),
-            additionalReferences: additionalReferences);
+            AnalyzerTestHarness.GetDiagnosticsAsync(
+                new TypeXmlSummaryAnalyzer(),
+                source,
+                options: CreateOptions(apiSurface, effectiveApiSurface),
+                additionalReferences: additionalReferences);
 
     private static Task<ImmutableArray<Diagnostic>> AnalyzeAsync(
         IReadOnlyList<(string Source, string FileName)> sources,
         string? apiSurface = null,
         string? effectiveApiSurface = null) =>
-        AnalyzerTestHarness.GetDiagnosticsAsync(
-            new TypeXmlSummaryAnalyzer(),
-            sources,
-            options: CreateOptions(apiSurface, effectiveApiSurface));
+            AnalyzerTestHarness.GetDiagnosticsAsync(
+                new TypeXmlSummaryAnalyzer(),
+                sources,
+                options: CreateOptions(apiSurface, effectiveApiSurface));
 
     private static Dictionary<string, string>? CreateOptions(
         string? apiSurface,
@@ -60,6 +60,7 @@ public class TypeXmlSummaryAnalyzerTests
             syntaxTrees: [CSharpSyntaxTree.ParseText(source)],
             references: RoslynTestEnvironment.References,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
         return compilation.ToMetadataReference();
     }
 
@@ -71,14 +72,16 @@ public class TypeXmlSummaryAnalyzerTests
             syntaxTrees: [tree],
             references: RoslynTestEnvironment.References,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
         CompilationWithAnalyzers compilationWithAnalyzers =
             compilation.WithAnalyzers([new TypeXmlSummaryAnalyzer()]);
+
         SemanticModel semanticModel = compilation.GetSemanticModel(tree);
 
         return await compilationWithAnalyzers.GetAnalyzerSemanticDiagnosticsAsync(
             semanticModel,
             filterSpan: null,
-            cancellationToken: default).ConfigureAwait(false);
+            cancellationToken: default).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -107,7 +110,7 @@ public class TypeXmlSummaryAnalyzerTests
             public delegate void DelegateSample();
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -120,7 +123,7 @@ public class TypeXmlSummaryAnalyzerTests
             public class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -133,7 +136,7 @@ public class TypeXmlSummaryAnalyzerTests
             public class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -151,7 +154,7 @@ public class TypeXmlSummaryAnalyzerTests
             public delegate void DelegateSample();
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(7);
         diagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
@@ -170,7 +173,7 @@ public class TypeXmlSummaryAnalyzerTests
     {
         const string source = "class Sample { }";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Id.Should().Be(TypeXmlSummaryAnalyzer.DiagnosticId);
@@ -184,7 +187,7 @@ public class TypeXmlSummaryAnalyzerTests
     {
         const string source = "class Sample { }";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeSemanticAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeSemanticAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(TypeXmlSummaryAnalyzer.DiagnosticId);
@@ -201,7 +204,7 @@ public class TypeXmlSummaryAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Nested");
@@ -218,7 +221,7 @@ public class TypeXmlSummaryAnalyzerTests
             class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -232,7 +235,7 @@ public class TypeXmlSummaryAnalyzerTests
             class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -247,7 +250,7 @@ public class TypeXmlSummaryAnalyzerTests
             class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().EndWith("found 0 summaries");
@@ -261,7 +264,7 @@ public class TypeXmlSummaryAnalyzerTests
             class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().EndWith("found 0 summaries");
@@ -275,7 +278,7 @@ public class TypeXmlSummaryAnalyzerTests
             class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -291,7 +294,7 @@ public class TypeXmlSummaryAnalyzerTests
             class Base { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -324,7 +327,7 @@ public class TypeXmlSummaryAnalyzerTests
             public delegate void DelegateSample();
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "public").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "public").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(7);
         diagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
@@ -367,7 +370,7 @@ public class TypeXmlSummaryAnalyzerTests
             public delegate void DelegateSample();
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "public").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "public").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -398,7 +401,7 @@ public class TypeXmlSummaryAnalyzerTests
             public delegate void DelegateSample();
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(7);
     }
@@ -420,7 +423,7 @@ public class TypeXmlSummaryAnalyzerTests
             public enum Sample : {{underlyingType}} { None }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Sample");
@@ -438,7 +441,7 @@ public class TypeXmlSummaryAnalyzerTests
             """;
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, apiSurface: "public")
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -451,7 +454,7 @@ public class TypeXmlSummaryAnalyzerTests
             public class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -476,7 +479,7 @@ public class TypeXmlSummaryAnalyzerTests
             public struct Implementation : IContract { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -495,7 +498,7 @@ public class TypeXmlSummaryAnalyzerTests
             public class Leaf { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -511,7 +514,7 @@ public class TypeXmlSummaryAnalyzerTests
             public class Second { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
     }
@@ -527,7 +530,7 @@ public class TypeXmlSummaryAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            additionalReferences: [projectReference]).ConfigureAwait(false);
+            additionalReferences: [projectReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText()
@@ -543,7 +546,7 @@ public class TypeXmlSummaryAnalyzerTests
             class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -558,7 +561,7 @@ public class TypeXmlSummaryAnalyzerTests
             class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().EndWith("found 2 summaries");
@@ -572,7 +575,7 @@ public class TypeXmlSummaryAnalyzerTests
             class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -585,7 +588,7 @@ public class TypeXmlSummaryAnalyzerTests
             class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -600,7 +603,7 @@ public class TypeXmlSummaryAnalyzerTests
             class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -615,7 +618,7 @@ public class TypeXmlSummaryAnalyzerTests
             class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().EndWith("found 0 summaries");
@@ -630,7 +633,7 @@ public class TypeXmlSummaryAnalyzerTests
             class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().EndWith("found 2 summaries");
@@ -645,7 +648,7 @@ public class TypeXmlSummaryAnalyzerTests
             ("partial class Sample { }", "Sample.Other.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -659,7 +662,7 @@ public class TypeXmlSummaryAnalyzerTests
             ("partial class Sample { }", "A.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().FilePath.Should().Be("A.cs");
@@ -675,7 +678,7 @@ public class TypeXmlSummaryAnalyzerTests
             ("/// <summary>Second.</summary>\npartial class Sample { }", "B.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().FilePath.Should().Be("A.cs");
@@ -693,7 +696,7 @@ public class TypeXmlSummaryAnalyzerTests
             partial class Sample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().EndWith("found 2 summaries");
@@ -707,6 +710,7 @@ public class TypeXmlSummaryAnalyzerTests
             ("partial class Sample { }", "A.cs"),
             ("partial class Sample { }", "B.cs")
         ];
+
         Dictionary<string, IReadOnlyDictionary<string, string>> optionsByFile = new(StringComparer.Ordinal)
         {
             ["A.cs"] = new Dictionary<string, string>
@@ -722,7 +726,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new TypeXmlSummaryAnalyzer(),
             sources,
-            optionsByFile: optionsByFile).ConfigureAwait(false);
+            optionsByFile: optionsByFile).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -742,6 +746,7 @@ public class TypeXmlSummaryAnalyzerTests
                 "internal partial class Outer { public partial class Nested { } }",
                 "B.cs")
         ];
+
         Dictionary<string, IReadOnlyDictionary<string, string>> optionsByFile = new(StringComparer.Ordinal)
         {
             ["A.cs"] = new Dictionary<string, string>
@@ -758,7 +763,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new TypeXmlSummaryAnalyzer(),
             sources,
-            optionsByFile: optionsByFile).ConfigureAwait(false);
+            optionsByFile: optionsByFile).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Nested");
@@ -772,6 +777,7 @@ public class TypeXmlSummaryAnalyzerTests
             ("partial class Sample { }", "A.cs"),
             ("partial class Sample { }", "B.cs")
         ];
+
         Dictionary<string, IReadOnlyDictionary<string, string>> optionsByFile = new(StringComparer.Ordinal)
         {
             ["A.cs"] = new Dictionary<string, string>
@@ -787,7 +793,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new TypeXmlSummaryAnalyzer(),
             sources,
-            optionsByFile: optionsByFile).ConfigureAwait(false);
+            optionsByFile: optionsByFile).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -801,7 +807,7 @@ public class TypeXmlSummaryAnalyzerTests
             ("// <auto-generated/>\n/// <summary>Generated.</summary>\npartial class Sample { }", "Sample.g.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -815,7 +821,7 @@ public class TypeXmlSummaryAnalyzerTests
             ("// <auto-generated/>\n/// <summary>Generated.</summary>\npartial class Sample { }", "Sample.g.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().FilePath.Should().Be("Sample.cs");
@@ -833,7 +839,7 @@ public class TypeXmlSummaryAnalyzerTests
             ("partial class Sample { }", "B.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().FilePath.Should().Be("B.cs");
@@ -850,7 +856,7 @@ public class TypeXmlSummaryAnalyzerTests
             ("partial class Sample { }", "B.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().FilePath.Should().Be("B.cs");
@@ -867,7 +873,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new TypeXmlSummaryAnalyzer(),
             "class Sample { }",
-            options).ConfigureAwait(false);
+            options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -884,7 +890,7 @@ public class TypeXmlSummaryAnalyzerTests
             new TypeXmlSummaryAnalyzer(),
             "class Sample { }",
             options,
-            fileName: "Sample.g.cs").ConfigureAwait(false);
+            fileName: "Sample.g.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -895,7 +901,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new TypeXmlSummaryAnalyzer(),
             "class Sample { }",
-            fileName: "Sample.g.cs").ConfigureAwait(false);
+            fileName: "Sample.g.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -909,7 +915,7 @@ public class TypeXmlSummaryAnalyzerTests
             #line default
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -925,7 +931,7 @@ public class TypeXmlSummaryAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -943,7 +949,7 @@ public class TypeXmlSummaryAnalyzerTests
                 "Outer.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         SyntaxTree sourceTree = diagnostic.Location.GetRequiredSourceTree();
@@ -956,7 +962,7 @@ public class TypeXmlSummaryAnalyzerTests
     {
         const string source = "// <auto-generated/>\nclass Sample { }";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -975,7 +981,7 @@ public class TypeXmlSummaryAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "public").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "public").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
         diagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
@@ -1003,32 +1009,39 @@ public class TypeXmlSummaryAnalyzerTests
 
         ImmutableArray<Diagnostic> publicDiagnostics = await AnalyzeAsync(
             source,
-            apiSurface: "public").ConfigureAwait(false);
+            apiSurface: "public").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> internalDiagnostics = await AnalyzeAsync(
             source,
-            apiSurface: "internal").ConfigureAwait(false);
+            apiSurface: "internal").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> effectivePublicDiagnostics = await AnalyzeAsync(
             source,
-            effectiveApiSurface: "public").ConfigureAwait(false);
+            effectiveApiSurface: "public").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> effectiveInternalDiagnostics = await AnalyzeAsync(
             source,
-            effectiveApiSurface: "internal").ConfigureAwait(false);
+            effectiveApiSurface: "internal").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> effectivePrivateDiagnostics = await AnalyzeAsync(
             source,
-            effectiveApiSurface: "private").ConfigureAwait(false);
+            effectiveApiSurface: "private").ConfigureAwait(continueOnCapturedContext: false);
 
         publicDiagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
             .ToString(diagnostic.Location.SourceSpan)).Should().BeEquivalentTo(
                 "ProtectedNested",
                 "ProtectedInternalNested",
                 "PublicNested");
+
         internalDiagnostics.Should().ContainSingle()
             .Which.Location.GetRequiredSourceTree().GetText().ToString(
                 internalDiagnostics[0].Location.SourceSpan).Should().Be("PrivateProtectedNested");
+
         effectivePublicDiagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
             .ToString(diagnostic.Location.SourceSpan)).Should().BeEquivalentTo(
                 "ProtectedNested",
                 "ProtectedInternalNested");
+
         effectiveInternalDiagnostics.Should().ContainSingle();
         effectivePrivateDiagnostics.Should().ContainSingle()
             .Which.Location.GetRequiredSourceTree().GetText().ToString(
@@ -1048,10 +1061,11 @@ public class TypeXmlSummaryAnalyzerTests
 
         ImmutableArray<Diagnostic> internalDiagnostics = await AnalyzeAsync(
             source,
-            apiSurface: "internal").ConfigureAwait(false);
+            apiSurface: "internal").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> effectiveInternalDiagnostics = await AnalyzeAsync(
             source,
-            effectiveApiSurface: "internal").ConfigureAwait(false);
+            effectiveApiSurface: "internal").ConfigureAwait(continueOnCapturedContext: false);
 
         internalDiagnostics.Should().BeEmpty();
         Location location = effectiveInternalDiagnostics.Should().ContainSingle().Subject.Location;
@@ -1072,11 +1086,12 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> effectivePublicDiagnostics = await AnalyzeAsync(
             source,
             apiSurface: "internal",
-            effectiveApiSurface: "public").ConfigureAwait(false);
+            effectiveApiSurface: "public").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> effectiveInternalDiagnostics = await AnalyzeAsync(
             source,
             apiSurface: "private",
-            effectiveApiSurface: "internal").ConfigureAwait(false);
+            effectiveApiSurface: "internal").ConfigureAwait(continueOnCapturedContext: false);
 
         effectivePublicDiagnostics.Should().BeEmpty();
         effectiveInternalDiagnostics.Should().ContainSingle();
@@ -1090,11 +1105,12 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> publicDiagnostics = await AnalyzeAsync(
             source,
             apiSurface: "public",
-            effectiveApiSurface: "internal").ConfigureAwait(false);
+            effectiveApiSurface: "internal").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> internalDiagnostics = await AnalyzeAsync(
             source,
             apiSurface: "internal",
-            effectiveApiSurface: "private").ConfigureAwait(false);
+            effectiveApiSurface: "private").ConfigureAwait(continueOnCapturedContext: false);
 
         publicDiagnostics.Should().BeEmpty();
         internalDiagnostics.Should().ContainSingle();
@@ -1117,7 +1133,7 @@ public class TypeXmlSummaryAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
             apiSurface: "private",
-            effectiveApiSurface: effectiveApiSurface).ConfigureAwait(false);
+            effectiveApiSurface: effectiveApiSurface).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -1133,7 +1149,7 @@ public class TypeXmlSummaryAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "private").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "private").ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Nested");
@@ -1147,7 +1163,7 @@ public class TypeXmlSummaryAnalyzerTests
             internal class InternalSample { }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "file").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "file").ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("FileSample");
@@ -1166,10 +1182,11 @@ public class TypeXmlSummaryAnalyzerTests
 
         ImmutableArray<Diagnostic> fileDiagnostics = await AnalyzeAsync(
             source,
-            apiSurface: "file").ConfigureAwait(false);
+            apiSurface: "file").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> effectiveFileDiagnostics = await AnalyzeAsync(
             source,
-            effectiveApiSurface: "file").ConfigureAwait(false);
+            effectiveApiSurface: "file").ConfigureAwait(continueOnCapturedContext: false);
 
         fileDiagnostics.Should().BeEmpty();
         Location location = effectiveFileDiagnostics.Should().ContainSingle().Subject.Location;
@@ -1187,7 +1204,7 @@ public class TypeXmlSummaryAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "file").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "file").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1202,7 +1219,7 @@ public class TypeXmlSummaryAnalyzerTests
             """;
 
         ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzeAsync(source, " PUBLIC, file ").ConfigureAwait(false);
+            await AnalyzeAsync(source, " PUBLIC, file ").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
         diagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
@@ -1214,7 +1231,7 @@ public class TypeXmlSummaryAnalyzerTests
     {
         const string source = "class Sample { }";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "unknown").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "unknown").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }

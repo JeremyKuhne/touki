@@ -18,9 +18,7 @@ internal static class AnalyzerTestHarness
     ///  Runs <paramref name="analyzer"/> against <paramref name="source"/> and returns the
     ///  analyzer-produced diagnostics.
     /// </summary>
-    /// <param name="options">
-    ///  Optional <c>.editorconfig</c> values made visible to the analyzer.
-    /// </param>
+    /// <param name="options">Optional <c>.editorconfig</c> values made visible to the analyzer.</param>
     /// <param name="fileName">
     ///  Optional path for the parsed tree. Analyzers that inspect the file name need one; the default leaves
     ///  the tree pathless, matching an in-memory compilation.
@@ -45,6 +43,7 @@ internal static class AnalyzerTestHarness
     {
         IReadOnlyCollection<MetadataReference> references =
             metadataReferences ?? RoslynTestEnvironment.GetReferences(additionalReferences);
+
         CSharpCompilation compilation = parseOptions is null
             ? CreateCompilation(source, fileName, references)
             : CSharpCompilation.Create(
@@ -59,7 +58,7 @@ internal static class AnalyzerTestHarness
             options,
             diagnosticOptions,
             expectedCompilerDiagnosticIds,
-            optionsByFile: null).ConfigureAwait(false);
+            optionsByFile: null).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     /// <summary>
@@ -83,6 +82,7 @@ internal static class AnalyzerTestHarness
             syntaxTrees: [syntaxTree],
             references: RoslynTestEnvironment.References,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
+
         beforeAnalysis();
 
         return await GetDiagnosticsAsync(
@@ -91,7 +91,7 @@ internal static class AnalyzerTestHarness
             options,
             diagnosticOptions,
             expectedCompilerDiagnosticIds,
-            optionsByFile: null).ConfigureAwait(false);
+            optionsByFile: null).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     /// <summary>
@@ -120,7 +120,7 @@ internal static class AnalyzerTestHarness
             options,
             diagnosticOptions,
             expectedCompilerDiagnosticIds,
-            optionsByFile).ConfigureAwait(false);
+            optionsByFile).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(
@@ -135,13 +135,14 @@ internal static class AnalyzerTestHarness
 
         ImmutableArray<Diagnostic> compilerErrors =
             [.. compilation.GetDiagnostics().Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)];
+
         string[] actualIds = [.. compilerErrors.Select(diagnostic => diagnostic.Id).OrderBy(id => id)];
         string[] expectedIds = [.. (expectedCompilerDiagnosticIds ?? []).OrderBy(id => id)];
         if (!actualIds.SequenceEqual(expectedIds, StringComparer.Ordinal))
         {
             throw new InvalidOperationException(
                 $"Analyzer test source compiler errors did not match. Expected: [{string.Join(", ", expectedIds)}]. "
-                + $"Actual:{Environment.NewLine}{string.Join(Environment.NewLine, compilerErrors)}");
+                    + $"Actual:{Environment.NewLine}{string.Join(Environment.NewLine, compilerErrors)}");
         }
 
         CompilationWithAnalyzers compilationWithAnalyzers =
@@ -149,14 +150,14 @@ internal static class AnalyzerTestHarness
                 [analyzer],
                 RoslynTestEnvironment.CreateAnalyzerOptions(options, optionsByFile));
 
-        return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(false);
+        return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(continueOnCapturedContext: false);
     }
 
     private static CSharpCompilation CreateCompilation(
         string source,
         string? fileName,
-        IReadOnlyCollection<MetadataReference>? metadataReferences = null)
-        => CreateCompilation([(source, fileName ?? string.Empty)], metadataReferences);
+        IReadOnlyCollection<MetadataReference>? metadataReferences = null) =>
+            CreateCompilation([(source, fileName ?? string.Empty)], metadataReferences);
 
     private static CSharpCompilation CreateCompilation(
         IReadOnlyList<(string Source, string FileName)> sources,
@@ -193,7 +194,7 @@ internal static class RoslynTestAssertions
         this Project project,
         CancellationToken cancellationToken = default)
     {
-        if (await project.GetCompilationAsync(cancellationToken).ConfigureAwait(false) is not { } compilation)
+        if (await project.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false) is not { } compilation)
         {
             throw new InvalidOperationException("Expected a C# project compilation.");
         }

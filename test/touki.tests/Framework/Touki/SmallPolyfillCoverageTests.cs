@@ -43,7 +43,7 @@ public class SmallPolyfillCoverageTests
     [TestMethod]
     public unsafe void ThrowIfNull_VoidPointer_Null_Throws()
     {
-        Action action = () => ArgumentNullException.ThrowIfNull((void*)null);
+        Action action = () => ArgumentNullException.ThrowIfNull(argument: (void*)null);
         action.Should().Throw<ArgumentNullException>();
     }
 
@@ -75,7 +75,7 @@ public class SmallPolyfillCoverageTests
     [TestMethod]
     public void ThrowIfNull_Object_ExceptionArgument_Null_Throws()
     {
-        Action action = () => ArgumentNullException.ThrowIfNull((object?)null, ExceptionArgument.value);
+        Action action = () => ArgumentNullException.ThrowIfNull(argument: (object?)null, ExceptionArgument.value);
         action.Should().Throw<ArgumentNullException>();
     }
 
@@ -91,7 +91,7 @@ public class SmallPolyfillCoverageTests
     [TestMethod]
     public void OverflowAdapter_Throw_NullMessage_ThrowsOverflowException()
     {
-        Action action = () => OverflowAdapter.Throw(null);
+        Action action = () => OverflowAdapter.Throw(message: null);
         action.Should().Throw<OverflowException>();
     }
 
@@ -406,6 +406,7 @@ public class SmallPolyfillCoverageTests
             ArgumentOutOfRangeException.ThrowIfNegative(0);
             ArgumentOutOfRangeException.ThrowIfNegative(1);
         };
+
         action.Should().NotThrow();
     }
 
@@ -459,6 +460,7 @@ public class SmallPolyfillCoverageTests
             ArgumentOutOfRangeException.ThrowIfGreaterThan(5, 5);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(3, 5);
         };
+
         action.Should().NotThrow();
     }
 
@@ -486,6 +488,7 @@ public class SmallPolyfillCoverageTests
             ArgumentOutOfRangeException.ThrowIfLessThan(5, 5);
             ArgumentOutOfRangeException.ThrowIfLessThan(7, 5);
         };
+
         action.Should().NotThrow();
     }
 

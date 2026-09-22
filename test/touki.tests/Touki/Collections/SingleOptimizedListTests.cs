@@ -283,6 +283,7 @@ public class SingleOptimizedListTests
             // Single item case
             42,
         ];
+
         list.IndexOf(42).Should().Be(0);
         list.IndexOf(99).Should().Be(-1);
 

@@ -18,10 +18,3 @@ dotnet_diagnostic.TOUKI0041.severity = none
 
 # Production allocation guidance does not apply to test implementations.
 dotnet_diagnostic.TOUKI0030.severity = none
-
-# Keep existing test style and path-composition debt visible without blocking the full-analyzer rollout.
-dotnet_diagnostic.TOUKI0024.severity = suggestion
-dotnet_diagnostic.TOUKI0027.severity = suggestion
-dotnet_diagnostic.TOUKI0028.severity = suggestion
-dotnet_diagnostic.TOUKI0029.severity = suggestion
-dotnet_diagnostic.TOUKI0032.severity = suggestion

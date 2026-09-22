@@ -252,8 +252,8 @@ internal sealed class SerializablePayload : ISerializable
     [NonSerialized]
     public bool ConstructorCalled;
 
-    public void GetObjectData(SerializationInfo info, StreamingContext context)
-        => info.AddValue("Value", Value);
+    public void GetObjectData(SerializationInfo info, StreamingContext context) =>
+        info.AddValue("Value", Value);
 }
 
 [Serializable]
@@ -289,8 +289,8 @@ internal struct NodeStruct : ISerializable
 
     public NodeWithNodeStruct? Node;
 
-    public readonly void GetObjectData(SerializationInfo info, StreamingContext context)
-        => info.AddValue("Node", Node, typeof(NodeWithNodeStruct));
+    public readonly void GetObjectData(SerializationInfo info, StreamingContext context) =>
+        info.AddValue("Node", Node, typeof(NodeWithNodeStruct));
 }
 
 #pragma warning restore CA5362

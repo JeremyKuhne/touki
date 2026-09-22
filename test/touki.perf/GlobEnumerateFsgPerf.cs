@@ -7,8 +7,6 @@ using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using Touki.Io;
 
 using File = System.IO.File;
-using Path = System.IO.Path;
-
 namespace touki.perf;
 
 /// <summary>
@@ -54,7 +52,7 @@ public class GlobEnumerateFsgPerf
     {
         // Walk up from the perf assembly's location until we find the repo root.
         string? dir = AppContext.BaseDirectory;
-        while (dir is not null && !File.Exists(Path.Combine(dir, "touki.slnx")))
+        while (dir is not null && !File.Exists(Path.Join(dir, "touki.slnx")))
         {
             dir = Path.GetDirectoryName(dir);
         }
@@ -110,6 +108,7 @@ public class GlobEnumerateFsgPerf
                 ExcludePatterns = s_excludes,
                 Dialect = Touki.Io.Globbing.GlobDialect.FileSystemGlobbing
             });
+
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -134,6 +133,7 @@ public class GlobEnumerateFsgPerf
                 ExcludePatterns = s_reducedExcludes,
                 Dialect = Touki.Io.Globbing.GlobDialect.FileSystemGlobbing
             });
+
         List<string> results = [];
         while (enumerator.MoveNext())
         {

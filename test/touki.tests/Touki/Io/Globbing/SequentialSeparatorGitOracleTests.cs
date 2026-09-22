@@ -4,6 +4,12 @@
 
 using LibGit2Sharp;
 
+#if NETFRAMEWORK
+using FilePath = Microsoft.IO.Path;
+#else
+using FilePath = System.IO.Path;
+#endif
+
 namespace Touki.Io.Globbing;
 
 /// <summary>
@@ -36,14 +42,14 @@ public sealed class SequentialSeparatorGitOracleTests
 
         public RepoFixture()
         {
-            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "touki-glob-oracle-" + Guid.NewGuid().ToString("N"));
+            Path = FilePath.Join(System.IO.Path.GetTempPath(), "touki-glob-oracle-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(Path);
             Repository.Init(Path);
             Repository = new Repository(Path);
         }
 
-        public bool IsIgnored(string pattern, string path)
-            => IsIgnored([pattern], path);
+        public bool IsIgnored(string pattern, string path) =>
+            IsIgnored([pattern], path);
 
         public bool IsIgnored(IReadOnlyList<string> patterns, string path)
         {
@@ -70,6 +76,7 @@ public sealed class SequentialSeparatorGitOracleTests
                 {
                     File.SetAttributes(file, FileAttributes.Normal);
                 }
+
                 Directory.Delete(Path, recursive: true);
             }
             catch

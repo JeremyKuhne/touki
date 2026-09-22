@@ -240,7 +240,8 @@ public class InterlockTests
                     do
                     {
                         current = value;
-                    } while (Interlocked.CompareExchange(ref value, current + 1, current) != current);
+                    }
+                    while (Interlocked.CompareExchange(ref value, current + 1, current) != current);
                 }
             },
             CancellationToken.None);

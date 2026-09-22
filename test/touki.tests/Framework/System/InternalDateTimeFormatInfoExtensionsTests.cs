@@ -37,8 +37,8 @@ public class InternalDateTimeFormatInfoExtensionsTests
     {
         DateTimeFormatInfo formatInfo = CultureInfo.GetCultureInfo("en-US").DateTimeFormat;
 
-        string january = formatInfo.GetMonthName(1, MonthNameStyles.Regular, false);
-        string december = formatInfo.GetMonthName(12, MonthNameStyles.Regular, false);
+        string january = formatInfo.GetMonthName(1, MonthNameStyles.Regular, abbreviated: false);
+        string december = formatInfo.GetMonthName(12, MonthNameStyles.Regular, abbreviated: false);
 
         january.Should().Be("January");
         december.Should().Be("December");
@@ -49,8 +49,8 @@ public class InternalDateTimeFormatInfoExtensionsTests
     {
         DateTimeFormatInfo formatInfo = CultureInfo.GetCultureInfo("en-US").DateTimeFormat;
 
-        string january = formatInfo.GetMonthName(1, MonthNameStyles.Regular, true);
-        string december = formatInfo.GetMonthName(12, MonthNameStyles.Regular, true);
+        string january = formatInfo.GetMonthName(1, MonthNameStyles.Regular, abbreviated: true);
+        string december = formatInfo.GetMonthName(12, MonthNameStyles.Regular, abbreviated: true);
 
         january.Should().Be("Jan");
         december.Should().Be("Dec");
@@ -61,7 +61,7 @@ public class InternalDateTimeFormatInfoExtensionsTests
     {
         // Ukranian has distinct genitive forms
         DateTimeFormatInfo formatInfo = CultureInfo.GetCultureInfo("uk-UA").DateTimeFormat;
-        string january = formatInfo.GetMonthName(1, MonthNameStyles.Genitive, false);
+        string january = formatInfo.GetMonthName(1, MonthNameStyles.Genitive, abbreviated: false);
         january.Should().Be("січня");
     }
 
@@ -69,7 +69,7 @@ public class InternalDateTimeFormatInfoExtensionsTests
     public void GetMonthName_AbbreviatedGenitiveStyle_ReturnsName()
     {
         DateTimeFormatInfo formatInfo = CultureInfo.GetCultureInfo("uk-UA").DateTimeFormat;
-        string january = formatInfo.GetMonthName(1, MonthNameStyles.Genitive, true);
+        string january = formatInfo.GetMonthName(1, MonthNameStyles.Genitive, abbreviated: true);
         january.Should().Be("січ");
     }
 
@@ -77,7 +77,7 @@ public class InternalDateTimeFormatInfoExtensionsTests
     public void GetMonthName_LeapYearStyle_InvariantCulture_ReturnsName()
     {
         DateTimeFormatInfo formatInfo = CultureInfo.InvariantCulture.DateTimeFormat;
-        string february = formatInfo.GetMonthName(2, MonthNameStyles.LeapYear, false);
+        string february = formatInfo.GetMonthName(2, MonthNameStyles.LeapYear, abbreviated: false);
         february.Should().Be("February");
     }
 
@@ -86,8 +86,8 @@ public class InternalDateTimeFormatInfoExtensionsTests
     {
         DateTimeFormatInfo formatInfo = CultureInfo.InvariantCulture.DateTimeFormat;
 
-        Action action1 = () => formatInfo.GetMonthName(0, MonthNameStyles.Regular, false);
-        Action action2 = () => formatInfo.GetMonthName(14, MonthNameStyles.Regular, false);
+        Action action1 = () => formatInfo.GetMonthName(0, MonthNameStyles.Regular, abbreviated: false);
+        Action action2 = () => formatInfo.GetMonthName(14, MonthNameStyles.Regular, abbreviated: false);
 
         action1.Should().Throw<ArgumentOutOfRangeException>();
         action2.Should().Throw<ArgumentOutOfRangeException>();

@@ -6,8 +6,6 @@ using Touki.Io;
 
 using Directory = System.IO.Directory;
 using File = System.IO.File;
-using Path = System.IO.Path;
-
 namespace touki.perf;
 
 /// <summary>
@@ -28,22 +26,22 @@ public class MSBuildExcludeCompositionPerf
     [GlobalSetup]
     public void GlobalSetup()
     {
-        _root = Path.Combine(Path.GetTempPath(), $"touki-msbuild-exclude-perf-{Guid.NewGuid():N}");
+        _root = Path.Join(Path.GetTempPath(), $"touki-msbuild-exclude-perf-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_root);
 
         for (int moduleIndex = 0; moduleIndex < ModuleCount; moduleIndex++)
         {
-            string module = Path.Combine(_root, $"module-{moduleIndex:D2}");
-            string source = Path.Combine(module, "src");
-            string obj = Path.Combine(module, "obj");
-            string bin = Path.Combine(module, "bin");
+            string module = Path.Join(_root, $"module-{moduleIndex:D2}");
+            string source = Path.Join(module, "src");
+            string obj = Path.Join(module, "obj");
+            string bin = Path.Join(module, "bin");
             Directory.CreateDirectory(source);
             Directory.CreateDirectory(obj);
             Directory.CreateDirectory(bin);
-            File.WriteAllText(Path.Combine(source, "code.cs"), string.Empty);
-            File.WriteAllText(Path.Combine(obj, "excluded.txt"), string.Empty);
-            File.WriteAllText(Path.Combine(obj, "included.cs"), string.Empty);
-            File.WriteAllText(Path.Combine(bin, "generated.cs"), string.Empty);
+            File.WriteAllText(Path.Join(source, "code.cs"), string.Empty);
+            File.WriteAllText(Path.Join(obj, "excluded.txt"), string.Empty);
+            File.WriteAllText(Path.Join(obj, "included.cs"), string.Empty);
+            File.WriteAllText(Path.Join(bin, "generated.cs"), string.Empty);
         }
 
         System.IO.StringWriter writer = new();
@@ -55,11 +53,13 @@ public class MSBuildExcludeCompositionPerf
             "**/bin/**;**/obj/**",
             ModuleCount,
             "common C# subtree excludes");
+
         ValidateCount(
             "**/*",
             "**/obj/**",
             ModuleCount * 2,
             "all-files subtree exclude");
+
         ValidateCount(
             "**/*",
             "**/obj/*.txt",
@@ -95,6 +95,7 @@ public class MSBuildExcludeCompositionPerf
             excludes,
             _root,
             out string startDirectory);
+
         using RecordedDirectoryEnumerator enumerator = new(
             _fileSystem,
             matcher,

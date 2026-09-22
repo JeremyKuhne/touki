@@ -15,6 +15,7 @@ public class FileSystemMatcherCompositionTests
         IFileSystemMatcher matcher = FileSystemMatcher.CreateExclusionWins(
             [FileSystemMatcher.Create((_, fileName) => fileName.EndsWith(".cs"))],
             [FileSystemMatcher.Create((_, fileName) => fileName.StartsWith("Generated"))]);
+
         using IFileSystemMatcherSession session = matcher.CreateSession("root");
 
         session.MatchesFile("root", "Source.cs").Should().BeTrue();
@@ -28,6 +29,7 @@ public class FileSystemMatcherCompositionTests
         IFileSystemMatcher matcher = FileSystemMatcher.CreateExclusionWins(
             [new ConstantMatcher(DirectoryMatchType.AllDescendantFilesMatch)],
             [new ConstantMatcher(DirectoryMatchType.MayContainMatchingFiles)]);
+
         using IFileSystemMatcherSession session = matcher.CreateSession("root");
 
         session.MatchesDirectory("root", "child").Should().Be(DirectoryMatchType.MayContainMatchingFiles);
@@ -57,6 +59,7 @@ public class FileSystemMatcherCompositionTests
                             && normalizedExclude == DirectoryMatchType.NoDescendantFilesMatch
                                 ? DirectoryMatchType.AllDescendantFilesMatch
                                 : DirectoryMatchType.MayContainMatchingFiles;
+
                 yield return (include, exclude, expected);
             }
         }
@@ -72,6 +75,7 @@ public class FileSystemMatcherCompositionTests
         IFileSystemMatcher matcher = FileSystemMatcher.CreateExclusionWins(
             [new ConstantMatcher(include)],
             [new ConstantMatcher(exclude)]);
+
         using IFileSystemMatcherSession session = matcher.CreateSession("root");
 
         session.MatchesDirectory("root", "child").Should().Be(expected);
@@ -86,6 +90,7 @@ public class FileSystemMatcherCompositionTests
             new(new ConstantMatcher(DirectoryMatchType.MayContainMatchingFiles), FileSystemMatchAction.Include)
         ],
             includeUnmatched: true);
+
         using IFileSystemMatcherSession session = matcher.CreateSession("root");
 
         session.MatchesDirectory("root", "child").Should().Be(DirectoryMatchType.MayContainMatchingFiles);
@@ -99,6 +104,7 @@ public class FileSystemMatcherCompositionTests
             new(new ConstantMatcher(DirectoryMatchType.MayContainMatchingFiles), FileSystemMatchAction.Include),
             new(new ConstantMatcher(DirectoryMatchType.AllDescendantFilesMatch), FileSystemMatchAction.Exclude)
         ]);
+
         using IFileSystemMatcherSession session = matcher.CreateSession("root");
 
         session.MatchesDirectory("root", "child").Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
@@ -145,6 +151,7 @@ public class FileSystemMatcherCompositionTests
         IFileSystemMatcher matcher = FileSystemMatcher.CreateOrdered(
             [new(new ConstantMatcher(matchType), action)],
             includeUnmatched);
+
         using IFileSystemMatcherSession session = matcher.CreateSession("root");
 
         session.MatchesDirectory("root", "child").Should().Be(expected);
@@ -181,6 +188,7 @@ public class FileSystemMatcherCompositionTests
             FileSystemMatcher.Create((_, fileName) => fileName.SequenceEqual("native-blocked.cs")),
             FileSystemMatcher.CreatePath(path => path.SequenceEqual("path-blocked.cs"))
         ]);
+
         using IFileSystemMatcherSession session = matcher.CreateSession("root");
 
         session.MatchesFile("root", "native-blocked.cs").Should().BeFalse();
@@ -208,6 +216,7 @@ public class FileSystemMatcherCompositionTests
                 FileSystemMatchAction.Exclude),
             new(pathMatcher, FileSystemMatchAction.Include)
         ]);
+
         using IFileSystemMatcherSession session = matcher.CreateSession("root");
 
         session.MatchesFile("root/sub", "file.cs").Should().BeTrue();
@@ -232,6 +241,7 @@ public class FileSystemMatcherCompositionTests
                 FileSystemMatchAction.Include)
         ],
             includeUnmatched: true);
+
         using IFileSystemMatcherSession session = matcher.CreateSession("root");
 
         session.MatchesFile("root", "keep.tmp").Should().BeTrue();
@@ -242,7 +252,7 @@ public class FileSystemMatcherCompositionTests
     [TestMethod]
     public void CreateOrdered_DirectoryOnlyExcludeThenFileInclude_ReopensOnlyMatchingFile()
     {
-        string root = Path.Combine(Path.GetTempPath(), "matcher-root");
+        string root = Path.Join(Path.GetTempPath(), "matcher-root");
         GlobSpecification directoryOnly = GlobSpecification.Compile("bin/", GlobDialect.Git);
         IFileSystemMatcher matcher = FileSystemMatcher.CreateOrdered(
         [
@@ -252,11 +262,12 @@ public class FileSystemMatcherCompositionTests
                 FileSystemMatchAction.Include)
         ],
             includeUnmatched: true);
+
         using IFileSystemMatcherSession session = matcher.CreateSession(root);
 
         session.MatchesDirectory(root, "bin").Should().Be(DirectoryMatchType.MayContainMatchingFiles);
-        session.MatchesFile(Path.Combine(root, "bin"), "keep.txt").Should().BeTrue();
-        session.MatchesFile(Path.Combine(root, "bin"), "other.txt").Should().BeFalse();
+        session.MatchesFile(Path.Join(root, "bin"), "keep.txt").Should().BeTrue();
+        session.MatchesFile(Path.Join(root, "bin"), "other.txt").Should().BeFalse();
     }
 
     [TestMethod]
@@ -376,6 +387,7 @@ public class FileSystemMatcherCompositionTests
         session.MatchesFile("root/sub", "file.txt").Should().BeFalse();
         session.MatchesDirectory("root", "sub")
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+
         session.DirectoryFinished("root");
     }
 
@@ -385,8 +397,10 @@ public class FileSystemMatcherCompositionTests
         IFileSystemMatcher nested = FileSystemMatcher.CreateExclusionWins(
             [FileSystemMatcher.Create((_, fileName) => fileName.EndsWith(".cs"))],
             [FileSystemMatcher.Create((_, fileName) => fileName.StartsWith("Generated"))]);
+
         IFileSystemMatcher matcher = FileSystemMatcher.CreateOrdered(
             [new(nested, FileSystemMatchAction.Include)]);
+
         using IFileSystemMatcherSession session = matcher.CreateSession("root");
 
         session.MatchesFile("root", "Source.cs").Should().BeTrue();
@@ -394,13 +408,16 @@ public class FileSystemMatcherCompositionTests
         session.MatchesFile("root", "Source.txt").Should().BeFalse();
         session.MatchesDirectory("root", "src")
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+
         session.DirectoryFinished("root");
 
         IFileSystemMatcher allFiles = FileSystemMatcher.CreateExclusionWins(
             [new ConstantMatcher(DirectoryMatchType.AllDescendantFilesMatch)],
             [new ConstantMatcher(DirectoryMatchType.NoDescendantFilesMatch)]);
+
         IFileSystemMatcher allMatcher = FileSystemMatcher.CreateOrdered(
             [new(allFiles, FileSystemMatchAction.Include)]);
+
         using IFileSystemMatcherSession allSession = allMatcher.CreateSession("root");
         allSession.MatchesDirectory("root", "src")
             .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
@@ -408,8 +425,10 @@ public class FileSystemMatcherCompositionTests
         IFileSystemMatcher noFiles = FileSystemMatcher.CreateExclusionWins(
             [new ConstantMatcher(DirectoryMatchType.AllDescendantFilesMatch)],
             [new ConstantMatcher(DirectoryMatchType.AllDescendantFilesMatch)]);
+
         IFileSystemMatcher noMatcher = FileSystemMatcher.CreateOrdered(
             [new(noFiles, FileSystemMatchAction.Include)]);
+
         using IFileSystemMatcherSession noSession = noMatcher.CreateSession("root");
         noSession.MatchesDirectory("root", "src")
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
@@ -437,6 +456,7 @@ public class FileSystemMatcherCompositionTests
             new(first, FileSystemMatchAction.Include),
             new(second, FileSystemMatchAction.Include)
         ]);
+
         IFileSystemMatcher matcher = FileSystemMatcher.CreateExclusionWins([nested]);
         using IFileSystemMatcherSession session = matcher.CreateSession("root");
 
@@ -456,6 +476,7 @@ public class FileSystemMatcherCompositionTests
             new(first, FileSystemMatchAction.Include),
             new(new ThrowingMatcher("nested-create"), FileSystemMatchAction.Include)
         ]);
+
         IFileSystemMatcher matcher = FileSystemMatcher.CreateExclusionWins([nested]);
 
         Action action = () => matcher.CreateSession("root");
@@ -474,6 +495,7 @@ public class FileSystemMatcherCompositionTests
             new(first, FileSystemMatchAction.Include),
             new(second, FileSystemMatchAction.Include)
         ]);
+
         IFileSystemMatcher matcher = FileSystemMatcher.CreateExclusionWins([nested]);
         IFileSystemMatcherSession session = matcher.CreateSession("root");
         try
@@ -499,6 +521,7 @@ public class FileSystemMatcherCompositionTests
             new(child, FileSystemMatchAction.Include),
             new(child, FileSystemMatchAction.Exclude)
         ]);
+
         IFileSystemMatcher matcher = FileSystemMatcher.CreateExclusionWins([nested]);
 
         Action action = () => matcher.CreateSession("root");
@@ -586,7 +609,7 @@ public class FileSystemMatcherCompositionTests
                 return matches;
             }
 
-            public unsafe bool MatchesPath(ReadOnlySpan<char> rootRelativePath)
+            public bool MatchesPath(ReadOnlySpan<char> rootRelativePath)
             {
                 owner.CanonicalPathCalls++;
                 owner.LastPath = rootRelativePath.ToString();

@@ -7,10 +7,10 @@ namespace Touki.Analyzers;
 [TestClass]
 public class TrailingWhitespaceAnalyzerTests
 {
-    private static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(string source)
-        => await AnalyzerTestHarness
+    private static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(string source) =>
+        await AnalyzerTestHarness
             .GetDiagnosticsAsync(new TrailingWhitespaceAnalyzer(), source)
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
 
     private static string ReportedText(Diagnostic diagnostic)
     {
@@ -23,10 +23,11 @@ public class TrailingWhitespaceAnalyzerTests
     {
         string source = "class Sample\n{\n    int Value;   \n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(TrailingWhitespaceAnalyzer.DiagnosticId);
+
         ReportedText(diagnostics[0]).Should().Be("   ");
     }
 
@@ -35,7 +36,7 @@ public class TrailingWhitespaceAnalyzerTests
     {
         string source = "class Sample\n{\n    int Value;\t\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         ReportedText(diagnostics[0]).Should().Be("\t");
@@ -46,7 +47,7 @@ public class TrailingWhitespaceAnalyzerTests
     {
         string source = "class Sample\n{\n    \n    int Value;\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         ReportedText(diagnostics[0]).Should().Be("    ");
@@ -57,7 +58,7 @@ public class TrailingWhitespaceAnalyzerTests
     {
         string source = "class Sample\n{\n    int Value;\n}   ";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         ReportedText(diagnostics[0]).Should().Be("   ");
@@ -68,7 +69,7 @@ public class TrailingWhitespaceAnalyzerTests
     {
         string source = "class Sample\n{\n    int Value;\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -79,7 +80,7 @@ public class TrailingWhitespaceAnalyzerTests
         // The carriage return is part of the line break, not trailing whitespace on the line.
         string source = "class Sample\r\n{\r\n    int Value;\r\n}\r\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -91,7 +92,7 @@ public class TrailingWhitespaceAnalyzerTests
         // what the program does, so it must not be reported.
         string source = "class Sample\n{\n    string Value = \"\"\"\n        a   \n        b\n        \"\"\";\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -101,7 +102,7 @@ public class TrailingWhitespaceAnalyzerTests
     {
         string source = "class Sample\n{\n    string Value = @\"a   \nb\";\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -111,7 +112,7 @@ public class TrailingWhitespaceAnalyzerTests
     {
         string source = "class Sample\n{\n    string Name = \"n\";\n    string Value => $@\"{Name}   \nb\";\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -122,7 +123,7 @@ public class TrailingWhitespaceAnalyzerTests
         string source =
             "class Sample\n{\n    string Name = \"n\";\n    string Value => $\"\"\"\n        {Name}   \n        b\n        \"\"\";\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -133,7 +134,7 @@ public class TrailingWhitespaceAnalyzerTests
         string source =
             "class Sample\n{\n    static System.ReadOnlySpan<byte> Value => \"\"\"\n        a   \n        b\n        \"\"\"u8;\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -144,7 +145,7 @@ public class TrailingWhitespaceAnalyzerTests
         // The parser never interprets excluded text, so a raw string could be hiding in there.
         string source = "class Sample\n{\n#if UNDEFINED_SYMBOL\n    int Value;   \n#endif\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -156,7 +157,7 @@ public class TrailingWhitespaceAnalyzerTests
         // backwards scan stops there and the space it sits on is never reported.
         string source = "class Sample\n{\n    // caret: \u0020\u0301\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -166,7 +167,7 @@ public class TrailingWhitespaceAnalyzerTests
     {
         string source = "class Sample\n{\n    // caret: \u0020\u0301 \n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         ReportedText(diagnostics[0]).Should().Be(" ");
@@ -177,7 +178,7 @@ public class TrailingWhitespaceAnalyzerTests
     {
         string source = "class Sample\n{\n    // note   \n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         ReportedText(diagnostics[0]).Should().Be("   ");
@@ -188,7 +189,7 @@ public class TrailingWhitespaceAnalyzerTests
     {
         string source = "class Sample \n{\n    int Value;  \n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
     }
@@ -198,7 +199,7 @@ public class TrailingWhitespaceAnalyzerTests
     {
         string source = "// <auto-generated/>\nclass Sample\n{\n    int Value;   \n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }

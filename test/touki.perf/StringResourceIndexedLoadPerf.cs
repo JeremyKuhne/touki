@@ -97,6 +97,7 @@ public class StringResourceIndexedLoadPerf
         StringResourceTable table = StringResourceTableLoader.LoadTableFromResourcesFile(
             _resources,
             _options);
+
         return table.Strings.TryGetValue(_lookupKey, out string? value) ? value.Length : 0;
     }
 
@@ -106,6 +107,7 @@ public class StringResourceIndexedLoadPerf
         using IndexedStringResourceTable table = IndexedStringResourceTable.Create(
             new RawResourceReader(_resources),
             _options);
+
         StringResourceLookupKind result = table.Lookup(_lookupKey, out string? value);
         return result == StringResourceLookupKind.Found && value is not null ? value.Length : 0;
     }

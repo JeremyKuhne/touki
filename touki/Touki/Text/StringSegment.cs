@@ -445,7 +445,7 @@ public readonly struct StringSegment :
     ///   which includes spaces, tabs, and other whitespace characters.
     ///  </para>
     /// </remarks>
-    public unsafe StringSegment Trim()
+    public StringSegment Trim()
     {
         if (_length == 0 || _value is null)
         {
@@ -594,7 +594,7 @@ public readonly struct StringSegment :
     ///  Trims the segment by removing trailing whitespace characters.
     /// </summary>
     /// <inheritdoc cref="Trim()"/>
-    public unsafe StringSegment TrimEnd()
+    public StringSegment TrimEnd()
     {
         if (_length == 0 || _value is null)
         {

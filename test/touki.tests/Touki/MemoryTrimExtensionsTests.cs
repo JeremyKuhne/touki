@@ -57,7 +57,7 @@ public class MemoryTrimExtensionsTests
     public void Trim_Element_Memory_NullableReference()
     {
         Memory<string?> memory = new string?[] { null, "a", "b", null };
-        memory.Trim((string?)null).ToArray().Should().Equal("a", "b");
+        memory.Trim(trimElement: (string?)null).ToArray().Should().Equal("a", "b");
     }
 
     // -----------------------------------------------------------------------

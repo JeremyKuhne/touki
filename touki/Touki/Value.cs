@@ -1263,7 +1263,7 @@ public readonly partial struct Value
     /// <returns>
     ///  <see langword="true"/> if the value was successfully retrieved; otherwise, <see langword="false"/>.
     /// </returns>
-    public readonly unsafe bool TryGetValue<T>([MaybeNullWhen(returnValue: false)] out T value)
+    public readonly bool TryGetValue<T>([MaybeNullWhen(returnValue: false)] out T value)
     {
         bool success;
 

@@ -261,6 +261,7 @@ public class ValueEnumeratorTests
         {
             firstResults.Add(enumerator.Current);
         }
+
         firstResults.Should().Equal([5, 10, 15]);
 
         // Reset and iterate again
@@ -270,6 +271,7 @@ public class ValueEnumeratorTests
         {
             secondResults.Add(enumerator.Current);
         }
+
         secondResults.Should().Equal([5, 10, 15]);
     }
 

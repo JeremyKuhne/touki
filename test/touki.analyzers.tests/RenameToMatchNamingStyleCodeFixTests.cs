@@ -10,14 +10,14 @@ public class RenameToMatchNamingStyleCodeFixTests
     private static readonly Dictionary<string, ReportDiagnostic> s_enabled =
         new() { [NamingStyleAnalyzer.DiagnosticId] = ReportDiagnostic.Warn };
 
-    private static async Task<string> ApplyFixAsync(string source, Dictionary<string, string>? options = null)
-        => await CodeFixTestHarness.ApplyFixAsync(
+    private static async Task<string> ApplyFixAsync(string source, Dictionary<string, string>? options = null) =>
+        await CodeFixTestHarness.ApplyFixAsync(
             new NamingStyleAnalyzer(),
             new RenameToMatchNamingStyleCodeFixProvider(),
             source,
             NamingStyleAnalyzer.DiagnosticId,
             options,
-            s_enabled).ConfigureAwait(false);
+            s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
     private static Dictionary<string, string> PrivateFieldRule() => new()
     {
@@ -42,7 +42,7 @@ public class RenameToMatchNamingStyleCodeFixTests
                 public int Read() => value;
             }
             """,
-            PrivateFieldRule()).ConfigureAwait(false);
+            PrivateFieldRule()).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Contain("private int _value;");
         fixedSource.Should().Contain("=> _value;");
@@ -60,7 +60,7 @@ public class RenameToMatchNamingStyleCodeFixTests
             class Implementation : Thing
             {
             }
-            """).ConfigureAwait(false);
+            """).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Contain("interface IThing");
         fixedSource.Should().Contain(": IThing");
@@ -75,7 +75,7 @@ public class RenameToMatchNamingStyleCodeFixTests
             {
                 public Item Value { get; set; }
             }
-            """).ConfigureAwait(false);
+            """).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Contain("class Thing<TItem>");
         fixedSource.Should().Contain("public TItem Value");
@@ -92,7 +92,7 @@ public class RenameToMatchNamingStyleCodeFixTests
 
                 public void Call() => doWork();
             }
-            """).ConfigureAwait(false);
+            """).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Contain("public void DoWork()");
         fixedSource.Should().Contain("=> DoWork();");
@@ -119,7 +119,7 @@ public class RenameToMatchNamingStyleCodeFixTests
                 ["touki_naming_rule.local_functions.style"] = "pascal_case_style",
                 ["touki_naming_symbols.local_functions.applicable_kinds"] = "local_function",
                 ["touki_naming_style.pascal_case_style.capitalization"] = "pascal_case"
-            }).ConfigureAwait(false);
+            }).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Contain("void DoMore() { }");
         fixedSource.Should().Contain("DoMore();");
@@ -142,7 +142,7 @@ public class RenameToMatchNamingStyleCodeFixTests
                 ["touki_naming_rule.parameters.style"] = "camel_case_style",
                 ["touki_naming_symbols.parameters.applicable_kinds"] = "parameter",
                 ["touki_naming_style.camel_case_style.capitalization"] = "camel_case"
-            }).ConfigureAwait(false);
+            }).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Contain("Work(int value)");
         fixedSource.Should().Contain("=> value;");
@@ -159,7 +159,7 @@ public class RenameToMatchNamingStyleCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(Source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(Source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(Source);
     }

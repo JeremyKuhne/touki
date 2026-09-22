@@ -111,6 +111,7 @@ public class StringDjb2HashPerf
         {
             System.Runtime.Intrinsics.Vector128<ushort> characters =
                 System.Runtime.Intrinsics.Vector128.LoadUnsafe(ref first, (nuint)index);
+
             for (int lane = 0; lane < width; lane++)
             {
                 hash = ((hash << 5) + hash)
