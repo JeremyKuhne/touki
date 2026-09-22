@@ -1,0 +1,4 @@
+[*.cs]
+# TOUKI0012: Disposable classes must derive from DisposableBase. The analyzer ships disabled so
+# consuming projects are not required to adopt Touki's disposal pattern; production sources are.
+dotnet_diagnostic.TOUKI0012.severity = warning

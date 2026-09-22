@@ -51,6 +51,9 @@ the compilation to reference `Touki.DisposableBase`. TOUKI0031 requires C# 10 or
 and the Touki `TextWriterExtensions` handler overload. The rest apply to any C# the
 compiler hands them.
 
+The Touki production library enables TOUKI0012 as a warning in `touki/.editorconfig`;
+the packaged analyzer remains disabled by default for consumers.
+
 Generated code is not diagnosed. TOUKI0025 counts documentation on a generated partial declaration when
 analyzing the corresponding user-authored type. TOUKI0026 ignores generated member declarations.
 
