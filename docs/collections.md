@@ -165,4 +165,8 @@ public sealed class StreamCache : RefCountedCache<MemoryStream, int, int>
 ```
 
 When the last `Scope` for an entry is disposed and the entry isn't
-cached, the underlying object is released.
+cached, the underlying object is released. Disposing the cache removes and
+disposes every cached entry; later calls to `GetEntry` throw
+`ObjectDisposedException`. Cleanup continues when an entry throws during
+disposal, and the first failure is rethrown after all entries have been
+processed.

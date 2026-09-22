@@ -7,6 +7,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace Touki.Collections;
@@ -17,7 +18,7 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
     ///  Cache entry that maintains the reference count, entry data, and basic cleanup logic.
     /// </summary>
     [DebuggerDisplay("{DebuggerDisplay}")]
-    public abstract class CacheEntry : IDisposable
+    public abstract class CacheEntry : DisposableBase
     {
         private readonly bool _cached;
         private int _refCount;
@@ -68,7 +69,7 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
             {
                 // If this entry wasn't actually cached, we need to clean ourselves up when we're unreferenced.
                 // (This happens when there isn't enough room in the cache.)
-                Dispose(disposing: true);
+                Dispose();
             }
         }
 
@@ -91,25 +92,39 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey>
         ///  <see cref="IDisposable" />. Override to provide custom cleanup logic.
         /// </summary>
         /// <param name="disposing"></param>
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                var disposable = Object as IDisposable;
-                disposable?.Dispose();
-                disposable = Data as IDisposable;
-                disposable?.Dispose();
+                ExceptionDispatchInfo? disposeFailure = null;
+                IDisposable? @object = null;
+                try
+                {
+                    @object = Object as IDisposable;
+                    @object?.Dispose();
+                }
+                catch (Exception exception)
+                {
+                    disposeFailure = ExceptionDispatchInfo.Capture(exception);
+                }
+
+                IDisposable? data = Data as IDisposable;
+                if (!ReferenceEquals(@object, data))
+                {
+                    try
+                    {
+                        data?.Dispose();
+                    }
+                    catch (Exception exception)
+                    {
+                        disposeFailure ??= ExceptionDispatchInfo.Capture(exception);
+                    }
+                }
+
+                disposeFailure?.Throw();
             }
         }
 
-        /// <summary>
-        ///  Disposes the scope, releasing the reference to the entry.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
     }
 }
 

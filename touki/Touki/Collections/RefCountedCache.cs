@@ -7,6 +7,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.ExceptionServices;
+
 namespace Touki.Collections;
 
 /// <summary>
@@ -46,7 +48,7 @@ namespace Touki.Collections;
 ///   </code>
 ///  </para>
 /// </remarks>
-public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey> : IDisposable
+public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey> : DisposableBase
 {
     private readonly SinglyLinkedList<CacheEntry> _list = new();
 
@@ -119,6 +121,7 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey> : I
     {
         // NOTE: Measure carefully when changing logic in this method. Code has been optimized for performance.
         ArgumentNullException.ThrowIfNull(key);
+        ObjectDisposedException.ThrowIf(Disposed, this);
 
         if (!Find(key, out CacheEntry? entry))
         {
@@ -216,26 +219,30 @@ public abstract partial class RefCountedCache<TValue, TCacheEntryData, TKey> : I
     /// <param name="disposing">
     ///  <see langword="true"/> to release managed resources; otherwise, <see langword="false"/>.
     /// </param>
-    protected virtual void Dispose(bool disposing)
+    protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
+            ExceptionDispatchInfo? disposeFailure = null;
             var enumerator = _list.GetEnumerator();
             while (enumerator.MoveNext())
             {
                 SinglyLinkedList<CacheEntry>.Node? current = enumerator.Current;
                 Debugging.Assert(current is not null);
-                current.Value.Dispose();
                 enumerator.RemoveCurrent();
+                try
+                {
+                    current.Value.Dispose();
+                }
+                catch (Exception exception)
+                {
+                    disposeFailure ??= ExceptionDispatchInfo.Capture(exception);
+                }
             }
+
+            disposeFailure?.Throw();
         }
     }
 
-    /// <inheritdoc cref="Dispose(bool)"/>
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
 }
 

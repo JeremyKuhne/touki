@@ -75,18 +75,61 @@ public class RefCountedCacheTests
 
     private class DisposableValue : IDisposable
     {
-        public string Value { get; }
-        public bool IsDisposed { get; private set; }
+        private readonly Exception? _disposeException;
 
-        public DisposableValue(string value)
+        public string Value { get; }
+        public int DisposeCount { get; private set; }
+
+        public bool IsDisposed => DisposeCount != 0;
+
+        public DisposableValue(string value, Exception? disposeException = null)
         {
             Value = value;
+            _disposeException = disposeException;
         }
 
         public void Dispose()
         {
-            IsDisposed = true;
+            DisposeCount++;
+            if (_disposeException is not null)
+            {
+                throw _disposeException;
+            }
         }
+    }
+
+    private sealed class DisposalTrackingCache(
+        Exception firstDisposeException,
+        Exception secondDisposeException)
+        : RefCountedCache<DisposableValue, DisposableValue, string>
+    {
+        internal Dictionary<string, DisposableValue> Values { get; } = [with(StringComparer.Ordinal)];
+
+        internal int Count => this.TestAccessor.Dynamic._list.Count;
+
+        protected override CacheEntry CreateEntry(string key, bool cached)
+        {
+            DisposableValue value = new(
+                key,
+                key switch
+                {
+                    "first" => firstDisposeException,
+                    "second" => secondDisposeException,
+                    _ => null
+                });
+            Values.Add(key, value);
+            return new DisposableTestCacheEntry(value, cached);
+        }
+
+        protected override bool IsMatch(string key, CacheEntry entry) => key == entry.Data.Value;
+    }
+
+    private sealed class DistinctDisposableTestCacheEntry(
+        DisposableValue data,
+        DisposableValue @object)
+        : RefCountedCache<DisposableValue, DisposableValue, string>.CacheEntry(data, cached: false)
+    {
+        public override DisposableValue Object => @object;
     }
 
     [TestMethod]
@@ -151,6 +194,18 @@ public class RefCountedCacheTests
         entry1.Data.Should().Be("test1");
         entry2.Data.Should().Be("test2");
         cache.Count.Should().Be(2);
+    }
+
+    [TestMethod]
+    public void GetEntry_AfterDispose_ThrowsWithoutCreatingEntry()
+    {
+        TestCache cache = new();
+        cache.Dispose();
+
+        Action action = () => cache.GetEntry("test");
+
+        action.Should().Throw<ObjectDisposedException>();
+        cache.Count.Should().Be(0);
     }
 
     [TestMethod]
@@ -385,6 +440,22 @@ public class RefCountedCacheTests
     }
 
     [TestMethod]
+    public void RemoveRef_UncachedEntryThenDispose_DisposesValueOnce()
+    {
+        using DisposableTestCache cache = new(softLimit: 1, hardLimit: 1);
+        RefCountedCache<DisposableValue, DisposableValue, string>.CacheEntry cached = cache.GetEntry("cached");
+        cached.AddRef();
+        RefCountedCache<DisposableValue, DisposableValue, string>.CacheEntry uncached = cache.GetEntry("uncached");
+        DisposableValue value = uncached.Object;
+
+        uncached.AddRef();
+        uncached.RemoveRef();
+        uncached.Dispose();
+
+        value.DisposeCount.Should().Be(1);
+    }
+
+    [TestMethod]
     public void Cache_Dispose_DisposesAllEntries()
     {
         DisposableTestCache cache = new();
@@ -405,6 +476,23 @@ public class RefCountedCacheTests
     }
 
     [TestMethod]
+    public void Dispose_EntriesThrow_DisposesAllEntriesAndPreservesFirstException()
+    {
+        InvalidOperationException firstException = new("first");
+        ArgumentException secondException = new("second");
+        DisposalTrackingCache cache = new(firstException, secondException);
+        _ = cache.GetEntry("second");
+        _ = cache.GetEntry("first");
+
+        Action action = cache.Dispose;
+
+        action.Should().Throw<InvalidOperationException>().Which.Should().BeSameAs(firstException);
+        cache.Values["first"].DisposeCount.Should().Be(1);
+        cache.Values["second"].DisposeCount.Should().Be(1);
+        cache.Count.Should().Be(0);
+    }
+
+    [TestMethod]
     public void CacheEntry_Dispose_DisposesObjectAndData()
     {
         DisposableTestCache cache = new();
@@ -415,6 +503,22 @@ public class RefCountedCacheTests
 
         entry.Dispose();
         value.IsDisposed.Should().BeTrue();
+    }
+
+    [TestMethod]
+    public void Dispose_ObjectAndDataThrow_DisposesBothAndPreservesObjectException()
+    {
+        InvalidOperationException objectException = new("object");
+        ArgumentException dataException = new("data");
+        DisposableValue data = new("data", dataException);
+        DisposableValue @object = new("object", objectException);
+        DistinctDisposableTestCacheEntry entry = new(data, @object);
+
+        Action action = entry.Dispose;
+
+        action.Should().Throw<InvalidOperationException>().Which.Should().BeSameAs(objectException);
+        @object.DisposeCount.Should().Be(1);
+        data.DisposeCount.Should().Be(1);
     }
 
     [TestMethod]
