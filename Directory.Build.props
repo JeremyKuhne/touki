@@ -57,7 +57,7 @@
     <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900;NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'">
+  <PropertyGroup Condition="$([System.String]::Copy('$(TargetFramework)').StartsWith('net4'))">
     <!--
       The unsafe contexts are required by the .NET Framework build. IDE0380 analyzes each target
       independently and cannot account for that cross-target requirement, so disable it for the
