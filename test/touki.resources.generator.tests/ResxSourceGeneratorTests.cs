@@ -28,6 +28,7 @@ public class ResxSourceGeneratorTests
         result.CompilerErrors.Should().BeEmpty();
         result.GeneratedSources.Should().ContainSingle();
         result.SingleSource.Should().Contain("private sealed class __ToukiResourceCache");
+        result.SingleSource.Should().Contain("private static class __ToukiResourceManagerCache");
         result.SingleSource.Should().Contain(
             "private static string GetCachedResourceString(ref string? value, string resourceKey)");
 
@@ -140,7 +141,7 @@ public class ResxSourceGeneratorTests
     }
 
     [TestMethod]
-    public void Generate_LocalizedSibling_UsesRuntimeSatelliteManager()
+    public void Generate_LocalizedSibling_UsesManagerProvider()
     {
         GeneratorTestResult result = GeneratorTestHarness.Run(
             GeneratorTestResource.Selected(SimpleResource),
@@ -148,7 +149,37 @@ public class ResxSourceGeneratorTests
 
         result.GeneratorDiagnostics.Should().BeEmpty();
         result.CompilerErrors.Should().BeEmpty();
-        result.SingleSource.Should().Contain("SatelliteStringResourceManager.FromRuntimeSatellites");
+        result.SingleSource.Should().Contain("StringResourceManagerProvider.Create");
+        result.SingleSource.Should().NotContain("SatelliteStringResourceManager.FromRuntimeSatellites");
+    }
+
+    [TestMethod]
+    public void Generate_NeutralOnlyWithProviderOptIn_UsesManagerProvider()
+    {
+        Dictionary<string, string> metadata = new(StringComparer.Ordinal)
+        {
+            ["UseResourceManagerProvider"] = "true"
+        };
+
+        GeneratorTestResult result = GeneratorTestHarness.Run(
+            GeneratorTestResource.Selected(SimpleResource, metadata: metadata));
+
+        result.GeneratorDiagnostics.Should().BeEmpty();
+        result.CompilerErrors.Should().BeEmpty();
+        result.SingleSource.Should().Contain("StringResourceManagerProvider.Create");
+        result.SingleSource.Should().NotContain("return new global::Touki.Resources.StringResourceManager(");
+    }
+
+    [TestMethod]
+    public void Generate_NeutralOnlyWithoutProviderOptIn_UsesDirectManager()
+    {
+        GeneratorTestResult result = GeneratorTestHarness.Run(
+            GeneratorTestResource.Selected(SimpleResource));
+
+        result.GeneratorDiagnostics.Should().BeEmpty();
+        result.CompilerErrors.Should().BeEmpty();
+        result.SingleSource.Should().Contain("return new global::Touki.Resources.StringResourceManager(");
+        result.SingleSource.Should().NotContain("StringResourceManagerProvider.Create");
     }
 
     [TestMethod]
@@ -170,7 +201,7 @@ public class ResxSourceGeneratorTests
 
         result.GeneratorDiagnostics.Should().BeEmpty();
         result.CompilerErrors.Should().BeEmpty();
-        result.SingleSource.Should().Contain("SatelliteStringResourceManager.FromRuntimeSatellites");
+        result.SingleSource.Should().Contain("StringResourceManagerProvider.Create");
     }
 
     [TestMethod]
@@ -475,6 +506,7 @@ public class ResxSourceGeneratorTests
     [TestMethod]
     [DataRow("Strings")]
     [DataRow("__ToukiResourceCache")]
+    [DataRow("__ToukiResourceManagerCache")]
     [DataRow("CreateResourceManager")]
     [DataRow("Culture")]
     [DataRow("GetCachedResourceString")]

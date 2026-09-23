@@ -22,7 +22,10 @@ namespace Touki.Resources;
 ///   <see cref="FromResourcesDirectory(string, string, Assembly, StringResourceManagerOptions)"/> for loose
 ///   per-culture <c>.resources</c> files, or
 ///   <see cref="FromSatelliteDirectory(string, string, Assembly, StringResourceManagerOptions)"/> to parse deployed satellite
-///   assemblies as data. A manager never mixes these localized source modes.
+///  assemblies as data. Use
+///  <see cref="FromAssemblyFiles(string, string, string, StringResourceManagerOptions)"/> when both
+///  the neutral owner and its satellites must be parsed as data. A manager never mixes these
+///  localized source modes.
 ///  </para>
 ///  <para>
 ///   For a requested culture the manager walks from the most specific culture up to (but not
@@ -51,8 +54,16 @@ namespace Touki.Resources;
 ///  </para>
 ///  <para>
 ///   Resource data is expected to be a trusted output of the application's build and deployment
-///   pipeline. Only a genuinely absent localized source continues parent or neutral fallback. A
-///   present unreadable, malformed, unsupported, or incorrectly bundled source throws.
+///   pipeline. Strict probing continues parent or neutral fallback only for an absent localized
+///   source. <see cref="SatelliteStringResourceProbeMode.FallbackOnFailure"/> also treats unreadable,
+///   malformed, unsupported, and incorrectly bundled localized satellite candidates as missing.
+///   When <see cref="StringResourceManagerOptions.ValidateAssemblyIdentity"/> is enabled, identity
+///   mismatches follow the same probe-mode behavior. Neutral resource failures always throw.
+///  </para>
+///  <para>
+///   Direct satellite modes validate the satellite simple name, culture, version, and public key
+///   against the resource-owning assembly only when
+///   <see cref="StringResourceManagerOptions.ValidateAssemblyIdentity"/> is enabled.
 ///  </para>
 ///  <para>
 ///   Null resources always reject a table. By default any non-string resource rejects the table;
@@ -70,9 +81,12 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
     private readonly SatelliteStringResourceSourceKind _sourceKind;
     private readonly string? _localizedRoot;
     private readonly Assembly? _resourceAssembly;
+    private readonly ManagedAssemblyStringResourceSource? _resourceAssemblySource;
+    private readonly string? _resourceAssemblySimpleNameAlias;
     private readonly StringResourceManager _neutralResources;
     private readonly Func<string, MappedMemoryManager> _openFile;
-    private volatile SatelliteStringResourceSourceMetadata? _neutralSourceMetadata;
+    private readonly SatelliteStringResourceProbeMode _probeMode;
+    private volatile ResourceAssemblyMetadata? _neutralSourceMetadata;
     private object? _localizedLoadGate;
     private int _localizedGeneration;
     private Dictionary<string, CultureCache>? _cultureCaches;
@@ -111,6 +125,7 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
             SatelliteStringResourceSourceKind.ResourcesDirectory,
             probeRoot,
             assembly,
+            resourceAssemblySource: null,
             s_openFile,
             StringResourceManagerOptions.None)
     {
@@ -149,6 +164,7 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
             SatelliteStringResourceSourceKind.RuntimeSatellites,
             localizedRoot: null,
             resourceAssembly,
+            resourceAssemblySource: null,
             s_openFile,
             options);
     }
@@ -192,6 +208,7 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
             SatelliteStringResourceSourceKind.RuntimeSatellites,
             localizedRoot: null,
             resourceAssembly,
+            resourceAssemblySource: null,
             s_openFile,
             options);
     }
@@ -234,6 +251,7 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
             SatelliteStringResourceSourceKind.ResourcesDirectory,
             resourcesDirectory,
             neutralAssembly,
+            resourceAssemblySource: null,
             s_openFile,
             options);
     }
@@ -274,6 +292,7 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
             SatelliteStringResourceSourceKind.ResourcesDirectory,
             resourcesDirectory,
             neutralAssembly,
+            resourceAssemblySource: null,
             openFile,
             options);
     }
@@ -304,6 +323,7 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
             SatelliteStringResourceSourceKind.ResourcesDirectory,
             resourcesDirectory,
             neutralResources.SourceAssembly,
+            resourceAssemblySource: null,
             s_openFile,
             options);
     }
@@ -321,6 +341,77 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
             StringResourceManagerOptions.None);
     }
 
+    /// <inheritdoc cref="FromSatelliteDirectory(string, string, Assembly, StringResourceManagerOptions, SatelliteStringResourceProbeMode)"/>
+    public static SatelliteStringResourceManager FromSatelliteDirectory(
+        string baseName,
+        string satelliteDirectory,
+        Assembly resourceAssembly,
+        SatelliteStringResourceProbeMode probeMode) => FromSatelliteDirectory(
+            baseName,
+            satelliteDirectory,
+            resourceAssembly,
+            StringResourceManagerOptions.None,
+            probeMode);
+
+    /// <inheritdoc cref="FromSatelliteDirectory(
+    ///     string,
+    ///     string,
+    ///     Assembly,
+    ///     string,
+    ///     StringResourceManagerOptions,
+    ///     SatelliteStringResourceProbeMode)"/>
+    public static SatelliteStringResourceManager FromSatelliteDirectory(
+        string baseName,
+        string satelliteDirectory,
+        Assembly generatedOwnerAssembly,
+        string externalOwnerSimpleName,
+        SatelliteStringResourceProbeMode probeMode) => FromSatelliteDirectory(
+            baseName,
+            satelliteDirectory,
+            generatedOwnerAssembly,
+            externalOwnerSimpleName,
+            StringResourceManagerOptions.None,
+            probeMode);
+
+    /// <summary>
+    ///  Creates a direct-satellite manager that maps a generated owner assembly to an external
+    ///  assembly family name.
+    /// </summary>
+    /// <param name="baseName">The root name of the resource table.</param>
+    /// <param name="satelliteDirectory">The directory containing culture subdirectories.</param>
+    /// <param name="generatedOwnerAssembly">The generated accessor's owner assembly.</param>
+    /// <param name="externalOwnerSimpleName">The external managed owner assembly simple name.</param>
+    /// <param name="options">The resource loading options.</param>
+    /// <param name="probeMode">How localized satellite candidate failures affect fallback.</param>
+    /// <returns>A direct-satellite manager.</returns>
+    public static SatelliteStringResourceManager FromSatelliteDirectory(
+        string baseName,
+        string satelliteDirectory,
+        Assembly generatedOwnerAssembly,
+        string externalOwnerSimpleName,
+        StringResourceManagerOptions options,
+        SatelliteStringResourceProbeMode probeMode)
+    {
+        ArgumentNullException.ThrowIfNull(baseName);
+        ArgumentNullException.ThrowIfNull(satelliteDirectory);
+        ArgumentNullException.ThrowIfNull(generatedOwnerAssembly);
+        ArgumentNullException.ThrowIfNull(externalOwnerSimpleName);
+        ValidatePathSegment(externalOwnerSimpleName, nameof(externalOwnerSimpleName));
+
+        return new(
+            baseName,
+            new StringResourceManager(baseName, generatedOwnerAssembly, options),
+            ownsNeutralResources: true,
+            SatelliteStringResourceSourceKind.SatelliteDirectory,
+            satelliteDirectory,
+            generatedOwnerAssembly,
+            resourceAssemblySource: null,
+            s_openFile,
+            options,
+            probeMode,
+            externalOwnerSimpleName);
+    }
+
     /// <summary>
     ///  Creates a manager that parses satellite assemblies directly from a directory.
     /// </summary>
@@ -333,7 +424,28 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
         string baseName,
         string satelliteDirectory,
         Assembly resourceAssembly,
-        StringResourceManagerOptions options)
+        StringResourceManagerOptions options) => FromSatelliteDirectory(
+            baseName,
+            satelliteDirectory,
+            resourceAssembly,
+            options,
+            SatelliteStringResourceProbeMode.Strict);
+
+    /// <summary>
+    ///  Creates a manager that parses satellite assemblies directly from a directory.
+    /// </summary>
+    /// <param name="baseName">The root name of the resource table.</param>
+    /// <param name="satelliteDirectory">The directory containing culture subdirectories.</param>
+    /// <param name="resourceAssembly">The assembly that owns the neutral and satellite resources.</param>
+    /// <param name="options">The resource loading options.</param>
+    /// <param name="probeMode">How localized satellite candidate failures affect fallback.</param>
+    /// <returns>A direct-satellite manager.</returns>
+    public static SatelliteStringResourceManager FromSatelliteDirectory(
+        string baseName,
+        string satelliteDirectory,
+        Assembly resourceAssembly,
+        StringResourceManagerOptions options,
+        SatelliteStringResourceProbeMode probeMode)
     {
         ArgumentNullException.ThrowIfNull(baseName);
         ArgumentNullException.ThrowIfNull(satelliteDirectory);
@@ -346,8 +458,10 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
             SatelliteStringResourceSourceKind.SatelliteDirectory,
             satelliteDirectory,
             resourceAssembly,
+            resourceAssemblySource: null,
             s_openFile,
-            options);
+            options,
+            probeMode);
     }
 
     /// <inheritdoc cref="FromSatelliteDirectory(string, string, Assembly, StringResourceManager, StringResourceManagerOptions)"/>
@@ -373,13 +487,15 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
     /// <param name="resourceAssembly">The assembly that owns the resources.</param>
     /// <param name="openFile">The function that opens a file as mapped memory.</param>
     /// <param name="options">The resource loading options.</param>
+    /// <param name="probeMode">How localized satellite candidate failures affect fallback.</param>
     /// <returns>A direct-satellite manager.</returns>
     internal static SatelliteStringResourceManager FromSatelliteDirectory(
         string baseName,
         string satelliteDirectory,
         Assembly resourceAssembly,
         Func<string, MappedMemoryManager> openFile,
-        StringResourceManagerOptions options = StringResourceManagerOptions.None)
+        StringResourceManagerOptions options = StringResourceManagerOptions.None,
+        SatelliteStringResourceProbeMode probeMode = SatelliteStringResourceProbeMode.Strict)
     {
         return new(
             baseName,
@@ -388,8 +504,10 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
             SatelliteStringResourceSourceKind.SatelliteDirectory,
             satelliteDirectory,
             resourceAssembly,
+            resourceAssemblySource: null,
             openFile,
-            options);
+            options,
+            probeMode);
     }
 
     /// <summary>
@@ -421,8 +539,209 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
             SatelliteStringResourceSourceKind.SatelliteDirectory,
             satelliteDirectory,
             resourceAssembly,
+            resourceAssemblySource: null,
             s_openFile,
             options);
+    }
+
+    /// <inheritdoc cref="FromAssemblyFiles(string, string, string, StringResourceManagerOptions)"/>
+    public static SatelliteStringResourceManager FromAssemblyFiles(
+        string baseName,
+        string resourceAssemblyFile,
+        string satelliteDirectory) => FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            satelliteDirectory,
+            StringResourceManagerOptions.None);
+
+    /// <inheritdoc cref="FromAssemblyFiles(string, string, string, StringResourceManagerOptions, SatelliteStringResourceProbeMode)"/>
+    public static SatelliteStringResourceManager FromAssemblyFiles(
+        string baseName,
+        string resourceAssemblyFile,
+        string satelliteDirectory,
+        SatelliteStringResourceProbeMode probeMode) => FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            satelliteDirectory,
+            StringResourceManagerOptions.None,
+            probeMode);
+
+    /// <inheritdoc cref="FromAssemblyFiles(
+    ///     string,
+    ///     string,
+    ///     string,
+    ///     Assembly,
+    ///     string,
+    ///     StringResourceManagerOptions,
+    ///     SatelliteStringResourceProbeMode)"/>
+    public static SatelliteStringResourceManager FromAssemblyFiles(
+        string baseName,
+        string resourceAssemblyFile,
+        string satelliteDirectory,
+        Assembly generatedOwnerAssembly,
+        string externalOwnerSimpleName,
+        SatelliteStringResourceProbeMode probeMode) => FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            satelliteDirectory,
+            generatedOwnerAssembly,
+            externalOwnerSimpleName,
+            StringResourceManagerOptions.None,
+            probeMode);
+
+    /// <summary>
+    ///  Creates an external-all manager and optionally validates an aliased external owner assembly.
+    /// </summary>
+    /// <param name="baseName">The root name of the resource table.</param>
+    /// <param name="resourceAssemblyFile">The external managed owner assembly file.</param>
+    /// <param name="satelliteDirectory">The directory containing culture subdirectories.</param>
+    /// <param name="generatedOwnerAssembly">The generated accessor's owner assembly.</param>
+    /// <param name="externalOwnerSimpleName">The expected external owner simple name.</param>
+    /// <param name="options">
+    ///  The resource loading options.
+    ///  <see cref="StringResourceManagerOptions.ValidateAssemblyIdentity"/> validates the owner and
+    ///  localized satellite identities.
+    /// </param>
+    /// <param name="probeMode">How localized satellite candidate failures affect fallback.</param>
+    /// <returns>An external-all string resource manager.</returns>
+    public static SatelliteStringResourceManager FromAssemblyFiles(
+        string baseName,
+        string resourceAssemblyFile,
+        string satelliteDirectory,
+        Assembly generatedOwnerAssembly,
+        string externalOwnerSimpleName,
+        StringResourceManagerOptions options,
+        SatelliteStringResourceProbeMode probeMode)
+    {
+        ArgumentNullException.ThrowIfNull(generatedOwnerAssembly);
+        ArgumentNullException.ThrowIfNull(externalOwnerSimpleName);
+        if (externalOwnerSimpleName.Length == 0)
+        {
+            throw new ArgumentException(
+                "The external owner simple name cannot be empty.",
+                nameof(externalOwnerSimpleName));
+        }
+
+        ManagedAssemblyIdentity? expectedOwnerIdentity = null;
+        if (options.AreFlagsSet(StringResourceManagerOptions.ValidateAssemblyIdentity))
+        {
+            ValidateAssemblyFile(
+                baseName,
+                resourceAssemblyFile,
+                generatedOwnerAssembly,
+                externalOwnerSimpleName,
+                options);
+
+            expectedOwnerIdentity = ManagedAssemblyIdentity.FromAssemblyName(generatedOwnerAssembly.GetName())
+                .WithName(externalOwnerSimpleName);
+        }
+
+        return FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            satelliteDirectory,
+            s_openFile,
+            options,
+            probeMode,
+            expectedOwnerIdentity);
+    }
+
+    /// <summary>
+    ///  Creates a manager that parses neutral resources from a managed owner assembly and localized
+    ///  resources from its satellite assemblies without loading those assemblies.
+    /// </summary>
+    /// <param name="baseName">The root name of the resource table.</param>
+    /// <param name="resourceAssemblyFile">The managed assembly containing the neutral resource.</param>
+    /// <param name="satelliteDirectory">
+    ///  The directory containing culture subdirectories with satellite resource assemblies.
+    /// </param>
+    /// <param name="options">The resource loading options.</param>
+    /// <returns>An external-assembly string resource manager.</returns>
+    /// <exception cref="ArgumentNullException">
+    ///  <paramref name="baseName"/>, <paramref name="resourceAssemblyFile"/>, or
+    ///  <paramref name="satelliteDirectory"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException"><paramref name="baseName"/> is not a single path segment.</exception>
+    public static SatelliteStringResourceManager FromAssemblyFiles(
+        string baseName,
+        string resourceAssemblyFile,
+        string satelliteDirectory,
+        StringResourceManagerOptions options) => FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            satelliteDirectory,
+            options,
+            SatelliteStringResourceProbeMode.Strict);
+
+    /// <summary>
+    ///  Creates a manager that parses a neutral owner assembly and localized satellite assemblies
+    ///  without loading them.
+    /// </summary>
+    /// <param name="baseName">The root name of the resource table.</param>
+    /// <param name="resourceAssemblyFile">The managed assembly containing the neutral resource.</param>
+    /// <param name="satelliteDirectory">The directory containing culture subdirectories.</param>
+    /// <param name="options">The resource loading options.</param>
+    /// <param name="probeMode">How localized satellite candidate failures affect fallback.</param>
+    /// <returns>An external-assembly string resource manager.</returns>
+    public static SatelliteStringResourceManager FromAssemblyFiles(
+        string baseName,
+        string resourceAssemblyFile,
+        string satelliteDirectory,
+        StringResourceManagerOptions options,
+        SatelliteStringResourceProbeMode probeMode) => FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            satelliteDirectory,
+            s_openFile,
+            options,
+            probeMode);
+
+    /// <summary>
+    ///  Creates an external-assembly manager that opens files through <paramref name="openFile"/>.
+    /// </summary>
+    /// <param name="baseName">The root name of the resource table.</param>
+    /// <param name="resourceAssemblyFile">The managed assembly containing the neutral resource.</param>
+    /// <param name="satelliteDirectory">The directory containing culture subdirectories.</param>
+    /// <param name="openFile">The function that opens a file as mapped memory.</param>
+    /// <param name="options">The resource loading options.</param>
+    /// <param name="probeMode">How localized satellite candidate failures affect fallback.</param>
+    /// <param name="expectedOwnerIdentity">The expected owner identity, when validation is enabled.</param>
+    /// <returns>An external-assembly string resource manager.</returns>
+    internal static SatelliteStringResourceManager FromAssemblyFiles(
+        string baseName,
+        string resourceAssemblyFile,
+        string satelliteDirectory,
+        Func<string, MappedMemoryManager> openFile,
+        StringResourceManagerOptions options = StringResourceManagerOptions.None,
+        SatelliteStringResourceProbeMode probeMode = SatelliteStringResourceProbeMode.Strict,
+        ManagedAssemblyIdentity? expectedOwnerIdentity = null)
+    {
+        ArgumentNullException.ThrowIfNull(baseName);
+        ArgumentNullException.ThrowIfNull(resourceAssemblyFile);
+        ArgumentNullException.ThrowIfNull(satelliteDirectory);
+        ArgumentNullException.ThrowIfNull(openFile);
+
+        StringResourceManager neutralResources = StringResourceManager.FromAssemblyFile(
+            baseName,
+            resourceAssemblyFile,
+            openFile,
+            options,
+            expectedOwnerIdentity);
+
+        ManagedAssemblyStringResourceSource source = neutralResources.ManagedAssemblySource
+            ?? throw new InvalidOperationException("The managed assembly source was not initialized.");
+
+        return new(
+            baseName,
+            neutralResources,
+            ownsNeutralResources: true,
+            SatelliteStringResourceSourceKind.SatelliteDirectory,
+            satelliteDirectory,
+            resourceAssembly: null,
+            source,
+            openFile,
+            options,
+            probeMode);
     }
 
     private SatelliteStringResourceManager(
@@ -432,8 +751,11 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
         SatelliteStringResourceSourceKind sourceKind,
         string? localizedRoot,
         Assembly? resourceAssembly,
+        ManagedAssemblyStringResourceSource? resourceAssemblySource,
         Func<string, MappedMemoryManager> openFile,
-        StringResourceManagerOptions options)
+        StringResourceManagerOptions options,
+        SatelliteStringResourceProbeMode probeMode = SatelliteStringResourceProbeMode.Strict,
+        string? resourceAssemblySimpleNameAlias = null)
         : base(
             baseName,
             neutralResources,
@@ -443,6 +765,12 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
         ArgumentNullException.ThrowIfNull(baseName);
         ArgumentNullException.ThrowIfNull(neutralResources);
         ArgumentNullException.ThrowIfNull(openFile);
+        if (probeMode is not SatelliteStringResourceProbeMode.Strict
+            and not SatelliteStringResourceProbeMode.FallbackOnFailure)
+        {
+            throw new ArgumentOutOfRangeException(nameof(probeMode));
+        }
+
         if (sourceKind != SatelliteStringResourceSourceKind.RuntimeSatellites)
         {
             ArgumentNullException.ThrowIfNull(localizedRoot);
@@ -450,18 +778,29 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
             localizedRoot = Path.GetFullPath(localizedRoot);
         }
 
-        if (sourceKind is SatelliteStringResourceSourceKind.RuntimeSatellites
-            or SatelliteStringResourceSourceKind.SatelliteDirectory)
+        if (sourceKind == SatelliteStringResourceSourceKind.RuntimeSatellites)
         {
             ArgumentNullException.ThrowIfNull(resourceAssembly);
+        }
+
+        if (sourceKind == SatelliteStringResourceSourceKind.SatelliteDirectory
+            && resourceAssembly is null
+            && resourceAssemblySource is null)
+        {
+            throw new ArgumentException(
+                "A resource assembly or managed assembly file source is required.",
+                nameof(resourceAssembly));
         }
 
         _resourceName = $"{baseName}.resources";
         _sourceKind = sourceKind;
         _localizedRoot = localizedRoot;
         _resourceAssembly = resourceAssembly;
+        _resourceAssemblySource = resourceAssemblySource;
+        _resourceAssemblySimpleNameAlias = resourceAssemblySimpleNameAlias;
         _neutralResources = neutralResources;
         _openFile = openFile;
+        _probeMode = probeMode;
     }
 
     /// <summary>
@@ -615,7 +954,7 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
                 return cache;
             }
 
-            SatelliteStringResourceSourceMetadata metadata = GetSourceMetadata();
+            ResourceAssemblyMetadata metadata = GetSourceMetadata();
             IndexedStringResourceTable[] tables = LoadCultureChain(culture, metadata);
             cache = new(culture.Name, generation, tables);
             (_cultureCaches ??= [with(StringComparer.Ordinal)])[culture.Name] = cache;
@@ -626,7 +965,7 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
 
     private IndexedStringResourceTable[] LoadCultureChain(
         CultureInfo culture,
-        SatelliteStringResourceSourceMetadata metadata)
+        ResourceAssemblyMetadata metadata)
     {
         IndexedStringResourceTable? first = null;
         List<IndexedStringResourceTable>? multiple = null;
@@ -663,7 +1002,7 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
 
     private IndexedStringResourceTable? GetOrLoadSourceTable(
         CultureInfo culture,
-        SatelliteStringResourceSourceMetadata metadata)
+        ResourceAssemblyMetadata metadata)
     {
         _sourceTables ??= [with(StringComparer.Ordinal)];
         if (_sourceTables.TryGetValue(culture.Name, out LocalizedStringResourceTableCache? cache))
@@ -693,9 +1032,21 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
     internal static bool IsNeutralCulture(string cultureName, string? neutralCultureName) =>
         string.Equals(cultureName, neutralCultureName, StringComparison.OrdinalIgnoreCase);
 
-    private SatelliteStringResourceSourceMetadata GetSourceMetadata()
+    private ResourceAssemblyMetadata GetSourceMetadata()
     {
-        SatelliteStringResourceSourceMetadata? metadata = _neutralSourceMetadata;
+        if (_resourceAssemblySource is not null)
+        {
+            ResourceAssemblyMetadata externalMetadata =
+                _neutralResources.GetManagedAssemblySourceMetadata(_resourceAssemblySource);
+
+            string satelliteAssemblyFileName = externalMetadata.SatelliteAssemblyFileName
+                ?? throw new InvalidOperationException("The satellite assembly filename was not initialized.");
+
+            ValidatePathSegment(satelliteAssemblyFileName, "resourceAssemblyFile");
+            return externalMetadata;
+        }
+
+        ResourceAssemblyMetadata? metadata = _neutralSourceMetadata;
         if (metadata is not null)
         {
             return metadata;
@@ -705,6 +1056,7 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
         if (resourceAssembly is null)
         {
             metadata = new(
+                resourceAssemblyIdentity: null,
                 satelliteAssemblyFileName: null,
                 neutralCultureName: null,
                 satelliteContractVersion: null);
@@ -715,7 +1067,12 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
                 .GetOrCreateValue(resourceAssembly)
                 .GetMetadata(
                     resourceAssembly,
-                    includeContractVersion: _sourceKind == SatelliteStringResourceSourceKind.RuntimeSatellites);
+                    includeContractVersion: _sourceKind != SatelliteStringResourceSourceKind.ResourcesDirectory);
+
+            if (_resourceAssemblySimpleNameAlias is not null)
+            {
+                metadata = metadata.WithSimpleName(_resourceAssemblySimpleNameAlias);
+            }
 
             if (_sourceKind == SatelliteStringResourceSourceKind.SatelliteDirectory
                 && metadata.SatelliteAssemblyFileName is not null)
@@ -730,7 +1087,7 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
 
     private IndexedStringResourceTable? TryLoadSourceTable(
         CultureInfo culture,
-        SatelliteStringResourceSourceMetadata metadata)
+        ResourceAssemblyMetadata metadata)
     {
         return _sourceKind switch
         {
@@ -744,7 +1101,7 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
     [MethodImpl(MethodImplOptions.NoInlining)]
     private IndexedStringResourceTable? LoadRuntimeSatellite(
         CultureInfo culture,
-        SatelliteStringResourceSourceMetadata metadata)
+        ResourceAssemblyMetadata metadata)
     {
         Assembly resourceAssembly = _resourceAssembly
             ?? throw new InvalidOperationException("The resource assembly was not initialized.");
@@ -795,7 +1152,7 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
     [MethodImpl(MethodImplOptions.NoInlining)]
     private IndexedStringResourceTable? LoadSatelliteFile(
         CultureInfo culture,
-        SatelliteStringResourceSourceMetadata metadata)
+        ResourceAssemblyMetadata metadata)
     {
         string satelliteRoot = _localizedRoot
             ?? throw new InvalidOperationException("The satellite directory was not initialized.");
@@ -804,24 +1161,30 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
             ?? throw new InvalidOperationException("The satellite assembly filename was not initialized.");
 
         string satellitePath = Path.Join(satelliteRoot, culture.Name, satelliteFileName);
-        MappedMemoryManager satelliteFile;
         try
         {
-            satelliteFile = _openFile(satellitePath);
+            MappedMemoryManager satelliteFile = _openFile(satellitePath);
+            string resourceName = $"{BaseName}.{culture.Name}.resources";
+            return StringResourceTableLoader.LoadIndexedTableFromSatelliteAssembly(
+                satelliteFile.Memory,
+                resourceName,
+                Options,
+                satelliteFile,
+                metadata,
+                culture.Name)
+                ?? throw new MissingManifestResourceException(
+                    $"The satellite assembly '{satellitePath}' does not contain '{resourceName}'.");
         }
         catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
         {
             return null;
         }
-
-        string resourceName = $"{BaseName}.{culture.Name}.resources";
-        return StringResourceTableLoader.LoadIndexedTableFromAssembly(
-            satelliteFile.Memory,
-            resourceName,
-            Options,
-            satelliteFile)
-            ?? throw new MissingManifestResourceException(
-                $"The satellite assembly '{satellitePath}' does not contain '{resourceName}'.");
+        catch (Exception exception) when (
+            _probeMode == SatelliteStringResourceProbeMode.FallbackOnFailure
+                && IsToleratedSatelliteFailure(exception))
+        {
+            return null;
+        }
     }
 
     private object GetLocalizedLoadGate()
@@ -846,4 +1209,13 @@ public sealed partial class SatelliteStringResourceManager : StringResourceManag
             throw new ArgumentException("The value must be a single non-empty path segment.", paramName);
         }
     }
+
+    private static bool IsToleratedSatelliteFailure(Exception exception) =>
+        exception is ArgumentException
+            or BadImageFormatException
+            or IOException
+            or MissingManifestResourceException
+            or NotSupportedException
+            or UnauthorizedAccessException
+            or System.Security.SecurityException;
 }

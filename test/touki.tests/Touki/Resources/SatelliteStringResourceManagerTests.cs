@@ -62,15 +62,38 @@ public partial class SatelliteStringResourceManagerTests
         return $"{assemblyName}.resources.dll";
     }
 
-    private static string CopySatelliteAssembly(string probeRoot, string culture)
+    private static string CopySatelliteAssembly(string probeRoot, string culture) =>
+        CopySatelliteAssembly(probeRoot, culture, culture);
+
+    private static string CopySatelliteAssembly(
+        string probeRoot,
+        string sourceCulture,
+        string destinationCulture) =>
+            CopySatelliteAssembly(
+                probeRoot,
+                sourceCulture,
+                destinationCulture,
+                SatelliteAssemblyFileName());
+
+    private static string CopySatelliteAssembly(
+        string probeRoot,
+        string sourceCulture,
+        string destinationCulture,
+        string destinationFileName)
     {
-        string directory = Path.Join(probeRoot, culture);
+        string directory = Path.Join(probeRoot, destinationCulture);
         Directory.CreateDirectory(directory);
 
-        string fileName = SatelliteAssemblyFileName();
-        string source = Path.Join(AppContext.BaseDirectory, culture, fileName);
-        string destination = Path.Join(directory, fileName);
+        string source = Path.Join(AppContext.BaseDirectory, sourceCulture, SatelliteAssemblyFileName());
+        string destination = Path.Join(directory, destinationFileName);
         System.IO.File.Copy(source, destination);
+        return destination;
+    }
+
+    private static string CopyResourceAssembly(string directory)
+    {
+        string destination = Path.Join(directory, "external-owner.dll");
+        System.IO.File.Copy(s_assembly.Location, destination);
         return destination;
     }
 
@@ -203,6 +226,193 @@ public partial class SatelliteStringResourceManagerTests
             s_assembly);
 
         manager.GetString("Greeting", new CultureInfo("de")).Should().Be("Hallo");
+    }
+
+    [TestMethod]
+    public void GetString_ExternalAssemblyFilesExactCulture_ReturnsLocalizedValue()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        string resourceAssemblyFile = CopyResourceAssembly(folder.TempPath);
+        CopySatelliteAssembly(folder.TempPath, "de");
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            folder.TempPath);
+
+        manager.GetString("Greeting", new CultureInfo("de")).Should().Be("Hallo");
+    }
+
+    [TestMethod]
+    public void FromAssemblyFiles_AliasedSimpleNameMatches_CreatesManager()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        string resourceAssemblyFile = CopyResourceAssembly(folder.TempPath);
+        string simpleName = s_assembly.GetName().Name
+            ?? throw new InvalidOperationException("The test assembly does not have a simple name.");
+
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            folder.TempPath,
+            s_assembly,
+            simpleName,
+            StringResourceManagerOptions.ValidateAssemblyIdentity,
+            SatelliteStringResourceProbeMode.FallbackOnFailure);
+
+        manager.GetString("Greeting", CultureInfo.InvariantCulture).Should().Be("Hello");
+    }
+
+    [TestMethod]
+    public void FromAssemblyFiles_AliasedSimpleNameDoesNotMatchByDefault_CreatesManager()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        string resourceAssemblyFile = CopyResourceAssembly(folder.TempPath);
+
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            folder.TempPath,
+            s_assembly,
+            "WrongOwner",
+            SatelliteStringResourceProbeMode.FallbackOnFailure);
+
+        manager.GetString("Greeting", CultureInfo.InvariantCulture).Should().Be("Hello");
+    }
+
+    [TestMethod]
+    public void FromAssemblyFiles_ValidateAssemblyIdentityWithMismatchedAlias_ThrowsFileLoadException()
+    {
+        using TempFolder folder = new();
+        string resourceAssemblyFile = CopyResourceAssembly(folder.TempPath);
+
+        Action action = () => SatelliteStringResourceManager.FromAssemblyFiles(
+            NeutralBaseName(),
+            resourceAssemblyFile,
+            folder.TempPath,
+            s_assembly,
+            "WrongOwner",
+            StringResourceManagerOptions.ValidateAssemblyIdentity,
+            SatelliteStringResourceProbeMode.FallbackOnFailure);
+
+        action.Should().Throw<FileLoadException>();
+    }
+
+    [TestMethod]
+    public void GetString_AliasedOwnerChangedBeforeFirstLookup_ThrowsFileLoadException()
+    {
+        using TempFolder folder = new();
+        string resourceAssemblyFile = CopyResourceAssembly(folder.TempPath);
+        string simpleName = s_assembly.GetName().Name
+            ?? throw new InvalidOperationException("The test assembly does not have a simple name.");
+
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            NeutralBaseName(),
+            resourceAssemblyFile,
+            folder.TempPath,
+            s_assembly,
+            simpleName,
+            StringResourceManagerOptions.ValidateAssemblyIdentity,
+            SatelliteStringResourceProbeMode.Strict);
+
+        System.IO.File.Copy(typeof(StringResourceManager).Assembly.Location, resourceAssemblyFile, overwrite: true);
+
+        Action action = () => manager.GetString("Greeting", CultureInfo.InvariantCulture);
+
+        action.Should().Throw<FileLoadException>();
+    }
+
+    [TestMethod]
+    public void GetString_AliasedOwnerChangedAfterRelease_ThrowsFileLoadException()
+    {
+        using TempFolder folder = new();
+        string resourceAssemblyFile = CopyResourceAssembly(folder.TempPath);
+        string simpleName = s_assembly.GetName().Name
+            ?? throw new InvalidOperationException("The test assembly does not have a simple name.");
+
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            NeutralBaseName(),
+            resourceAssemblyFile,
+            folder.TempPath,
+            s_assembly,
+            simpleName,
+            StringResourceManagerOptions.ValidateAssemblyIdentity,
+            SatelliteStringResourceProbeMode.Strict);
+
+        manager.GetString("Greeting", CultureInfo.InvariantCulture).Should().Be("Hello");
+        manager.ReleaseAllResources();
+        System.IO.File.Copy(typeof(StringResourceManager).Assembly.Location, resourceAssemblyFile, overwrite: true);
+
+        Action action = () => manager.GetString("Greeting", CultureInfo.InvariantCulture);
+
+        action.Should().Throw<FileLoadException>();
+    }
+
+    [TestMethod]
+    public void GetString_ExternalAssemblyFilesParentCulture_ReturnsParentValue()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        string resourceAssemblyFile = CopyResourceAssembly(folder.TempPath);
+        CopySatelliteAssembly(folder.TempPath, "de");
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            folder.TempPath);
+
+        manager.GetString("Greeting", new CultureInfo("de-DE")).Should().Be("Hallo");
+    }
+
+    [TestMethod]
+    public void GetString_ExternalAssemblyFilesMissingCulture_ReturnsNeutralValue()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        string resourceAssemblyFile = CopyResourceAssembly(folder.TempPath);
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            folder.TempPath);
+
+        manager.GetString("Greeting", new CultureInfo("fr-FR")).Should().Be("Hello");
+    }
+
+    [TestMethod]
+    public void GetString_ExternalAssemblyFilesNeutralCulture_SkipsSatellite()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        string resourceAssemblyFile = CopyResourceAssembly(folder.TempPath);
+
+        // The file has German identity, so probing it as en-US would fail identity validation.
+        CopySatelliteAssembly(folder.TempPath, "de", "en-US");
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            folder.TempPath);
+
+        manager.GetString("Greeting", new CultureInfo("en-US")).Should().Be("Hello");
+    }
+
+    [TestMethod]
+    public void GetString_ExternalAssemblyFilesSatelliteCultureDoesNotMatch_ThrowsFileLoadException()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        string resourceAssemblyFile = CopyResourceAssembly(folder.TempPath);
+        CopySatelliteAssembly(folder.TempPath, "de", "fr");
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            folder.TempPath,
+            StringResourceManagerOptions.ValidateAssemblyIdentity,
+            SatelliteStringResourceProbeMode.Strict);
+
+        Action action = () => manager.GetString("Greeting", new CultureInfo("fr"));
+
+        action.Should().Throw<FileLoadException>();
     }
 
     [TestMethod]
@@ -631,15 +841,165 @@ public partial class SatelliteStringResourceManagerTests
     }
 
     [TestMethod]
+    public void GetString_TolerantMalformedSatellite_FallsBackToParent()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        CopySatelliteAssembly(folder.TempPath, "de");
+        string directory = Path.Join(folder.TempPath, "de-DE");
+        Directory.CreateDirectory(directory);
+        System.IO.File.WriteAllBytes(
+            Path.Join(directory, SatelliteAssemblyFileName()),
+            [0x00, 0x01, 0x02, 0x03]);
+
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromSatelliteDirectory(
+            baseName,
+            folder.TempPath,
+            s_assembly,
+            SatelliteStringResourceProbeMode.FallbackOnFailure);
+
+        manager.GetString("Greeting", new CultureInfo("de-DE")).Should().Be("Hallo");
+    }
+
+    [TestMethod]
+    public void GetString_TolerantMissingSatellite_FallsBackToParent()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        CopySatelliteAssembly(folder.TempPath, "de");
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromSatelliteDirectory(
+            baseName,
+            folder.TempPath,
+            s_assembly,
+            SatelliteStringResourceProbeMode.FallbackOnFailure);
+
+        manager.GetString("Greeting", new CultureInfo("de-DE")).Should().Be("Hallo");
+    }
+
+    [TestMethod]
+    public void GetString_TolerantUnreadableSatellite_FallsBackToParent()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        CopySatelliteAssembly(folder.TempPath, "de");
+        string unreadablePath = Path.Join(folder.TempPath, "de-DE", SatelliteAssemblyFileName());
+
+        MappedMemoryManager OpenFile(string path)
+        {
+            if (path == unreadablePath)
+            {
+                throw new UnauthorizedAccessException("Test candidate is unreadable.");
+            }
+
+            return MappedMemoryManager.CreateFromFile(path);
+        }
+
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromSatelliteDirectory(
+            baseName,
+            folder.TempPath,
+            s_assembly,
+            OpenFile,
+            probeMode: SatelliteStringResourceProbeMode.FallbackOnFailure);
+
+        manager.GetString("Greeting", new CultureInfo("de-DE")).Should().Be("Hallo");
+    }
+
+    [TestMethod]
+    public void GetString_TolerantUnsupportedSatellite_FallsBackToParent()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        CopySatelliteAssembly(folder.TempPath, "de");
+        string unsupportedPath = Path.Join(folder.TempPath, "de-DE", SatelliteAssemblyFileName());
+
+        MappedMemoryManager OpenFile(string path)
+        {
+            if (path == unsupportedPath)
+            {
+                throw new NotSupportedException("Test candidate is unsupported.");
+            }
+
+            return MappedMemoryManager.CreateFromFile(path);
+        }
+
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromSatelliteDirectory(
+            baseName,
+            folder.TempPath,
+            s_assembly,
+            OpenFile,
+            probeMode: SatelliteStringResourceProbeMode.FallbackOnFailure);
+
+        manager.GetString("Greeting", new CultureInfo("de-DE")).Should().Be("Hallo");
+    }
+
+    [TestMethod]
+    public void GetString_TolerantIdentityMismatch_FallsBackToParent()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        CopySatelliteAssembly(folder.TempPath, "de");
+        CopySatelliteAssembly(folder.TempPath, "de", "de-DE");
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromSatelliteDirectory(
+            baseName,
+            folder.TempPath,
+            s_assembly,
+            StringResourceManagerOptions.ValidateAssemblyIdentity,
+            SatelliteStringResourceProbeMode.FallbackOnFailure);
+
+        manager.GetString("Greeting", new CultureInfo("de-DE")).Should().Be("Hallo");
+    }
+
+    [TestMethod]
+    public void GetString_TolerantExternalAssemblyLocalizedFailure_ReturnsExternalNeutral()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        string resourceAssemblyFile = CopyResourceAssembly(folder.TempPath);
+        string directory = Path.Join(folder.TempPath, "de");
+        Directory.CreateDirectory(directory);
+        System.IO.File.WriteAllBytes(
+            Path.Join(directory, SatelliteAssemblyFileName()),
+            [0x00, 0x01, 0x02, 0x03]);
+
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            folder.TempPath,
+            SatelliteStringResourceProbeMode.FallbackOnFailure);
+
+        manager.GetString("Greeting", new CultureInfo("de")).Should().Be("Hello");
+    }
+
+    [TestMethod]
+    public void GetString_TolerantExternalAssemblyMalformedNeutral_ThrowsBadImageFormatException()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        string resourceAssemblyFile = Path.Join(folder.TempPath, "Malformed.dll");
+        System.IO.File.WriteAllBytes(resourceAssemblyFile, [0x00, 0x01, 0x02, 0x03]);
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            folder.TempPath,
+            SatelliteStringResourceProbeMode.FallbackOnFailure);
+
+        Action action = () => manager.GetString("Greeting", new CultureInfo("de"));
+
+        action.Should().Throw<BadImageFormatException>();
+    }
+
+    [TestMethod]
     public void GetString_SatelliteAssemblyWithoutMatchingResource_ThrowsMissingManifestResourceException()
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
-        string directory = Path.Join(folder.TempPath, "de");
-        Directory.CreateDirectory(directory);
-        System.IO.File.Copy(
-            typeof(SatelliteStringResourceManager).Assembly.Location,
-            Path.Join(directory, SatelliteAssemblyFileName()));
+        byte[] image = ReadSatelliteAssembly();
+        ReplaceManifestResourceName(
+            image,
+            $"{baseName}.de.resources",
+            $"X{baseName[1..]}.de.resources");
+
+        WriteSatelliteAssembly(folder.TempPath, image);
 
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromSatelliteDirectory(
             baseName,
@@ -649,6 +1009,53 @@ public partial class SatelliteStringResourceManagerTests
         Action action = () => manager.GetString("Greeting", new CultureInfo("de"));
 
         action.Should().Throw<MissingManifestResourceException>();
+    }
+
+    [TestMethod]
+    public void GetString_SatelliteAssemblyIdentityDoesNotMatchByDefault_ReturnsValue()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        const string externalOwnerSimpleName = "ExternalOwner";
+        CopySatelliteAssembly(
+            folder.TempPath,
+            "de",
+            "de",
+            $"{externalOwnerSimpleName}.resources.dll");
+
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromSatelliteDirectory(
+            baseName,
+            folder.TempPath,
+            s_assembly,
+            externalOwnerSimpleName,
+            SatelliteStringResourceProbeMode.Strict);
+
+        manager.GetString("Greeting", new CultureInfo("de")).Should().Be("Hallo");
+    }
+
+    [TestMethod]
+    public void GetString_ValidateAssemblyIdentityWithMismatchedSatellite_ThrowsFileLoadException()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        const string externalOwnerSimpleName = "ExternalOwner";
+        CopySatelliteAssembly(
+            folder.TempPath,
+            "de",
+            "de",
+            $"{externalOwnerSimpleName}.resources.dll");
+
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromSatelliteDirectory(
+            baseName,
+            folder.TempPath,
+            s_assembly,
+            externalOwnerSimpleName,
+            StringResourceManagerOptions.ValidateAssemblyIdentity,
+            SatelliteStringResourceProbeMode.Strict);
+
+        Action action = () => manager.GetString("Greeting", new CultureInfo("de"));
+
+        action.Should().Throw<FileLoadException>();
     }
 
     [TestMethod]
@@ -904,6 +1311,44 @@ public partial class SatelliteStringResourceManagerTests
         string?[] values = await Task.WhenAll(first, second).ConfigureAwait(continueOnCapturedContext: false);
         values.Should().Equal("Hallo", "Hallo");
         openCount.Should().Be(1);
+
+        string? GetString()
+        {
+            callsReady.Signal();
+            callsReady.Wait();
+            return manager.GetString("Greeting", german);
+        }
+    }
+
+    [TestMethod]
+    public async Task GetString_ConcurrentFirstExternalAssemblyLookup_OpensEachFileOnce()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        string resourceAssemblyFile = CopyResourceAssembly(folder.TempPath);
+        CopySatelliteAssembly(folder.TempPath, "de");
+        using CountdownEvent callsReady = new(initialCount: 2);
+        int openCount = 0;
+
+        MappedMemoryManager OpenFile(string path)
+        {
+            Interlocked.Increment(ref openCount);
+            return MappedMemoryManager.CreateFromFile(path);
+        }
+
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            baseName,
+            resourceAssemblyFile,
+            folder.TempPath,
+            OpenFile);
+
+        CultureInfo german = new("de");
+        Task<string?> first = Task.Run(GetString);
+        Task<string?> second = Task.Run(GetString);
+
+        string?[] values = await Task.WhenAll(first, second).ConfigureAwait(continueOnCapturedContext: false);
+        values.Should().Equal("Hallo", "Hallo");
+        openCount.Should().Be(2);
 
         string? GetString()
         {

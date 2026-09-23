@@ -311,10 +311,12 @@ jobs:
         }
 
         $satelliteOutput = 'artifacts/native-aot/${{ inputs.native-aot-rid }}-satellite'
+        $externalOwnerName = 'dotnet'
         dotnet build test/touki.aot.tests/touki.aot.tests.csproj `
           --configuration Release `
           --framework net10.0 `
           --output $satelliteOutput `
+          "-p:AssemblyName=$externalOwnerName" `
           @platformArgs
 
         if ($LASTEXITCODE -ne 0) {
@@ -326,7 +328,6 @@ jobs:
           --configuration Release `
           --runtime '${{ inputs.native-aot-rid }}' `
           --output $publishOutput `
-          -p:IncludeSatelliteFixture=false `
           @platformArgs
 
         if ($LASTEXITCODE -ne 0) {
@@ -335,20 +336,77 @@ jobs:
 
         $executableName = if ($IsWindows) { 'touki.aot.tests.exe' } else { 'touki.aot.tests' }
         $executable = Join-Path $publishOutput $executableName
-        & $executable 'satellite' 'Hello'
+        & $executable 'default'
         if ($LASTEXITCODE -ne 0) {
-          throw "NativeAOT neutral resource smoke test failed with exit code $LASTEXITCODE."
+          throw "NativeAOT default provider smoke test failed with exit code $LASTEXITCODE."
         }
 
-        $cultureOutput = Join-Path $publishOutput 'de'
+        & $executable 'embedded' 'fr' 'Bonjour'
+        if ($LASTEXITCODE -ne 0) {
+          throw "NativeAOT embedded exact-culture smoke test failed with exit code $LASTEXITCODE."
+        }
+
+        & $executable 'embedded' 'de-DE' 'Hallo'
+        if ($LASTEXITCODE -ne 0) {
+          throw "NativeAOT embedded parent-culture smoke test failed with exit code $LASTEXITCODE."
+        }
+
+        & $executable 'satellite' $externalOwnerName 'de' 'Hello'
+        if ($LASTEXITCODE -ne 0) {
+          throw "NativeAOT external-localized neutral resource smoke test failed with exit code $LASTEXITCODE."
+        }
+
+        $cultureOutput = Join-Path $publishOutput 'external-satellites/de'
         New-Item -ItemType Directory -Path $cultureOutput -Force | Out-Null
         Copy-Item `
-          (Join-Path $satelliteOutput 'de/touki.aot.tests.resources.dll') `
+          (Join-Path $satelliteOutput "de/$externalOwnerName.resources.dll") `
           $cultureOutput
 
-        & $executable 'satellite' 'Hallo'
+        & $executable 'satellite' $externalOwnerName 'de' 'Hallo'
         if ($LASTEXITCODE -ne 0) {
           throw "NativeAOT satellite resource smoke test failed with exit code $LASTEXITCODE."
+        }
+
+        $malformedCultureOutput = Join-Path $publishOutput 'external-satellites/de-DE'
+        $malformedCultureOutput = (
+          New-Item -ItemType Directory -Path $malformedCultureOutput -Force
+        ).FullName
+        [System.IO.File]::WriteAllBytes(
+          (Join-Path $malformedCultureOutput "$externalOwnerName.resources.dll"),
+          [byte[]](0x00, 0x01, 0x02, 0x03))
+
+        & $executable 'satellite' $externalOwnerName 'de-DE' 'Hallo'
+        if ($LASTEXITCODE -ne 0) {
+          throw "NativeAOT tolerant external-localized smoke test failed with exit code $LASTEXITCODE."
+        }
+
+        $resourceAssembly = Join-Path $satelliteOutput "$externalOwnerName.dll"
+        & $executable 'assemblies' $resourceAssembly $satelliteOutput $externalOwnerName 'de' 'Hallo'
+        if ($LASTEXITCODE -ne 0) {
+          throw "NativeAOT external assembly exact-culture smoke test failed with exit code $LASTEXITCODE."
+        }
+
+        $malformedExternalCulture = Join-Path $satelliteOutput 'de-DE'
+        $malformedExternalCulture = (
+          New-Item -ItemType Directory -Path $malformedExternalCulture -Force
+        ).FullName
+        [System.IO.File]::WriteAllBytes(
+          (Join-Path $malformedExternalCulture "$externalOwnerName.resources.dll"),
+          [byte[]](0x00, 0x01, 0x02, 0x03))
+
+        & $executable 'assemblies' $resourceAssembly $satelliteOutput $externalOwnerName 'de-DE' 'Hallo'
+        if ($LASTEXITCODE -ne 0) {
+          throw "NativeAOT external assembly parent-culture smoke test failed with exit code $LASTEXITCODE."
+        }
+
+        & $executable 'assemblies' $resourceAssembly $satelliteOutput $externalOwnerName 'fr' 'Bonjour'
+        if ($LASTEXITCODE -ne 0) {
+          throw "NativeAOT external assembly French smoke test failed with exit code $LASTEXITCODE."
+        }
+
+        & $executable 'assemblies' $resourceAssembly $satelliteOutput $externalOwnerName 'es-MX' 'Hello'
+        if ($LASTEXITCODE -ne 0) {
+          throw "NativeAOT external assembly neutral-fallback smoke test failed with exit code $LASTEXITCODE."
         }
 
         $intermediatePlatform = if ($platformArgs.Count -gt 0) { 'AnyCPU' } else { 'x64' }
@@ -365,7 +423,7 @@ jobs:
           $looseResource `
           (Join-Path $looseCultureOutput 'Touki.Resources.SatelliteTestStrings.resources')
 
-        & $executable 'resources' 'Hallo'
+        & $executable 'resources' 'de' 'Hallo'
         if ($LASTEXITCODE -ne 0) {
           throw "NativeAOT loose resource smoke test failed with exit code $LASTEXITCODE."
         }

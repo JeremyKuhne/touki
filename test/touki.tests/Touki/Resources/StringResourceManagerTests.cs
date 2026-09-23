@@ -59,6 +59,17 @@ public class StringResourceManagerTests
     }
 
     [TestMethod]
+    public void FromAssemblyFile_AssemblyFileDoesNotExist_DoesNotOpenFile()
+    {
+        using TempFolder folder = new();
+        string path = Path.Join(folder.TempPath, "Missing.dll");
+
+        Action action = () => _ = StringResourceManager.FromAssemblyFile(NeutralBaseName(), path);
+
+        action.Should().NotThrow();
+    }
+
+    [TestMethod]
     public void GetString_ResourcesFileReturnsString_ReturnsString()
     {
         using TempFolder folder = new();
@@ -160,6 +171,117 @@ public class StringResourceManagerTests
     }
 
     [TestMethod]
+    public void GetString_AssemblyFile_ReturnsString()
+    {
+        StringResourceManager manager = StringResourceManager.FromAssemblyFile(
+            NeutralBaseName(),
+            s_assembly.Location);
+
+        manager.GetString("Greeting", CultureInfo.InvariantCulture).Should().Be("Hello");
+    }
+
+    [TestMethod]
+    public void GetString_AssemblyFileResourceIsMissing_ThrowsMissingManifestResourceException()
+    {
+        StringResourceManager manager = StringResourceManager.FromAssemblyFile(
+            "Missing",
+            s_assembly.Location);
+
+        Action action = () => manager.GetString("Greeting", CultureInfo.InvariantCulture);
+
+        action.Should().Throw<MissingManifestResourceException>();
+    }
+
+    [TestMethod]
+    public void ValidateAssemblyFile_ValidOwner_DoesNotThrow()
+    {
+        Action action = () => StringResourceManager.ValidateAssemblyFile(
+            NeutralBaseName(),
+            s_assembly.Location,
+            s_assembly);
+
+        action.Should().NotThrow();
+    }
+
+    [TestMethod]
+    public void ValidateAssemblyFile_FileIsMissing_ThrowsFileNotFoundException()
+    {
+        using TempFolder folder = new();
+        string assemblyFile = Path.Join(folder.TempPath, "Missing.dll");
+
+        Action action = () => StringResourceManager.ValidateAssemblyFile(
+            NeutralBaseName(),
+            assemblyFile,
+            s_assembly);
+
+        action.Should().Throw<FileNotFoundException>();
+    }
+
+    [TestMethod]
+    public void ValidateAssemblyFile_AssemblyIsMalformed_ThrowsBadImageFormatException()
+    {
+        using TempFolder folder = new();
+        string assemblyFile = Path.Join(folder.TempPath, "Malformed.dll");
+        System.IO.File.WriteAllBytes(assemblyFile, [0x00, 0x01, 0x02, 0x03]);
+
+        Action action = () => StringResourceManager.ValidateAssemblyFile(
+            NeutralBaseName(),
+            assemblyFile,
+            s_assembly);
+
+        action.Should().Throw<BadImageFormatException>();
+    }
+
+    [TestMethod]
+    public void ValidateAssemblyFile_IdentityDoesNotMatch_ThrowsFileLoadException()
+    {
+        Action action = () => StringResourceManager.ValidateAssemblyFile(
+            NeutralBaseName(),
+            typeof(StringResourceManager).Assembly.Location,
+            s_assembly);
+
+        action.Should().Throw<FileLoadException>();
+    }
+
+    [TestMethod]
+    public void ValidateAssemblyFile_AliasedSimpleNameMatches_DoesNotThrow()
+    {
+        string simpleName = s_assembly.GetName().Name
+            ?? throw new InvalidOperationException("The test assembly does not have a simple name.");
+
+        Action action = () => StringResourceManager.ValidateAssemblyFile(
+            NeutralBaseName(),
+            s_assembly.Location,
+            s_assembly,
+            simpleName);
+
+        action.Should().NotThrow();
+    }
+
+    [TestMethod]
+    public void ValidateAssemblyFile_AliasedSimpleNameDoesNotMatch_ThrowsFileLoadException()
+    {
+        Action action = () => StringResourceManager.ValidateAssemblyFile(
+            NeutralBaseName(),
+            s_assembly.Location,
+            s_assembly,
+            "WrongOwner");
+
+        action.Should().Throw<FileLoadException>();
+    }
+
+    [TestMethod]
+    public void ValidateAssemblyFile_ResourceIsMissing_ThrowsMissingManifestResourceException()
+    {
+        Action action = () => StringResourceManager.ValidateAssemblyFile(
+            "Missing",
+            s_assembly.Location,
+            s_assembly);
+
+        action.Should().Throw<MissingManifestResourceException>();
+    }
+
+    [TestMethod]
     public void GetString_WithoutCulture_ReturnsString()
     {
         StringResourceManager manager = new(NeutralBaseName(), s_assembly);
@@ -234,6 +356,32 @@ public class StringResourceManagerTests
         WriteResources(folder.TempPath, ("Greeting", "Second"));
 
         manager.GetString("Greeting", CultureInfo.InvariantCulture).Should().Be("Second");
+    }
+
+    [TestMethod]
+    public void ReleaseAllResources_AssemblyFile_ReopensFile()
+    {
+        int openCount = 0;
+
+        MappedMemoryManager OpenFile(string path)
+        {
+            openCount++;
+            return MappedMemoryManager.CreateFromFile(path);
+        }
+
+        StringResourceManager manager = StringResourceManager.FromAssemblyFile(
+            NeutralBaseName(),
+            s_assembly.Location,
+            OpenFile);
+
+        manager.GetString("Greeting").Should().Be("Hello");
+        manager.GetString("Greeting").Should().Be("Hello");
+        openCount.Should().Be(1);
+
+        manager.ReleaseAllResources();
+
+        manager.GetString("Greeting").Should().Be("Hello");
+        openCount.Should().Be(2);
     }
 
     [TestMethod]

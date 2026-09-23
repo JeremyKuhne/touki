@@ -14,64 +14,145 @@ namespace Touki.Resources;
 /// </summary>
 internal static class NativeAotSmoke
 {
+    private const string ExternalBaseName = "Touki.Resources.SatelliteTestStrings";
+
     /// <summary>
     ///  Returns success when the selected source returns the expected localized greeting.
     /// </summary>
-    /// <param name="args">The source mode and expected greeting.</param>
+    /// <param name="args">The source mode, source arguments, culture, and expected greeting.</param>
     /// <returns>Zero when lookup returns the expected value; otherwise one.</returns>
     private static int Main(string[] args)
     {
-        if (args.Length != 2)
+        if (args.Length == 1 && string.Equals(args[0], "default", StringComparison.Ordinal))
         {
-            Console.Error.WriteLine("Expected a source mode and the expected greeting.");
-            return 1;
-        }
-
-        Assembly assembly = typeof(NativeAotSmoke).Assembly;
-        string? baseName = null;
-        foreach (string name in assembly.GetManifestResourceNames())
-        {
-            if (name.EndsWith("SatelliteTestStrings.resources", StringComparison.Ordinal))
+            if (GeneratedSatelliteTestStrings.ResourceManager is not SatelliteStringResourceManager)
             {
-                baseName = name[..^".resources".Length];
-                break;
+                Console.Error.WriteLine("The default provider did not create a runtime-satellite manager.");
+                return 1;
             }
+
+            return 0;
         }
 
-        if (baseName is null)
+        if (args.Length < 3)
         {
-            Console.Error.WriteLine("The neutral resource was not embedded.");
+            Console.Error.WriteLine("Expected a source mode, culture, and expected greeting.");
             return 1;
         }
 
-        SatelliteStringResourceManager manager;
-        if (string.Equals(args[0], "satellite", StringComparison.Ordinal))
+        string cultureName;
+        string expected;
+        if (string.Equals(args[0], "assemblies", StringComparison.Ordinal))
         {
-            manager = SatelliteStringResourceManager.FromSatelliteDirectory(
-                baseName,
-                AppContext.BaseDirectory,
-                assembly);
+            if (args.Length != 6)
+            {
+                Console.Error.WriteLine(
+                    "Assembly mode expects an owner assembly, satellite root, external name, culture, and expected greeting.");
+
+                return 1;
+            }
+
+            string resourceAssemblyFile = args[1];
+            string satelliteDirectory = args[2];
+            string externalOwnerSimpleName = args[3];
+            Assembly ownerAssembly = typeof(NativeAotSmoke).Assembly;
+            StringResourceManager.ValidateAssemblyFile(
+                ExternalBaseName,
+                resourceAssemblyFile,
+                ownerAssembly,
+                externalOwnerSimpleName);
+
+            StringResourceManagerProvider.Register(
+                (baseName, generatedOwnerAssembly) => SatelliteStringResourceManager.FromAssemblyFiles(
+                    baseName,
+                    resourceAssemblyFile,
+                    satelliteDirectory,
+                    generatedOwnerAssembly,
+                    externalOwnerSimpleName,
+                    StringResourceManagerOptions.ValidateAssemblyIdentity,
+                    SatelliteStringResourceProbeMode.FallbackOnFailure));
+
+            cultureName = args[4];
+            expected = args[5];
         }
-        else if (string.Equals(args[0], "resources", StringComparison.Ordinal))
+        else if (string.Equals(args[0], "satellite", StringComparison.Ordinal))
         {
-            manager = SatelliteStringResourceManager.FromResourcesDirectory(
-                baseName,
-                Path.Join(AppContext.BaseDirectory, "loose"),
-                assembly);
+            if (args.Length != 4)
+            {
+                Console.Error.WriteLine(
+                    "Satellite mode expects an external owner name, culture, and expected greeting.");
+
+                return 1;
+            }
+
+            RegisterResourceManager(args[0], args[1]);
+            cultureName = args[2];
+            expected = args[3];
         }
         else
         {
-            Console.Error.WriteLine($"Unknown source mode '{args[0]}'.");
-            return 1;
+            if (args.Length != 3)
+            {
+                Console.Error.WriteLine("The selected mode expects a culture and expected greeting.");
+                return 1;
+            }
+
+            RegisterResourceManager(args[0], externalOwnerSimpleName: null);
+            cultureName = args[1];
+            expected = args[2];
         }
 
-        string? value = manager.GetString("Greeting", new CultureInfo("de"));
-        if (!string.Equals(value, args[1], StringComparison.Ordinal))
+        GeneratedSatelliteTestStrings.Culture = new CultureInfo(cultureName);
+        string? value = GeneratedSatelliteTestStrings.Greeting;
+        if (!string.Equals(value, expected, StringComparison.Ordinal))
         {
-            Console.Error.WriteLine($"Expected '{args[1]}', but resource lookup returned '{value}'.");
+            Console.Error.WriteLine($"Expected '{expected}', but resource lookup returned '{value}'.");
             return 1;
         }
 
         return 0;
+    }
+
+    private static void RegisterResourceManager(
+        string sourceMode,
+        string? externalOwnerSimpleName)
+    {
+        if (string.Equals(sourceMode, "embedded", StringComparison.Ordinal))
+        {
+            StringResourceManagerProvider.RegisterEmbedded();
+            return;
+        }
+
+        if (string.Equals(sourceMode, "satellite", StringComparison.Ordinal))
+        {
+            string simpleName = externalOwnerSimpleName
+                ?? throw new InvalidOperationException("The external owner simple name was not initialized.");
+
+            StringResourceManagerProvider.Register(
+                (registeredBaseName, ownerAssembly) =>
+                    SatelliteStringResourceManager.FromSatelliteDirectory(
+                        registeredBaseName,
+                        Path.Join(AppContext.BaseDirectory, "external-satellites"),
+                        ownerAssembly,
+                        simpleName,
+                        StringResourceManagerOptions.ValidateAssemblyIdentity,
+                        SatelliteStringResourceProbeMode.FallbackOnFailure));
+
+            return;
+        }
+
+        if (string.Equals(sourceMode, "resources", StringComparison.Ordinal))
+        {
+            StringResourceManagerProvider.Register(
+                (registeredBaseName, ownerAssembly) =>
+                    SatelliteStringResourceManager.FromResourcesDirectory(
+                        registeredBaseName,
+                        Path.Join(AppContext.BaseDirectory, "loose"),
+                        ownerAssembly));
+
+            return;
+        }
+
+        throw new ArgumentException($"Unknown source mode '{sourceMode}'.", nameof(sourceMode));
     }
 }

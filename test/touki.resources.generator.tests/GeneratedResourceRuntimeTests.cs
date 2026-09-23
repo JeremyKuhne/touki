@@ -9,6 +9,7 @@ using System.Resources;
 namespace Touki.Resources.Generator.Tests;
 
 [TestClass]
+[DoNotParallelize]
 public class GeneratedResourceRuntimeTests
 {
     private const string SimpleResource = """
@@ -18,6 +19,109 @@ public class GeneratedResourceRuntimeTests
           </data>
         </root>
         """;
+
+    [TestInitialize]
+    public void ResetProviderBeforeTest() => StringResourceManagerProvider.ResetForTests();
+
+    [TestCleanup]
+    public void ResetProviderAfterTest() => StringResourceManagerProvider.ResetForTests();
+
+    [TestMethod]
+    public void ResourceManager_LocalizedResourceWithoutRegistration_UsesRuntimeSatellites()
+    {
+        GeneratorTestResult result = GeneratorTestHarness.Run(
+            GeneratorTestResource.Selected(SimpleResource),
+            GeneratorTestResource.Sibling(SimpleResource, "fr"));
+
+        using GeneratedAssembly generatedAssembly = result.Emit(
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Greeting"] = "Runtime value"
+            });
+
+        object? manager = GetRequiredProperty(
+            generatedAssembly.GetGeneratedType(),
+            "ResourceManager").GetValue(obj: null);
+
+        manager.Should().BeOfType<SatelliteStringResourceManager>();
+    }
+
+    [TestMethod]
+    public async Task ResourceManager_RegisteredProvider_InvokesProviderOnce()
+    {
+        int invocationCount = 0;
+        string? receivedBaseName = null;
+        Assembly? receivedAssembly = null;
+        StringResourceManagerProvider.Register(
+            (baseName, ownerAssembly) =>
+            {
+                Interlocked.Increment(ref invocationCount);
+                receivedBaseName = baseName;
+                receivedAssembly = ownerAssembly;
+                return new StringResourceManager(baseName, ownerAssembly);
+            });
+
+        GeneratorTestResult result = GeneratorTestHarness.Run(
+            GeneratorTestResource.Selected(SimpleResource),
+            GeneratorTestResource.Sibling(SimpleResource, "fr"));
+
+        using GeneratedAssembly generatedAssembly = result.Emit(
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Greeting"] = "Runtime value"
+            });
+
+        PropertyInfo resourceManager = GetRequiredProperty(
+            generatedAssembly.GetGeneratedType(),
+            "ResourceManager");
+
+        Task<object?>[] reads =
+        [
+            .. Enumerable.Range(0, 16)
+                .Select(_ => Task.Run(() => resourceManager.GetValue(obj: null)))
+        ];
+
+        object?[] managers = await Task.WhenAll(reads).ConfigureAwait(continueOnCapturedContext: false);
+
+        invocationCount.Should().Be(1);
+        managers.Should().OnlyContain(manager => ReferenceEquals(manager, managers[0]));
+        managers[0].Should().BeOfType<StringResourceManager>();
+        receivedBaseName.Should().Be("Test.Resources.Strings");
+        receivedAssembly.Should().BeSameAs(generatedAssembly.Assembly);
+    }
+
+    [TestMethod]
+    public void ResourceManager_NeutralOnlyWithProviderOptIn_InvokesProviderOnce()
+    {
+        int invocationCount = 0;
+        StringResourceManagerProvider.Register(
+            (baseName, ownerAssembly) =>
+            {
+                invocationCount++;
+                return new StringResourceManager(baseName, ownerAssembly);
+            });
+
+        Dictionary<string, string> metadata = new(StringComparer.Ordinal)
+        {
+            ["UseResourceManagerProvider"] = "true"
+        };
+
+        GeneratorTestResult result = GeneratorTestHarness.Run(
+            GeneratorTestResource.Selected(SimpleResource, metadata: metadata));
+
+        using GeneratedAssembly generatedAssembly = result.Emit(
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Greeting"] = "Runtime value"
+            });
+
+        Type resourceType = generatedAssembly.GetGeneratedType();
+        PropertyInfo manager = GetRequiredProperty(resourceType, "ResourceManager");
+
+        manager.GetValue(obj: null).Should().BeOfType<StringResourceManager>();
+        GetRequiredProperty(resourceType, "Greeting").GetValue(obj: null).Should().Be("Runtime value");
+        invocationCount.Should().Be(1);
+    }
 
     [TestMethod]
     public void GeneratedProperty_RepeatRead_CachesValue()

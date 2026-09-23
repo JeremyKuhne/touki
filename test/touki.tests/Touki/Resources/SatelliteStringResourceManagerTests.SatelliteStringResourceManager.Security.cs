@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Text;
 
 namespace Touki.Resources;
 
@@ -102,6 +103,19 @@ public partial class SatelliteStringResourceManagerTests
         string directory = Path.Join(probeRoot, "de");
         Directory.CreateDirectory(directory);
         System.IO.File.WriteAllBytes(Path.Join(directory, SatelliteAssemblyFileName()), image);
+    }
+
+    private static void ReplaceManifestResourceName(
+        byte[] image,
+        string resourceName,
+        string replacementName)
+    {
+        byte[] resourceNameBytes = Encoding.UTF8.GetBytes(resourceName);
+        byte[] replacementNameBytes = Encoding.UTF8.GetBytes(replacementName);
+        replacementNameBytes.Should().HaveSameCount(resourceNameBytes);
+        int offset = image.AsSpan().IndexOf(resourceNameBytes);
+        offset.Should().BeGreaterThanOrEqualTo(0);
+        replacementNameBytes.CopyTo(image, offset);
     }
 
     private static (int SizeOffset, int MaximumSize) GetResourceDirectorySizeBounds(byte[] image)

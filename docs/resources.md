@@ -72,7 +72,8 @@ the complete stream. The returned dictionary materializes its keys and values.
 [`StringResourceManager`](../touki/Touki/Resources/StringResourceManager.cs)
 provides `ResourceManager`-style string lookup over exactly one resource table.
 Construct it with a `.resources` file path, an already-loaded assembly and base
-name, or a stream factory:
+name, or a stream factory. Use `FromAssemblyFile` to parse a managed assembly as
+data without loading it:
 
 ```csharp
 StringResourceManager fromFile = new("Resources/Strings.resources");
@@ -81,19 +82,25 @@ StringResourceManager fromAssembly = new(
     "MyApp.Resources.Strings",
     typeof(Program).Assembly);
 
+StringResourceManager fromAssemblyFile =
+    StringResourceManager.FromAssemblyFile(
+        "MyApp.Resources.Strings",
+        "external/MyApp.dll");
+
 StringResourceManager fromStream = new(
     "MyApp.Resources.Strings",
     () => File.OpenRead("Resources/Strings.resources"));
 ```
 
-Construction does not open or parse the source. The first lookup opens the
-source, validates its type codes, binary-searches the existing resource index,
-and decodes only the requested string. The indexed backing and last decoded
-string remain cached; warmed lookup allocates nothing. Files are memory-mapped,
-and loaded assemblies expose their manifest payload as unmanaged memory, so
-neither path copies the complete resource image. Other stream-factory sources
-must be readable and seekable. The stream is retained until
-`ReleaseAllResources()` and then disposed.
+Construction does not open or parse the source. `FromAssemblyFile` captures a
+fully qualified path during construction. The first lookup opens the source,
+validates its type codes, binary-searches the existing resource index, and
+decodes only the requested string. The indexed backing and last decoded string
+remain cached; warmed lookup allocates nothing. Resource and managed assembly
+files are memory-mapped, and loaded assemblies expose their manifest payload as
+unmanaged memory, so none of these paths copies the complete resource image.
+Other stream-factory sources must be readable and seekable. The backing is
+retained until `ReleaseAllResources()` and then disposed.
 An abandoned file manager releases its mapped view through the backing's
 finalizable lease; assembly and stream tables do not pay that finalization cost.
 
@@ -152,7 +159,12 @@ uses exactly one localized source selected by its factory:
 - `FromResourcesDirectory` reads
     `<root>/<culture>/<baseName>.resources`; and
 - `FromSatelliteDirectory` parses
-    `<root>/<culture>/<assemblyName>.resources.dll` as data.
+    `<root>/<culture>/<assemblyName>.resources.dll` as data while neutral
+    resources come from an already-loaded assembly; and
+- `FromAssemblyFiles` parses neutral resources from a managed owner assembly
+    file and localized resources from
+    `<root>/<culture>/<ownerAssemblyName>.resources.dll`, without loading either
+    assembly.
 
 Localized source modes are not mixed. Lookup walks from the requested culture
 through its parents, then falls back to the neutral manager.
@@ -168,6 +180,15 @@ SatelliteStringResourceManager resources =
         assembly);
 
 string? greeting = resources.GetString("Greeting", new CultureInfo("de-DE"));
+
+SatelliteStringResourceManager externalResources =
+    SatelliteStringResourceManager.FromAssemblyFiles(
+        "MyApp.Resources.Strings",
+        "external/MyApp.dll",
+        "external");
+
+string? externalGreeting =
+    externalResources.GetString("Greeting", new CultureInfo("de-DE"));
 ```
 
 Use an overload that accepts `StringResourceManager` to supply neutral resources
@@ -191,18 +212,91 @@ require the resource base name, culture name, and satellite assembly name to be
 single path segments. These checks preserve deterministic probe layout and make
 relative roots independent of later current-directory changes.
 
-Direct satellite mode memory-maps assemblies and inspects them as PE files; it
-does not load or execute them. Only an absent file or runtime satellite continues
-fallback. A present unreadable file, unsupported format, malformed payload, or
-assembly missing the expected manifest resource throws.
+Direct assembly modes memory-map assemblies and inspect them as PE files; they
+do not load or execute them. The owner assembly's
+`NeutralResourcesLanguageAttribute` controls the neutral-culture boundary.
+Assembly identity validation is opt-in. Pass
+`StringResourceManagerOptions.ValidateAssemblyIdentity` to compare satellite
+simple name, culture, version (including `SatelliteContractVersionAttribute`),
+and public key token against the owner assembly.
 
-The end-to-end NativeAOT smoke test covers embedded neutral lookup,
-`FromSatelliteDirectory`, and `FromResourcesDirectory`. For external NativeAOT
-localization, exclude localized `.resx` inputs from the native publish and deploy
-the culture directories after publishing. Otherwise those resources remain
-publish inputs and can be included in the native image. Direct satellite DLLs
-and loose resource files are trusted deployment artifacts. Automatic publish
-externalization remains future work.
+Strict probing is the default: only an absent localized file continues parent
+or neutral fallback, while unreadable, unsupported, malformed, or incorrectly
+bundled candidates throw. When assembly identity validation is enabled, an
+identity mismatch also throws. The culture chain is opened before key lookup,
+so a malformed parent candidate throws even when a more-specific table contains
+the key. Pass
+`SatelliteStringResourceProbeMode.FallbackOnFailure` to the direct satellite or
+assembly-files factory to treat all of those localized candidate failures as
+missing and continue fallback. This mode never suppresses neutral owner or
+neutral resource failures.
+
+Before selecting an external-all layout, validate its neutral owner strictly
+against the generated owner assembly:
+
+```csharp
+StringResourceManager.ValidateAssemblyFile(
+    "MyApp.Resources.Strings",
+    "external/MyApp.dll",
+    typeof(Program).Assembly);
+```
+
+Calling `ValidateAssemblyFile` is itself an explicit opt-in. It parses the owner
+as data, compares name, version, culture, and public key token, and validates the
+complete neutral string table. Missing, unreadable, malformed, unsupported, or
+identity-mismatched owners throw, allowing the host to choose its managed
+fallback before committing to NativeAOT.
+
+When the NativeAOT-generated owner has a different simple name from its managed
+resource family, supply the external name explicitly. For example, a generated
+`dotnet-aot` owner can consume the managed `dotnet` family without weakening the
+remaining identity checks:
+
+```csharp
+StringResourceManager.ValidateAssemblyFile(
+    baseName,
+    "dotnet.dll",
+    generatedOwnerAssembly,
+    "dotnet");
+
+StringResourceManager externalLocalized =
+    SatelliteStringResourceManager.FromSatelliteDirectory(
+        baseName,
+        satelliteRoot,
+        generatedOwnerAssembly,
+        "dotnet",
+        StringResourceManagerOptions.ValidateAssemblyIdentity,
+        SatelliteStringResourceProbeMode.FallbackOnFailure);
+
+StringResourceManager externalAll =
+    SatelliteStringResourceManager.FromAssemblyFiles(
+        baseName,
+        "dotnet.dll",
+        satelliteRoot,
+        generatedOwnerAssembly,
+        "dotnet",
+        StringResourceManagerOptions.ValidateAssemblyIdentity,
+        SatelliteStringResourceProbeMode.FallbackOnFailure);
+```
+
+The alias replaces only the expected owner/satellite simple name and satellite
+filename. Version, culture, public-key token, neutral-language metadata, and
+satellite contract version remain anchored to the generated owner assembly.
+With `ValidateAssemblyIdentity` enabled, the aliased `FromAssemblyFiles`
+overload performs strict neutral preflight before returning the manager and
+compares the owner identity again each time the file is opened for a lazy
+lookup or reopened after `ReleaseAllResources()`.
+
+The end-to-end NativeAOT smoke test reads a generated accessor for ILC-embedded
+French exact and German parent lookup, `FromSatelliteDirectory`,
+`FromResourcesDirectory`, and `FromAssemblyFiles` exact, parent, and neutral
+fallback using a managed owner assembly and satellite DLL from a separate
+managed build. External layouts can
+exclude localized `.resx` inputs from the native publish and deploy the managed
+owner assembly plus its culture directories after publishing. Embedded mode
+retains those publish inputs for ILC. Direct assembly DLLs and loose resource
+files are trusted deployment artifacts. Automatic publish externalization
+remains SDK/build tooling work.
 
 ## Generated string accessors
 
@@ -221,9 +315,59 @@ resources. Select it per neutral resource item:
 The generated static partial class exposes `ResourceManager`, `Culture`, and one
 non-null string property per supported entry. Each property stores its first
 resolved value in a generated field. Setting `Culture` replaces the complete
-cache in constant time. A localized sibling causes the generated class to use
+cache in constant time. A localized sibling causes the generated class to create
+its manager through `StringResourceManagerProvider`. With no registration, the
+provider preserves the managed default by calling
 `SatelliteStringResourceManager.FromRuntimeSatellites`; exact, parent, missing,
 and neutral fallback then follow the runtime-satellite manager.
+
+Without a localized sibling, the accessor creates a `StringResourceManager`
+directly by default. To deploy localized resources only as external files,
+opt the neutral resource into the provider even when no localized `.resx`
+files are included in the build:
+
+```xml
+<EmbeddedResource Update="Resources\Strings.resx"
+                  Generator="Touki"
+                  UseResourceManagerProvider="true" />
+```
+
+Register a provider at process startup before any generated localized accessor
+is used to select an external NativeAOT layout:
+
+```csharp
+StringResourceManagerProvider.Register(
+    (baseName, ownerAssembly) =>
+        SatelliteStringResourceManager.FromSatelliteDirectory(
+            baseName,
+            externalRoot,
+            ownerAssembly,
+            SatelliteStringResourceProbeMode.FallbackOnFailure));
+```
+
+For NativeAOT resources embedded by ILC, register the platform resource adapter
+instead:
+
+```csharp
+StringResourceManagerProvider.RegisterEmbedded();
+```
+
+`ResourceManagerAdapter` delegates lookup and release to
+`System.Resources.ResourceManager`, allowing the NativeAOT resource
+implementation to resolve embedded exact, parent, and neutral resources without
+calling `Assembly.GetSatelliteAssembly`. The unregistered managed default
+remains Touki's runtime-satellite manager. NativeAOT entry points must register
+embedded or external behavior before any generated localized accessor is used.
+
+Use `ValidateAssemblyFile` followed by `FromAssemblyFiles` in the provider when
+neutral resources are external too. Tolerant satellite probing does not weaken
+the strict neutral preflight.
+Provider selection is process-wide and thread-safe. The first registration or
+unregistered generated-manager creation freezes the selection; a later or
+second registration throws. Each generated class uses a nested static holder,
+so its provider is invoked exactly once even during concurrent first access.
+Warmed generated property reads still return their cached field directly and do
+not call the provider or manager.
 
 When `Culture` is `null`, the first property read uses
 `CultureInfo.CurrentUICulture` and remains cached until the `Culture` setter is

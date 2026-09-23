@@ -51,7 +51,8 @@ Some of the design goals include:
 - Gitignore parsing with ordered include/exclude rules and best-effort text
   clipboard access across supported desktop platforms
 - Raw `.resources` inspection, registered-type NRBF deserialization for trusted
-  payloads, and culture side-file string resources
+  payloads, and NativeAOT-compatible string lookup from ILC-embedded resources,
+  loose resources, or managed owner/satellite assemblies parsed as data
 - Interop ownership helpers that pair native handles with their managed owners
 - Polyfills for many modern .NET BCL APIs on .NET Framework 4.7.2 (see the
   [polyfill guide](https://github.com/JeremyKuhne/touki/blob/main/.agents/skills/polyfill-dotnet-api/references/polyfill-layout.md))

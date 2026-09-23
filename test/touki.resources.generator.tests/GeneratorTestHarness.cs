@@ -242,6 +242,14 @@ internal static class GeneratorTestHarness
                     string baseName,
                     System.Reflection.Assembly assembly) => new(baseName, assembly);
             }
+
+            public static class StringResourceManagerProvider
+            {
+                public static StringResourceManager Create(
+                    string baseName,
+                    System.Reflection.Assembly assembly) =>
+                    SatelliteStringResourceManager.FromRuntimeSatellites(baseName, assembly);
+            }
         }
         """;
 }
