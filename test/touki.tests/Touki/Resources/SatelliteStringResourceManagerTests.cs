@@ -138,6 +138,18 @@ public partial class SatelliteStringResourceManagerTests
     }
 
     [TestMethod]
+    public void Constructor_ExplicitResourcesDirectory_ReturnsLocalizedValue()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        WriteSideFile(folder.TempPath, "de", baseName, ("Greeting", "Hallo"));
+
+        SatelliteStringResourceManager manager = new(baseName, s_assembly, folder.TempPath);
+
+        manager.GetString("Greeting", new CultureInfo("de")).Should().Be("Hallo");
+    }
+
+    [TestMethod]
     public void FromResourcesDirectory_RootIsRelative_CapturesFullPath()
     {
         string relativeRoot = $"relative-{Guid.NewGuid():N}";
@@ -280,6 +292,36 @@ public partial class SatelliteStringResourceManagerTests
             SatelliteStringResourceProbeMode.FallbackOnFailure);
 
         manager.GetString("Greeting", CultureInfo.InvariantCulture).Should().Be("Hello");
+    }
+
+    [TestMethod]
+    public void FromAssemblyFiles_EmptyExternalOwnerSimpleName_ThrowsArgumentException()
+    {
+        Action action = () => SatelliteStringResourceManager.FromAssemblyFiles(
+            NeutralBaseName(),
+            s_assembly.Location,
+            Environment.CurrentDirectory,
+            s_assembly,
+            string.Empty,
+            SatelliteStringResourceProbeMode.Strict);
+
+        action.Should().Throw<ArgumentException>()
+            .WithParameterName("externalOwnerSimpleName");
+    }
+
+    [TestMethod]
+    public void FromAssemblyFiles_InvalidProbeMode_ThrowsArgumentOutOfRangeException()
+    {
+        SatelliteStringResourceProbeMode invalidMode = (SatelliteStringResourceProbeMode)(-1);
+
+        Action action = () => SatelliteStringResourceManager.FromAssemblyFiles(
+            NeutralBaseName(),
+            s_assembly.Location,
+            Environment.CurrentDirectory,
+            invalidMode);
+
+        action.Should().Throw<ArgumentOutOfRangeException>()
+            .WithParameterName("probeMode");
     }
 
     [TestMethod]
