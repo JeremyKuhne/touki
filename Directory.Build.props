@@ -57,6 +57,15 @@
     <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900;NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == '$(DotNetFrameworkVersion)'">
+    <!--
+      The unsafe contexts are required by the .NET Framework build. IDE0380 analyzes each target
+      independently and cannot account for that cross-target requirement, so disable it for the
+      .NET Framework target. Modern .NET reports are suppressed individually in GlobalSuppressions.cs.
+    -->
+    <NoWarn>$(NoWarn);IDE0380</NoWarn>
+  </PropertyGroup>
+
   <!-- Common repo directories -->
   <PropertyGroup>
     <RepoDir>$(MSBuildThisFileDirectory)</RepoDir>
