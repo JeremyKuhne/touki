@@ -30,16 +30,40 @@ namespace Touki.Fuzz;
 ///  </para>
 ///  <para>
 ///   <list type="bullet">
-///    <item><description><c>Compile</c> throws <see cref="GlobFormatException"/> if and only if the
-///     7-argument <c>TryCompile</c> reports failure.</description></item>
-///    <item><description>The 5-argument <c>TryCompile</c> agrees with the 7-argument overload when the
-///     latter is given <see cref="GlobPathSeparator.DialectDefault"/> and an unbounded length.</description></item>
-///    <item><description>Compilation is deterministic: a second compile of the same inputs yields the same
-///     flags and the same <c>IsMatch</c> verdicts.</description></item>
-///    <item><description>A pattern longer than a non-negative <c>maxPatternLength</c> always fails to compile,
-///     and a <see cref="GlobCompileErrorCode.PatternTooLarge"/> failure only happens when it is oversized.</description></item>
-///    <item><description><see cref="GlobSpecification.Pattern"/> round-trips the supplied pattern verbatim.</description></item>
-///    <item><description><see cref="GlobSpecification.IsMatch(ReadOnlySpan{char})"/> is pure: repeated calls return the same verdict.</description></item>
+///    <item>
+///     <description>
+///      <c>Compile</c> throws <see cref="GlobFormatException"/> if and only if the
+///     7-argument <c>TryCompile</c> reports failure.
+///     </description>
+///    </item>
+///    <item>
+///     <description>
+///      The 5-argument <c>TryCompile</c> agrees with the 7-argument overload when the
+///     latter is given <see cref="GlobPathSeparator.DialectDefault"/> and an unbounded length.
+///     </description>
+///    </item>
+///    <item>
+///     <description>
+///      Compilation is deterministic: a second compile of the same inputs yields the same
+///     flags and the same <c>IsMatch</c> verdicts.
+///     </description>
+///    </item>
+///    <item>
+///     <description>
+///      A pattern longer than a non-negative <c>maxPatternLength</c> always fails to compile,
+///     and a <see cref="GlobCompileErrorCode.PatternTooLarge"/> failure only happens when it is oversized.
+///     </description>
+///    </item>
+///    <item>
+///     <description>
+///      <see cref="GlobSpecification.Pattern"/> round-trips the supplied pattern verbatim.
+///     </description>
+///    </item>
+///    <item>
+///     <description>
+///      <see cref="GlobSpecification.IsMatch(ReadOnlySpan{char})"/> is pure: repeated calls return the same verdict.
+///     </description>
+///    </item>
 ///   </list>
 ///  </para>
 /// </remarks>

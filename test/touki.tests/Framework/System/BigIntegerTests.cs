@@ -753,6 +753,7 @@ public class BigIntegerTests
         // The result should either be a valid BigInteger or zero due to overflow protection
         large.GetLength().Should().BeGreaterThanOrEqualTo(0);
     }
+
     [TestMethod]
     public void ShiftLeft_ExtremeShift_ShouldHandleGracefully()
     {
@@ -820,6 +821,7 @@ public class BigIntegerTests
         result.GetBlock(0).Should().Be(0u);
         result.GetBlock(1).Should().Be(1u);
     }
+
     [TestMethod]
     [DataRow(0u)]
     [DataRow(1u)]

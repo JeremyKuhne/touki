@@ -21,7 +21,7 @@ public class SpanExtensionsEnumerateLinesTests
     [TestMethod]
     public void EnumerateLines_Empty_ReturnsSingleEmptyLine()
     {
-        CollectLines(default).Should().Equal([""]);
+        CollectLines(source: default).Should().Equal([""]);
     }
 
     [TestMethod]

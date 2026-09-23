@@ -58,12 +58,12 @@ internal static class WaitHandleExtensions
             }
         }
 
-        static unsafe WAIT_EVENT WaitOneCore(void* handle, int millisecondsTimeout)
+        static WAIT_EVENT WaitOneCore(void* handle, int millisecondsTimeout)
         {
             return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout);
         }
 
-        static unsafe WAIT_EVENT WaitForMultipleObjectsIgnoringSyncContext(
+        static WAIT_EVENT WaitForMultipleObjectsIgnoringSyncContext(
             void** pHandles,
             int numHandles,
             bool waitAll,

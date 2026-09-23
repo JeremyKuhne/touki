@@ -19,7 +19,7 @@ public class UsePathJoinCodeFixTests
             new UsePathJoinAnalyzer(),
             new UsePathJoinCodeFixProvider(),
             source,
-            UsePathJoinAnalyzer.DiagnosticId).ConfigureAwait(false);
+            UsePathJoinAnalyzer.DiagnosticId).ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
     public async Task UsePathJoin_PathCombine_RenamesMethod()
@@ -32,9 +32,10 @@ public class UsePathJoinCodeFixTests
                 string Build(string first, string second) => Path.Combine(first, second);
             }
             """;
+
         string expected = source.Replace("Path.Combine", "Path.Join");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -48,9 +49,10 @@ public class UsePathJoinCodeFixTests
                 string Build(string first, string second) => System.IO.Path.Combine(first, second);
             }
             """;
+
         string expected = source.Replace("Path.Combine", "Path.Join");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -65,9 +67,10 @@ public class UsePathJoinCodeFixTests
                     => System.IO.Path /* keep */ .Combine(first, second);
             }
             """;
+
         string expected = source.Replace(".Combine", ".Join");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -83,9 +86,10 @@ public class UsePathJoinCodeFixTests
                 string Build(string first, string second) => FilePath.Combine(first, second);
             }
             """;
+
         string expected = source.Replace("FilePath.Combine", "FilePath.Join");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -101,9 +105,10 @@ public class UsePathJoinCodeFixTests
                 string Build(string first, string second) => Combine(first, second);
             }
             """;
+
         string expected = source.Replace("Combine(first", "Join(first");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -120,9 +125,10 @@ public class UsePathJoinCodeFixTests
                     => Path.Combine(first, second, third, fourth);
             }
             """;
+
         string expected = source.Replace("Path.Combine", "Path.Join");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -138,9 +144,10 @@ public class UsePathJoinCodeFixTests
                 string Build(string[] paths) => Path.Combine(paths);
             }
             """;
+
         string expected = source.Replace("Path.Combine", "Path.Join");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -157,9 +164,10 @@ public class UsePathJoinCodeFixTests
                 string Build(ReadOnlySpan<string> paths) => Path.Combine(paths);
             }
             """;
+
         string expected = source.Replace("Path.Combine", "Path.Join");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -175,9 +183,10 @@ public class UsePathJoinCodeFixTests
                 string Build(string root) => Path.Combine(root, null!);
             }
             """;
+
         string expected = source.Replace("Path.Combine", "Path.Join");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -193,9 +202,10 @@ public class UsePathJoinCodeFixTests
                 string Build() => Path.Combine("C:", "child");
             }
             """;
+
         string expected = source.Replace("Path.Combine", "Path.Join");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -212,9 +222,10 @@ public class UsePathJoinCodeFixTests
                     => Path.Combine(path1: first, path2: second);
             }
             """;
+
         string expected = source.Replace("Path.Combine", "Path.Join");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -238,9 +249,10 @@ public class UsePathJoinCodeFixTests
                 string Build(string first, string second) => Path.Combine(first, second);
             }
             """;
+
         string expected = source.Replace("Path.Combine", "Path.Join");
 
-        string fixedSource = await FixAsync(source).ConfigureAwait(false);
+        string fixedSource = await FixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -256,6 +268,7 @@ public class UsePathJoinCodeFixTests
                 string Build(string first, string second) => Path.Combine(first, second);
             }
             """;
+
         string expected = source.Replace("Path.Combine", "global::Microsoft.IO.Path.Join");
 
         string fixedSource = await CodeFixTestHarness.ApplyFixAsync(
@@ -263,7 +276,7 @@ public class UsePathJoinCodeFixTests
             new UsePathJoinCodeFixProvider(),
             source,
             UsePathJoinAnalyzer.DiagnosticId,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -278,6 +291,7 @@ public class UsePathJoinCodeFixTests
                     => Microsoft.IO.Path.Combine(first, second);
             }
             """;
+
         string expected = source.Replace("Path.Combine", "Path.Join");
 
         string fixedSource = await CodeFixTestHarness.ApplyFixAsync(
@@ -285,7 +299,7 @@ public class UsePathJoinCodeFixTests
             new UsePathJoinCodeFixProvider(),
             source,
             UsePathJoinAnalyzer.DiagnosticId,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -306,6 +320,7 @@ public class UsePathJoinCodeFixTests
                 string Static(string first, string second) => Combine(first, second);
             }
             """;
+
         string expected = source
             .Replace(".Combine", ".Join")
             .Replace("=> Combine(", "=> Join(");
@@ -316,7 +331,7 @@ public class UsePathJoinCodeFixTests
             [("Test.cs", "Test.cs", source)],
             UsePathJoinAnalyzer.DiagnosticId,
             fixAll: true,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -337,6 +352,7 @@ public class UsePathJoinCodeFixTests
                     => Path.Combine(path1: first, path2: second);
             }
             """;
+
         string expected = source.Replace("Path.Combine", "global::Microsoft.IO.Path.Join");
 
         string fixedSource = await CodeFixTestHarness.ApplyFixAsync(
@@ -344,7 +360,7 @@ public class UsePathJoinCodeFixTests
             new UsePathJoinCodeFixProvider(),
             source,
             UsePathJoinAnalyzer.DiagnosticId,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -371,7 +387,7 @@ public class UsePathJoinCodeFixTests
             [("Test.cs", "Test.cs", source)],
             UsePathJoinAnalyzer.DiagnosticId,
             fixAll: true,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -406,7 +422,7 @@ public class UsePathJoinCodeFixTests
             new UsePathJoinCodeFixProvider(),
             source,
             UsePathJoinAnalyzer.DiagnosticId,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -422,6 +438,7 @@ public class UsePathJoinCodeFixTests
                 string Build(string root) => Path.Combine(root, "bad\0name");
             }
             """;
+
         string expected = source.Replace("Path.Combine", "global::Microsoft.IO.Path.Join");
 
         string fixedSource = await CodeFixTestHarness.ApplyFixAsync(
@@ -429,7 +446,7 @@ public class UsePathJoinCodeFixTests
             new UsePathJoinCodeFixProvider(),
             source,
             UsePathJoinAnalyzer.DiagnosticId,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -450,7 +467,7 @@ public class UsePathJoinCodeFixTests
             new UsePathJoinCodeFixProvider(),
             source,
             UsePathJoinAnalyzer.DiagnosticId,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -475,7 +492,7 @@ public class UsePathJoinCodeFixTests
             new UsePathJoinCodeFixProvider(),
             source,
             UsePathJoinAnalyzer.DiagnosticId,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -498,7 +515,7 @@ public class UsePathJoinCodeFixTests
             new UsePathJoinCodeFixProvider(),
             [("Test.cs", "Test.cs", source)],
             UsePathJoinAnalyzer.DiagnosticId,
-            fixAll: true).ConfigureAwait(false);
+            fixAll: true).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -527,7 +544,7 @@ public class UsePathJoinCodeFixTests
             new ForcedCombineAnalyzer(),
             new UsePathJoinCodeFixProvider(),
             source,
-            UsePathJoinAnalyzer.DiagnosticId).ConfigureAwait(false);
+            UsePathJoinAnalyzer.DiagnosticId).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -548,7 +565,7 @@ public class UsePathJoinCodeFixTests
             new ForcedCombineAnalyzer(),
             new UsePathJoinCodeFixProvider(),
             source,
-            UsePathJoinAnalyzer.DiagnosticId).ConfigureAwait(false);
+            UsePathJoinAnalyzer.DiagnosticId).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -569,7 +586,7 @@ public class UsePathJoinCodeFixTests
             new ForcedCombineAnalyzer(reportArgument: true),
             new UsePathJoinCodeFixProvider(),
             source,
-            UsePathJoinAnalyzer.DiagnosticId).ConfigureAwait(false);
+            UsePathJoinAnalyzer.DiagnosticId).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -585,14 +602,17 @@ public class UsePathJoinCodeFixTests
                 string Build(string first, string second) => Path.Combine(first, second);
             }
             """;
+
         using AdhocWorkspace workspace = new();
         Project firstProject = workspace.AddProject("First", LanguageNames.CSharp)
             .AddMetadataReferences(RoslynTestEnvironment.References)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
         workspace.TryApplyChanges(firstProject.Solution).Should().BeTrue();
         Project secondProject = workspace.AddProject("Second", LanguageNames.CSharp)
             .AddMetadataReferences(RoslynTestEnvironment.Net472References)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
         workspace.TryApplyChanges(secondProject.Solution).Should().BeTrue();
 
         string filePath = Path.Join(Path.GetTempPath(), "touki-linked", "Shared.cs");
@@ -601,32 +621,38 @@ public class UsePathJoinCodeFixTests
             "Shared.cs",
             SourceText.From(source),
             filePath: filePath);
+
         workspace.TryApplyChanges(firstDocument.Project.Solution).Should().BeTrue();
         secondProject = workspace.CurrentSolution.GetRequiredProject(secondProject.Id);
         Document secondDocument = secondProject.AddDocument(
             "Shared.cs",
             SourceText.From(source),
             filePath: filePath);
+
         workspace.TryApplyChanges(secondDocument.Project.Solution).Should().BeTrue();
         firstDocument = workspace.CurrentSolution.GetRequiredDocument(firstDocument.Id);
         secondDocument = workspace.CurrentSolution.GetRequiredDocument(secondDocument.Id);
 
         Compilation firstCompilation =
-            await firstDocument.Project.GetRequiredCompilationAsync().ConfigureAwait(false);
+            await firstDocument.Project.GetRequiredCompilationAsync().ConfigureAwait(continueOnCapturedContext: false);
+
         Compilation secondCompilation =
-            await secondDocument.Project.GetRequiredCompilationAsync().ConfigureAwait(false);
+            await secondDocument.Project.GetRequiredCompilationAsync().ConfigureAwait(continueOnCapturedContext: false);
+
         firstCompilation.GetDiagnostics().Should().NotContain(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
         secondCompilation.GetDiagnostics().Should().NotContain(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
         Diagnostic firstDiagnostic = (await firstCompilation
             .WithAnalyzers([new UsePathJoinAnalyzer()])
             .GetAnalyzerDiagnosticsAsync()
-            .ConfigureAwait(false))
+            .ConfigureAwait(continueOnCapturedContext: false))
             .Should().ContainSingle().Subject;
+
         Diagnostic secondDiagnostic = (await secondCompilation
             .WithAnalyzers([new UsePathJoinAnalyzer()])
             .GetAnalyzerDiagnosticsAsync()
-            .ConfigureAwait(false))
+            .ConfigureAwait(continueOnCapturedContext: false))
             .Should().ContainSingle().Subject;
+
         List<CodeAction> actions = [];
         CodeFixContext firstContext = new(
             firstDocument,
@@ -635,7 +661,7 @@ public class UsePathJoinCodeFixTests
             CancellationToken.None);
 
         UsePathJoinCodeFixProvider provider = new();
-        await provider.RegisterCodeFixesAsync(firstContext).ConfigureAwait(false);
+        await provider.RegisterCodeFixesAsync(firstContext).ConfigureAwait(continueOnCapturedContext: false);
 
         actions.Should().BeEmpty();
         CodeFixContext secondContext = new(
@@ -643,7 +669,8 @@ public class UsePathJoinCodeFixTests
             secondDiagnostic,
             (action, _) => actions.Add(action),
             CancellationToken.None);
-        await provider.RegisterCodeFixesAsync(secondContext).ConfigureAwait(false);
+
+        await provider.RegisterCodeFixesAsync(secondContext).ConfigureAwait(continueOnCapturedContext: false);
 
         actions.Should().BeEmpty();
     }
@@ -676,6 +703,7 @@ public class UsePathJoinCodeFixTests
                         {
                             syntaxContext.ReportDiagnostic(
                                 Diagnostic.Create(s_rule, invocation.ArgumentList.Arguments[0].GetLocation()));
+
                             return;
                         }
 
@@ -685,6 +713,7 @@ public class UsePathJoinCodeFixTests
                             MemberAccessExpressionSyntax memberAccess => memberAccess.Name,
                             _ => null
                         };
+
                         if (methodName is not null)
                         {
                             syntaxContext.ReportDiagnostic(

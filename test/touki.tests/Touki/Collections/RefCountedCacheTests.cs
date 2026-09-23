@@ -117,6 +117,7 @@ public class RefCountedCacheTests
                     "second" => secondDisposeException,
                     _ => null
                 });
+
             Values.Add(key, value);
             return new DisposableTestCacheEntry(value, cached);
         }
@@ -154,7 +155,7 @@ public class RefCountedCacheTests
         TestCache cache = new();
         // Intentionally pass null to exercise key validation.
     #pragma warning disable CS8625
-        Action action = () => cache.GetEntry(null);
+        Action action = () => cache.GetEntry(key: null);
     #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }

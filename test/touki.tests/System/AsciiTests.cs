@@ -123,6 +123,7 @@ public class AsciiTests
             lowerChars[i] = (char)('a' + (i % 26));
             upperChars[i] = (char)('A' + (i % 26));
         }
+
         string lower = new(lowerChars);
         string upper = new(upperChars);
 

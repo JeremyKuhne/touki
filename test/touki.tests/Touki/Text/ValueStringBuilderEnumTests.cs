@@ -5,7 +5,7 @@
 namespace Touki.Text;
 
 /// <summary>
-/// Tests for ValueStringBuilder enum formatting with all integer backing types.
+///  Tests for ValueStringBuilder enum formatting with all integer backing types.
 /// </summary>
 [TestClass]
 public unsafe class ValueStringBuilderEnumTests
@@ -263,6 +263,7 @@ public unsafe class ValueStringBuilderEnumTests
             Value.Create(SByteFlagsEnum.None),
             Value.Create(UInt32FlagsEnum.None),
             Value.Create(Int64FlagsEnum.None));
+
         builder.ToString().Should().Be("ZeroFlags: None, None, None");
     }
 
@@ -326,6 +327,7 @@ public unsafe class ValueStringBuilderEnumTests
             Value.Create(ByteBackedEnum.Max),
             Value.Create(Int16BackedEnum.Max),
             Value.Create(Int32BackedEnum.Max));
+
         builder.ToString().Should().Be("Formats: 255, 32767, 2147483647");
         builder.Clear();
 
@@ -333,6 +335,7 @@ public unsafe class ValueStringBuilderEnumTests
         builder.AppendFormat("Hex: {0:X}, {1:X}",
             Value.Create(ByteBackedEnum.Max),
             Value.Create(UInt32BackedEnum.Max));
+
         builder.ToString().Should().Be("Hex: FF, FFFFFFFF");
         builder.Clear();
 
@@ -340,6 +343,7 @@ public unsafe class ValueStringBuilderEnumTests
         builder.AppendFormat("General: {0:G}, {1:G}",
             Value.Create(Int64BackedEnum.Positive),
             Value.Create(UInt64BackedEnum.Value));
+
         builder.ToString().Should().Be("General: Positive, Value");
     }
 
@@ -374,6 +378,7 @@ public unsafe class ValueStringBuilderEnumTests
 
         expected = string.Format("MaxValues: {0}, {1}, {2}, {3}",
             ByteBackedEnum.Max, UInt16BackedEnum.Max, UInt32BackedEnum.Max, UInt64BackedEnum.Max);
+
         builder.ToString().Should().Be(expected);
     }
 }

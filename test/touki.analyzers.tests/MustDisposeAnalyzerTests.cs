@@ -58,7 +58,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(MustDisposeAnalyzer.DiagnosticId);
@@ -77,7 +77,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -96,7 +96,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -115,7 +115,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -135,7 +135,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -154,7 +154,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -174,7 +174,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -194,7 +194,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -214,7 +214,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -233,7 +233,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(MustDisposeAnalyzer.DiagnosticId);
@@ -255,7 +255,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(MustDisposeAnalyzer.DiagnosticId);
@@ -276,7 +276,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -294,7 +294,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(MustDisposeAnalyzer.DiagnosticId);
@@ -314,7 +314,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -332,7 +332,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -352,7 +352,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(MustDisposeAnalyzer.DiagnosticId);
@@ -372,7 +372,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(MustDisposeAnalyzer.DiagnosticId);
@@ -396,7 +396,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -415,7 +415,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -436,7 +436,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -457,7 +457,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -478,7 +478,7 @@ public class MustDisposeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }

@@ -24,16 +24,18 @@ public class GeneratedResourceRuntimeTests
     {
         GeneratorTestResult result = GeneratorTestHarness.Run(
             GeneratorTestResource.Selected(SimpleResource));
+
         using GeneratedAssembly generatedAssembly = result.Emit(
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["Greeting"] = "Runtime value"
             });
+
         Type resourceType = generatedAssembly.GetGeneratedType();
         PropertyInfo greeting = GetRequiredProperty(resourceType, "Greeting");
 
-        object? first = greeting.GetValue(null);
-        object? second = greeting.GetValue(null);
+        object? first = greeting.GetValue(obj: null);
+        object? second = greeting.GetValue(obj: null);
 
         first.Should().Be("Runtime value");
         second.Should().BeSameAs(first);
@@ -44,22 +46,24 @@ public class GeneratedResourceRuntimeTests
     {
         GeneratorTestResult result = GeneratorTestHarness.Run(
             GeneratorTestResource.Selected(SimpleResource));
+
         using GeneratedAssembly generatedAssembly = result.Emit(
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["Greeting"] = "Runtime value"
             });
+
         Type resourceType = generatedAssembly.GetGeneratedType();
         FieldInfo cacheField = GetRequiredField(resourceType, "s_cache");
         PropertyInfo cultureProperty = GetRequiredProperty(resourceType, "Culture");
-        object? originalCache = cacheField.GetValue(null);
+        object? originalCache = cacheField.GetValue(obj: null);
         CultureInfo culture = new("fr-FR");
 
-        cultureProperty.SetValue(null, culture);
+        cultureProperty.SetValue(obj: null, culture);
 
-        object? replacementCache = cacheField.GetValue(null);
+        object? replacementCache = cacheField.GetValue(obj: null);
         replacementCache.Should().NotBeSameAs(originalCache);
-        cultureProperty.GetValue(null).Should().BeSameAs(culture);
+        cultureProperty.GetValue(obj: null).Should().BeSameAs(culture);
     }
 
     [TestMethod]
@@ -67,11 +71,13 @@ public class GeneratedResourceRuntimeTests
     {
         GeneratorTestResult result = GeneratorTestHarness.Run(
             GeneratorTestResource.Selected(SimpleResource));
+
         using GeneratedAssembly generatedAssembly = result.Emit(
             new Dictionary<string, string>(StringComparer.Ordinal));
+
         PropertyInfo greeting = GetRequiredProperty(generatedAssembly.GetGeneratedType(), "Greeting");
 
-        Action action = () => greeting.GetValue(null);
+        Action action = () => greeting.GetValue(obj: null);
 
         action.Should().Throw<TargetInvocationException>()
             .Which.InnerException.Should().BeOfType<MissingManifestResourceException>();
@@ -84,14 +90,17 @@ public class GeneratedResourceRuntimeTests
         {
             ["IncludeDefaultValues"] = "true"
         };
+
         GeneratorTestResult result = GeneratorTestHarness.Run(
             GeneratorTestResource.Selected(SimpleResource, metadata: metadata));
+
         using GeneratedAssembly generatedAssembly = result.Emit(
             new Dictionary<string, string>(StringComparer.Ordinal));
+
         PropertyInfo greeting = GetRequiredProperty(generatedAssembly.GetGeneratedType(), "Greeting");
 
-        object? first = greeting.GetValue(null);
-        object? second = greeting.GetValue(null);
+        object? first = greeting.GetValue(obj: null);
+        object? second = greeting.GetValue(obj: null);
 
         first.Should().Be("Source fallback");
         second.Should().BeSameAs(first);
@@ -105,27 +114,31 @@ public class GeneratedResourceRuntimeTests
               <data name="Greeting"><value>Hello {name}</value></data>
             </root>
             """;
+
         Dictionary<string, string> metadata = new(StringComparer.Ordinal)
         {
             ["EmitFormatMethods"] = "true"
         };
+
         GeneratorTestResult result = GeneratorTestHarness.Run(
             GeneratorTestResource.Selected(resource, metadata: metadata));
+
         using GeneratedAssembly generatedAssembly = result.Emit(
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["Greeting"] = "Hello {name}"
             });
+
         Type resourceType = generatedAssembly.GetGeneratedType();
         MethodInfo formatGreeting = resourceType.GetMethod(
             "FormatGreeting",
             BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("FormatGreeting was not found.");
 
-        object? formatted = formatGreeting.Invoke(null, ["Ada"]);
+        object? formatted = formatGreeting.Invoke(obj: null, ["Ada"]);
 
         formatted.Should().Be("Hello Ada");
-        object? cachedValue = GetRequiredProperty(resourceType, "Greeting").GetValue(null);
+        object? cachedValue = GetRequiredProperty(resourceType, "Greeting").GetValue(obj: null);
         cachedValue.Should().Be("Hello {name}");
     }
 
@@ -137,24 +150,28 @@ public class GeneratedResourceRuntimeTests
               <data name="Greeting"><value>Hello {1}</value></data>
             </root>
             """;
+
         Dictionary<string, string> metadata = new(StringComparer.Ordinal)
         {
             ["EmitFormatMethods"] = "true"
         };
+
         GeneratorTestResult result = GeneratorTestHarness.Run(
             GeneratorTestResource.Selected(resource, metadata: metadata));
+
         using GeneratedAssembly generatedAssembly = result.Emit(
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["Greeting"] = "Hello {1}"
             });
+
         Type resourceType = generatedAssembly.GetGeneratedType();
         MethodInfo formatGreeting = resourceType.GetMethod(
             "FormatGreeting",
             BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("FormatGreeting was not found.");
 
-        object? formatted = formatGreeting.Invoke(null, ["unused", "Ada"]);
+        object? formatted = formatGreeting.Invoke(obj: null, ["unused", "Ada"]);
 
         formatted.Should().Be("Hello Ada");
     }

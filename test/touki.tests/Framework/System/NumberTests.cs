@@ -23,7 +23,7 @@ public class NumberTests
     public void Number_FormatInt32(int value, string format, string expected)
     {
         Span<char> buffer = stackalloc char[32];
-        Number.TryFormatInt32(value, ~0, format.AsSpan(), null, buffer, out int charsWritten).Should().BeTrue();
+        Number.TryFormatInt32(value, ~0, format.AsSpan(), provider: null, buffer, out int charsWritten).Should().BeTrue();
         charsWritten.Should().Be(expected.Length);
         buffer[..charsWritten].ToString().Should().Be(expected);
     }

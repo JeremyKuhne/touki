@@ -40,9 +40,11 @@ public class StringResourceManagerCachedLookupPerf
         Assembly assembly = typeof(StringResourceManagerCachedLookupPerf).Assembly;
         string resourceName = assembly.GetManifestResourceNames()
             .Single(name => name.EndsWith("SatelliteStringResourceManagerPerfStrings.resources", StringComparison.Ordinal));
+
         string baseName = resourceName[..^".resources".Length];
         _resourcesFile = StringResourceManagerConstructionPerf.WriteResourcesFile(
             nameof(StringResourceManagerCachedLookupPerf));
+
         string resourcesDirectory = Path.GetDirectoryName(_resourcesFile)
             ?? throw new InvalidOperationException("The benchmark resource path must have a directory.");
 
@@ -51,6 +53,7 @@ public class StringResourceManagerCachedLookupPerf
             Path.GetFileNameWithoutExtension(_resourcesFile),
             resourcesDirectory,
             usingResourceSet: null);
+
         _assemblyManager = new(baseName, assembly);
         _fileManager = new(_resourcesFile);
         byte[] resources = System.IO.File.ReadAllBytes(_resourcesFile);

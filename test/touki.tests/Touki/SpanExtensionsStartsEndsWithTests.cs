@@ -55,7 +55,7 @@ public class SpanExtensionsStartsEndsWithTests
     public void StartsWith_NullReference_Match_ReturnsTrue()
     {
         ReadOnlySpan<string?> span = [null, "b"];
-        span.StartsWith((string?)null).Should().BeTrue();
+        span.StartsWith(value: (string?)null).Should().BeTrue();
     }
 
     [TestMethod]
@@ -106,7 +106,7 @@ public class SpanExtensionsStartsEndsWithTests
     public void EndsWith_NullReference_Match_ReturnsTrue()
     {
         ReadOnlySpan<string?> span = ["a", null];
-        span.EndsWith((string?)null).Should().BeTrue();
+        span.EndsWith(value: (string?)null).Should().BeTrue();
     }
 
     [TestMethod]

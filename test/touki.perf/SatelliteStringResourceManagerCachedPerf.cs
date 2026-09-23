@@ -50,6 +50,7 @@ public class SatelliteStringResourceManagerCachedPerf
         Assembly assembly = typeof(SatelliteStringResourceManagerCachedPerf).Assembly;
         string resourceName = assembly.GetManifestResourceNames()
             .Single(name => name.EndsWith("SatelliteStringResourceManagerPerfStrings.resources", StringComparison.Ordinal));
+
         string baseName = resourceName[..^".resources".Length];
         _culture = Scenario switch
         {
@@ -77,6 +78,7 @@ public class SatelliteStringResourceManagerCachedPerf
         Directory.CreateDirectory(satelliteDirectory);
         string assemblyName = assembly.GetName().Name
             ?? throw new InvalidOperationException("The benchmark assembly must have a name.");
+
         string satelliteFileName = $"{assemblyName}.resources.dll";
         System.IO.File.Copy(
             Path.Join(AppContext.BaseDirectory, LocalizedCultureName, satelliteFileName),
@@ -88,10 +90,12 @@ public class SatelliteStringResourceManagerCachedPerf
             baseName,
             _looseRoot,
             assembly);
+
         _satelliteManager = SatelliteStringResourceManager.FromSatelliteDirectory(
             baseName,
             satelliteRoot,
             assembly);
+
         _ = _resourceManager.GetString("Greeting", _culture);
         _ = _runtimeManager.GetString("Greeting", _culture);
         _ = _looseManager.GetString("Greeting", _culture);

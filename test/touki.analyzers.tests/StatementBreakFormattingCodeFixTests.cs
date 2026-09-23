@@ -17,13 +17,13 @@ public class StatementBreakFormattingCodeFixTests
     private static async Task<string> ApplyFixAsync(
         string source,
         Dictionary<string, string>? options = null) =>
-        await CodeFixTestHarness.ApplyFixAsync(
-            new StatementBreakFormattingAnalyzer(),
-            new FormatStatementBreaksCodeFixProvider(),
-            source,
-            StatementBreakFormattingAnalyzer.DiagnosticId,
-            options,
-            s_enabled).ConfigureAwait(false);
+            await CodeFixTestHarness.ApplyFixAsync(
+                new StatementBreakFormattingAnalyzer(),
+                new FormatStatementBreaksCodeFixProvider(),
+                source,
+                StatementBreakFormattingAnalyzer.DiagnosticId,
+                options,
+                s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
     public void GetFixAllProvider_Default_IsDocumentBased()
@@ -55,9 +55,11 @@ public class StatementBreakFormattingCodeFixTests
 
         exact.TryReserveReplacementCharacters(StatementBreakFixAllBudget.MaximumReplacementCharacters)
             .Should().BeTrue();
+
         exact.TryReserveReplacementCharacters(1).Should().BeFalse();
         over.TryReserveReplacementCharacters(StatementBreakFixAllBudget.MaximumReplacementCharacters + 1)
             .Should().BeFalse();
+
         over.TryReserveReplacementCharacters(StatementBreakFixAllBudget.MaximumReplacementCharacters)
             .Should().BeTrue();
     }
@@ -82,7 +84,7 @@ public class StatementBreakFormattingCodeFixTests
             fixAll: true,
             diagnosticOptions: s_enabled,
             transformDiagnostics: diagnostics => RepeatDiagnostics(diagnostics, diagnosticCount))
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(diagnosticCount);
         result.FixAllActionOffered.Should().Be(actionExpected);
@@ -114,7 +116,7 @@ public class StatementBreakFormattingCodeFixTests
                 diagnostics,
                 firstDocumentRepeats: 512,
                 secondDocumentRepeats))
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(512 + secondDocumentRepeats);
         result.FixAllActionOffered.Should().Be(actionExpected);
@@ -135,6 +137,7 @@ public class StatementBreakFormattingCodeFixTests
         const string expected = "class Sample\n{\n    int Value =>\n        1;\n}\n";
         (string Name, string FilePath, string Source)[] sources =
             [("Shared.cs", "Shared.cs", source)];
+
         int documentRequests = 0;
 
         CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
@@ -149,7 +152,7 @@ public class StatementBreakFormattingCodeFixTests
             transformDiagnostics: diagnostics => [diagnostics[0]],
             transformFixAllDiagnostics: diagnostics => diagnostics,
             onFixAllDocumentDiagnosticsRequested: _ => documentRequests++)
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.Documents.Should().HaveCount(2).And.OnlyContain(document => document.Source == expected);
@@ -165,11 +168,13 @@ public class StatementBreakFormattingCodeFixTests
     {
         string sharedSource =
             CreateMaximumReplacementSource("SharedOne")
-            + "\n"
-            + CreateMaximumReplacementSource("SharedTwo");
+                + "\n"
+                + CreateMaximumReplacementSource("SharedTwo");
+
         string laterSource = CreateMaximumReplacementSource("Later");
         (string Name, string FilePath, string Source)[] sources =
             [("Shared.cs", "Shared.cs", sharedSource)];
+
         (string Name, string FilePath, string Source)[] additionalProjectSources =
             [("Later.cs", "Later.cs", laterSource)];
 
@@ -190,11 +195,12 @@ public class StatementBreakFormattingCodeFixTests
             transformFixAllDiagnostics: diagnostics => CreateRejectedLinkedBudgetDiagnostics(
                 diagnostics,
                 laterDocumentRepeats))
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().Be(actionExpected);
         result.Documents.Where(document => document.Name == "Shared.cs")
             .Should().OnlyContain(document => document.Source == sharedSource);
+
         result.Documents.Single(document => document.Name == "Later.cs").Source.Should().Be(
             actionExpected ? CreateMaximumReplacementExpected("Later") : laterSource);
     }
@@ -206,7 +212,8 @@ public class StatementBreakFormattingCodeFixTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new StatementBreakFormattingAnalyzer(),
             source,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
+
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         SourceText changedSource = SourceText.From(source.Replace("=>", "==", StringComparison.Ordinal));
 
@@ -225,7 +232,7 @@ public class StatementBreakFormattingCodeFixTests
     public async Task TryCreateTextChange_MalformedProperty_ReturnsFalse(string propertyName, string value)
     {
         const string source = "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left\n              + right;\n    }\n}\n";
-        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
+        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(continueOnCapturedContext: false);
         Diagnostic malformed = CreateDiagnostic(
             diagnostic,
             [.. diagnostic.AdditionalLocations],
@@ -243,13 +250,14 @@ public class StatementBreakFormattingCodeFixTests
     public async Task TryCreateTextChange_BaseIndentationContainsCode_ReturnsFalse()
     {
         const string source = "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left\n              + right;\n    }\n}\n";
-        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
+        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(continueOnCapturedContext: false);
         SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
         ImmutableArray<Location> locations =
         [
             diagnostic.AdditionalLocations[0],
             Location.Create(tree, new TextSpan(0, "class".Length))
         ];
+
         Diagnostic malformed = CreateDiagnostic(diagnostic, locations, diagnostic.Properties);
 
         bool created = TryCreateTextChange(
@@ -264,7 +272,7 @@ public class StatementBreakFormattingCodeFixTests
     public async Task TryCreateTextChange_IndentationReplacementContainsCode_ReturnsFalse()
     {
         const string source = "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left\n              + right;\n    }\n}\n";
-        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
+        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(continueOnCapturedContext: false);
         SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
         int codeStart = source.IndexOf("left", StringComparison.Ordinal);
         ImmutableArray<Location> locations =
@@ -272,6 +280,7 @@ public class StatementBreakFormattingCodeFixTests
             Location.Create(tree, new TextSpan(codeStart, "left".Length)),
             diagnostic.AdditionalLocations[1]
         ];
+
         Diagnostic malformed = CreateDiagnostic(diagnostic, locations, diagnostic.Properties);
 
         bool created = TryCreateTextChange(
@@ -286,7 +295,7 @@ public class StatementBreakFormattingCodeFixTests
     public async Task TryCreateTextChange_RelocationSpanContainsCode_ReturnsFalse()
     {
         const string source = "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left +\n            right;\n    }\n}\n";
-        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
+        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(continueOnCapturedContext: false);
         SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
         int leftStart = source.IndexOf("left +", StringComparison.Ordinal);
         ImmutableArray<Location> locations =
@@ -296,6 +305,7 @@ public class StatementBreakFormattingCodeFixTests
                 TextSpan.FromBounds(leftStart, diagnostic.AdditionalLocations[0].SourceSpan.End)),
             diagnostic.AdditionalLocations[1]
         ];
+
         Diagnostic malformed = CreateDiagnostic(diagnostic, locations, diagnostic.Properties);
 
         bool created = TryCreateTextChange(
@@ -311,7 +321,7 @@ public class StatementBreakFormattingCodeFixTests
     {
         string source = new(' ', 4097);
         source += "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left\n              + right;\n    }\n}\n";
-        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
+        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(continueOnCapturedContext: false);
         SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
         Diagnostic malformed = Diagnostic.Create(
             diagnostic.Descriptor,
@@ -334,16 +344,17 @@ public class StatementBreakFormattingCodeFixTests
         string payload = new('a', StatementBreakDiagnosticData.MaximumChangeCharacters);
         string source =
             "class Sample\n"
-            + "{\n"
-            + "    string Method(\n"
-            + "        string value)\n"
-            + "        => Read(\n"
-            + $"            \"{payload}\",\n"
-            + "            value);\n"
-            + "\n"
-            + "    string Read(string first, string second) => first + second;\n"
-            + "}\n";
-        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
+                + "{\n"
+                + "    string Method(\n"
+                + "        string value)\n"
+                + "        => Read(\n"
+                + $"            \"{payload}\",\n"
+                + "            value);\n"
+                + "\n"
+                + "    string Read(string first, string second) => first + second;\n"
+                + "}\n";
+
+        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(continueOnCapturedContext: false);
         SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
 
         bool created = StatementBreakDiagnosticData.TryCreateTextChanges(
@@ -371,20 +382,21 @@ public class StatementBreakFormattingCodeFixTests
         int payloadLength = physicalRangeLength - commentPrefix.Length - continuation.Length;
         string source =
             "class Sample\n"
-            + "{\n"
-            + "    int Method(\n"
-            + "        int value) =>\n"
-            + commentPrefix
-            + new string('x', payloadLength)
-            + continuation
-            + ";\n"
-            + "\n"
-            + "    int Read(int value) => value;\n"
-            + "}\n";
+                + "{\n"
+                + "    int Method(\n"
+                + "        int value) =>\n"
+                + commentPrefix
+                + new string('x', payloadLength)
+                + continuation
+                + ";\n"
+                + "\n"
+                + "    int Read(int value) => value;\n"
+                + "}\n";
+
         int rangeStart = source.IndexOf(commentPrefix, StringComparison.Ordinal);
         int rangeEnd = source.IndexOf(");", rangeStart, StringComparison.Ordinal) + 1;
         (rangeEnd - rangeStart).Should().Be(physicalRangeLength);
-        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
+        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(continueOnCapturedContext: false);
         SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
 
         bool created = StatementBreakDiagnosticData.TryCreateTextChanges(
@@ -406,21 +418,22 @@ public class StatementBreakFormattingCodeFixTests
         string baseIndentation = new(' ', 1024);
         string source =
             $"{baseIndentation}class Sample\n"
-            + $"{baseIndentation}{{\n"
-            + $"{baseIndentation}    string Method(\n"
-            + $"{baseIndentation}        string value)\n"
-            + "        => Read(\n"
-            + "            value,\n"
-            + "            value,\n"
-            + "            value,\n"
-            + "            value);\n"
-            + $"{baseIndentation}    string Read(\n"
-            + $"{baseIndentation}        string first,\n"
-            + $"{baseIndentation}        string second,\n"
-            + $"{baseIndentation}        string third,\n"
-            + $"{baseIndentation}        string fourth) => first;\n"
-            + $"{baseIndentation}}}\n";
-        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
+                + $"{baseIndentation}{{\n"
+                + $"{baseIndentation}    string Method(\n"
+                + $"{baseIndentation}        string value)\n"
+                + "        => Read(\n"
+                + "            value,\n"
+                + "            value,\n"
+                + "            value,\n"
+                + "            value);\n"
+                + $"{baseIndentation}    string Read(\n"
+                + $"{baseIndentation}        string first,\n"
+                + $"{baseIndentation}        string second,\n"
+                + $"{baseIndentation}        string third,\n"
+                + $"{baseIndentation}        string fourth) => first;\n"
+                + $"{baseIndentation}}}\n";
+
+        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(continueOnCapturedContext: false);
         SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
 
         bool created = StatementBreakDiagnosticData.TryCreateTextChanges(
@@ -442,21 +455,23 @@ public class StatementBreakFormattingCodeFixTests
         string payload = new('a', StatementBreakDiagnosticData.MaximumChangeCharacters);
         string source =
             "class Sample\n"
-            + "{\n"
-            + "    string Method(\n"
-            + "        string value)\n"
-            + "        => Read(\n"
-            + $"            \"{payload}\",\n"
-            + "            value);\n"
-            + "\n"
-            + "    int Value\n"
-            + "        => 1;\n"
-            + "\n"
-            + "    string Read(string first, string second) => first + second;\n"
-            + "}\n";
+                + "{\n"
+                + "    string Method(\n"
+                + "        string value)\n"
+                + "        => Read(\n"
+                + $"            \"{payload}\",\n"
+                + "            value);\n"
+                + "\n"
+                + "    int Value\n"
+                + "        => 1;\n"
+                + "\n"
+                + "    string Read(string first, string second) => first + second;\n"
+                + "}\n";
+
         string expected = source.Replace(
             "    int Value\n        => 1;",
             "    int Value =>\n        1;");
+
         (string Name, string FilePath, string Source)[] sources =
             [("Sample.cs", "Sample.cs", source)];
 
@@ -466,7 +481,7 @@ public class StatementBreakFormattingCodeFixTests
             sources,
             StatementBreakFormattingAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
@@ -492,7 +507,8 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """";
-        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
+
+        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(continueOnCapturedContext: false);
         SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
         int literalOperator = source.IndexOf("    +\n", StringComparison.Ordinal) + 4;
         Diagnostic malformed = Diagnostic.Create(
@@ -514,13 +530,14 @@ public class StatementBreakFormattingCodeFixTests
     public async Task TryCreateTextChange_ReplacementSpanPointsToUnrelatedWhitespace_ReturnsFalse()
     {
         const string source = "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left\n              + right;\n    }\n}\n";
-        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
+        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(continueOnCapturedContext: false);
         SyntaxTree tree = diagnostic.Location.GetRequiredSourceTree();
         ImmutableArray<Location> locations =
         [
             Location.Create(tree, new TextSpan(source.IndexOf("    int", StringComparison.Ordinal), 4)),
             diagnostic.AdditionalLocations[1]
         ];
+
         Diagnostic malformed = CreateDiagnostic(diagnostic, locations, diagnostic.Properties);
 
         bool created = TryCreateTextChange(
@@ -535,7 +552,7 @@ public class StatementBreakFormattingCodeFixTests
     public async Task TryCreateTextChange_Canceled_ThrowsOperationCanceledException()
     {
         const string source = "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left\n              + right;\n    }\n}\n";
-        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
+        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(continueOnCapturedContext: false);
         using CancellationTokenSource cancellation = new();
         cancellation.Cancel();
 
@@ -552,7 +569,7 @@ public class StatementBreakFormattingCodeFixTests
     public async Task TryCreateTextChange_IndentationOptionChangedSinceDiagnostic_ReturnsFalse()
     {
         const string source = "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left\n              + right;\n    }\n}\n";
-        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(false);
+        Diagnostic diagnostic = await GetSingleDiagnosticAsync(source).ConfigureAwait(continueOnCapturedContext: false);
         SyntaxTree currentTree = diagnostic.Location.GetRequiredSourceTree();
         SourceText currentSource = currentTree.GetText();
         SyntaxNode currentRoot = currentTree.GetRoot();
@@ -575,7 +592,8 @@ public class StatementBreakFormattingCodeFixTests
             new StatementBreakFormattingAnalyzer(),
             source,
             diagnosticOptions: s_enabled,
-            parseOptions: new CSharpParseOptions(LanguageVersion.CSharp11)).ConfigureAwait(false);
+            parseOptions: new CSharpParseOptions(LanguageVersion.CSharp11)).ConfigureAwait(continueOnCapturedContext: false);
+
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         SourceText currentSource = diagnostic.Location.GetRequiredSourceTree().GetText();
         SyntaxNode currentRoot = CSharpSyntaxTree.ParseText(
@@ -605,6 +623,7 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -616,7 +635,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -634,6 +653,7 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -645,7 +665,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -660,6 +680,7 @@ public class StatementBreakFormattingCodeFixTests
                     => 1;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -668,18 +689,18 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
 
     [TestMethod]
     public async Task Format_ExpressionBodyAfterConstraintClause_IndentsBeyondConstraint() =>
-        await AssertExpressionBodyAfterConstraintClauseAsync(fixAll: false).ConfigureAwait(false);
+        await AssertExpressionBodyAfterConstraintClauseAsync(fixAll: false).ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
     public async Task FormatAll_ExpressionBodyAfterConstraintClause_IndentsBeyondConstraint() =>
-        await AssertExpressionBodyAfterConstraintClauseAsync(fixAll: true).ConfigureAwait(false);
+        await AssertExpressionBodyAfterConstraintClauseAsync(fixAll: true).ConfigureAwait(continueOnCapturedContext: false);
 
     private static async Task AssertExpressionBodyAfterConstraintClauseAsync(bool fixAll)
     {
@@ -706,6 +727,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             #endif
             """;
+
         const string expected = """
             namespace System.Com
             {
@@ -729,6 +751,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             #endif
             """;
+
         const string generatedSource = """
             // <auto-generated/>
             unsafe partial class Sample
@@ -737,6 +760,7 @@ public class StatementBreakFormattingCodeFixTests
                     where TComInterface : unmanaged;
             }
             """;
+
         (string Name, string FilePath, string Source)[] sources =
         [
             ("Sample.cs", "Sample.cs", source),
@@ -754,15 +778,17 @@ public class StatementBreakFormattingCodeFixTests
             parseOptions: new CSharpParseOptions(
                 LanguageVersion.Preview,
                 preprocessorSymbols: ["NET"]),
-            linkedProjectParseOptions: new CSharpParseOptions(LanguageVersion.Preview)).ConfigureAwait(false);
+            linkedProjectParseOptions: new CSharpParseOptions(LanguageVersion.Preview)).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(1);
         result.CompilerErrors.Should().BeEmpty();
         result.AnalyzerDiagnostics.Should().BeEmpty();
         result.Documents.Where(document => document.Name == "Sample.cs")
             .Should().HaveCount(2).And.OnlyContain(document => document.Source == expected);
+
         result.Documents.Where(document => document.Name == "Sample.g.cs")
             .Should().HaveCount(2).And.OnlyContain(document => document.Source == generatedSource);
+
         if (fixAll)
         {
             result.FixAllActionOffered.Should().BeTrue();
@@ -783,6 +809,7 @@ public class StatementBreakFormattingCodeFixTests
                       1;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -791,7 +818,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -807,6 +834,7 @@ public class StatementBreakFormattingCodeFixTests
                     value;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -816,7 +844,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -837,6 +865,7 @@ public class StatementBreakFormattingCodeFixTests
                 int ReadCore(int first, int second) => first + second;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -851,7 +880,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -871,6 +900,7 @@ public class StatementBreakFormattingCodeFixTests
                 int ReadCore(int first, int second) => first + second;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -886,7 +916,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -905,6 +935,7 @@ public class StatementBreakFormattingCodeFixTests
                 int ReadCore(int first, int second) => first + second;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -919,7 +950,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -941,6 +972,7 @@ public class StatementBreakFormattingCodeFixTests
                 int ReadCore(int first, int second) => first + second;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -958,7 +990,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -978,7 +1010,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -999,7 +1031,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(source);
     }
@@ -1020,6 +1052,7 @@ public class StatementBreakFormattingCodeFixTests
                     };
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1034,7 +1067,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1050,6 +1083,7 @@ public class StatementBreakFormattingCodeFixTests
                 ];
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1061,7 +1095,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -1078,6 +1112,7 @@ public class StatementBreakFormattingCodeFixTests
                 ];
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1088,7 +1123,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -1118,6 +1153,7 @@ public class StatementBreakFormattingCodeFixTests
                     };
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1141,7 +1177,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 3).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 3).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1166,6 +1202,7 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1186,7 +1223,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 4).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 4).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1204,6 +1241,7 @@ public class StatementBreakFormattingCodeFixTests
                 };
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1217,7 +1255,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -1232,6 +1270,7 @@ public class StatementBreakFormattingCodeFixTests
                       1;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1240,7 +1279,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -1258,6 +1297,7 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1269,7 +1309,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -1288,6 +1328,7 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1299,7 +1340,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -1318,6 +1359,7 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1330,7 +1372,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -1343,14 +1385,15 @@ public class StatementBreakFormattingCodeFixTests
     {
         string source =
             "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left +"
-            + lineBreak
-            + "            right;\n    }\n}\n";
+                + lineBreak
+                + "            right;\n    }\n}\n";
+
         string expected =
             "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left"
-            + lineBreak
-            + "            + right;\n    }\n}\n";
+                + lineBreak
+                + "            + right;\n    }\n}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -1364,24 +1407,25 @@ public class StatementBreakFormattingCodeFixTests
         string continuationIndentation = new(' ', baseIndentationLength + 12);
         string source =
             $"{baseIndentation}class Sample\n"
-            + $"{baseIndentation}{{\n"
-            + $"{baseIndentation}    int Method(int left, int right)\n"
-            + $"{baseIndentation}    {{\n"
-            + $"{statementIndentation}return left +\n"
-            + $"{continuationIndentation}right;\n"
-            + $"{baseIndentation}    }}\n"
-            + $"{baseIndentation}}}\n";
+                + $"{baseIndentation}{{\n"
+                + $"{baseIndentation}    int Method(int left, int right)\n"
+                + $"{baseIndentation}    {{\n"
+                + $"{statementIndentation}return left +\n"
+                + $"{continuationIndentation}right;\n"
+                + $"{baseIndentation}    }}\n"
+                + $"{baseIndentation}}}\n";
+
         string expected =
             $"{baseIndentation}class Sample\n"
-            + $"{baseIndentation}{{\n"
-            + $"{baseIndentation}    int Method(int left, int right)\n"
-            + $"{baseIndentation}    {{\n"
-            + $"{statementIndentation}return left\n"
-            + $"{continuationIndentation}+ right;\n"
-            + $"{baseIndentation}    }}\n"
-            + $"{baseIndentation}}}\n";
+                + $"{baseIndentation}{{\n"
+                + $"{baseIndentation}    int Method(int left, int right)\n"
+                + $"{baseIndentation}    {{\n"
+                + $"{statementIndentation}return left\n"
+                + $"{continuationIndentation}+ right;\n"
+                + $"{baseIndentation}    }}\n"
+                + $"{baseIndentation}}}\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -1398,6 +1442,7 @@ public class StatementBreakFormattingCodeFixTests
                     "right";
             }
             """";
+
         const string expected = """"
             class Sample
             {
@@ -1408,7 +1453,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -1419,7 +1464,7 @@ public class StatementBreakFormattingCodeFixTests
         const string source = "class Sample\r\n{\r\n    int Value\r\n        => 1;\r\n}\r\n";
         const string expected = "class Sample\r\n{\r\n    int Value =>\r\n        1;\r\n}\r\n";
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -1441,6 +1486,7 @@ public class StatementBreakFormattingCodeFixTests
                 bool Check(bool value) => value;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1455,6 +1501,7 @@ public class StatementBreakFormattingCodeFixTests
                 bool Check(bool value) => value;
             }
             """;
+
         (string Name, string FilePath, string Source)[] sources =
             [("Sample.cs", "Sample.cs", source)];
 
@@ -1464,7 +1511,7 @@ public class StatementBreakFormattingCodeFixTests
             sources,
             StatementBreakFormattingAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
@@ -1494,6 +1541,7 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """;
+
         const string expected = """
             using System;
 
@@ -1513,7 +1561,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1547,6 +1595,7 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """;
+
         const string expected = """
             using System;
 
@@ -1576,7 +1625,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 8).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 8).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1594,6 +1643,7 @@ public class StatementBreakFormattingCodeFixTests
                 bool Check(bool value) => value;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1606,6 +1656,7 @@ public class StatementBreakFormattingCodeFixTests
                 bool Check(bool value) => value;
             }
             """;
+
         (string Name, string FilePath, string Source)[] sources =
             [("Sample.cs", "Sample.cs", source)];
 
@@ -1615,7 +1666,7 @@ public class StatementBreakFormattingCodeFixTests
             sources,
             StatementBreakFormattingAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
@@ -1657,6 +1708,7 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """;
+
         const string expected = """
             using System.Linq;
 
@@ -1688,7 +1740,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 4).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 4).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1708,6 +1760,7 @@ public class StatementBreakFormattingCodeFixTests
                             .ToArray();
             }
             """;
+
         const string expected = """
             using System.Linq;
 
@@ -1723,7 +1776,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 4).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 4).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1740,6 +1793,7 @@ public class StatementBreakFormattingCodeFixTests
                     : 2;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1752,7 +1806,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 4).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 4).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1776,6 +1830,7 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1795,7 +1850,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 3).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 3).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1815,6 +1870,7 @@ public class StatementBreakFormattingCodeFixTests
                 bool IsProvider(string value) => true;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1830,7 +1886,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 4).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 4).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1849,6 +1905,7 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1863,7 +1920,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1879,6 +1936,7 @@ public class StatementBreakFormattingCodeFixTests
                 int GetValue() => 0;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1890,7 +1948,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1904,6 +1962,7 @@ public class StatementBreakFormattingCodeFixTests
                     && second;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1913,7 +1972,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1927,6 +1986,7 @@ public class StatementBreakFormattingCodeFixTests
                         && third && fourth;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1938,7 +1998,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1952,6 +2012,7 @@ public class StatementBreakFormattingCodeFixTests
                         - third;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1962,7 +2023,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -1978,6 +2039,7 @@ public class StatementBreakFormattingCodeFixTests
                     == right;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -1989,7 +2051,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 3).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 3).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2003,6 +2065,7 @@ public class StatementBreakFormattingCodeFixTests
                         is string;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2012,7 +2075,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -2032,6 +2095,7 @@ public class StatementBreakFormattingCodeFixTests
                 object CreateValue() => null;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2045,7 +2109,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2063,6 +2127,7 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2076,7 +2141,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2093,6 +2158,7 @@ public class StatementBreakFormattingCodeFixTests
                 };
             }
             """;
+
         const string expected = """
             using System;
 
@@ -2105,7 +2171,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
     }
@@ -2131,6 +2197,7 @@ public class StatementBreakFormattingCodeFixTests
                 static bool Second() => false;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2150,7 +2217,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 3).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 3).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2168,6 +2235,7 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2181,7 +2249,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 3).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 3).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2200,6 +2268,7 @@ public class StatementBreakFormattingCodeFixTests
                 }
             }
             """";
+
         const string expected = """"
             class Sample
             {
@@ -2214,7 +2283,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """";
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2237,6 +2306,7 @@ public class StatementBreakFormattingCodeFixTests
                     => 1;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2254,6 +2324,7 @@ public class StatementBreakFormattingCodeFixTests
                     1;
             }
             """;
+
         (string Name, string FilePath, string Source)[] sources =
             [("Sample.cs", "Sample.cs", source)];
 
@@ -2263,7 +2334,7 @@ public class StatementBreakFormattingCodeFixTests
             sources,
             StatementBreakFormattingAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.InitialAnalyzerDiagnosticCount.Should().Be(4);
@@ -2284,6 +2355,7 @@ public class StatementBreakFormattingCodeFixTests
                                 || third);
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2293,6 +2365,7 @@ public class StatementBreakFormattingCodeFixTests
                             || third);
             }
             """;
+
         (string Name, string FilePath, string Source)[] sources =
             [("Sample.cs", "Sample.cs", source)];
 
@@ -2302,7 +2375,7 @@ public class StatementBreakFormattingCodeFixTests
             sources,
             StatementBreakFormattingAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.InitialAnalyzerDiagnosticCount.Should().Be(1);
@@ -2326,6 +2399,7 @@ public class StatementBreakFormattingCodeFixTests
                 bool Check(bool value) => value;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2338,6 +2412,7 @@ public class StatementBreakFormattingCodeFixTests
                 bool Check(bool value) => value;
             }
             """;
+
         (string Name, string FilePath, string Source)[] sources =
             [("Sample.cs", "Sample.cs", source)];
 
@@ -2347,7 +2422,7 @@ public class StatementBreakFormattingCodeFixTests
             sources,
             StatementBreakFormattingAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
@@ -2376,6 +2451,7 @@ public class StatementBreakFormattingCodeFixTests
                             second);
             }
             """;
+
         const string expected = """
             class Builder
             {
@@ -2394,7 +2470,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2411,6 +2487,7 @@ public class StatementBreakFormattingCodeFixTests
                         "");
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2423,7 +2500,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2438,6 +2515,7 @@ public class StatementBreakFormattingCodeFixTests
                             second];
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2448,7 +2526,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2465,6 +2543,7 @@ public class StatementBreakFormattingCodeFixTests
                         "");
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2477,7 +2556,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2493,6 +2572,7 @@ public class StatementBreakFormattingCodeFixTests
                             second];
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2503,7 +2583,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2521,6 +2601,7 @@ public class StatementBreakFormattingCodeFixTests
                 bool Check(bool value) => value;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2533,7 +2614,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2557,6 +2638,7 @@ public class StatementBreakFormattingCodeFixTests
                 bool Check(bool value) => value;
             }
             """;
+
         const string expected = """
             using System;
 
@@ -2575,7 +2657,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2596,6 +2678,7 @@ public class StatementBreakFormattingCodeFixTests
                 bool Check(bool value) => value;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2611,7 +2694,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2630,6 +2713,7 @@ public class StatementBreakFormattingCodeFixTests
                         };
             }
             """;
+
         const string expected = """
             using System;
 
@@ -2643,7 +2727,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2659,6 +2743,7 @@ public class StatementBreakFormattingCodeFixTests
                     ];
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2669,7 +2754,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2685,6 +2770,7 @@ public class StatementBreakFormattingCodeFixTests
                     };
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2695,7 +2781,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2714,6 +2800,7 @@ public class StatementBreakFormattingCodeFixTests
                 };
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -2726,6 +2813,7 @@ public class StatementBreakFormattingCodeFixTests
                 };
             }
             """;
+
         (string Name, string FilePath, string Source)[] sources =
             [("Sample.cs", "Sample.cs", source)];
 
@@ -2735,7 +2823,7 @@ public class StatementBreakFormattingCodeFixTests
             sources,
             StatementBreakFormattingAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.InitialAnalyzerDiagnosticCount.Should().Be(1);
@@ -2764,6 +2852,7 @@ public class StatementBreakFormattingCodeFixTests
                 bool Check(bool value) => value;
             }
             """;
+
         const string expected = """
             class Builder
             {
@@ -2782,7 +2871,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2803,6 +2892,7 @@ public class StatementBreakFormattingCodeFixTests
                             || second);
             }
             """;
+
         const string expected = """
             class Builder
             {
@@ -2819,7 +2909,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2841,6 +2931,7 @@ public class StatementBreakFormattingCodeFixTests
                             || third);
             }
             """;
+
         const string expected = """
             class Builder
             {
@@ -2858,7 +2949,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2879,6 +2970,7 @@ public class StatementBreakFormattingCodeFixTests
                             and < 10);
             }
             """;
+
         const string expected = """
             class Builder
             {
@@ -2895,7 +2987,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2916,6 +3008,7 @@ public class StatementBreakFormattingCodeFixTests
                             + second);
             }
             """;
+
         const string expected = """
             class Builder
             {
@@ -2932,7 +3025,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -2959,6 +3052,7 @@ public class StatementBreakFormattingCodeFixTests
             {
             }
             """;
+
         const string expected = """
             using System;
 
@@ -2981,7 +3075,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -3001,6 +3095,7 @@ public class StatementBreakFormattingCodeFixTests
                 bool Check(bool value) => value;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -3016,7 +3111,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -3037,6 +3132,7 @@ public class StatementBreakFormattingCodeFixTests
             {
             }
             """;
+
         const string expected = """
             using System;
 
@@ -3053,7 +3149,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -3071,6 +3167,7 @@ public class StatementBreakFormattingCodeFixTests
                 };
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -3084,7 +3181,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -3100,6 +3197,7 @@ public class StatementBreakFormattingCodeFixTests
                 Alias.StringBuilder? Builder { get; }
             }
             """;
+
         const string expected = """
             using Alias =
                 System.
@@ -3111,7 +3209,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -3133,6 +3231,7 @@ public class StatementBreakFormattingCodeFixTests
                 int Read(int value) => value;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -3150,7 +3249,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 1).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -3169,6 +3268,7 @@ public class StatementBreakFormattingCodeFixTests
                                 && value < 10);
             }
             """;
+
         const string expected = """
             using System.Collections.Generic;
             using System.Linq;
@@ -3183,7 +3283,7 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(false);
+        await AssertFixAllAsync(source, expected, expectedInitialDiagnostics: 2).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -3196,6 +3296,7 @@ public class StatementBreakFormattingCodeFixTests
                             < 10;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -3203,6 +3304,7 @@ public class StatementBreakFormattingCodeFixTests
                     and < 10;
             }
             """;
+
         (string Name, string FilePath, string Source)[] sources =
             [("Sample.cs", "Sample.cs", source)];
 
@@ -3212,7 +3314,7 @@ public class StatementBreakFormattingCodeFixTests
             sources,
             StatementBreakFormattingAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
@@ -3222,8 +3324,8 @@ public class StatementBreakFormattingCodeFixTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
+    [DataRow(data: false)]
+    [DataRow(data: true)]
     public async Task Format_IsBeforeRelationalPattern_AlreadyUsesTrailingPlacement(bool fixAll)
     {
         const string source = """
@@ -3234,6 +3336,7 @@ public class StatementBreakFormattingCodeFixTests
                         0;
             }
             """;
+
         (string Name, string FilePath, string Source)[] sources =
             [("Sample.cs", "Sample.cs", source)];
 
@@ -3243,7 +3346,7 @@ public class StatementBreakFormattingCodeFixTests
             sources,
             StatementBreakFormattingAnalyzer.DiagnosticId,
             fixAll,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(0);
         result.CompilerErrors.Should().BeEmpty();
@@ -3273,6 +3376,7 @@ public class StatementBreakFormattingCodeFixTests
                     right;
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -3284,6 +3388,7 @@ public class StatementBreakFormattingCodeFixTests
                     + right;
             }
             """;
+
         (string Name, string FilePath, string Source)[] sources =
             [("Sample.cs", "Sample.cs", source)];
 
@@ -3293,7 +3398,7 @@ public class StatementBreakFormattingCodeFixTests
             sources,
             StatementBreakFormattingAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.InitialAnalyzerDiagnosticCount.Should().Be(1);
@@ -3315,6 +3420,7 @@ public class StatementBreakFormattingCodeFixTests
                 };
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -3326,8 +3432,8 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
         fixedAgain.Should().Be(expected);
@@ -3346,6 +3452,7 @@ public class StatementBreakFormattingCodeFixTests
                 };
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -3357,8 +3464,8 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
         fixedAgain.Should().Be(expected);
@@ -3378,6 +3485,7 @@ public class StatementBreakFormattingCodeFixTests
                 };
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -3390,8 +3498,8 @@ public class StatementBreakFormattingCodeFixTests
             }
             """;
 
-        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(false);
-        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(false);
+        string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+        string fixedAgain = await ApplyFixAsync(fixedSource).ConfigureAwait(continueOnCapturedContext: false);
 
         fixedSource.Should().Be(expected);
         fixedAgain.Should().Be(expected);
@@ -3411,6 +3519,7 @@ public class StatementBreakFormattingCodeFixTests
                 };
             }
             """;
+
         const string expected = """
             class Sample
             {
@@ -3422,6 +3531,7 @@ public class StatementBreakFormattingCodeFixTests
                 };
             }
             """;
+
         (string Name, string FilePath, string Source)[] sources =
             [("Sample.cs", "Sample.cs", source)];
 
@@ -3431,7 +3541,7 @@ public class StatementBreakFormattingCodeFixTests
             sources,
             StatementBreakFormattingAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
@@ -3450,17 +3560,22 @@ public class StatementBreakFormattingCodeFixTests
         const string oneFixed = "class One\n{\n    int Value =>\n        1;\n}\n";
         const string twoSource =
             "class Two\n{\n    int Add(int left, int right)\n    {\n        return left +\n            right;\n    }\n}\n";
+
         const string twoFixed =
             "class Two\n{\n    int Add(int left, int right)\n    {\n        return left\n            + right;\n    }\n}\n";
+
         const string threeSource =
             "class Three\n{\n    int Select(bool condition) => condition ?\n        1 :\n        2;\n}\n";
+
         const string threeFixed =
             "class Three\n{\n    int Select(bool condition) => condition\n        ? 1\n        : 2;\n}\n";
+
         (string Name, string FilePath, string Source)[] sources =
         [
             ("One.cs", "A-One.cs", oneSource),
             ("Two.cs", "B-Two.cs", twoSource)
         ];
+
         (string Name, string FilePath, string Source)[] additionalProjectSources =
             [("Three.cs", "C-Three.cs", threeSource)];
 
@@ -3472,7 +3587,7 @@ public class StatementBreakFormattingCodeFixTests
             fixAll: true,
             diagnosticOptions: s_enabled,
             fixAllScope: scope,
-            additionalProjectSources: additionalProjectSources).ConfigureAwait(false);
+            additionalProjectSources: additionalProjectSources).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
@@ -3481,13 +3596,14 @@ public class StatementBreakFormattingCodeFixTests
         result.Documents.Single(document => document.Name == "One.cs").Source.Should().Be(oneFixed);
         result.Documents.Single(document => document.Name == "Two.cs").Source.Should().Be(
             scope is FixAllScope.Project or FixAllScope.Solution ? twoFixed : twoSource);
+
         result.Documents.Single(document => document.Name == "Three.cs").Source.Should().Be(
             scope == FixAllScope.Solution ? threeFixed : threeSource);
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
+    [DataRow(data: false)]
+    [DataRow(data: true)]
     public async Task Format_LinkedDocumentsWithCompatibleIndentation_UpdatesBothDocuments(bool fixAll)
     {
         const string source = "class Sample\n{\n    int Value\n        => 1;\n}\n";
@@ -3502,7 +3618,7 @@ public class StatementBreakFormattingCodeFixTests
             StatementBreakFormattingAnalyzer.DiagnosticId,
             fixAll,
             diagnosticOptions: s_enabled,
-            addLinkedProject: true).ConfigureAwait(false);
+            addLinkedProject: true).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CompilerErrors.Should().BeEmpty();
@@ -3516,11 +3632,11 @@ public class StatementBreakFormattingCodeFixTests
 
     [TestMethod]
     public async Task Format_LinkedDocumentsWithEquivalentPreprocessorContexts_UpdatesBothDocuments() =>
-        await AssertEquivalentPreprocessorContextsAsync(fixAll: false).ConfigureAwait(false);
+        await AssertEquivalentPreprocessorContextsAsync(fixAll: false).ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
     public async Task FormatAll_LinkedDocumentsWithEquivalentPreprocessorContexts_UpdatesBothDocuments() =>
-        await AssertEquivalentPreprocessorContextsAsync(fixAll: true).ConfigureAwait(false);
+        await AssertEquivalentPreprocessorContextsAsync(fixAll: true).ConfigureAwait(continueOnCapturedContext: false);
 
     private static async Task AssertEquivalentPreprocessorContextsAsync(bool fixAll)
     {
@@ -3541,7 +3657,7 @@ public class StatementBreakFormattingCodeFixTests
                 preprocessorSymbols: ["NET"]),
             linkedProjectParseOptions: new CSharpParseOptions(
                 LanguageVersion.Preview,
-                preprocessorSymbols: ["NET", "WINDOWS"])).ConfigureAwait(false);
+                preprocessorSymbols: ["NET", "WINDOWS"])).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CompilerErrors.Should().BeEmpty();
@@ -3555,14 +3671,16 @@ public class StatementBreakFormattingCodeFixTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
+    [DataRow(data: false)]
+    [DataRow(data: true)]
     public async Task Format_LinkedDocumentsWithConflictingIndentation_OffersNoFix(bool fixAll)
     {
         const string source =
             "class Sample\n{\n    int Method(int left, int right)\n    {\n        return left\n           + right;\n    }\n}\n";
+
         (string Name, string FilePath, string Source)[] sources =
             [("Shared.cs", "Shared.cs", source)];
+
         Dictionary<string, string> options = new() { ["indent_size"] = "2" };
         Dictionary<string, string> linkedOptions = new() { ["indent_size"] = "4" };
 
@@ -3575,7 +3693,7 @@ public class StatementBreakFormattingCodeFixTests
             options,
             s_enabled,
             addLinkedProject: true,
-            linkedProjectOptions: linkedOptions).ConfigureAwait(false);
+            linkedProjectOptions: linkedOptions).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CompilerErrors.Should().BeEmpty();
@@ -3612,6 +3730,7 @@ public class StatementBreakFormattingCodeFixTests
             #endif
             }
             """;
+
         (string Name, string FilePath, string Source)[] sources =
             [("Shared.cs", "Shared.cs", source)];
 
@@ -3626,7 +3745,7 @@ public class StatementBreakFormattingCodeFixTests
             parseOptions: new CSharpParseOptions(LanguageVersion.Preview),
             linkedProjectParseOptions: new CSharpParseOptions(
                 LanguageVersion.Preview,
-                preprocessorSymbols: ["WRAPPED"])).ConfigureAwait(false);
+                preprocessorSymbols: ["WRAPPED"])).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CompilerErrors.Should().BeEmpty();
@@ -3649,6 +3768,7 @@ public class StatementBreakFormattingCodeFixTests
             #endif
             }
             """;
+
         (string Name, string FilePath, string Source)[] sources = [("Shared.cs", "Shared.cs", source)];
 
         CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
@@ -3662,7 +3782,7 @@ public class StatementBreakFormattingCodeFixTests
             parseOptions: new CSharpParseOptions(
                 LanguageVersion.Preview,
                 preprocessorSymbols: ["FIRST"]),
-            linkedProjectParseOptions: new CSharpParseOptions(LanguageVersion.Preview)).ConfigureAwait(false);
+            linkedProjectParseOptions: new CSharpParseOptions(LanguageVersion.Preview)).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CompilerErrors.Should().BeEmpty();
@@ -3671,8 +3791,8 @@ public class StatementBreakFormattingCodeFixTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
+    [DataRow(data: false)]
+    [DataRow(data: true)]
     public async Task Format_LinkedDocumentsWithDifferentLanguageVersions_OffersNoFix(bool fixAll)
     {
         const string source = "class Sample\n{\n    int Value\n        => 1;\n}\n";
@@ -3688,7 +3808,7 @@ public class StatementBreakFormattingCodeFixTests
             diagnosticOptions: s_enabled,
             addLinkedProject: true,
             parseOptions: new CSharpParseOptions(LanguageVersion.CSharp11),
-            linkedProjectParseOptions: new CSharpParseOptions(LanguageVersion.CSharp12)).ConfigureAwait(false);
+            linkedProjectParseOptions: new CSharpParseOptions(LanguageVersion.CSharp12)).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CompilerErrors.Should().BeEmpty();
@@ -3709,6 +3829,7 @@ public class StatementBreakFormattingCodeFixTests
     {
         (string Name, string FilePath, string Source)[] sources =
             [("Sample.cs", "Sample.cs", "class Sample\n{\n    int Value\n        => 1;\n}\n")];
+
         using CancellationTokenSource cancellation = new();
         cancellation.Cancel();
         Func<Task> action = async () => await CodeFixTestHarness.ApplyFixToSolutionAsync(
@@ -3718,9 +3839,9 @@ public class StatementBreakFormattingCodeFixTests
             StatementBreakFormattingAnalyzer.DiagnosticId,
             fixAll: true,
             diagnosticOptions: s_enabled,
-            fixAllCancellationToken: cancellation.Token).ConfigureAwait(false);
+            fixAllCancellationToken: cancellation.Token).ConfigureAwait(continueOnCapturedContext: false);
 
-        await action.Should().ThrowAsync<OperationCanceledException>().ConfigureAwait(false);
+        await action.Should().ThrowAsync<OperationCanceledException>().ConfigureAwait(continueOnCapturedContext: false);
     }
 
     private static async Task AssertFixAllAsync(
@@ -3730,13 +3851,14 @@ public class StatementBreakFormattingCodeFixTests
     {
         (string Name, string FilePath, string Source)[] sources =
             [("Sample.cs", "Sample.cs", source)];
+
         CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
             new StatementBreakFormattingAnalyzer(),
             new FormatStatementBreaksCodeFixProvider(),
             sources,
             StatementBreakFormattingAnalyzer.DiagnosticId,
             fixAll: true,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.InitialAnalyzerDiagnosticCount.Should().Be(expectedInitialDiagnostics);
@@ -3750,7 +3872,8 @@ public class StatementBreakFormattingCodeFixTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new StatementBreakFormattingAnalyzer(),
             source,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
+
         return diagnostics.Should().ContainSingle().Subject;
     }
 
@@ -3758,18 +3881,18 @@ public class StatementBreakFormattingCodeFixTests
         Diagnostic diagnostic,
         ImmutableArray<Location> additionalLocations,
         ImmutableDictionary<string, string?> properties) =>
-        Diagnostic.Create(
-            diagnostic.Descriptor,
-            diagnostic.Location,
-            additionalLocations,
-            properties,
-            "+");
+            Diagnostic.Create(
+                diagnostic.Descriptor,
+                diagnostic.Location,
+                additionalLocations,
+                properties,
+                "+");
 
     private static bool TryCreateTextChange(
         Diagnostic diagnostic,
         SourceText source,
         out TextChange change) =>
-        TryCreateTextChange(diagnostic, source, CancellationToken.None, out change);
+            TryCreateTextChange(diagnostic, source, CancellationToken.None, out change);
 
     private static bool TryCreateTextChange(
         Diagnostic diagnostic,
@@ -3813,9 +3936,11 @@ public class StatementBreakFormattingCodeFixTests
                 static diagnostic => diagnostic.Location.GetRequiredSourceTree().FilePath,
                 StringComparer.Ordinal)
         ];
+
         ordered.Should().HaveCount(2);
         ImmutableArray<Diagnostic>.Builder repeated = ImmutableArray.CreateBuilder<Diagnostic>(
             firstDocumentRepeats + secondDocumentRepeats);
+
         for (int index = 0; index < firstDocumentRepeats; index++)
         {
             repeated.Add(ordered[0]);
@@ -3842,13 +3967,16 @@ public class StatementBreakFormattingCodeFixTests
                 .GroupBy(diagnostic => diagnostic.Location.SourceTree)
                 .Select(group => group.OrderBy(diagnostic => diagnostic.Location.SourceSpan.Start).ToArray())
         ];
+
         sharedDiagnostics.Should().HaveCount(2);
         sharedDiagnostics.Should().OnlyContain(group => group.Length == 2);
         Diagnostic later = diagnostics.Single(diagnostic => diagnostic.Location.GetRequiredSourceTree().FilePath.EndsWith(
             "Later.cs",
             StringComparison.Ordinal));
+
         ImmutableArray<Diagnostic>.Builder selected = ImmutableArray.CreateBuilder<Diagnostic>(
             2 + laterDocumentRepeats);
+
         selected.Add(sharedDiagnostics[0][0]);
         selected.Add(sharedDiagnostics[1][1]);
         for (int index = 0; index < laterDocumentRepeats; index++)

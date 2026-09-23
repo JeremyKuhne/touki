@@ -22,6 +22,7 @@ public partial class SatelliteStringResourceManagerTests
         BinaryPrimitives.WriteInt32LittleEndian(
             image.AsSpan(bounds.SizeOffset, sizeof(int)),
             bounds.MaximumSize);
+
         WriteSatelliteAssembly(folder.TempPath, image);
 
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromSatelliteDirectory(
@@ -41,6 +42,7 @@ public partial class SatelliteStringResourceManagerTests
         BinaryPrimitives.WriteInt32LittleEndian(
             image.AsSpan(bounds.SizeOffset, sizeof(int)),
             checked(bounds.MaximumSize + 1));
+
         WriteSatelliteAssembly(folder.TempPath, image);
 
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromSatelliteDirectory(
@@ -93,13 +95,13 @@ public partial class SatelliteStringResourceManagerTests
     }
 
     private static byte[] ReadSatelliteAssembly() => System.IO.File.ReadAllBytes(
-        Path.Combine(AppContext.BaseDirectory, "de", SatelliteAssemblyFileName()));
+        Path.Join(AppContext.BaseDirectory, "de", SatelliteAssemblyFileName()));
 
     private static void WriteSatelliteAssembly(string probeRoot, byte[] image)
     {
-        string directory = Path.Combine(probeRoot, "de");
+        string directory = Path.Join(probeRoot, "de");
         Directory.CreateDirectory(directory);
-        System.IO.File.WriteAllBytes(Path.Combine(directory, SatelliteAssemblyFileName()), image);
+        System.IO.File.WriteAllBytes(Path.Join(directory, SatelliteAssemblyFileName()), image);
     }
 
     private static (int SizeOffset, int MaximumSize) GetResourceDirectorySizeBounds(byte[] image)
@@ -109,11 +111,13 @@ public partial class SatelliteStringResourceManagerTests
         PEHeaders headers = peReader.PEHeaders;
         CorHeader corHeader = headers.CorHeader
             ?? throw new InvalidOperationException("The test satellite does not have a CLR header.");
+
         PEHeader peHeader = headers.PEHeader
             ?? throw new InvalidOperationException("The test satellite does not have a PE header.");
 
         headers.TryGetDirectoryOffset(peHeader.CorHeaderTableDirectory, out int corHeaderOffset)
             .Should().BeTrue();
+
         headers.TryGetDirectoryOffset(corHeader.ResourcesDirectory, out int resourceDirectoryOffset)
             .Should().BeTrue();
 
@@ -121,6 +125,7 @@ public partial class SatelliteStringResourceManagerTests
         {
             long sectionRelativeOffset = (long)corHeader.ResourcesDirectory.RelativeVirtualAddress
                 - section.VirtualAddress;
+
             if (sectionRelativeOffset < 0
                 || (long)section.PointerToRawData + sectionRelativeOffset != resourceDirectoryOffset)
             {
@@ -151,8 +156,10 @@ public partial class SatelliteStringResourceManagerTests
 
             CorHeader corHeader = peReader.PEHeaders.CorHeader
                 ?? throw new InvalidOperationException("The test satellite does not have a CLR header.");
+
             peReader.PEHeaders.TryGetDirectoryOffset(corHeader.ResourcesDirectory, out int directoryOffset)
                 .Should().BeTrue();
+
             return checked(directoryOffset + (int)resource.Offset);
         }
 

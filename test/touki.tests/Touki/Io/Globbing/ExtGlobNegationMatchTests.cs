@@ -144,7 +144,7 @@ public class ExtGlobNegationMatchTests
             GlobDialect.Bash,
             GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob);
 
-        Action act = () => _ = strategy.MatchCore(default, "x".AsSpan());
+        Action act = () => _ = strategy.MatchCore(directoryPrefix: default, "x".AsSpan());
         act.Should().Throw<InvalidOperationException>()
             .WithMessage("*recursion exceeded*");
     }
@@ -166,8 +166,8 @@ public class ExtGlobNegationMatchTests
             int blockLength = 5 + program.Length + 1;
             program =
                 $"{GlobOpCodes.AltStart}!{(char)blockLength}{(char)1}{(char)5}"
-                + program
-                + GlobOpCodes.AltEnd;
+                    + program
+                    + GlobOpCodes.AltEnd;
         }
 
         return program;

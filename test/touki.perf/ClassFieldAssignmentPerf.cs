@@ -28,7 +28,8 @@ public class ClassFieldAssignmentPerf
         _members = FormatterServices.GetSerializableMembers(typeof(BinaryFormattedObjectWidePayload));
         _values = FormatterServices.GetObjectData(payload, _members);
 
-        if (FieldInfo_SetValue() is not BinaryFormattedObjectWidePayload direct || !direct.IsValid()
+        if (FieldInfo_SetValue() is not BinaryFormattedObjectWidePayload direct
+            || !direct.IsValid()
             || FormatterServices_PopulateObjectMembers() is not BinaryFormattedObjectWidePayload batch
             || !batch.IsValid()
             || FormatterServices_WithPerObjectValuesArray() is not BinaryFormattedObjectWidePayload realisticBatch

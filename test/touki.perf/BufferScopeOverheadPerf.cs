@@ -27,12 +27,17 @@ namespace touki.perf;
 ///   The benchmarks come in pairs so the wrapper overhead is the difference
 ///   within each pair:
 ///   <list type="bullet">
-///    <item><c>Direct_StackOnly</c> vs <c>Scope_StackOnly</c> - the stack-only
+///    <item>
+///     <c>Direct_StackOnly</c> vs <c>Scope_StackOnly</c> - the stack-only
 ///     fast path (no rental); isolates the cost of constructing and disposing
-///     the scope.</item>
-///    <item><c>Direct_Rent</c> vs <c>Scope_Rent</c> - the grow path where the
-///     requested size overflows the stack buffer and the scope rents.</item>
-///    <item><c>Scope_StackOnly_Zeroed</c> - identical to <c>Scope_StackOnly</c>
+///     the scope.
+///    </item>
+///    <item>
+///     <c>Direct_Rent</c> vs <c>Scope_Rent</c> - the grow path where the
+///     requested size overflows the stack buffer and the scope rents.
+///    </item>
+///    <item>
+///     <c>Scope_StackOnly_Zeroed</c> - identical to <c>Scope_StackOnly</c>
 ///     but without <c>[SkipLocalsInit]</c>, so the delta to it shows the
 ///     wrapper passes the localsinit decision straight through to the caller.
 ///    </item>

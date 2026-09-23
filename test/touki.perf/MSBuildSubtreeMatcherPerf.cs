@@ -4,8 +4,6 @@
 
 using Touki.Io;
 
-using Path = System.IO.Path;
-
 namespace touki.perf;
 
 /// <summary>
@@ -24,7 +22,7 @@ public class MSBuildSubtreeMatcherPerf
     [GlobalSetup]
     public void GlobalSetup()
     {
-        _root = Path.Combine(Path.GetTempPath(), "touki-msbuild-subtree-perf");
+        _root = Path.Join(Path.GetTempPath(), "touki-msbuild-subtree-perf");
         _matcher = EnumerationMatcherFactory.CreateMSBuild(
             "**/*",
             "**/bin/**",

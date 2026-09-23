@@ -660,6 +660,7 @@ public class MSBuildSpecificationTests
         yield return ("file.txt;*.cs;docs/**",
             true,
             new[] { "file.txt", "*.cs", Sep("docs/**") });
+
         yield return ("file.txt;;*.cs;", true, new[] { "file.txt", "*.cs" });
         yield return ("file.txt;file.txt;*.cs", true, new[] { "file.txt", "*.cs" });
         yield return ("file.txt;FILE.txt;*.cs", true, new[] { "file.txt", "*.cs" });
@@ -678,6 +679,7 @@ public class MSBuildSpecificationTests
                 Sep("**/*.vssscc"),
                 Sep("**/.DS_Store")
             });
+
         yield return (@"bin\/**;obj\/**;bin\Debug\/**;obj\Debug\/**;",
             true,
             new[]
@@ -721,6 +723,7 @@ public class MSBuildSpecificationTests
             results[1].IsError.Should().BeFalse();
             MSBuildSpecification firstSpecification = results[1].Specification
                 ?? throw new AssertFailedException("Expected the second segment to have a specification.");
+
             firstSpecification.Normalized.ToString().Should().Be("file.txt");
 
             results[2].IsError.Should().BeTrue();
@@ -729,6 +732,7 @@ public class MSBuildSpecificationTests
             results[3].IsError.Should().BeFalse();
             MSBuildSpecification secondSpecification = results[3].Specification
                 ?? throw new AssertFailedException("Expected the fourth segment to have a specification.");
+
             secondSpecification.Normalized.ToString().Should().Be("*.cs");
         }
         finally
@@ -1141,7 +1145,7 @@ public class MSBuildSpecificationTests
     [TestMethod]
     public void Equals_Object_Null_False()
     {
-        new MSBuildSpecification("file.txt").Equals((object?)null).Should().BeFalse();
+        new MSBuildSpecification("file.txt").Equals(obj: (object?)null).Should().BeFalse();
     }
 
     [TestMethod]
@@ -1153,7 +1157,7 @@ public class MSBuildSpecificationTests
     [TestMethod]
     public void Equals_String_NullString_False()
     {
-        new MSBuildSpecification("file.txt").Equals((string?)null).Should().BeFalse();
+        new MSBuildSpecification("file.txt").Equals(other: (string?)null).Should().BeFalse();
     }
 
     [TestMethod]
@@ -1165,7 +1169,7 @@ public class MSBuildSpecificationTests
     [TestMethod]
     public void Equals_MSBuildSpecification_Null_False()
     {
-        new MSBuildSpecification("file.txt").Equals((MSBuildSpecification?)null).Should().BeFalse();
+        new MSBuildSpecification("file.txt").Equals(other: (MSBuildSpecification?)null).Should().BeFalse();
     }
 
     [TestMethod]

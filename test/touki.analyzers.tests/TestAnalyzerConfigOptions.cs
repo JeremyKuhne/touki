@@ -15,7 +15,7 @@ internal sealed class TestAnalyzerConfigOptions(IReadOnlyDictionary<string, stri
 {
     public static TestAnalyzerConfigOptions Empty { get; } = new(new Dictionary<string, string>());
 
-    public override bool TryGetValue(string key, [MaybeNullWhen(false)] out string value) =>
+    public override bool TryGetValue(string key, [MaybeNullWhen(returnValue: false)] out string value) =>
         options.TryGetValue(key, out value);
 
     /// <summary>

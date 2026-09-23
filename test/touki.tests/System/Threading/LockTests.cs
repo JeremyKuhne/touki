@@ -101,10 +101,12 @@ public class LockTests
         {
             lockObj.IsHeldByCurrentThread.Should().BeTrue();
         }
+
         lock (lockObj)
         {
             lockObj.IsHeldByCurrentThread.Should().BeTrue();
         }
+
         lockObj.IsHeldByCurrentThread.Should().BeFalse();
     }
 
@@ -244,6 +246,7 @@ public class LockTests
                 Thread t =
                     ThreadTestHelpers.CreateGuardedThread(out waitForThreadArray[i],
                         () => backgroundTestDelegates[icopy]());
+
                 t.IsBackground = true;
                 t.Start();
             }
@@ -253,6 +256,7 @@ public class LockTests
                 readyBarrier.SignalAndWait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds, CancellationToken.None);
                 Thread.Sleep(ThreadTestHelpers.ExpectedTimeoutMilliseconds);
             }
+
             foreach (Action waitForThread in waitForThreadArray)
                 waitForThread();
         }
@@ -284,6 +288,7 @@ public class LockTests
                 Thread t =
                     ThreadTestHelpers.CreateGuardedThread(out waitForThreadArray[i],
                         () => backgroundTestDelegates[icopy]());
+
                 t.IsBackground = true;
                 t.Start();
             }
@@ -302,8 +307,8 @@ public class LockTests
     public void UseTrivialWaits_Constructor()
     {
         // Test that the constructor with useTrivialWaits parameter works correctly
-        Lock lockWithTrivialWaits = new(true);
-        Lock lockWithoutTrivialWaits = new(false);
+        Lock lockWithTrivialWaits = new(useTrivialWaits: true);
+        Lock lockWithoutTrivialWaits = new(useTrivialWaits: false);
 
         lockWithTrivialWaits.TryEnter().Should().BeTrue();
         lockWithTrivialWaits.Exit();
@@ -354,7 +359,7 @@ public class LockTests
     public void TryEnter_Timeout_Precision()
     {
         Lock lockObj = new();
-        ManualResetEventSlim backgroundTaskStarted = new(false);
+        ManualResetEventSlim backgroundTaskStarted = new(initialState: false);
 
         // First, acquire the lock on this thread
         using (lockObj.EnterScope())
@@ -404,7 +409,7 @@ public class LockTests
 
         var tasks = new Task[threadCount];
         var ready = new CountdownEvent(threadCount);
-        var start = new ManualResetEventSlim(false);
+        var start = new ManualResetEventSlim(initialState: false);
 
         for (int t = 0; t < threadCount; t++)
         {

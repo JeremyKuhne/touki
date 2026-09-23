@@ -47,8 +47,10 @@ public class MultipleAsteriskMSBuildOracleTests
 
         globOracle.Should().BeFalse(
             because: $"MSBuildGlob validates misplaced '**' in file specs such as '{pattern}'");
+
         fileMatcherOracle.Should().BeTrue(
             because: $"FileMatcher.IsMatch collapses repeated stars in pattern '{pattern}'");
+
         actual.Should().Be(fileMatcherOracle);
     }
 

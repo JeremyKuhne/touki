@@ -76,6 +76,7 @@ internal static class SpanReaderTarget
                         subject.TryAdvancePast(data.Length >= 1 ? data[..1] : data);
                         break;
                     }
+
                 case 12:
                     {
                         // Advance only by an in-range amount so any throw is a real defect.
@@ -83,12 +84,14 @@ internal static class SpanReaderTarget
                         subject.Advance(op % (remaining + 1));
                         break;
                     }
+
                 case 13:
                     {
                         // Rewind only by an in-range amount.
                         subject.Rewind(op % (subject.Position + 1));
                         break;
                     }
+
                 case 14:
                     {
                         // Set Position to an in-range value and confirm the getter round-trips it.
@@ -102,6 +105,7 @@ internal static class SpanReaderTarget
 
                         break;
                     }
+
                 case 15:
                     subject.Reset();
                     break;

@@ -184,6 +184,7 @@ public class ListBaseTests
             "Item1",
             "Item2"
         };
+
         string[] array = new string[3];
 
         list.CopyTo(array, 1);
@@ -289,7 +290,7 @@ public class ListBaseTests
     {
         IList list = new TestList<string>();
 
-        Action action = () => list.Add(null);
+        Action action = () => list.Add(value: null);
 
         action.Should().Throw<ArgumentNullException>();
     }
@@ -299,7 +300,7 @@ public class ListBaseTests
     {
         IList list = new TestList<string>();
 
-        Action action = () => list.Insert(0, null);
+        Action action = () => list.Insert(0, value: null);
 
         action.Should().Throw<ArgumentNullException>();
     }

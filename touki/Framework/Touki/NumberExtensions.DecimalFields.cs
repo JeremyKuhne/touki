@@ -4,7 +4,7 @@
 
 namespace Touki;
 
-public static unsafe partial class NumberExtensions
+public static partial class NumberExtensions
 {
 #pragma warning disable CS0649 // Field 'DecimalFields._flags' is never assigned to, and will always have its default value 0
     /// <summary>

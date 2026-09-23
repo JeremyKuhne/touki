@@ -14,6 +14,7 @@ public class SpanExtensionsSplitRangesTests
         {
             result[i] = source[ranges[i]].ToString();
         }
+
         return result;
     }
 
@@ -218,6 +219,7 @@ public class SpanExtensionsSplitRangesTests
             Span<Range> ranges = new Range[4];
             source.Split(ranges, ',', (StringSplitOptions)0x100);
         };
+
         act.Should().Throw<ArgumentException>();
     }
 
@@ -277,6 +279,7 @@ public class SpanExtensionsSplitRangesTests
             ranges,
             ReadOnlySpan<char>.Empty,
             (StringSplitOptions)2 | StringSplitOptions.RemoveEmptyEntries);
+
         count.Should().Be(3);
         source[ranges[0]].ToString().Should().Be("apple");
         source[ranges[1]].ToString().Should().Be("banana");

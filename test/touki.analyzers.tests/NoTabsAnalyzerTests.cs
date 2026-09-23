@@ -17,10 +17,10 @@ public class NoTabsAnalyzerTests
 
     private static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(
         string source,
-        Dictionary<string, string>? options = null)
-        => await AnalyzerTestHarness
-            .GetDiagnosticsAsync(new NoTabsAnalyzer(), source, options, fileName: null, s_enabled)
-            .ConfigureAwait(false);
+        Dictionary<string, string>? options = null) =>
+            await AnalyzerTestHarness
+                .GetDiagnosticsAsync(new NoTabsAnalyzer(), source, options, fileName: null, s_enabled)
+                .ConfigureAwait(continueOnCapturedContext: false);
 
     private static string ReportedText(Diagnostic diagnostic)
     {
@@ -36,10 +36,11 @@ public class NoTabsAnalyzerTests
     {
         string source = "class Sample\n{\n\tint Value;\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(NoTabsAnalyzer.DiagnosticId);
+
         ReportedText(diagnostics[0]).Should().Be("\t");
     }
 
@@ -50,7 +51,7 @@ public class NoTabsAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness
             .GetDiagnosticsAsync(new NoTabsAnalyzer(), source)
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -60,7 +61,7 @@ public class NoTabsAnalyzerTests
     {
         string source = "class Sample\n{\n\t\tint Value;\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         ReportedText(diagnostics[0]).Should().Be("\t\t");
@@ -72,7 +73,7 @@ public class NoTabsAnalyzerTests
     {
         string source = "class Sample\n{\n    // name\tvalue\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         ReportedText(diagnostics[0]).Should().Be("\t");
@@ -83,7 +84,7 @@ public class NoTabsAnalyzerTests
     {
         string source = "class Sample\n{\n    string Value = \"a\\tb\";\n    string Literal = \"a\tb\";\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -93,7 +94,7 @@ public class NoTabsAnalyzerTests
     {
         string source = "class Sample\n{\n    string Value = @\"a\tb\";\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -103,7 +104,7 @@ public class NoTabsAnalyzerTests
     {
         string source = "class Sample\n{\n    string Value = \"\"\"\n        a\tb\n        \"\"\";\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -113,7 +114,7 @@ public class NoTabsAnalyzerTests
     {
         string source = "class Sample\n{\n    string Value = \"\"\"a\tb\"\"\";\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -123,7 +124,7 @@ public class NoTabsAnalyzerTests
     {
         string source = "class Sample\n{\n    static System.ReadOnlySpan<byte> Value => \"a\tb\"u8;\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -133,7 +134,7 @@ public class NoTabsAnalyzerTests
     {
         string source = "class Sample\n{\n    static System.ReadOnlySpan<byte> Value => \"\"\"a\tb\"\"\"u8;\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -144,7 +145,7 @@ public class NoTabsAnalyzerTests
         string source =
             "class Sample\n{\n    static System.ReadOnlySpan<byte> Value => \"\"\"\n        a\tb\n        \"\"\"u8;\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -154,7 +155,7 @@ public class NoTabsAnalyzerTests
     {
         string source = "class Sample\n{\n    char Value = '\t';\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -165,7 +166,7 @@ public class NoTabsAnalyzerTests
         string source =
             "class Sample\n{\n    string Name = \"n\";\n    string Value => $\"\"\"a\tb{Name}\"\"\";\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -175,7 +176,7 @@ public class NoTabsAnalyzerTests
     {
         string source = "class Sample\n{\n#if UNDEFINED_SYMBOL\n\tint Value;\n#endif\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -185,7 +186,7 @@ public class NoTabsAnalyzerTests
     {
         string source = "class Sample\n{\n    int Value;\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -195,7 +196,7 @@ public class NoTabsAnalyzerTests
     {
         string source = "// <auto-generated/>\nclass Sample\n{\n\tint Value;\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -207,7 +208,7 @@ public class NoTabsAnalyzerTests
         // not a fixed 4.
         string source = "class Sample\n{\n    int x\t= 1;\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         Replacement(diagnostics[0]).Should().Be("   ");
@@ -219,7 +220,7 @@ public class NoTabsAnalyzerTests
         // The first tab expands 0 -> 4, so "public" ends at column 10 and the second tab advances 2 to 12.
         string source = "class Sample\n{\n\tpublic\tint Value;\n}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
         Replacement(diagnostics[0]).Should().Be("    ");
@@ -232,7 +233,7 @@ public class NoTabsAnalyzerTests
         string source = "class Sample\n{\n\tint Value;\n}\n";
         Dictionary<string, string> options = new() { [NoTabsAnalyzer.SpacesPerTabOption] = "2" };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         Replacement(diagnostics.Single()).Should().Be("  ");
     }
@@ -243,7 +244,7 @@ public class NoTabsAnalyzerTests
         string source = "class Sample\n{\n\tint Value;\n}\n";
         Dictionary<string, string> options = new() { ["tab_width"] = "8" };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         Replacement(diagnostics.Single()).Should().Be(new string(' ', 8));
     }
@@ -254,7 +255,7 @@ public class NoTabsAnalyzerTests
         string source = "class Sample\n{\n\tint Value;\n}\n";
         Dictionary<string, string> options = new() { ["indent_size"] = "3" };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         Replacement(diagnostics.Single()).Should().Be("   ");
     }
@@ -269,7 +270,7 @@ public class NoTabsAnalyzerTests
             ["tab_width"] = "8"
         };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         Replacement(diagnostics.Single()).Should().Be("  ");
     }
@@ -284,7 +285,7 @@ public class NoTabsAnalyzerTests
             ["indent_size"] = "8"
         };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         Replacement(diagnostics.Single()).Should().Be("  ");
     }
@@ -297,7 +298,7 @@ public class NoTabsAnalyzerTests
         string source = "class Sample\n{\n\tint Value;\n}\n";
         Dictionary<string, string> options = new() { ["indent_size"] = "tab" };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         Replacement(diagnostics.Single()).Should().Be(new string(' ', NoTabsAnalyzer.DefaultSpacesPerTab));
     }
@@ -308,7 +309,7 @@ public class NoTabsAnalyzerTests
         string source = "class Sample\n{\n\tint Value;\n}\n";
         Dictionary<string, string> options = new() { [NoTabsAnalyzer.SpacesPerTabOption] = "0" };
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
 
         Replacement(diagnostics.Single()).Should().Be(new string(' ', NoTabsAnalyzer.DefaultSpacesPerTab));
     }

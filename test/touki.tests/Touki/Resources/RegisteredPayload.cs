@@ -73,8 +73,8 @@ internal sealed class SerializablePayload : ISerializable
     [NonSerialized]
     public bool ConstructorCalled;
 
-    public void GetObjectData(SerializationInfo info, StreamingContext context)
-        => info.AddValue("Value", Value);
+    public void GetObjectData(SerializationInfo info, StreamingContext context) =>
+        info.AddValue("Value", Value);
 }
 
 [Serializable]
@@ -126,8 +126,8 @@ internal struct NodeStruct : ISerializable
 
     public NodeWithNodeStruct? Node;
 
-    public readonly void GetObjectData(SerializationInfo info, StreamingContext context)
-        => info.AddValue("Node", Node, typeof(NodeWithNodeStruct));
+    public readonly void GetObjectData(SerializationInfo info, StreamingContext context) =>
+        info.AddValue("Node", Node, typeof(NodeWithNodeStruct));
 }
 
 [Serializable]
@@ -176,8 +176,8 @@ internal sealed class NullObjectReferenceContainer : ISerializable
     [NonSerialized]
     public Type? ValueType;
 
-    public void GetObjectData(SerializationInfo info, StreamingContext context)
-        => info.AddValue("Value", Value, typeof(object));
+    public void GetObjectData(SerializationInfo info, StreamingContext context) =>
+        info.AddValue("Value", Value, typeof(object));
 }
 
 [Serializable]
@@ -195,8 +195,8 @@ internal sealed class NullObjectReference : IObjectReference, ISerializable
     public object GetRealObject(StreamingContext context) => null;
 #pragma warning restore CS8603
 
-    public void GetObjectData(SerializationInfo info, StreamingContext context)
-        => info.AddValue("Marker", Marker);
+    public void GetObjectData(SerializationInfo info, StreamingContext context) =>
+        info.AddValue("Marker", Marker);
 }
 
 [Serializable]
@@ -232,8 +232,8 @@ internal sealed class NullableSerializablePayload : ISerializable
 
     public int? Value;
 
-    public void GetObjectData(SerializationInfo info, StreamingContext context)
-        => info.AddValue("Value", Value, typeof(int?));
+    public void GetObjectData(SerializationInfo info, StreamingContext context) =>
+        info.AddValue("Value", Value, typeof(int?));
 }
 
 [Serializable]
@@ -280,8 +280,8 @@ internal sealed class FanOutOwner
     public bool CallbackCalled;
 
     [OnDeserialized]
-    private void OnDeserialized(StreamingContext context)
-        => CallbackCalled = true;
+    private void OnDeserialized(StreamingContext context) =>
+        CallbackCalled = true;
 }
 
 [Serializable]
@@ -294,8 +294,8 @@ internal struct FanOutValue : ISerializable
 
     public int Value;
 
-    public readonly void GetObjectData(SerializationInfo info, StreamingContext context)
-        => info.AddValue("Value", Value);
+    public readonly void GetObjectData(SerializationInfo info, StreamingContext context) =>
+        info.AddValue("Value", Value);
 }
 
 [Serializable]
@@ -337,6 +337,6 @@ internal struct SelfReferencingSerializableStruct : ISerializable
     internal static int InvocationCount { get; set; }
     public object? Value;
 
-    public readonly void GetObjectData(SerializationInfo info, StreamingContext context)
-        => info.AddValue("Value", Value, typeof(object));
+    public readonly void GetObjectData(SerializationInfo info, StreamingContext context) =>
+        info.AddValue("Value", Value, typeof(object));
 }

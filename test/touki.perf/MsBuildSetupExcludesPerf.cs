@@ -6,8 +6,6 @@ using Touki.Io;
 
 using Directory = System.IO.Directory;
 using File = System.IO.File;
-using Path = System.IO.Path;
-
 namespace touki.perf;
 
 /// <summary>
@@ -43,22 +41,22 @@ public class MsBuildSetupExcludesPerf
     [GlobalSetup]
     public void GlobalSetup()
     {
-        _directory = Path.Combine(Path.GetTempPath(), $"touki-perf-{Guid.NewGuid():N}");
+        _directory = Path.Join(Path.GetTempPath(), $"touki-perf-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_directory);
-        Directory.CreateDirectory(Path.Combine(_directory, "src"));
-        Directory.CreateDirectory(Path.Combine(_directory, "src", "nested"));
-        Directory.CreateDirectory(Path.Combine(_directory, "bin"));
-        Directory.CreateDirectory(Path.Combine(_directory, "obj"));
+        Directory.CreateDirectory(Path.Join(_directory, "src"));
+        Directory.CreateDirectory(Path.Join(_directory, "src", "nested"));
+        Directory.CreateDirectory(Path.Join(_directory, "bin"));
+        Directory.CreateDirectory(Path.Join(_directory, "obj"));
 
         // Matching files
-        File.WriteAllText(Path.Combine(_directory, "a.cs"), string.Empty);
-        File.WriteAllText(Path.Combine(_directory, "src", "b.cs"), string.Empty);
-        File.WriteAllText(Path.Combine(_directory, "src", "nested", "c.cs"), string.Empty);
+        File.WriteAllText(Path.Join(_directory, "a.cs"), string.Empty);
+        File.WriteAllText(Path.Join(_directory, "src", "b.cs"), string.Empty);
+        File.WriteAllText(Path.Join(_directory, "src", "nested", "c.cs"), string.Empty);
 
         // Files that should be filtered out by the default excludes
-        File.WriteAllText(Path.Combine(_directory, "bin", "ignored.cs"), string.Empty);
-        File.WriteAllText(Path.Combine(_directory, "obj", "ignored.cs"), string.Empty);
-        File.WriteAllText(Path.Combine(_directory, "skip.user"), string.Empty);
+        File.WriteAllText(Path.Join(_directory, "bin", "ignored.cs"), string.Empty);
+        File.WriteAllText(Path.Join(_directory, "obj", "ignored.cs"), string.Empty);
+        File.WriteAllText(Path.Join(_directory, "skip.user"), string.Empty);
     }
 
     [GlobalCleanup]
@@ -81,6 +79,7 @@ public class MsBuildSetupExcludesPerf
     {
         using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(
             new(Filespec, _directory, UnsplitExcludes));
+
         List<string> results = [];
         while (enumerator.MoveNext())
         {
@@ -95,6 +94,7 @@ public class MsBuildSetupExcludesPerf
     {
         MSBuildSearchResult result = (MSBuildSearchResult)MSBuildEnumerator.CreateResult(
             new(Filespec, _directory, UnsplitExcludes));
+
         using MSBuildEnumerator enumerator = result.Enumerator;
         List<string> results = [];
         while (enumerator.MoveNext())

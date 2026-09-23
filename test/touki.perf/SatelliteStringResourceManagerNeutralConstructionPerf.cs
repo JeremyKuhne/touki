@@ -37,11 +37,13 @@ public class SatelliteStringResourceManagerNeutralConstructionPerf
         _assembly = typeof(SatelliteStringResourceManagerNeutralConstructionPerf).Assembly;
         string resourceName = _assembly.GetManifestResourceNames()
             .Single(name => name.EndsWith("SatelliteStringResourceManagerPerfStrings.resources", StringComparison.Ordinal));
+
         _baseName = resourceName[..^".resources".Length];
         _neutralResources = new(_baseName, _assembly);
         _ = _neutralResources.GetString("Greeting");
         _neutralStrings = StringResourceTableLoader.LoadStringTableFromAssembly(_assembly, resourceName)
             ?? throw new InvalidOperationException("The neutral benchmark resource is missing.");
+
         _localized = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["LocalizedOnly"] = "Localized"
@@ -64,6 +66,7 @@ public class SatelliteStringResourceManagerNeutralConstructionPerf
             _baseName,
             _assembly,
             _neutralResources);
+
         Dictionary<string, string> combined = new(_neutralStrings, StringComparer.Ordinal);
         foreach (KeyValuePair<string, string> entry in _localized)
         {

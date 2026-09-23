@@ -3,6 +3,14 @@
   <PropertyGroup>
     <!-- Workaround for .NET 10 RC2 regression: https://github.com/dotnet/sdk/issues/51265 -->
     <RestoreEnablePackagePruning Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">false</RestoreEnablePackagePruning>
+
+    <!--
+      The unsafe contexts are required by the .NET Framework build. IDE0380 analyzes each target
+      independently and cannot account for that cross-target requirement, so disable it after the
+      target-framework identifier is available. Modern .NET reports are suppressed individually
+      in GlobalSuppressions.cs.
+    -->
+    <NoWarn Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">$(NoWarn);IDE0380</NoWarn>
   </PropertyGroup>
 
   <!--

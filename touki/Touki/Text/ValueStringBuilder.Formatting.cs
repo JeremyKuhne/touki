@@ -29,7 +29,7 @@ public ref partial struct ValueStringBuilder
     private static Value[] Values => t_values ??= new Value[4];
 
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
-    public unsafe void AppendFormat(ReadOnlySpan<char> format, ReadOnlySpan<Value> args) =>
+    public void AppendFormat(ReadOnlySpan<char> format, ReadOnlySpan<Value> args) =>
         AppendFormat<Value>(format, args);
 
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
@@ -39,14 +39,14 @@ public ref partial struct ValueStringBuilder
     }
 
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
-    public unsafe void AppendFormat(ReadOnlySpan<char> format, Value arg)
+    public void AppendFormat(ReadOnlySpan<char> format, Value arg)
     {
         Values[0] = arg;
         AppendFormat(format, new ReadOnlySpan<Value>(Values, 0, 1));
     }
 
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
-    public unsafe void AppendFormat(ReadOnlySpan<char> format, Value arg1, Value arg2)
+    public void AppendFormat(ReadOnlySpan<char> format, Value arg1, Value arg2)
     {
         Values[0] = arg1;
         Values[1] = arg2;
@@ -54,7 +54,7 @@ public ref partial struct ValueStringBuilder
     }
 
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
-    public unsafe void AppendFormat(ReadOnlySpan<char> format, Value arg1, Value arg2, Value arg3)
+    public void AppendFormat(ReadOnlySpan<char> format, Value arg1, Value arg2, Value arg3)
     {
         Values[0] = arg1;
         Values[1] = arg2;
@@ -63,11 +63,11 @@ public ref partial struct ValueStringBuilder
     }
 
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
-    public unsafe void AppendFormat(string format, Value arg1, Value arg2, Value arg3, Value arg4) =>
+    public void AppendFormat(string format, Value arg1, Value arg2, Value arg3, Value arg4) =>
         AppendFormat(format.AsSpan(), arg1, arg2, arg3, arg4);
 
     /// <inheritdoc cref="AppendFormat{TArgument}(ReadOnlySpan{char}, ReadOnlySpan{TArgument})"/>
-    public unsafe void AppendFormat(ReadOnlySpan<char> format, Value arg1, Value arg2, Value arg3, Value arg4)
+    public void AppendFormat(ReadOnlySpan<char> format, Value arg1, Value arg2, Value arg3, Value arg4)
     {
         Values[0] = arg1;
         Values[1] = arg2;

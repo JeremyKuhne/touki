@@ -16,9 +16,9 @@ public class FileMatcherValidationOracleTests
 {
     private static void CreateFixture(string root)
     {
-        File.WriteAllText(Path.Combine(root, "a.txt"), string.Empty);
-        Directory.CreateDirectory(Path.Combine(root, "Foo"));
-        File.WriteAllText(Path.Combine(root, "Foo", "b.txt"), string.Empty);
+        File.WriteAllText(Path.Join(root, "a.txt"), string.Empty);
+        Directory.CreateDirectory(Path.Join(root, "Foo"));
+        File.WriteAllText(Path.Join(root, "Foo", "b.txt"), string.Empty);
     }
 
     // 1. No-wildcard illegal specs hit the GetFiles no-wildcard shortcut FIRST and are returned
@@ -160,12 +160,12 @@ public class FileMatcherValidationOracleTests
     {
         using TempFolder tempFolder = new();
         string fileName = "bad...txt";
-        string filePath = Path.Combine(tempFolder.TempPath, fileName);
+        string filePath = Path.Join(tempFolder.TempPath, fileName);
         File.WriteAllText(filePath, string.Empty);
 
         FileMatcherWrapper.GetFilesResult result = FileMatcherWrapper.GetFiles(
             tempFolder.TempPath,
-            Path.Combine(tempFolder.TempPath, "**", "*.txt"),
+            Path.Join(tempFolder.TempPath, "**", "*.txt"),
             [fileName]);
 
         result.Action.Should().Be(FileMatcherWrapper.SearchAction.RunSearch);
@@ -178,9 +178,9 @@ public class FileMatcherValidationOracleTests
     public void GetFiles_ParentBeforeWildcard_RunsNormalizedSearch()
     {
         using TempFolder tempFolder = new();
-        string barDirectory = Path.Combine(tempFolder.TempPath, "bar");
+        string barDirectory = Path.Join(tempFolder.TempPath, "bar");
         Directory.CreateDirectory(barDirectory);
-        File.WriteAllText(Path.Combine(barDirectory, "source.cs"), string.Empty);
+        File.WriteAllText(Path.Join(barDirectory, "source.cs"), string.Empty);
 
         FileMatcherWrapper.GetFilesResult result = FileMatcherWrapper.GetFiles(
             tempFolder.TempPath,
@@ -210,6 +210,7 @@ public class FileMatcherValidationOracleTests
         string prefix = tempFolder.TempPath.EndsWith(Path.DirectorySeparatorChar)
             ? tempFolder.TempPath
             : tempFolder.TempPath + Path.DirectorySeparatorChar;
+
         string[] normalized = [.. result.FileList
             .Select(f => f.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? f[prefix.Length..] : f)
             .Select(f => f.Replace('\\', '/'))];
@@ -299,6 +300,7 @@ public class FileMatcherValidationOracleTests
             tempFolder.TempPath,
             "**/*.txt",
             ["bad.../*.txt", "**/Foo/*.txt"]);
+
         FileMatcherWrapper.GetFilesResult invalidLast = FileMatcherWrapper.GetFiles(
             tempFolder.TempPath,
             "**/*.txt",
@@ -319,7 +321,7 @@ public class FileMatcherValidationOracleTests
         using TempFolder outsideFolder = new();
         CreateFixture(includeFolder.TempPath);
 
-        string outsideExclude = Path.Combine(outsideFolder.TempPath, "**", "*.txt");
+        string outsideExclude = Path.Join(outsideFolder.TempPath, "**", "*.txt");
         FileMatcherWrapper.GetFilesResult result = FileMatcherWrapper.GetFiles(
             includeFolder.TempPath,
             "**/*.txt",

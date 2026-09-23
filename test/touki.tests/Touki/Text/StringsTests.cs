@@ -14,7 +14,7 @@ namespace Touki.Text;
 public class StringsTests
 {
     [TestMethod]
-    [DataRow((object?)null)]
+    [DataRow(data: (object?)null)]
     [DataRow("")]
     [DataRow(" ")]
     [DataRow("Aar")]
@@ -56,7 +56,7 @@ public class StringsTests
     {
         // Intentionally pass null to exercise action validation.
     #pragma warning disable CS8625
-        Action act = () => string.Create(10, 0, null);
+        Action act = () => string.Create(10, 0, action: null);
     #pragma warning restore CS8625
         act.Should().Throw<ArgumentNullException>();
     }
@@ -876,7 +876,7 @@ public class StringsTests
         string input = "Hello\nWorld";
         // Intentionally pass null to exercise replacement validation.
     #pragma warning disable CS8625
-        Action action = () => input.ReplaceLineEndings(null);
+        Action action = () => input.ReplaceLineEndings(replacementText: null);
     #pragma warning restore CS8625
 
         action.Should().Throw<ArgumentNullException>();

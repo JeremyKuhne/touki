@@ -41,6 +41,7 @@ public class MatchMSBuildTests
             "**/*.cs",
             ["root.cs", "level1/level1.cs", "level1/level2/level2.cs", "level1/level2/level3/level3.cs", "level1/level2/other.txt"],
             ["root.cs", "level1/level1.cs", "level1/level2/level2.cs", "level1/level2/level3/level3.cs"]);
+
         yield return ("*.cs", ["file1.txt", "file2.md"], []);
         yield return ("Program.cs", ["Program.cs", "Program.txt", "Other.cs"], ["Program.cs"]);
         yield return ("**/deep.txt", ["root.txt", "a/b/c/d/deep.txt", "a/intermediate.txt"], ["a/b/c/d/deep.txt"]);
@@ -53,15 +54,18 @@ public class MatchMSBuildTests
             "**/target.cs",
             ["target.cs", "level1/target.cs", "level1/level2/target.cs", "level1/level2/other.txt"],
             ["target.cs", "level1/target.cs", "level1/level2/target.cs"]);
+
         yield return ("**/target.cs", ["target.cs", "a/b/c/d/e/target.cs"], ["target.cs", "a/b/c/d/e/target.cs"]);
         yield return (
             "**/bin/*.exe",
             ["src/bin/app.exe", "tests/bin/test.exe", "docs/bin/doc.exe", "project/nested/bin/nested.exe", "bin.exe"],
             ["src/bin/app.exe", "tests/bin/test.exe", "docs/bin/doc.exe", "project/nested/bin/nested.exe"]);
+
         yield return (
             "???/v1/**/?*.cs",
             ["src/v1/a.cs", "src/v1/b.cs", "src/v2/a.cs", "lib/v1/a.cs", "test/v1/core/a.cs"],
             ["src/v1/a.cs", "src/v1/b.cs", "lib/v1/a.cs"]);
+
         yield return ("???/v1/**/?*.cs", ["src/v1/a.cs"], ["src/v1/a.cs"]);
         yield return ("?*.cs", ["a.cs"], ["a.cs"]);
         yield return ("???/*.cs", ["src/a.cs"], ["src/a.cs"]);
@@ -71,18 +75,22 @@ public class MatchMSBuildTests
             "**/src/**/*.cs",
             ["src/tests/tracing/runtimeeventsource/NativeRuntimeEventSourceTest.cs"],
             ["src/tests/tracing/runtimeeventsource/NativeRuntimeEventSourceTest.cs"]);
+
         yield return (
             "**/a/b/*.cs",
             ["a/a/b/source.cs", "a/b/source.cs", "a/a/b/source.txt"],
             ["a/a/b/source.cs", "a/b/source.cs"]);
+
         yield return (
             "**/a/a/*.cs",
             ["a/a/source.cs", "a/a/a/source.cs", "a/b/a/source.cs"],
             ["a/a/source.cs", "a/a/a/source.cs"]);
+
         yield return (
             "**/a/**/a/*.cs",
             ["a/a/zero.cs", "a/x/a/one.cs", "x/a/x/y/a/many.cs", "a/x/b/no.cs"],
             ["a/a/zero.cs", "a/x/a/one.cs", "x/a/x/y/a/many.cs"]);
+
         yield return (
             "**/**/a/*.cs",
             ["a/zero.cs", "x/a/one.cs", "other/b/no.cs"],
@@ -105,6 +113,7 @@ public class MatchMSBuildTests
         string repeated = string.Join(
             Path.DirectorySeparatorChar.ToString(),
             Enumerable.Repeat("a", 2048));
+
         string currentDirectory = Path.Join(root, repeated, "a", "b");
 
         using MatchMSBuild match = CreateSpec("**/a/b/*.cs", root);
@@ -140,8 +149,10 @@ public class MatchMSBuildTests
 
         match.MatchesDirectory(root, "src")
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+
         match.MatchesDirectory(root, "other")
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+
         match.MatchesFile(root, "source.cs").Should().BeFalse();
     }
 
@@ -170,6 +181,7 @@ public class MatchMSBuildTests
 
         match.MatchesDirectory(root, "other")
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+
         match.MatchesDirectory(root, "src")
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
     }

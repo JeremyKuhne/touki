@@ -20,7 +20,7 @@ public class StringResourceManagerTests
 
     private static string WriteResources(string directory, params (string Key, object? Value)[] entries)
     {
-        string path = Path.Combine(directory, "Strings.resources");
+        string path = Path.Join(directory, "Strings.resources");
         using ResourceWriter writer = new(path);
         foreach ((string key, object? value) in entries)
         {
@@ -51,7 +51,7 @@ public class StringResourceManagerTests
     public void Constructor_ResourcesFileDoesNotExist_DoesNotOpenFile()
     {
         using TempFolder folder = new();
-        string path = Path.Combine(folder.TempPath, "Missing.resources");
+        string path = Path.Join(folder.TempPath, "Missing.resources");
 
         Action action = () => _ = new StringResourceManager(path);
 
@@ -179,7 +179,7 @@ public class StringResourceManagerTests
     [TestMethod]
     public void BaseName_ResourcesFile_ReturnsFileName()
     {
-        StringResourceManager manager = new(Path.Combine("resources", "Strings.resources"));
+        StringResourceManager manager = new(Path.Join("resources", "Strings.resources"));
 
         manager.BaseName.Should().Be("Strings");
     }
@@ -399,14 +399,17 @@ public class StringResourceManagerTests
 
         action.Should().ThrowExactly<System.IO.IOException>()
             .WithMessage("Factory failure.");
+
         action.Should().ThrowExactly<System.IO.IOException>()
             .WithMessage("Factory failure.");
+
         invocationCount.Should().Be(1);
 
         manager.ReleaseAllResources();
 
         action.Should().ThrowExactly<System.IO.IOException>()
             .WithMessage("Factory failure.");
+
         invocationCount.Should().Be(2);
     }
 
@@ -429,7 +432,7 @@ public class StringResourceManagerTests
     public void GetString_ResourcesFileIsMalformed_ThrowsArgumentException()
     {
         using TempFolder folder = new();
-        string path = Path.Combine(folder.TempPath, "Malformed.resources");
+        string path = Path.Join(folder.TempPath, "Malformed.resources");
         System.IO.File.WriteAllBytes(path, [0x00, 0x01]);
         StringResourceManager manager = new(path);
 
@@ -442,7 +445,7 @@ public class StringResourceManagerTests
     public void GetString_ResourcesFileFailedThenCreated_RetriesAfterRelease()
     {
         using TempFolder folder = new();
-        string path = Path.Combine(folder.TempPath, "Strings.resources");
+        string path = Path.Join(folder.TempPath, "Strings.resources");
         StringResourceManager manager = new(path);
 
         Action action = () => manager.GetString("Greeting");
@@ -478,7 +481,7 @@ public class StringResourceManagerTests
         Task<string?> second = Task.Run(() => manager.GetString("Greeting"));
         continueLoad.Set();
 
-        string?[] values = await Task.WhenAll(first, second).ConfigureAwait(false);
+        string?[] values = await Task.WhenAll(first, second).ConfigureAwait(continueOnCapturedContext: false);
         values.Should().Equal("Hello", "Hello");
         invocationCount.Should().Be(1);
     }
@@ -513,8 +516,8 @@ public class StringResourceManagerTests
         releaseWaiting.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
         continueLoad.Set();
 
-        (await lookup.ConfigureAwait(false)).Should().BeOneOf("First", "Second");
-        await release.ConfigureAwait(false);
+        (await lookup.ConfigureAwait(continueOnCapturedContext: false)).Should().BeOneOf("First", "Second");
+        await release.ConfigureAwait(continueOnCapturedContext: false);
         manager.GetString("Greeting").Should().Be("Second");
         invocationCount.Should().Be(2);
     }

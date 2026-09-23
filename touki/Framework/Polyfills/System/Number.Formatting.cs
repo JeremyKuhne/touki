@@ -1195,7 +1195,7 @@ internal static partial class Number
         return true;
     }
 
-    internal static unsafe char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
+    internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
     {
         char c = default;
         if (format.Length > 0)
@@ -1267,7 +1267,7 @@ internal static partial class Number
             '\0';
     }
 
-    internal static unsafe void NumberToString(ref ValueStringBuilder sb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info)
+    internal static void NumberToString(ref ValueStringBuilder sb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info)
     {
         number.CheckConsistency();
         bool isCorrectlyRounded = (number.Kind == NumberBufferKind.FloatingPoint);

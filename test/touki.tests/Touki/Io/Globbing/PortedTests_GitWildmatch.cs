@@ -15,10 +15,26 @@ namespace Touki.Io.Globbing;
 ///   Licensed under GPL-2.0. The upstream <c>match</c> helper asserts four
 ///   columns per row:
 ///   <list type="number">
-///    <item><description><c>wildmatch</c> - <c>WM_PATHNAME</c> on (case-sensitive).</description></item>
-///    <item><description><c>iwildmatch</c> - <c>WM_PATHNAME</c> on (case-insensitive).</description></item>
-///    <item><description><c>pathmatch</c> - <c>WM_PATHNAME</c> off (case-sensitive).</description></item>
-///    <item><description><c>ipathmatch</c> - <c>WM_PATHNAME</c> off (case-insensitive).</description></item>
+///    <item>
+///     <description>
+///      <c>wildmatch</c> - <c>WM_PATHNAME</c> on (case-sensitive).
+///     </description>
+///    </item>
+///    <item>
+///     <description>
+///      <c>iwildmatch</c> - <c>WM_PATHNAME</c> on (case-insensitive).
+///     </description>
+///    </item>
+///    <item>
+///     <description>
+///      <c>pathmatch</c> - <c>WM_PATHNAME</c> off (case-sensitive).
+///     </description>
+///    </item>
+///    <item>
+///     <description>
+///      <c>ipathmatch</c> - <c>WM_PATHNAME</c> off (case-insensitive).
+///     </description>
+///    </item>
 ///   </list>
 ///   This port mines the <c>wildmatch</c> column (column 1 / argument 1) -
 ///   the <c>WM_PATHNAME</c>-on, case-sensitive variant - because git's own

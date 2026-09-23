@@ -166,7 +166,7 @@ public class ValueStringBuilderCopyToTests
     public void AppendFormatted_CustomSpanFormattableStruct_AppendsFormattedValue()
     {
         using ValueStringBuilder builder = new(stackalloc char[32]);
-        builder.AppendFormatted(new FixedSpanFormattable("hello"), default(StringSpan));
+        builder.AppendFormatted(new FixedSpanFormattable("hello"), format: default(StringSpan));
 
         builder.ToString().Should().Be("hello");
     }
@@ -184,7 +184,7 @@ public class ValueStringBuilderCopyToTests
         // allocates the first time the generic is touched).
         using (ValueStringBuilder warmup = new(stackalloc char[32]))
         {
-            warmup.AppendFormatted(new FixedSpanFormattable("warm"), default(StringSpan));
+            warmup.AppendFormatted(new FixedSpanFormattable("warm"), format: default(StringSpan));
         }
 
         ValueStringBuilder builder = new(stackalloc char[32]);
@@ -192,7 +192,7 @@ public class ValueStringBuilderCopyToTests
         {
             using (MemoryWatch.Create)
             {
-                builder.AppendFormatted(new FixedSpanFormattable("zero-alloc"), default(StringSpan));
+                builder.AppendFormatted(new FixedSpanFormattable("zero-alloc"), format: default(StringSpan));
             }
         }
         finally
@@ -208,7 +208,7 @@ public class ValueStringBuilderCopyToTests
         // Start with a tiny buffer so the formatter's first TryFormat call
         // returns false and DoubleRemaining is invoked at least once.
         using ValueStringBuilder builder = new(stackalloc char[4]);
-        builder.AppendFormatted(new FixedSpanFormattable("0123456789ABCDEF"), default(StringSpan));
+        builder.AppendFormatted(new FixedSpanFormattable("0123456789ABCDEF"), format: default(StringSpan));
 
         builder.ToString().Should().Be("0123456789ABCDEF");
     }

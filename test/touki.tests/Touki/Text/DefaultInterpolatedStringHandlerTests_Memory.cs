@@ -8,7 +8,7 @@ namespace Touki;
 
 [DoNotParallelize]
 [TestClass]
-public unsafe class DefaultInterpolatedStringHandlerTests_Memory
+public class DefaultInterpolatedStringHandlerTests_Memory
 {
     // On .NET Framework this is our implementation. On .NET we're getting built-in.
     // Testing both so we can validate behavior and expected allocations.

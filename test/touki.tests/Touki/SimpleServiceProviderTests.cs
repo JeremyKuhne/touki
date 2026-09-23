@@ -227,7 +227,7 @@ public class SimpleServiceProviderTests
         }
 
         // Wait for all tasks to complete asynchronously
-        await Task.WhenAll(tasks).ConfigureAwait(false);
+        await Task.WhenAll(tasks).ConfigureAwait(continueOnCapturedContext: false);
 
         // The last added service should be available
         CustomService? lastService = provider.GetService<CustomService>();

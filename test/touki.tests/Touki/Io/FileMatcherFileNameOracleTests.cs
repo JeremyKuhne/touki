@@ -36,14 +36,14 @@ public class FileMatcherFileNameOracleTests
 
         foreach (string fileName in fileNames)
         {
-            File.WriteAllText(Path.Combine(root, fileName), string.Empty);
+            File.WriteAllText(Path.Join(root, fileName), string.Empty);
         }
 
-        string nested = Path.Combine(root, "nested");
+        string nested = Path.Join(root, "nested");
         Directory.CreateDirectory(nested);
-        File.WriteAllText(Path.Combine(nested, "README"), string.Empty);
-        File.WriteAllText(Path.Combine(nested, "LICENSE"), string.Empty);
-        File.WriteAllText(Path.Combine(nested, "LICENSE.txt"), string.Empty);
+        File.WriteAllText(Path.Join(nested, "README"), string.Empty);
+        File.WriteAllText(Path.Join(nested, "LICENSE"), string.Empty);
+        File.WriteAllText(Path.Join(nested, "LICENSE.txt"), string.Empty);
     }
 
     [TestMethod]
@@ -77,7 +77,7 @@ public class FileMatcherFileNameOracleTests
         string pattern,
         string input,
         bool expected) =>
-        FileMatcherWrapper.IsMatch(input, pattern).Should().Be(expected);
+            FileMatcherWrapper.IsMatch(input, pattern).Should().Be(expected);
 
     [TestMethod]
     [DataRow("*")]
@@ -133,6 +133,7 @@ public class FileMatcherFileNameOracleTests
         List<string> actual = [];
         using MSBuildEnumerator enumerator = MSBuildEnumerator.Create(
             new(pattern, tempFolder.TempPath, enumerationOptions: options));
+
         while (enumerator.MoveNext())
         {
             actual.Add(enumerator.Current);

@@ -28,7 +28,7 @@ public static class EnumerationMatcherFactory
         string rootDirectory,
         GlobDialect dialect = GlobDialect.PosixPath,
         GlobOptions globOptions = GlobOptions.None) =>
-        GlobEnumerator.BuildSession(
+            GlobEnumerator.BuildSession(
             includePattern,
             excludePatterns,
             rootDirectory,

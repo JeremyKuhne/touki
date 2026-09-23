@@ -119,7 +119,7 @@ public class ConvertBase64PolyfillTests
         byte[] destArray = new byte[8];
         // Intentionally pass null to exercise string validation.
     #pragma warning disable CS8625
-        Action action = () => Convert.TryFromBase64String(null, destArray, out _);
+        Action action = () => Convert.TryFromBase64String(s: null, destArray, out _);
     #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }

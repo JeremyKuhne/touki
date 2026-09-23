@@ -172,6 +172,6 @@ public sealed class AllocationException : Exception
     /// </summary>
     /// <param name="allocatedBytes">Bytes observed.</param>
     public AllocationException(long allocatedBytes)
-        : base($"Expected zero allocations on the current thread, but {allocatedBytes} bytes were allocated.")
-        => AllocatedBytes = allocatedBytes;
+        : base($"Expected zero allocations on the current thread, but {allocatedBytes} bytes were allocated.") =>
+            AllocatedBytes = allocatedBytes;
 }

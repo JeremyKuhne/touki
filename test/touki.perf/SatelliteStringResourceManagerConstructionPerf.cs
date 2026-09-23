@@ -30,6 +30,7 @@ public class SatelliteStringResourceManagerConstructionPerf
         _assembly = typeof(SatelliteStringResourceManagerConstructionPerf).Assembly;
         string resourceName = _assembly.GetManifestResourceNames()
             .Single(name => name.EndsWith("SatelliteStringResourceManagerPerfStrings.resources", StringComparison.Ordinal));
+
         _baseName = resourceName[..^".resources".Length];
         _sourceRoot = AppContext.BaseDirectory;
     }

@@ -33,6 +33,7 @@ public class AnalyzerHostCompatibilityTests
             {
                 Version version = reference.Version
                     ?? throw new InvalidOperationException($"{reference.Name} has no assembly version.");
+
                 version.CompareTo(s_maximumRoslynReferenceVersion).Should().BeLessThanOrEqualTo(0);
             }
         }

@@ -33,13 +33,13 @@ public class MSBuildSpecificationTrailingSeparatorTests
 {
     private static void CreateFixture(string root)
     {
-        File.WriteAllText(Path.Combine(root, "a.txt"), string.Empty);
-        string foo = Path.Combine(root, "Foo");
+        File.WriteAllText(Path.Join(root, "a.txt"), string.Empty);
+        string foo = Path.Join(root, "Foo");
         Directory.CreateDirectory(foo);
-        File.WriteAllText(Path.Combine(foo, "b.txt"), string.Empty);
-        string bar = Path.Combine(foo, "Bar");
+        File.WriteAllText(Path.Join(foo, "b.txt"), string.Empty);
+        string bar = Path.Join(foo, "Bar");
         Directory.CreateDirectory(bar);
-        File.WriteAllText(Path.Combine(bar, "c.txt"), string.Empty);
+        File.WriteAllText(Path.Join(bar, "c.txt"), string.Empty);
     }
 
     private static string[] EnumerateTouki(string root, string spec)

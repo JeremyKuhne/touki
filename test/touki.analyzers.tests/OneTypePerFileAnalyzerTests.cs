@@ -20,7 +20,7 @@ public class OneTypePerFileAnalyzerTests
 
         return await AnalyzerTestHarness
             .GetDiagnosticsAsync(new OneTypePerFileAnalyzer(), source, options)
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
     }
 
     [TestMethod]
@@ -35,7 +35,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -53,7 +53,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -71,7 +71,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -93,7 +93,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Second");
@@ -115,7 +115,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -125,7 +125,7 @@ public class OneTypePerFileAnalyzerTests
     {
         const string source = "class Owner { } file enum Hidden { None }";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -135,7 +135,7 @@ public class OneTypePerFileAnalyzerTests
     {
         const string source = "class Owner { } file delegate void Hidden();";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -155,7 +155,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(OneTypePerFileAnalyzer.DiagnosticId);
@@ -176,7 +176,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Second");
@@ -197,7 +197,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Be("Move 'Second' to its own file, 'First' is already declared in this file");
@@ -222,7 +222,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
         diagnostics.Should().OnlyContain(diagnostic => diagnostic.Id == OneTypePerFileAnalyzer.DiagnosticId);
@@ -249,7 +249,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(3);
         diagnostics.Should().OnlyContain(diagnostic => diagnostic.Id == OneTypePerFileAnalyzer.DiagnosticId);
@@ -276,7 +276,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "true").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "true").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -299,7 +299,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "true").ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "true").ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Second");
@@ -321,7 +321,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Nested");
@@ -344,7 +344,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -366,7 +366,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
         diagnostics.Select(diagnostic => diagnostic.GetMessage()).Should().Equal(
@@ -393,7 +393,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Be("Move 'Leaf' to its own file, 'Middle' is already declared in this file");
@@ -416,7 +416,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -436,7 +436,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Other");
@@ -460,7 +460,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Second");
@@ -482,7 +482,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Nested");
@@ -505,7 +505,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -527,7 +527,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Be("Move 'Split<T>' to its own file, 'Split' is already declared in this file");
@@ -553,7 +553,7 @@ public class OneTypePerFileAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new OneTypePerFileAnalyzer(),
             source,
-            expectedCompilerDiagnosticIds: ["CS0261"]).ConfigureAwait(false);
+            expectedCompilerDiagnosticIds: ["CS0261"]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(OneTypePerFileAnalyzer.DiagnosticId);
@@ -575,7 +575,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Kind");
@@ -594,7 +594,7 @@ public class OneTypePerFileAnalyzerTests
             public delegate void Handler();
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Handler");
@@ -613,7 +613,7 @@ public class OneTypePerFileAnalyzerTests
             public record Owner(int Value);
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Owner");
@@ -638,7 +638,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Two");
@@ -660,7 +660,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Location location = diagnostics.Should().ContainSingle().Subject.Location;
         location.GetRequiredSourceTree().GetText().ToString(location.SourceSpan).Should().Be("Scoped");
@@ -675,7 +675,7 @@ public class OneTypePerFileAnalyzerTests
             [assembly: CLSCompliant(false)]
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -696,7 +696,7 @@ public class OneTypePerFileAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }

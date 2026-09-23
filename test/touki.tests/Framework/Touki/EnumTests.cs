@@ -11,7 +11,10 @@ public class EnumTests
     public void TestGetValuesAndNames()
     {
         var expectedValues = new ulong[] { 0, 1, 2, 3, 4, 5, 6 };
-        var expectedNames = new string[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+        var expectedNames = new string[]
+        {
+            "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+        };
 
         var (values, names) = typeof(DayOfWeek).GetEnumValuesAndNames();
 

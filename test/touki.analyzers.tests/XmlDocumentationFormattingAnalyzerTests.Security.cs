@@ -19,7 +19,7 @@ public partial class XmlDocumentationFormattingAnalyzerTests
         string content = new('x', maximumCommentLength - prefix.Length - suffix.Length);
         string source = $"{prefix}{content}{suffix}\nclass Sample {{ }}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -33,7 +33,7 @@ public partial class XmlDocumentationFormattingAnalyzerTests
         string content = new('x', maximumCommentLength - prefix.Length - suffix.Length + 1);
         string source = $"{prefix}{content}{suffix}\nclass Sample {{ }}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -47,7 +47,7 @@ public partial class XmlDocumentationFormattingAnalyzerTests
         string content = new('x', maximumCommentLength - prefix.Length - suffix.Length + 1);
         string source = $"class Sample\n{{\n    int First => 1;\n{prefix}{content}{suffix}\n}}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         Replacement(diagnostics[0]).Should().Be("\n");
@@ -64,7 +64,7 @@ public partial class XmlDocumentationFormattingAnalyzerTests
             new XmlDocumentationFormattingAnalyzer(),
             source,
             source.Reset,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
         source.CharacterReads.Should().BeLessThan(source.Length * 2L);
@@ -75,11 +75,11 @@ public partial class XmlDocumentationFormattingAnalyzerTests
     {
         string source =
             $"/// <summary>x{string.Concat(Enumerable.Repeat("<br/>", 2044))}</summary>\n"
-            + "class Sample { }\n";
+                + "class Sample { }\n";
 
         GetStructuredNodeCount(source).Should().Be(4096);
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -89,11 +89,11 @@ public partial class XmlDocumentationFormattingAnalyzerTests
     {
         string source =
             $"/// <summary>x{string.Concat(Enumerable.Repeat("<br/>", 2044))}y</summary>\n"
-            + "class Sample { }\n";
+                + "class Sample { }\n";
 
         GetStructuredNodeCount(source).Should().Be(4097);
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -105,7 +105,7 @@ public partial class XmlDocumentationFormattingAnalyzerTests
         string closing = string.Concat(Enumerable.Repeat("</para>", 127));
         string source = $"/// <summary>{opening}Text.{closing}</summary>\nclass Sample {{ }}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -117,7 +117,7 @@ public partial class XmlDocumentationFormattingAnalyzerTests
         string closing = string.Concat(Enumerable.Repeat("</para>", 128));
         string source = $"/// <summary>{opening}Text.{closing}</summary>\nclass Sample {{ }}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -128,9 +128,9 @@ public partial class XmlDocumentationFormattingAnalyzerTests
         string indentation = new(' ', 838_847);
         string source =
             $"class First {{ }}\n{indentation}/// <remarks><para>Text.more</para></remarks>\n"
-            + "class Sample { }\n";
+                + "class Sample { }\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         Replacement(diagnostics[0]).Should().Be("\n");
@@ -142,9 +142,9 @@ public partial class XmlDocumentationFormattingAnalyzerTests
         string indentation = new(' ', 838_847);
         string source =
             $"class First {{ }}\n\n{indentation}/// <remarks><para>Text.more</para></remarks>\n"
-            + "class Sample { }\n";
+                + "class Sample { }\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         Replacement(diagnostics[0]).Length.Should().Be(4 * 1024 * 1024);
@@ -156,7 +156,7 @@ public partial class XmlDocumentationFormattingAnalyzerTests
         string indentation = new(' ', 838_847);
         string source = $"{indentation}/// <remarks><para>Text.more!</para></remarks>\nclass Sample {{ }}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -167,9 +167,9 @@ public partial class XmlDocumentationFormattingAnalyzerTests
         string indentation = new(' ', 838_847);
         string source =
             $"class First {{ }}\n{indentation}/// <remarks><para>Text.more!</para></remarks>\n"
-            + "class Sample { }\n";
+                + "class Sample { }\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         Replacement(diagnostics[0]).Should().Be("\n");
@@ -186,7 +186,7 @@ public partial class XmlDocumentationFormattingAnalyzerTests
             new XmlDocumentationFormattingAnalyzer(),
             source,
             source.Reset,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         source.CharacterReads.Should().BeLessThan(source.Length * 20L);
@@ -202,7 +202,7 @@ public partial class XmlDocumentationFormattingAnalyzerTests
             new XmlDocumentationFormattingAnalyzer(),
             source,
             source.Reset,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
         source.CharacterReads.Should().BeLessThan(source.Length * 20L);
@@ -220,7 +220,7 @@ public partial class XmlDocumentationFormattingAnalyzerTests
             new XmlDocumentationFormattingAnalyzer(),
             source,
             source.Reset,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
         source.CharacterReads.Should().BeLessThan(source.Length * 20L);
@@ -238,7 +238,7 @@ public partial class XmlDocumentationFormattingAnalyzerTests
             new XmlDocumentationFormattingAnalyzer(),
             source,
             source.Reset,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         source.CharacterReads.Should().BeLessThan(source.Length * 20L);

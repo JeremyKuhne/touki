@@ -17,16 +17,16 @@ internal static class GeneratorTestHarness
 {
     private const string Source = "internal sealed class GeneratorTestAnchor { }";
 
-    internal static GeneratorTestResult Run(params GeneratorTestResource[] resources)
-        => RunCore(new ResxSourceGenerator(), GetReferences(), Source, resources);
+    internal static GeneratorTestResult Run(params GeneratorTestResource[] resources) =>
+        RunCore(new ResxSourceGenerator(), GetReferences(), Source, resources);
 
     internal static GeneratorTestResult Run(
         IIncrementalGenerator generator,
-        params GeneratorTestResource[] resources)
-        => RunCore(generator, GetReferences(), Source, resources);
+        params GeneratorTestResource[] resources) =>
+            RunCore(generator, GetReferences(), Source, resources);
 
-    internal static GeneratorTestResult RunNet472(params GeneratorTestResource[] resources)
-        => RunCore(new ResxSourceGenerator(), GetNet472References(), Net472RuntimeStubs, resources);
+    internal static GeneratorTestResult RunNet472(params GeneratorTestResource[] resources) =>
+        RunCore(new ResxSourceGenerator(), GetNet472References(), Net472RuntimeStubs, resources);
 
     internal static ImmutableArray<IncrementalStepRunReason> RunAfterUnrelatedSourceChange(
         GeneratorTestResource resource)
@@ -38,6 +38,7 @@ internal static class GeneratorTestHarness
         GeneratorDriverOptions driverOptions = new(
             IncrementalGeneratorOutputKind.None,
             trackIncrementalGeneratorSteps: true);
+
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
             generators: [new ResxSourceGenerator().AsSourceGenerator()],
             additionalTexts: [additionalText],
@@ -49,6 +50,7 @@ internal static class GeneratorTestHarness
         compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(
             "internal sealed class UnrelatedSource { }",
             parseOptions));
+
         driver = driver.RunGenerators(compilation);
 
         GeneratorRunResult result = driver.GetRunResult().Results.Single();
@@ -73,6 +75,7 @@ internal static class GeneratorTestHarness
         GeneratorDriverOptions driverOptions = new(
             IncrementalGeneratorOutputKind.None,
             trackIncrementalGeneratorSteps: true);
+
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
             generators: [new ResxSourceGenerator().AsSourceGenerator()],
             additionalTexts: [changedText, unchangedText],
@@ -84,6 +87,7 @@ internal static class GeneratorTestHarness
         driver = driver.ReplaceAdditionalText(
             changedText,
             new TestAdditionalText(changedResource.Path, changedContent));
+
         driver = driver.RunGenerators(compilation);
 
         GeneratorRunResult result = driver.GetRunResult().Results.Single();
@@ -106,6 +110,7 @@ internal static class GeneratorTestHarness
 
         ImmutableArray<AdditionalText> additionalTexts =
             [.. resources.Select(static resource => (AdditionalText)new TestAdditionalText(resource.Path, resource.Content))];
+
         TestAnalyzerConfigOptionsProvider optionsProvider = new(resources);
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
             generators: [generator.AsSourceGenerator()],
@@ -123,6 +128,7 @@ internal static class GeneratorTestHarness
         ImmutableArray<Diagnostic> compilerDiagnostics =
             [.. outputCompilation.GetDiagnostics()
                 .Where(static diagnostic => diagnostic.Severity is DiagnosticSeverity.Warning or DiagnosticSeverity.Error)];
+
         ImmutableArray<Diagnostic> compilerErrors =
             [.. compilerDiagnostics.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)];
 
@@ -278,6 +284,7 @@ internal sealed class GeneratorTestResult(
             "Test.Resources.Strings.resources",
             () => new MemoryStream(resourceData, writable: false),
             isPublic: true);
+
         using MemoryStream assemblyStream = new();
         EmitResult emitResult = OutputCompilation.Emit(
             assemblyStream,
@@ -310,6 +317,7 @@ internal sealed class GeneratedAssembly : IDisposable
         AssemblyLoadContext loadContext = new(
             "Touki.Resources.Generator.Tests." + Guid.NewGuid(),
             isCollectible: true);
+
         loadContext.Resolving += ResolveTouki;
         Assembly assembly = loadContext.LoadFromStream(assemblyStream);
         return new(loadContext, assembly);
@@ -409,7 +417,7 @@ internal sealed class TestAnalyzerConfigOptions(
 
     public override IEnumerable<string> Keys => options.Keys;
 
-    public override bool TryGetValue(string key, [MaybeNullWhen(false)] out string value) =>
+    public override bool TryGetValue(string key, [MaybeNullWhen(returnValue: false)] out string value) =>
         options.TryGetValue(key, out value);
 }
 

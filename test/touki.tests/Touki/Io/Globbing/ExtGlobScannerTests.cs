@@ -413,8 +413,10 @@ public class ExtGlobScannerTests
             {
                 sb.Append('|');
             }
+
             sb.Append((char)('a' + (j % 26)));
         }
+
         sb.Append(')');
 
         Action act = () => GlobSpecification.Compile(
@@ -438,8 +440,10 @@ public class ExtGlobScannerTests
             {
                 sb.Append('|');
             }
+
             sb.Append((char)('a' + (j % 26)));
         }
+
         sb.Append(')');
 
         Action act = () => GlobSpecification.Compile(

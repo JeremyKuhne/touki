@@ -46,6 +46,7 @@ internal static class SpanWriterTarget
                         writer.TryWrite(op, value);
                         break;
                     }
+
                 case 2:
                     {
                         // Write a slice of the remaining op bytes.
@@ -53,6 +54,7 @@ internal static class SpanWriterTarget
                         writer.TryWrite(values);
                         break;
                     }
+
                 case 3:
                     {
                         // Advance only by an in-range amount so any throw is a real defect.
@@ -60,6 +62,7 @@ internal static class SpanWriterTarget
                         writer.Advance(op % (remaining + 1));
                         break;
                     }
+
                 case 4:
                     // Rewind only by an in-range amount.
                     writer.Rewind(op % (writer.Position + 1));

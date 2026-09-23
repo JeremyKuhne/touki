@@ -249,7 +249,7 @@ public class ArrayPoolListTests
         using ArrayPoolList<int> list = [1];
         // Intentionally pass null to exercise array validation.
     #pragma warning disable CS8625
-        Action act = () => list.CopyTo(null, 0);
+        Action act = () => list.CopyTo(array: null, 0);
     #pragma warning restore CS8625
         act.Should().Throw<ArgumentNullException>();
     }

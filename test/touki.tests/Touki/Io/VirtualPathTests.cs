@@ -422,6 +422,7 @@ public class VirtualPathTests
         {
             segments2.Add(path2.Current.ToString());
         }
+
         segments2.Should().BeEquivalentTo(["a", "b"]);
     }
 

@@ -57,6 +57,7 @@ public unsafe class NumberFormattingTests
         Span<char> destination = stackalloc char[256];
         Number.TryFormatDecimal(value, format.AsSpan(), s_invariant, destination, out int charsWritten)
             .Should().BeTrue();
+
         return destination[..charsWritten].ToString();
     }
 
@@ -450,7 +451,7 @@ public unsafe class NumberFormattingTests
         // NumberToFloatingPointBits.cs.
         byte* pDigits = stackalloc byte[Number.DoubleNumberBufferLength];
         Number.NumberBuffer number = new(Number.NumberBufferKind.FloatingPoint, pDigits, Number.DoubleNumberBufferLength);
-        FillDigits(ref number, "10000000000000000000005", 23, false);
+        FillDigits(ref number, "10000000000000000000005", 23, negative: false);
 
         Number.NumberToDouble(ref number).Should().Be(1.0000000000000000000005e22);
     }
@@ -460,7 +461,7 @@ public unsafe class NumberFormattingTests
     {
         byte* pDigits = stackalloc byte[Number.DoubleNumberBufferLength];
         Number.NumberBuffer number = new(Number.NumberBufferKind.FloatingPoint, pDigits, Number.DoubleNumberBufferLength);
-        FillDigits(ref number, "5", -323, false);
+        FillDigits(ref number, "5", -323, negative: false);
 
         double result = Number.NumberToDouble(ref number);
         result.Should().BeGreaterThan(0.0);
@@ -472,7 +473,7 @@ public unsafe class NumberFormattingTests
     {
         byte* pDigits = stackalloc byte[Number.DoubleNumberBufferLength];
         Number.NumberBuffer number = new(Number.NumberBufferKind.FloatingPoint, pDigits, Number.DoubleNumberBufferLength);
-        FillDigits(ref number, "12345", 3, true);
+        FillDigits(ref number, "12345", 3, negative: true);
 
         string description = number.ToString();
         description.Should().Contain("12345");

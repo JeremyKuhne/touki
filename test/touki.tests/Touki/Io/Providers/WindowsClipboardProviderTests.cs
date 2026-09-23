@@ -38,6 +38,7 @@ public unsafe class WindowsClipboardProviderTests
             Assert.Inconclusive("Exercises Win32 PInvoke surface; Windows-only test.");
         }
 #endif
+
         string original = SnapshotText();
         try
         {

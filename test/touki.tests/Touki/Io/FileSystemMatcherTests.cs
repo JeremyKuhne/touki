@@ -27,6 +27,7 @@ public class FileSystemMatcherTests
             actualFileName = fileName.ToString();
             return true;
         });
+
         using IFileSystemMatcherSession session = matcher.CreateSession("root");
 
         session.MatchesFile("root/sub", "file.cs").Should().BeTrue();
@@ -48,14 +49,15 @@ public class FileSystemMatcherTests
     [TestMethod]
     public void CreatePath_NestedFile_UsesCanonicalRootRelativePath()
     {
-        string root = Path.Combine(Path.GetTempPath(), "matcher-root");
-        string currentDirectory = Path.Combine(root, "src", "nested");
+        string root = Path.Join(Path.GetTempPath(), "matcher-root");
+        string currentDirectory = Path.Join(root, "src", "nested");
         string? actualPath = null;
         IFileSystemMatcher matcher = FileSystemMatcher.CreatePath(path =>
         {
             actualPath = path.ToString();
             return true;
         });
+
         using IFileSystemMatcherSession session = matcher.CreateSession(root);
 
         session.MatchesFile(currentDirectory, "file.cs").Should().BeTrue();
@@ -66,13 +68,14 @@ public class FileSystemMatcherTests
     [TestMethod]
     public void CreatePath_RootFile_UsesFileNameOnly()
     {
-        string root = Path.Combine(Path.GetTempPath(), "matcher-root");
+        string root = Path.Join(Path.GetTempPath(), "matcher-root");
         string? actualPath = null;
         IFileSystemMatcher matcher = FileSystemMatcher.CreatePath(path =>
         {
             actualPath = path.ToString();
             return true;
         });
+
         using IFileSystemMatcherSession session = matcher.CreateSession(root);
 
         session.MatchesFile(root, "file.cs").Should().BeTrue();

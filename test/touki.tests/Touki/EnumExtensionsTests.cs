@@ -275,7 +275,7 @@ public class EnumExtensionsTests
 
         value = ByteFlags.One | ByteFlags.Two;
         value.ClearFlags(ByteFlags.One | ByteFlags.Two); // Clearing all flags
-        value.Should().Be(default);
+        value.Should().Be(expected: default);
     }
 
     [TestMethod]
@@ -295,7 +295,7 @@ public class EnumExtensionsTests
 
         value = ShortFlags.One | ShortFlags.Two;
         value.ClearFlags(ShortFlags.One | ShortFlags.Two); // Clearing all flags
-        value.Should().Be(default);
+        value.Should().Be(expected: default);
     }
 
     [TestMethod]
@@ -315,7 +315,7 @@ public class EnumExtensionsTests
 
         value = IntFlags.One | IntFlags.Two;
         value.ClearFlags(IntFlags.One | IntFlags.Two); // Clearing all flags
-        value.Should().Be(default);
+        value.Should().Be(expected: default);
     }
 
     [TestMethod]
@@ -335,7 +335,7 @@ public class EnumExtensionsTests
 
         value = LongFlags.One | LongFlags.Two;
         value.ClearFlags(LongFlags.One | LongFlags.Two); // Clearing all flags
-        value.Should().Be(default);
+        value.Should().Be(expected: default);
     }
 
     #endregion

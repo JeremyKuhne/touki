@@ -36,11 +36,13 @@ public class SatelliteStringResourceManagerNeutralLookupPerf
         Assembly assembly = typeof(SatelliteStringResourceManagerNeutralLookupPerf).Assembly;
         string resourceName = assembly.GetManifestResourceNames()
             .Single(name => name.EndsWith("SatelliteStringResourceManagerPerfStrings.resources", StringComparison.Ordinal));
+
         string baseName = resourceName[..^".resources".Length];
         StringResourceManager neutralResources = new(baseName, assembly);
         Dictionary<string, string> neutralStrings =
             StringResourceTableLoader.LoadStringTableFromAssembly(assembly, resourceName)
                 ?? throw new InvalidOperationException("The neutral benchmark resource is missing.");
+
         _culture = new("de");
         _root = Path.Join(Path.GetTempPath(), $"{nameof(SatelliteStringResourceManagerNeutralLookupPerf)}-{Guid.NewGuid():N}");
         string cultureRoot = Path.Join(_root, _culture.Name);
@@ -56,12 +58,14 @@ public class SatelliteStringResourceManagerNeutralLookupPerf
             baseName,
             _root,
             neutralResources);
+
         _ = _fallback.GetString("Greeting", _culture);
 
         Dictionary<string, string> combined = new(neutralStrings, StringComparer.Ordinal)
         {
             ["LocalizedOnly"] = "Localized"
         };
+
         _combined = combined.ToFrozenDictionary(StringComparer.Ordinal);
     }
 

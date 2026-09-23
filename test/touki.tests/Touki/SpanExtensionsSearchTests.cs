@@ -86,7 +86,7 @@ public class SpanExtensionsSearchTests
     {
         ReadOnlySpan<string?> span = ["a", null, "b"];
         span.IndexOfAnyExcept((string?)"a").Should().Be(1);
-        span.IndexOfAnyExcept((string?)null).Should().Be(0);
+        span.IndexOfAnyExcept(value: (string?)null).Should().Be(0);
     }
 
     [TestMethod]

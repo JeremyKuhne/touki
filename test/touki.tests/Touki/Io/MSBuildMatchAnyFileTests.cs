@@ -10,8 +10,8 @@ public class MSBuildMatchAnyFileTests
     [TestMethod]
     public void DirectoryFinished_AfterOutsideRoot_AllowsMatchingInsideRoot()
     {
-        string rootPath = Path.Combine(Path.GetTempPath(), "MSBuildRoot");
-        string outsideRoot = Path.Combine(Path.GetTempPath(), "OtherRoot");
+        string rootPath = Path.Join(Path.GetTempPath(), "MSBuildRoot");
+        string outsideRoot = Path.Join(Path.GetTempPath(), "OtherRoot");
         using MSBuildMatchAnyFile matcher = new(
             expression: "*.txt",
             rootPath,
@@ -36,7 +36,7 @@ public class MSBuildMatchAnyFileTests
             rootMatchCasing: MatchCasing.CaseSensitive,
             useMSBuildFileNameSemantics: true);
 
-        matcher.MatchesFile(default, "README").Should().BeTrue();
+        matcher.MatchesFile(currentDirectory: default, "README").Should().BeTrue();
     }
 
     [TestMethod]
@@ -50,14 +50,14 @@ public class MSBuildMatchAnyFileTests
             rootMatchCasing: MatchCasing.CaseSensitive,
             useMSBuildFileNameSemantics: false);
 
-        matcher.MatchesFile(default, "README").Should().BeFalse();
+        matcher.MatchesFile(currentDirectory: default, "README").Should().BeFalse();
     }
 
     [TestMethod]
     public void MatchesFile_RootAndFileCasingDiffer_AppliesEachCasing()
     {
-        string rootPath = Path.Combine(Path.GetTempPath(), "MSBuildRoot");
-        string currentDirectory = Path.Combine(Path.GetTempPath(), "msbuildroot");
+        string rootPath = Path.Join(Path.GetTempPath(), "MSBuildRoot");
+        string currentDirectory = Path.Join(Path.GetTempPath(), "msbuildroot");
         using MSBuildMatchAnyFile matcher = new(
             expression: "file.txt",
             rootPath,

@@ -38,21 +38,21 @@ public sealed class MSBuildFileSystemPlayback : MSBuildFileSystemBase
         string path,
         string searchPattern = "*",
         System.IO.SearchOption searchOption = System.IO.SearchOption.TopDirectoryOnly) =>
-        Lookup(RecordedMSBuildFileSystem.EnumerateFileSystemEntriesMethod, path, searchPattern, (int)searchOption);
+            Lookup(RecordedMSBuildFileSystem.EnumerateFileSystemEntriesMethod, path, searchPattern, (int)searchOption);
 
     /// <inheritdoc/>
     public override IEnumerable<string> EnumerateFiles(
         string path,
         string searchPattern = "*",
         System.IO.SearchOption searchOption = System.IO.SearchOption.TopDirectoryOnly) =>
-        Lookup(RecordedMSBuildFileSystem.EnumerateFilesMethod, path, searchPattern, (int)searchOption);
+            Lookup(RecordedMSBuildFileSystem.EnumerateFilesMethod, path, searchPattern, (int)searchOption);
 
     /// <inheritdoc/>
     public override IEnumerable<string> EnumerateDirectories(
         string path,
         string searchPattern = "*",
         System.IO.SearchOption searchOption = System.IO.SearchOption.TopDirectoryOnly) =>
-        Lookup(RecordedMSBuildFileSystem.EnumerateDirectoriesMethod, path, searchPattern, (int)searchOption);
+            Lookup(RecordedMSBuildFileSystem.EnumerateDirectoriesMethod, path, searchPattern, (int)searchOption);
 
     /// <inheritdoc/>
     public override bool DirectoryExists(string path)

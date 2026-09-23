@@ -114,8 +114,10 @@ public class PortedTests_MSBuild
 
         GlobSpecification upperPatternMatcher = GlobSpecification.Compile(
             pattern.ToUpperInvariant(), GlobDialect.MSBuild);
+
         upperPatternMatcher.IsMatch(input).Should().Be(
             expected, "uppercased pattern '{0}' vs input '{1}'", pattern, input);
+
         upperPatternMatcher.IsMatch(input.ToUpperInvariant()).Should().Be(
             expected, "uppercased pattern and input '{0}'", pattern);
     }

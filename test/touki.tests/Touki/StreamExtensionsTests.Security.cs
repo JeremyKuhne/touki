@@ -147,6 +147,7 @@ public partial class StreamExtensionsTests
             count: 3,
             writable: false,
             publiclyVisible: true);
+
         stream.Position = 1;
         byte[] buffer = [0, 0];
 
@@ -169,6 +170,7 @@ public partial class StreamExtensionsTests
             count: source.Length,
             writable: false,
             publiclyVisible: true);
+
         stream.Position = stream.Length + 1;
         byte[] buffer = [9];
 
@@ -191,6 +193,7 @@ public partial class StreamExtensionsTests
             count: 3,
             writable: true,
             publiclyVisible: true);
+
         stream.Position = 1;
         ReadOnlySpan<byte> buffer = [2, 3];
 
@@ -241,6 +244,7 @@ public partial class StreamExtensionsTests
             count: backing.Length,
             writable: true,
             publiclyVisible: true);
+
         stream.Position = stream.Length;
         ReadOnlySpan<byte> buffer = [4];
         NotSupportedException? exception = null;
@@ -270,6 +274,7 @@ public partial class StreamExtensionsTests
             count: backing.Length,
             writable: false,
             publiclyVisible: true);
+
         ReadOnlySpan<byte> buffer = [1];
         NotSupportedException? exception = null;
 

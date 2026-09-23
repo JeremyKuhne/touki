@@ -181,6 +181,7 @@ public class ExtGlobPositiveMatchTests
             combinedPattern,
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification first = GlobSpecification.Compile(firstPattern, GlobDialect.MSBuild);
         GlobSpecification second = GlobSpecification.Compile(secondPattern, GlobDialect.MSBuild);
 
@@ -201,6 +202,7 @@ public class ExtGlobPositiveMatchTests
             "x**(a).",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification expected = GlobSpecification.Compile("x*.", GlobDialect.MSBuild);
 
         foreach (string candidate in candidates)
@@ -218,10 +220,12 @@ public class ExtGlobPositiveMatchTests
             "!(a).",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification negationThenStar = GlobSpecification.Compile(
             "!(a)*.",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification alternative = GlobSpecification.Compile("a.", GlobDialect.MSBuild);
         GlobSpecification star = GlobSpecification.Compile("*.", GlobDialect.MSBuild);
 
@@ -250,6 +254,7 @@ public class ExtGlobPositiveMatchTests
             "x**(a)*.*",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification expected = GlobSpecification.Compile(
             "x**(a)*",
             GlobDialect.MSBuild,
@@ -269,6 +274,7 @@ public class ExtGlobPositiveMatchTests
             "x**(a**b)*.*",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification expected = GlobSpecification.Compile(
             "x**(a**b)*",
             GlobDialect.MSBuild,
@@ -294,10 +300,12 @@ public class ExtGlobPositiveMatchTests
         [
             "", "x", "xx", "xxx", "a.xb.", "xa.xb.", "a.xb.x.", "xxa.xb.", "a.xb.a.xb."
         ];
+
         GlobSpecification combined = GlobSpecification.Compile(
             $"{kind}(x|a**b).",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         List<GlobSpecification> expansions = [];
         for (int repetitions = minimumRepetitions; repetitions <= maximumRepetitions; repetitions++)
         {
@@ -332,6 +340,7 @@ public class ExtGlobPositiveMatchTests
             "!(x|a**b).",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification first = GlobSpecification.Compile("x.", GlobDialect.MSBuild);
         GlobSpecification second = GlobSpecification.Compile("a**b.", GlobDialect.MSBuild);
 
@@ -352,11 +361,13 @@ public class ExtGlobPositiveMatchTests
             "!(x|@(y|z)|a**b).",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification first = GlobSpecification.Compile("x.", GlobDialect.MSBuild);
         GlobSpecification second = GlobSpecification.Compile(
             "@(y|z).",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification third = GlobSpecification.Compile("a**b.", GlobDialect.MSBuild);
 
         foreach (string candidate in candidates)
@@ -364,6 +375,7 @@ public class ExtGlobPositiveMatchTests
             bool expected = !first.IsMatch(candidate)
                 && !second.IsMatch(candidate)
                 && !third.IsMatch(candidate);
+
             combined.IsMatch(candidate).Should().Be(expected);
         }
     }
@@ -376,6 +388,7 @@ public class ExtGlobPositiveMatchTests
             "@(@(!(a**b))).",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification direct = GlobSpecification.Compile(
             "!(a**b).",
             GlobDialect.MSBuild,
@@ -395,10 +408,12 @@ public class ExtGlobPositiveMatchTests
             "@(!(a**b)|keep).",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification negation = GlobSpecification.Compile(
             "!(a**b).",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification keep = GlobSpecification.Compile("keep.", GlobDialect.MSBuild);
 
         foreach (string candidate in candidates)
@@ -466,6 +481,7 @@ public class ExtGlobPositiveMatchTests
             "+(***|a)",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification negative = GlobSpecification.Compile(
             "!(***|a)",
             GlobDialect.MSBuild,
@@ -484,6 +500,7 @@ public class ExtGlobPositiveMatchTests
             "@(*.*|dir/*.*)",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification first = GlobSpecification.Compile("*.*", GlobDialect.MSBuild);
         GlobSpecification second = GlobSpecification.Compile("dir/*.*", GlobDialect.MSBuild);
 
@@ -503,6 +520,7 @@ public class ExtGlobPositiveMatchTests
             "@(a/b|c).",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification first = GlobSpecification.Compile("a/b.", GlobDialect.MSBuild);
         GlobSpecification second = GlobSpecification.Compile("c.", GlobDialect.MSBuild);
 
@@ -534,6 +552,7 @@ public class ExtGlobPositiveMatchTests
             "x@(a/b|c).",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification first = GlobSpecification.Compile("xa/b.", GlobDialect.MSBuild);
         GlobSpecification second = GlobSpecification.Compile("xc.", GlobDialect.MSBuild);
 
@@ -553,6 +572,7 @@ public class ExtGlobPositiveMatchTests
             "?/x@(a|b).",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification first = GlobSpecification.Compile("?/xa.", GlobDialect.MSBuild);
         GlobSpecification second = GlobSpecification.Compile("?/xb.", GlobDialect.MSBuild);
 
@@ -571,6 +591,7 @@ public class ExtGlobPositiveMatchTests
             "**/x@(a|b).",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification first = GlobSpecification.Compile("**/xa.", GlobDialect.MSBuild);
         GlobSpecification second = GlobSpecification.Compile("**/xb.", GlobDialect.MSBuild);
 
@@ -589,6 +610,7 @@ public class ExtGlobPositiveMatchTests
             "@(*.*/file|other)",
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob);
+
         GlobSpecification first = GlobSpecification.Compile("*.*/file", GlobDialect.MSBuild);
         GlobSpecification second = GlobSpecification.Compile("other", GlobDialect.MSBuild);
 
@@ -608,10 +630,12 @@ public class ExtGlobPositiveMatchTests
             GlobDialect.MSBuild,
             GlobOptions.AllowExtGlob,
             GlobPathSeparator.Backslash);
+
         GlobSpecification first = GlobSpecification.Compile(
             "x.",
             GlobDialect.MSBuild,
             separator: GlobPathSeparator.Backslash);
+
         GlobSpecification second = GlobSpecification.Compile(
             "a**b.",
             GlobDialect.MSBuild,

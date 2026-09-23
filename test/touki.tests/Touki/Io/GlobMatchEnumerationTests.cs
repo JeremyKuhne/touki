@@ -12,7 +12,7 @@ namespace Touki.Io;
 [TestClass]
 public class GlobMatchEnumerationTests
 {
-    private static string Root => Path.Combine(Path.GetTempPath(), "glob-enum-root");
+    private static string Root => Path.Join(Path.GetTempPath(), "glob-enum-root");
 
     private static IFileSystemMatcherSession Create(string includePattern, string? root = null) =>
         GlobSpecification.Compile(includePattern, GlobDialect.PosixPath, GlobOptions.AllowGlobStar)
@@ -43,7 +43,7 @@ public class GlobMatchEnumerationTests
     {
         using IFileSystemMatcherSession boundary = Create("**/*.cs");
 
-        string subDir = Path.Combine(Root, "bin", "Debug");
+        string subDir = Path.Join(Root, "bin", "Debug");
         boundary.MatchesFile(subDir, "file.cs".AsSpan()).Should().BeTrue();
         boundary.MatchesFile(subDir, "file.txt".AsSpan()).Should().BeFalse();
     }
@@ -53,11 +53,11 @@ public class GlobMatchEnumerationTests
     {
         using IFileSystemMatcherSession boundary = CreateSet("**/*.cs", "**/obj/**");
 
-        string objDir = Path.Combine(Root, "obj", "Debug");
+        string objDir = Path.Join(Root, "obj", "Debug");
         boundary.MatchesFile(objDir, "file.cs".AsSpan()).Should().BeFalse();
         boundary.DirectoryFinished(objDir);
 
-        string srcDir = Path.Combine(Root, "src");
+        string srcDir = Path.Join(Root, "src");
         boundary.MatchesFile(srcDir, "file.cs".AsSpan()).Should().BeTrue();
     }
 
@@ -66,13 +66,13 @@ public class GlobMatchEnumerationTests
     {
         using IFileSystemMatcherSession boundary = CreateSet("**/*.cs", "**/obj/**", "**/bin/**");
 
-        string objDirectory = Path.Combine(Root, "obj");
-        string binDirectory = Path.Combine(Root, "bin");
+        string objDirectory = Path.Join(Root, "obj");
+        string binDirectory = Path.Join(Root, "bin");
         boundary.MatchesFile(objDirectory, "x.cs".AsSpan()).Should().BeFalse();
         boundary.DirectoryFinished(objDirectory);
         boundary.MatchesFile(binDirectory, "x.cs".AsSpan()).Should().BeFalse();
         boundary.DirectoryFinished(binDirectory);
-        boundary.MatchesFile(Path.Combine(Root, "src"), "x.cs".AsSpan()).Should().BeTrue();
+        boundary.MatchesFile(Path.Join(Root, "src"), "x.cs".AsSpan()).Should().BeTrue();
     }
 
     [TestMethod]
@@ -82,6 +82,7 @@ public class GlobMatchEnumerationTests
             "**/*.cs",
             GlobDialect.PosixPath,
             GlobOptions.AllowGlobStar).CreateSession(Root);
+
         GlobMatch subtreeExclude = GlobSpecification.Compile("obj/", GlobDialect.Git).CreateSession(Root);
         GlobMatch fileExclude = GlobSpecification.Compile("generated.cs", GlobDialect.Posix).CreateSession(Root);
         using IFileSystemMatcherSession boundary = new GlobEnumeratorFileSystemMatcherSession(
@@ -93,9 +94,11 @@ public class GlobMatchEnumerationTests
 
         boundary.MatchesDirectory(Root, "obj")
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+
         boundary.MatchesDirectory(Root, "src")
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
-        string sourceDirectory = Path.Combine(Root, "src");
+
+        string sourceDirectory = Path.Join(Root, "src");
         boundary.MatchesFile(sourceDirectory, "generated.cs").Should().BeFalse();
         boundary.MatchesFile(sourceDirectory, "source.cs").Should().BeTrue();
     }
@@ -107,6 +110,7 @@ public class GlobMatchEnumerationTests
             "src/**/*.cs",
             GlobDialect.PosixPath,
             GlobOptions.AllowGlobStar).CreateSession(Root);
+
         GlobMatch exclude = GlobSpecification.Compile("obj/", GlobDialect.Git).CreateSession(Root);
         using IFileSystemMatcherSession boundary = new GlobEnumeratorFileSystemMatcherSession(
             include,
@@ -123,6 +127,7 @@ public class GlobMatchEnumerationTests
 
         boundary.MatchesDirectory(Root, "obj".AsSpan())
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+
         boundary.MatchesDirectory(Root, "src".AsSpan())
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
     }
@@ -134,9 +139,11 @@ public class GlobMatchEnumerationTests
 
         boundary.MatchesDirectory(Root, "bin".AsSpan())
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+
         boundary.DirectoryFinished(Root);
         boundary.MatchesDirectory(Root, "src".AsSpan())
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+
         boundary.DirectoryFinished(Root);
         boundary.MatchesDirectory(Root, "lib".AsSpan())
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
@@ -147,12 +154,14 @@ public class GlobMatchEnumerationTests
     {
         using IFileSystemMatcherSession boundary = Create("bin/Debug/**/*.cs");
 
-        string binDirectory = Path.Combine(Root, "bin");
+        string binDirectory = Path.Join(Root, "bin");
         boundary.MatchesDirectory(Root, "bin".AsSpan())
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+
         boundary.DirectoryFinished(Root);
         boundary.MatchesDirectory(binDirectory, "Debug".AsSpan())
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
+
         boundary.DirectoryFinished(binDirectory);
         boundary.MatchesDirectory(binDirectory, "Other".AsSpan())
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
@@ -165,10 +174,10 @@ public class GlobMatchEnumerationTests
 
         boundary.MatchesFile(Root, "stray.cs".AsSpan()).Should().BeFalse();
         boundary.DirectoryFinished(Root);
-        string binDirectory = Path.Combine(Root, "bin");
+        string binDirectory = Path.Join(Root, "bin");
         boundary.MatchesFile(binDirectory, "stray.cs".AsSpan()).Should().BeFalse();
         boundary.DirectoryFinished(binDirectory);
-        boundary.MatchesFile(Path.Combine(Root, "bin", "Debug"), "ok.cs".AsSpan()).Should().BeTrue();
+        boundary.MatchesFile(Path.Join(Root, "bin", "Debug"), "ok.cs".AsSpan()).Should().BeTrue();
     }
 
     [TestMethod]
@@ -176,7 +185,7 @@ public class GlobMatchEnumerationTests
     {
         using IFileSystemMatcherSession boundary = Create("bin/Debug/**/*.cs");
 
-        string divergedDir = Path.Combine(Root, "src");
+        string divergedDir = Path.Join(Root, "src");
         boundary.MatchesFile(divergedDir, "file.cs".AsSpan()).Should().BeFalse();
         boundary.MatchesFile(divergedDir, "another.cs".AsSpan()).Should().BeFalse();
     }
@@ -186,10 +195,10 @@ public class GlobMatchEnumerationTests
     {
         using IFileSystemMatcherSession boundary = CreateSet("**/*.cs", "obj/Debug/**");
 
-        string sourceDirectory = Path.Combine(Root, "src");
+        string sourceDirectory = Path.Join(Root, "src");
         boundary.MatchesFile(sourceDirectory, "file.cs".AsSpan()).Should().BeTrue();
         boundary.DirectoryFinished(sourceDirectory);
-        boundary.MatchesFile(Path.Combine(Root, "obj", "Debug"), "blocked.cs".AsSpan()).Should().BeFalse();
+        boundary.MatchesFile(Path.Join(Root, "obj", "Debug"), "blocked.cs".AsSpan()).Should().BeFalse();
     }
 
     [TestMethod]
@@ -201,7 +210,8 @@ public class GlobMatchEnumerationTests
         {
             string dir = depth == 0
                 ? Root
-                : Path.Combine([Root, .. Enumerable.Range(0, depth).Select(i => $"d{i}")]);
+                : Path.Join([Root, .. Enumerable.Range(0, depth).Select(i => $"d{i}")]);
+
             boundary.MatchesFile(dir, "x.cs".AsSpan()).Should().BeTrue();
             boundary.DirectoryFinished(dir);
         }
@@ -228,11 +238,13 @@ public class GlobMatchEnumerationTests
         // Top-level `bin` directory is excluded.
         matcher.MatchesDirectory(Root, "bin".AsSpan())
             .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+
         matcher.DirectoryFinished(Root);
         // Nested `bin` directory is also excluded (match-anywhere).
-        string sourceDirectory = Path.Combine(Root, "src");
+        string sourceDirectory = Path.Join(Root, "src");
         matcher.MatchesDirectory(sourceDirectory, "bin".AsSpan())
             .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+
         matcher.DirectoryFinished(sourceDirectory);
         // Unrelated directory is not excluded.
         matcher.MatchesDirectory(Root, "src".AsSpan())
@@ -257,6 +269,7 @@ public class GlobMatchEnumerationTests
 
         matcher.MatchesDirectory(Root, "logs".AsSpan())
             .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+
         matcher.DirectoryFinished(Root);
         matcher.MatchesDirectory(Root, "bin".AsSpan())
             .Should().Be(DirectoryMatchType.MayContainMatchingFiles);
@@ -271,8 +284,9 @@ public class GlobMatchEnumerationTests
 
         matcher.MatchesDirectory(Root, "node_modules")
             .Should().Be(DirectoryMatchType.AllDescendantFilesMatch);
+
         matcher.DirectoryFinished(Root);
-        string packageDirectory = Path.Combine(Root, "node_modules", "package");
+        string packageDirectory = Path.Join(Root, "node_modules", "package");
         matcher.MatchesFile(packageDirectory, "index.js").Should().BeTrue();
     }
 
@@ -283,7 +297,7 @@ public class GlobMatchEnumerationTests
             "/node_modules",
             GlobDialect.Git).CreateSession(Root);
 
-        string packageDirectory = Path.Combine(Root, "node_modules", "package");
+        string packageDirectory = Path.Join(Root, "node_modules", "package");
         matcher.MatchesFile(packageDirectory, "index.js").Should().BeTrue();
         ((bool)matcher.TestAccessor.Dynamic._cacheValid).Should().BeTrue();
         ((bool)matcher.TestAccessor.Dynamic._directoryAncestorMatched).Should().BeTrue();
@@ -291,7 +305,7 @@ public class GlobMatchEnumerationTests
         matcher.MatchesFile(packageDirectory, "other.js").Should().BeTrue();
         matcher.DirectoryFinished(packageDirectory);
         ((bool)matcher.TestAccessor.Dynamic._cacheValid).Should().BeFalse();
-        matcher.MatchesFile(Path.Combine(Root, "src"), "index.js").Should().BeFalse();
+        matcher.MatchesFile(Path.Join(Root, "src"), "index.js").Should().BeFalse();
     }
 
     [TestMethod]
@@ -303,10 +317,11 @@ public class GlobMatchEnumerationTests
 
         matcher.MatchesDirectory(Root, "bin")
             .Should().Be(DirectoryMatchType.NoDescendantFilesMatch);
+
         matcher.DirectoryFinished(Root);
-        matcher.MatchesFile(Path.Combine(Root, "bin"), "file.txt").Should().BeFalse();
-        matcher.DirectoryFinished(Path.Combine(Root, "bin"));
-        matcher.MatchesFile(Path.Combine(Root, "src"), "file.txt").Should().BeTrue();
+        matcher.MatchesFile(Path.Join(Root, "bin"), "file.txt").Should().BeFalse();
+        matcher.DirectoryFinished(Path.Join(Root, "bin"));
+        matcher.MatchesFile(Path.Join(Root, "src"), "file.txt").Should().BeTrue();
     }
 
     [TestMethod]
@@ -314,7 +329,7 @@ public class GlobMatchEnumerationTests
     {
         using IFileSystemMatcherSession boundary = Create("**/*.cs");
 
-        string subDir = Path.Combine(Root, "a", "b", "c");
+        string subDir = Path.Join(Root, "a", "b", "c");
         for (int i = 0; i < 100; i++)
         {
             boundary.MatchesFile(subDir, $"file{i}.cs".AsSpan()).Should().BeTrue();
@@ -327,8 +342,8 @@ public class GlobMatchEnumerationTests
     {
         using IFileSystemMatcherSession boundary = Create("a/*.cs");
 
-        string aDir = Path.Combine(Root, "a");
-        string bDir = Path.Combine(Root, "b");
+        string aDir = Path.Join(Root, "a");
+        string bDir = Path.Join(Root, "b");
 
         boundary.MatchesFile(aDir, "x.cs".AsSpan()).Should().BeTrue();
         boundary.DirectoryFinished(aDir);
@@ -348,7 +363,7 @@ public class GlobMatchEnumerationTests
             segments[i] = $"segment{i:D2}";
         }
 
-        string deepDir = Path.Combine([Root, .. segments]);
+        string deepDir = Path.Join([Root, .. segments]);
         boundary.MatchesFile(deepDir, "file.cs".AsSpan()).Should().BeTrue();
         boundary.DirectoryFinished(deepDir);
 
@@ -360,7 +375,7 @@ public class GlobMatchEnumerationTests
     {
         using IFileSystemMatcherSession boundary = Create("a/b/*.cs");
 
-        string subDir = Path.Combine(Root, "a", "b");
+        string subDir = Path.Join(Root, "a", "b");
         boundary.MatchesFile(subDir, "file.cs".AsSpan()).Should().BeTrue();
     }
 
@@ -399,7 +414,7 @@ public class GlobMatchEnumerationTests
                 segments[i] = $"segment{i:D2}";
             }
 
-            string deepDir = Path.Combine([Root, .. segments]);
+            string deepDir = Path.Join([Root, .. segments]);
             matcher.MatchesFile(deepDir, "file.cs".AsSpan());
 
             matcher.Dispose();

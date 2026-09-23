@@ -30,12 +30,13 @@ public class FileSystemMatchEnumeratorTests
     public void MoveNext_MatchingFiles_ReturnsCanonicalRelativePaths()
     {
         using TempFolder folder = new();
-        string source = Path.Combine(folder.TempPath, "src");
+        string source = Path.Join(folder.TempPath, "src");
         Directory.CreateDirectory(source);
-        File.WriteAllText(Path.Combine(source, "a.cs"), string.Empty);
-        File.WriteAllText(Path.Combine(source, "a.txt"), string.Empty);
+        File.WriteAllText(Path.Join(source, "a.cs"), string.Empty);
+        File.WriteAllText(Path.Join(source, "a.txt"), string.Empty);
         IFileSystemMatcher matcher = FileSystemMatcher.Create(
             (_, fileName) => fileName.EndsWith(".cs"));
+
         using FileSystemPathEnumerator enumerator = FileSystemPathEnumerator.Create(
             folder.TempPath,
             matcher);
@@ -67,9 +68,10 @@ public class FileSystemMatchEnumeratorTests
     public void MoveNext_RelativeRootWithTrailingSeparator_PassesNormalizedRootToSession()
     {
         using TempFolder folder = new();
-        File.WriteAllText(Path.Combine(folder.TempPath, "a.cs"), string.Empty);
+        File.WriteAllText(Path.Join(folder.TempPath, "a.cs"), string.Empty);
         string relativeRoot = Path.GetRelativePath(Environment.CurrentDirectory, folder.TempPath)
             + Path.DirectorySeparatorChar;
+
         TrackingMatcher matcher = new();
         using FileSystemPathEnumerator enumerator = FileSystemPathEnumerator.Create(
             relativeRoot,
@@ -85,9 +87,9 @@ public class FileSystemMatchEnumeratorTests
     public void MoveNext_DirectoryExcluded_DoesNotVisitDescendant()
     {
         using TempFolder folder = new();
-        string excluded = Path.Combine(folder.TempPath, "obj");
+        string excluded = Path.Join(folder.TempPath, "obj");
         Directory.CreateDirectory(excluded);
-        File.WriteAllText(Path.Combine(excluded, "a.cs"), string.Empty);
+        File.WriteAllText(Path.Join(excluded, "a.cs"), string.Empty);
         IFileSystemMatcher matcher = new ExcludeDirectoryMatcher("obj");
         using FileSystemPathEnumerator enumerator = FileSystemPathEnumerator.Create(
             folder.TempPath,
@@ -100,11 +102,12 @@ public class FileSystemMatchEnumeratorTests
     public void Dispose_AfterTraversal_DisposesSessionOnce()
     {
         using TempFolder folder = new();
-        File.WriteAllText(Path.Combine(folder.TempPath, "a.cs"), string.Empty);
+        File.WriteAllText(Path.Join(folder.TempPath, "a.cs"), string.Empty);
         TrackingMatcher matcher = new();
         FileSystemPathEnumerator enumerator = FileSystemPathEnumerator.Create(
             folder.TempPath,
             matcher);
+
         try
         {
             enumerator.MoveNext().Should().BeTrue();
@@ -124,14 +127,15 @@ public class FileSystemMatchEnumeratorTests
     public void MoveNext_CompiledGlobDefinition_MatchesExpectedFiles()
     {
         using TempFolder folder = new();
-        string source = Path.Combine(folder.TempPath, "src");
+        string source = Path.Join(folder.TempPath, "src");
         Directory.CreateDirectory(source);
-        File.WriteAllText(Path.Combine(source, "a.cs"), string.Empty);
-        File.WriteAllText(Path.Combine(source, "a.txt"), string.Empty);
+        File.WriteAllText(Path.Join(source, "a.cs"), string.Empty);
+        File.WriteAllText(Path.Join(source, "a.txt"), string.Empty);
         GlobSpecification specification = GlobSpecification.Compile(
             "**/*.cs",
             GlobDialect.PosixPath,
             GlobOptions.AllowGlobStar);
+
         using FileSystemPathEnumerator enumerator = FileSystemPathEnumerator.Create(
             folder.TempPath,
             specification.CreateFileSystemMatcher());
@@ -149,14 +153,15 @@ public class FileSystemMatchEnumeratorTests
     public void Create_CallerMutatesEnumerationOptions_TraversalUsesSnapshot()
     {
         using TempFolder folder = new();
-        string source = Path.Combine(folder.TempPath, "src");
+        string source = Path.Join(folder.TempPath, "src");
         Directory.CreateDirectory(source);
-        File.WriteAllText(Path.Combine(source, "a.cs"), string.Empty);
+        File.WriteAllText(Path.Join(source, "a.cs"), string.Empty);
         EnumerationOptions options = new()
         {
             IgnoreInaccessible = true,
             RecurseSubdirectories = true
         };
+
         IFileSystemMatcher matcher = FileSystemMatcher.Create((_, _) => true);
         using FileSystemPathEnumerator enumerator = FileSystemPathEnumerator.Create(
             folder.TempPath,
@@ -182,15 +187,16 @@ public class FileSystemMatchEnumeratorTests
         }
 
         using TempFolder folder = new();
-        string directory = Path.Combine(folder.TempPath, "literal\\name");
+        string directory = Path.Join(folder.TempPath, "literal\\name");
         Directory.CreateDirectory(directory);
-        File.WriteAllText(Path.Combine(directory, "file.cs"), string.Empty);
+        File.WriteAllText(Path.Join(directory, "file.cs"), string.Empty);
         string? observedPath = null;
         IFileSystemMatcher matcher = FileSystemMatcher.CreatePath(path =>
         {
             observedPath = path.ToString();
             return true;
         });
+
         using FileSystemPathEnumerator enumerator = FileSystemPathEnumerator.Create(
             folder.TempPath,
             matcher);
@@ -205,7 +211,7 @@ public class FileSystemMatchEnumeratorTests
     public void Dispose_DerivedAndSessionThrow_AttemptsDerivedThenSessionAndPreservesFirstException()
     {
         using TempFolder folder = new();
-        File.WriteAllText(Path.Combine(folder.TempPath, "file.cs"), string.Empty);
+        File.WriteAllText(Path.Join(folder.TempPath, "file.cs"), string.Empty);
         List<string> order = [];
         DisposalOrderEnumerator enumerator = new(folder.TempPath, new DisposalOrderMatcher(order), order);
         try

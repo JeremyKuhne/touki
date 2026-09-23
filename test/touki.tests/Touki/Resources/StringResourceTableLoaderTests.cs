@@ -94,6 +94,7 @@ public class StringResourceTableLoaderTests
                 StringResourceManagerOptions.None,
                 owner)
                 ?? throw new InvalidOperationException("Expected the embedded resource.");
+
             try
             {
                 owner.IsDisposed.Should().BeFalse();
@@ -188,6 +189,7 @@ public class StringResourceTableLoaderTests
                 resources,
                 StringResourceManagerOptions.None,
                 owner);
+
             try
             {
                 owner.IsDisposed.Should().BeFalse();
@@ -236,6 +238,7 @@ public class StringResourceTableLoaderTests
         IndexedStringResourceTable table = StringResourceTableLoader.LoadIndexedTableFromResourcesStream(
             stream,
             StringResourceManagerOptions.None);
+
         try
         {
             stream.CanRead.Should().BeTrue();
@@ -425,7 +428,7 @@ public class StringResourceTableLoaderTests
     [TestMethod]
     public void LoadStringTableFromResourcesFile_NullResource_ThrowsBadImageFormatException()
     {
-        byte[] resources = WriteResources(static writer => writer.AddResource("Null", (object?)null));
+        byte[] resources = WriteResources(static writer => writer.AddResource("Null", value: (object?)null));
 
         Action strict = () => StringResourceTableLoader.LoadStringTableFromResourcesFile(resources);
         Action ignore = () => StringResourceTableLoader.LoadStringTableFromResourcesFile(
@@ -486,6 +489,7 @@ public class StringResourceTableLoaderTests
             writer.AddResource("Alpha", "One");
             writer.AddResource("Bravo", "Two");
         });
+
         ReplaceUtf16(resources, "Bravo", "Alpha");
 
         Action action = () => StringResourceTableLoader.LoadStringTableFromResourcesFile(resources);
@@ -501,6 +505,7 @@ public class StringResourceTableLoaderTests
             writer.AddResource("Alpha", "One");
             writer.AddResource("Bravo", 2);
         });
+
         ReplaceUtf16(resources, "Bravo", "Alpha");
 
         Dictionary<string, string> table = StringResourceTableLoader.LoadStringTableFromResourcesFile(
@@ -518,6 +523,7 @@ public class StringResourceTableLoaderTests
             writer.AddResource("Alpha", 1);
             writer.AddResource("Bravo", 2);
         });
+
         ReplaceUtf16(resources, "Bravo", "Alpha");
 
         Dictionary<string, string> table = StringResourceTableLoader.LoadStringTableFromResourcesFile(
@@ -567,8 +573,10 @@ public class StringResourceTableLoaderTests
 
             CorHeader corHeader = peReader.PEHeaders.CorHeader
                 ?? throw new InvalidOperationException("The test assembly does not have a CLR header.");
+
             peReader.PEHeaders.TryGetDirectoryOffset(corHeader.ResourcesDirectory, out int directoryOffset)
                 .Should().BeTrue();
+
             return checked(directoryOffset + (int)resource.Offset + sizeof(int));
         }
 

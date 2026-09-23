@@ -20,7 +20,7 @@ public class AssertInterpolatedStringHandlerTests
     public void Constructor_SetsShouldAppend_FalseWhenConditionTrue()
     {
         bool shouldAppend;
-        AssertInterpolatedStringHandler handler = new(5, 1, true, out shouldAppend);
+        AssertInterpolatedStringHandler handler = new(5, 1, condition: true, out shouldAppend);
         shouldAppend.Should().BeFalse();
 #if NETFRAMEWORK
         handler.AppendLiteral("Hello");
@@ -32,7 +32,7 @@ public class AssertInterpolatedStringHandlerTests
     public void Constructor_SetsShouldAppend_TrueWhenConditionFalse()
     {
         bool shouldAppend;
-        AssertInterpolatedStringHandler handler = new(5, 1, false, out shouldAppend);
+        AssertInterpolatedStringHandler handler = new(5, 1, condition: false, out shouldAppend);
         shouldAppend.Should().BeTrue();
 #if NETFRAMEWORK
         handler.AppendLiteral("Hello");

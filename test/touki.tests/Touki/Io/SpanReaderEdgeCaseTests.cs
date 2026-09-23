@@ -5,7 +5,7 @@
 namespace Touki.Io;
 
 /// <summary>
-/// Edge case and bug validation tests for SpanReader{T}.
+///  Edge case and bug validation tests for SpanReader{T}.
 /// </summary>
 [TestClass]
 public class SpanReaderEdgeCaseTests
@@ -289,7 +289,7 @@ public class SpanReaderEdgeCaseTests
         SpanReader<byte> reader = new(span);
 
         ReadOnlySpan<byte> emptyDelimiters = [];
-        bool result = reader.TryReadToAny(emptyDelimiters, true, out ReadOnlySpan<byte> read);
+        bool result = reader.TryReadToAny(emptyDelimiters, advancePastDelimiter: true, out ReadOnlySpan<byte> read);
         result.Should().BeFalse();
         read.Length.Should().Be(0);
         reader.Position.Should().Be(0);
@@ -422,7 +422,7 @@ public class SpanReaderEdgeCaseTests
 
         // Test the special optimization for exactly 2 delimiters
         ReadOnlySpan<byte> twoDelimiters = [3, 9];
-        bool result = reader.TryReadToAny(twoDelimiters, true, out ReadOnlySpan<byte> read);
+        bool result = reader.TryReadToAny(twoDelimiters, advancePastDelimiter: true, out ReadOnlySpan<byte> read);
         result.Should().BeTrue();
         read.ToArray().Should().BeEquivalentTo([1, 2]);
         reader.Position.Should().Be(3);
@@ -436,7 +436,7 @@ public class SpanReaderEdgeCaseTests
 
         // Test the general path for more than 2 delimiters
         ReadOnlySpan<byte> multipleDelimiters = [3, 7, 9, 11];
-        bool result = reader.TryReadToAny(multipleDelimiters, true, out ReadOnlySpan<byte> read);
+        bool result = reader.TryReadToAny(multipleDelimiters, advancePastDelimiter: true, out ReadOnlySpan<byte> read);
         result.Should().BeTrue();
         read.ToArray().Should().BeEquivalentTo([1, 2]);
         reader.Position.Should().Be(3);
@@ -494,6 +494,7 @@ public class SpanReaderEdgeCaseTests
             // Test setting to 0
             Position = 1
         };
+
         reader.Position = 0;
         reader.Position.Should().Be(0);
         reader.Unread.ToArray().Should().BeEquivalentTo([1, 2, 3]);

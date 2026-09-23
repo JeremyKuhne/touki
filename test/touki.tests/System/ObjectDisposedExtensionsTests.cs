@@ -12,13 +12,13 @@ public class ObjectDisposedExtensionsTests
     [TestMethod]
     public void ThrowIf_FalseWithInstance_DoesNotThrow()
     {
-        ObjectDisposedException.ThrowIf(false, new Sample());
+        ObjectDisposedException.ThrowIf(condition: false, new Sample());
     }
 
     [TestMethod]
     public void ThrowIf_TrueWithInstance_ThrowsWithTypeName()
     {
-        Action action = () => ObjectDisposedException.ThrowIf(true, new Sample());
+        Action action = () => ObjectDisposedException.ThrowIf(condition: true, new Sample());
         action.Should().Throw<ObjectDisposedException>()
             .Which.ObjectName.Should().Be(typeof(Sample).FullName);
     }
@@ -26,13 +26,13 @@ public class ObjectDisposedExtensionsTests
     [TestMethod]
     public void ThrowIf_FalseWithType_DoesNotThrow()
     {
-        ObjectDisposedException.ThrowIf(false, typeof(Sample));
+        ObjectDisposedException.ThrowIf(condition: false, typeof(Sample));
     }
 
     [TestMethod]
     public void ThrowIf_TrueWithType_ThrowsWithTypeName()
     {
-        Action action = () => ObjectDisposedException.ThrowIf(true, typeof(Sample));
+        Action action = () => ObjectDisposedException.ThrowIf(condition: true, typeof(Sample));
         action.Should().Throw<ObjectDisposedException>()
             .Which.ObjectName.Should().Be(typeof(Sample).FullName);
     }

@@ -299,12 +299,14 @@ public partial class MemberXmlDocumentationAnalyzerTests
             "M:",
             new string('(', MaximumDocumentationIdDepth + 1),
             new string(')', MaximumDocumentationIdDepth + 1));
+
         MetadataReference metadata = CreateMetadataReference(
             "public static class External { public static void Run() { } }",
             new Dictionary<string, string>
             {
                 ["M:External.Run"] = $"<member><inheritdoc cref=\"{unsafeDocumentationId}\"/></member>"
             });
+
         const string source = """
             public class Sample
             {
@@ -316,7 +318,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            additionalReferences: [metadata]).ConfigureAwait(false);
+            additionalReferences: [metadata]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -335,13 +337,14 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 }
 
                 """));
+
         string interfaceList = string.Join(", ", Enumerable.Range(0, interfaceCount).Select(index => $"I{index}"));
         string inheritdocs = string.Concat(Enumerable.Repeat("    /// <inheritdoc/>\n", inheritdocCount));
         string source = $"{interfaceDeclarations}public class Sample : {interfaceList}\n{{\n"
             + inheritdocs
             + "    public void Run() { }\n}";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }

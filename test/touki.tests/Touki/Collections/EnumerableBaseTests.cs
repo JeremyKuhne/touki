@@ -136,7 +136,7 @@ public class EnumerableBaseTests
         TestEnumerable enumerable = new(42);
 
         // Before any MoveNext calls, Current should be default
-        enumerable.Current.Should().Be(default);
+        enumerable.Current.Should().Be(expected: default);
     }
 
     [TestMethod]
@@ -202,7 +202,7 @@ public class EnumerableBaseTests
 
         // Reset and verify we start from the beginning
         enumerable.Reset();
-        enumerable.Current.Should().Be(default);
+        enumerable.Current.Should().Be(expected: default);
 
         // Verify we can enumerate from the beginning
         enumerable.MoveNext();

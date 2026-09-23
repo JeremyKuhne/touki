@@ -60,7 +60,7 @@ public class ArrayListTests
         using ArrayList<string> list = new();
         // Intentionally pass null to exercise item validation.
     #pragma warning disable CS8625
-        Action act = () => list.Add(null);
+        Action act = () => list.Add(item: null);
     #pragma warning restore CS8625
         act.Should().Throw<ArgumentNullException>();
     }

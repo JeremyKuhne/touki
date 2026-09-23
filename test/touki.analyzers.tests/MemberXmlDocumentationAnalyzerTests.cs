@@ -25,6 +25,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             requireParameters,
             requireReturns,
             effectiveApiSurface);
+
         return AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
@@ -36,15 +37,15 @@ public partial class MemberXmlDocumentationAnalyzerTests
         string source,
         string? apiSurface = null,
         string? effectiveApiSurface = null) =>
-        AnalyzerTestHarness.GetDiagnosticsAsync(
-            new MemberXmlDocumentationAnalyzer(),
-            source,
-            options: CreateOptions(
-                apiSurface,
-                requireParameters: null,
-                requireReturns: null,
-                effectiveApiSurface),
-            parseOptions: new CSharpParseOptions(LanguageVersion.Preview));
+            AnalyzerTestHarness.GetDiagnosticsAsync(
+                new MemberXmlDocumentationAnalyzer(),
+                source,
+                options: CreateOptions(
+                    apiSurface,
+                    requireParameters: null,
+                    requireReturns: null,
+                    effectiveApiSurface),
+                parseOptions: new CSharpParseOptions(LanguageVersion.Preview));
 
     private static Task<ImmutableArray<Diagnostic>> AnalyzeAsync(
         IReadOnlyList<(string Source, string FileName)> sources,
@@ -58,6 +59,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             requireParameters,
             requireReturns,
             effectiveApiSurface);
+
         return AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             sources,
@@ -110,15 +112,15 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
     private static bool IsMemberDocumentationDiagnostic(Diagnostic diagnostic) =>
         diagnostic.Id == MemberXmlDocumentationAnalyzer.DiagnosticId
-        && diagnostic.GetMessage().Contains("missing <summary>", StringComparison.Ordinal);
+            && diagnostic.GetMessage().Contains("missing <summary>", StringComparison.Ordinal);
 
     private static bool IsParameterDocumentationDiagnostic(Diagnostic diagnostic) =>
         diagnostic.Id == MemberXmlDocumentationAnalyzer.DiagnosticId
-        && diagnostic.GetMessage().Contains("missing <param>", StringComparison.Ordinal);
+            && diagnostic.GetMessage().Contains("missing <param>", StringComparison.Ordinal);
 
     private static bool IsReturnDocumentationDiagnostic(Diagnostic diagnostic) =>
         diagnostic.Id == MemberXmlDocumentationAnalyzer.DiagnosticId
-        && diagnostic.GetMessage().Contains("missing <returns>", StringComparison.Ordinal);
+            && diagnostic.GetMessage().Contains("missing <returns>", StringComparison.Ordinal);
 
     private static PortableExecutableReference CreateMetadataReference(
         string source,
@@ -130,6 +132,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             syntaxTrees: [CSharpSyntaxTree.ParseText(source)],
             references: RoslynTestEnvironment.References,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
         using MemoryStream peStream = new();
         Microsoft.CodeAnalysis.Emit.EmitResult result = compilation.Emit(peStream);
         if (!result.Success)
@@ -153,6 +156,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             syntaxTrees: [CSharpSyntaxTree.ParseText(source)],
             references: RoslynTestEnvironment.GetReferences(additionalReferences),
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
         return compilation.ToMetadataReference();
     }
 
@@ -161,7 +165,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
     {
         const string source = "public class Sample { public void Run() { } }";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Id.Should().Be(MemberXmlDocumentationAnalyzer.DiagnosticId);
@@ -179,7 +183,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -195,13 +199,14 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(3);
         diagnostics.Should().ContainSingle(
             diagnostic => diagnostic.GetMessage().Contains(
                 "<inheritdoc> does not resolve to a top-level <summary>",
                 StringComparison.Ordinal));
+
         diagnostics.Should().ContainSingle(diagnostic => IsParameterDocumentationDiagnostic(diagnostic));
         diagnostics.Should().ContainSingle(diagnostic => IsReturnDocumentationDiagnostic(diagnostic));
     }
@@ -218,15 +223,18 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 public void Run() { }
             }
             """;
+
         SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
         CSharpCompilation compilation = CSharpCompilation.Create(
             assemblyName: "SynthesizedTarget",
             syntaxTrees: [tree],
             references: RoslynTestEnvironment.References,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
         XmlCrefAttributeSyntax cref = tree.GetRoot().DescendantNodes(descendIntoTrivia: true)
             .OfType<XmlCrefAttributeSyntax>()
             .Single();
+
         ISymbol? target = compilation.GetSemanticModel(tree).GetSymbolInfo(cref.Cref).Symbol;
         target.Should().BeAssignableTo<IMethodSymbol>();
         if (target is not IMethodSymbol method)
@@ -237,7 +245,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         method.IsImplicitlyDeclared.Should().BeTrue();
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, apiSurface: "public")
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -254,15 +262,18 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 public void Run() { }
             }
             """;
+
         SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
         CSharpCompilation compilation = CSharpCompilation.Create(
             assemblyName: "AssemblylessTarget",
             syntaxTrees: [tree],
             references: RoslynTestEnvironment.References,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true));
+
         XmlCrefAttributeSyntax cref = tree.GetRoot().DescendantNodes(descendIntoTrivia: true)
             .OfType<XmlCrefAttributeSyntax>()
             .Single();
+
         ISymbol? target = compilation.GetSemanticModel(tree).GetSymbolInfo(cref.Cref).Symbol;
         target.Should().BeAssignableTo<IFunctionPointerTypeSymbol>();
         if (target is not IFunctionPointerTypeSymbol functionPointer)
@@ -272,7 +283,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         functionPointer.ContainingAssembly.Should().BeNull();
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -292,7 +303,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            additionalReferences: [projectReference]).ConfigureAwait(false);
+            additionalReferences: [projectReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.GetMessage().Should().Contain("<inheritdoc> does not resolve to a top-level <summary>");
@@ -310,6 +321,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 None
             }
             """);
+
         const string source = """
             public enum LocalKind
             {
@@ -321,7 +333,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            additionalReferences: [projectReference]).ConfigureAwait(false);
+            additionalReferences: [projectReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -340,6 +352,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 Alias
             }
             """);
+
         const string source = """
             public enum LocalKind
             {
@@ -351,7 +364,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            additionalReferences: [projectReference]).ConfigureAwait(false);
+            additionalReferences: [projectReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -368,6 +381,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """,
             assemblyName: "RootProject");
+
         CompilationReference middleReference = CreateCompilationReference(
             """
             public enum MiddleKind
@@ -378,6 +392,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             """,
             assemblyName: "MiddleProject",
             additionalReferences: [rootReference]);
+
         const string source = """
             public enum LocalKind
             {
@@ -389,7 +404,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            additionalReferences: [middleReference]).ConfigureAwait(false);
+            additionalReferences: [middleReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -406,6 +421,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 ["F:ExternalKind.Alias"] =
                     "<member name=\"F:ExternalKind.Alias\"><inheritdoc cref=\"F:ExternalKind.Documented\"/></member>"
             });
+
         const string source = """
             public enum LocalKind
             {
@@ -417,7 +433,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            additionalReferences: [metadata]).ConfigureAwait(false);
+            additionalReferences: [metadata]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -451,6 +467,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 ["M:External.RootMethod"] = "<member><summary>Method documentation.</summary></member>",
                 ["M:External.AliasMethod"] = "<member><inheritdoc cref=\"M:External.RootMethod\"/></member>"
             });
+
         const string source = """
             public class Sample
             {
@@ -471,7 +488,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            additionalReferences: [metadata]).ConfigureAwait(false);
+            additionalReferences: [metadata]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -487,6 +504,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 ["F:External.Alias"] = "<member><inheritdoc cref=\"F:External.Root\"/></member>"
             },
             assemblyName: "DocumentedAssembly").WithAliases(["Documented"]);
+
         PortableExecutableReference undocumentedReference = CreateMetadataReference(
             "public enum External { Root, Alias }",
             new Dictionary<string, string>
@@ -494,6 +512,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 ["F:External.Root"] = "<member><remarks>No summary.</remarks></member>"
             },
             assemblyName: "UndocumentedAssembly").WithAliases(["Undocumented"]);
+
         const string source = """
             extern alias Documented;
 
@@ -507,7 +526,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            additionalReferences: [undocumentedReference, documentedReference]).ConfigureAwait(false);
+            additionalReferences: [undocumentedReference, documentedReference]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -518,6 +537,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         const int inheritdocCount = 4094;
         string inheritdocElements = string.Concat(
             Enumerable.Repeat("<inheritdoc cref=\"F:External.Root\"/>", inheritdocCount));
+
         PortableExecutableReference metadata = CreateMetadataReference(
             "public enum External { Root, Alias }",
             new Dictionary<string, string>
@@ -525,6 +545,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 ["F:External.Root"] = "<member><summary>Root documentation.</summary></member>",
                 ["F:External.Alias"] = $"<member>{inheritdocElements}</member>"
             }).WithAliases(["ExternalAlias"]);
+
         const string source = """
             extern alias ExternalAlias;
 
@@ -538,7 +559,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            additionalReferences: [metadata]).ConfigureAwait(false);
+            additionalReferences: [metadata]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -555,6 +576,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 ["F:ExternalKind.Alias"] =
                     "<member name=\"F:ExternalKind.Alias\"><inheritdoc cref=\"F:ExternalKind.Documented\" path=\"/summary\"/></member>"
             });
+
         const string source = """
             public enum LocalKind
             {
@@ -566,7 +588,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            additionalReferences: [metadata]).ConfigureAwait(false);
+            additionalReferences: [metadata]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -589,7 +611,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             """;
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, apiSurface: "public")
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -600,6 +622,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         MetadataReference metadata = CreateMetadataReference(
             "public static class External { public static void Run() { } }",
             new Dictionary<string, string>());
+
         const string source = """
             public class Sample
             {
@@ -611,7 +634,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            additionalReferences: [metadata]).ConfigureAwait(false);
+            additionalReferences: [metadata]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -663,7 +686,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             source,
             apiSurface: "all",
             requireParameters: false,
-            requireReturns: false).ConfigureAwait(false);
+            requireReturns: false).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(10);
         diagnostics.Should().OnlyContain(
@@ -720,7 +743,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             source,
             apiSurface: "all",
             requireParameters: false,
-            requireReturns: false).ConfigureAwait(false);
+            requireReturns: false).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -752,7 +775,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(5);
         diagnostics.Count(IsParameterDocumentationDiagnostic).Should().Be(4);
@@ -785,7 +808,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -819,7 +842,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -845,7 +868,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             """;
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, apiSurface: "public")
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -871,7 +894,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             """;
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, apiSurface: "public")
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.GetMessage().Should().Contain("<inheritdoc> does not resolve to a top-level <summary>");
@@ -888,7 +911,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(3);
         diagnostics.Should().OnlyContain(diagnostic => diagnostic.Id == MemberXmlDocumentationAnalyzer.DiagnosticId);
@@ -910,7 +933,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -927,7 +950,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Id.Should().Be(MemberXmlDocumentationAnalyzer.DiagnosticId);
@@ -948,7 +971,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            requireParameters: false).ConfigureAwait(false);
+            requireParameters: false).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         IsReturnDocumentationDiagnostic(diagnostic).Should().BeTrue();
@@ -967,7 +990,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            requireReturns: false).ConfigureAwait(false);
+            requireReturns: false).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         IsParameterDocumentationDiagnostic(diagnostic).Should().BeTrue();
@@ -987,7 +1010,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
             requireParameters: false,
-            requireReturns: false).ConfigureAwait(false);
+            requireReturns: false).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1007,7 +1030,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(5);
         diagnostics.Should().OnlyContain(
@@ -1027,7 +1050,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            apiSurface: "private").ConfigureAwait(false);
+            apiSurface: "private").ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan)
@@ -1049,7 +1072,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            apiSurface: " PUBLIC, internal ").ConfigureAwait(false);
+            apiSurface: " PUBLIC, internal ").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(3);
         diagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
@@ -1067,11 +1090,12 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> publicDiagnostics = await AnalyzeAsync(
             source,
             apiSurface: "public",
-            effectiveApiSurface: "private").ConfigureAwait(false);
+            effectiveApiSurface: "private").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> internalDiagnostics = await AnalyzeAsync(
             source,
             apiSurface: "internal",
-            effectiveApiSurface: "internal").ConfigureAwait(false);
+            effectiveApiSurface: "internal").ConfigureAwait(continueOnCapturedContext: false);
 
         publicDiagnostics.Should().ContainSingle();
         internalDiagnostics.Should().BeEmpty();
@@ -1090,16 +1114,18 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> defaultDiagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> defaultDiagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
         ImmutableArray<Diagnostic> privateDiagnostics = await AnalyzeAsync(
             source,
-            apiSurface: "private").ConfigureAwait(false);
+            apiSurface: "private").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> effectiveDefaultDiagnostics = await AnalyzeAsync(
             source,
-            effectiveApiSurface: "public, internal").ConfigureAwait(false);
+            effectiveApiSurface: "public, internal").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> effectivePrivateDiagnostics = await AnalyzeAsync(
             source,
-            effectiveApiSurface: "private").ConfigureAwait(false);
+            effectiveApiSurface: "private").ConfigureAwait(continueOnCapturedContext: false);
 
         defaultDiagnostics.Should().ContainSingle();
         privateDiagnostics.Should().BeEmpty();
@@ -1115,11 +1141,12 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> effectivePublicDiagnostics = await AnalyzeAsync(
             source,
             apiSurface: "internal",
-            effectiveApiSurface: "public").ConfigureAwait(false);
+            effectiveApiSurface: "public").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> effectiveInternalDiagnostics = await AnalyzeAsync(
             source,
             apiSurface: "private",
-            effectiveApiSurface: "internal").ConfigureAwait(false);
+            effectiveApiSurface: "internal").ConfigureAwait(continueOnCapturedContext: false);
 
         effectivePublicDiagnostics.Should().BeEmpty();
         effectiveInternalDiagnostics.Should().ContainSingle();
@@ -1135,7 +1162,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            effectiveApiSurface: effectiveApiSurface).ConfigureAwait(false);
+            effectiveApiSurface: effectiveApiSurface).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1153,7 +1180,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            apiSurface: "file").ConfigureAwait(false);
+            apiSurface: "file").ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan)
@@ -1171,10 +1198,11 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         ImmutableArray<Diagnostic> apiSurfaceDiagnostics = await AnalyzeAsync(
             topLevelSource,
-            apiSurface: surface).ConfigureAwait(false);
+            apiSurface: surface).ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> effectiveApiSurfaceDiagnostics = await AnalyzeAsync(
             nestedSource,
-            effectiveApiSurface: surface).ConfigureAwait(false);
+            effectiveApiSurface: surface).ConfigureAwait(continueOnCapturedContext: false);
 
         apiSurfaceDiagnostics.Should().BeEmpty();
         effectiveApiSurfaceDiagnostics.Should().BeEmpty();
@@ -1201,7 +1229,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
             requireParameters: false,
-            requireReturns: false).ConfigureAwait(false);
+            requireReturns: false).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(5);
         diagnostics.Select(diagnostic => diagnostic.Location.GetRequiredSourceTree().GetText()
@@ -1218,7 +1246,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
     {
         const string source = "public class Sample { ~Sample() { } }";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1234,7 +1262,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1244,7 +1272,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
     {
         const string source = "public class Sample { public int First, Second; }";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
     }
@@ -1260,7 +1288,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1276,7 +1304,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         IsParameterDocumentationDiagnostic(diagnostic).Should().BeTrue();
@@ -1294,7 +1322,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         IsReturnDocumentationDiagnostic(diagnostic).Should().BeTrue();
@@ -1310,7 +1338,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(4);
         diagnostics.Should().OnlyContain(diagnostic => diagnostic.Id == MemberXmlDocumentationAnalyzer.DiagnosticId);
@@ -1329,7 +1357,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(3);
         diagnostics.Should().OnlyContain(diagnostic => diagnostic.Id == MemberXmlDocumentationAnalyzer.DiagnosticId);
@@ -1348,7 +1376,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             public delegate int Transformer(int value);
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1361,7 +1389,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             public delegate int Transformer(int value);
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
         diagnostics.Should().OnlyContain(diagnostic => diagnostic.Id == MemberXmlDocumentationAnalyzer.DiagnosticId);
@@ -1378,7 +1406,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             public class Sample(int value);
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1391,7 +1419,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             public class Sample(int value);
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         IsParameterDocumentationDiagnostic(diagnostic).Should().BeTrue();
@@ -1406,7 +1434,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             public record Sample(int Value);
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1429,7 +1457,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             public record DerivedRecord(int Value) : BaseRecord(Value);
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1450,22 +1478,26 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 public void Run() { }
             }
             """;
+
         SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
         CSharpCompilation compilation = CSharpCompilation.Create(
             assemblyName: "PrimaryConstructorTarget",
             syntaxTrees: [tree],
             references: RoslynTestEnvironment.References,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
         XmlCrefAttributeSyntax cref = tree.GetRoot().DescendantNodes(descendIntoTrivia: true)
             .OfType<XmlCrefAttributeSyntax>()
             .Single();
+
         IMethodSymbol target = compilation.GetSemanticModel(tree).GetSymbolInfo(cref.Cref).Symbol
             .Should().BeAssignableTo<IMethodSymbol>().Subject;
+
         target.MethodKind.Should().Be(MethodKind.Constructor);
         target.DeclaringSyntaxReferences.Should().ContainSingle()
             .Which.GetSyntax().Should().BeAssignableTo<TypeDeclarationSyntax>();
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1491,7 +1523,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 "Sample.Transform.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1508,6 +1540,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 "public partial class Outer { internal partial class Sample { public partial void Run() { } } }",
                 "B.cs")
         ];
+
         Dictionary<string, IReadOnlyDictionary<string, string>> optionsByFile = new(StringComparer.Ordinal)
         {
             ["A.cs"] = new Dictionary<string, string>
@@ -1524,7 +1557,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             sources,
-            optionsByFile: optionsByFile).ConfigureAwait(false);
+            optionsByFile: optionsByFile).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("Run");
@@ -1541,7 +1574,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(3);
         diagnostics.Should().OnlyContain(diagnostic => diagnostic.Id == MemberXmlDocumentationAnalyzer.DiagnosticId);
@@ -1564,7 +1597,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1583,7 +1616,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         IsParameterDocumentationDiagnostic(diagnostic).Should().BeTrue();
@@ -1603,7 +1636,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1628,7 +1661,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 "Sample.g.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(MemberXmlDocumentationAnalyzer.DiagnosticId);
@@ -1659,7 +1692,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 "Sample.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1689,7 +1722,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 "Sample.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         IsParameterDocumentationDiagnostic(diagnostic).Should().BeTrue();
@@ -1715,7 +1748,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1741,7 +1774,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1767,7 +1800,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
             requireParameters: false,
-            requireReturns: false).ConfigureAwait(false);
+            requireReturns: false).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1787,7 +1820,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
     }
@@ -1814,7 +1847,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
         diagnostics.Should().OnlyContain(
@@ -1838,7 +1871,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(MemberXmlDocumentationAnalyzer.DiagnosticId);
@@ -1849,7 +1882,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
     {
         const string source = "public sealed class Sample { public override string ToString() => string.Empty; }";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1863,12 +1896,13 @@ public partial class MemberXmlDocumentationAnalyzerTests
             {
                 ["M:Base.Run"] = "<member name=\"M:Base.Run\"><summary>Runs the operation.</summary></member>"
             });
+
         const string source = "public sealed class Derived : Base { public override void Run() { } }";
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            additionalReferences: [metadata]).ConfigureAwait(false);
+            additionalReferences: [metadata]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1878,15 +1912,17 @@ public partial class MemberXmlDocumentationAnalyzerTests
     {
         string oversizedDocumentation =
             $"<member name=\"M:Base.Run\"><summary>{new string('x', 1024 * 1024)}</summary></member>";
+
         MetadataReference metadata = CreateMetadataReference(
             "public abstract class Base { public abstract void Run(); }",
             new Dictionary<string, string> { ["M:Base.Run"] = oversizedDocumentation });
+
         const string source = "public sealed class Derived : Base { public override void Run() { } }";
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            additionalReferences: [metadata]).ConfigureAwait(false);
+            additionalReferences: [metadata]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1902,7 +1938,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         IsReturnDocumentationDiagnostic(diagnostic).Should().BeTrue();
@@ -1926,7 +1962,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            apiSurface: "private").ConfigureAwait(false);
+            apiSurface: "private").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1948,7 +1984,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            apiSurface: "private").ConfigureAwait(false);
+            apiSurface: "private").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(MemberXmlDocumentationAnalyzer.DiagnosticId);
@@ -1976,7 +2012,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            apiSurface: "private").ConfigureAwait(false);
+            apiSurface: "private").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -1997,7 +2033,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(MemberXmlDocumentationAnalyzer.DiagnosticId);
@@ -2014,7 +2050,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(MemberXmlDocumentationAnalyzer.DiagnosticId);
@@ -2027,7 +2063,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
             source,
-            fileName: "Sample.g.cs").ConfigureAwait(false);
+            fileName: "Sample.g.cs").ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -2043,7 +2079,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -2062,7 +2098,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -2078,7 +2114,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -2097,7 +2133,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -2114,7 +2150,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            options).ConfigureAwait(false);
+            options).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -2134,12 +2170,13 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         IsParameterDocumentationDiagnostic(diagnostic).Should().BeTrue();
         diagnostic.Location.GetRequiredSourceTree().GetText()
             .ToString(diagnostic.Location.SourceSpan).Should().Be("receiver");
+
         diagnostic.GetMessage().Should().Contain("Member 'extension(receiver)'");
     }
 
@@ -2159,7 +2196,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -2179,10 +2216,10 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> defaultDiagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> defaultDiagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(continueOnCapturedContext: false);
         ImmutableArray<Diagnostic> privateDiagnostics = await AnalyzePreviewAsync(
             source,
-            apiSurface: "private").ConfigureAwait(false);
+            apiSurface: "private").ConfigureAwait(continueOnCapturedContext: false);
 
         defaultDiagnostics.Should().BeEmpty();
         Diagnostic diagnostic = privateDiagnostics.Should().ContainSingle().Subject;
@@ -2207,14 +2244,16 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> publicDiagnostics = await AnalyzePreviewAsync(
             source,
             apiSurface: "public",
-            effectiveApiSurface: "private").ConfigureAwait(false);
+            effectiveApiSurface: "private").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> internalDiagnostics = await AnalyzePreviewAsync(
             source,
             apiSurface: "internal",
-            effectiveApiSurface: "internal").ConfigureAwait(false);
+            effectiveApiSurface: "internal").ConfigureAwait(continueOnCapturedContext: false);
 
         publicDiagnostics.Should().ContainSingle(
             diagnostic => IsParameterDocumentationDiagnostic(diagnostic));
+
         internalDiagnostics.Should().BeEmpty();
     }
 
@@ -2239,18 +2278,22 @@ public partial class MemberXmlDocumentationAnalyzerTests
 
         ImmutableArray<Diagnostic> publicDiagnostics = await AnalyzePreviewAsync(
             source,
-            apiSurface: "public").ConfigureAwait(false);
+            apiSurface: "public").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> privateDiagnostics = await AnalyzePreviewAsync(
             source,
-            apiSurface: "private").ConfigureAwait(false);
+            apiSurface: "private").ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> internalDiagnostics = await AnalyzePreviewAsync(
             source,
-            apiSurface: "internal").ConfigureAwait(false);
+            apiSurface: "internal").ConfigureAwait(continueOnCapturedContext: false);
 
         publicDiagnostics.Should().ContainSingle(
             diagnostic => IsParameterDocumentationDiagnostic(diagnostic));
+
         privateDiagnostics.Should().ContainSingle(
             diagnostic => IsParameterDocumentationDiagnostic(diagnostic));
+
         internalDiagnostics.Should().BeEmpty();
     }
 
@@ -2268,7 +2311,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzePreviewAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -2283,7 +2326,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             + "public void Run() { }"
             + new string('}', depth + 1);
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -2299,7 +2342,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -2316,7 +2359,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -2328,7 +2371,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             string documentationMemberId,
             CultureInfo? preferredCulture,
             CancellationToken cancellationToken) =>
-            documentation.TryGetValue(documentationMemberId, out string? xml) ? xml : string.Empty;
+                documentation.TryGetValue(documentationMemberId, out string? xml) ? xml : string.Empty;
 
         public override bool Equals(object? obj) => ReferenceEquals(this, obj);
 

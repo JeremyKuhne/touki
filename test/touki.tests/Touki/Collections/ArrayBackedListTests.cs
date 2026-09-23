@@ -43,7 +43,7 @@ public class ArrayBackedListTests
         using TestArrayBackedList<string> list = new();
         // Intentionally pass null to exercise item validation.
     #pragma warning disable CS8625
-        Action act = () => list.Add(null);
+        Action act = () => list.Add(item: null);
     #pragma warning restore CS8625
         act.Should().Throw<ArgumentNullException>();
     }
@@ -102,7 +102,7 @@ public class ArrayBackedListTests
     {
         // Intentionally pass null to exercise array validation.
     #pragma warning disable CS8625
-        Action act = () => new TestArrayBackedList<int>(null);
+        Action act = () => new TestArrayBackedList<int>(backingArray: null);
     #pragma warning restore CS8625
         act.Should().Throw<ArgumentNullException>();
     }
@@ -345,6 +345,7 @@ public class ArrayBackedListTests
         {
             3
         };
+
         list.Insert(0, 1);
         list.Insert(1, 2);
 
@@ -364,7 +365,7 @@ public class ArrayBackedListTests
 
         // Intentionally pass null to exercise item validation.
     #pragma warning disable CS8625
-        Action act = () => list.Insert(0, null);
+        Action act = () => list.Insert(0, item: null);
     #pragma warning restore CS8625
         act.Should().Throw<ArgumentNullException>();
     }
@@ -456,7 +457,7 @@ public class ArrayBackedListTests
         using TestArrayBackedList<int> list = new();
         // Intentionally pass null to exercise predicate validation.
     #pragma warning disable CS8625
-        Action act = () => list.RemoveAll(null);
+        Action act = () => list.RemoveAll(match: null);
     #pragma warning restore CS8625
         act.Should().Throw<ArgumentNullException>();
     }

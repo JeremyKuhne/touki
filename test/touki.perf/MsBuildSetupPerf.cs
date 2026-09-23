@@ -6,8 +6,6 @@ using Touki.Io;
 
 using Directory = System.IO.Directory;
 using File = System.IO.File;
-using Path = System.IO.Path;
-
 namespace touki.perf;
 
 /// <summary>
@@ -25,17 +23,17 @@ public class MsBuildSetupPerf
     [GlobalSetup]
     public void GlobalSetup()
     {
-        _directory = Path.Combine(Path.GetTempPath(), $"touki-perf-{Guid.NewGuid():N}");
+        _directory = Path.Join(Path.GetTempPath(), $"touki-perf-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_directory);
-        Directory.CreateDirectory(Path.Combine(_directory, "src"));
-        Directory.CreateDirectory(Path.Combine(_directory, "src", "nested"));
+        Directory.CreateDirectory(Path.Join(_directory, "src"));
+        Directory.CreateDirectory(Path.Join(_directory, "src", "nested"));
 
         // Five matching files spread shallow + deep so the recursive walk visits >1 directory.
-        File.WriteAllText(Path.Combine(_directory, "a.cs"), string.Empty);
-        File.WriteAllText(Path.Combine(_directory, "b.cs"), string.Empty);
-        File.WriteAllText(Path.Combine(_directory, "src", "c.cs"), string.Empty);
-        File.WriteAllText(Path.Combine(_directory, "src", "d.cs"), string.Empty);
-        File.WriteAllText(Path.Combine(_directory, "src", "nested", "e.cs"), string.Empty);
+        File.WriteAllText(Path.Join(_directory, "a.cs"), string.Empty);
+        File.WriteAllText(Path.Join(_directory, "b.cs"), string.Empty);
+        File.WriteAllText(Path.Join(_directory, "src", "c.cs"), string.Empty);
+        File.WriteAllText(Path.Join(_directory, "src", "d.cs"), string.Empty);
+        File.WriteAllText(Path.Join(_directory, "src", "nested", "e.cs"), string.Empty);
     }
 
     [GlobalCleanup]

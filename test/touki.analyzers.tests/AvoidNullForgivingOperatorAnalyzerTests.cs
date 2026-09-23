@@ -23,7 +23,7 @@ public class AvoidNullForgivingOperatorAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(AvoidNullForgivingOperatorAnalyzer.DiagnosticId);
@@ -39,7 +39,7 @@ public class AvoidNullForgivingOperatorAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(AvoidNullForgivingOperatorAnalyzer.DiagnosticId);
@@ -55,7 +55,7 @@ public class AvoidNullForgivingOperatorAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
         Location location = diagnostics[0].Location;
@@ -82,7 +82,7 @@ public class AvoidNullForgivingOperatorAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new AvoidNullForgivingOperatorAnalyzer(),
-            source).ConfigureAwait(false);
+            source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -97,7 +97,7 @@ public class AvoidNullForgivingOperatorAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -112,7 +112,7 @@ public class AvoidNullForgivingOperatorAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -128,13 +128,13 @@ public class AvoidNullForgivingOperatorAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
 
-    private static Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(string source)
-        => AnalyzerTestHarness.GetDiagnosticsAsync(
+    private static Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(string source) =>
+        AnalyzerTestHarness.GetDiagnosticsAsync(
             new AvoidNullForgivingOperatorAnalyzer(),
             source,
             diagnosticOptions: s_diagnosticOptions);

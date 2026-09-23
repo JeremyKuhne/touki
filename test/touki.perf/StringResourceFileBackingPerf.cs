@@ -49,6 +49,7 @@ public class StringResourceFileBackingPerf
         using IndexedStringResourceTable table = IndexedStringResourceTable.Create(
             RawResourceReader.CreateFromFile(_path),
             StringResourceManagerOptions.None);
+
         StringResourceLookupKind result = table.Lookup(_lookupKey, out string? value);
         return result == StringResourceLookupKind.Found && value is not null ? value.Length : 0;
     }
@@ -65,6 +66,7 @@ public class StringResourceFileBackingPerf
         using IndexedStringResourceTable table = StringResourceTableLoader.LoadIndexedTableFromResourcesStream(
             stream,
             StringResourceManagerOptions.None);
+
         StringResourceLookupKind result = table.Lookup(_lookupKey, out string? value);
         return result == StringResourceLookupKind.Found && value is not null ? value.Length : 0;
     }

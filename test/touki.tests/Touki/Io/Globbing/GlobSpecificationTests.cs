@@ -48,6 +48,7 @@ public partial class GlobSpecificationTests
             out _,
             out _);
 #pragma warning restore CS8604
+
         // Intentionally pass null to exercise pattern validation.
 #pragma warning disable CS8604
         Action suppliedOptions = () => GlobSpecification.TryCompile(
@@ -57,6 +58,7 @@ public partial class GlobSpecificationTests
             out _,
             out _);
 #pragma warning restore CS8604
+
         // Intentionally pass null to exercise pattern validation.
 #pragma warning disable CS8604
         Action allArguments = () => GlobSpecification.TryCompile(
@@ -123,7 +125,7 @@ public partial class GlobSpecificationTests
     {
         // Intentionally pass null to exercise message validation.
     #pragma warning disable CS8625
-        Action action = () => new GlobCompileError(GlobCompileErrorCode.PatternTooLarge, null);
+        Action action = () => new GlobCompileError(GlobCompileErrorCode.PatternTooLarge, message: null);
     #pragma warning restore CS8625
 
         action.Should().Throw<ArgumentNullException>().WithParameterName("message");
@@ -314,6 +316,7 @@ public partial class GlobSpecificationTests
     {
         bool ok = GlobSpecification.TryCompile(@"abc\", GlobDialect.Posix, GlobOptions.None,
             out GlobSpecification? result, out GlobCompileError error);
+
         ok.Should().BeFalse();
         result.Should().BeNull();
         error.Code.Should().Be(GlobCompileErrorCode.DanglingEscape);
@@ -366,6 +369,7 @@ public partial class GlobSpecificationTests
     {
         bool ok = GlobSpecification.TryCompile("ab`", GlobDialect.PowerShell, GlobOptions.None,
             out GlobSpecification? result, out GlobCompileError error);
+
         ok.Should().BeFalse();
         result.Should().BeNull();
         error.Code.Should().Be(GlobCompileErrorCode.DanglingEscape);
@@ -562,7 +566,7 @@ public partial class GlobSpecificationTests
     [DataRow("**/*foo*", "dir/barfoobaz", true)]
     public void IsMatch_GlobStarFileNameSpecialization_FunctionalParity(
         string pattern, string input, bool expected) =>
-        GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing).IsMatch(input).Should().Be(expected);
+            GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing).IsMatch(input).Should().Be(expected);
 
     [TestMethod]
     public void Compile_PosixPath_SeparatorIsForwardSlash() =>

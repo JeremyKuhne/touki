@@ -210,9 +210,18 @@ public unsafe class EnumExtensionsInliningPerf
     private static bool IsOnlyOneFlagSet_Default<T>(T value, T flags) where T : unmanaged, Enum
     {
         if (sizeof(T) == sizeof(byte)) { int v = *(byte*)&value & *(byte*)&flags; return v != 0 && (v & (v - 1)) == 0; }
-        else if (sizeof(T) == sizeof(short)) { int v = *(short*)&value & *(short*)&flags; return v != 0 && (v & (v - 1)) == 0; }
-        else if (sizeof(T) == sizeof(int)) { int v = *(int*)&value & *(int*)&flags; return v != 0 && (v & (v - 1)) == 0; }
-        else if (sizeof(T) == sizeof(long)) { long v = *(long*)&value & *(long*)&flags; return v != 0 && (v & (v - 1)) == 0; }
+        else if (sizeof(T) == sizeof(short))
+        {
+            int v = *(short*)&value & *(short*)&flags; return v != 0 && (v & (v - 1)) == 0;
+        }
+        else if (sizeof(T) == sizeof(int))
+        {
+            int v = *(int*)&value & *(int*)&flags; return v != 0 && (v & (v - 1)) == 0;
+        }
+        else if (sizeof(T) == sizeof(long))
+        {
+            long v = *(long*)&value & *(long*)&flags; return v != 0 && (v & (v - 1)) == 0;
+        }
         else { throw new InvalidOperationException(); }
     }
 
@@ -220,9 +229,18 @@ public unsafe class EnumExtensionsInliningPerf
     private static bool IsOnlyOneFlagSet_Aggressive<T>(T value, T flags) where T : unmanaged, Enum
     {
         if (sizeof(T) == sizeof(byte)) { int v = *(byte*)&value & *(byte*)&flags; return v != 0 && (v & (v - 1)) == 0; }
-        else if (sizeof(T) == sizeof(short)) { int v = *(short*)&value & *(short*)&flags; return v != 0 && (v & (v - 1)) == 0; }
-        else if (sizeof(T) == sizeof(int)) { int v = *(int*)&value & *(int*)&flags; return v != 0 && (v & (v - 1)) == 0; }
-        else if (sizeof(T) == sizeof(long)) { long v = *(long*)&value & *(long*)&flags; return v != 0 && (v & (v - 1)) == 0; }
+        else if (sizeof(T) == sizeof(short))
+        {
+            int v = *(short*)&value & *(short*)&flags; return v != 0 && (v & (v - 1)) == 0;
+        }
+        else if (sizeof(T) == sizeof(int))
+        {
+            int v = *(int*)&value & *(int*)&flags; return v != 0 && (v & (v - 1)) == 0;
+        }
+        else if (sizeof(T) == sizeof(long))
+        {
+            long v = *(long*)&value & *(long*)&flags; return v != 0 && (v & (v - 1)) == 0;
+        }
         else { throw new InvalidOperationException(); }
     }
 

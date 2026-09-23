@@ -59,7 +59,7 @@ public class IgnoreCaseKindTests
     [DataRow(GlobDialect.Posix, GlobOptions.MatchLeadingDot, (int)IgnoreCaseKind.Off)]
     public void DefaultIgnoreCaseKind_UnrelatedFlags_DoNotInfluence(
         GlobDialect dialect, GlobOptions options, int expectedAsInt) =>
-        dialect.DefaultIgnoreCaseKind(options).Should().Be((IgnoreCaseKind)expectedAsInt);
+            dialect.DefaultIgnoreCaseKind(options).Should().Be((IgnoreCaseKind)expectedAsInt);
 
     [TestMethod]
     // The compiled matcher must expose the resolved kind so callers (and tests) can
@@ -74,7 +74,7 @@ public class IgnoreCaseKindTests
     [DataRow(GlobDialect.PowerShell, GlobOptions.IgnoreCase, (int)IgnoreCaseKind.Unicode)]
     public void GlobSpecification_IgnoreCaseKind_FlowsFromDialectAndOptions(
         GlobDialect dialect, GlobOptions options, int expectedAsInt) =>
-        ((IgnoreCaseKind)GlobSpecification.Compile("abc", dialect, options).TestAccessor.Dynamic.IgnoreCaseKind).Should().Be((IgnoreCaseKind)expectedAsInt);
+            ((IgnoreCaseKind)GlobSpecification.Compile("abc", dialect, options).TestAccessor.Dynamic.IgnoreCaseKind).Should().Be((IgnoreCaseKind)expectedAsInt);
 
     // -- GetEscapeChar --------------------------------------------------------------
 

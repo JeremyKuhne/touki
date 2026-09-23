@@ -46,6 +46,7 @@ public class GeneratedStringResourceFirstAccessPerf
         string? other = SR.ResourceManager.GetString(
             nameof(SR.Argument_BadFormatSpecifier),
             CultureInfo.InvariantCulture);
+
         return SR.ErrorString.Length
             + (other?.Length ?? throw new MissingManifestResourceException());
     }

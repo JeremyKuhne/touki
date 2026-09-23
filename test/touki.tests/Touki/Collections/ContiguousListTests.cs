@@ -31,6 +31,7 @@ public class ContiguousListTests
             {
                 if (index >= _count)
                     throw new ArgumentOutOfRangeException(nameof(index));
+
                 _array[index] = value;
             }
         }
@@ -47,6 +48,7 @@ public class ContiguousListTests
             {
                 Array.Resize(ref _array, _array.Length * 2);
             }
+
             _array[_count++] = item;
         }
 
@@ -98,6 +100,7 @@ public class ContiguousListTests
                 RemoveAt(index);
                 return true;
             }
+
             return false;
         }
 
@@ -111,6 +114,7 @@ public class ContiguousListTests
             {
                 Array.Copy(_array, index + 1, _array, index, _count - index);
             }
+
             Array.Clear(_array, _count, 1);
         }
 
@@ -238,11 +242,11 @@ public class ContiguousListTests
         browsable.Browsable.Should().BeFalse();
 #else
         // For .NET Framework, check attributes using standard reflection
-        object[] editorBrowsableAttrs = propertyInfo.GetCustomAttributes(typeof(EditorBrowsableAttribute), false);
+        object[] editorBrowsableAttrs = propertyInfo.GetCustomAttributes(typeof(EditorBrowsableAttribute), inherit: false);
         editorBrowsableAttrs.Should().HaveCount(1);
         ((EditorBrowsableAttribute)editorBrowsableAttrs[0]).State.Should().Be(EditorBrowsableState.Never);
 
-        object[] browsableAttrs = propertyInfo.GetCustomAttributes(typeof(BrowsableAttribute), false);
+        object[] browsableAttrs = propertyInfo.GetCustomAttributes(typeof(BrowsableAttribute), inherit: false);
         browsableAttrs.Should().HaveCount(1);
         ((BrowsableAttribute)browsableAttrs[0]).Browsable.Should().BeFalse();
 #endif
@@ -362,9 +366,9 @@ public class ContiguousListTests
         // In .NET 6+, the notnull constraint is represented as a GenericParameterAttributes flag
 #if NET5_0_OR_GREATER
         GenericParameterAttributes attributes = listType.GetGenericArguments()[0].GenericParameterAttributes;
-        bool hasNotNullConstraint = (attributes & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0 ||
-                                    listType.GetGenericArguments()[0].GetCustomAttributes(false)
-                                        .Any(attr => attr.GetType().Name.Contains("NotNull"));
+        bool hasNotNullConstraint = (attributes & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0
+            || listType.GetGenericArguments()[0].GetCustomAttributes(inherit: false)
+                .Any(attr => attr.GetType().Name.Contains("NotNull"));
 #endif
 
         // At minimum, we know the constraint is enforced by the compiler

@@ -48,7 +48,7 @@ internal static partial class Number
         number.DigitsCount = length;
     }
 
-    public static unsafe void Dragon4Single(float value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
+    public static void Dragon4Single(float value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
     {
         float v = value.IsNegative() ? -value : value;
 

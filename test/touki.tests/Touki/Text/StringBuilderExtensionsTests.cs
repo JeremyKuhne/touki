@@ -74,8 +74,8 @@ public unsafe class StringBuilderExtensionsTests
         StringBuilder builder = new();
 
         builder.AppendFormatted($"First: {1}")
-               .AppendFormatted($", Second: {2}")
-               .AppendFormatted($", Third: {3}");
+            .AppendFormatted($", Second: {2}")
+            .AppendFormatted($", Third: {3}");
 
         builder.ToString().Should().Be("First: 1, Second: 2, Third: 3");
     }
@@ -137,7 +137,7 @@ public unsafe class StringBuilderExtensionsTests
     public void AppendFormatted_ValueArrayOverload_WithSpanFormat()
     {
         StringBuilder builder = new();
-        builder.AppendFormatted("Values: {0}, {1}, {2}".AsSpan(), "Hello", 42, true);
+        builder.AppendFormatted("Values: {0}, {1}, {2}".AsSpan(), "Hello", 42, arg3: true);
         builder.ToString().Should().Be("Values: Hello, 42, True");
     }
 
@@ -636,7 +636,7 @@ public unsafe class StringBuilderExtensionsTests
     public void AppendFormatted_StringFormat_ValueSpan_FormatsAllPlaceholders()
     {
         StringBuilder builder = new();
-        ReadOnlySpan<Value> values = [Value.Create("a"), Value.Create(1), Value.Create(true)];
+        ReadOnlySpan<Value> values = [Value.Create("a"), Value.Create(1), Value.Create(value: true)];
 
         StringBuilderExtensions.AppendFormatted(builder, "{0}-{1}-{2}", values);
 

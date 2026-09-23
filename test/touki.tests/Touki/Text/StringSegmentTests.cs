@@ -33,7 +33,7 @@ public class StringSegmentTests
     {
         // Intentionally pass null to pin the constructor's empty-segment compatibility behavior.
     #pragma warning disable CS8625
-        StringSegment segment = new(null, 0, 0);
+        StringSegment segment = new(value: null, 0, 0);
     #pragma warning restore CS8625
         segment.IsEmpty.Should().BeTrue();
     }
@@ -320,7 +320,7 @@ public class StringSegmentTests
     {
         StringSegment segment1 = new("Hello");
         StringSegment segment2 = new("hello");
-        segment1.Equals(segment2, true).Should().BeTrue();
+        segment1.Equals(segment2, ignoreCase: true).Should().BeTrue();
     }
 
     [TestMethod]
@@ -442,8 +442,8 @@ public class StringSegmentTests
         StringSegment partial = new("Hello World", 6, 5);  // "World"
 
         // Null string
-        empty.Equals((string?)null).Should().BeFalse();
-        segment.Equals((string?)null).Should().BeFalse();
+        empty.Equals(other: (string?)null).Should().BeFalse();
+        segment.Equals(other: (string?)null).Should().BeFalse();
 
         // Empty string
         empty.Equals(string.Empty).Should().BeTrue();
@@ -482,7 +482,7 @@ public class StringSegmentTests
         segment.Equals(differentSegmentObj).Should().BeFalse();
 
         // Null object
-        segment.Equals((object?)null).Should().BeFalse();
+        segment.Equals(obj: (object?)null).Should().BeFalse();
 
         // Different type
         object intObj = 42;
@@ -720,7 +720,7 @@ public class StringSegmentTests
         hello.StartsWith("", StringComparison.Ordinal).Should().BeTrue();
         // Intentionally pass null to exercise value validation.
     #pragma warning disable CS8625
-        Action action = () => hello.StartsWith(null, StringComparison.Ordinal);
+        Action action = () => hello.StartsWith(value: null, StringComparison.Ordinal);
     #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
 
@@ -1488,26 +1488,31 @@ public class StringSegmentTests
         // Different content
         segment1.CompareTo(segment2).Should().Be(
             string.Compare("Hello", "World", StringComparison.Ordinal));
+
         segment2.CompareTo(segment1).Should().Be(
             string.Compare("World", "Hello", StringComparison.Ordinal));
 
         // Comparing with whole string
         segment1.CompareTo(segment3).Should().Be(
             string.Compare("Hello", "Hello World", StringComparison.Ordinal));
+
         segment3.CompareTo(segment1).Should().Be(
             string.Compare("Hello World", "Hello", StringComparison.Ordinal));
 
         // Case sensitivity (ordinal is case-sensitive)
         segment1.CompareTo(segment5).Should().Be(
             string.Compare("Hello", "hello", StringComparison.Ordinal));
+
         segment5.CompareTo(segment1).Should().Be(
             string.Compare("hello", "Hello", StringComparison.Ordinal));
 
         // Empty segment
         empty.CompareTo(segment1).Should().Be(
             string.Compare("", "Hello", StringComparison.Ordinal));
+
         segment1.CompareTo(empty).Should().Be(
             string.Compare("Hello", "", StringComparison.Ordinal));
+
         empty.CompareTo(empty).Should().Be(
             string.Compare("", "", StringComparison.Ordinal));
     }
@@ -1556,16 +1561,20 @@ public class StringSegmentTests
         // Full segment comparison
         fullSegment.CompareTo("Hello World").Should().Be(
             string.Compare("Hello World", "Hello World", StringComparison.Ordinal));
+
         fullSegment.CompareTo("Hello").Should().Be(
             string.Compare("Hello World", "Hello", StringComparison.Ordinal));
+
         fullSegment.CompareTo("Zebra").Should().Be(
             string.Compare("Hello World", "Zebra", StringComparison.Ordinal));
 
         // Start segment comparison
         startSegment.CompareTo("Hello").Should().Be(
             string.Compare("Hello", "Hello", StringComparison.Ordinal));
+
         startSegment.CompareTo("Help").Should().Be(
             string.Compare("Hello", "Help", StringComparison.Ordinal));
+
         startSegment.CompareTo("Hel").Should().Be(
             string.Compare("Hello", "Hel", StringComparison.Ordinal));
 
@@ -1575,20 +1584,24 @@ public class StringSegmentTests
 
         middleSegment.CompareTo("lo").Should().Be(
             string.Compare("lo Wo", "lo", StringComparison.Ordinal));
+
         middleSegment.CompareTo("lo Wp").Should().Be(
             string.Compare("lo Wo", "lo Wp", StringComparison.Ordinal));
 
         // End segment comparison
         endSegment.CompareTo("World").Should().Be(
             string.Compare("World", "World", StringComparison.Ordinal));
+
         endSegment.CompareTo("Worle").Should().Be(
             string.Compare("World", "Worle", StringComparison.Ordinal));
+
         endSegment.CompareTo("Worl").Should().Be(
             string.Compare("World", "Worl", StringComparison.Ordinal));
 
         // Empty segment
         empty.CompareTo("").Should().Be(
             string.Compare("", "", StringComparison.Ordinal));
+
         empty.CompareTo("Hello").Should().Be(
             string.Compare("", "Hello", StringComparison.Ordinal));
     }
@@ -1602,12 +1615,14 @@ public class StringSegmentTests
         // Ordinal
         segment.CompareTo("hello", StringComparison.Ordinal).Should().Be(
             string.Compare("Hello", "hello", StringComparison.Ordinal));
+
         segment.CompareTo("Hello", StringComparison.Ordinal).Should().Be(
             string.Compare("Hello", "Hello", StringComparison.Ordinal));
 
         // OrdinalIgnoreCase
         segment.CompareTo("hello", StringComparison.OrdinalIgnoreCase).Should().Be(
             string.Compare("Hello", "hello", StringComparison.OrdinalIgnoreCase));
+
         segment.CompareTo("help", StringComparison.OrdinalIgnoreCase).Should().Be(
             string.Compare("Hello", "help", StringComparison.OrdinalIgnoreCase));
 
@@ -1624,6 +1639,7 @@ public class StringSegmentTests
         // InvariantCulture
         segment.CompareTo("hello", StringComparison.InvariantCulture).Should().Be(
             string.Compare("Hello", "hello", StringComparison.InvariantCulture));
+
         segment.CompareTo("Hello", StringComparison.InvariantCulture).Should().Be(
             string.Compare("Hello", "Hello", StringComparison.InvariantCulture));
 
@@ -1634,6 +1650,7 @@ public class StringSegmentTests
         // Different lengths
         segment.CompareTo("Hell", StringComparison.Ordinal).Should().Be(
             string.Compare("Hello", "Hell", StringComparison.Ordinal));
+
         segment.CompareTo("Helloz", StringComparison.Ordinal).Should().Be(
             string.Compare("Hello", "Helloz", StringComparison.Ordinal));
     }
@@ -1814,7 +1831,7 @@ public class StringSegmentTests
         // Should throw for invalid comparison value
         Action action = () => segment.CompareTo(other, invalidComparison);
         action.Should().Throw<ArgumentOutOfRangeException>()
-              .WithMessage("*Unsupported comparison type*");
+            .WithMessage("*Unsupported comparison type*");
     }
 
     [TestMethod]
@@ -2036,7 +2053,7 @@ public class StringSegmentTests
             destination,
             out int charsWritten,
             [],
-            null);
+            provider: null);
 
         result.Should().BeTrue();
         charsWritten.Should().Be(segment.Length);
@@ -2053,7 +2070,7 @@ public class StringSegmentTests
             destination,
             out int charsWritten,
             [],
-            null);
+            provider: null);
 
         result.Should().BeFalse();
         charsWritten.Should().Be(0);
@@ -2082,7 +2099,7 @@ public class StringSegmentTests
     {
         // Intentionally pass null to pin the constructor's empty-segment compatibility behavior.
     #pragma warning disable CS8625
-        StringSegment segment = new(null);
+        StringSegment segment = new(value: null);
     #pragma warning restore CS8625
         segment.GetHashCode().Should().Be(string.Empty.GetHashCode());
     }
@@ -2170,20 +2187,20 @@ public class StringSegmentTests
     {
         string hello = "Hello";
 #pragma warning disable CA1310 // Specify StringComparison for correctness
-        hello.CompareTo(null).Should().Be(1);
+        hello.CompareTo(strB: null).Should().Be(1);
 #pragma warning restore CA1310
 
         // StringSegment with content should return positive value when compared to null
         StringSegment segment = new("Hello");
-        segment.CompareTo(null).Should().Be(1);
+        segment.CompareTo(other: null).Should().Be(1);
 
 #pragma warning disable CA1310 // Specify StringComparison for correctness
-        "".CompareTo(null).Should().Be(1);
+        "".CompareTo(strB: null).Should().Be(1);
 #pragma warning restore CA1310
 
         // Empty StringSegment should return 1 when compared to null (special case)
         StringSegment empty = new();
-        empty.CompareTo(null).Should().Be(1);
+        empty.CompareTo(other: null).Should().Be(1);
     }
 
     [TestMethod]
@@ -2191,7 +2208,7 @@ public class StringSegmentTests
     {
         // Intentionally pass null to pin the constructor's empty-segment compatibility behavior.
     #pragma warning disable CS8625
-        StringSegment segment = new(null);
+        StringSegment segment = new(value: null);
     #pragma warning restore CS8625
         ReadOnlyMemory<char> memory = segment;
 
@@ -2270,7 +2287,7 @@ public class StringSegmentTests
         StringSegment segment = new("Hello");
         // Intentionally pass null to exercise writer validation.
     #pragma warning disable CS8625
-        Action action = () => segment.WriteTo(null);
+        Action action = () => segment.WriteTo(writer: null);
     #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }

@@ -52,7 +52,7 @@ public class ArrayExtensionsTests
     {
         // Intentionally pass null to exercise array validation.
     #pragma warning disable CS8625
-        Action action = () => Array.Fill<int>(null, 0);
+        Action action = () => Array.Fill<int>(array: null, 0);
     #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
@@ -62,7 +62,7 @@ public class ArrayExtensionsTests
     {
         // Intentionally pass null to exercise array validation.
     #pragma warning disable CS8625
-        Action action = () => Array.Fill<int>(null, 0, 0, 0);
+        Action action = () => Array.Fill<int>(array: null, 0, 0, 0);
     #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
@@ -144,7 +144,7 @@ public class ArrayExtensionsTests
     public void Fill_Range_NullValue_AllowedForReferenceType()
     {
         string?[] array = ["a", "b", "c"];
-        Array.Fill(array, null, 0, 2);
+        Array.Fill(array, value: null, 0, 2);
         array[0].Should().BeNull();
         array[1].Should().BeNull();
         array[2].Should().Be("c");

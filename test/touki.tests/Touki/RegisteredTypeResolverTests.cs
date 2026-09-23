@@ -109,6 +109,7 @@ public class RegisteredTypeResolverTests
     {
         BinaryFormattedObject formatted = BinaryFormattedObjectFixtures.Parse(
             BinaryFormattedObjectFixtures.ListInt32);
+
         ClassRecord rootRecord = (ClassRecord)formatted.RootRecord;
         RegisteredTypeResolver resolver = new();
 
@@ -122,7 +123,7 @@ public class RegisteredTypeResolverTests
 
         // Intentionally pass null to exercise type name validation.
     #pragma warning disable CS8625
-        Action action = () => resolver.BindToType(null);
+        Action action = () => resolver.BindToType(typeName: null);
     #pragma warning restore CS8625
 
         action.Should().Throw<ArgumentNullException>();
@@ -178,6 +179,7 @@ public class RegisteredTypeResolverTests
     {
         string assemblyQualifiedName = type.AssemblyQualifiedName
             ?? throw new AssertFailedException($"Type '{type}' has no assembly-qualified name.");
+
         return TypeName.Parse(assemblyQualifiedName);
     }
 }

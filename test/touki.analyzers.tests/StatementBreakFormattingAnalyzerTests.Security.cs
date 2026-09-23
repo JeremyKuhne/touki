@@ -13,7 +13,7 @@ public partial class StatementBreakFormattingAnalyzerTests
     {
         string source = CreateDeepBinaryChain(additionalOperators: 200);
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(201);
     }
@@ -23,7 +23,7 @@ public partial class StatementBreakFormattingAnalyzerTests
     {
         string source = CreateDeepBinaryChain(additionalOperators: 300);
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -34,16 +34,16 @@ public partial class StatementBreakFormattingAnalyzerTests
         const int maximumReplacementCharacters = 4 * 1024;
         string source =
             "class Sample\n"
-            + "{\n"
-            + "    int Method(int left, int right)\n"
-            + "    {\n"
-            + "        return left +\n"
-            + new string(' ', maximumReplacementCharacters + 1)
-            + "right;\n"
-            + "    }\n"
-            + "}\n";
+                + "{\n"
+                + "    int Method(int left, int right)\n"
+                + "    {\n"
+                + "        return left +\n"
+                + new string(' ', maximumReplacementCharacters + 1)
+                + "right;\n"
+                + "    }\n"
+                + "}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -57,15 +57,15 @@ public partial class StatementBreakFormattingAnalyzerTests
         string continuationIndentation = new(' ', baseIndentationLength + 12);
         string source =
             $"{baseIndentation}class Sample\n"
-            + $"{baseIndentation}{{\n"
-            + $"{baseIndentation}    int Method(int left, int right)\n"
-            + $"{baseIndentation}    {{\n"
-            + $"{statementIndentation}return left +\n"
-            + $"{continuationIndentation}right;\n"
-            + $"{baseIndentation}    }}\n"
-            + $"{baseIndentation}}}\n";
+                + $"{baseIndentation}{{\n"
+                + $"{baseIndentation}    int Method(int left, int right)\n"
+                + $"{baseIndentation}    {{\n"
+                + $"{statementIndentation}return left +\n"
+                + $"{continuationIndentation}right;\n"
+                + $"{baseIndentation}    }}\n"
+                + $"{baseIndentation}}}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle();
     }
@@ -78,15 +78,15 @@ public partial class StatementBreakFormattingAnalyzerTests
         string statementIndentation = new(' ', baseIndentationLength + 8);
         string source =
             $"{baseIndentation}class Sample\n"
-            + $"{baseIndentation}{{\n"
-            + $"{baseIndentation}    int Method(int left, int right)\n"
-            + $"{baseIndentation}    {{\n"
-            + $"{statementIndentation}return left +\n"
-            + "right;\n"
-            + $"{baseIndentation}    }}\n"
-            + $"{baseIndentation}}}\n";
+                + $"{baseIndentation}{{\n"
+                + $"{baseIndentation}    int Method(int left, int right)\n"
+                + $"{baseIndentation}    {{\n"
+                + $"{statementIndentation}return left +\n"
+                + "right;\n"
+                + $"{baseIndentation}    }}\n"
+                + $"{baseIndentation}}}\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -98,11 +98,11 @@ public partial class StatementBreakFormattingAnalyzerTests
         const int violationCount = 128;
         string source =
             new string(' ', indentationLength)
-            + "class Sample { bool Method(bool value) => value\n"
-            + string.Concat(Enumerable.Repeat("&& value\n", violationCount))
-            + "; }\n";
+                + "class Sample { bool Method(bool value) => value\n"
+                + string.Concat(Enumerable.Repeat("&& value\n", violationCount))
+                + "; }\n";
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(violationCount);
         diagnostics.Should().OnlyContain(diagnostic => HasCompactProperties(diagnostic));
@@ -131,15 +131,15 @@ public partial class StatementBreakFormattingAnalyzerTests
         const int violationCount = 64;
         CountingSourceText source = new(SourceText.From(
             new string(' ', indentationLength)
-            + "class Sample { bool Method(bool value) => value\n"
-            + string.Concat(Enumerable.Repeat("&& value\n", violationCount))
-            + "; }\n"));
+                + "class Sample { bool Method(bool value) => value\n"
+                + string.Concat(Enumerable.Repeat("&& value\n", violationCount))
+                + "; }\n"));
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new StatementBreakFormattingAnalyzer(),
             source,
             source.Reset,
-            diagnosticOptions: s_enabled).ConfigureAwait(false);
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
         source.CharacterReads.Should().BeLessThan(source.Length * 20L);
@@ -150,7 +150,7 @@ public partial class StatementBreakFormattingAnalyzerTests
     {
         string source = CreateDeepPostfixChain(chainLength: 100);
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Select(GetDiagnosticText).Should().BeEquivalentTo([".", "||"]);
     }
@@ -160,38 +160,38 @@ public partial class StatementBreakFormattingAnalyzerTests
     {
         string source = CreateDeepPostfixChain(chainLength: 140);
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         GetDiagnosticText(diagnostics.Should().ContainSingle().Subject).Should().Be("||");
     }
 
     private static string CreateDeepBinaryChain(int additionalOperators) =>
         "class Sample\n"
-        + "{\n"
-        + "    bool Method()\n"
-        + "    {\n"
-        + "        return true\n"
-        + "              && true"
-        + string.Concat(Enumerable.Repeat(" && true", additionalOperators))
-        + ";\n"
-        + "    }\n"
-        + "}\n";
+            + "{\n"
+            + "    bool Method()\n"
+            + "    {\n"
+            + "        return true\n"
+            + "              && true"
+            + string.Concat(Enumerable.Repeat(" && true", additionalOperators))
+            + ";\n"
+            + "    }\n"
+            + "}\n";
 
     private static string CreateDeepPostfixChain(int chainLength) =>
         "class Chain\n"
-        + "{\n"
-        + "    public Chain Next() => this;\n"
-        + "    public bool Check(bool value) => value;\n"
-        + "}\n"
-        + "\n"
-        + "class Sample\n"
-        + "{\n"
-        + "    bool Method(Chain chain, bool left, bool right) =>\n"
-        + "        chain\n"
-        + "        .Next()"
-        + string.Concat(Enumerable.Repeat(".Next()", chainLength))
-        + ".Check(\n"
-        + "            left\n"
-        + "              || right);\n"
-        + "}\n";
+            + "{\n"
+            + "    public Chain Next() => this;\n"
+            + "    public bool Check(bool value) => value;\n"
+            + "}\n"
+            + "\n"
+            + "class Sample\n"
+            + "{\n"
+            + "    bool Method(Chain chain, bool left, bool right) =>\n"
+            + "        chain\n"
+            + "        .Next()"
+            + string.Concat(Enumerable.Repeat(".Next()", chainLength))
+            + ".Check(\n"
+            + "            left\n"
+            + "              || right);\n"
+            + "}\n";
 }

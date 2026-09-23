@@ -290,6 +290,7 @@ public partial class GlobSpecificationTests
             normalizedPattern.Length,
             out GlobSpecification? normalizedResult,
             out GlobCompileError normalizedError);
+
         bool prefixed = GlobSpecification.TryCompile(
             prefixedPattern,
             GlobDialect.Git,

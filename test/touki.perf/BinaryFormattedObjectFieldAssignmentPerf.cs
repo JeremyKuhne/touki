@@ -33,7 +33,7 @@ public class BinaryFormattedObjectFieldAssignmentPerf
     public void Setup()
     {
 #if NET
-        AppContext.SetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", true);
+        AppContext.SetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", isEnabled: true);
 #endif
 
         BinaryFormattedObjectWidePayload payload = BinaryFormattedObjectWidePayload.Create();
@@ -132,8 +132,8 @@ internal sealed class BinaryFormattedObjectWidePayload
     public int Field30;
     public int Field31;
 
-    internal static BinaryFormattedObjectWidePayload Create()
-        => new()
+    internal static BinaryFormattedObjectWidePayload Create() =>
+        new()
         {
             Field00 = 100,
             Field01 = 101,
@@ -169,8 +169,8 @@ internal sealed class BinaryFormattedObjectWidePayload
             Field31 = 131
         };
 
-    internal bool IsValid()
-        => Field00 == 100
+    internal bool IsValid() =>
+        Field00 == 100
             && Field01 == 101
             && Field02 == 102
             && Field03 == 103

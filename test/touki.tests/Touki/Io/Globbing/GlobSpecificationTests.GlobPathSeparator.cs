@@ -42,6 +42,7 @@ public partial class GlobSpecificationTests
             GlobDialect.PosixPath,
             GlobOptions.AllowGlobStar,
             GlobPathSeparator.Backslash);
+
         matcher.IsMatch("Foo.cs").Should().BeTrue();
         matcher.IsMatch(@"a\b\Foo.cs").Should().BeTrue();
         // Path-aware `*` cannot cross the (backslash) separator: a literal `\` in the
@@ -59,6 +60,7 @@ public partial class GlobSpecificationTests
             GlobDialect.PosixPath,
             GlobOptions.None,
             GlobPathSeparator.Backslash);
+
         matcher.IsMatch("Foo.cs").Should().BeTrue();
         matcher.IsMatch(@"a\Foo.cs").Should().BeFalse();
         // Forward slash is now a literal character; `*` matches it.
@@ -74,6 +76,7 @@ public partial class GlobSpecificationTests
             GlobDialect.PosixPath,
             GlobOptions.None,
             GlobPathSeparator.OSDefault);
+
         matcher.Separator.Should().Be(expected);
     }
 

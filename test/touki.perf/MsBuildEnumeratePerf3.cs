@@ -5,8 +5,6 @@
 using Touki.Io;
 using Touki.Io.Globbing;
 
-using Path = System.IO.Path;
-
 namespace touki.perf;
 
 /// <summary>
@@ -79,9 +77,9 @@ public class MsBuildEnumeratePerf3
         // the build output by CompressedContent.targets. They are the single source of truth for
         // the replay: we always load them from next to the assembly and never re-record against
         // the live file system, so the benchmark stays deterministic as the repo evolves.
-        string recordedDataDirectory = Path.Combine(AppContext.BaseDirectory, "RecordedData");
-        string enumerationCsv = Path.Combine(recordedDataDirectory, "enumeration.csv");
-        string msbuildCsv = Path.Combine(recordedDataDirectory, "msbuild-filesystem.csv");
+        string recordedDataDirectory = Path.Join(AppContext.BaseDirectory, "RecordedData");
+        string enumerationCsv = Path.Join(recordedDataDirectory, "enumeration.csv");
+        string msbuildCsv = Path.Join(recordedDataDirectory, "msbuild-filesystem.csv");
 
         _fileSystem = RecordedFileSystem.Load(enumerationCsv);
         RecordedMSBuildFileSystem msbuildFileSystem = RecordedMSBuildFileSystem.Load(msbuildCsv);
@@ -165,9 +163,9 @@ public class MsBuildEnumeratePerf3
 
     [Benchmark]
     public IReadOnlyList<string> GlobEnumeratorExtGlobSingle() =>
-        ReplayGlob(ExtGlobSingleInclude, null, GlobOptions.AllowExtGlob);
+        ReplayGlob(ExtGlobSingleInclude, excludePatterns: null, GlobOptions.AllowExtGlob);
 
     [Benchmark]
     public IReadOnlyList<string> GlobEnumeratorExtGlobSingleWithRoot() =>
-        ReplayGlob(ExtGlobSingleIncludeWithRoot, null, GlobOptions.AllowExtGlob);
+        ReplayGlob(ExtGlobSingleIncludeWithRoot, excludePatterns: null, GlobOptions.AllowExtGlob);
 }

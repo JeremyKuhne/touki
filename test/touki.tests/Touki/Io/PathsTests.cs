@@ -61,6 +61,7 @@ public class PathsTests
             "fileA.txt",
             MatchType.Win32,
             MatchCasing.CaseSensitive).Should().BeFalse();
+
         Paths.AreExpressionsExclusive(
             "fileA.txt",
             "file>.txt",
@@ -228,12 +229,15 @@ public class PathsTests
         yield return (Paths.ChangeAlternateDirectorySeparators("/foo/bar/"),
             Paths.ChangeAlternateDirectorySeparators("/foo/barista"),
             false);
+
         yield return (Paths.ChangeAlternateDirectorySeparators("/foo/bar"),
             Paths.ChangeAlternateDirectorySeparators("/foo/barista"),
             false);
+
         yield return (Paths.ChangeAlternateDirectorySeparators("/foo/bar/"),
             Paths.ChangeAlternateDirectorySeparators("/foo/bar/ista"),
             true);
+
         yield return (Paths.ChangeAlternateDirectorySeparators("/foo/bar"),
             Paths.ChangeAlternateDirectorySeparators("/foo/bar/ista"),
             true);
@@ -508,6 +512,7 @@ public class PathsTests
         // Win32 treats '*.*' as matching anything that has a dot in it (and more).
         Paths.MatchesExpression("file.txt".AsSpan(), "*.*".AsSpan(), MatchCasing.CaseSensitive, MatchType.Win32)
             .Should().BeTrue();
+
         // Exercising MatchType.Win32 path; behavior follows FileSystemName.MatchesWin32Expression.
         Paths.MatchesExpression("README".AsSpan(), "READ*".AsSpan(), MatchCasing.CaseInsensitive, MatchType.Win32)
             .Should().BeTrue();
@@ -519,6 +524,7 @@ public class PathsTests
         // Simple semantics treat '*.*' as needing a literal '.'.
         Paths.MatchesExpression("file.txt".AsSpan(), "*.*".AsSpan(), MatchCasing.CaseSensitive, MatchType.Simple)
             .Should().BeTrue();
+
         Paths.MatchesExpression("filename".AsSpan(), "*.*".AsSpan(), MatchCasing.CaseSensitive, MatchType.Simple)
             .Should().BeFalse();
     }

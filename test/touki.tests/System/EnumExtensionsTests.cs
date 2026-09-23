@@ -216,7 +216,7 @@ public class EnumExtensionsTests
     public void TryParse_Generic_Invalid_ReturnsFalse()
     {
         Enum.TryParse("Magenta".AsSpan(), out Color value).Should().BeFalse();
-        value.Should().Be(default);
+        value.Should().Be(expected: default);
     }
 
     [TestMethod]
@@ -236,7 +236,7 @@ public class EnumExtensionsTests
     public void TryParse_Generic_EmptySpan_ReturnsFalse()
     {
         Enum.TryParse([], out Color value).Should().BeFalse();
-        value.Should().Be(default);
+        value.Should().Be(expected: default);
     }
 
     [TestMethod]
@@ -288,6 +288,7 @@ public class EnumExtensionsTests
     {
         Enum.TryParse(typeof(Color), "green".AsSpan(), ignoreCase: true, out object? value)
             .Should().BeTrue();
+
         value.Should().Be(Color.Green);
     }
 
@@ -297,7 +298,7 @@ public class EnumExtensionsTests
         // BCL contract: invalid enumType throws even from TryParse.
         // Intentionally pass null to exercise enum type validation.
     #pragma warning disable CS8625
-        Action action = () => Enum.TryParse(null, "Red".AsSpan(), out object? _);
+        Action action = () => Enum.TryParse(enumType: null, "Red".AsSpan(), out object? _);
     #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
@@ -314,7 +315,7 @@ public class EnumExtensionsTests
     {
         // Intentionally pass null to exercise enum type validation.
     #pragma warning disable CS8625
-        Action action = () => Enum.TryParse(null, "Red".AsSpan(), ignoreCase: true, out object? _);
+        Action action = () => Enum.TryParse(enumType: null, "Red".AsSpan(), ignoreCase: true, out object? _);
     #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
@@ -491,7 +492,7 @@ public class EnumExtensionsTests
     {
         // Intentionally pass null to exercise enum type validation.
     #pragma warning disable CS8625
-        Action action = () => Enum.TryParse(null, "Read".AsSpan(), out _);
+        Action action = () => Enum.TryParse(enumType: null, "Read".AsSpan(), out _);
     #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }
@@ -529,7 +530,7 @@ public class EnumExtensionsTests
     {
         // Intentionally pass null to exercise enum type validation.
     #pragma warning disable CS8625
-        Action action = () => Enum.TryParse(null, "Read".AsSpan(), ignoreCase: true, out _);
+        Action action = () => Enum.TryParse(enumType: null, "Read".AsSpan(), ignoreCase: true, out _);
     #pragma warning restore CS8625
         action.Should().Throw<ArgumentNullException>();
     }

@@ -60,6 +60,7 @@ internal static class ValueStringBuilderTarget
 
                             break;
                         }
+
                     case 1:
                         {
                             char c = (char)NextByte(ref ops);
@@ -72,6 +73,7 @@ internal static class ValueStringBuilderTarget
 
                             break;
                         }
+
                     case 2:
                         {
                             // Append a slice of the remaining op bytes interpreted as chars.
@@ -94,6 +96,7 @@ internal static class ValueStringBuilderTarget
 
                             break;
                         }
+
                     case 3:
                         {
                             string s = ReadString(ref ops);
@@ -105,6 +108,7 @@ internal static class ValueStringBuilderTarget
 
                             break;
                         }
+
                     case 4:
                         {
                             // Insert(index, char, count) at an in-range index.
@@ -119,6 +123,7 @@ internal static class ValueStringBuilderTarget
 
                             break;
                         }
+
                     case 5:
                         {
                             // Insert(index, string) at an in-range index.
@@ -132,6 +137,7 @@ internal static class ValueStringBuilderTarget
 
                             break;
                         }
+
                     case 6:
                         {
                             // Truncate via the Length setter (shrink only - growing exposes stale buffer).
@@ -140,6 +146,7 @@ internal static class ValueStringBuilderTarget
                             oracle.Length = newLength;
                             break;
                         }
+
                     default:
                         builder.Clear();
                         oracle.Clear();

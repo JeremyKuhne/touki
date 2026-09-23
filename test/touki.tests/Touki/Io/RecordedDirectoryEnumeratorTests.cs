@@ -22,18 +22,18 @@ public class RecordedDirectoryEnumeratorTests
     {
         TempFolder folder = new();
         string root = folder.TempPath;
-        Directory.CreateDirectory(Path.Combine(root, "src", "nested"));
-        Directory.CreateDirectory(Path.Combine(root, "obj", "Debug"));
-        Directory.CreateDirectory(Path.Combine(root, "bin", "Release"));
-        Directory.CreateDirectory(Path.Combine(root, "empty"));
+        Directory.CreateDirectory(Path.Join(root, "src", "nested"));
+        Directory.CreateDirectory(Path.Join(root, "obj", "Debug"));
+        Directory.CreateDirectory(Path.Join(root, "bin", "Release"));
+        Directory.CreateDirectory(Path.Join(root, "empty"));
 
-        File.WriteAllText(Path.Combine(root, "top.cs"), "");
-        File.WriteAllText(Path.Combine(root, "top.txt"), "");
-        File.WriteAllText(Path.Combine(root, "src", "a.cs"), "");
-        File.WriteAllText(Path.Combine(root, "src", "b.user"), "");
-        File.WriteAllText(Path.Combine(root, "src", "nested", "c.cs"), "");
-        File.WriteAllText(Path.Combine(root, "obj", "Debug", "obj.cs"), "");
-        File.WriteAllText(Path.Combine(root, "bin", "Release", "bin.cs"), "");
+        File.WriteAllText(Path.Join(root, "top.cs"), "");
+        File.WriteAllText(Path.Join(root, "top.txt"), "");
+        File.WriteAllText(Path.Join(root, "src", "a.cs"), "");
+        File.WriteAllText(Path.Join(root, "src", "b.user"), "");
+        File.WriteAllText(Path.Join(root, "src", "nested", "c.cs"), "");
+        File.WriteAllText(Path.Join(root, "obj", "Debug", "obj.cs"), "");
+        File.WriteAllText(Path.Join(root, "bin", "Release", "bin.cs"), "");
         return folder;
     }
 
@@ -71,8 +71,8 @@ public class RecordedDirectoryEnumeratorTests
         }
 
         actual.Should().BeEquivalentTo(expected);
-        actual.Should().Contain(Path.Combine("src", "a.cs"));
-        actual.Should().NotContain(Path.Combine("obj", "Debug", "obj.cs"));
+        actual.Should().Contain(Path.Join("src", "a.cs"));
+        actual.Should().NotContain(Path.Join("obj", "Debug", "obj.cs"));
     }
 
     [TestMethod]
@@ -131,6 +131,7 @@ public class RecordedDirectoryEnumeratorTests
             exclude,
             root,
             out string startDirectory);
+
         TrackingMatcher trackingMatcher = new(matcher);
 
         HashSet<string> actual = [];
@@ -145,11 +146,11 @@ public class RecordedDirectoryEnumeratorTests
             }
         }
 
-        actual.Should().Contain(Path.Combine("src", "a.cs"));
-        actual.Should().NotContain(Path.Combine("obj", "Debug", "obj.cs"));
+        actual.Should().Contain(Path.Join("src", "a.cs"));
+        actual.Should().NotContain(Path.Join("obj", "Debug", "obj.cs"));
         trackingMatcher.FileMatchDirectories.Should().NotContain(
             directory => directory.StartsWith(
-                Path.Combine(root, "obj"),
+                Path.Join(root, "obj"),
                 StringComparison.OrdinalIgnoreCase));
     }
 
@@ -170,7 +171,7 @@ public class RecordedDirectoryEnumeratorTests
 
         results.Should().Contain("top.cs");
         results.Should().NotContain("src");
-        results.Should().NotContain(Path.Combine("src", "nested"));
+        results.Should().NotContain(Path.Join("src", "nested"));
     }
 
     [TestMethod]
@@ -179,7 +180,7 @@ public class RecordedDirectoryEnumeratorTests
         using TempFolder folder = CreateFixture();
         RecordedFileSystem fileSystem = RecordRoundTrip(folder.TempPath);
 
-        fileSystem.GetEntries(Path.Combine(folder.TempPath, "empty")).Should().BeEmpty();
+        fileSystem.GetEntries(Path.Join(folder.TempPath, "empty")).Should().BeEmpty();
         fileSystem.DirectoryCount.Should().BeGreaterThan(1);
     }
 
@@ -228,7 +229,7 @@ public class RecordedDirectoryEnumeratorTests
         public DirectoryMatchType MatchesDirectory(
             ReadOnlySpan<char> currentDirectory,
             ReadOnlySpan<char> directoryName) =>
-            _inner.MatchesDirectory(currentDirectory, directoryName);
+                _inner.MatchesDirectory(currentDirectory, directoryName);
 
         public bool MatchesFile(ReadOnlySpan<char> currentDirectory, ReadOnlySpan<char> fileName)
         {

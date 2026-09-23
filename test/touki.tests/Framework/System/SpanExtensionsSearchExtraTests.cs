@@ -795,7 +795,7 @@ public class SpanExtensionsSearchExtraTests
     public void IndexOfAnyExcept_SingleValue_String_NullValue_FindsFirstNonNull()
     {
         ReadOnlySpan<string?> span = [null, null, "x"];
-        span.IndexOfAnyExcept((string?)null).Should().Be(2);
+        span.IndexOfAnyExcept(value: (string?)null).Should().Be(2);
     }
 
     // ----- LastIndexOfAnyExcept type-specialized branches -----
@@ -887,7 +887,7 @@ public class SpanExtensionsSearchExtraTests
     public void LastIndexOfAnyExcept_SingleValue_String_NullValue_FindsLastNonNull()
     {
         ReadOnlySpan<string?> span = [null, "x", null];
-        span.LastIndexOfAnyExcept((string?)null).Should().Be(1);
+        span.LastIndexOfAnyExcept(value: (string?)null).Should().Be(1);
     }
 
     [TestMethod]

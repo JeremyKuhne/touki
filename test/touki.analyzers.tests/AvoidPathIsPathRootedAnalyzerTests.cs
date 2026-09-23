@@ -9,7 +9,7 @@ public class AvoidPathIsPathRootedAnalyzerTests
 {
     private static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(string source) =>
         await AnalyzerTestHarness.GetDiagnosticsAsync(new AvoidPathIsPathRootedAnalyzer(), source)
-            .ConfigureAwait(false);
+            .ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
     public async Task AnalyzeInvocation_PathIsPathRooted_ReportsDiagnostic()
@@ -23,7 +23,7 @@ public class AvoidPathIsPathRootedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(AvoidPathIsPathRootedAnalyzer.DiagnosticId);
@@ -43,7 +43,7 @@ public class AvoidPathIsPathRootedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
         diagnostics.Should().OnlyContain(diagnostic => diagnostic.Id == AvoidPathIsPathRootedAnalyzer.DiagnosticId);
@@ -66,7 +66,7 @@ public class AvoidPathIsPathRootedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(4);
         diagnostics.Should().OnlyContain(diagnostic =>
@@ -86,7 +86,7 @@ public class AvoidPathIsPathRootedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle().Which.GetMessage()
             .Should().Contain("Path.IsPathFullyQualified")
@@ -105,7 +105,7 @@ public class AvoidPathIsPathRootedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -125,7 +125,7 @@ public class AvoidPathIsPathRootedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -148,7 +148,7 @@ public class AvoidPathIsPathRootedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -174,7 +174,7 @@ public class AvoidPathIsPathRootedAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new AvoidPathIsPathRootedAnalyzer(),
             source,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(AvoidPathIsPathRootedAnalyzer.DiagnosticId);
@@ -201,7 +201,7 @@ public class AvoidPathIsPathRootedAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new AvoidPathIsPathRootedAnalyzer(),
             source,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(4);
         diagnostics.Should().OnlyContain(diagnostic => diagnostic.Id == AvoidPathIsPathRootedAnalyzer.DiagnosticId);
@@ -225,10 +225,11 @@ public class AvoidPathIsPathRootedAnalyzerTests
                     "Microsoft.IO.Redist.dll",
                     StringComparison.OrdinalIgnoreCase))
         ];
+
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new AvoidPathIsPathRootedAnalyzer(),
             source,
-            metadataReferences: references).ConfigureAwait(false);
+            metadataReferences: references).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle().Which.GetMessage()
             .Should().Contain("Microsoft.IO.Path.IsPathFullyQualified");
@@ -252,7 +253,7 @@ public class AvoidPathIsPathRootedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -270,7 +271,7 @@ public class AvoidPathIsPathRootedAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }

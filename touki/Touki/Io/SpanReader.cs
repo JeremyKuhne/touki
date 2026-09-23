@@ -18,7 +18,7 @@ namespace Touki.Io;
 ///  </para>
 /// </remarks>
 /// <param name="span">The span to read.</param>
-public unsafe ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged, IEquatable<T>
+public ref struct SpanReader<T>(ReadOnlySpan<T> span) where T : unmanaged, IEquatable<T>
 {
     // Deliberately not an auto property for performance.
     private ReadOnlySpan<T> _unread = span;

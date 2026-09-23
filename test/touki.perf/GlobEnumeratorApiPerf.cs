@@ -7,8 +7,6 @@ using Touki.Io.Globbing;
 
 using Directory = System.IO.Directory;
 using File = System.IO.File;
-using Path = System.IO.Path;
-
 namespace touki.perf;
 
 /// <summary>
@@ -39,21 +37,21 @@ public class GlobEnumeratorApiPerf
     [GlobalSetup]
     public void GlobalSetup()
     {
-        _root = Path.Combine(Path.GetTempPath(), $"touki-glob-api-perf-{Guid.NewGuid():N}");
+        _root = Path.Join(Path.GetTempPath(), $"touki-glob-api-perf-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_root);
         for (int moduleIndex = 0; moduleIndex < ModuleCount; moduleIndex++)
         {
-            string module = Path.Combine(_root, $"module-{moduleIndex:D2}");
-            string source = Path.Combine(module, "src");
-            string obj = Path.Combine(module, "obj");
-            string bin = Path.Combine(module, "bin");
+            string module = Path.Join(_root, $"module-{moduleIndex:D2}");
+            string source = Path.Join(module, "src");
+            string obj = Path.Join(module, "obj");
+            string bin = Path.Join(module, "bin");
             Directory.CreateDirectory(source);
             Directory.CreateDirectory(obj);
             Directory.CreateDirectory(bin);
-            File.WriteAllText(Path.Combine(source, "code.cs"), string.Empty);
-            File.WriteAllText(Path.Combine(source, "notes.txt"), string.Empty);
-            File.WriteAllText(Path.Combine(obj, "generated.cs"), string.Empty);
-            File.WriteAllText(Path.Combine(bin, "generated.cs"), string.Empty);
+            File.WriteAllText(Path.Join(source, "code.cs"), string.Empty);
+            File.WriteAllText(Path.Join(source, "notes.txt"), string.Empty);
+            File.WriteAllText(Path.Join(obj, "generated.cs"), string.Empty);
+            File.WriteAllText(Path.Join(bin, "generated.cs"), string.Empty);
         }
 
         if (Enumerate(excludes: null) != ModuleCount * 3)
@@ -136,6 +134,7 @@ public class GlobEnumeratorApiPerf
             "**/*.cs",
             GlobDialect.PosixPath,
             GlobOptions.AllowGlobStar);
+
         using FileSystemPathEnumerator enumerator = FileSystemPathEnumerator.Create(
             _root,
             specification.CreateFileSystemMatcher());

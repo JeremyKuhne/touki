@@ -88,6 +88,7 @@ public class BinaryFormattedObjectSecurityTests
         const int libraryId = 2;
         string assemblyName = type.Assembly.FullName
             ?? throw new AssertFailedException($"Assembly for '{type}' has no full name.");
+
         string typeName = type.FullName
             ?? throw new AssertFailedException($"Type '{type}' has no full name.");
 
@@ -130,7 +131,7 @@ public class BinaryFormattedObjectSecurityTests
 
         public bool TryBindToType(
             System.Reflection.Metadata.TypeName typeName,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All), NotNullWhen(true)] out Type? type)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All), NotNullWhen(returnValue: true)] out Type? type)
         {
             type = typeof(int);
             return true;

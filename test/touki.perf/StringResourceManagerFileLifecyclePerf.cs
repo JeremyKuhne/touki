@@ -29,6 +29,7 @@ public class StringResourceManagerFileLifecyclePerf
     {
         _resourcesFile = StringResourceManagerConstructionPerf.WriteResourcesFile(
             nameof(StringResourceManagerFileLifecyclePerf));
+
         _baseName = Path.GetFileNameWithoutExtension(_resourcesFile);
         _resourcesDirectory = Path.GetDirectoryName(_resourcesFile)
             ?? throw new InvalidOperationException("The benchmark resource path must have a directory.");
@@ -44,6 +45,7 @@ public class StringResourceManagerFileLifecyclePerf
             _baseName,
             _resourcesDirectory,
             usingResourceSet: null);
+
         try
         {
             return manager.GetString("Greeting", CultureInfo.InvariantCulture)?.Length ?? 0;

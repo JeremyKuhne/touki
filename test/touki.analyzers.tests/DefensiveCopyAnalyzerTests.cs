@@ -54,7 +54,7 @@ public class DefensiveCopyAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(DefensiveCopyAnalyzer.NonCopyableDefensiveCopyId);
@@ -70,7 +70,7 @@ public class DefensiveCopyAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(DefensiveCopyAnalyzer.DefensiveCopyId);
@@ -87,7 +87,7 @@ public class DefensiveCopyAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(DefensiveCopyAnalyzer.DefensiveCopyId);
@@ -108,7 +108,7 @@ public class DefensiveCopyAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -123,7 +123,7 @@ public class DefensiveCopyAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(DefensiveCopyAnalyzer.NonCopyableDefensiveCopyId);
@@ -139,7 +139,7 @@ public class DefensiveCopyAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -154,7 +154,7 @@ public class DefensiveCopyAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -176,11 +176,12 @@ public class DefensiveCopyAnalyzerTests
         ImmutableArray<Diagnostic> netStandardDiagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new DefensiveCopyAnalyzer(),
             source,
-            metadataReferences: RoslynTestEnvironment.NetStandard20References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.NetStandard20References).ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> netFrameworkDiagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new DefensiveCopyAnalyzer(),
             source,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(continueOnCapturedContext: false);
 
         netStandardDiagnostics.Should().BeEmpty();
         netFrameworkDiagnostics.Should().BeEmpty();
@@ -201,14 +202,16 @@ public class DefensiveCopyAnalyzerTests
         ImmutableArray<Diagnostic> netStandardDiagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new DefensiveCopyAnalyzer(),
             source,
-            metadataReferences: RoslynTestEnvironment.NetStandard20References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.NetStandard20References).ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> netFrameworkDiagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new DefensiveCopyAnalyzer(),
             source,
-            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(false);
+            metadataReferences: RoslynTestEnvironment.Net472References).ConfigureAwait(continueOnCapturedContext: false);
 
         netStandardDiagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(DefensiveCopyAnalyzer.DefensiveCopyId);
+
         netFrameworkDiagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(DefensiveCopyAnalyzer.DefensiveCopyId);
     }
@@ -225,7 +228,7 @@ public class DefensiveCopyAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -240,7 +243,7 @@ public class DefensiveCopyAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -261,7 +264,7 @@ public class DefensiveCopyAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be(DefensiveCopyAnalyzer.NonCopyableDefensiveCopyId);
@@ -294,7 +297,7 @@ public class DefensiveCopyAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }

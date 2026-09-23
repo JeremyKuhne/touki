@@ -22,7 +22,7 @@ namespace touki.perf;
 ///  </para>
 /// </remarks>
 [MemoryDiagnoser]
-[GcForce(true)]
+[GcForce(value: true)]
 public class StringResourceManagerFirstLookupPerf
 {
     [AllowNull]
@@ -52,12 +52,15 @@ public class StringResourceManagerFirstLookupPerf
         _assembly = typeof(StringResourceManagerFirstLookupPerf).Assembly;
         _resourceName = _assembly.GetManifestResourceNames()
             .Single(name => name.EndsWith("SatelliteStringResourceManagerPerfStrings.resources", StringComparison.Ordinal));
+
         _baseName = _resourceName[..^".resources".Length];
         _resourcesFile = StringResourceManagerConstructionPerf.WriteResourcesFile(
             nameof(StringResourceManagerFirstLookupPerf));
+
         _fileBaseName = Path.GetFileNameWithoutExtension(_resourcesFile);
         _resourcesDirectory = Path.GetDirectoryName(_resourcesFile)
             ?? throw new InvalidOperationException("The benchmark resource path must have a directory.");
+
         byte[] resources = System.IO.File.ReadAllBytes(_resourcesFile);
         _streamFactory = () => new System.IO.MemoryStream(resources, writable: false);
     }
@@ -85,6 +88,7 @@ public class StringResourceManagerFirstLookupPerf
             _fileBaseName,
             _resourcesDirectory,
             usingResourceSet: null);
+
         return manager.GetString("Greeting", CultureInfo.InvariantCulture)?.Length ?? 0;
     }
 

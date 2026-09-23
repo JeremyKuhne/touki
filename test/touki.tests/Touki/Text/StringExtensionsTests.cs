@@ -76,7 +76,7 @@ public class StringExtensionsTests
     {
         ReadOnlySpan<Value> args = [Value.Create(1234.5), Value.Create(0.25)];
 
-        string result = string.FormatValues(null, "{0:N1} {1:P0}".AsSpan(), args);
+        string result = string.FormatValues(provider: null, "{0:N1} {1:P0}".AsSpan(), args);
 
         result.Should().Be(string.Format(CultureInfo.CurrentCulture, "{0:N1} {1:P0}", 1234.5, 0.25));
     }
@@ -88,6 +88,7 @@ public class StringExtensionsTests
             "{0}-{1}".AsSpan(),
             Value.Create("a"),
             Value.Create(1));
+
         result.Should().Be("a-1");
     }
 
@@ -113,6 +114,7 @@ public class StringExtensionsTests
             Value.Create(2026),
             Value.Create(5),
             Value.Create(10));
+
         result.Should().Be("2026/5/10");
     }
 
@@ -140,6 +142,7 @@ public class StringExtensionsTests
             Value.Create(2),
             Value.Create(3),
             Value.Create(4));
+
         result.Should().Be("1,2,3,4");
     }
 
@@ -163,7 +166,7 @@ public class StringExtensionsTests
     public void FormatValues_CustomFormatter_ReceivesUnderlyingValues()
     {
         UnderlyingTypeFormatProvider provider = new();
-        ReadOnlySpan<Value> args = [Value.Create(42), Value.Create("text"), Value.Create((object?)null)];
+        ReadOnlySpan<Value> args = [Value.Create(42), Value.Create("text"), Value.Create(value: (object?)null)];
 
         string result = string.FormatValues(provider, "{0}|{1}|{2}".AsSpan(), args);
 
@@ -174,11 +177,11 @@ public class StringExtensionsTests
     public void FormatValues_CustomFormatterReturnsNull_FallsBackToDefaultFormatting()
     {
         NullFormatProvider provider = new(CultureInfo.GetCultureInfo("fr-FR"));
-        ReadOnlySpan<Value> args = [Value.Create(1234.5), Value.Create("text"), Value.Create((object?)null)];
+        ReadOnlySpan<Value> args = [Value.Create(1234.5), Value.Create("text"), Value.Create(value: (object?)null)];
 
         string result = string.FormatValues(provider, "{0:N1}|{1}|{2}".AsSpan(), args);
 
-        result.Should().Be(string.Format(provider, "{0:N1}|{1}|{2}", 1234.5, "text", null));
+        result.Should().Be(string.Format(provider, "{0:N1}|{1}|{2}", 1234.5, "text", arg2: null));
     }
 
     [TestMethod]
@@ -190,6 +193,7 @@ public class StringExtensionsTests
             Value.Create(2),
             Value.Create(3),
             Value.Create(4));
+
         result.Should().Be("literal");
     }
 

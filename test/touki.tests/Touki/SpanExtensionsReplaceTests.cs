@@ -55,7 +55,7 @@ public class SpanExtensionsReplaceTests
     public void Replace_Generic_NullableReference_HandlesNull()
     {
         Span<string?> span = ["a", null, "b", null];
-        span.Replace(null, "x");
+        span.Replace(oldValue: null, "x");
         span.ToArray().Should().Equal("a", "x", "b", "x");
     }
 

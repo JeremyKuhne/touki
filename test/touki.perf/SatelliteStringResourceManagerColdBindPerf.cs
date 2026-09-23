@@ -49,6 +49,7 @@ public class SatelliteStringResourceManagerColdBindPerf
         _assembly = typeof(SatelliteStringResourceManagerColdBindPerf).Assembly;
         string resourceName = _assembly.GetManifestResourceNames()
             .Single(name => name.EndsWith("SatelliteStringResourceManagerPerfStrings.resources", StringComparison.Ordinal));
+
         _baseName = resourceName[..^".resources".Length];
         _culture = Scenario switch
         {
@@ -76,6 +77,7 @@ public class SatelliteStringResourceManagerColdBindPerf
         Directory.CreateDirectory(satelliteDirectory);
         string assemblyName = _assembly.GetName().Name
             ?? throw new InvalidOperationException("The benchmark assembly must have a name.");
+
         string satelliteFileName = $"{assemblyName}.resources.dll";
         System.IO.File.Copy(
             Path.Join(AppContext.BaseDirectory, LocalizedCultureName, satelliteFileName),
@@ -98,6 +100,7 @@ public class SatelliteStringResourceManagerColdBindPerf
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromRuntimeSatellites(
             _baseName,
             _assembly);
+
         return manager.GetString("Greeting", _culture)?.Length ?? 0;
     }
 
@@ -108,6 +111,7 @@ public class SatelliteStringResourceManagerColdBindPerf
             _baseName,
             _resourcesRoot,
             _assembly);
+
         return manager.GetString("Greeting", _culture)?.Length ?? 0;
     }
 
@@ -118,6 +122,7 @@ public class SatelliteStringResourceManagerColdBindPerf
             _baseName,
             _satelliteRoot,
             _assembly);
+
         return manager.GetString("Greeting", _culture)?.Length ?? 0;
     }
 }
