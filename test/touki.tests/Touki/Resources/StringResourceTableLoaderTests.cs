@@ -137,27 +137,6 @@ public class StringResourceTableLoaderTests
     }
 
     [TestMethod]
-    public void LoadIndexedTableFromAssembly_InvalidOptions_DisposesOwner()
-    {
-        DisposalTracker owner = new();
-        try
-        {
-            Action action = () => StringResourceTableLoader.LoadIndexedTableFromAssembly(
-                ReadOnlyMemory<byte>.Empty,
-                "Missing.resources",
-                (StringResourceManagerOptions)int.MaxValue,
-                owner);
-
-            action.Should().Throw<ArgumentOutOfRangeException>();
-            owner.IsDisposed.Should().BeTrue();
-        }
-        finally
-        {
-            owner.Dispose();
-        }
-    }
-
-    [TestMethod]
     public void LoadIndexedTableFromAssembly_EmptyImage_DisposesOwner()
     {
         DisposalTracker owner = new();
@@ -210,27 +189,6 @@ public class StringResourceTableLoaderTests
     }
 
     [TestMethod]
-    public void LoadIndexedTableFromResourcesFile_InvalidOptions_DisposesOwner()
-    {
-        byte[] resources = WriteResources(static writer => writer.AddResource("Greeting", "Hello"));
-        DisposalTracker owner = new();
-        try
-        {
-            Action action = () => StringResourceTableLoader.LoadIndexedTableFromResourcesFile(
-                resources,
-                (StringResourceManagerOptions)int.MaxValue,
-                owner);
-
-            action.Should().Throw<ArgumentOutOfRangeException>();
-            owner.IsDisposed.Should().BeTrue();
-        }
-        finally
-        {
-            owner.Dispose();
-        }
-    }
-
-    [TestMethod]
     public void LoadIndexedTableFromResourcesStream_TransfersStreamUntilTableIsDisposed()
     {
         byte[] resources = WriteResources(static writer => writer.AddResource("Greeting", "Hello"));
@@ -250,20 +208,6 @@ public class StringResourceTableLoaderTests
             table.Dispose();
         }
 
-        stream.CanRead.Should().BeFalse();
-    }
-
-    [TestMethod]
-    public void LoadIndexedTableFromResourcesStream_InvalidOptions_DisposesStream()
-    {
-        byte[] resources = WriteResources(static writer => writer.AddResource("Greeting", "Hello"));
-        using MemoryStream stream = new(resources, writable: false);
-
-        Action action = () => StringResourceTableLoader.LoadIndexedTableFromResourcesStream(
-            stream,
-            (StringResourceManagerOptions)int.MaxValue);
-
-        action.Should().Throw<ArgumentOutOfRangeException>();
         stream.CanRead.Should().BeFalse();
     }
 
@@ -305,28 +249,6 @@ public class StringResourceTableLoaderTests
             "Missing.resources");
 
         table.Should().BeNull();
-    }
-
-    [TestMethod]
-    public void LoadStringTableFromAssembly_LoadedAssemblyInvalidOptions_ThrowsArgumentOutOfRangeException()
-    {
-        Action action = () => StringResourceTableLoader.LoadStringTableFromAssembly(
-            s_assembly,
-            "Missing.resources",
-            (StringResourceManagerOptions)int.MaxValue);
-
-        action.Should().Throw<ArgumentOutOfRangeException>();
-    }
-
-    [TestMethod]
-    public void LoadStringTableFromAssembly_ImageInvalidOptions_ThrowsArgumentOutOfRangeException()
-    {
-        Action action = () => StringResourceTableLoader.LoadStringTableFromAssembly(
-            ReadOnlyMemory<byte>.Empty,
-            "Missing.resources",
-            (StringResourceManagerOptions)int.MaxValue);
-
-        action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
     [TestMethod]
@@ -469,16 +391,6 @@ public class StringResourceTableLoaderTests
         Action action = () => StringResourceTableLoader.LoadStringTableFromResourcesFile(new byte[64]);
 
         action.Should().Throw<ArgumentException>();
-    }
-
-    [TestMethod]
-    public void LoadStringTableFromResourcesFile_InvalidOptions_ThrowsArgumentOutOfRangeException()
-    {
-        Action action = () => StringResourceTableLoader.LoadStringTableFromResourcesFile(
-            ReadOnlyMemory<byte>.Empty,
-            (StringResourceManagerOptions)int.MaxValue);
-
-        action.Should().Throw<ArgumentOutOfRangeException>();
     }
 
     [TestMethod]

@@ -47,6 +47,9 @@ public class SatelliteStringResourceAotTests
         throw new InvalidOperationException("The neutral test resources were not embedded.");
     }
 
+    private static string ResourceAssemblyFile() =>
+        Path.Join(AppContext.BaseDirectory, "touki.aot.tests.dll");
+
     private static void WriteSideFile(string probeRoot, string culture, string baseName, string key, string value)
     {
         string directory = Path.Join(probeRoot, culture);
@@ -80,6 +83,42 @@ public class SatelliteStringResourceAotTests
             s_assembly);
 
         Assert.AreEqual("Hallo", manager.GetString("Greeting", new CultureInfo("de")));
+    }
+
+    [TestMethod]
+    public void GetString_ExternalAssemblyFiles_LoadsInManagedAotProject()
+    {
+        string baseName = NeutralBaseName();
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            baseName,
+            ResourceAssemblyFile(),
+            AppContext.BaseDirectory);
+
+        Assert.AreEqual("Hallo", manager.GetString("Greeting", new CultureInfo("de")));
+    }
+
+    [TestMethod]
+    public void GetString_ExternalAssemblyFilesParentCulture_LoadsInManagedAotProject()
+    {
+        string baseName = NeutralBaseName();
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            baseName,
+            ResourceAssemblyFile(),
+            AppContext.BaseDirectory);
+
+        Assert.AreEqual("Hallo", manager.GetString("Greeting", new CultureInfo("de-DE")));
+    }
+
+    [TestMethod]
+    public void GetString_ExternalAssemblyFilesMissingCulture_LoadsNeutralInManagedAotProject()
+    {
+        string baseName = NeutralBaseName();
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            baseName,
+            ResourceAssemblyFile(),
+            AppContext.BaseDirectory);
+
+        Assert.AreEqual("Hello", manager.GetString("Greeting", new CultureInfo("es-MX")));
     }
 
     [TestMethod]

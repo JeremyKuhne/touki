@@ -40,6 +40,7 @@ internal sealed class ResourceInput : IEquatable<ResourceInput>
         string? targetPath,
         string? includeDefaultValues,
         string? emitFormatMethods,
+        string? useResourceManagerProvider,
         string? isPublic,
         string? omitGetResourceString,
         string? asConstants,
@@ -62,6 +63,7 @@ internal sealed class ResourceInput : IEquatable<ResourceInput>
         TargetPath = targetPath;
         IncludeDefaultValues = includeDefaultValues;
         EmitFormatMethods = emitFormatMethods;
+        UseResourceManagerProvider = useResourceManagerProvider;
         Public = isPublic;
         OmitGetResourceString = omitGetResourceString;
         AsConstants = asConstants;
@@ -151,6 +153,11 @@ internal sealed class ResourceInput : IEquatable<ResourceInput>
     internal string? EmitFormatMethods { get; }
 
     /// <summary>
+    ///  Gets the metadata opting neutral-only accessors into the registered manager provider.
+    /// </summary>
+    internal string? UseResourceManagerProvider { get; }
+
+    /// <summary>
     ///  Gets the metadata controlling generated class visibility.
     /// </summary>
     internal string? Public { get; }
@@ -223,6 +230,7 @@ internal sealed class ResourceInput : IEquatable<ResourceInput>
             ReadMetadata(options, "TargetPath"),
             ReadMetadata(options, "IncludeDefaultValues"),
             ReadMetadata(options, "EmitFormatMethods"),
+            ReadMetadata(options, "UseResourceManagerProvider"),
             ReadMetadata(options, "Public"),
             ReadMetadata(options, "OmitGetResourceString"),
             ReadMetadata(options, "AsConstants"),
@@ -284,6 +292,7 @@ internal sealed class ResourceInput : IEquatable<ResourceInput>
                 && TargetPath == other.TargetPath
                 && IncludeDefaultValues == other.IncludeDefaultValues
                 && EmitFormatMethods == other.EmitFormatMethods
+                && UseResourceManagerProvider == other.UseResourceManagerProvider
                 && Public == other.Public
                 && OmitGetResourceString == other.OmitGetResourceString
                 && AsConstants == other.AsConstants
@@ -314,6 +323,7 @@ internal sealed class ResourceInput : IEquatable<ResourceInput>
             hash = AddHash(hash, TargetPath);
             hash = AddHash(hash, IncludeDefaultValues);
             hash = AddHash(hash, EmitFormatMethods);
+            hash = AddHash(hash, UseResourceManagerProvider);
             hash = AddHash(hash, Public);
             hash = AddHash(hash, OmitGetResourceString);
             hash = AddHash(hash, AsConstants);

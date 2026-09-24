@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\touki.resources.generator\buildTransitive\KlutzyNinja.Touki.props" />
+
   <PropertyGroup>
     <!--
       Native AOT is only supported on .NET Core, so this project single-targets the current LTS.
@@ -13,8 +15,8 @@
           gated rather than always on.)
 
       RID publishes use NativeAotSmoke as a small executable entry point instead of the reflection-based
-      MSTest runner. CI publishes without the localized fixture, then runs the native binary against
-      neutral, direct-satellite, and loose-resource deployments.
+      MSTest runner. CI validates ILC-embedded localization plus the generated-manager provider default
+      and registered direct-satellite, loose-resource, and external owner/satellite assembly deployments.
     -->
     <TargetFramework>$(DotNetCoreVersion)</TargetFramework>
     <OutputType>Exe</OutputType>
@@ -75,6 +77,7 @@
 
   <ItemGroup Condition="'$(IncludeSatelliteFixture)' != 'true'">
     <EmbeddedResource Remove="Resources\SatelliteTestStrings.de.resx" />
+    <EmbeddedResource Remove="Resources\SatelliteTestStrings.fr.resx" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PublishAot)' != 'true'">
@@ -83,6 +86,17 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\touki\touki.csproj" />
+    <ProjectReference Include="..\..\touki.resources.generator\touki.resources.generator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\SatelliteTestStrings.resx"
+                      Generator="Touki"
+                      ClassName="Touki.Resources.GeneratedSatelliteTestStrings"
+                      UseResourceManagerProvider="true" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PublishAot)' == 'true'">
@@ -90,5 +104,7 @@
          Register<T> calls even though this project deliberately omits the experimental MSTest AOT runner. -->
     <TrimmerRootAssembly Include="$(AssemblyName)" />
   </ItemGroup>
+
+  <Import Project="..\..\touki.resources.generator\buildTransitive\KlutzyNinja.Touki.targets" />
 
 </Project>

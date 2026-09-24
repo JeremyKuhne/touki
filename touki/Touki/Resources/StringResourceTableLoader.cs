@@ -49,7 +49,6 @@ public static class StringResourceTableLoader
     {
         ArgumentNullException.ThrowIfNull(assembly);
         ArgumentNullException.ThrowIfNull(resourceName);
-        options.Validate();
 
         Stream? stream = assembly.GetManifestResourceStream(resourceName);
         if (stream is null)
@@ -75,18 +74,124 @@ public static class StringResourceTableLoader
     /// <param name="options">The string resource options.</param>
     /// <param name="owned">The owner that keeps <paramref name="assembly"/> valid.</param>
     /// <returns>The indexed table, or <see langword="null"/> when the resource is absent.</returns>
-    internal static unsafe IndexedStringResourceTable? LoadIndexedTableFromAssembly(
+    internal static IndexedStringResourceTable? LoadIndexedTableFromAssembly(
         ReadOnlyMemory<byte> assembly,
         string resourceName,
         StringResourceManagerOptions options,
         IDisposable owned)
+    {
+        (
+            IndexedStringResourceTable? table,
+            _
+        ) = LoadIndexedTableFromAssemblyCore(
+            assembly,
+            resourceName,
+            options,
+            owned,
+            readResourceAssemblyMetadata: false,
+            expectedResourceAssembly: null,
+            expectedCultureName: null,
+            expectedOwnerIdentity: null);
+
+        return table;
+    }
+
+    /// <summary>
+    ///  Loads an indexed table and owner metadata from a managed resource assembly image.
+    /// </summary>
+    /// <param name="assembly">The complete managed assembly image.</param>
+    /// <param name="resourceName">The exact manifest resource name.</param>
+    /// <param name="options">The string resource options.</param>
+    /// <param name="owned">The owner that keeps <paramref name="assembly"/> valid.</param>
+    /// <param name="expectedOwnerIdentity">The expected owner identity, if validation was requested.</param>
+    /// <returns>The indexed table and resource assembly metadata.</returns>
+    internal static (
+        IndexedStringResourceTable? Table,
+        ResourceAssemblyMetadata Metadata
+    ) LoadIndexedTableAndMetadataFromAssembly(
+        ReadOnlyMemory<byte> assembly,
+        string resourceName,
+        StringResourceManagerOptions options,
+        IDisposable owned,
+        ManagedAssemblyIdentity? expectedOwnerIdentity = null)
+    {
+        (
+            IndexedStringResourceTable? table,
+            ResourceAssemblyMetadata? metadata
+        ) = LoadIndexedTableFromAssemblyCore(
+            assembly,
+            resourceName,
+            options,
+            owned,
+            readResourceAssemblyMetadata: true,
+            expectedResourceAssembly: null,
+            expectedCultureName: null,
+            expectedOwnerIdentity);
+
+        return (
+            table,
+            metadata
+                ?? throw new InvalidOperationException("The resource assembly metadata was not loaded.")
+        );
+    }
+
+    /// <summary>
+    ///  Loads an indexed table from a satellite assembly image.
+    /// </summary>
+    /// <param name="assembly">The complete satellite assembly image.</param>
+    /// <param name="resourceName">The exact manifest resource name.</param>
+    /// <param name="options">
+    ///  The string resource options. <see cref="StringResourceManagerOptions.ValidateAssemblyIdentity"/>
+    ///  enables satellite identity validation.
+    /// </param>
+    /// <param name="owned">The owner that keeps <paramref name="assembly"/> valid.</param>
+    /// <param name="resourceAssembly">The expected resource-owning assembly metadata.</param>
+    /// <param name="cultureName">The expected satellite culture.</param>
+    /// <returns>The indexed table, or <see langword="null"/> when the resource is absent.</returns>
+    internal static IndexedStringResourceTable? LoadIndexedTableFromSatelliteAssembly(
+        ReadOnlyMemory<byte> assembly,
+        string resourceName,
+        StringResourceManagerOptions options,
+        IDisposable owned,
+        ResourceAssemblyMetadata resourceAssembly,
+        string cultureName)
+    {
+        ArgumentNullException.ThrowIfNull(resourceAssembly);
+        ArgumentNullException.ThrowIfNull(cultureName);
+        (
+            IndexedStringResourceTable? table,
+            _
+        ) = LoadIndexedTableFromAssemblyCore(
+            assembly,
+            resourceName,
+            options,
+            owned,
+            readResourceAssemblyMetadata: false,
+            resourceAssembly,
+            cultureName,
+            expectedOwnerIdentity: null);
+
+        return table;
+    }
+
+    private static unsafe (
+        IndexedStringResourceTable? Table,
+        ResourceAssemblyMetadata? Metadata
+    ) LoadIndexedTableFromAssemblyCore(
+        ReadOnlyMemory<byte> assembly,
+        string resourceName,
+        StringResourceManagerOptions options,
+        IDisposable owned,
+        bool readResourceAssemblyMetadata,
+        ResourceAssemblyMetadata? expectedResourceAssembly,
+        string? expectedCultureName,
+        ManagedAssemblyIdentity? expectedOwnerIdentity)
     {
         ArgumentNullException.ThrowIfNull(resourceName);
         ArgumentNullException.ThrowIfNull(owned);
         bool ownershipTransferred = false;
         try
         {
-            options.Validate();
             if (assembly.IsEmpty)
             {
                 throw new BadImageFormatException("The assembly image is empty.");
@@ -100,6 +205,33 @@ public static class StringResourceTableLoader
             }
 
             MetadataReader metadataReader = peReader.GetMetadataReader();
+            ResourceAssemblyMetadata? resourceAssemblyMetadata = readResourceAssemblyMetadata
+                ? ManagedAssemblyMetadataReader.ReadResourceAssembly(metadataReader)
+                : null;
+
+            if (expectedOwnerIdentity is not null)
+            {
+                ManagedAssemblyIdentity actualOwnerIdentity = resourceAssemblyMetadata?.ResourceAssemblyIdentity
+                    ?? throw new BadImageFormatException("The resource assembly identity is missing.");
+
+                actualOwnerIdentity.ValidateMatches(expectedOwnerIdentity);
+            }
+
+            if (expectedResourceAssembly is not null
+                && options.AreFlagsSet(StringResourceManagerOptions.ValidateAssemblyIdentity))
+            {
+                ManagedAssemblyIdentity expectedIdentity = expectedResourceAssembly.ResourceAssemblyIdentity
+                    ?? throw new InvalidOperationException(
+                        "The resource-owning assembly identity was not initialized.");
+
+                ManagedAssemblyIdentity satelliteIdentity = ManagedAssemblyIdentity.FromMetadata(metadataReader);
+                satelliteIdentity.ValidateSatelliteOf(
+                    expectedIdentity,
+                    expectedCultureName
+                        ?? throw new InvalidOperationException("The expected satellite culture was not initialized."),
+                    expectedResourceAssembly.SatelliteContractVersion);
+            }
+
             foreach (ManifestResourceHandle handle in metadataReader.ManifestResources)
             {
                 ManifestResource resource = metadataReader.GetManifestResource(handle);
@@ -112,10 +244,10 @@ public static class StringResourceTableLoader
                 ReadOnlyMemory<byte> resources = GetEmbeddedResource(assembly, peReader.PEHeaders, resource.Offset);
                 ownershipTransferred = true;
                 RawResourceReader reader = RawResourceReader.CreateOwned(resources, owned);
-                return IndexedStringResourceTable.Create(reader, options);
+                return (IndexedStringResourceTable.Create(reader, options), resourceAssemblyMetadata);
             }
 
-            return null;
+            return (null, resourceAssemblyMetadata);
         }
         finally
         {
@@ -165,7 +297,6 @@ public static class StringResourceTableLoader
     /// <exception cref="ArgumentNullException">
     ///  <paramref name="assembly"/> or <paramref name="resourceName"/> is <see langword="null"/>.
     /// </exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> contains an unknown flag.</exception>
     /// <exception cref="BadImageFormatException">The embedded resource has an invalid structure.</exception>
     /// <exception cref="NotSupportedException">The embedded resource format is not supported.</exception>
     public static Dictionary<string, string>? LoadStringTableFromAssembly(
@@ -195,7 +326,6 @@ public static class StringResourceTableLoader
     {
         ArgumentNullException.ThrowIfNull(assembly);
         ArgumentNullException.ThrowIfNull(resourceName);
-        options.Validate();
 
         Stream? stream = assembly.GetManifestResourceStream(resourceName);
         if (stream is null)
@@ -225,7 +355,6 @@ public static class StringResourceTableLoader
     ///  embedded resource with the given name.
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="resourceName"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> contains an unknown flag.</exception>
     /// <exception cref="BadImageFormatException">
     ///  The assembly or embedded resource has an invalid structure.
     /// </exception>
@@ -254,7 +383,6 @@ public static class StringResourceTableLoader
         StringResourceManagerOptions options = StringResourceManagerOptions.None)
     {
         ArgumentNullException.ThrowIfNull(resourceName);
-        options.Validate();
         if (assembly.IsEmpty)
         {
             throw new BadImageFormatException("The assembly image is empty.");
@@ -310,7 +438,6 @@ public static class StringResourceTableLoader
     ///  The resource data has an invalid structure or contains duplicate names.
     /// </exception>
     /// <exception cref="NotSupportedException">The resource format is not supported.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> contains an unknown flag.</exception>
     [SkipLocalsInit]
     public static Dictionary<string, string> LoadStringTableFromResourcesFile(
         ReadOnlyMemory<byte> resources,
@@ -327,7 +454,6 @@ public static class StringResourceTableLoader
         ReadOnlyMemory<byte> resources,
         StringResourceManagerOptions options)
     {
-        options.Validate();
         using RawResourceReader reader = new(resources);
         return LoadTableFromReader(reader, options);
     }
@@ -336,7 +462,6 @@ public static class StringResourceTableLoader
         IStringResourceReader reader,
         StringResourceManagerOptions options)
     {
-        options.Validate();
         bool ignoreNonStringResources = options.AreFlagsSet(
             StringResourceManagerOptions.IgnoreNonStringResources);
 

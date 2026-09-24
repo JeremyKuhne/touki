@@ -19,5 +19,11 @@ public enum StringResourceManagerOptions
     ///  Permit non-string resources but do not retain their names or values. A string lookup for an
     ///  ignored resource behaves as though the name is missing. Null resources remain invalid.
     /// </summary>
-    IgnoreNonStringResources = 1
+    IgnoreNonStringResources = 1,
+
+    /// <summary>
+    ///  Validate parsed satellite identities against their owner. When an expected owner assembly is
+    ///  supplied, validate its simple name, culture, version, and public key token on each file load.
+    /// </summary>
+    ValidateAssemblyIdentity = 2
 }

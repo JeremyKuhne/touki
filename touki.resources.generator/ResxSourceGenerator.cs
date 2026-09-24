@@ -105,8 +105,14 @@ public sealed class ResxSourceGenerator : IIncrementalGenerator
             }
 
             ImmutableArray<ResourceEntry> entries = ValidateMemberNames(context, options, resource.Entries);
-            bool hasLocalizedSiblings = HasLocalizedSibling(identities, options);
-            string source = CSharpResourceRenderer.Render(options, entries, hasLocalizedSiblings, features);
+            bool useResourceManagerProvider = HasLocalizedSibling(identities, options)
+                || ResourceInput.IsTrue(input.UseResourceManagerProvider);
+
+            string source = CSharpResourceRenderer.Render(
+                options,
+                entries,
+                useResourceManagerProvider,
+                features);
 
             context.AddSource(
                 options.HintName,
@@ -223,6 +229,7 @@ public sealed class ResxSourceGenerator : IIncrementalGenerator
             with(StringComparer.Ordinal),
             options.ClassIdentifier,
             "__ToukiResourceCache",
+            "__ToukiResourceManagerCache",
             "CreateResourceManager",
             "Culture",
             "GetCachedResourceString",

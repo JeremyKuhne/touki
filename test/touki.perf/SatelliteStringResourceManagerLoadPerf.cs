@@ -21,6 +21,9 @@ public class SatelliteStringResourceManagerLoadPerf
     private Assembly _assembly;
 
     [AllowNull]
+    private string _assemblyFile;
+
+    [AllowNull]
     private string _baseName;
 
     [AllowNull]
@@ -45,6 +48,7 @@ public class SatelliteStringResourceManagerLoadPerf
     public void Setup()
     {
         _assembly = typeof(SatelliteStringResourceManagerLoadPerf).Assembly;
+        _assemblyFile = _assembly.Location;
         string resourceName = _assembly.GetManifestResourceNames()
             .Single(name => name.EndsWith("SatelliteStringResourceManagerPerfStrings.resources", StringComparison.Ordinal));
 
@@ -127,6 +131,18 @@ public class SatelliteStringResourceManagerLoadPerf
             _baseName,
             _satelliteRoot,
             _assembly);
+
+        string? value = manager.GetString("Greeting", _culture);
+        return value?.Length ?? 0;
+    }
+
+    [Benchmark]
+    public int SatelliteStringResourceManager_AssemblyFiles_FirstLookup()
+    {
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromAssemblyFiles(
+            _baseName,
+            _assemblyFile,
+            _satelliteRoot);
 
         string? value = manager.GetString("Greeting", _culture);
         return value?.Length ?? 0;

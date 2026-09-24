@@ -104,7 +104,9 @@ The design has three layers:
 1. `StringResourceManager` owns one neutral table. It validates type codes once,
    searches the compiled resource index, and decodes only requested strings.
 2. `SatelliteStringResourceManager` adds exact, parent, missing-culture, and
-   neutral fallback. Generated localized accessors use runtime satellites.
+   neutral fallback. Generated localized accessors use the process-wide
+   `StringResourceManagerProvider`, whose unregistered default uses runtime
+   satellites.
 3. The generator emits a static partial accessor with a nested cache containing
    the selected `CultureInfo` and one nullable field per generated property.
 
@@ -448,8 +450,28 @@ The reduction occurs because the Touki path avoids retaining the BCL
   known at compile time, so hashing adds cost without flexibility.
 - Use runtime satellites as the generated localized default. They have the
   lowest managed first-load cost and preserve normal assembly identity checks.
+- Route generated localized manager construction through a thread-safe,
+  single-selection provider. A nested static holder invokes it once per
+  generated class, so warmed generated getters retain their field-only path.
+- Keep neutral-only generated accessors independent of the provider by default,
+  with `UseResourceManagerProvider` as an opt-in when localization is deployed
+  externally without localized `.resx` inputs.
+- Provide an explicit platform `ResourceManager` adapter for NativeAOT embedded
+  mode; managed applications retain the runtime-satellite default unless they
+  register another provider.
 - Keep direct satellite DLL and loose `.resources` factories for external and
   Native AOT deployment.
+- Keep direct satellite probing strict by default, with an explicit tolerant
+  mode for hosts that require localized candidate failures to continue parent
+  and neutral fallback.
+- Keep direct managed assembly identity validation opt-in through
+  `StringResourceManagerOptions.ValidateAssemblyIdentity`. External neutral
+  owners can use the explicit strict preflight before selecting the external
+  layout.
+- Allow an explicit external owner simple-name alias for NativeAOT hosts whose
+  generated assembly name differs from the managed owner/satellite family;
+  when identity validation is enabled, version and signing identity continue to
+  come from the generated owner.
 - Keep manager construction and source loading lazy.
 - Keep the manager's one-entry cache for direct callers.
 - Treat missing required generated strings as deployment errors and throw

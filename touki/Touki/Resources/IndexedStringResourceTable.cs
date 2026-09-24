@@ -34,7 +34,6 @@ internal sealed partial class IndexedStringResourceTable : DisposableBase
 
         try
         {
-            options.Validate();
             bool ignoreNonStringResources = options.AreFlagsSet(
                 StringResourceManagerOptions.IgnoreNonStringResources);
 

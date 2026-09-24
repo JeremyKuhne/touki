@@ -18,13 +18,13 @@ internal static class CSharpResourceRenderer
     /// </summary>
     /// <param name="options">The resource naming and generation options.</param>
     /// <param name="entries">The validated resource entries to emit.</param>
-    /// <param name="hasLocalizedSiblings">Whether the resource has localized satellite resources.</param>
+    /// <param name="useResourceManagerProvider">Whether the accessor selects the registered manager provider.</param>
     /// <param name="features">The features available in the consuming compilation.</param>
     /// <returns>The generated C# source.</returns>
     internal static string Render(
         ResourceGenerationOptions options,
         ImmutableArray<ResourceEntry> entries,
-        bool hasLocalizedSiblings,
+        bool useResourceManagerProvider,
         CompilationFeatures features)
     {
         StringBuilder builder = new();
@@ -59,7 +59,7 @@ internal static class CSharpResourceRenderer
 
         RenderCache(builder, memberIndent, entries, features);
         AppendLine(builder);
-        RenderResourceManager(builder, memberIndent, options, hasLocalizedSiblings, features);
+        RenderResourceManager(builder, memberIndent, options, useResourceManagerProvider);
         AppendLine(builder);
         RenderCulture(builder, memberIndent, features);
         AppendLine(builder);
@@ -125,17 +125,22 @@ internal static class CSharpResourceRenderer
         StringBuilder builder,
         string indent,
         ResourceGenerationOptions options,
-        bool hasLocalizedSiblings,
-        CompilationFeatures features)
+        bool useResourceManagerProvider)
     {
-        string nullableSuffix = features.SupportsNullable ? "?" : string.Empty;
+        AppendLine(builder, indent + "private static class __ToukiResourceManagerCache");
+        AppendLine(builder, indent + "{");
+        AppendLine(builder, indent + "    static __ToukiResourceManagerCache()");
+        AppendLine(builder, indent + "    {");
+        AppendLine(builder, indent + "        Instance = CreateResourceManager();");
+        AppendLine(builder, indent + "    }");
+        AppendLine(builder);
         AppendLine(
             builder,
             indent
-                + "private static global::Touki.Resources.StringResourceManager"
-                + nullableSuffix
-                + " s_resourceManager;");
+                + "    internal static global::Touki.Resources.StringResourceManager Instance { get; }");
 
+        AppendLine(builder, indent + "}");
+        AppendLine(builder);
         AppendLine(
             builder,
             indent
@@ -145,36 +150,11 @@ internal static class CSharpResourceRenderer
         AppendLine(builder, indent + "/// <summary>");
         AppendLine(builder, indent + "///  Gets the resource manager used by this class.");
         AppendLine(builder, indent + "/// </summary>");
+        AppendLine(
+            builder,
+            indent + "public static global::Touki.Resources.StringResourceManager ResourceManager =>");
 
-        if (features.SupportsNullable)
-        {
-            AppendLine(
-                builder,
-                indent + "public static global::Touki.Resources.StringResourceManager ResourceManager =>");
-
-            AppendLine(builder, indent + "    s_resourceManager ??= CreateResourceManager();");
-        }
-        else
-        {
-            AppendLine(builder, indent + "public static global::Touki.Resources.StringResourceManager ResourceManager");
-            AppendLine(builder, indent + "{");
-            AppendLine(builder, indent + "    get");
-            AppendLine(builder, indent + "    {");
-            AppendLine(
-                builder,
-                indent
-                    + "        global::Touki.Resources.StringResourceManager resourceManager = s_resourceManager;");
-
-            AppendLine(builder, indent + "        if (resourceManager == null)");
-            AppendLine(builder, indent + "        {");
-            AppendLine(builder, indent + "            resourceManager = CreateResourceManager();");
-            AppendLine(builder, indent + "            s_resourceManager = resourceManager;");
-            AppendLine(builder, indent + "        }");
-            AppendLine(builder);
-            AppendLine(builder, indent + "        return resourceManager;");
-            AppendLine(builder, indent + "    }");
-            AppendLine(builder, indent + "}");
-        }
+        AppendLine(builder, indent + "    __ToukiResourceManagerCache.Instance;");
 
         AppendLine(builder);
         AppendLine(
@@ -183,11 +163,11 @@ internal static class CSharpResourceRenderer
 
         AppendLine(builder, indent + "{");
 
-        if (hasLocalizedSiblings)
+        if (useResourceManagerProvider)
         {
             AppendLine(
                 builder,
-                indent + "    return global::Touki.Resources.SatelliteStringResourceManager.FromRuntimeSatellites(");
+                indent + "    return global::Touki.Resources.StringResourceManagerProvider.Create(");
         }
         else
         {

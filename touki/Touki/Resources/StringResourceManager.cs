@@ -11,7 +11,7 @@ namespace Touki.Resources;
 
 /// <summary>
 ///  Resolves strings from one binary <c>.resources</c> file, one embedded resource in an
-///  already-loaded assembly, or a stream supplied on demand.
+///  already-loaded assembly, one managed assembly parsed as data, or a stream supplied on demand.
 /// </summary>
 /// <remarks>
 ///  <para>
@@ -62,15 +62,186 @@ public class StringResourceManager
     /// <param name="resourcesFile">The path of a default-format version 2 <c>.resources</c> file.</param>
     /// <param name="options">The resource loading options.</param>
     /// <exception cref="ArgumentNullException"><paramref name="resourcesFile"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> contains an unknown flag.</exception>
     public StringResourceManager(
         string resourcesFile,
         StringResourceManagerOptions options)
     {
         ArgumentNullException.ThrowIfNull(resourcesFile);
-        options.Validate();
         _source = resourcesFile;
         _options = options;
+    }
+
+    /// <inheritdoc cref="FromAssemblyFile(string, string, StringResourceManagerOptions)"/>
+    public static StringResourceManager FromAssemblyFile(
+        string baseName,
+        string assemblyFile) => FromAssemblyFile(
+            baseName,
+            assemblyFile,
+            StringResourceManagerOptions.None);
+
+    /// <summary>
+    ///  Creates a manager that parses an embedded resource from a managed assembly file without
+    ///  loading the assembly.
+    /// </summary>
+    /// <param name="baseName">The root name of the resource, without the <c>.resources</c> extension.</param>
+    /// <param name="assemblyFile">The managed assembly file containing the neutral resource.</param>
+    /// <param name="options">The resource loading options.</param>
+    /// <returns>A lazy file-backed string resource manager.</returns>
+    /// <exception cref="ArgumentNullException">
+    ///  <paramref name="baseName"/> or <paramref name="assemblyFile"/> is <see langword="null"/>.
+    /// </exception>
+    public static StringResourceManager FromAssemblyFile(
+        string baseName,
+        string assemblyFile,
+        StringResourceManagerOptions options) => FromAssemblyFile(
+            baseName,
+            assemblyFile,
+            MappedMemoryManager.CreateFromFile,
+            options);
+
+    /// <inheritdoc cref="ValidateAssemblyFile(string, string, Assembly, StringResourceManagerOptions)"/>
+    public static void ValidateAssemblyFile(
+        string baseName,
+        string assemblyFile,
+        Assembly expectedAssembly) => ValidateAssemblyFile(
+            baseName,
+            assemblyFile,
+            expectedAssembly,
+            StringResourceManagerOptions.None);
+
+    /// <inheritdoc cref="ValidateAssemblyFile(string, string, Assembly, string, StringResourceManagerOptions)"/>
+    public static void ValidateAssemblyFile(
+        string baseName,
+        string assemblyFile,
+        Assembly generatedOwnerAssembly,
+        string externalOwnerSimpleName) => ValidateAssemblyFile(
+            baseName,
+            assemblyFile,
+            generatedOwnerAssembly,
+            externalOwnerSimpleName,
+            StringResourceManagerOptions.None);
+
+    /// <inheritdoc cref="ValidateAssemblyFile(string, string, Assembly, string, StringResourceManagerOptions)"/>
+    /// <param name="expectedAssembly">The generated accessor's expected owner assembly.</param>
+    /// <exception cref="ArgumentNullException">
+    ///  <paramref name="baseName"/>, <paramref name="assemblyFile"/>, or
+    ///  <paramref name="expectedAssembly"/> is <see langword="null"/>.
+    /// </exception>
+    public static void ValidateAssemblyFile(
+        string baseName,
+        string assemblyFile,
+        Assembly expectedAssembly,
+        StringResourceManagerOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(expectedAssembly);
+        string expectedSimpleName = expectedAssembly.GetName().Name
+            ?? throw new BadImageFormatException("The expected assembly does not have a simple name.");
+
+        ValidateAssemblyFile(
+            baseName,
+            assemblyFile,
+            expectedAssembly,
+            expectedSimpleName,
+            options);
+    }
+
+    /// <summary>
+    ///  Strictly validates an external managed owner assembly using an aliased simple name and the
+    ///  generated owner's remaining identity.
+    /// </summary>
+    /// <param name="baseName">The root name of the resource, without the <c>.resources</c> extension.</param>
+    /// <param name="assemblyFile">The external managed owner assembly file.</param>
+    /// <param name="generatedOwnerAssembly">The generated accessor's owner assembly.</param>
+    /// <param name="externalOwnerSimpleName">The expected external owner simple name.</param>
+    /// <param name="options">The resource loading options.</param>
+    /// <exception cref="ArgumentNullException">
+    ///  <paramref name="baseName"/>, <paramref name="assemblyFile"/>,
+    ///  <paramref name="generatedOwnerAssembly"/>, or <paramref name="externalOwnerSimpleName"/> is
+    ///  <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException"><paramref name="externalOwnerSimpleName"/> is empty.</exception>
+    /// <exception cref="FileLoadException">The external owner identity does not match.</exception>
+    /// <exception cref="MissingManifestResourceException">The neutral resource table is absent.</exception>
+    /// <exception cref="BadImageFormatException">The assembly or resource table is malformed.</exception>
+    /// <exception cref="NotSupportedException">The resource table format or contents are unsupported.</exception>
+    /// <exception cref="IOException">The assembly file cannot be read.</exception>
+    public static void ValidateAssemblyFile(
+        string baseName,
+        string assemblyFile,
+        Assembly generatedOwnerAssembly,
+        string externalOwnerSimpleName,
+        StringResourceManagerOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(baseName);
+        ArgumentNullException.ThrowIfNull(assemblyFile);
+        ArgumentNullException.ThrowIfNull(generatedOwnerAssembly);
+        ArgumentNullException.ThrowIfNull(externalOwnerSimpleName);
+        if (externalOwnerSimpleName.Length == 0)
+        {
+            throw new ArgumentException("The external owner simple name cannot be empty.", nameof(externalOwnerSimpleName));
+        }
+
+        string fullPath = Path.GetFullPath(assemblyFile);
+        MappedMemoryManager assembly = MappedMemoryManager.CreateFromFile(fullPath);
+        (
+            IndexedStringResourceTable? table,
+            ResourceAssemblyMetadata metadata
+        ) = StringResourceTableLoader.LoadIndexedTableAndMetadataFromAssembly(
+            assembly.Memory,
+            $"{baseName}.resources",
+            options,
+            assembly);
+
+        try
+        {
+            ManagedAssemblyIdentity actualIdentity = metadata.ResourceAssemblyIdentity
+                ?? throw new BadImageFormatException("The resource assembly identity is missing.");
+
+            ManagedAssemblyIdentity expectedIdentity = ManagedAssemblyIdentity.FromAssemblyName(
+                generatedOwnerAssembly.GetName())
+                .WithName(externalOwnerSimpleName);
+
+            actualIdentity.ValidateMatches(expectedIdentity);
+            if (table is null)
+            {
+                throw new MissingManifestResourceException(
+                    $"The assembly '{fullPath}' does not contain '{baseName}.resources'.");
+            }
+
+            _ = StringResourceTableLoader.LoadStringTableFromAssembly(
+                assembly.Memory,
+                $"{baseName}.resources",
+                options)
+                ?? throw new MissingManifestResourceException(
+                    $"The assembly '{fullPath}' does not contain '{baseName}.resources'.");
+        }
+        finally
+        {
+            table?.Dispose();
+        }
+    }
+
+    /// <summary>
+    ///  Creates a managed assembly file manager that opens through <paramref name="openFile"/>.
+    /// </summary>
+    /// <param name="baseName">The root name of the resource table.</param>
+    /// <param name="assemblyFile">The managed assembly file.</param>
+    /// <param name="openFile">The function that opens the file as mapped memory.</param>
+    /// <param name="options">The resource loading options.</param>
+    /// <param name="expectedOwnerIdentity">The expected owner identity, when validation is enabled.</param>
+    /// <returns>A lazy file-backed string resource manager.</returns>
+    internal static StringResourceManager FromAssemblyFile(
+        string baseName,
+        string assemblyFile,
+        Func<string, MappedMemoryManager> openFile,
+        StringResourceManagerOptions options = StringResourceManagerOptions.None,
+        ManagedAssemblyIdentity? expectedOwnerIdentity = null)
+    {
+        ArgumentNullException.ThrowIfNull(baseName);
+        return new(
+            baseName,
+            new ManagedAssemblyStringResourceSource(assemblyFile, openFile, expectedOwnerIdentity),
+            options);
     }
 
     /// <summary>
@@ -95,7 +266,6 @@ public class StringResourceManager
     /// <exception cref="ArgumentNullException">
     ///  <paramref name="baseName"/> or <paramref name="assembly"/> is <see langword="null"/>.
     /// </exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> contains an unknown flag.</exception>
     public StringResourceManager(
         string baseName,
         Assembly assembly,
@@ -103,7 +273,6 @@ public class StringResourceManager
     {
         ArgumentNullException.ThrowIfNull(baseName);
         ArgumentNullException.ThrowIfNull(assembly);
-        options.Validate();
         _baseName = baseName;
         _source = assembly;
         _options = options;
@@ -135,7 +304,6 @@ public class StringResourceManager
     /// <exception cref="ArgumentNullException">
     ///  <paramref name="baseName"/> or <paramref name="streamFactory"/> is <see langword="null"/>.
     /// </exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> contains an unknown flag.</exception>
     public StringResourceManager(
         string baseName,
         Func<Stream> streamFactory,
@@ -143,7 +311,6 @@ public class StringResourceManager
     {
         ArgumentNullException.ThrowIfNull(baseName);
         ArgumentNullException.ThrowIfNull(streamFactory);
-        options.Validate();
         _baseName = baseName;
         _source = streamFactory;
         _options = options;
@@ -166,10 +333,19 @@ public class StringResourceManager
     {
         ArgumentNullException.ThrowIfNull(baseName);
         ArgumentNullException.ThrowIfNull(neutralResources);
-        options.Validate();
         _baseName = baseName;
         _source = neutralResources;
         _ownsNeutralResources = ownsNeutralResources;
+        _options = options;
+    }
+
+    private StringResourceManager(
+        string baseName,
+        ManagedAssemblyStringResourceSource source,
+        StringResourceManagerOptions options)
+    {
+        _baseName = baseName;
+        _source = source;
         _options = options;
     }
 
@@ -311,6 +487,29 @@ public class StringResourceManager
     internal Assembly? SourceAssembly => _source as Assembly;
 
     /// <summary>
+    ///  The managed assembly file source, if this manager parses an assembly as data.
+    /// </summary>
+    internal ManagedAssemblyStringResourceSource? ManagedAssemblySource =>
+        _source as ManagedAssemblyStringResourceSource;
+
+    /// <summary>
+    ///  Gets metadata for this manager's managed assembly file after ensuring its table is loaded.
+    /// </summary>
+    /// <param name="source">The expected managed assembly file source.</param>
+    /// <returns>The parsed resource assembly metadata.</returns>
+    internal ResourceAssemblyMetadata GetManagedAssemblySourceMetadata(
+        ManagedAssemblyStringResourceSource source)
+    {
+        if (!ReferenceEquals(_source, source))
+        {
+            throw new InvalidOperationException("The managed assembly source does not belong to this manager.");
+        }
+
+        _ = GetOrLoadCache().Table;
+        return source.Metadata;
+    }
+
+    /// <summary>
     ///  Looks up a name in this manager's single resource table.
     /// </summary>
     /// <param name="name">The resource name.</param>
@@ -398,6 +597,11 @@ public class StringResourceManager
             return IndexedStringResourceTable.Create(
                 RawResourceReader.CreateFromFile(resourcesFile),
                 _options);
+        }
+
+        if (_source is ManagedAssemblyStringResourceSource managedAssembly)
+        {
+            return managedAssembly.LoadTable($"{BaseName}.resources", _options);
         }
 
         Func<Stream> streamFactory = (Func<Stream>)_source;

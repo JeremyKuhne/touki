@@ -16,8 +16,8 @@ internal sealed class SatelliteAssemblyCache
 {
     private readonly Dictionary<string, Assembly?> _assemblies = [with(StringComparer.Ordinal)];
     private readonly Lock _lock = new();
-    private SatelliteStringResourceSourceMetadata? _metadata;
-    private SatelliteStringResourceSourceMetadata? _runtimeMetadata;
+    private ResourceAssemblyMetadata? _metadata;
+    private ResourceAssemblyMetadata? _runtimeMetadata;
 
     /// <summary>
     ///  Gets cached source metadata for the resource assembly.
@@ -27,13 +27,13 @@ internal sealed class SatelliteAssemblyCache
     ///  Whether to read and validate <see cref="SatelliteContractVersionAttribute"/>.
     /// </param>
     /// <returns>The cached source metadata.</returns>
-    internal SatelliteStringResourceSourceMetadata GetMetadata(
+    internal ResourceAssemblyMetadata GetMetadata(
         Assembly resourceAssembly,
         bool includeContractVersion)
     {
         lock (_lock)
         {
-            SatelliteStringResourceSourceMetadata? metadata = includeContractVersion
+            ResourceAssemblyMetadata? metadata = includeContractVersion
                 ? _runtimeMetadata
                 : _metadata;
 
@@ -43,6 +43,9 @@ internal sealed class SatelliteAssemblyCache
             }
 
             string? assemblyName = resourceAssembly.GetName().Name;
+            ManagedAssemblyIdentity resourceAssemblyIdentity = ManagedAssemblyIdentity.FromAssemblyName(
+                resourceAssembly.GetName());
+
             string? satelliteAssemblyFileName = assemblyName is null
                 ? null
                 : $"{assemblyName}.resources.dll";
@@ -79,6 +82,7 @@ internal sealed class SatelliteAssemblyCache
             }
 
             metadata = new(
+                resourceAssemblyIdentity,
                 satelliteAssemblyFileName,
                 neutralCultureName,
                 satelliteContractVersion);

@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE file in the project root for full license information
 
-// IDE0380 correctly reports these unsafe contexts as unnecessary in modern .NET. The same source
-// must retain them for its .NET Framework build, which per-target analysis cannot account for.
+// IDE0380 correctly reports most of these unsafe contexts as unnecessary in modern .NET. The same
+// source must retain them for its .NET Framework build, which per-target analysis cannot account for.
+// The pinned SDK also misreports the assembly reader's required pointer context on modern .NET.
 // Suppress each modern report individually rather than weakening the rule for all modern .NET code.
 
 #if NET
@@ -40,11 +41,12 @@
 [assembly: SuppressMessage(
     "Style",
     "IDE0380:Remove unnecessary 'unsafe' modifier",
-    Justification = "Required by the .NET Framework target of this multi-targeted build.",
+    Justification = "The assembly reader's pointer cast requires an unsafe context on all targets.",
     Scope = "member",
-    Target = "~M:Touki.Resources.StringResourceTableLoader.LoadIndexedTableFromAssembly(System."
+    Target = "~M:Touki.Resources.StringResourceTableLoader.LoadIndexedTableFromAssemblyCore(System."
         + "ReadOnlyMemory{System.Byte},System.String,Touki.Resources.StringResourceManagerOptions,"
-        + "System.IDisposable)~Touki.Resources.IndexedStringResourceTable")]
+        + "System.IDisposable,System.Boolean,Touki.Resources.ResourceAssemblyMetadata,System.String,"
+        + "Touki.Resources.ManagedAssemblyIdentity)")]
 
 [assembly: SuppressMessage(
     "Style",
