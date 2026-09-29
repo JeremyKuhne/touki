@@ -1007,7 +1007,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 
 | Release | Rules added |
 |---------|-------------|
-| Unshipped | TOUKI0005 |
+| 0.11.0 | TOUKI0005 |
 | 0.10.0 | TOUKI0027, TOUKI0028, TOUKI0029 |
 | 0.4.0 | TOUKI0001, TOUKI0002, TOUKI0003, TOUKI0004, TOUKI0010 |
 | 0.5.0 | TOUKI0020, TOUKI0030 |
