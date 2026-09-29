@@ -38,6 +38,39 @@ internal static partial class DocumentationInheritanceResolver
         return GetDocumentation(pending, includeSourceDeclaration, cancellationToken);
     }
 
+    public static DocumentationAvailability GetInheritdocParameterDocumentation(
+        ISymbol symbol,
+        XmlDocumentationInfo documentation,
+        Compilation compilation,
+        IParameterSymbol parameter,
+        string parameterName,
+        CancellationToken cancellationToken)
+    {
+        List<PendingSymbol> pending = [];
+        AddInheritdocTargets(symbol, documentation, compilation, pending, cancellationToken);
+        return GetDocumentation(
+            pending,
+            includeSourceDeclaration: null,
+            cancellationToken,
+            new DocumentationRequirement(symbol, parameter, parameterName));
+    }
+
+    public static DocumentationAvailability GetInheritdocReturnDocumentation(
+        ISymbol symbol,
+        XmlDocumentationInfo documentation,
+        Compilation compilation,
+        IMethodSymbol method,
+        CancellationToken cancellationToken)
+    {
+        List<PendingSymbol> pending = [];
+        AddInheritdocTargets(symbol, documentation, compilation, pending, cancellationToken);
+        return GetDocumentation(
+            pending,
+            includeSourceDeclaration: null,
+            cancellationToken,
+            new DocumentationRequirement(method));
+    }
+
     public static DocumentationAvailability GetHierarchyDocumentation(
         ISymbol symbol,
         Compilation compilation,
@@ -60,7 +93,8 @@ internal static partial class DocumentationInheritanceResolver
     private static DocumentationAvailability GetDocumentation(
         List<PendingSymbol> pending,
         Func<ISymbol, MemberDeclarationSyntax, Compilation, bool>? includeSourceDeclaration,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        DocumentationRequirement requirement = default)
     {
         HashSet<ISymbol> inspected = [with(SymbolEqualityComparer.Default)];
         HashSet<ISymbol> expandedHierarchies = [with(SymbolEqualityComparer.Default)];
@@ -72,6 +106,10 @@ internal static partial class DocumentationInheritanceResolver
             cancellationToken.ThrowIfCancellationRequested();
             PendingSymbol item = pending[index];
             ISymbol current = item.Symbol;
+            if (!requirement.Matches(current, cancellationToken))
+            {
+                continue;
+            }
 
             if (inspected.Add(current))
             {
@@ -82,7 +120,7 @@ internal static partial class DocumentationInheritanceResolver
                     cancellationToken);
                 if (sourceDocumentation.HasCSharpDeclaration)
                 {
-                    if (sourceDocumentation.Documentation.SummaryCount > 0)
+                    if (requirement.HasDocumentation(sourceDocumentation.Documentation))
                     {
                         return DocumentationAvailability.Documented;
                     }
@@ -107,13 +145,14 @@ internal static partial class DocumentationInheritanceResolver
                     else if (!TryParseMetadataDocumentation(
                         xml,
                         cancellationToken,
-                        out MetadataDocumentationInfo metadataDocumentation))
+                        out MetadataDocumentationInfo metadataDocumentation,
+                        includeSignatureTags: requirement.IsSignatureRequirement))
                     {
                         unknown = true;
                     }
                     else
                     {
-                        if (metadataDocumentation.HasSummary)
+                        if (requirement.HasDocumentation(metadataDocumentation))
                         {
                             return DocumentationAvailability.Documented;
                         }
@@ -680,7 +719,8 @@ internal static partial class DocumentationInheritanceResolver
     private static bool TryParseMetadataDocumentation(
         string xml,
         CancellationToken cancellationToken,
-        out MetadataDocumentationInfo documentation)
+        out MetadataDocumentationInfo documentation,
+        bool includeSignatureTags = false)
     {
         documentation = default;
         if (xml.Length > MaximumMetadataDocumentationLength)
@@ -733,6 +773,16 @@ internal static partial class DocumentationInheritanceResolver
                         {
                             case "summary":
                                 documentation.HasSummary = true;
+                                break;
+                            case "param" when includeSignatureTags:
+                                if (reader.GetAttribute("name") is { Length: > 0 } name)
+                                {
+                                    (documentation.ParameterNames ??= new(StringComparer.Ordinal)).Add(name);
+                                }
+
+                                break;
+                            case "returns" when includeSignatureTags:
+                                documentation.HasReturns = true;
                                 break;
                             case "inheritdoc":
                                 documentation.HasInheritdoc = true;

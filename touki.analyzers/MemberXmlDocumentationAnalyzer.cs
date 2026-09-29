@@ -35,6 +35,10 @@ namespace Touki.Analyzers;
 ///   elements with a <c>path</c> filter do not satisfy this rule.
 ///  </para>
 ///  <para>
+///   When inherited documentation is available only from generated source, parameter and return tags are
+///   inherited only for matching signatures; otherwise the member needs local tags for those requirements.
+///  </para>
+///  <para>
 ///   <c>dotnet_code_quality.TOUKI0026.api_surface</c> filters on each member's declared accessibility.
 ///   For members declared in nested types, <c>dotnet_code_quality.TOUKI0026.effective_api_surface</c> can specify
 ///   a different set based on visibility through the containing-type hierarchy. Extension blocks use the combined
@@ -194,22 +198,22 @@ public sealed partial class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
         Location memberLocation = GetMemberLocation(symbol, reportDeclaration);
         bool signatureOnly = isDelegate || isPrimaryConstructor || isExtensionBlock;
         ISymbol inheritanceSymbol = isPrimaryConstructor ? symbol.ContainingType : symbol;
+        // Declared inheritdoc can use generated documentation, unlike automatic hierarchy lookup.
         DocumentationAvailability inheritedSummary = documentation.HasInheritdoc
-            ? GetInheritdocDocumentation(
-            inheritanceSymbol,
+            ? DocumentationInheritanceResolver.GetInheritdocDocumentation(
+                inheritanceSymbol,
                 documentation,
                 compilation,
-                context.Options.AnalyzerConfigOptionsProvider,
+                includeSourceDeclaration: null,
                 context.CancellationToken)
             : DocumentationAvailability.Undocumented;
+        ImmutableArray<IParameterSymbol> parameters = requireParameters ? GetParameters(symbol) : [];
+        IMethodSymbol? returnMethod = requireReturns ? GetReturnMethod(symbol) : null;
 
-        if (!signatureOnly && documentation.SummaryCount == 0)
+        if (!signatureOnly
+            && documentation.SummaryCount == 0
+            && inheritedSummary == DocumentationAvailability.Undocumented)
         {
-            if (inheritedSummary is DocumentationAvailability.Documented or DocumentationAvailability.Unknown)
-            {
-                return;
-            }
-
             if (!documentation.HasInheritdoc)
             {
                 DocumentationAvailability hierarchy = GetHierarchyDocumentation(
@@ -229,14 +233,32 @@ public sealed partial class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
             context.ReportDiagnostic(Diagnostic.Create(s_rule, memberLocation, displayName, problem));
         }
 
-        if (inheritedSummary is DocumentationAvailability.Documented or DocumentationAvailability.Unknown)
+        if (inheritedSummary == DocumentationAvailability.Unknown)
         {
             return;
         }
 
+        if (inheritedSummary == DocumentationAvailability.Documented)
+        {
+            if (parameters.IsEmpty && returnMethod is null)
+            {
+                return;
+            }
+
+            DocumentationAvailability existingDocumentation = GetNonGeneratedInheritdocDocumentation(
+                inheritanceSymbol,
+                documentation,
+                compilation,
+                context.Options.AnalyzerConfigOptionsProvider,
+                context.CancellationToken);
+            if (existingDocumentation is DocumentationAvailability.Documented or DocumentationAvailability.Unknown)
+            {
+                return;
+            }
+        }
+
         if (requireParameters)
         {
-            ImmutableArray<IParameterSymbol> parameters = GetParameters(symbol);
             for (int ordinal = 0; ordinal < parameters.Length; ordinal++)
             {
                 IParameterSymbol parameter = parameters[ordinal];
@@ -246,28 +268,57 @@ public sealed partial class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
                     continue;
                 }
 
-                if (!HasParameterDocumentation(
+                if (HasParameterDocumentation(
                     firstUserDeclaration,
                     additionalUserDeclarations,
                     parameterName,
                     ordinal))
                 {
-                    context.ReportDiagnostic(
-                        Diagnostic.Create(
-                            s_rule,
-                            GetParameterLocation(firstUserDeclaration, ordinal)
-                                ?? GetSourceLocation(parameter)
-                                ?? memberLocation,
-                            displayName,
-                            $"missing <param> for parameter '{parameterName}'"));
+                    continue;
                 }
+
+                DocumentationAvailability inheritedParameter =
+                    inheritedSummary == DocumentationAvailability.Documented
+                        ? DocumentationInheritanceResolver.GetInheritdocParameterDocumentation(
+                            inheritanceSymbol,
+                            documentation,
+                            compilation,
+                            parameter,
+                            parameterName,
+                            context.CancellationToken)
+                        : DocumentationAvailability.Undocumented;
+                if (inheritedParameter is DocumentationAvailability.Documented or DocumentationAvailability.Unknown)
+                {
+                    continue;
+                }
+
+                context.ReportDiagnostic(
+                    Diagnostic.Create(
+                        s_rule,
+                        GetParameterLocation(firstUserDeclaration, ordinal)
+                            ?? GetSourceLocation(parameter)
+                            ?? memberLocation,
+                        displayName,
+                        $"missing <param> for parameter '{parameterName}'"));
             }
         }
 
-        if (requireReturns && HasReturnValue(symbol) && !documentation.HasReturns)
+        if (returnMethod is not null && !documentation.HasReturns)
         {
-            context.ReportDiagnostic(
-                Diagnostic.Create(s_rule, memberLocation, displayName, "missing <returns>"));
+            DocumentationAvailability inheritedReturn =
+                inheritedSummary == DocumentationAvailability.Documented
+                    ? DocumentationInheritanceResolver.GetInheritdocReturnDocumentation(
+                        inheritanceSymbol,
+                        documentation,
+                        compilation,
+                        returnMethod,
+                        context.CancellationToken)
+                    : DocumentationAvailability.Undocumented;
+            if (inheritedReturn == DocumentationAvailability.Undocumented)
+            {
+                context.ReportDiagnostic(
+                    Diagnostic.Create(s_rule, memberLocation, displayName, "missing <returns>"));
+            }
         }
     }
 
@@ -342,13 +393,37 @@ public sealed partial class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
         _ => []
     };
 
-    private static bool HasReturnValue(ISymbol symbol) => symbol switch
+    private static IMethodSymbol? GetReturnMethod(ISymbol symbol) => symbol switch
     {
-        IMethodSymbol method => !method.ReturnsVoid,
-        INamedTypeSymbol { TypeKind: TypeKind.Delegate, DelegateInvokeMethod: IMethodSymbol invoke } =>
-            !invoke.ReturnsVoid,
-        _ => false
+        IMethodSymbol { ReturnsVoid: false } method => method,
+        INamedTypeSymbol
+        {
+            TypeKind: TypeKind.Delegate,
+            DelegateInvokeMethod: { ReturnsVoid: false } invoke
+        } => invoke,
+        _ => null
     };
+
+    private static DocumentationAvailability GetNonGeneratedInheritdocDocumentation(
+        ISymbol symbol,
+        XmlDocumentationInfo documentation,
+        Compilation compilation,
+        AnalyzerConfigOptionsProvider optionsProvider,
+        CancellationToken cancellationToken) =>
+        DocumentationInheritanceResolver.GetInheritdocDocumentation(
+            symbol,
+            documentation,
+            compilation,
+            (target, declaration, declaringCompilation) => !IsGeneratedDeclaration(
+                target,
+                declaration,
+                declaringCompilation,
+                optionsProvider,
+                declaringCompilation.GetTypeByMetadataName("System.CodeDom.Compiler.GeneratedCodeAttribute"),
+                declaringCompilation.GetTypeByMetadataName(
+                    "System.Runtime.CompilerServices.CompilerGeneratedAttribute"),
+                cancellationToken),
+            cancellationToken);
 
     private static bool HasParameterDocumentation(
         SyntaxNode firstDeclaration,
@@ -417,27 +492,6 @@ public sealed partial class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
             TypeDeclarationSyntax { ParameterList: ParameterListSyntax list } => list.Parameters,
             _ => default
         };
-
-    private static DocumentationAvailability GetInheritdocDocumentation(
-        ISymbol symbol,
-        XmlDocumentationInfo documentation,
-        Compilation compilation,
-        AnalyzerConfigOptionsProvider optionsProvider,
-        CancellationToken cancellationToken) =>
-        DocumentationInheritanceResolver.GetInheritdocDocumentation(
-            symbol,
-            documentation,
-            compilation,
-            (target, declaration, declaringCompilation) => !IsGeneratedDeclaration(
-                target,
-                declaration,
-                declaringCompilation,
-                optionsProvider,
-                declaringCompilation.GetTypeByMetadataName("System.CodeDom.Compiler.GeneratedCodeAttribute"),
-                declaringCompilation.GetTypeByMetadataName(
-                    "System.Runtime.CompilerServices.CompilerGeneratedAttribute"),
-                cancellationToken),
-            cancellationToken);
 
     private static DocumentationAvailability GetHierarchyDocumentation(
         ISymbol symbol,

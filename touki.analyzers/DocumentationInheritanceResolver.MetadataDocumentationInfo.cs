@@ -14,8 +14,10 @@ internal static partial class DocumentationInheritanceResolver
     private struct MetadataDocumentationInfo
     {
         public bool HasSummary;
+        public bool HasReturns;
         public bool HasInheritdoc;
         public bool HasImplicitInheritdoc;
+        public HashSet<string>? ParameterNames;
         public List<MetadataInheritdocReference>? InheritdocReferences;
     }
 }

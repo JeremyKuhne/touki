@@ -470,6 +470,9 @@ or interface member. Implicit interface implementations still need local documen
 they declare `<inheritdoc/>`. Explicit `cref` chains are followed to a documented member;
 unresolved or undocumented source targets do not count. Metadata without available XML
 documentation is left alone. XPath-filtered inheritdoc is not supported.
+Generated members can supply documentation to `<inheritdoc cref="..."/>` or to
+`<inheritdoc/>` on an override or interface implementation. Generated documentation does not
+exempt an otherwise undocumented member that has no `<inheritdoc>`.
 
 Configure the declared member visibility with:
 
@@ -509,8 +512,12 @@ Disable parameter enforcement while retaining member and return enforcement with
 dotnet_code_quality.TOUKI0026.require_parameter_documentation = false
 ```
 
-The default is `true`. A valid top-level `<inheritdoc>` satisfies the complete inherited contract,
-including parameters.
+The default is `true`. A valid `<inheritdoc>` can satisfy parameter documentation. When the
+inherited summary is available only from generated source, an inherited `<param>` must document
+the corresponding parameter with the same name, type, and passing mode. An extension receiver
+does not occupy a position in an instance-method target and needs its own `<param>`. Document
+wrapper parameters locally when their signatures differ. Existing non-generated inheritance
+retains its contract-level behavior.
 
 Documentation on a C# 14 extension block can document its contained members.
 
@@ -531,7 +538,9 @@ Disable return enforcement while retaining member and parameter enforcement with
 dotnet_code_quality.TOUKI0026.require_return_documentation = false
 ```
 
-The default is `true`. A valid top-level `<inheritdoc>` satisfies the inherited return contract.
+The default is `true`. A valid `<inheritdoc>` can satisfy the return contract. When the inherited
+summary is available only from generated source, the target must have a top-level `<returns>` and
+an equivalent return type and by-reference shape. Otherwise, document the wrapper return locally.
 
 The member documentation rule is disabled under `touki/Framework/Polyfills` in this repository.
 Those files track `dotnet/runtime`, so retaining upstream documentation coverage keeps future
