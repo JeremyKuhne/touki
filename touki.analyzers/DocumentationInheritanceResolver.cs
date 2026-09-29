@@ -777,7 +777,14 @@ internal static partial class DocumentationInheritanceResolver
                             case "param" when includeSignatureTags:
                                 if (reader.GetAttribute("name") is { Length: > 0 } name)
                                 {
-                                    (documentation.ParameterNames ??= new(StringComparer.Ordinal)).Add(name);
+                                    if (documentation.ParameterNames is { } parameterNames)
+                                    {
+                                        parameterNames.Add(name);
+                                    }
+                                    else
+                                    {
+                                        documentation.ParameterNames = [name];
+                                    }
                                 }
 
                                 break;

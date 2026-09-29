@@ -518,6 +518,12 @@ the corresponding parameter with the same name, type, and passing mode. An exten
 does not occupy a position in an instance-method target and needs its own `<param>`. Document
 wrapper parameters locally when their signatures differ. Existing non-generated inheritance
 retains its contract-level behavior.
+Generic type parameters in matching signatures compare by declaration kind, position, and
+generic arity even when wrappers and generated targets have distinct symbols. Nullability
+and by-reference shape must still match.
+Concrete generic arguments in a `cref` remain concrete; documentation is inherited only
+when type-parameter slots correspond. Function-pointer signatures also require compatible
+calling conventions and reference modifiers.
 
 Documentation on a C# 14 extension block can document its contained members.
 

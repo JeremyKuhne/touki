@@ -42,7 +42,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 "FontFeatureTag.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -81,7 +81,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 "Sample.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         IsParameterDocumentationDiagnostic(diagnostic).Should().BeTrue();
@@ -116,7 +116,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 "Sample.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(2);
         diagnostics.Should().ContainSingle(diagnostic => IsParameterDocumentationDiagnostic(diagnostic));
@@ -141,7 +141,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -168,7 +168,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -187,12 +187,14 @@ public partial class MemberXmlDocumentationAnalyzerTests
             }
             """,
             path: "GeneratedTags.g.cs");
+
         CSharpCompilation generatedCompilation =
             CSharpCompilation.Create(
                 "GeneratedTagsProject",
                 syntaxTrees: [generatedTree],
                 references: RoslynTestEnvironment.References,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
         const string source = """
             public enum FeatureTag
             {
@@ -204,7 +206,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
             new MemberXmlDocumentationAnalyzer(),
             source,
-            additionalReferences: [generatedCompilation.ToMetadataReference()]).ConfigureAwait(false);
+            additionalReferences: [generatedCompilation.ToMetadataReference()]).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -238,7 +240,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 "FeatureTag.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }
@@ -256,6 +258,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 Feature
             }
             """;
+
         IReadOnlyList<(string Source, string FileName)> sources =
         [
             (generated, "GeneratedTags.g.cs"),
@@ -270,7 +273,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 "FeatureTag.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
         diagnostic.GetMessage().Should().Contain("<inheritdoc> does not resolve to a top-level <summary>");
@@ -293,6 +296,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 WM_LBUTTONDOWN
             }
             """;
+
         IReadOnlyList<(string Source, string FileName)> sources =
         [
             (generated, "NativeMessage.g.cs"),
@@ -307,7 +311,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 "MessageType.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         if (expectWarning)
         {
@@ -346,13 +350,14 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 "Sample.cs")
         ];
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(sources).ConfigureAwait(continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(3);
         diagnostics.Should().ContainSingle(
             diagnostic => diagnostic.GetMessage().Contains(
                 "<inheritdoc> does not resolve to a top-level <summary>",
                 StringComparison.Ordinal));
+
         diagnostics.Should().ContainSingle(diagnostic => IsParameterDocumentationDiagnostic(diagnostic));
         diagnostics.Should().ContainSingle(diagnostic => IsReturnDocumentationDiagnostic(diagnostic));
     }
