@@ -9,7 +9,7 @@ internal static partial class DocumentationInheritanceResolver
     /// <summary>
     ///  Describes one inheritdoc target read from metadata XML.
     /// </summary>
-    private readonly struct MetadataInheritdocReference
+    internal readonly struct MetadataInheritdocReference
     {
         public MetadataInheritdocReference(string target, bool hasPath)
         {

@@ -38,6 +38,43 @@ internal static partial class DocumentationInheritanceResolver
         return GetDocumentation(pending, includeSourceDeclaration, cancellationToken);
     }
 
+    public static DocumentationAvailability GetInheritdocParameterDocumentation(
+        ISymbol symbol,
+        XmlDocumentationInfo documentation,
+        Compilation compilation,
+        IParameterSymbol parameter,
+        string parameterName,
+        SignatureDocumentationCache? cache,
+        CancellationToken cancellationToken)
+    {
+        List<PendingSymbol> pending = [];
+        AddInheritdocTargets(symbol, documentation, compilation, pending, cancellationToken);
+        return GetDocumentation(
+            pending,
+            includeSourceDeclaration: null,
+            cancellationToken,
+            new DocumentationRequirement(symbol, parameter, parameterName),
+            cache);
+    }
+
+    public static DocumentationAvailability GetInheritdocReturnDocumentation(
+        ISymbol symbol,
+        XmlDocumentationInfo documentation,
+        Compilation compilation,
+        IMethodSymbol method,
+        SignatureDocumentationCache? cache,
+        CancellationToken cancellationToken)
+    {
+        List<PendingSymbol> pending = [];
+        AddInheritdocTargets(symbol, documentation, compilation, pending, cancellationToken);
+        return GetDocumentation(
+            pending,
+            includeSourceDeclaration: null,
+            cancellationToken,
+            new DocumentationRequirement(method),
+            cache);
+    }
+
     public static DocumentationAvailability GetHierarchyDocumentation(
         ISymbol symbol,
         Compilation compilation,
@@ -60,11 +97,14 @@ internal static partial class DocumentationInheritanceResolver
     private static DocumentationAvailability GetDocumentation(
         List<PendingSymbol> pending,
         Func<ISymbol, MemberDeclarationSyntax, Compilation, bool>? includeSourceDeclaration,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        DocumentationRequirement requirement = default,
+        SignatureDocumentationCache? cache = null)
     {
-        HashSet<ISymbol> inspected = [with(SymbolEqualityComparer.Default)];
-        HashSet<ISymbol> expandedHierarchies = [with(SymbolEqualityComparer.Default)];
-        Dictionary<Compilation, Compilation> aliasNormalizedCompilations = [];
+        cache?.ResetTraversal();
+        HashSet<ISymbol> inspected = cache?.Inspected ?? [with(SymbolEqualityComparer.Default)];
+        HashSet<ISymbol> expandedHierarchies = cache?.ExpandedHierarchies ?? [with(SymbolEqualityComparer.Default)];
+        Dictionary<Compilation, Compilation> aliasNormalizedCompilations = cache?.AliasNormalizedCompilations ?? [];
         bool unknown = false;
 
         for (int index = 0; index < pending.Count; index++)
@@ -72,17 +112,19 @@ internal static partial class DocumentationInheritanceResolver
             cancellationToken.ThrowIfCancellationRequested();
             PendingSymbol item = pending[index];
             ISymbol current = item.Symbol;
+            if (!requirement.Matches(current, cancellationToken))
+            {
+                continue;
+            }
 
             if (inspected.Add(current))
             {
-                SourceDocumentation sourceDocumentation = GetSourceDocumentation(
-                    current,
-                    item.Compilation,
-                    includeSourceDeclaration,
-                    cancellationToken);
+                SourceDocumentation sourceDocumentation = cache is not null && includeSourceDeclaration is null
+                    ? cache.GetSource(current, item.Compilation, cancellationToken)
+                    : GetSourceDocumentation(current, item.Compilation, includeSourceDeclaration, cancellationToken);
                 if (sourceDocumentation.HasCSharpDeclaration)
                 {
-                    if (sourceDocumentation.Documentation.SummaryCount > 0)
+                    if (requirement.HasDocumentation(sourceDocumentation.Documentation))
                     {
                         return DocumentationAvailability.Documented;
                     }
@@ -96,31 +138,27 @@ internal static partial class DocumentationInheritanceResolver
                 }
                 else
                 {
-                    string? xml = current.GetDocumentationCommentXml(
-                        preferredCulture: null,
-                        expandIncludes: false,
-                        cancellationToken: cancellationToken);
-                    if (xml is null || xml.Length == 0)
+                    MetadataDocumentationResult metadata = cache is null
+                        ? ReadMetadataDocumentation(current, requirement.IsSignatureRequirement, cancellationToken)
+                        : cache.GetMetadata(current, cancellationToken);
+                    if (!metadata.HasXml)
                     {
                         unknown |= IsDocumentationUnavailable(current, item.Compilation);
                     }
-                    else if (!TryParseMetadataDocumentation(
-                        xml,
-                        cancellationToken,
-                        out MetadataDocumentationInfo metadataDocumentation))
+                    else if (!metadata.Parsed)
                     {
                         unknown = true;
                     }
                     else
                     {
-                        if (metadataDocumentation.HasSummary)
+                        if (requirement.HasDocumentation(metadata.Documentation))
                         {
                             return DocumentationAvailability.Documented;
                         }
 
                         unknown |= AddMetadataInheritdocTargets(
                             current,
-                            metadataDocumentation,
+                            metadata.Documentation,
                             item.Compilation,
                             aliasNormalizedCompilations,
                             pending,
@@ -677,10 +715,33 @@ internal static partial class DocumentationInheritanceResolver
         return parsed;
     }
 
+    private static MetadataDocumentationResult ReadMetadataDocumentation(
+        ISymbol symbol,
+        bool includeSignatureTags,
+        CancellationToken cancellationToken)
+    {
+        string? xml = symbol.GetDocumentationCommentXml(
+            preferredCulture: null,
+            expandIncludes: false,
+            cancellationToken: cancellationToken);
+        if (xml is null || xml.Length == 0)
+        {
+            return default;
+        }
+
+        bool parsed = TryParseMetadataDocumentation(
+            xml,
+            cancellationToken,
+            out MetadataDocumentationInfo documentation,
+            includeSignatureTags);
+        return new(parsed, documentation);
+    }
+
     private static bool TryParseMetadataDocumentation(
         string xml,
         CancellationToken cancellationToken,
-        out MetadataDocumentationInfo documentation)
+        out MetadataDocumentationInfo documentation,
+        bool includeSignatureTags = false)
     {
         documentation = default;
         if (xml.Length > MaximumMetadataDocumentationLength)
@@ -733,6 +794,23 @@ internal static partial class DocumentationInheritanceResolver
                         {
                             case "summary":
                                 documentation.HasSummary = true;
+                                break;
+                            case "param" when includeSignatureTags:
+                                if (reader.GetAttribute("name") is { Length: > 0 } name)
+                                {
+                                    if (documentation.ParameterNames is { } parameterNames)
+                                    {
+                                        parameterNames.Add(name);
+                                    }
+                                    else
+                                    {
+                                        documentation.ParameterNames = [name];
+                                    }
+                                }
+
+                                break;
+                            case "returns" when includeSignatureTags:
+                                documentation.HasReturns = true;
                                 break;
                             case "inheritdoc":
                                 documentation.HasInheritdoc = true;

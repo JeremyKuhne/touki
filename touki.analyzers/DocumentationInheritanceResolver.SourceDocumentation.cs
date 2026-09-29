@@ -9,7 +9,7 @@ internal static partial class DocumentationInheritanceResolver
     /// <summary>
     ///  Carries parsed source documentation and whether its declaration is inspectable C#.
     /// </summary>
-    private readonly struct SourceDocumentation
+    internal readonly struct SourceDocumentation
     {
         public SourceDocumentation(
             XmlDocumentationInfo documentation,
