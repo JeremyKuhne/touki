@@ -257,6 +257,8 @@ public sealed partial class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
             }
         }
 
+        int inheritedSignatureLookups = 0;
+        DocumentationInheritanceResolver.SignatureDocumentationCache? signatureCache = null;
         if (requireParameters)
         {
             for (int ordinal = 0; ordinal < parameters.Length; ordinal++)
@@ -277,16 +279,25 @@ public sealed partial class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
                     continue;
                 }
 
-                DocumentationAvailability inheritedParameter =
-                    inheritedSummary == DocumentationAvailability.Documented
-                        ? DocumentationInheritanceResolver.GetInheritdocParameterDocumentation(
-                            inheritanceSymbol,
-                            documentation,
-                            compilation,
-                            parameter,
-                            parameterName,
-                            context.CancellationToken)
-                        : DocumentationAvailability.Undocumented;
+                DocumentationAvailability inheritedParameter = DocumentationAvailability.Undocumented;
+                if (inheritedSummary == DocumentationAvailability.Documented)
+                {
+                    // Avoid a cache allocation for members with only one inherited signature check.
+                    if (++inheritedSignatureLookups == 2)
+                    {
+                        signatureCache = new();
+                    }
+
+                    inheritedParameter = DocumentationInheritanceResolver.GetInheritdocParameterDocumentation(
+                        inheritanceSymbol,
+                        documentation,
+                        compilation,
+                        parameter,
+                        parameterName,
+                        signatureCache,
+                        context.CancellationToken);
+                }
+
                 if (inheritedParameter is DocumentationAvailability.Documented or DocumentationAvailability.Unknown)
                 {
                     continue;
@@ -305,15 +316,23 @@ public sealed partial class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
 
         if (returnMethod is not null && !documentation.HasReturns)
         {
-            DocumentationAvailability inheritedReturn =
-                inheritedSummary == DocumentationAvailability.Documented
-                    ? DocumentationInheritanceResolver.GetInheritdocReturnDocumentation(
-                        inheritanceSymbol,
-                        documentation,
-                        compilation,
-                        returnMethod,
-                        context.CancellationToken)
-                    : DocumentationAvailability.Undocumented;
+            DocumentationAvailability inheritedReturn = DocumentationAvailability.Undocumented;
+            if (inheritedSummary == DocumentationAvailability.Documented)
+            {
+                if (++inheritedSignatureLookups == 2)
+                {
+                    signatureCache = new();
+                }
+
+                inheritedReturn = DocumentationInheritanceResolver.GetInheritdocReturnDocumentation(
+                    inheritanceSymbol,
+                    documentation,
+                    compilation,
+                    returnMethod,
+                    signatureCache,
+                    context.CancellationToken);
+            }
+
             if (inheritedReturn == DocumentationAvailability.Undocumented)
             {
                 context.ReportDiagnostic(

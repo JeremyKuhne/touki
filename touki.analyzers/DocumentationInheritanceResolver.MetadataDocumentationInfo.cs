@@ -11,7 +11,7 @@ internal static partial class DocumentationInheritanceResolver
     /// <summary>
     ///  Captures documentation elements read from one metadata XML member.
     /// </summary>
-    private struct MetadataDocumentationInfo
+    internal struct MetadataDocumentationInfo
     {
         public bool HasSummary;
         public bool HasReturns;
