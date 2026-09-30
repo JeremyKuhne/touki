@@ -162,7 +162,7 @@ jobs:
       run: |
         dotnet pack touki/touki.csproj `
           --configuration Release `
-          --no-build `
+          --no-restore `
           --output ./artifacts `
           -p:Platform=AnyCPU `
           -p:Platforms=AnyCPU
@@ -197,7 +197,7 @@ jobs:
 
         dotnet pack touki/touki.csproj `
           --configuration Release `
-          --no-build `
+          --no-restore `
           --output ./artifacts/validation `
           -p:Platform=AnyCPU `
           -p:Platforms=AnyCPU `
