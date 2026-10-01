@@ -451,17 +451,15 @@ public sealed class RawResourceReader : DisposableBase, IStringResourceReader
     }
 
     /// <inheritdoc/>
-    StringResourceLookupKind IStringResourceReader.Lookup(string name, out string? value)
+    string? IStringResourceReader.Lookup(string name)
     {
         if (!TryFindResource(name, out ResourceLocation location)
             || location.TypeCode != ResourceTypeCode.String)
         {
-            value = null;
-            return StringResourceLookupKind.Missing;
+            return null;
         }
 
-        value = GetString(location);
-        return StringResourceLookupKind.Found;
+        return GetString(location);
     }
 
     /// <summary>

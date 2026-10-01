@@ -94,11 +94,11 @@ public class StringResourceIndexedLoadPerf
     [Benchmark(Baseline = true)]
     public int EagerTable_LoadLookup()
     {
-        StringResourceTable table = StringResourceTableLoader.LoadTableFromResourcesFile(
+        Dictionary<string, string> table = StringResourceTableLoader.LoadStringTableFromResourcesFile(
             _resources,
             _options);
 
-        return table.Strings.TryGetValue(_lookupKey, out string? value) ? value.Length : 0;
+        return table.TryGetValue(_lookupKey, out string? value) ? value.Length : 0;
     }
 
     [Benchmark]
@@ -108,7 +108,6 @@ public class StringResourceIndexedLoadPerf
             new RawResourceReader(_resources),
             _options);
 
-        StringResourceLookupKind result = table.Lookup(_lookupKey, out string? value);
-        return result == StringResourceLookupKind.Found && value is not null ? value.Length : 0;
+        return table.Lookup(_lookupKey)?.Length ?? 0;
     }
 }

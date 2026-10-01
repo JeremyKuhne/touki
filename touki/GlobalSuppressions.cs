@@ -53,9 +53,9 @@
     "IDE0380:Remove unnecessary 'unsafe' modifier",
     Justification = "Required by the .NET Framework target of this multi-targeted build.",
     Scope = "member",
-    Target = "~M:Touki.Resources.StringResourceTableLoader.LoadTableFromAssembly(System.ReadOnlyMemory{System."
-        + "Byte},System.String,Touki.Resources.StringResourceManagerOptions)~Touki.Resources."
-        + "StringResourceTable")]
+    Target = "~M:Touki.Resources.StringResourceTableLoader.LoadStringTableFromAssembly(System.ReadOnlyMemory{System."
+        + "Byte},System.String,Touki.Resources.StringResourceManagerOptions)~System.Collections.Generic."
+        + "Dictionary{System.String,System.String}")]
 
 [assembly: SuppressMessage(
     "Style",

@@ -50,8 +50,7 @@ public class StringResourceFileBackingPerf
             RawResourceReader.CreateFromFile(_path),
             StringResourceManagerOptions.None);
 
-        StringResourceLookupKind result = table.Lookup(_lookupKey, out string? value);
-        return result == StringResourceLookupKind.Found && value is not null ? value.Length : 0;
+        return table.Lookup(_lookupKey)?.Length ?? 0;
     }
 
     [Benchmark]
@@ -67,7 +66,6 @@ public class StringResourceFileBackingPerf
             stream,
             StringResourceManagerOptions.None);
 
-        StringResourceLookupKind result = table.Lookup(_lookupKey, out string? value);
-        return result == StringResourceLookupKind.Found && value is not null ? value.Length : 0;
+        return table.Lookup(_lookupKey)?.Length ?? 0;
     }
 }

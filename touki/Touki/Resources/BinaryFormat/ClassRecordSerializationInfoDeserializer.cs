@@ -17,6 +17,8 @@ namespace Touki.Resources.BinaryFormat;
 /// </summary>
 internal sealed class ClassRecordSerializationInfoDeserializer : ClassRecordDeserializer
 {
+    private static readonly FormatterConverter s_converter = new();
+
     private readonly ClassRecord _classRecord;
     private readonly SerializationInfo _serializationInfo;
 
@@ -48,7 +50,7 @@ internal sealed class ClassRecordSerializationInfoDeserializer : ClassRecordDese
     {
         _classRecord = classRecord;
         _type = type;
-        _serializationInfo = new(type, BinaryFormattedObject.DefaultConverter);
+        _serializationInfo = new(type, s_converter);
         _memberNamesIterator = _classRecord.MemberNames.GetEnumerator();
         _canIterate = _memberNamesIterator.MoveNext();
     }

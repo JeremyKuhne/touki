@@ -3,6 +3,12 @@
 For the final executive design and performance summary, see
 [Generated string resource solution](string-resource-manager-solution.md).
 
+The retained measurements below predate removal of the manager's one-item
+decoded-value cache. Direct-manager warmed and first-access rows describe the
+earlier implementation, not current lookup costs. Direct manager calls now
+decode each request without allocating a cache entry; generated property
+fields still cache their values.
+
 ## Status
 
 Batch 1 implements the approved trusted-resource, strict-by-default, no-copy
@@ -27,10 +33,11 @@ localized fixture validated on net10.0, net11.0, and net481.
 - finalizable mapped-view leases without making every indexed table finalizable;
 - ordinal, case-sensitive string lookup;
 - parent-culture and neutral fallback;
-- one source load per culture and cache generation, including concurrent first
-  lookup;
+- successful source loads and missing-source results cached until release,
+  including concurrent first lookup; failed loads throw directly and may be
+  retried;
 - assembly-scoped source metadata and positive/negative satellite bind caches;
-- generation-aware release without stale cache publication;
+- caller-coordinated release with explicit disposed-table failures;
 - caller-owned neutral-manager composition; and
 - Native AOT-compatible direct satellite parsing.
 
@@ -139,15 +146,15 @@ tables in 256-call batches:
 | .NET Framework 4.8.1 RyuJIT | 50% adjacent hits | 1.58 | 1.34 | 31.5-31.9 KB |
 | .NET Framework 4.8.1 RyuJIT | No adjacent hits | 3.15 | 2.99 | 61.2-63.8 KB |
 
-The one-entry cache therefore needs about 50% adjacent reuse to win CPU time on
-modern .NET RyuJIT and between 50% and 75% on .NET Framework 4.8.1 RyuJIT.
-Every cache miss still allocates a decoded string and cache entry. BCL warmed
+The former one-entry cache therefore needed about 50% adjacent reuse to win CPU
+time on modern .NET RyuJIT and between 50% and 75% on .NET Framework 4.8.1 RyuJIT.
+Every cache miss allocated a decoded string and cache entry. BCL warmed
 lookup allocates 0 B because it retains decoded values by name, so Touki can add
 material GC pressure even when its CPU ratio is below 1.0.
 
 This is a single-threaded direct-table sensitivity test. It does not replay an
 MSBuild build, primary-to-shared fallback, localization, or concurrent lookup.
-Concurrent callers share the same last-entry cache and can reduce effective
+Concurrent callers shared the same last-entry cache and could reduce effective
 locality. A production MSBuild assessment therefore still requires a key and
 thread trace from representative builds.
 
@@ -191,10 +198,11 @@ First-field population over a warm manager separates cache replacement from
 lookup. A same-key read costs 4.853 ns / 48 B on modern .NET RyuJIT and
 9.982 ns / 48 B on .NET Framework 4.8.1 RyuJIT. Forcing a different manager key
 before every generated read raises the complete alternating operation to
-84.662 ns / 232 B and 270.873 ns / 241 B respectively. Only one 32-byte
-`CacheEntry` per property is redundant after the generated field is populated.
-The manager cache remains enabled because a bypass would add API complexity and
-weaken direct-manager locality for that one-time saving.
+84.662 ns / 232 B and 270.873 ns / 241 B respectively. These measurements
+included one redundant 32-byte `CacheEntry` per property after the generated
+field was populated.
+The manager cache has since been removed rather than adding a separate bypass
+API. Decoded-value caching now belongs to generated property fields or callers.
 
 Exact deployment-size comparison against the pre-generator backup is:
 
@@ -609,8 +617,9 @@ while loose resources have the lower .NET Framework 4.8.1 RyuJIT startup cost.
 - Directory roots are converted to fully qualified paths during construction.
   Resource base names, culture names, and satellite assembly names must be
   single path segments to preserve deterministic probe layout.
-- Every requested culture and missing candidate remains cached until
-  `ReleaseAllResources()` so a source opens at most once per generation.
+- Completed culture chains, successful source loads, and missing candidates
+  remain cached until `ReleaseAllResources()`. Failed loads are not cached;
+  later lookups retry the source.
 - Runtime assembly metadata and successful or missing satellite bind results are
   cached per resource assembly for the process lifetime.
 - The loader must not make a complete managed copy of a file or stream. A direct

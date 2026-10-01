@@ -1,5 +1,11 @@
 # Generated string resource solution
 
+The retained timing, allocation, and binary-size measurements below predate
+removal of the manager's one-item decoded-value cache. Direct-manager and
+first-access rows describe that earlier implementation; warmed generated
+properties still use their field-only cache. The cache-memory model below has
+been updated to exclude the removed manager cache objects.
+
 ## Executive decision
 
 **Ship the Touki-generated solution.** It trades a small fixed property-slot
@@ -13,7 +19,7 @@ For the measured Microsoft.Build-sized workload - 651 properties across a
 | --- | ---: | ---: |
 | Warm property, modern .NET RyuJIT | 27.458 ns / 0 B | **0.588 ns / 0 B** |
 | Warm property, .NET Framework 4.8.1 RyuJIT | 47.792 ns / 0 B | **2.109 ns / 0 B** |
-| Cache metadata after one key in each table | **about 480 B** | about 5,320 B |
+| Cache metadata after one key in each table | **about 480 B** | about 5,256 B |
 | Fully populated comparable runtime cache | about 169 KiB | **about 138 KiB** |
 | Runtime DLL growth | - | 0.245-0.676% |
 | NuGet package growth | - | 28,326 B / 1.841% |
@@ -24,12 +30,11 @@ The memory tradeoff is straightforward:
 
 - **Sparse access favors the existing path.** With one key read from each table,
   its comparable dictionary metadata is about 480 B. Touki has already allocated
-  5,256 B of generated property slots plus up to 64 B for two manager last-entry
-  caches.
+  5,256 B of generated property slots.
 - **Broad access favors Touki.** Once the main table reaches about 90 distinct
   cached keys, the BCL dictionary takes its next capacity step and exceeds the
   generated main-table cache. With both tables fully populated, Touki saves about
-  31,232 B, or 18%, in the comparable retained cache.
+  31,296 B, or 18%, in the comparable retained cache.
 - **Decoded strings cost the same in both designs.** The saving comes from
   replacing BCL dictionaries and `ResourceLocator` entries with generated
   reference fields.
@@ -56,8 +61,9 @@ flowchart TB
     subgraph Touki[Touki-generated solution]
         T1[Generated property] --> T2[Direct cache field]
         T1 -. first miss .-> T3[StringResourceManager]
-        T3 --> T4[Indexed table and one-entry cache]
-        T4 --> T5[Decoded strings]
+        T3 --> T4[Indexed table]
+        T4 -. decode on demand .-> T5[Decoded strings]
+        T2 --> T5
         T4 --> T6[Reader, index, and resource backing]
         T1 --> T7[Satellite manager for localization]
     end
@@ -72,10 +78,10 @@ The table uses the two Microsoft.Build resource classes and one active culture.
 | --- | ---: | ---: | --- |
 | Source-generator assembly | 0 B in application | 0 B in application | Compiler-only |
 | Generated property-slot object | none | 5,256 B | Fixed after both classes initialize |
-| Lookup metadata, one key per table | about 480 B | up to 64 B | Modeled; excludes property slots |
-| Lookup metadata, all 651 keys | about 36,552 B | up to 64 B | Modeled; excludes property slots |
+| Lookup metadata, one key per table | about 480 B | 0 B | Modeled; excludes property slots |
+| Lookup metadata, all 651 keys | about 36,552 B | 0 B | Modeled; excludes property slots |
 | Decoded strings, all 651 values | about 136,432 B | about 136,432 B | Same payload model |
-| **Comparable full-cache subtotal** | **172,984 B / 169 KiB** | **141,752 B / 138 KiB** | Property/value caching only |
+| **Comparable full-cache subtotal** | **172,984 B / 169 KiB** | **141,688 B / 138 KiB** | Property/value caching only |
 | Manager and culture objects | Additional | Additional | Not separately measured |
 | Reader, index, manifest/mapped backing | Additional | Additional | Deployment-dependent |
 | Satellite assemblies or external files | Additional | Additional | Deployment-dependent |
@@ -148,11 +154,10 @@ same key, replacing the cache and populating one property costs 4.853 ns / 48 B
 on modern .NET RyuJIT and 9.982 ns / 48 B on .NET Framework 4.8.1 RyuJIT.
 
 An intentionally adverse alternating-key benchmark costs 84.662 ns / 232 B and
-270.873 ns / 241 B respectively. This includes decoding two strings. Only one
-32-byte manager `CacheEntry` per property is redundant after the generated field
-is populated. Touki retains the manager's one-entry cache because bypassing it
-would add another lookup contract and weaken direct-manager locality for a
-one-time 32-byte saving.
+270.873 ns / 241 B respectively. This includes decoding two strings. These
+measurements also included a 32-byte manager cache entry for each decoded
+value. That one-item cache has since been removed: direct manager calls decode
+each requested value, and generated property fields own value caching.
 
 ## Memory model
 
@@ -192,9 +197,9 @@ reference stores `Culture`.
 | **Combined** | **651** | **5,256 B / 5.13 KiB** |
 
 This memory is fixed once both generated classes initialize, even if only one
-property is read. Only accessed values occupy the slots. Each underlying Touki
-manager can additionally retain one 32-byte last-entry object, so two active
-managers bring steady cache metadata to about 5,320 B.
+property is read. Only accessed values occupy the slots. Underlying Touki
+managers retain indexed source backings, not decoded values, so there is no
+additional last-entry cache metadata.
 
 ### BCL `ResourceManager` cache metadata
 
@@ -257,7 +262,7 @@ populating all 651 values retains approximately 133 KiB of decoded strings.
 | Fully populated cache | Metadata | Decoded values | Approximate total |
 | --- | ---: | ---: | ---: |
 | BCL `ResourceManager` | 35.70 KiB | 133 KiB | 169 KiB |
-| Generated + Touki managers | 5.20 KiB | 133 KiB | 138 KiB |
+| Generated + Touki managers | 5.13 KiB | 133 KiB | 138 KiB |
 
 The generated solution therefore saves about 30.5 KiB, or 18%, in this fully
 populated two-table model. More importantly, it replaces hash-table traversal
@@ -473,7 +478,8 @@ The reduction occurs because the Touki path avoids retaining the BCL
   when identity validation is enabled, version and signing identity continue to
   come from the generated owner.
 - Keep manager construction and source loading lazy.
-- Keep the manager's one-entry cache for direct callers.
+- Leave decoded-value caching to generated property fields or callers; direct
+  manager lookups decode each request.
 - Treat missing required generated strings as deployment errors and throw
   `MissingManifestResourceException`.
 - Replace all generated property values in constant time by publishing a new
