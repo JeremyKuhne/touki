@@ -8,14 +8,14 @@ using Touki.Resources;
 namespace touki.perf;
 
 /// <summary>
-///  Measures cache hits and alternating-key lookup allocations on .NET Framework 4.8.1 RyuJIT
+///  Measures repeated-name and alternating-name lookup costs on .NET Framework 4.8.1 RyuJIT
 ///  and modern .NET RyuJIT.
 /// </summary>
 [MemoryDiagnoser]
 public class IndexedStringResourceTableLookupPerf
 {
     /// <summary>
-    ///  Resource backings used to separate cache overhead from string decoding.
+    ///  Resource backings used to separate lookup overhead from string decoding.
     /// </summary>
     public enum ReaderKind
     {
