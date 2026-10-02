@@ -314,6 +314,10 @@ retains those publish inputs for ILC. Direct assembly DLLs and loose resource
 files are trusted deployment artifacts. Automatic publish externalization
 remains SDK/build tooling work.
 
+CI passes `NativeAotFixtureAssemblyName=dotnet` to the managed fixture build to
+rename only its owner assembly and satellites. A global `AssemblyName` override
+would also rename analyzer dependencies and cause output-file collisions.
+
 ## Generated string accessors
 
 For the executive design, performance, and memory analysis, see

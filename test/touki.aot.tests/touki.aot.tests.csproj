@@ -26,6 +26,8 @@
     <IsPackable>false</IsPackable>
     <RootNamespace>Touki</RootNamespace>
     <AssemblyName>touki.aot.tests</AssemblyName>
+    <!-- Scope the fixture alias to this project instead of renaming analyzer dependencies. -->
+    <AssemblyName Condition="'$(NativeAotFixtureAssemblyName)' != ''">$(NativeAotFixtureAssemblyName)</AssemblyName>
 
     <!-- Not a security boundary, the strong name is for identity and ease of use from other signed assemblies. -->
     <SignAssembly>True</SignAssembly>

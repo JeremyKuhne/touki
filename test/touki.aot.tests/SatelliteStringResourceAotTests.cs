@@ -47,8 +47,13 @@ public class SatelliteStringResourceAotTests
         throw new InvalidOperationException("The neutral test resources were not embedded.");
     }
 
-    private static string ResourceAssemblyFile() =>
-        Path.Join(AppContext.BaseDirectory, "touki.aot.tests.dll");
+    private static string ResourceAssemblyFile()
+    {
+        string assemblyName = s_assembly.GetName().Name
+            ?? throw new InvalidOperationException("The test assembly name is missing.");
+
+        return Path.Join(AppContext.BaseDirectory, $"{assemblyName}.dll");
+    }
 
     private static void WriteSideFile(string probeRoot, string culture, string baseName, string key, string value)
     {
