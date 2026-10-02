@@ -12,11 +12,16 @@ public class StreamStringResourceReaderTests
 {
     private const int MagicNumber = unchecked((int)0xBEEFCACE);
 
-    private static byte[] WriteResources()
+    private static byte[] WriteResources(params (string Name, string Value)[] additionalResources)
     {
         using MemoryStream stream = new();
         using ResourceWriter writer = new(stream);
         writer.AddResource("Greeting", "Hello");
+        foreach ((string name, string value) in additionalResources)
+        {
+            writer.AddResource(name, value);
+        }
+
         writer.Generate();
         return stream.ToArray();
     }
@@ -102,8 +107,69 @@ public class StreamStringResourceReaderTests
         reader.GetResourceName(0).Should().Be("Greeting");
         reader.GetResourceTypeCode(0).Should().Be(ResourceTypeCode.String);
         reader.GetString(0).Should().Be("Hello");
-        reader.Lookup("Missing", out string? value).Should().Be(StringResourceLookupKind.Missing);
-        value.Should().BeNull();
+        reader.Lookup("Missing").Should().BeNull();
+    }
+
+    [TestMethod]
+    public void Lookup_ConcurrentNames_ReturnsRequestedValues()
+    {
+        using StreamStringResourceReader reader = new(
+            new MemoryStream(WriteResources(("Farewell", "Goodbye")), writable: false));
+
+        Parallel.For(0, 8, worker =>
+        {
+            for (int i = 0; i < 1_000; i++)
+            {
+                bool greeting = ((i + worker) & 1) == 0;
+                string name = greeting ? "Greeting" : "Farewell";
+                string expected = greeting ? "Hello" : "Goodbye";
+                reader.Lookup(name).Should().Be(expected);
+            }
+        });
+    }
+
+    [TestMethod]
+    public void Lookup_ConcurrentIndexReads_ReturnsRequestedValues()
+    {
+        using StreamStringResourceReader reader = new(
+            new MemoryStream(WriteResources(("Farewell", "Goodbye")), writable: false));
+
+        string[] names = [reader.GetResourceName(0), reader.GetResourceName(1)];
+        string[] values = [reader.GetString(0), reader.GetString(1)];
+        Parallel.For(0, 8, worker =>
+        {
+            for (int i = 0; i < 1_000; i++)
+            {
+                int index = (i + worker) & 1;
+                reader.Lookup(names[index]).Should().Be(values[index]);
+                reader.GetResourceName(index).Should().Be(names[index]);
+                reader.GetResourceTypeCode(index).Should().Be(ResourceTypeCode.String);
+                reader.GetString(index).Should().Be(values[index]);
+            }
+        });
+    }
+
+    [TestMethod]
+    [DataRow("Greeting")]
+    [DataRow("Farewell")]
+    [DataRow("Missing")]
+    public void Lookup_DisposedReader_ThrowsObjectDisposedException(string name)
+    {
+        StreamStringResourceReader reader = new(
+            new MemoryStream(WriteResources(), writable: false));
+
+        try
+        {
+            reader.Dispose();
+
+            Action action = () => reader.Lookup(name);
+
+            action.Should().Throw<ObjectDisposedException>();
+        }
+        finally
+        {
+            reader.Dispose();
+        }
     }
 
     private static (int NamePositionOffset, int NameSectionOffset, int DataSectionOffset, int NamePosition)

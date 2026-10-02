@@ -9,9 +9,11 @@ public class IndexedStringResourceTableTests
 {
     private sealed class StubStringResourceReader(ResourceTypeCode typeCode) : IStringResourceReader
     {
+        private int _lookupCount;
+
         public int DisposeCount { get; private set; }
 
-        public int LookupCount { get; private set; }
+        public int LookupCount => Volatile.Read(ref _lookupCount);
 
         public int ResourceCount => 1;
 
@@ -21,11 +23,10 @@ public class IndexedStringResourceTableTests
 
         public string GetString(int index) => "Hello";
 
-        public StringResourceLookupKind Lookup(string name, out string? value)
+        public string? Lookup(string name)
         {
-            LookupCount++;
-            value = "Hello";
-            return StringResourceLookupKind.Found;
+            Interlocked.Increment(ref _lookupCount);
+            return "Hello";
         }
 
         public void Dispose() => DisposeCount++;
@@ -76,7 +77,7 @@ public class IndexedStringResourceTableTests
     }
 
     [TestMethod]
-    public void Lookup_RepeatedName_UsesCachedValue()
+    public void Lookup_RepeatedName_ReadsValueEachTime()
     {
         StubStringResourceReader reader = new(ResourceTypeCode.String);
         IndexedStringResourceTable table = IndexedStringResourceTable.Create(
@@ -85,12 +86,12 @@ public class IndexedStringResourceTableTests
 
         try
         {
-            table.Lookup("Greeting", out string? first).Should().Be(StringResourceLookupKind.Found);
-            table.Lookup("Greeting", out string? second).Should().Be(StringResourceLookupKind.Found);
+            string? first = table.Lookup("Greeting");
+            string? second = table.Lookup("Greeting");
 
             first.Should().Be("Hello");
             second.Should().Be("Hello");
-            reader.LookupCount.Should().Be(1);
+            reader.LookupCount.Should().Be(2);
         }
         finally
         {
@@ -98,107 +99,132 @@ public class IndexedStringResourceTableTests
         }
     }
 
+#if !DEBUG
     [TestMethod]
-    public async Task Dispose_LookupInProgress_WaitsBeforeDisposingBacking()
+    public void Lookup_AlternatingNames_DoesNotAllocate()
     {
-        using ManualResetEventSlim lookupStarted = new();
-        using ManualResetEventSlim continueLookup = new();
-        using ManualResetEventSlim backingDisposed = new();
-        BlockingStringResourceReader reader = new(
-            lookupStarted,
-            continueLookup,
-            backingDisposed);
+        using IndexedStringResourceTable table = IndexedStringResourceTable.Create(
+            new StubStringResourceReader(ResourceTypeCode.String),
+            StringResourceManagerOptions.None);
 
+        _ = table.Lookup("Greeting");
+        _ = table.Lookup("Farewell");
+
+        string? first;
+        string? second;
+        using (MemoryWatch.Create)
+        {
+            first = table.Lookup("Greeting");
+            second = table.Lookup("Farewell");
+        }
+
+        first.Should().Be("Hello");
+        second.Should().Be("Hello");
+    }
+#endif
+
+    [TestMethod]
+    public void Lookup_MemoryReaderRepeatedName_DecodesEachTime()
+    {
+        using IndexedStringResourceTable table = IndexedStringResourceTable.Create(
+            new RawResourceReader(CreateResources()),
+            StringResourceManagerOptions.None);
+
+        AssertRepeatedLookup(table);
+    }
+
+    [TestMethod]
+    public void Lookup_StreamReaderRepeatedName_DecodesEachTime()
+    {
+        using IndexedStringResourceTable table = IndexedStringResourceTable.Create(
+            new StreamStringResourceReader(new MemoryStream(CreateResources(), writable: false)),
+            StringResourceManagerOptions.None);
+
+        AssertRepeatedLookup(table);
+    }
+
+    [TestMethod]
+    public void Lookup_ConcurrentCustomReader_DelegatesEveryLookup()
+    {
+        StubStringResourceReader reader = new(ResourceTypeCode.String);
+        using IndexedStringResourceTable table = IndexedStringResourceTable.Create(
+            reader,
+            StringResourceManagerOptions.None);
+
+        Parallel.For(0, 8, _ =>
+        {
+            for (int i = 0; i < 1_000; i++)
+            {
+                table.Lookup("Greeting").Should().Be("Hello");
+            }
+        });
+
+        reader.LookupCount.Should().Be(8_000);
+    }
+
+    [TestMethod]
+    public void Lookup_MemoryReaderConcurrentNames_ReturnsRequestedValues()
+    {
+        using IndexedStringResourceTable table = IndexedStringResourceTable.Create(
+            new RawResourceReader(CreateResources()),
+            StringResourceManagerOptions.None);
+
+        AssertConcurrentLookups(table);
+    }
+
+    [TestMethod]
+    public void Lookup_StreamReaderConcurrentNames_ReturnsRequestedValues()
+    {
+        using IndexedStringResourceTable table = IndexedStringResourceTable.Create(
+            new StreamStringResourceReader(new MemoryStream(CreateResources(), writable: false)),
+            StringResourceManagerOptions.None);
+
+        AssertConcurrentLookups(table);
+    }
+
+    [TestMethod]
+    [DataRow("Greeting")]
+    [DataRow("Farewell")]
+    [DataRow("Missing")]
+    public void Lookup_DisposedTable_ThrowsObjectDisposedException(string name)
+    {
+        StubStringResourceReader reader = new(ResourceTypeCode.String);
         IndexedStringResourceTable table = IndexedStringResourceTable.Create(
             reader,
             StringResourceManagerOptions.None);
 
         try
         {
-            Task<(StringResourceLookupKind Result, string? Value)> lookup = Task.Run(() =>
-            {
-                StringResourceLookupKind result = table.Lookup("Greeting", out string? value);
-                return (result, value);
-            });
+            table.Dispose();
 
-            lookupStarted.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
-            Task dispose = Task.Run(table.Dispose);
-            SpinWait.SpinUntil(
-                () => (bool)table.TestAccessor.Dynamic.Disposed,
-                TimeSpan.FromSeconds(10)).Should().BeTrue();
+            Action action = () => table.Lookup(name);
 
-            backingDisposed.Wait(TimeSpan.FromMilliseconds(100)).Should().BeFalse();
-
-            continueLookup.Set();
-
-            (StringResourceLookupKind result, string? value) = await lookup.ConfigureAwait(continueOnCapturedContext: false);
-            await dispose.ConfigureAwait(continueOnCapturedContext: false);
-            result.Should().Be(StringResourceLookupKind.Found);
-            value.Should().Be("Hello");
-            backingDisposed.IsSet.Should().BeTrue();
-            table.Lookup("Greeting", out _).Should().Be(StringResourceLookupKind.Stale);
+            action.Should().Throw<ObjectDisposedException>();
+            reader.LookupCount.Should().Be(0);
         }
         finally
         {
-            continueLookup.Set();
             table.Dispose();
         }
     }
 
     [TestMethod]
-    public async Task Dispose_StreamLookupInProgress_WaitsBeforeDisposingBacking()
+    public void Dispose_MultipleCalls_DisposesOwnedReaderOnce()
     {
-        byte[] resources;
-        using (MemoryStream resourceStream = new())
-        {
-            using System.Resources.ResourceWriter writer = new(resourceStream);
-            writer.AddResource("Greeting", "Hello");
-            writer.Generate();
-            resources = resourceStream.ToArray();
-        }
-
-        using ManualResetEventSlim readStarted = new();
-        using ManualResetEventSlim continueRead = new();
-        using ManualResetEventSlim backingDisposed = new();
-        BlockingSeekableResourceStream stream = new(
-            resources,
-            readStarted,
-            continueRead,
-            backingDisposed);
-
+        StubStringResourceReader reader = new(ResourceTypeCode.String);
         IndexedStringResourceTable table = IndexedStringResourceTable.Create(
-            new StreamStringResourceReader(stream),
+            reader,
             StringResourceManagerOptions.None);
 
         try
         {
-            stream.BlockReads = true;
-            Task<(StringResourceLookupKind Result, string? Value)> lookup = Task.Run(() =>
-            {
-                StringResourceLookupKind result = table.Lookup("Greeting", out string? value);
-                return (result, value);
-            });
+            table.Dispose();
+            table.Dispose();
 
-            readStarted.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
-            Task dispose = Task.Run(table.Dispose);
-            SpinWait.SpinUntil(
-                () => (bool)table.TestAccessor.Dynamic.Disposed,
-                TimeSpan.FromSeconds(10)).Should().BeTrue();
-
-            backingDisposed.Wait(TimeSpan.FromMilliseconds(100)).Should().BeFalse();
-
-            continueRead.Set();
-
-            (StringResourceLookupKind result, string? value) = await lookup.ConfigureAwait(continueOnCapturedContext: false);
-            await dispose.ConfigureAwait(continueOnCapturedContext: false);
-            result.Should().Be(StringResourceLookupKind.Found);
-            value.Should().Be("Hello");
-            backingDisposed.IsSet.Should().BeTrue();
-            table.Lookup("Greeting", out _).Should().Be(StringResourceLookupKind.Stale);
+            reader.DisposeCount.Should().Be(1);
         }
         finally
         {
-            continueRead.Set();
             table.Dispose();
         }
     }
@@ -222,6 +248,40 @@ public class IndexedStringResourceTableTests
         _ = IndexedStringResourceTable.Create(reader, StringResourceManagerOptions.None);
     }
 
+    private static byte[] CreateResources()
+    {
+        using MemoryStream stream = new();
+        using System.Resources.ResourceWriter writer = new(stream);
+        writer.AddResource("Greeting", "Hello");
+        writer.AddResource("Farewell", "Goodbye");
+        writer.Generate();
+        return stream.ToArray();
+    }
+
+    private static void AssertRepeatedLookup(IndexedStringResourceTable table)
+    {
+        string? first = table.Lookup("Greeting");
+        string? second = table.Lookup("Greeting");
+
+        first.Should().Be("Hello");
+        second.Should().Be("Hello");
+        second.Should().NotBeSameAs(first);
+    }
+
+    private static void AssertConcurrentLookups(IndexedStringResourceTable table)
+    {
+        Parallel.For(0, 8, worker =>
+        {
+            for (int i = 0; i < 1_000; i++)
+            {
+                bool greeting = ((i + worker) & 1) == 0;
+                string name = greeting ? "Greeting" : "Farewell";
+                string expected = greeting ? "Hello" : "Goodbye";
+                table.Lookup(name).Should().Be(expected);
+            }
+        });
+    }
+
     private sealed class InvalidStringResourceReader : IStringResourceReader
     {
         public int DisposeCount { get; private set; }
@@ -235,7 +295,7 @@ public class IndexedStringResourceTableTests
 
         public string GetString(int index) => throw new NotSupportedException();
 
-        public StringResourceLookupKind Lookup(string name, out string? value) =>
+        public string? Lookup(string name) =>
             throw new NotSupportedException();
 
         public void Dispose() => DisposeCount++;

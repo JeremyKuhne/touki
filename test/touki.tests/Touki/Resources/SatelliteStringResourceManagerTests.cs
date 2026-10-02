@@ -807,7 +807,7 @@ public partial class SatelliteStringResourceManagerTests
     }
 
     [TestMethod]
-    public void GetString_CorruptSideFile_CachesFailureUntilRelease()
+    public void GetString_CorruptSideFileThenRepaired_RetriesWithoutRelease()
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
@@ -831,16 +831,74 @@ public partial class SatelliteStringResourceManagerTests
             s_assembly,
             OpenFile);
 
-        Action action = () => manager.GetString("Greeting", new CultureInfo("de"));
+        try
+        {
+            CultureInfo german = new("de");
+            Action action = () => manager.GetString("Greeting", german);
 
-        action.Should().Throw<ArgumentException>();
-        action.Should().Throw<ArgumentException>();
-        openCount.Should().Be(1);
+            action.Should().Throw<ArgumentException>();
+            action.Should().Throw<ArgumentException>();
+            openCount.Should().Be(2);
 
-        manager.ReleaseAllResources();
+            WriteSideFile(folder.TempPath, "de", baseName, ("Greeting", "Hallo"));
 
-        action.Should().Throw<ArgumentException>();
-        openCount.Should().Be(2);
+            manager.GetString("Greeting", german).Should().Be("Hallo");
+            manager.GetString("Greeting", german).Should().Be("Hallo");
+            openCount.Should().Be(3);
+        }
+        finally
+        {
+            manager.ReleaseAllResources();
+        }
+    }
+
+    [TestMethod]
+    public void GetString_ParentLoadFails_RetainsChildAndRetriesParent()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        WriteSideFile(folder.TempPath, "de-DE", baseName, ("Greeting", "Specific"));
+        string parentDirectory = Path.Join(folder.TempPath, "de");
+        Directory.CreateDirectory(parentDirectory);
+        System.IO.File.WriteAllBytes(Path.Join(parentDirectory, $"{baseName}.resources"), [0x00, 0x01]);
+
+        Dictionary<string, int> openCounts = [with(StringComparer.Ordinal)];
+        MappedMemoryManager OpenFile(string path)
+        {
+            openCounts.TryGetValue(path, out int count);
+            openCounts[path] = count + 1;
+            return MappedMemoryManager.CreateFromFile(path);
+        }
+
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromResourcesDirectory(
+            baseName,
+            folder.TempPath,
+            s_assembly,
+            OpenFile);
+
+        try
+        {
+            CultureInfo german = new("de-DE");
+            Action action = () => manager.GetString("Greeting", german);
+            string childPath = Path.Join(folder.TempPath, "de-DE", $"{baseName}.resources");
+            string parentPath = Path.Join(parentDirectory, $"{baseName}.resources");
+
+            action.Should().Throw<ArgumentException>();
+            action.Should().Throw<ArgumentException>();
+            openCounts[childPath].Should().Be(1);
+            openCounts[parentPath].Should().Be(2);
+
+            WriteSideFile(folder.TempPath, "de", baseName, ("Farewell", "Tschuss"));
+
+            manager.GetString("Greeting", german).Should().Be("Specific");
+            manager.GetString("Farewell", german).Should().Be("Tschuss");
+            openCounts[childPath].Should().Be(1);
+            openCounts[parentPath].Should().Be(3);
+        }
+        finally
+        {
+            manager.ReleaseAllResources();
+        }
     }
 
     [TestMethod]
@@ -1400,9 +1458,8 @@ public partial class SatelliteStringResourceManagerTests
         }
     }
 
-#if !DEBUG
     [TestMethod]
-    public void GetString_CachedResourcesFile_DoesNotAllocate()
+    public void GetString_CachedResourcesFile_DecodesEachLookup()
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
@@ -1413,19 +1470,16 @@ public partial class SatelliteStringResourceManagerTests
             s_assembly);
 
         CultureInfo german = new("de");
-        manager.GetString("Greeting", german).Should().Be("Hallo");
+        string? first = manager.GetString("Greeting", german);
+        first.Should().Be("Hallo");
 
-        string? value;
-        using (MemoryWatch.Create)
-        {
-            value = manager.GetString("Greeting", german);
-        }
-
+        string? value = manager.GetString("Greeting", german);
         value.Should().Be("Hallo");
+        value.Should().NotBeSameAs(first);
     }
 
     [TestMethod]
-    public void GetString_CachedDirectSatelliteAssembly_DoesNotAllocate()
+    public void GetString_CachedDirectSatelliteAssembly_DecodesEachLookup()
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
@@ -1436,19 +1490,16 @@ public partial class SatelliteStringResourceManagerTests
             s_assembly);
 
         CultureInfo german = new("de");
-        manager.GetString("Greeting", german).Should().Be("Hallo");
+        string? first = manager.GetString("Greeting", german);
+        first.Should().Be("Hallo");
 
-        string? value;
-        using (MemoryWatch.Create)
-        {
-            value = manager.GetString("Greeting", german);
-        }
-
+        string? value = manager.GetString("Greeting", german);
         value.Should().Be("Hallo");
+        value.Should().NotBeSameAs(first);
     }
 
     [TestMethod]
-    public void GetString_CachedSatelliteAssembly_DoesNotAllocate()
+    public void GetString_CachedSatelliteAssembly_DecodesEachLookup()
     {
         string baseName = NeutralBaseName();
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromRuntimeSatellites(
@@ -1456,17 +1507,13 @@ public partial class SatelliteStringResourceManagerTests
             s_assembly);
 
         CultureInfo german = new("de");
-        manager.GetString("Greeting", german).Should().Be("Hallo");
+        string? first = manager.GetString("Greeting", german);
+        first.Should().Be("Hallo");
 
-        string? value;
-        using (MemoryWatch.Create)
-        {
-            value = manager.GetString("Greeting", german);
-        }
-
+        string? value = manager.GetString("Greeting", german);
         value.Should().Be("Hallo");
+        value.Should().NotBeSameAs(first);
     }
-#endif
 
     [TestMethod]
     public void GetString_AlternatingCultures_ReturnsRequestedValues()
@@ -1524,6 +1571,37 @@ public partial class SatelliteStringResourceManagerTests
         SatelliteStringResourceManager.IsNeutralCulture("en-US", "en-us").Should().BeTrue();
 
     [TestMethod]
+    public void GetString_CachedLocalizedTableDisposed_ThrowsObjectDisposedException()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        WriteSideFile(folder.TempPath, "de", baseName, ("Greeting", "Hallo"));
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromResourcesDirectory(
+            baseName,
+            folder.TempPath,
+            s_assembly);
+
+        try
+        {
+            CultureInfo german = new("de");
+            manager.GetString("Greeting", german).Should().Be("Hallo");
+            Dictionary<string, IndexedStringResourceTable[]> cultureTables = manager.TestAccessor.Dynamic._cultureTables;
+            IndexedStringResourceTable[] tables = cultureTables[german.Name];
+            tables.Should().ContainSingle();
+            tables[0].Dispose();
+
+            Action action = () => manager.GetString("Greeting", german);
+
+            action.Should().Throw<ObjectDisposedException>();
+            ((object)manager.TestAccessor.Dynamic._cultureTables).Should().BeSameAs(cultureTables);
+        }
+        finally
+        {
+            manager.ReleaseAllResources();
+        }
+    }
+
+    [TestMethod]
     public void ReleaseAllResources_SideFileChanged_ReloadsValue()
     {
         using TempFolder folder = new();
@@ -1541,6 +1619,28 @@ public partial class SatelliteStringResourceManagerTests
         WriteSideFile(folder.TempPath, "de", baseName, ("Greeting", "Servus"));
 
         manager.GetString("Greeting", german).Should().Be("Servus");
+    }
+
+    [TestMethod]
+    public void GetString_CallerOwnedNeutralFallback_ForwardsRequestedCulture()
+    {
+        using TempFolder folder = new();
+        string baseName = NeutralBaseName();
+        ResourceManagerAdapter neutralResources = new(baseName, s_assembly);
+        SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromResourcesDirectory(
+            baseName,
+            folder.TempPath,
+            neutralResources);
+
+        try
+        {
+            manager.GetString("Greeting", CultureInfo.GetCultureInfo("de")).Should().Be("Hallo");
+        }
+        finally
+        {
+            manager.ReleaseAllResources();
+            neutralResources.ReleaseAllResources();
+        }
     }
 
     [TestMethod]
@@ -1601,7 +1701,7 @@ public partial class SatelliteStringResourceManagerTests
     }
 
     [TestMethod]
-    public async Task ReleaseAllResources_LocalizedLoadInProgress_DoesNotRetainOldGeneration()
+    public void ReleaseAllResources_CompletedLookup_ReopensLocalizedSource()
     {
         using TempFolder folder = new();
         string baseName = NeutralBaseName();
@@ -1609,9 +1709,6 @@ public partial class SatelliteStringResourceManagerTests
         string secondRoot = Path.Join(folder.TempPath, "second");
         WriteSideFile(firstRoot, "de", baseName, ("Greeting", "First"));
         WriteSideFile(secondRoot, "de", baseName, ("Greeting", "Second"));
-        using ManualResetEventSlim loadStarted = new();
-        using ManualResetEventSlim continueLoad = new();
-        using ManualResetEventSlim releaseWaiting = new();
         int openCount = 0;
 
         MappedMemoryManager OpenFile(string path)
@@ -1622,14 +1719,7 @@ public partial class SatelliteStringResourceManagerTests
                 "de",
                 $"{baseName}.resources");
 
-            MappedMemoryManager memory = MappedMemoryManager.CreateFromFile(selectedPath);
-            if (invocation == 1)
-            {
-                loadStarted.Set();
-                continueLoad.Wait();
-            }
-
-            return memory;
+            return MappedMemoryManager.CreateFromFile(selectedPath);
         }
 
         SatelliteStringResourceManager manager = SatelliteStringResourceManager.FromResourcesDirectory(
@@ -1638,17 +1728,19 @@ public partial class SatelliteStringResourceManagerTests
             s_assembly,
             OpenFile);
 
-        CultureInfo german = new("de");
-        Task<string?> lookup = Task.Run(() => manager.GetString("Greeting", german));
-        loadStarted.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
-        Task release = Task.Run(() => manager.ReleaseAllResources(releaseWaiting.Set));
-        releaseWaiting.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
-        continueLoad.Set();
+        try
+        {
+            CultureInfo german = new("de");
+            manager.GetString("Greeting", german).Should().Be("First");
+            manager.ReleaseAllResources();
 
-        (await lookup.ConfigureAwait(continueOnCapturedContext: false)).Should().BeOneOf("First", "Second");
-        await release.ConfigureAwait(continueOnCapturedContext: false);
-        manager.GetString("Greeting", german).Should().Be("Second");
-        openCount.Should().Be(2);
+            manager.GetString("Greeting", german).Should().Be("Second");
+            openCount.Should().Be(2);
+        }
+        finally
+        {
+            manager.ReleaseAllResources();
+        }
     }
 
     [TestMethod]
@@ -1660,12 +1752,12 @@ public partial class SatelliteStringResourceManagerTests
             s_assembly);
 
         manager.GetString("Greeting", CultureInfo.InvariantCulture).Should().Be("Hello");
-        StringResourceManager neutralResources = manager.TestAccessor.Dynamic._neutralResources;
-        ((object?)neutralResources.TestAccessor.Dynamic._cache).Should().NotBeNull();
+        StringResourceManager neutralResources = manager.TestAccessor.Dynamic._source;
+        ((object?)neutralResources.TestAccessor.Dynamic._table).Should().NotBeNull();
 
         manager.ReleaseAllResources();
 
-        ((object?)neutralResources.TestAccessor.Dynamic._cache).Should().BeNull();
+        ((object?)neutralResources.TestAccessor.Dynamic._table).Should().BeNull();
     }
 
     [TestMethod]

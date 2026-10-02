@@ -61,6 +61,31 @@ public class GeneratedSatelliteStringResourcesTests
         }
     }
 
+#if !DEBUG
+    [TestMethod]
+    public void Greeting_RepeatedRead_DoesNotAllocate()
+    {
+        try
+        {
+            GeneratedSatelliteTestStrings.Culture = CultureInfo.GetCultureInfo("de");
+            string first = GeneratedSatelliteTestStrings.Greeting;
+
+            string second;
+            using (MemoryWatch.Create)
+            {
+                second = GeneratedSatelliteTestStrings.Greeting;
+            }
+
+            second.Should().Be("Hallo");
+            second.Should().BeSameAs(first);
+        }
+        finally
+        {
+            GeneratedSatelliteTestStrings.Culture = null;
+        }
+    }
+#endif
+
     [TestMethod]
     public void Culture_AfterCachedRead_ReplacesCachedValues()
     {

@@ -316,7 +316,7 @@ jobs:
           --configuration Release `
           --framework net10.0 `
           --output $satelliteOutput `
-          "-p:AssemblyName=$externalOwnerName" `
+          "-p:NativeAotFixtureAssemblyName=$externalOwnerName" `
           @platformArgs
 
         if ($LASTEXITCODE -ne 0) {

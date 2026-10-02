@@ -302,27 +302,7 @@ public static class StringResourceTableLoader
     public static Dictionary<string, string>? LoadStringTableFromAssembly(
         Assembly assembly,
         string resourceName,
-        StringResourceManagerOptions options) => LoadTableFromAssembly(assembly, resourceName, options)?.Strings;
-
-    /// <inheritdoc cref="LoadStringTableFromAssembly(ReadOnlyMemory{byte}, string, StringResourceManagerOptions)"/>
-    public static Dictionary<string, string>? LoadStringTableFromAssembly(
-        ReadOnlyMemory<byte> assembly,
-        string resourceName) => LoadStringTableFromAssembly(
-            assembly,
-            resourceName,
-            StringResourceManagerOptions.None);
-
-    /// <summary>
-    ///  Loads the string table from an embedded assembly resource.
-    /// </summary>
-    /// <param name="assembly">The loaded assembly containing the resource.</param>
-    /// <param name="resourceName">The exact manifest resource name.</param>
-    /// <param name="options">The resource loading options.</param>
-    /// <returns>The table, or <see langword="null"/> when the resource is absent.</returns>
-    internal static StringResourceTable? LoadTableFromAssembly(
-        Assembly assembly,
-        string resourceName,
-        StringResourceManagerOptions options = StringResourceManagerOptions.None)
+        StringResourceManagerOptions options)
     {
         ArgumentNullException.ThrowIfNull(assembly);
         ArgumentNullException.ThrowIfNull(resourceName);
@@ -344,6 +324,14 @@ public static class StringResourceTableLoader
         }
     }
 
+    /// <inheritdoc cref="LoadStringTableFromAssembly(ReadOnlyMemory{byte}, string, StringResourceManagerOptions)"/>
+    public static Dictionary<string, string>? LoadStringTableFromAssembly(
+        ReadOnlyMemory<byte> assembly,
+        string resourceName) => LoadStringTableFromAssembly(
+            assembly,
+            resourceName,
+            StringResourceManagerOptions.None);
+
     /// <summary>
     ///  Loads the string table stored in the named embedded resource of a managed assembly image.
     /// </summary>
@@ -359,28 +347,10 @@ public static class StringResourceTableLoader
     ///  The assembly or embedded resource has an invalid structure.
     /// </exception>
     /// <exception cref="NotSupportedException">The embedded resource format is not supported.</exception>
-    public static Dictionary<string, string>? LoadStringTableFromAssembly(
+    public static unsafe Dictionary<string, string>? LoadStringTableFromAssembly(
         ReadOnlyMemory<byte> assembly,
         string resourceName,
-        StringResourceManagerOptions options) => LoadTableFromAssembly(assembly, resourceName, options)?.Strings;
-
-    /// <inheritdoc cref="LoadStringTableFromResourcesFile(ReadOnlyMemory{byte}, StringResourceManagerOptions)"/>
-    public static Dictionary<string, string> LoadStringTableFromResourcesFile(
-        ReadOnlyMemory<byte> resources) => LoadStringTableFromResourcesFile(
-            resources,
-            StringResourceManagerOptions.None);
-
-    /// <summary>
-    ///  Loads the string table from a managed assembly image.
-    /// </summary>
-    /// <param name="assembly">The complete managed assembly image.</param>
-    /// <param name="resourceName">The exact manifest resource name.</param>
-    /// <param name="options">The resource loading options.</param>
-    /// <returns>The table, or <see langword="null"/> when the resource is absent.</returns>
-    internal static unsafe StringResourceTable? LoadTableFromAssembly(
-        ReadOnlyMemory<byte> assembly,
-        string resourceName,
-        StringResourceManagerOptions options = StringResourceManagerOptions.None)
+        StringResourceManagerOptions options)
     {
         ArgumentNullException.ThrowIfNull(resourceName);
         if (assembly.IsEmpty)
@@ -413,13 +383,19 @@ public static class StringResourceTableLoader
         return null;
     }
 
-    private static StringResourceTable LoadEmbeddedTable(
+    /// <inheritdoc cref="LoadStringTableFromResourcesFile(ReadOnlyMemory{byte}, StringResourceManagerOptions)"/>
+    public static Dictionary<string, string> LoadStringTableFromResourcesFile(
+        ReadOnlyMemory<byte> resources) => LoadStringTableFromResourcesFile(
+            resources,
+            StringResourceManagerOptions.None);
+
+    private static Dictionary<string, string> LoadEmbeddedTable(
         ReadOnlyMemory<byte> resources,
         StringResourceManagerOptions options)
     {
         try
         {
-            return LoadTableFromResourcesFile(resources, options);
+            return LoadStringTableFromResourcesFile(resources, options);
         }
         catch (ArgumentException ex)
         {
@@ -441,24 +417,13 @@ public static class StringResourceTableLoader
     [SkipLocalsInit]
     public static Dictionary<string, string> LoadStringTableFromResourcesFile(
         ReadOnlyMemory<byte> resources,
-        StringResourceManagerOptions options) => LoadTableFromResourcesFile(resources, options).Strings;
-
-    /// <summary>
-    ///  Loads a string table from a binary resource image.
-    /// </summary>
-    /// <param name="resources">The complete binary resource image.</param>
-    /// <param name="options">The resource loading options.</param>
-    /// <returns>The loaded table.</returns>
-    [SkipLocalsInit]
-    internal static StringResourceTable LoadTableFromResourcesFile(
-        ReadOnlyMemory<byte> resources,
         StringResourceManagerOptions options)
     {
         using RawResourceReader reader = new(resources);
         return LoadTableFromReader(reader, options);
     }
 
-    private static StringResourceTable LoadTableFromReader(
+    private static Dictionary<string, string> LoadTableFromReader(
         IStringResourceReader reader,
         StringResourceManagerOptions options)
     {
@@ -496,7 +461,7 @@ public static class StringResourceTableLoader
             }
         }
 
-        return new(table);
+        return table;
     }
 
     private static unsafe IStringResourceReader CreateStringResourceReader(Stream stream)

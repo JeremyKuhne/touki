@@ -52,8 +52,7 @@ public class StringResourceTableLoaderTests
             StringResourceManagerOptions.None)
             ?? throw new InvalidOperationException("Expected the embedded resource.");
 
-        table.Lookup("Greeting", out string? value).Should().Be(StringResourceLookupKind.Found);
-        value.Should().Be("Hello");
+        table.Lookup("Greeting").Should().Be("Hello");
     }
 
     [TestMethod]
@@ -98,8 +97,7 @@ public class StringResourceTableLoaderTests
             try
             {
                 owner.IsDisposed.Should().BeFalse();
-                table.Lookup("Greeting", out string? value).Should().Be(StringResourceLookupKind.Found);
-                value.Should().Be("Hello");
+                table.Lookup("Greeting").Should().Be("Hello");
             }
             finally
             {
@@ -172,8 +170,7 @@ public class StringResourceTableLoaderTests
             try
             {
                 owner.IsDisposed.Should().BeFalse();
-                table.Lookup("Greeting", out string? value).Should().Be(StringResourceLookupKind.Found);
-                value.Should().Be("Hello");
+                table.Lookup("Greeting").Should().Be("Hello");
             }
             finally
             {
@@ -200,8 +197,7 @@ public class StringResourceTableLoaderTests
         try
         {
             stream.CanRead.Should().BeTrue();
-            table.Lookup("Greeting", out string? value).Should().Be(StringResourceLookupKind.Found);
-            value.Should().Be("Hello");
+            table.Lookup("Greeting").Should().Be("Hello");
         }
         finally
         {

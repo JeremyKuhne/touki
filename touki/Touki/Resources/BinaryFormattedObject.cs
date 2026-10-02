@@ -42,11 +42,6 @@ public sealed class BinaryFormattedObject
     private int _deserializationStarted;
 
     /// <summary>
-    ///  Gets the formatter converter used to populate serialization information.
-    /// </summary>
-    internal static FormatterConverter DefaultConverter { get; } = new();
-
-    /// <summary>
     ///  Creates an object model by parsing <paramref name="stream"/>.
     /// </summary>
     /// <param name="stream">The readable stream containing an NRBF payload.</param>

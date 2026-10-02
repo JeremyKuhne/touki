@@ -290,6 +290,27 @@ public class StringResourceManagerTests
     }
 
     [TestMethod]
+    public void GetString_CachedTableDisposed_ThrowsObjectDisposedException()
+    {
+        StringResourceManager manager = new(NeutralBaseName(), s_assembly);
+        try
+        {
+            manager.GetString("Greeting").Should().Be("Hello");
+            IndexedStringResourceTable table = manager.TestAccessor.Dynamic._table;
+            table.Dispose();
+
+            Action action = () => manager.GetString("Greeting");
+
+            action.Should().Throw<ObjectDisposedException>();
+            ((object)manager.TestAccessor.Dynamic._table).Should().BeSameAs(table);
+        }
+        finally
+        {
+            manager.ReleaseAllResources();
+        }
+    }
+
+    [TestMethod]
     public void BaseName_LoadedAssembly_ReturnsResourceBaseName()
     {
         string baseName = NeutralBaseName();
@@ -462,20 +483,30 @@ public class StringResourceManagerTests
     [TestMethod]
     public void GetString_MalformedStream_DisposesOnceWithoutMaskingParseException()
     {
+        int invocationCount = 0;
         StringResourceManagerTestStream? stream = null;
         StringResourceManager manager = new(
             "Strings",
-            () => stream = new(
-                new byte[64],
-                maximumReadSize: 3,
-                canSeek: true,
-                throwOnSecondDispose: true));
+            () =>
+            {
+                invocationCount++;
+                return stream = new(
+                    new byte[64],
+                    maximumReadSize: 3,
+                    canSeek: true,
+                    throwOnSecondDispose: true);
+            });
 
         Action action = () => manager.GetString("Greeting");
 
-        action.Should().Throw<ArgumentException>();
-        stream.Should().NotBeNull();
-        stream.DisposeCount.Should().Be(1);
+        for (int i = 0; i < 2; i++)
+        {
+            action.Should().Throw<ArgumentException>();
+            stream.Should().NotBeNull();
+            stream.DisposeCount.Should().Be(1);
+        }
+
+        invocationCount.Should().Be(2);
     }
 
     [TestMethod]
@@ -532,7 +563,7 @@ public class StringResourceManagerTests
     }
 
     [TestMethod]
-    public void GetString_StreamFactoryThrows_InvokesFactoryOncePerGeneration()
+    public void GetString_StreamFactoryThrows_RetriesEachLookup()
     {
         int invocationCount = 0;
         StringResourceManager manager = new(
@@ -551,14 +582,41 @@ public class StringResourceManagerTests
         action.Should().ThrowExactly<System.IO.IOException>()
             .WithMessage("Factory failure.");
 
-        invocationCount.Should().Be(1);
-
-        manager.ReleaseAllResources();
-
-        action.Should().ThrowExactly<System.IO.IOException>()
-            .WithMessage("Factory failure.");
-
         invocationCount.Should().Be(2);
+    }
+
+    [TestMethod]
+    public void GetString_StreamFactoryFailsThenSucceeds_CachesSuccessfulLoad()
+    {
+        byte[] resources = WriteResources(("Greeting", "Hello"));
+        System.IO.IOException failure = new("Factory failure.");
+        int invocationCount = 0;
+        StringResourceManager manager = new(
+            "Strings",
+            () =>
+            {
+                invocationCount++;
+                if (invocationCount == 1)
+                {
+                    throw failure;
+                }
+
+                return new MemoryStream(resources);
+            });
+
+        try
+        {
+            Action action = () => manager.GetString("Greeting");
+
+            action.Should().ThrowExactly<System.IO.IOException>().Which.Should().BeSameAs(failure);
+            manager.GetString("Greeting").Should().Be("Hello");
+            manager.GetString("Greeting").Should().Be("Hello");
+            invocationCount.Should().Be(2);
+        }
+        finally
+        {
+            manager.ReleaseAllResources();
+        }
     }
 
     [TestMethod]
@@ -590,21 +648,25 @@ public class StringResourceManagerTests
     }
 
     [TestMethod]
-    public void GetString_ResourcesFileFailedThenCreated_RetriesAfterRelease()
+    public void GetString_ResourcesFileFailedThenCreated_RetriesWithoutRelease()
     {
         using TempFolder folder = new();
         string path = Path.Join(folder.TempPath, "Strings.resources");
         StringResourceManager manager = new(path);
 
-        Action action = () => manager.GetString("Greeting");
+        try
+        {
+            Action action = () => manager.GetString("Greeting");
 
-        action.Should().Throw<System.IO.FileNotFoundException>();
-        WriteResources(folder.TempPath, ("Greeting", "Hello"));
-        action.Should().Throw<System.IO.FileNotFoundException>();
+            action.Should().Throw<System.IO.FileNotFoundException>();
+            WriteResources(folder.TempPath, ("Greeting", "Hello"));
 
-        manager.ReleaseAllResources();
-
-        manager.GetString("Greeting").Should().Be("Hello");
+            manager.GetString("Greeting").Should().Be("Hello");
+        }
+        finally
+        {
+            manager.ReleaseAllResources();
+        }
     }
 
     [TestMethod]
@@ -635,39 +697,31 @@ public class StringResourceManagerTests
     }
 
     [TestMethod]
-    public async Task ReleaseAllResources_LoadInProgress_DoesNotRetainOldGeneration()
+    public void ReleaseAllResources_CompletedLookup_ReloadsStreamSource()
     {
         byte[] firstResources = WriteResources(("Greeting", "First"));
         byte[] secondResources = WriteResources(("Greeting", "Second"));
-        using ManualResetEventSlim loadStarted = new();
-        using ManualResetEventSlim continueLoad = new();
-        using ManualResetEventSlim releaseWaiting = new();
         int invocationCount = 0;
         StringResourceManager manager = new("Strings", CreateStream);
 
         Stream CreateStream()
         {
             int invocation = Interlocked.Increment(ref invocationCount);
-            if (invocation == 1)
-            {
-                loadStarted.Set();
-                continueLoad.Wait();
-                return new MemoryStream(firstResources);
-            }
-
-            return new MemoryStream(secondResources);
+            return new MemoryStream(invocation == 1 ? firstResources : secondResources);
         }
 
-        Task<string?> lookup = Task.Run(() => manager.GetString("Greeting"));
-        loadStarted.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
-        Task release = Task.Run(() => manager.ReleaseAllResources(releaseWaiting.Set));
-        releaseWaiting.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
-        continueLoad.Set();
+        try
+        {
+            manager.GetString("Greeting").Should().Be("First");
+            manager.ReleaseAllResources();
 
-        (await lookup.ConfigureAwait(continueOnCapturedContext: false)).Should().BeOneOf("First", "Second");
-        await release.ConfigureAwait(continueOnCapturedContext: false);
-        manager.GetString("Greeting").Should().Be("Second");
-        invocationCount.Should().Be(2);
+            manager.GetString("Greeting").Should().Be("Second");
+            invocationCount.Should().Be(2);
+        }
+        finally
+        {
+            manager.ReleaseAllResources();
+        }
     }
 
     [TestMethod]

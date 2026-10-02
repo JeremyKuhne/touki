@@ -16,20 +16,21 @@ public partial class SatelliteStringResourceManagerTests
             s_assembly);
 
         manager.GetString("Greeting", CultureInfo.InvariantCulture).Should().Be("Hello");
-        StringResourceManager neutralResources = manager.TestAccessor.Dynamic._neutralResources;
-        ((object?)neutralResources.TestAccessor.Dynamic._cache).Should().NotBeNull();
+        StringResourceManager neutralResources = manager.TestAccessor.Dynamic._source;
+        ((object?)neutralResources.TestAccessor.Dynamic._table).Should().NotBeNull();
 
         InvalidOperationException disposeException = new("Localized disposal failed.");
         ReleaseTrackingStringResourceReader throwingReader = new(disposeException);
         ReleaseTrackingStringResourceReader succeedingReader = new(disposeException: null);
-        Dictionary<string, LocalizedStringResourceTableCache> sourceTables = new(StringComparer.Ordinal)
+        Dictionary<string, IndexedStringResourceTable?> sourceTables = new(StringComparer.Ordinal)
         {
-            ["throwing"] = new(IndexedStringResourceTable.Create(
+            ["throwing"] = IndexedStringResourceTable.Create(
                 throwingReader,
-                StringResourceManagerOptions.None)),
-            ["succeeding"] = new(IndexedStringResourceTable.Create(
+                StringResourceManagerOptions.None),
+            ["missing"] = null,
+            ["succeeding"] = IndexedStringResourceTable.Create(
                 succeedingReader,
-                StringResourceManagerOptions.None))
+                StringResourceManagerOptions.None)
         };
 
         manager.TestAccessor.Dynamic._sourceTables = sourceTables;
@@ -39,7 +40,7 @@ public partial class SatelliteStringResourceManagerTests
         action.Should().Throw<InvalidOperationException>().Which.Should().BeSameAs(disposeException);
         throwingReader.DisposeCount.Should().Be(1);
         succeedingReader.DisposeCount.Should().Be(1);
-        ((object?)neutralResources.TestAccessor.Dynamic._cache).Should().BeNull();
+        ((object?)neutralResources.TestAccessor.Dynamic._table).Should().BeNull();
     }
 
     private sealed class ReleaseTrackingStringResourceReader(Exception? disposeException) : IStringResourceReader
@@ -54,7 +55,7 @@ public partial class SatelliteStringResourceManagerTests
 
         public string GetString(int index) => throw new NotSupportedException();
 
-        public StringResourceLookupKind Lookup(string name, out string? value) =>
+        public string? Lookup(string name) =>
             throw new NotSupportedException();
 
         public void Dispose()

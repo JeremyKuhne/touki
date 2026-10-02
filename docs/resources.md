@@ -92,17 +92,30 @@ StringResourceManager fromStream = new(
     () => File.OpenRead("Resources/Strings.resources"));
 ```
 
-Construction does not open or parse the source. `FromAssemblyFile` captures a
+Construction initializes private synchronization locks but does not open or
+parse the source. `FromAssemblyFile` captures a
 fully qualified path during construction. The first lookup opens the source,
 validates its type codes, binary-searches the existing resource index, and
-decodes only the requested string. The indexed backing and last decoded string
-remain cached; warmed lookup allocates nothing. Resource and managed assembly
-files are memory-mapped, and loaded assemblies expose their manifest payload as
-unmanaged memory, so none of these paths copies the complete resource image.
+decodes only the requested string. The indexed backing remains cached, but
+decoded values are not retained by the manager: each direct lookup decodes the
+requested string again without allocating a separate cache entry. Generated
+resource accessors cache their property values, so repeated property reads
+remain allocation-free. Resource and managed assembly files are memory-mapped,
+and loaded assemblies expose their manifest payload as unmanaged memory, so
+none of these paths copies the complete resource image.
 Other stream-factory sources must be readable and seekable. The backing is
 retained until `ReleaseAllResources()` and then disposed.
+Failed loads throw directly without being cached, so a later lookup retries
+the source without requiring `ReleaseAllResources()`.
 An abandoned file manager releases its mapped view through the backing's
 finalizable lease; assembly and stream tables do not pay that finalization cost.
+
+Readers own their lookup synchronization. Stream readers serialize access to
+their shared position with a private `Lock`; immutable memory readers support
+concurrent lookup directly. The indexed table makes no concrete-reader
+assumptions and throws `ObjectDisposedException` when used after disposal.
+Callers must coordinate disposal and `ReleaseAllResources()` with active
+lookups; the table does not wait for active users or retry disposed lookups.
 
 By default a null or non-string entry rejects the table. Pass
 `StringResourceManagerOptions.IgnoreNonStringResources` to skip non-string
@@ -200,12 +213,13 @@ also reject it. `IgnoreNonStringResources` skips non-string names and values, so
 a matching name behaves as missing and normal culture fallback continues.
 Resource names are matched ordinally and case-sensitively; assigning
 `IgnoreCase` throws `NotSupportedException`. Localized tables, runtime satellite
-binds, assembly metadata, and missing candidates are cached. Each file is opened
-at most once per cache generation, including during concurrent first lookup.
-`ReleaseAllResources()` starts a new table/file generation. Runtime assembly
-metadata and successful or missing satellite bind results remain cached per
-resource assembly for the process lifetime, matching the normal bundled-resource
-deployment model.
+binds, assembly metadata, and missing candidates are cached. Successful loads
+and missing-source results are reused until `ReleaseAllResources()`, including
+during concurrent first lookup. Failed loads throw directly and are retried on
+the next lookup. `ReleaseAllResources()` clears table and missing-source caches.
+Runtime assembly metadata and successful or missing satellite bind results
+remain cached per resource assembly for the process lifetime, matching the normal
+bundled-resource deployment model.
 
 Directory factories capture a fully qualified root during construction and
 require the resource base name, culture name, and satellite assembly name to be
@@ -229,7 +243,9 @@ the key. Pass
 `SatelliteStringResourceProbeMode.FallbackOnFailure` to the direct satellite or
 assembly-files factory to treat all of those localized candidate failures as
 missing and continue fallback. This mode never suppresses neutral owner or
-neutral resource failures.
+neutral resource failures. Tolerated localized failures are cached as missing
+candidates until `ReleaseAllResources()`; exceptions that propagate are not
+cached.
 
 Before selecting an external-all layout, validate its neutral owner strictly
 against the generated owner assembly:
@@ -297,6 +313,10 @@ owner assembly plus its culture directories after publishing. Embedded mode
 retains those publish inputs for ILC. Direct assembly DLLs and loose resource
 files are trusted deployment artifacts. Automatic publish externalization
 remains SDK/build tooling work.
+
+CI passes `NativeAotFixtureAssemblyName=dotnet` to the managed fixture build to
+rename only its owner assembly and satellites. A global `AssemblyName` override
+would also rename analyzer dependencies and cause output-file collisions.
 
 ## Generated string accessors
 
