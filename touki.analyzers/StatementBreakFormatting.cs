@@ -1672,11 +1672,13 @@ internal static partial class StatementBreakFormatting
                     candidate = postfix.Operand;
                     break;
                 case MemberBindingExpressionSyntax memberBinding
-                    when memberBinding.FirstAncestorOrSelf<ConditionalAccessExpressionSyntax>() is { } owner:
+                    when memberBinding.FirstAncestorOrSelf<ConditionalAccessExpressionSyntax>() is { } owner
+                        && owner != node:
                     previousPrimaryNode = owner;
                     return true;
                 case ElementBindingExpressionSyntax elementBinding
-                    when elementBinding.FirstAncestorOrSelf<ConditionalAccessExpressionSyntax>() is { } owner:
+                    when elementBinding.FirstAncestorOrSelf<ConditionalAccessExpressionSyntax>() is { } owner
+                        && owner != node:
                     previousPrimaryNode = owner;
                     return true;
                 default:
