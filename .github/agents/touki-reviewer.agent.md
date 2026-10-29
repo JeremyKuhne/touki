@@ -77,7 +77,7 @@ tests, and API design.
    [.github/instructions/tests.instructions.md](../instructions/tests.instructions.md);
    the [`pre-pr-self-review`](../../.agents/skills/pre-pr-self-review/SKILL.md)
    skill lists the recurring misses (test-name form, stray "Arrange / Act /
-   Assert" comments, redundant `FluentAssertions` / `Xunit` usings, reflection
+   Assert" comments, reflection
    instead of `TestAccessor`, ref-struct exercised inside a lambda).
 
 6. **Approval-verb hygiene** (for PR descriptions only). The PR description

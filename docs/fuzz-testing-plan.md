@@ -120,7 +120,7 @@ minimized into a regression case (see Phase 4).
 ## Phase 4 - PR integration vs. expanded cadence
 
 - **On every PR (in `touki.tests`):** promote each interesting fuzz finding to
-  a **deterministic** xUnit case (a captured input byte array plus the
+  a **deterministic** test case (a captured input byte array plus the
   asserted invariant), running on both `net10.0` and `net481`. Optionally add
   a small **fixed-seed, low-iteration** in-proc property check per target so
   the invariants are continuously exercised without flakiness. The PR gate

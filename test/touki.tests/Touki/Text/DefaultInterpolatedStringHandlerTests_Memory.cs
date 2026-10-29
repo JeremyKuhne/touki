@@ -17,9 +17,7 @@ public class DefaultInterpolatedStringHandlerTests_Memory
     // Need to run sequentially to avoid contention with StringBuilder pooling in
     // string formatting (which will give different memory usage results occasionally).
 
-#pragma warning disable xUnit1004 // Test methods should not be skipped
     [TestMethod, Ignore("No way to make this completely consistent, run manually.")]
-#pragma warning restore xUnit1004
     [DataRow(DayOfWeek.Monday)]
     public void ValidateAllocations(DayOfWeek value)
     {
