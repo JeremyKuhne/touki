@@ -26,8 +26,7 @@ ever drift, AGENTS.md wins; update this file to match.
 ## Style
 
 - Do **not** add "Arrange, Act, Assert" comments in tests.
-- Use FluentAssertions for assertions. `FluentAssertions` and `Xunit` are
-  already global usings - do not add new usings for these to test files.
+- Use FluentAssertions for assertions.
 - Prefer `[Theory]` with `[InlineData]` only when there are 3 or more
   distinct test cases (rows of `[InlineData]`); for 1-2 cases use
   separate `[Fact]` methods.
