@@ -25,6 +25,9 @@
     <File Path=".github/workflows/publishtestsupport.yml" />
   </Folder>
   <Folder Name="/test/">
+    <Project Path="test/touki.largefileprobe/touki.largefileprobe.csproj">
+      <Platform Project="x64" />
+    </Project>
     <Project Path="test/touki.resources.generator.tests/touki.resources.generator.tests.csproj">
       <Platform Project="x64" />
     </Project>

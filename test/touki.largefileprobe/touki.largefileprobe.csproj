@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(DotNetCoreVersion);$(DotNetCoreNextVersion)</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace />
+    <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <!-- Keep publishing properties local rather than passing PublishAot to netstandard analyzer references. -->
+    <LargeFileProbePublishMode Condition="'$(LargeFileProbePublishMode)' == ''">Jit</LargeFileProbePublishMode>
+    <PublishAot Condition="'$(LargeFileProbePublishMode)' == 'NativeAot'">true</PublishAot>
+    <PublishReadyToRun Condition="'$(LargeFileProbePublishMode)' == 'ReadyToRun'">true</PublishReadyToRun>
+    <SelfContained Condition="'$(RuntimeIdentifier)' != ''">true</SelfContained>
+    <RuntimeFrameworkVersion Condition="'$(LargeFileProbeRuntimeVersion)' != ''">$(LargeFileProbeRuntimeVersion)</RuntimeFrameworkVersion>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\klutzyninja.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\touki.perf\LargeFileReadCommand.cs" Link="Replay\LargeFileReadCommand.cs" />
+    <Compile Include="..\touki.perf\LargeFileReadReferenceReader.cs" Link="Replay\LargeFileReadReferenceReader.cs" />
+    <Compile Include="..\touki.perf\LargeFileReadReference.cs" Link="Replay\LargeFileReadReference.cs" />
+    <Compile Include="..\touki.perf\LargeFileReadScenario.cs" Link="Replay\LargeFileReadScenario.cs" />
+    <Compile Include="..\touki.perf\LargeFileReadReplay.cs" Link="Replay\LargeFileReadReplay.cs" />
+    <Compile Include="..\touki.perf\LargeFileReadPattern.cs" Link="Replay\LargeFileReadPattern.cs" />
+    <Compile Include="..\touki.perf\LargeFileReadProfile.cs" Link="Replay\LargeFileReadProfile.cs" />
+    <Compile Include="..\touki.perf\LargeFileCacheControl.cs" Link="Replay\LargeFileCacheControl.cs" />
+    <ProjectReference Include="..\..\touki\touki.csproj" AdditionalProperties="TargetFramework=$(TargetFramework)" />
+  </ItemGroup>
+
+  <Target Name="ValidateLargeFileProbePublishMode" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(LargeFileProbePublishMode)' != 'Jit'
+                      And '$(LargeFileProbePublishMode)' != 'ReadyToRun'
+                      And '$(LargeFileProbePublishMode)' != 'NativeAot'"
+           Text="LargeFileProbePublishMode must be Jit, ReadyToRun, or NativeAot." />
+  </Target>
+</Project>

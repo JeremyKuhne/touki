@@ -16,3 +16,7 @@ GlobalSize
 GlobalFree
 CLIPBOARD_FORMAT
 GLOBAL_ALLOC_FLAGS
+ReadFile
+DeviceIoControl
+FSCTL_SET_SPARSE
+SetSystemFileCacheSize

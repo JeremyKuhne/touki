@@ -1,0 +1,3 @@
+GetOverlappedResult
+ReOpenFile
+GENERIC_ACCESS_RIGHTS

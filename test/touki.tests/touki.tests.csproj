@@ -103,5 +103,13 @@
                       ClassName="Touki.Resources.GeneratedSatelliteTestStrings" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\touki.perf\LargeFileReadPattern.cs" Link="Perf\LargeFileReadPattern.cs" />
+    <Compile Include="..\touki.perf\LargeFileReadReference.cs" Link="Perf\LargeFileReadReference.cs" />
+    <Compile Include="..\touki.perf\LargeFileReadScenario.cs" Link="Perf\LargeFileReadScenario.cs" />
+    <Compile Include="..\touki.perf\LargeFileReadReferenceReader.cs" Link="Perf\LargeFileReadReferenceReader.cs" />
+    <Compile Include="..\touki.perf\LargeFileReadReplay.cs" Link="Perf\LargeFileReadReplay.cs" />
+  </ItemGroup>
+
   <Import Project="..\..\touki.resources.generator\buildTransitive\KlutzyNinja.Touki.targets" />
 </Project>

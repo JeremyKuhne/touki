@@ -86,6 +86,10 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <AdditionalFiles Include="Modern.NativeMethods.txt" />
+  </ItemGroup>
+
   <!--
     Pack (NuGet) related
   -->
