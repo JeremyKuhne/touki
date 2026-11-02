@@ -85,7 +85,7 @@ public class FileSystemMatcherCompositionTests
     public void CreateOrdered_LaterIncludeAfterExclude_RequiresRecursion()
     {
         IFileSystemMatcher matcher = FileSystemMatcher.CreateOrdered(
-        [
+            [
             new(new ConstantMatcher(DirectoryMatchType.AllDescendantFilesMatch), FileSystemMatchAction.Exclude),
             new(new ConstantMatcher(DirectoryMatchType.MayContainMatchingFiles), FileSystemMatchAction.Include)
         ],
@@ -100,7 +100,7 @@ public class FileSystemMatcherCompositionTests
     public void CreateOrdered_LaterExcludeAfterPossibleInclude_Prunes()
     {
         IFileSystemMatcher matcher = FileSystemMatcher.CreateOrdered(
-        [
+            [
             new(new ConstantMatcher(DirectoryMatchType.MayContainMatchingFiles), FileSystemMatchAction.Include),
             new(new ConstantMatcher(DirectoryMatchType.AllDescendantFilesMatch), FileSystemMatchAction.Exclude)
         ]);
@@ -180,11 +180,11 @@ public class FileSystemMatcherCompositionTests
     public void CreateExclusionWins_MixedNativeAndPathChildren_HonorsEveryRuleKind()
     {
         IFileSystemMatcher matcher = FileSystemMatcher.CreateExclusionWins(
-        [
+            [
             FileSystemMatcher.Create((_, fileName) => fileName.StartsWith("native")),
             FileSystemMatcher.CreatePath(path => path.StartsWith("path"))
         ],
-        [
+            [
             FileSystemMatcher.Create((_, fileName) => fileName.SequenceEqual("native-blocked.cs")),
             FileSystemMatcher.CreatePath(path => path.SequenceEqual("path-blocked.cs"))
         ]);
@@ -205,7 +205,7 @@ public class FileSystemMatcherCompositionTests
         string? actualFileName = null;
         CanonicalTrackingMatcher pathMatcher = new(matches: true);
         IFileSystemMatcher matcher = FileSystemMatcher.CreateOrdered(
-        [
+            [
             new(
                 FileSystemMatcher.Create((directory, fileName) =>
                 {
@@ -232,7 +232,7 @@ public class FileSystemMatcherCompositionTests
     public void CreateOrdered_FileMatches_LastMatchingRuleWinsAndUsesDefault()
     {
         IFileSystemMatcher matcher = FileSystemMatcher.CreateOrdered(
-        [
+            [
             new(
                 FileSystemMatcher.Create((_, fileName) => fileName.EndsWith(".tmp")),
                 FileSystemMatchAction.Exclude),
@@ -255,7 +255,7 @@ public class FileSystemMatcherCompositionTests
         string root = Path.Join(Path.GetTempPath(), "matcher-root");
         GlobSpecification directoryOnly = GlobSpecification.Compile("bin/", GlobDialect.Git);
         IFileSystemMatcher matcher = FileSystemMatcher.CreateOrdered(
-        [
+            [
             new(directoryOnly.CreateFileSystemMatcher(), FileSystemMatchAction.Exclude),
             new(
                 FileSystemMatcher.CreatePath(path => path.SequenceEqual("bin/keep.txt")),
@@ -375,7 +375,7 @@ public class FileSystemMatcherCompositionTests
         for (int depth = 0; depth < 10_000; depth++)
         {
             matcher = FileSystemMatcher.CreateOrdered(
-            [
+                [
                 new(never, FileSystemMatchAction.Exclude),
                 new(matcher, FileSystemMatchAction.Include)
             ]);
@@ -452,7 +452,7 @@ public class FileSystemMatcherCompositionTests
         CanonicalTrackingMatcher first = new(matches: false);
         CanonicalTrackingMatcher second = new(matches: true);
         IFileSystemMatcher nested = FileSystemMatcher.CreateOrdered(
-        [
+            [
             new(first, FileSystemMatchAction.Include),
             new(second, FileSystemMatchAction.Include)
         ]);
@@ -472,7 +472,7 @@ public class FileSystemMatcherCompositionTests
     {
         TrackingMatcher first = new(throwOnDispose: true);
         IFileSystemMatcher nested = FileSystemMatcher.CreateOrdered(
-        [
+            [
             new(first, FileSystemMatchAction.Include),
             new(new ThrowingMatcher("nested-create"), FileSystemMatchAction.Include)
         ]);
@@ -491,7 +491,7 @@ public class FileSystemMatcherCompositionTests
         TrackingMatcher first = new(throwOnDispose: true);
         TrackingMatcher second = new();
         IFileSystemMatcher nested = FileSystemMatcher.CreateOrdered(
-        [
+            [
             new(first, FileSystemMatchAction.Include),
             new(second, FileSystemMatchAction.Include)
         ]);
@@ -517,7 +517,7 @@ public class FileSystemMatcherCompositionTests
     {
         SingletonSessionMatcher child = new();
         IFileSystemMatcher nested = FileSystemMatcher.CreateOrdered(
-        [
+            [
             new(child, FileSystemMatchAction.Include),
             new(child, FileSystemMatchAction.Exclude)
         ]);

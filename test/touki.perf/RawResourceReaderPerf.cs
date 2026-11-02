@@ -109,7 +109,10 @@ public class RawResourceReaderPerf
     public int Oracle_DiskStream_OpenLookup()
     {
         using ResourceReader reader = new(new System.IO.FileStream(
-            _path, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read));
+            _path,
+            System.IO.FileMode.Open,
+            System.IO.FileAccess.Read,
+            System.IO.FileShare.Read));
 
         reader.GetResourceData(_lookupKey, out _, out byte[] data);
         return data.Length;

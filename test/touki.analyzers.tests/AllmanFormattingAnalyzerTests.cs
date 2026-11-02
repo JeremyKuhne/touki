@@ -43,9 +43,11 @@ public partial class AllmanFormattingAnalyzerTests
     [DataRow("class Item { public int Value; }\n\nclass Sample\n{\n    Item Create() => new Item {\n        Value = 1\n    };\n}\n")]
     [DataRow("class Sample\n{\n    int[] Values = new[] {\n        1\n    };\n}\n")]
     [DataRow("class Sample\n{\n    object Value => new {\n        Number = 1\n    };\n}\n")]
-    [DataRow("record Item { public int Value; }\n\nclass Sample\n{\n    Item Copy(Item item) => item with {\n        Value = 1\n    };\n}\n")]
+    [DataRow(
+        "record Item { public int Value; }\n\nclass Sample\n{\n    Item Copy(Item item) => item with {\n        Value = 1\n    };\n}\n")]
     [DataRow("class Sample\n{\n    int Convert(int value) => value switch {\n        _ => 0\n    };\n}\n")]
-    [DataRow("record Item { public int Value; }\n\nclass Sample\n{\n    bool Matches(Item item) => item is {\n        Value: 1\n    };\n}\n")]
+    [DataRow(
+        "record Item { public int Value; }\n\nclass Sample\n{\n    bool Matches(Item item) => item is {\n        Value: 1\n    };\n}\n")]
     public async Task Analyze_MultilineBraceDelimitedConstructWithSameLineOpeningBrace_ReportsDiagnostic(
         string source)
     {

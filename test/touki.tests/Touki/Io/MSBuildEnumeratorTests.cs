@@ -714,7 +714,7 @@ public class MSBuildEnumeratorTests
         files.Should().BeEquivalentTo(expected);
 
         files.Should().BeEquivalentTo(
-        [
+            [
             Path.Join("lib", "core", "v1", "api.cs"),
             Path.Join("lib", "core", "v2", "api.cs"),
             Path.Join("lib", "utils", "v1", "api.cs")
@@ -751,7 +751,7 @@ public class MSBuildEnumeratorTests
         }
 
         files.Should().BeEquivalentTo(
-        [
+            [
             Path.Join("src", "tests", "unit", "test1.cs"),
             Path.Join("src", "tests", "integration", "test2.cs"),
             Path.Join("src", "main", "tests", "test4.cs")

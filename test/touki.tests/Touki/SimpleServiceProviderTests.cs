@@ -206,24 +206,25 @@ public class SimpleServiceProviderTests
         for (int i = 0; i < threadCount; i++)
         {
             int threadId = i;
-            tasks.Add(Task.Run(async () =>
-            {
-                // Each thread adds a range of services
-                for (int j = 0; j < itemsPerThread; j++)
+            tasks.Add(Task.Run(
+                async () =>
                 {
-                    int serviceId = (threadId * itemsPerThread) + j;
-                    CustomService service = new(serviceId);
-                    provider.AddService(service);
+                    // Each thread adds a range of services
+                    for (int j = 0; j < itemsPerThread; j++)
+                    {
+                        int serviceId = (threadId * itemsPerThread) + j;
+                        CustomService service = new(serviceId);
+                        provider.AddService(service);
 
-                    // Immediately verify it can be retrieved
-                    CustomService? retrieved = provider.GetService<CustomService>();
-                    retrieved.Should().NotBeNull();
+                        // Immediately verify it can be retrieved
+                        CustomService? retrieved = provider.GetService<CustomService>();
+                        retrieved.Should().NotBeNull();
 
-                    // Small delay to simulate real work and increase the chance of thread interleaving
-                    await Task.Delay(1).ConfigureAwait(continueOnCapturedContext: false);
-                }
-            },
-            CancellationToken.None));
+                        // Small delay to simulate real work and increase the chance of thread interleaving
+                        await Task.Delay(1).ConfigureAwait(continueOnCapturedContext: false);
+                    }
+                },
+                CancellationToken.None));
         }
 
         // Wait for all tasks to complete asynchronously

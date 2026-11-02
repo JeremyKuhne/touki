@@ -761,7 +761,14 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
                     {
                         int length = program[state.ProgramIndex + 1];
                         if (state.InputIndex + length <= totalLength
-                            && LiteralMatchesAt(first, second, state.InputIndex, program.Slice(state.ProgramIndex + 2, length), IgnoreCaseKind.Off))
+                            && LiteralMatchesAt(
+                                first,
+                                second,
+                                state.InputIndex,
+                                program.Slice(
+                                    state.ProgramIndex + 2,
+                                    length),
+                                IgnoreCaseKind.Off))
                         {
                             state.InputIndex += length;
                             state.ProgramIndex += 2 + length;
@@ -772,7 +779,12 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
                     {
                         int length = program[state.ProgramIndex + 1];
                         if ((separator == '\0' || inputChar != separator)
-                            && ClassContainsOrdinal(program.Slice(state.ProgramIndex + 2, length), inputChar, opcode == GlobOpCodes.NegClass))
+                            && ClassContainsOrdinal(
+                                program.Slice(
+                                    state.ProgramIndex + 2,
+                                    length),
+                                inputChar,
+                                opcode == GlobOpCodes.NegClass))
                         {
                             state.InputIndex++;
                             state.ProgramIndex += 2 + length;
@@ -877,7 +889,12 @@ internal sealed partial class CompiledGlobStrategy : GlobStrategy
                     {
                         int length = program[state.ProgramIndex + 1];
                         if ((separator == '\0' || inputChar != separator)
-                            && ClassContainsIgnoreCase(program.Slice(state.ProgramIndex + 2, length), inputChar, opcode == GlobOpCodes.NegClass))
+                            && ClassContainsIgnoreCase(
+                                program.Slice(
+                                    state.ProgramIndex + 2,
+                                    length),
+                                inputChar,
+                                opcode == GlobOpCodes.NegClass))
                         {
                             state.InputIndex++;
                             state.ProgramIndex += 2 + length;

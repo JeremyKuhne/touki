@@ -271,7 +271,8 @@ public class PortedTests_Posix
     {
         if (requiresPerSegmentDotRule)
         {
-            Assert.Inconclusive("Per-segment FNM_PERIOD enforcement (leading '.' restricted at every path segment, not only input[0]) is deferred; see docs/globbing.md compatibility notes.");
+            Assert.Inconclusive(
+                "Per-segment FNM_PERIOD enforcement (leading '.' restricted at every path segment, not only input[0]) is deferred; see docs/globbing.md compatibility notes.");
         }
 
         GlobSpecification.Compile(pattern, GlobDialect.PosixPath).IsMatch(input).Should().Be(expected);

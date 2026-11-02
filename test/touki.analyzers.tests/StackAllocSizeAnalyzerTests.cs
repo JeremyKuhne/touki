@@ -227,7 +227,10 @@ public class StackAllocSizeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, maxBytes: "256").ConfigureAwait(continueOnCapturedContext: false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            source,
+            maxBytes: "256").ConfigureAwait(
+                continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("512").And.Contain("256");
@@ -247,7 +250,10 @@ public class StackAllocSizeAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, maxBytes: "4096").ConfigureAwait(continueOnCapturedContext: false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            source,
+            maxBytes: "4096").ConfigureAwait(
+                continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }

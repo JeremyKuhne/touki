@@ -71,7 +71,17 @@ public class SpanExtensionsCoverageTests
         ushort[] data = [1000, 2, 1000, 4, 1000, 6, 1000, 8, 1000, 10];
         Span<ushort> span = data;
         span.Replace((ushort)1000, (ushort)0);
-        span.ToArray().Should().Equal((ushort)0, (ushort)2, (ushort)0, (ushort)4, (ushort)0, (ushort)6, (ushort)0, (ushort)8, (ushort)0, (ushort)10);
+        span.ToArray().Should().Equal(
+            (ushort)0,
+            (ushort)2,
+            (ushort)0,
+            (ushort)4,
+            (ushort)0,
+            (ushort)6,
+            (ushort)0,
+            (ushort)8,
+            (ushort)0,
+            (ushort)10);
     }
 
     [TestMethod]

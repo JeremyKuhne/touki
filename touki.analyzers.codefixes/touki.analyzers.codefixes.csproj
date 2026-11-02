@@ -82,6 +82,8 @@
          Link="Shared\StatementBreakIndentation.cs" />
     <Compile Include="..\touki.analyzers\StatementBreakOperator.cs"
          Link="Shared\StatementBreakOperator.cs" />
+    <Compile Include="..\touki.analyzers\ParameterListFormatting.cs"
+             Link="Shared\ParameterListFormatting.cs" />
   </ItemGroup>
 
 </Project>

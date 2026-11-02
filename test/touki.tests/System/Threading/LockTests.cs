@@ -116,16 +116,17 @@ public class LockTests
         Lock lockObj = new();
         var b = new Barrier(2);
 
-        Task t = Task.Run(() =>
-        {
-            using (lockObj.EnterScope())
+        Task t = Task.Run(
+            () =>
             {
-                b.SignalAndWait(CancellationToken.None);
-                lockObj.IsHeldByCurrentThread.Should().BeTrue();
-                b.SignalAndWait(CancellationToken.None);
-            }
-        },
-        CancellationToken.None);
+                using (lockObj.EnterScope())
+                {
+                    b.SignalAndWait(CancellationToken.None);
+                    lockObj.IsHeldByCurrentThread.Should().BeTrue();
+                    b.SignalAndWait(CancellationToken.None);
+                }
+            },
+            CancellationToken.None);
 
         b.SignalAndWait(CancellationToken.None);
         lockObj.IsHeldByCurrentThread.Should().BeFalse();
@@ -154,15 +155,16 @@ public class LockTests
             lockScopeCopy = lockScope;
         }
 
-        Task t = Task.Run(() =>
-        {
-            using (lockObj.EnterScope())
+        Task t = Task.Run(
+            () =>
             {
-                b.SignalAndWait(CancellationToken.None);
-                b.SignalAndWait(CancellationToken.None);
-            }
-        },
-        CancellationToken.None);
+                using (lockObj.EnterScope())
+                {
+                    b.SignalAndWait(CancellationToken.None);
+                    b.SignalAndWait(CancellationToken.None);
+                }
+            },
+            CancellationToken.None);
 
         b.SignalAndWait(CancellationToken.None);
 
@@ -244,7 +246,8 @@ public class LockTests
             {
                 int icopy = i; // for use in delegates
                 Thread t =
-                    ThreadTestHelpers.CreateGuardedThread(out waitForThreadArray[i],
+                    ThreadTestHelpers.CreateGuardedThread(
+                        out waitForThreadArray[i],
                         () => backgroundTestDelegates[icopy]());
 
                 t.IsBackground = true;
@@ -286,7 +289,8 @@ public class LockTests
             {
                 int icopy = i; // for use in delegates
                 Thread t =
-                    ThreadTestHelpers.CreateGuardedThread(out waitForThreadArray[i],
+                    ThreadTestHelpers.CreateGuardedThread(
+                        out waitForThreadArray[i],
                         () => backgroundTestDelegates[icopy]());
 
                 t.IsBackground = true;
@@ -334,13 +338,14 @@ public class LockTests
             // Start multiple threads that will try to acquire the lock
             for (int i = 0; i < threadCount; i++)
             {
-                tasks[i] = Task.Run(() =>
-                {
-                    barrier.SignalAndWait(); // Wait for all threads to be ready
-                    lockObj.TryEnter(50); // Try to enter with timeout - will contend with main thread
-                    barrier.SignalAndWait(); // Signal completion
-                },
-                CancellationToken.None);
+                tasks[i] = Task.Run(
+                    () =>
+                    {
+                        barrier.SignalAndWait(); // Wait for all threads to be ready
+                        lockObj.TryEnter(50); // Try to enter with timeout - will contend with main thread
+                        barrier.SignalAndWait(); // Signal completion
+                    },
+                    CancellationToken.None);
             }
 
             barrier.SignalAndWait(CancellationToken.None); // Let all threads try to acquire
@@ -414,24 +419,25 @@ public class LockTests
         for (int t = 0; t < threadCount; t++)
         {
             int threadId = t; // Capture for lambda
-            tasks[t] = Task.Run(() =>
-            {
-                ready.Signal();
-                start.Wait();
-
-                for (int i = 0; i < iterations; i++)
+            tasks[t] = Task.Run(
+                () =>
                 {
-                    using (lockObj.EnterScope())
-                    {
-                        sharedCounter++;
-                        threadAcquisitions[threadId]++;
-                        Thread.Sleep(1); // Small delay to increase chance of contention
-                    }
+                    ready.Signal();
+                    start.Wait();
 
-                    Thread.Yield(); // Give other threads a chance
-                }
-            },
-            CancellationToken.None);
+                    for (int i = 0; i < iterations; i++)
+                    {
+                        using (lockObj.EnterScope())
+                        {
+                            sharedCounter++;
+                            threadAcquisitions[threadId]++;
+                            Thread.Sleep(1); // Small delay to increase chance of contention
+                        }
+
+                        Thread.Yield(); // Give other threads a chance
+                    }
+                },
+                CancellationToken.None);
         }
 
         // Wait for all threads to be ready

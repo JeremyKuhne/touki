@@ -259,7 +259,8 @@ public unsafe class ValueStringBuilderEnumTests
         builder.Clear();
 
         // Test zero flags values
-        builder.AppendFormat("ZeroFlags: {0}, {1}, {2}",
+        builder.AppendFormat(
+            "ZeroFlags: {0}, {1}, {2}",
             Value.Create(SByteFlagsEnum.None),
             Value.Create(UInt32FlagsEnum.None),
             Value.Create(Int64FlagsEnum.None));
@@ -323,7 +324,8 @@ public unsafe class ValueStringBuilderEnumTests
         using ValueStringBuilder builder = new(stackalloc char[200]);
 
         // Test decimal format on different backing types
-        builder.AppendFormat("Formats: {0:D}, {1:D}, {2:D}",
+        builder.AppendFormat(
+            "Formats: {0:D}, {1:D}, {2:D}",
             Value.Create(ByteBackedEnum.Max),
             Value.Create(Int16BackedEnum.Max),
             Value.Create(Int32BackedEnum.Max));
@@ -332,7 +334,8 @@ public unsafe class ValueStringBuilderEnumTests
         builder.Clear();
 
         // Test hex format
-        builder.AppendFormat("Hex: {0:X}, {1:X}",
+        builder.AppendFormat(
+            "Hex: {0:X}, {1:X}",
             Value.Create(ByteBackedEnum.Max),
             Value.Create(UInt32BackedEnum.Max));
 
@@ -340,7 +343,8 @@ public unsafe class ValueStringBuilderEnumTests
         builder.Clear();
 
         // Test general format (default)
-        builder.AppendFormat("General: {0:G}, {1:G}",
+        builder.AppendFormat(
+            "General: {0:G}, {1:G}",
             Value.Create(Int64BackedEnum.Positive),
             Value.Create(UInt64BackedEnum.Value));
 
@@ -353,7 +357,8 @@ public unsafe class ValueStringBuilderEnumTests
         using ValueStringBuilder builder = new(stackalloc char[300]);
 
         // Test extreme values for signed types
-        builder.AppendFormat("Extremes: {0}, {1}, {2}, {3}",
+        builder.AppendFormat(
+            "Extremes: {0}, {1}, {2}, {3}",
             Value.Create(SByteBackedEnum.Min),
             Value.Create(Int16BackedEnum.Min),
             Value.Create(Int32BackedEnum.Min),
@@ -370,14 +375,19 @@ public unsafe class ValueStringBuilderEnumTests
         builder.Clear();
 
         // Test extreme values for unsigned types
-        builder.AppendFormat("MaxValues: {0}, {1}, {2}, {3}",
+        builder.AppendFormat(
+            "MaxValues: {0}, {1}, {2}, {3}",
             Value.Create(ByteBackedEnum.Max),
             Value.Create(UInt16BackedEnum.Max),
             Value.Create(UInt32BackedEnum.Max),
             Value.Create(UInt64BackedEnum.Max));
 
-        expected = string.Format("MaxValues: {0}, {1}, {2}, {3}",
-            ByteBackedEnum.Max, UInt16BackedEnum.Max, UInt32BackedEnum.Max, UInt64BackedEnum.Max);
+        expected = string.Format(
+            "MaxValues: {0}, {1}, {2}, {3}",
+            ByteBackedEnum.Max,
+            UInt16BackedEnum.Max,
+            UInt32BackedEnum.Max,
+            UInt64BackedEnum.Max);
 
         builder.ToString().Should().Be(expected);
     }

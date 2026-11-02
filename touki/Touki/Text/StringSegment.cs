@@ -388,7 +388,13 @@ public readonly struct StringSegment :
     {
         return value.Length == 0
             || (value._length <= _length
-                && string.Compare(_value, _startIndex + _length - value._length, value._value, value._startIndex, value._length, comparison) == 0);
+                && string.Compare(
+                    _value,
+                    _startIndex + _length - value._length,
+                    value._value,
+                    value._startIndex,
+                    value._length,
+                    comparison) == 0);
     }
 
     /// <summary>
@@ -850,13 +856,41 @@ public readonly struct StringSegment :
         StringComparison.Ordinal => AsSpan().CompareOrdinalAsString(other),
         StringComparison.OrdinalIgnoreCase => CompareToOrdinalIgnoreCase(other.Value, other._startIndex, other._length),
         StringComparison.CurrentCulture =>
-            CultureInfo.CurrentCulture.CompareInfo.Compare(Value, _startIndex, _length, other.Value, other._startIndex, other._length, CompareOptions.None),
+            CultureInfo.CurrentCulture.CompareInfo.Compare(
+                Value,
+                _startIndex,
+                _length,
+                other.Value,
+                other._startIndex,
+                other._length,
+                CompareOptions.None),
         StringComparison.CurrentCultureIgnoreCase =>
-            CultureInfo.CurrentCulture.CompareInfo.Compare(Value, _startIndex, _length, other.Value, other._startIndex, other._length, CompareOptions.IgnoreCase),
+            CultureInfo.CurrentCulture.CompareInfo.Compare(
+                Value,
+                _startIndex,
+                _length,
+                other.Value,
+                other._startIndex,
+                other._length,
+                CompareOptions.IgnoreCase),
         StringComparison.InvariantCulture =>
-            CultureInfo.InvariantCulture.CompareInfo.Compare(Value, _startIndex, _length, other.Value, other._startIndex, other._length, CompareOptions.None),
+            CultureInfo.InvariantCulture.CompareInfo.Compare(
+                Value,
+                _startIndex,
+                _length,
+                other.Value,
+                other._startIndex,
+                other._length,
+                CompareOptions.None),
         StringComparison.InvariantCultureIgnoreCase =>
-            CultureInfo.InvariantCulture.CompareInfo.Compare(Value, _startIndex, _length, other.Value, other._startIndex, other._length, CompareOptions.IgnoreCase),
+            CultureInfo.InvariantCulture.CompareInfo.Compare(
+                Value,
+                _startIndex,
+                _length,
+                other.Value,
+                other._startIndex,
+                other._length,
+                CompareOptions.IgnoreCase),
         _ => throw new ArgumentOutOfRangeException(nameof(comparison), "Unsupported comparison type."),
     };
 
@@ -876,7 +910,14 @@ public readonly struct StringSegment :
         StringComparison.InvariantCulture =>
             CultureInfo.InvariantCulture.CompareInfo.Compare(_value, _startIndex, _length, other, 0, other.Length, CompareOptions.None),
         StringComparison.InvariantCultureIgnoreCase =>
-            CultureInfo.InvariantCulture.CompareInfo.Compare(_value, _startIndex, _length, other, 0, other.Length, CompareOptions.IgnoreCase),
+            CultureInfo.InvariantCulture.CompareInfo.Compare(
+                _value,
+                _startIndex,
+                _length,
+                other,
+                0,
+                other.Length,
+                CompareOptions.IgnoreCase),
         _ => throw new ArgumentOutOfRangeException(nameof(comparison), "Unsupported comparison type."),
     };
 

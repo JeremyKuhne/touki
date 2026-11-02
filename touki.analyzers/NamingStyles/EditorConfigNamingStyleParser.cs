@@ -232,8 +232,8 @@ internal static class EditorConfigNamingStyleParser
         string prefix = $"{SymbolsPrefix}{symbolName}.";
 
         if (!TryParseSymbolKinds(
-                GetValue(options, prefix + "applicable_kinds"),
-                out ImmutableArray<SymbolSpecification.SymbolKindOrTypeKind> kinds)
+            GetValue(options, prefix + "applicable_kinds"),
+            out ImmutableArray<SymbolSpecification.SymbolKindOrTypeKind> kinds)
             || !TryParseAccessibilities(
                 GetValue(options, prefix + "applicable_accessibilities"),
                 out ImmutableArray<Accessibility> accessibilities)

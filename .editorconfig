@@ -92,6 +92,15 @@ dotnet_diagnostic.TOUKI0028.severity = warning
 # literal set: boolean, null, and default.
 dotnet_diagnostic.TOUKI0029.severity = warning
 
+# TOUKI0042 ships disabled because statement layout is a house style.
+# Require consecutive statements to start on separate lines.
+dotnet_diagnostic.TOUKI0042.severity = warning
+
+# TOUKI0043 ships disabled because parameter and argument wrapping is a house style.
+# Lists may stay on one line within 140 characters; otherwise indent every item.
+dotnet_diagnostic.TOUKI0043.severity = warning
+dotnet_code_quality.TOUKI0043.max_line_length = 140
+
 # TOUKI0032 ships as a warning. Touki treats warnings as errors, so Path.Combine fails every
 # first-party project build.
 dotnet_diagnostic.TOUKI0032.severity = warning

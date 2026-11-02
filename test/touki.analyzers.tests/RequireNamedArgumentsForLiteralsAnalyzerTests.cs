@@ -147,7 +147,10 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "floating_point").ConfigureAwait(continueOnCapturedContext: false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            source,
+            "floating_point").ConfigureAwait(
+                continueOnCapturedContext: false);
 
         diagnostics.Should().HaveCount(3);
         diagnostics.Select(diagnostic => diagnostic.GetMessage()).Should().OnlyContain(
@@ -316,7 +319,10 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "integer, typo").ConfigureAwait(continueOnCapturedContext: false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            source,
+            "integer, typo").ConfigureAwait(
+                continueOnCapturedContext: false);
 
         diagnostics.Should().ContainSingle()
             .Which.GetMessage().Should().Contain("enabled:");

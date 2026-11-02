@@ -211,7 +211,14 @@ internal sealed partial class CompiledGlobStrategy
                             if (_useMSBuildAllDotInput
                                 && WorkInput + literalLength > _firstLength
                                     || WorkInput + literalLength > _totalLength
-                                    || !LiteralMatchesAt(_first, _second, WorkInput, _program.Slice(programIndex + 2, literalLength), _kind))
+                                    || !LiteralMatchesAt(
+                                        _first,
+                                        _second,
+                                        WorkInput,
+                                        _program.Slice(
+                                            programIndex + 2,
+                                            literalLength),
+                                        _kind))
                             {
                                 break;
                             }
@@ -761,7 +768,15 @@ internal sealed partial class CompiledGlobStrategy
                             return true;
                         }
 
-                        if (BuildRangesWithAlternativeAndBlock(altBodyStart, altBodyEnd, programIndex, afterEnd, _rest[..restCount], _work, out WorkCount))
+                        if (BuildRangesWithAlternativeAndBlock(
+                            altBodyStart,
+                            altBodyEnd,
+                            programIndex,
+                            afterEnd,
+                            _rest[
+                                ..restCount],
+                            _work,
+                            out WorkCount))
                         {
                             _work[1].MinProgressInput = savedInput;
                             Head = 0;
@@ -793,7 +808,15 @@ internal sealed partial class CompiledGlobStrategy
                             return true;
                         }
 
-                        if (BuildRangesWithAlternativeAndBlock(altBodyStart, altBodyEnd, programIndex, afterEnd, _rest[..restCount], _work, out WorkCount))
+                        if (BuildRangesWithAlternativeAndBlock(
+                            altBodyStart,
+                            altBodyEnd,
+                            programIndex,
+                            afterEnd,
+                            _rest[
+                                ..restCount],
+                            _work,
+                            out WorkCount))
                         {
                             _work[1].MinProgressInput = savedInput;
                             Head = 0;

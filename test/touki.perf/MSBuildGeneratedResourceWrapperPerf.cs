@@ -120,11 +120,15 @@ public class MSBuildGeneratedResourceWrapperPerf
         internal static string AbortingBuild => GetResourceString(nameof(AbortingBuild));
         internal static string BuildCheck_BC0106_MessageFmt => GetResourceString(nameof(BuildCheck_BC0106_MessageFmt));
         internal static string ConflictingValuesOfMSBuildToolsPath => GetResourceString(nameof(ConflictingValuesOfMSBuildToolsPath));
-        internal static string IllFormedPropertyCloseParenthesisInCondition => GetResourceString(nameof(IllFormedPropertyCloseParenthesisInCondition));
-        internal static string OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove => GetResourceString(nameof(OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove));
-        internal static string ProjectImportSkippedExpressionEvaluatedToEmpty => GetResourceString(nameof(ProjectImportSkippedExpressionEvaluatedToEmpty));
+        internal static string IllFormedPropertyCloseParenthesisInCondition => GetResourceString(
+            nameof(IllFormedPropertyCloseParenthesisInCondition));
+        internal static string OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove => GetResourceString(
+            nameof(OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove));
+        internal static string ProjectImportSkippedExpressionEvaluatedToEmpty => GetResourceString(
+            nameof(ProjectImportSkippedExpressionEvaluatedToEmpty));
         internal static string SdkEnvironmentVariableAlreadySetBySdk => GetResourceString(nameof(SdkEnvironmentVariableAlreadySetBySdk));
-        internal static string UsingDifferentToolsVersionFromProjectFile => GetResourceString(nameof(UsingDifferentToolsVersionFromProjectFile));
+        internal static string UsingDifferentToolsVersionFromProjectFile => GetResourceString(
+            nameof(UsingDifferentToolsVersionFromProjectFile));
 
         internal static void Release() => s_resourceManager?.ReleaseAllResources();
 
@@ -147,11 +151,15 @@ public class MSBuildGeneratedResourceWrapperPerf
         internal static string AbortingBuild => GetResourceString(nameof(AbortingBuild));
         internal static string BuildCheck_BC0106_MessageFmt => GetResourceString(nameof(BuildCheck_BC0106_MessageFmt));
         internal static string ConflictingValuesOfMSBuildToolsPath => GetResourceString(nameof(ConflictingValuesOfMSBuildToolsPath));
-        internal static string IllFormedPropertyCloseParenthesisInCondition => GetResourceString(nameof(IllFormedPropertyCloseParenthesisInCondition));
-        internal static string OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove => GetResourceString(nameof(OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove));
-        internal static string ProjectImportSkippedExpressionEvaluatedToEmpty => GetResourceString(nameof(ProjectImportSkippedExpressionEvaluatedToEmpty));
+        internal static string IllFormedPropertyCloseParenthesisInCondition => GetResourceString(
+            nameof(IllFormedPropertyCloseParenthesisInCondition));
+        internal static string OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove => GetResourceString(
+            nameof(OM_ItemsOutsideTargetMustHaveIncludeOrUpdateOrRemove));
+        internal static string ProjectImportSkippedExpressionEvaluatedToEmpty => GetResourceString(
+            nameof(ProjectImportSkippedExpressionEvaluatedToEmpty));
         internal static string SdkEnvironmentVariableAlreadySetBySdk => GetResourceString(nameof(SdkEnvironmentVariableAlreadySetBySdk));
-        internal static string UsingDifferentToolsVersionFromProjectFile => GetResourceString(nameof(UsingDifferentToolsVersionFromProjectFile));
+        internal static string UsingDifferentToolsVersionFromProjectFile => GetResourceString(
+            nameof(UsingDifferentToolsVersionFromProjectFile));
 
         internal static void Release() => s_resourceManager?.ReleaseAllResources();
 

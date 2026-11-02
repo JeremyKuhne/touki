@@ -34,7 +34,8 @@ internal static class Program
             "StringSegment" => StringSegmentTarget.Run,
             "ValueStringBuilder" => ValueStringBuilderTarget.Run,
             "GlobSpecification" => GlobSpecificationTarget.Run,
-            _ => throw new ArgumentException($"Unknown fuzz target '{target}'. Set FUZZ_TARGET to 'SpanReader', 'SpanWriter', 'RunLength', 'StringSegment', 'ValueStringBuilder', or 'GlobSpecification'.")
+            _ => throw new ArgumentException(
+                $"Unknown fuzz target '{target}'. Set FUZZ_TARGET to 'SpanReader', 'SpanWriter', 'RunLength', 'StringSegment', 'ValueStringBuilder', or 'GlobSpecification'.")
         };
 
         if (string.Equals(Environment.GetEnvironmentVariable("FUZZ_MODE"), "sweep", StringComparison.OrdinalIgnoreCase))

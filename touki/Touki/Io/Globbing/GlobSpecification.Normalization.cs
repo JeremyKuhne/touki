@@ -47,13 +47,13 @@ public sealed partial class GlobSpecification
         {
             ReadOnlySpan<char> source = pattern.AsSpan();
             if (!AnalyzeFileSystemGlobbing(
-                    source,
-                    separator,
-                    out bool needsRewrite,
-                    out int invalidParentPosition,
-                    out starCount,
-                    out firstStarPosition,
-                    out hasAsteriskRun))
+                source,
+                separator,
+                out bool needsRewrite,
+                out int invalidParentPosition,
+                out starCount,
+                out firstStarPosition,
+                out hasAsteriskRun))
             {
                 rewritten = false;
                 error = new GlobCompileError(

@@ -75,7 +75,8 @@ public class MultiSuffixGlobStrategyTests
                 || GlobSpecification.Compile("**/*.md", GlobDialect.Bash, GlobOptions.AllowGlobStar)
                     .MatchCore(prefix.AsSpan(), fileName.AsSpan());
 
-        extGlob.Should().Be(unionOfSuffixes,
+        extGlob.Should().Be(
+            unionOfSuffixes,
             $"prefix='{prefix}' fileName='{fileName}'");
     }
 
@@ -106,7 +107,10 @@ public class MultiSuffixGlobStrategyTests
     [DataRow("**/@(*.cs|README)", "src/", "README", true)]
     [DataRow("**/@(*.cs|README)", "src/", "foo.cs", true)]
     public void MatchCore_RejectedShapesStillMatchCorrectly(
-        string pattern, string prefix, string fileName, bool expected) =>
+        string pattern,
+        string prefix,
+        string fileName,
+        bool expected) =>
             MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
@@ -194,6 +198,9 @@ public class MultiSuffixGlobStrategyTests
     [DataRow("**/@(*foo|@(bar))", "src/", "bar", true)]
     [DataRow("**/@(*foo|@(bar))", "src/", "baz", false)]
     public void MatchCore_NonSpecializedShapesStillMatch(
-        string pattern, string prefix, string fileName, bool expected) =>
+        string pattern,
+        string prefix,
+        string fileName,
+        bool expected) =>
             MatchCore(pattern, prefix, fileName).Should().Be(expected);
 }

@@ -499,7 +499,13 @@ public class StringsTests
     public void GenerateRandomStrings_MinEqualsMax_ReturnsExactLength()
     {
         int exactLength = 8;
-        List<string> result = string.GenerateRandomStrings(50, exactLength, exactLength, allowSurrogatePairs: false, random: new Random(123));
+        List<string> result = string.GenerateRandomStrings(
+            50,
+            exactLength,
+            exactLength,
+            allowSurrogatePairs: false,
+            random: new Random(
+                123));
 
         foreach (string s in result)
         {

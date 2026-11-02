@@ -337,7 +337,10 @@ public class UseDisposableBaseAnalyzerTests
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, "Resource.g.cs").ConfigureAwait(continueOnCapturedContext: false);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            source,
+            "Resource.g.cs").ConfigureAwait(
+                continueOnCapturedContext: false);
 
         diagnostics.Should().BeEmpty();
     }

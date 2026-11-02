@@ -237,7 +237,9 @@ public class GlobAdditionalCoverageTests
     // Contains matcher leading-dot path with input shorter than needle returns false.
     [DataRow("*.foobar*", ".foo", false)]
     public void ContainsGlobStrategy_LeadingDot_InputShorterThanNeedle(
-        string pattern, string input, bool expected) =>
+        string pattern,
+        string input,
+        bool expected) =>
             GlobSpecification.Compile(pattern, GlobDialect.Posix).IsMatch(input).Should().Be(expected);
 
     [TestMethod]
@@ -263,7 +265,9 @@ public class GlobAdditionalCoverageTests
     [DataRow("*.FOO*", ".foobar", true)]
     [DataRow("*.\u00E9*", ".\u00C9oo", false)]  // non-ASCII does not fold
     public void ContainsGlobStrategy_PosixIgnoreCase_LeadingDot_AsciiOnlyFold(
-        string pattern, string input, bool expected) =>
+        string pattern,
+        string input,
+        bool expected) =>
             GlobSpecification.Compile(pattern, GlobDialect.Posix, GlobOptions.IgnoreCase)
                 .IsMatch(input).Should().Be(expected);
 

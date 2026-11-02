@@ -680,7 +680,8 @@ public class MakeMemberReadonlyCodeFixTests
             fixAllScope: FixAllScope.Solution,
             addLinkedProject: true,
             primaryProjectSources: [("PrimaryPooled.cs", "PrimaryPooled.cs", primaryDeclaration)],
-            linkedProjectSources: [("LinkedPooled.cs", "LinkedPooled.cs", linkedDeclaration)]).ConfigureAwait(continueOnCapturedContext: false);
+            linkedProjectSources: [("LinkedPooled.cs", "LinkedPooled.cs", linkedDeclaration)]).ConfigureAwait(
+                continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
         result.CompilerErrors.Should().BeEmpty();
@@ -1067,7 +1068,10 @@ public class MakeMemberReadonlyCodeFixTests
             [("Use.cs", "Use.cs", source)],
             DefensiveCopyAnalyzer.DefensiveCopyId,
             fixAll: false,
-            analyzerReferences: [new TestGeneratorReference(new SourceGenerator(generated))]).ConfigureAwait(continueOnCapturedContext: false);
+            analyzerReferences: [new TestGeneratorReference(
+                new SourceGenerator(
+                    generated))]).ConfigureAwait(
+                        continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(1);
         result.CodeFixActionOffered.Should().BeFalse();
@@ -1101,7 +1105,10 @@ public class MakeMemberReadonlyCodeFixTests
             [("Use.cs", "Use.cs", source)],
             DefensiveCopyAnalyzer.DefensiveCopyId,
             fixAll: false,
-            analyzerReferences: [new TestGeneratorReference(new SourceGenerator(generated))]).ConfigureAwait(continueOnCapturedContext: false);
+            analyzerReferences: [new TestGeneratorReference(
+                new SourceGenerator(
+                    generated))]).ConfigureAwait(
+                        continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(1);
         result.CodeFixActionOffered.Should().BeFalse();

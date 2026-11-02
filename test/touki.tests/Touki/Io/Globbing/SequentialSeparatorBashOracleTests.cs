@@ -49,7 +49,11 @@ public class SequentialSeparatorBashOracleTests
         }
 
         bool oracle = BashInterop.Matches(bashPath, pattern, input);
-        bool actual = GlobSpecification.Compile(pattern, GlobDialect.Bash, GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob).IsMatch(input);
+        bool actual = GlobSpecification.Compile(
+            pattern,
+            GlobDialect.Bash,
+            GlobOptions.AllowGlobStar | GlobOptions.AllowExtGlob).IsMatch(input);
+
         actual.Should().Be(
             oracle,
             because: $"GlobSpecification(Bash) and bash [[ == ]] must agree on pattern '{pattern}' vs input '{input}'");

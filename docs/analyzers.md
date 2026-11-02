@@ -4,7 +4,7 @@
 `KlutzyNinja.Touki` depends on that package, so adding the main package reference is still
 enough: the rules start running on the next build and in the IDE. Reference the analyzer
 package directly when you want the rules without the Touki runtime library. TOUKI0005,
-TOUKI0012, TOUKI0022, TOUKI0024, TOUKI0027, TOUKI0028, TOUKI0029, and TOUKI0041 ship disabled
+TOUKI0012, TOUKI0022, TOUKI0024, TOUKI0027, TOUKI0028, TOUKI0029, TOUKI0041, TOUKI0042, and TOUKI0043 ship disabled
 unless a project opts in.
 
 The analyzer package is versioned independently from `KlutzyNinja.Touki`.
@@ -45,6 +45,8 @@ what it actually is.
 | [TOUKI0032](#touki0032) | Use `Path.Join` instead of `Path.Combine` | Reliability | Warning | - | - |
 | [TOUKI0033](#touki0033) | Avoid `Path.IsPathRooted` | Reliability | Warning | - | - |
 | [TOUKI0041](#touki0041) | Naming rule violation | Naming | **Disabled** | Yes | - |
+| [TOUKI0042](#touki0042) | Use one statement per line | Maintainability | **Disabled** | - | - |
+| [TOUKI0043](#touki0043) | Format parameter and argument lists | Maintainability | **Disabled** | Yes | - |
 
 Rules that require an attribute only fire on code that applies it. TOUKI0012 requires
 the compilation to reference `Touki.DisposableBase`. TOUKI0031 requires C# 10 or later
@@ -945,6 +947,92 @@ with the same `#if`. A target that does not resolve is reported as IDE0076.
 
 ---
 
+## TOUKI0042
+
+**Use one statement per line.** Reports the first token of a statement when the previous
+statement in the same block, switch section, or top-level program ends on that physical line.
+
+```csharp
+Read(); Write(); // TOUKI0042 on Write
+
+// After the fix:
+Read();
+Write();
+```
+
+Only consecutive statements are checked. Inline embedded statements (`if (ready) Run();`),
+single-statement methods, lambdas, and accessors remain allowed. Loop-header semicolons,
+multi-variable declarations, and expression-bodied members are not violations. Brace placement
+is a separate concern handled by TOUKI0027.
+
+The rule ships disabled. Enable it with:
+
+```ini
+dotnet_diagnostic.TOUKI0042.severity = warning
+```
+
+Touki enables it as a warning except in ported BCL polyfills. There are no rule-specific options.
+The fixer preserves comments and surrounding layout, uses existing indentation where possible,
+and follows `indent_style`, `indent_size`, `tab_width`, and `end_of_line`. Without an
+`end_of_line` setting, it preserves the source's line endings, defaulting to LF for a single-line file.
+Fix All applies the independent whitespace edits together per document.
+
+Diagnostics remain available, but fixes are withheld for linked files and inside interpolated
+strings, where changing physical lines requires additional cross-context or language-version checks.
+
+## TOUKI0043
+
+**Format parameter and argument lists.** A list may stay on one physical line within the
+configured length limit. Once there is a line break before, between, or after its items,
+every item must start on its own line, one indentation level beyond the opening delimiter's
+line. The closing delimiter stays after the last item.
+
+```csharp
+Send(first,
+    second); // TOUKI0043
+
+Send(
+    first,
+    second);
+```
+
+The rule covers declaration parameters, including constructors, delegates, primary constructors,
+parenthesized lambdas, and indexers; call and constructor arguments; indexing arguments; and
+attribute arguments. Generic type lists, tuples, function-pointer signatures, empty lists,
+and the `nameof` operator are not checked.
+
+Line breaks inside an argument alone do not require its containing list to wrap. This remains
+allowed when the inner list is correctly indented:
+
+```csharp
+Send(Build(
+    first,
+    second), options);
+```
+
+The rule ships disabled. Touki enables it as a warning except in ported BCL polyfills.
+
+```ini
+dotnet_diagnostic.TOUKI0043.severity = warning
+dotnet_code_quality.TOUKI0043.max_line_length = 140
+```
+
+The maximum length uses the first positive integer from the rule-specific option,
+the standard `max_line_length`, or 140. Invalid and non-positive values fall through.
+The limit includes indentation and other source on the physical line, not just the list.
+It initiates wrapping for a single-line list; it does not split individual long arguments or
+collapse an already-wrapped list.
+
+Indentation follows `indent_style`, `indent_size`, and `tab_width`, with four spaces as the fallback.
+The fixer wraps the list and uses Roslyn's formatter for indentation within the affected syntax.
+It preserves source line endings unless `end_of_line` is configured. Fix All batches sibling and
+nested lists per document and settles nested indentation before returning the result.
+
+Linked files are changed together only when their project contexts agree on configuration and output.
+The diagnostic is available when a fix cannot safely be offered. Fixes are withheld for conflicting
+linked contexts, interpolated-string contexts, comments or directives at list boundaries, and layouts
+exceeding the 256-level fix budget.
+
 ## Configuring severity
 
 Every rule responds to the standard `.editorconfig` severity keys, and can be scoped to a
@@ -980,6 +1068,8 @@ turned off just for that folder.
 | TOUKI0031 | Use `WriteFormatted` and add its import | Yes |
 | TOUKI0032 | Replace `Path.Combine` with the appropriate `Path.Join` | Yes |
 | TOUKI0041 | Rename the symbol and its references | No |
+| TOUKI0042 | Move statement to a new line | Yes |
+| TOUKI0043 | Wrap and indent every parameter or argument | Yes |
 
 Rules not listed here do not provide a code fix.
 
@@ -1007,6 +1097,7 @@ Two rules are opt-in through public attributes in the `Touki` namespace:
 
 | Release | Rules added |
 |---------|-------------|
+| Unshipped | TOUKI0042, TOUKI0043 |
 | 0.11.0 | TOUKI0005 |
 | 0.10.0 | TOUKI0027, TOUKI0028, TOUKI0029 |
 | 0.4.0 | TOUKI0001, TOUKI0002, TOUKI0003, TOUKI0004, TOUKI0010 |

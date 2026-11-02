@@ -117,27 +117,27 @@ public sealed partial class MakeMemberReadonlyCodeFixProvider : CodeFixProvider
                     when semanticModel.GetOperation(invocation, cancellationToken) is IInvocationOperation operation
                         && operation.Instance?.Syntax.Span == diagnosticSpan
                         && IsCurrentDefensiveCopyAccess(
-                        operation.Instance,
-                        operation.TargetMethod,
-                        semanticModel.GetEnclosingSymbol(invocation.SpanStart, cancellationToken)):
+                            operation.Instance,
+                            operation.TargetMethod,
+                            semanticModel.GetEnclosingSymbol(invocation.SpanStart, cancellationToken)):
                     return operation.TargetMethod;
                 case ElementAccessExpressionSyntax elementAccess
                     when semanticModel.GetOperation(elementAccess, cancellationToken)
                         is IPropertyReferenceOperation operation
                         && operation.Instance?.Syntax.Span == diagnosticSpan
                         && IsCurrentDefensiveCopyAccess(
-                        operation.Instance,
-                        operation.Property,
-                        semanticModel.GetEnclosingSymbol(elementAccess.SpanStart, cancellationToken)):
+                            operation.Instance,
+                            operation.Property,
+                            semanticModel.GetEnclosingSymbol(elementAccess.SpanStart, cancellationToken)):
                     return operation.Property;
                 case MemberAccessExpressionSyntax memberAccess
                     when semanticModel.GetOperation(memberAccess, cancellationToken)
                         is IPropertyReferenceOperation operation
                         && operation.Instance?.Syntax.Span == diagnosticSpan
                         && IsCurrentDefensiveCopyAccess(
-                        operation.Instance,
-                        operation.Property,
-                        semanticModel.GetEnclosingSymbol(memberAccess.SpanStart, cancellationToken)):
+                            operation.Instance,
+                            operation.Property,
+                            semanticModel.GetEnclosingSymbol(memberAccess.SpanStart, cancellationToken)):
                     return operation.Property;
                 case StatementSyntax:
                     return null;

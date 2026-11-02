@@ -55,7 +55,8 @@ internal static class CodeFixTestHarness
         AnalyzerOptions analyzerOptions = RoslynTestEnvironment.CreateAnalyzerOptions(options);
 
         CompilationWithAnalyzers withAnalyzers = compilation.WithAnalyzers([analyzer], analyzerOptions);
-        ImmutableArray<Diagnostic> diagnostics = await withAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(continueOnCapturedContext: false);
+        ImmutableArray<Diagnostic> diagnostics = await withAnalyzers.GetAnalyzerDiagnosticsAsync().ConfigureAwait(
+            continueOnCapturedContext: false);
 
         if (GetFirstDiagnostic(diagnostics, diagnosticId) is not { } target)
         {

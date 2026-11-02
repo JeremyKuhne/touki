@@ -186,7 +186,23 @@ public class RawResourceReaderTests
             ("float", 3.14159f, ResourceTypeCode.Single, PrimitiveBytes(w => w.Write(3.14159f))),
             ("double", 2.718281828, ResourceTypeCode.Double, PrimitiveBytes(w => w.Write(2.718281828))),
             ("decimal", 12345.6789m, ResourceTypeCode.Decimal, PrimitiveBytes(w => w.Write(12345.6789m))),
-            ("datetime", new DateTime(2026, 7, 7, 1, 2, 3, DateTimeKind.Utc), ResourceTypeCode.DateTime, PrimitiveBytes(w => w.Write(new DateTime(2026, 7, 7, 1, 2, 3, DateTimeKind.Utc).ToBinary()))),
+            ("datetime", new DateTime(
+                2026,
+                7,
+                7,
+                1,
+                2,
+                3,
+                DateTimeKind.Utc), ResourceTypeCode.DateTime, PrimitiveBytes(
+                    w => w.Write(
+                        new DateTime(
+                            2026,
+                            7,
+                            7,
+                            1,
+                            2,
+                            3,
+                            DateTimeKind.Utc).ToBinary()))),
             ("timespan", TimeSpan.FromMinutes(90), ResourceTypeCode.TimeSpan, PrimitiveBytes(w => w.Write(TimeSpan.FromMinutes(90).Ticks))),
         ];
 

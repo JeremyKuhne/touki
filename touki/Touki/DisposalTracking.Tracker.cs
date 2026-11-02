@@ -53,7 +53,8 @@ public static partial class DisposalTracking
             if (_throwIfFinalized)
             {
                 // Not asserting here as assertions take down test runs.
-                throw new InvalidOperationException($"Did not dispose `{GetFriendlyTypeName(GetType())}`. Originating stack:\n{_originatingStack}");
+                throw new InvalidOperationException($"Did not dispose `{GetFriendlyTypeName(
+                    GetType())}`. Originating stack:\n{_originatingStack}");
             }
         }
 

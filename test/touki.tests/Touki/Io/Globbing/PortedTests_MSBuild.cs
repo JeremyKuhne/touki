@@ -110,16 +110,25 @@ public class PortedTests_MSBuild
         // case-insensitive by default.
         matcher.IsMatch(input).Should().Be(expected, "pattern '{0}' vs input '{1}'", pattern, input);
         matcher.IsMatch(input.ToUpperInvariant()).Should().Be(
-            expected, "pattern '{0}' vs uppercased input '{1}'", pattern, input);
+            expected,
+            "pattern '{0}' vs uppercased input '{1}'",
+            pattern,
+            input);
 
         GlobSpecification upperPatternMatcher = GlobSpecification.Compile(
-            pattern.ToUpperInvariant(), GlobDialect.MSBuild);
+            pattern.ToUpperInvariant(),
+            GlobDialect.MSBuild);
 
         upperPatternMatcher.IsMatch(input).Should().Be(
-            expected, "uppercased pattern '{0}' vs input '{1}'", pattern, input);
+            expected,
+            "uppercased pattern '{0}' vs input '{1}'",
+            pattern,
+            input);
 
         upperPatternMatcher.IsMatch(input.ToUpperInvariant()).Should().Be(
-            expected, "uppercased pattern and input '{0}'", pattern);
+            expected,
+            "uppercased pattern and input '{0}'",
+            pattern);
     }
 
     // From FileMatcher_Tests.GetFilesPatternMatching. Upstream asserts a match

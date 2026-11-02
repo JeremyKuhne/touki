@@ -151,30 +151,78 @@ public unsafe class EnumExtensionsInliningPerf
 
     private static bool AreFlagsSet_Default<T>(T value, T flags) where T : unmanaged, Enum
     {
-        if (sizeof(T) == sizeof(byte)) { byte f = *(byte*)&flags; return (*(byte*)&value & f) == f; }
-        else if (sizeof(T) == sizeof(short)) { short f = *(short*)&flags; return (*(short*)&value & f) == f; }
-        else if (sizeof(T) == sizeof(int)) { int f = *(int*)&flags; return (*(int*)&value & f) == f; }
-        else if (sizeof(T) == sizeof(long)) { long f = *(long*)&flags; return (*(long*)&value & f) == f; }
+        if (sizeof(T) == sizeof(byte))
+        {
+            byte f = *(byte*)&flags;
+            return (*(byte*)&value & f) == f;
+        }
+        else if (sizeof(T) == sizeof(short))
+        {
+            short f = *(short*)&flags;
+            return (*(short*)&value & f) == f;
+        }
+        else if (sizeof(T) == sizeof(int))
+        {
+            int f = *(int*)&flags;
+            return (*(int*)&value & f) == f;
+        }
+        else if (sizeof(T) == sizeof(long))
+        {
+            long f = *(long*)&flags;
+            return (*(long*)&value & f) == f;
+        }
         else { throw new InvalidOperationException(); }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool AreFlagsSet_Aggressive<T>(T value, T flags) where T : unmanaged, Enum
     {
-        if (sizeof(T) == sizeof(byte)) { byte f = *(byte*)&flags; return (*(byte*)&value & f) == f; }
-        else if (sizeof(T) == sizeof(short)) { short f = *(short*)&flags; return (*(short*)&value & f) == f; }
-        else if (sizeof(T) == sizeof(int)) { int f = *(int*)&flags; return (*(int*)&value & f) == f; }
-        else if (sizeof(T) == sizeof(long)) { long f = *(long*)&flags; return (*(long*)&value & f) == f; }
+        if (sizeof(T) == sizeof(byte))
+        {
+            byte f = *(byte*)&flags;
+            return (*(byte*)&value & f) == f;
+        }
+        else if (sizeof(T) == sizeof(short))
+        {
+            short f = *(short*)&flags;
+            return (*(short*)&value & f) == f;
+        }
+        else if (sizeof(T) == sizeof(int))
+        {
+            int f = *(int*)&flags;
+            return (*(int*)&value & f) == f;
+        }
+        else if (sizeof(T) == sizeof(long))
+        {
+            long f = *(long*)&flags;
+            return (*(long*)&value & f) == f;
+        }
         else { throw new InvalidOperationException(); }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool AreFlagsSet_NoInline<T>(T value, T flags) where T : unmanaged, Enum
     {
-        if (sizeof(T) == sizeof(byte)) { byte f = *(byte*)&flags; return (*(byte*)&value & f) == f; }
-        else if (sizeof(T) == sizeof(short)) { short f = *(short*)&flags; return (*(short*)&value & f) == f; }
-        else if (sizeof(T) == sizeof(int)) { int f = *(int*)&flags; return (*(int*)&value & f) == f; }
-        else if (sizeof(T) == sizeof(long)) { long f = *(long*)&flags; return (*(long*)&value & f) == f; }
+        if (sizeof(T) == sizeof(byte))
+        {
+            byte f = *(byte*)&flags;
+            return (*(byte*)&value & f) == f;
+        }
+        else if (sizeof(T) == sizeof(short))
+        {
+            short f = *(short*)&flags;
+            return (*(short*)&value & f) == f;
+        }
+        else if (sizeof(T) == sizeof(int))
+        {
+            int f = *(int*)&flags;
+            return (*(int*)&value & f) == f;
+        }
+        else if (sizeof(T) == sizeof(long))
+        {
+            long f = *(long*)&flags;
+            return (*(long*)&value & f) == f;
+        }
         else { throw new InvalidOperationException(); }
     }
 
@@ -209,18 +257,25 @@ public unsafe class EnumExtensionsInliningPerf
 
     private static bool IsOnlyOneFlagSet_Default<T>(T value, T flags) where T : unmanaged, Enum
     {
-        if (sizeof(T) == sizeof(byte)) { int v = *(byte*)&value & *(byte*)&flags; return v != 0 && (v & (v - 1)) == 0; }
+        if (sizeof(T) == sizeof(byte))
+        {
+            int v = *(byte*)&value & *(byte*)&flags;
+            return v != 0 && (v & (v - 1)) == 0;
+        }
         else if (sizeof(T) == sizeof(short))
         {
-            int v = *(short*)&value & *(short*)&flags; return v != 0 && (v & (v - 1)) == 0;
+            int v = *(short*)&value & *(short*)&flags;
+            return v != 0 && (v & (v - 1)) == 0;
         }
         else if (sizeof(T) == sizeof(int))
         {
-            int v = *(int*)&value & *(int*)&flags; return v != 0 && (v & (v - 1)) == 0;
+            int v = *(int*)&value & *(int*)&flags;
+            return v != 0 && (v & (v - 1)) == 0;
         }
         else if (sizeof(T) == sizeof(long))
         {
-            long v = *(long*)&value & *(long*)&flags; return v != 0 && (v & (v - 1)) == 0;
+            long v = *(long*)&value & *(long*)&flags;
+            return v != 0 && (v & (v - 1)) == 0;
         }
         else { throw new InvalidOperationException(); }
     }
@@ -228,18 +283,25 @@ public unsafe class EnumExtensionsInliningPerf
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsOnlyOneFlagSet_Aggressive<T>(T value, T flags) where T : unmanaged, Enum
     {
-        if (sizeof(T) == sizeof(byte)) { int v = *(byte*)&value & *(byte*)&flags; return v != 0 && (v & (v - 1)) == 0; }
+        if (sizeof(T) == sizeof(byte))
+        {
+            int v = *(byte*)&value & *(byte*)&flags;
+            return v != 0 && (v & (v - 1)) == 0;
+        }
         else if (sizeof(T) == sizeof(short))
         {
-            int v = *(short*)&value & *(short*)&flags; return v != 0 && (v & (v - 1)) == 0;
+            int v = *(short*)&value & *(short*)&flags;
+            return v != 0 && (v & (v - 1)) == 0;
         }
         else if (sizeof(T) == sizeof(int))
         {
-            int v = *(int*)&value & *(int*)&flags; return v != 0 && (v & (v - 1)) == 0;
+            int v = *(int*)&value & *(int*)&flags;
+            return v != 0 && (v & (v - 1)) == 0;
         }
         else if (sizeof(T) == sizeof(long))
         {
-            long v = *(long*)&value & *(long*)&flags; return v != 0 && (v & (v - 1)) == 0;
+            long v = *(long*)&value & *(long*)&flags;
+            return v != 0 && (v & (v - 1)) == 0;
         }
         else { throw new InvalidOperationException(); }
     }
