@@ -271,7 +271,7 @@ internal sealed class ResourceInput : IEquatable<ResourceInput>
             new LinePositionSpan(point, point));
     }
 
-            /// <inheritdoc/>
+    /// <inheritdoc/>
     public bool Equals(ResourceInput? other)
     {
         return ReferenceEquals(this, other)

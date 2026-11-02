@@ -595,9 +595,9 @@ dotnet_code_quality.TOUKI0027.require_blank_line_after_multiline_statement = tru
 `require_blank_line_after_closing_brace` adds a blank line after a brace-led closing line,
 including endings such as `}`, `};`, `},`, `});`, and `}];`. Attached closing delimiters and
 punctuation stay together, and trailing comments stay before the inserted blank line.
-The next nonblank content line suppresses the requirement only when it contains a standalone `}`
-apart from whitespace, or when there is no further content before EOF. A following `};` or `});`
-does not suppress it.
+A blank line is required only when the following content line has the same indentation as
+the closing line. No new blank line is required before differently indented content, including an
+outer closing delimiter or an indented continuation, or at EOF. Existing blank lines are preserved.
 
 Continuation clauses (`else`, `catch`, `finally`, and `do`/`while`) and sibling accessors retain
 their adjacency exceptions. Continuation clauses are placed on the next line without an
@@ -611,8 +611,13 @@ For a switch expression ending in `};`, the semicolon is the terminator.
 Both blank-line policies skip preprocessor-only and inactive lines without carrying a requirement
 across `#else` or `#elif`.
 
-`allow_single_line_blocks` permits any complete structural brace pair to stay on one line. The
-maximum physical line length uses the first positive integer from this list:
+`allow_single_line_blocks` permits a complete structural brace pair to stay on one line.
+Paired blocks must agree: if any braced branch of an `if`/`else if`/`else` chain or a
+`try`/`catch`/`finally` group is multiline or exceeds the compact-line limit, every braced branch
+in that group is expanded. Entirely compact groups remain compact. This does not add braces to
+unbraced statements.
+
+The maximum physical line length uses the first positive integer from this list:
 
 1. `dotnet_code_quality.TOUKI0027.max_line_length`
 2. `max_line_length` - the standard EditorConfig property
@@ -676,7 +681,8 @@ Call(
     .Finish();
 ```
 
-Changing a leading dot's indentation also shifts its multiline call arguments with it.
+Changing a leading dot's indentation also shifts its multiline call arguments and their nested
+operator continuations. This includes later arguments when the first argument stays on the dot's line.
 
 Indentation follows the configured indentation, C# operator precedence, and the expression's
 existing syntactic nesting. Operators at the same precedence remain aligned, while nested

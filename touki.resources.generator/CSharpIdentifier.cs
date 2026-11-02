@@ -79,18 +79,18 @@ internal static class CSharpIdentifier
             || SyntaxFacts.GetContextualKeywordKind(identifier) != SyntaxKind.None;
     }
 
-            /// <summary>
-            ///  Escapes an identifier so that C# keywords remain valid member names.
-            /// </summary>
-            /// <param name="identifier">The identifier to escape.</param>
-            /// <returns>The verbatim identifier.</returns>
+    /// <summary>
+    ///  Escapes an identifier so that C# keywords remain valid member names.
+    /// </summary>
+    /// <param name="identifier">The identifier to escape.</param>
+    /// <returns>The verbatim identifier.</returns>
     internal static string Escape(string identifier) => "@" + identifier;
 
-            /// <summary>
-            ///  Escapes every identifier in a namespace.
-            /// </summary>
-            /// <param name="namespaceName">The namespace to escape.</param>
-            /// <returns>The namespace with each component escaped.</returns>
+    /// <summary>
+    ///  Escapes every identifier in a namespace.
+    /// </summary>
+    /// <param name="namespaceName">The namespace to escape.</param>
+    /// <returns>The namespace with each component escaped.</returns>
     internal static string EscapeNamespace(string namespaceName)
     {
         string[] parts = namespaceName.Split('.');

@@ -26,6 +26,7 @@ internal static partial class AllmanFormatter
         out bool fixAvailable)
     {
         List<BracePair> pairs = GetBracePairs(root, cancellationToken);
+        HashSet<BlockSyntax> expandedBlocks = GetPairedBlocksToExpand(root, source, options, cancellationToken);
         Dictionary<int, LineLayout> lineLayouts = [];
         Dictionary<int, int> braceIndentationLengths = [];
         PreprocessorLineMap preprocessorLines = new(source, root, cancellationToken);
@@ -54,6 +55,7 @@ internal static partial class AllmanFormatter
                 AddWithoutOverflow(braceIndentationLength, options.Indentation.Length));
 
             bool allowedSingleLine = options.AllowSingleLineBlocks
+                && (pair.OpenBrace.Parent is not BlockSyntax block || !expandedBlocks.Contains(block))
                 && openLine.LineNumber == closeLine.LineNumber
                 && openLine.Span.Length <= options.MaxLineLength;
             if (TryGetSameLineContinuationSpan(source, pair.CloseBrace, out _)
@@ -117,6 +119,7 @@ internal static partial class AllmanFormatter
                     source,
                     spacingToken,
                     canMoveSameLineSuccessor: false,
+                    blockEndSpacing: true,
                     preprocessorLines,
                     lineLayouts,
                     cancellationToken,
@@ -154,6 +157,8 @@ internal static partial class AllmanFormatter
                         source,
                         semicolon,
                         canMoveSameLineSuccessor: true,
+                        blockEndSpacing: options.RequireBlankLineAfterClosingBrace
+                            && IsBlockEnd(semicolon, cancellationToken),
                         preprocessorLines,
                         lineLayouts,
                         cancellationToken,
@@ -191,6 +196,7 @@ internal static partial class AllmanFormatter
         }
 
         List<BracePair> pairs = GetBracePairs(root, cancellationToken);
+        HashSet<BlockSyntax> expandedBlocks = GetPairedBlocksToExpand(root, source, options, cancellationToken);
         Dictionary<TextSpan, string> replacements = [];
         Dictionary<int, string> braceIndentations = [];
         Dictionary<int, LineLayout> lineLayouts = [];
@@ -213,6 +219,7 @@ internal static partial class AllmanFormatter
                 lineLayouts);
             braceIndentations.Add(pair.OpenBrace.SpanStart, braceIndentation);
             bool allowedSingleLine = options.AllowSingleLineBlocks
+                && (pair.OpenBrace.Parent is not BlockSyntax block || !expandedBlocks.Contains(block))
                 && openLine.LineNumber == closeLine.LineNumber
                 && openLine.Span.Length <= options.MaxLineLength;
             bool moveContinuation = TryGetSameLineContinuationSpan(
@@ -359,6 +366,7 @@ internal static partial class AllmanFormatter
                     replacements,
                     sameLineIndentation: null,
                     fallbackLineBreak,
+                    blockEndSpacing: true,
                     preprocessorLines,
                     lineLayouts,
                     cancellationToken))
@@ -394,6 +402,8 @@ internal static partial class AllmanFormatter
                 replacements,
                 statementIndentation,
                 fallbackLineBreak,
+                blockEndSpacing: options.RequireBlankLineAfterClosingBrace
+                    && IsBlockEnd(semicolon, cancellationToken),
                 preprocessorLines,
                 lineLayouts,
                 cancellationToken))
@@ -409,6 +419,7 @@ internal static partial class AllmanFormatter
         Dictionary<TextSpan, string> replacements,
         string? sameLineIndentation,
         string fallbackLineBreak,
+        bool blockEndSpacing,
         PreprocessorLineMap preprocessorLines,
         Dictionary<int, LineLayout> lineLayouts,
         CancellationToken cancellationToken)
@@ -417,6 +428,7 @@ internal static partial class AllmanFormatter
             source,
             token,
             canMoveSameLineSuccessor: sameLineIndentation is not null,
+            blockEndSpacing,
             preprocessorLines,
             lineLayouts,
             cancellationToken,
@@ -437,6 +449,7 @@ internal static partial class AllmanFormatter
         SourceText source,
         SyntaxToken token,
         bool canMoveSameLineSuccessor,
+        bool blockEndSpacing,
         PreprocessorLineMap preprocessorLines,
         Dictionary<int, LineLayout> lineLayouts,
         CancellationToken cancellationToken,
@@ -500,7 +513,10 @@ internal static partial class AllmanFormatter
                 return false;
             }
 
-            if (source[nextContent] == '}' && nextLayout.LastNonWhitespaceExclusive == nextContent + 1)
+            bool needsBlankLine = blockEndSpacing
+                ? IndentationMatches(source, tokenLine, nextLine, lineLayouts)
+                : source[nextContent] != '}' || nextLayout.LastNonWhitespaceExclusive != nextContent + 1;
+            if (!needsBlankLine)
             {
                 change = default;
                 return false;
@@ -514,6 +530,53 @@ internal static partial class AllmanFormatter
         }
 
         change = default;
+        return false;
+    }
+
+    private static bool IndentationMatches(
+        SourceText source,
+        TextLine first,
+        TextLine second,
+        Dictionary<int, LineLayout> lineLayouts)
+    {
+        int firstLength = GetLineLayout(source, first, lineLayouts).IndentationEnd - first.Start;
+        int secondLength = GetLineLayout(source, second, lineLayouts).IndentationEnd - second.Start;
+        if (firstLength != secondLength)
+        {
+            return false;
+        }
+
+        for (int index = 0; index < firstLength; index++)
+        {
+            if (source[first.Start + index] != source[second.Start + index])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsBlockEnd(SyntaxToken token, CancellationToken cancellationToken)
+    {
+        for (SyntaxToken previous = token.GetPreviousToken();
+            previous.RawKind != 0;
+            previous = previous.GetPreviousToken())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (previous.IsKind(SyntaxKind.CloseBraceToken))
+            {
+                return true;
+            }
+
+            if (previous.Kind() is not (SyntaxKind.CloseParenToken
+                or SyntaxKind.CloseBracketToken
+                or SyntaxKind.ExclamationToken))
+            {
+                break;
+            }
+        }
+
         return false;
     }
 
@@ -833,6 +896,89 @@ internal static partial class AllmanFormatter
 
     private static SourceText ApplyChanges(SourceText source, List<TextChange> changes) =>
         changes.Count == 0 ? source : source.WithChanges(changes);
+
+    private static HashSet<BlockSyntax> GetPairedBlocksToExpand(
+        SyntaxNode root,
+        SourceText source,
+        AllmanFormattingOptions options,
+        CancellationToken cancellationToken)
+    {
+        HashSet<BlockSyntax> expanded = [];
+        HashSet<IfStatementSyntax> visited = [];
+        foreach (SyntaxNode node in root.DescendantNodes())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            List<BlockSyntax> blocks;
+            if (node is IfStatementSyntax conditional)
+            {
+                if (!visited.Add(conditional))
+                {
+                    continue;
+                }
+
+                blocks = [];
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (conditional.Statement is BlockSyntax thenBlock)
+                    {
+                        blocks.Add(thenBlock);
+                    }
+
+                    if (conditional.Else?.Statement is IfStatementSyntax next)
+                    {
+                        visited.Add(next);
+                        conditional = next;
+                        continue;
+                    }
+
+                    if (conditional.Else?.Statement is BlockSyntax elseBlock)
+                    {
+                        blocks.Add(elseBlock);
+                    }
+
+                    break;
+                }
+            }
+            else if (node is TryStatementSyntax attempt)
+            {
+                blocks = [attempt.Block];
+                foreach (CatchClauseSyntax handler in attempt.Catches)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    blocks.Add(handler.Block);
+                }
+
+                if (attempt.Finally is { } cleanup)
+                {
+                    blocks.Add(cleanup.Block);
+                }
+            }
+            else
+            {
+                continue;
+            }
+
+            bool expand = !options.AllowSingleLineBlocks;
+            foreach (BlockSyntax block in blocks)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                TextLine openLine = source.Lines.GetLineFromPosition(block.OpenBraceToken.SpanStart);
+                TextLine closeLine = source.Lines.GetLineFromPosition(block.CloseBraceToken.SpanStart);
+                expand |= openLine.LineNumber != closeLine.LineNumber || openLine.Span.Length > options.MaxLineLength;
+            }
+
+            if (expand)
+            {
+                foreach (BlockSyntax block in blocks)
+                {
+                    expanded.Add(block);
+                }
+            }
+        }
+
+        return expanded;
+    }
 
     private static List<BracePair> GetBracePairs(SyntaxNode root, CancellationToken cancellationToken)
     {

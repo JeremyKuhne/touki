@@ -75,7 +75,7 @@ internal sealed class ResourceIdentity : IEquatable<ResourceIdentity>
             canGenerate);
     }
 
-            /// <inheritdoc/>
+    /// <inheritdoc/>
     public bool Equals(ResourceIdentity? other)
     {
         return ReferenceEquals(this, other)

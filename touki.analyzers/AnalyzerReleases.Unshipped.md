@@ -2,10 +2,12 @@
 ; https://github.com/dotnet/roslyn-analyzers/blob/main/src/Microsoft.CodeAnalysis.Analyzers/ReleaseTrackingAnalyzers.Help.md
 ; TOUKI0028 behavior fix: do not recurse into a conditional-access expression
 ; when resolving its own previous formatting node. Descriptor metadata is unchanged.
-; TOUKI0027 behavior fix: require spacing after punctuated closing lines; only
-; standalone } and EOF suppress it, retaining control-flow/accessor exceptions.
+; TOUKI0027 behavior fix: space punctuated closing lines only before same-indent
+; content and preserve existing blank lines before differently indented content. Retain
+; control-flow/accessor adjacency and expand paired branches consistently.
 ; TOUKI0028 behavior fix: anchor leading-dot chains to their starting line and
-; shift dependent call arguments when adjusting a dot's indentation.
+; shift dependent call arguments and nested operators when adjusting a dot's
+; indentation, including calls whose first argument stays on the dot's line.
 
 ### New Rules
 Rule ID | Category | Severity | Notes

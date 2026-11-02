@@ -171,7 +171,10 @@ public unsafe class EnumExtensionsInliningPerf
             long f = *(long*)&flags;
             return (*(long*)&value & f) == f;
         }
-        else { throw new InvalidOperationException(); }
+        else
+        {
+            throw new InvalidOperationException();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -197,7 +200,10 @@ public unsafe class EnumExtensionsInliningPerf
             long f = *(long*)&flags;
             return (*(long*)&value & f) == f;
         }
-        else { throw new InvalidOperationException(); }
+        else
+        {
+            throw new InvalidOperationException();
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -223,7 +229,10 @@ public unsafe class EnumExtensionsInliningPerf
             long f = *(long*)&flags;
             return (*(long*)&value & f) == f;
         }
-        else { throw new InvalidOperationException(); }
+        else
+        {
+            throw new InvalidOperationException();
+        }
     }
 
     private static bool AreAnyFlagsSet_Default<T>(T value, T flags) where T : unmanaged, Enum
@@ -277,7 +286,10 @@ public unsafe class EnumExtensionsInliningPerf
             long v = *(long*)&value & *(long*)&flags;
             return v != 0 && (v & (v - 1)) == 0;
         }
-        else { throw new InvalidOperationException(); }
+        else
+        {
+            throw new InvalidOperationException();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -303,7 +315,10 @@ public unsafe class EnumExtensionsInliningPerf
             long v = *(long*)&value & *(long*)&flags;
             return v != 0 && (v & (v - 1)) == 0;
         }
-        else { throw new InvalidOperationException(); }
+        else
+        {
+            throw new InvalidOperationException();
+        }
     }
 
     private static void SetFlags_Default<T>(ref T value, T flags) where T : unmanaged, Enum

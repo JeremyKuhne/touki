@@ -42,7 +42,7 @@ public partial class AllmanFormattingAnalyzerTests
     }
 
     [TestMethod]
-    public async Task Analyze_ClosingBraceBeforePunctuatedClosingBrace_RequiresBlankLine()
+    public async Task Analyze_ClosingBraceBeforeDedentedPunctuatedClosingBrace_ReportsNothing()
     {
         const string source = """
             class Sample
@@ -58,7 +58,7 @@ public partial class AllmanFormattingAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
-        diagnostics.Should().ContainSingle();
+        diagnostics.Should().BeEmpty();
     }
 
     [TestMethod]
@@ -640,7 +640,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("{");
     }
 
     [TestMethod]
@@ -995,7 +995,7 @@ public partial class AllmanFormattingAnalyzerTests
     }
 
     [TestMethod]
-    public async Task Analyze_MultilineSwitchExpressionInForHeader_ReportsMissingBlankLine()
+    public async Task Analyze_MultilineSwitchExpressionInForHeader_ReportsNothing()
     {
         const string source = """
             class Sample
@@ -1016,7 +1016,7 @@ public partial class AllmanFormattingAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
-        diagnostics.Should().ContainSingle();
+        diagnostics.Should().BeEmpty();
     }
 
     [TestMethod]

@@ -19,13 +19,17 @@ namespace Touki.Analyzers;
 ///   maximum.
 ///  </para>
 ///  <para>
+///   Braced branches of an <c>if</c>/<c>else if</c>/<c>else</c> chain or a <c>try</c>/<c>catch</c>/<c>finally</c>
+///   group expand together when any branch is multiline or exceeds the compact-line limit.
+///  </para>
+///  <para>
 ///   Before C# 11, interpolation holes are left unchanged because those language versions do not permit the
 ///   newlines that Allman formatting may introduce inside a non-verbatim interpolated string.
 ///  </para>
 ///  <para>
 ///   Optional spacing policies require a blank line after a brace-led closing line (including attached delimiters
-///   and punctuation) and after a multiline, semicolon-terminated statement. Both policies allow a standalone
-///   closing brace or the end of the file to follow without a blank line.
+///   and punctuation) only before content at the same indentation. Existing blank lines remain unchanged.
+///   A separate policy spaces multiline, semicolon-terminated statements.
 ///  </para>
 ///  <para>
 ///   The <c>else</c>, <c>catch</c>, <c>finally</c>, and a <c>do</c> statement's <c>while</c> continuation
@@ -52,7 +56,7 @@ public sealed class AllmanFormattingAnalyzer : DiagnosticAnalyzer
     public const string DiagnosticId = "TOUKI0027";
 
     /// <summary>
-    ///  The option that requires a blank line after a brace-led closing line, including attached punctuation.
+    ///  The option that spaces brace-led closing lines before content at the same indentation.
     /// </summary>
     public const string RequireBlankLineAfterClosingBraceOption =
         AllmanFormattingOptions.RequireBlankLineAfterClosingBraceOption;

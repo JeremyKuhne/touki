@@ -820,9 +820,11 @@ internal static partial class StatementBreakFormatting
             return false;
         }
 
-        string targetIndentation = string.Concat(operatorIndentation, indentation.Unit);
         TextLine firstArgumentLine = source.Lines.GetLineFromPosition(
             argumentList.Arguments[0].GetFirstToken().SpanStart);
+        string targetIndentation = firstArgumentLine.LineNumber == operatorLine.LineNumber
+            ? operatorIndentation
+            : string.Concat(operatorIndentation, indentation.Unit);
         if (!TryGetIndentationEnd(source, firstArgumentLine, cancellationToken, out int oldIndentationEnd))
         {
             return false;
@@ -851,8 +853,7 @@ internal static partial class StatementBreakFormatting
 
             SyntaxToken token = root.FindToken(indentationEnd, findInsideTrivia: true);
             bool isShiftableToken = token.SpanStart == indentationEnd
-                && argumentList.Span.Contains(token.Span)
-                && !TryGetFormattingNode(token, out _);
+                && argumentList.Span.Contains(token.Span);
             SyntaxTrivia trivia = root.FindTrivia(indentationEnd);
             bool isShiftableComment = trivia.Span.Contains(indentationEnd)
                 && IsShiftableComment(trivia)
