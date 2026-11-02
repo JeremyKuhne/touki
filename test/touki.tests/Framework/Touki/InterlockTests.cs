@@ -191,7 +191,9 @@ public class InterlockTests
                     {
                         Interlocked.Increment(ref value);
                     }
+
                 },
+
                 CancellationToken.None);
         }
 
@@ -216,7 +218,9 @@ public class InterlockTests
                     {
                         Interlocked.Add(ref value, 1);
                     }
+
                 },
+
                 CancellationToken.None);
         }
 
@@ -246,7 +250,9 @@ public class InterlockTests
                         }
                         while (Interlocked.CompareExchange(ref value, current + 1, current) != current);
                     }
+
                 },
+
                 CancellationToken.None);
         }
 
@@ -275,7 +281,9 @@ public class InterlockTests
                         Interlocked.And(ref andValue, ~mask);
                         Interlocked.Or(ref orValue, mask);
                     }
+
                 },
+
                 CancellationToken.None);
         }
 

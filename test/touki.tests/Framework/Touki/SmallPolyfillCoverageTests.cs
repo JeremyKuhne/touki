@@ -287,6 +287,7 @@ public class SmallPolyfillCoverageTests
             {
                 builder.Dispose();
             }
+
         };
 
         action.Should().Throw<FormatException>();
@@ -308,6 +309,7 @@ public class SmallPolyfillCoverageTests
             {
                 builder.Dispose();
             }
+
         };
 
         action.Should().Throw<FormatException>();
@@ -329,6 +331,7 @@ public class SmallPolyfillCoverageTests
             {
                 builder.Dispose();
             }
+
         };
 
         action.Should().Throw<FormatException>();

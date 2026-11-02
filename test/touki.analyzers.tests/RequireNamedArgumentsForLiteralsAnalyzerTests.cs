@@ -626,10 +626,12 @@ public class RequireNamedArgumentsForLiteralsAnalyzerTests
             {
                 [RequireNamedArgumentsForLiteralsAnalyzer.LiteralsOption] = "boolean"
             },
+
             ["Integer.cs"] = new Dictionary<string, string>
             {
                 [RequireNamedArgumentsForLiteralsAnalyzer.LiteralsOption] = "integer"
             }
+
         };
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(

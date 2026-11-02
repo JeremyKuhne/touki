@@ -503,6 +503,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
                 ["F:External.Root"] = "<member><summary>Root documentation.</summary></member>",
                 ["F:External.Alias"] = "<member><inheritdoc cref=\"F:External.Root\"/></member>"
             },
+
             assemblyName: "DocumentedAssembly").WithAliases(["Documented"]);
 
         PortableExecutableReference undocumentedReference = CreateMetadataReference(
@@ -511,6 +512,7 @@ public partial class MemberXmlDocumentationAnalyzerTests
             {
                 ["F:External.Root"] = "<member><remarks>No summary.</remarks></member>"
             },
+
             assemblyName: "UndocumentedAssembly").WithAliases(["Undocumented"]);
 
         const string source = """
@@ -1547,11 +1549,13 @@ public partial class MemberXmlDocumentationAnalyzerTests
             {
                 [MemberXmlDocumentationAnalyzer.ApiSurfaceOption] = "internal"
             },
+
             ["B.cs"] = new Dictionary<string, string>
             {
                 [MemberXmlDocumentationAnalyzer.ApiSurfaceOption] = "private",
                 [MemberXmlDocumentationAnalyzer.EffectiveApiSurfaceOption] = "internal"
             }
+
         };
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(

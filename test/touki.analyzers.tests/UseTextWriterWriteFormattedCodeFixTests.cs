@@ -965,7 +965,9 @@ public class UseTextWriterWriteFormattedCodeFixTests
                         syntaxContext.ReportDiagnostic(
                             Diagnostic.Create(s_rule, memberAccess.Name.GetLocation()));
                     }
+
                 },
+
                 SyntaxKind.InvocationExpression);
         }
     }

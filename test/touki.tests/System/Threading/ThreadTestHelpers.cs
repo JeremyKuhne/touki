@@ -35,6 +35,7 @@ public static class ThreadTestHelpers
                     backgroundEx = ex;
                     Interlocked.MemoryBarrier();
                 }
+
             });
 
         Action localCheckForThreadErrors = checkForThreadErrors = // cannot use ref or out parameters in lambda
@@ -45,6 +46,7 @@ public static class ThreadTestHelpers
                 {
                     throw new AggregateException(backgroundEx);
                 }
+
             };
 
         waitForThread =

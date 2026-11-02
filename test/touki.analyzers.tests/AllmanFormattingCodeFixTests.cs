@@ -27,6 +27,165 @@ public class AllmanFormattingCodeFixTests
                 parseOptions: parseOptions).ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
+    public async Task Format_PunctuatedBlockEnds_InsertsBlankLinesAndConverges()
+    {
+        const string source = """
+            class Sample
+            {
+                object[] values =
+                {
+                    new object
+                    {
+                    },
+                    new object
+                    {
+                    }
+                };
+                int count;
+            }
+            """;
+
+        const string expected = """
+            class Sample
+            {
+                object[] values =
+                {
+                    new object
+                    {
+                    },
+
+                    new object
+                    {
+                    }
+
+                };
+
+                int count;
+            }
+            """;
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(expected);
+        string second = await ApplyFixAsync(result).ConfigureAwait(continueOnCapturedContext: false);
+
+        second.Should().Be(result);
+    }
+
+    [TestMethod]
+    public async Task Format_LambdaEndingWithCloseParenthesisAndSemicolon_AddsBlankLine()
+    {
+        const string source = """
+            using System;
+
+            class Sample
+            {
+                void Run()
+                {
+                    Invoke(() =>
+                    {
+                    });
+                    Invoke(() => { });
+                }
+
+                void Invoke(Action action) { }
+            }
+            """;
+
+        const string expected = """
+            using System;
+
+            class Sample
+            {
+                void Run()
+                {
+                    Invoke(() =>
+                    {
+                    });
+
+                    Invoke(() => { });
+                }
+
+                void Invoke(Action action) { }
+            }
+            """;
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(expected);
+    }
+
+    [TestMethod]
+    public async Task Format_CollectionLambdaEndingWithBracket_AddsBlankLine()
+    {
+        const string source = """
+            using System;
+
+            class Sample
+            {
+                Action[] callbacks =
+                [
+                    () =>
+                    {
+                    }];
+                int count;
+            }
+            """;
+
+        const string expected = """
+            using System;
+
+            class Sample
+            {
+                Action[] callbacks =
+                [
+                    () =>
+                    {
+                    }];
+
+                int count;
+            }
+            """;
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(expected);
+    }
+
+    [TestMethod]
+    public async Task Format_PunctuatedEndWithMultilineComment_InsertsAfterComment()
+    {
+        const string source = """
+            class Sample
+            {
+                int[] values =
+                {
+                    1
+                }; /* closing
+                   comment */
+                int count;
+            }
+            """;
+
+        const string expected = """
+            class Sample
+            {
+                int[] values =
+                {
+                    1
+                }; /* closing
+                   comment */
+
+                int count;
+            }
+            """;
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(expected);
+    }
+
+    [TestMethod]
     public void GetFixAllProvider_Default_IsDocumentBased()
     {
         FixAllProvider provider = new FormatAllmanCodeFixProvider().GetFixAllProvider();
@@ -451,6 +610,7 @@ public class AllmanFormattingCodeFixTests
                 + "\n"
                 + "        Use(value);\n"
                 + "    } // First.\n"
+                + "\n"
                 + "    int GetValue() => 0;\n"
                 + "    void Use(int value) { }\n"
                 + "}\n";
@@ -1184,7 +1344,7 @@ public class AllmanFormattingCodeFixTests
     }
 
     [TestMethod]
-    public async Task Format_MultilineSwitchExpressionInForHeader_LeavesSourceUnchanged()
+    public async Task Format_MultilineSwitchExpressionInForHeader_AddsBlankLineAfterInitializer()
     {
         const string source =
             "class Sample\n"
@@ -1204,7 +1364,7 @@ public class AllmanFormattingCodeFixTests
 
         string fixedSource = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
-        fixedSource.Should().Be(source);
+        fixedSource.Should().Be(source.Replace("        };\n", "        };\n\n", StringComparison.Ordinal));
     }
 
     [TestMethod]

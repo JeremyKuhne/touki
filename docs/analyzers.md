@@ -592,14 +592,20 @@ dotnet_code_quality.TOUKI0027.allow_single_line_blocks = true
 dotnet_code_quality.TOUKI0027.require_blank_line_after_multiline_statement = true
 ```
 
-`require_blank_line_after_closing_brace` adds a blank line after a standalone `}`. It keeps
-continuation clauses (`else`, `catch`, `finally`, and `do`/`while`), sibling accessors, outer
-closing braces, and the end of the file adjacent. Continuation clauses are placed on the next line
-without an intervening blank.
+`require_blank_line_after_closing_brace` adds a blank line after a brace-led closing line,
+including endings such as `}`, `};`, `},`, `});`, and `}];`. Attached closing delimiters and
+punctuation stay together, and trailing comments stay before the inserted blank line.
+The next nonblank content line suppresses the requirement only when it contains a standalone `}`
+apart from whitespace, or when there is no further content before EOF. A following `};` or `});`
+does not suppress it.
+
+Continuation clauses (`else`, `catch`, `finally`, and `do`/`while`) and sibling accessors retain
+their adjacency exceptions. Continuation clauses are placed on the next line without an
+intervening blank.
 
 `require_blank_line_after_multiline_statement` adds a blank line after a statement whose
-terminating semicolon is on a later line than its first token. It does not add one before a closing
-brace or at the end of the file, and it does not apply to fields or other member declarations.
+terminating semicolon is on a later line than its first token. It does not add one before a standalone
+closing brace or at the end of the file, and it does not apply to fields or other member declarations.
 For a switch expression ending in `};`, the semicolon is the terminator.
 
 Both blank-line policies skip preprocessor-only and inactive lines without carrying a requirement
@@ -658,6 +664,19 @@ int Double(int value) =>
 The rule covers common expression operators, member and conditional access, ranges, patterns,
 declarations and initializers, query `let` clauses, and expression bodies. It treats `?.` and `?[`
 as single operators.
+
+Leading dots in a fluent chain align one indentation level beyond the line where the chain starts,
+not beyond the final argument of a preceding multiline call:
+
+```csharp
+Call(
+    value)
+    .Then(
+        other)
+    .Finish();
+```
+
+Changing a leading dot's indentation also shifts its multiline call arguments with it.
 
 Indentation follows the configured indentation, C# operator precedence, and the expression's
 existing syntactic nesting. Operators at the same precedence remain aligned, while nested
@@ -1027,6 +1046,7 @@ Indentation follows `indent_style`, `indent_size`, and `tab_width`, with four sp
 The fixer wraps the list and uses Roslyn's formatter for indentation within the affected syntax.
 It preserves source line endings unless `end_of_line` is configured. Fix All batches sibling and
 nested lists per document and settles nested indentation before returning the result.
+An unsafe nested rewrite group stays unchanged without preventing independent sibling groups from being fixed.
 
 Linked files are changed together only when their project contexts agree on configuration and output.
 The diagnostic is available when a fix cannot safely be offered. Fixes are withheld for conflicting

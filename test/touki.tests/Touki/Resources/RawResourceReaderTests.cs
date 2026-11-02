@@ -128,6 +128,7 @@ public class RawResourceReaderTests
             {
                 w.AddResource($"key_{i}", $"value_{i}");
             }
+
         }));
 
         reader.ResourceCount.Should().Be(count);
@@ -212,6 +213,7 @@ public class RawResourceReaderTests
             {
                 w.AddResource(name, value);
             }
+
         }));
 
         foreach ((string name, _, ResourceTypeCode type, byte[] expected) in cases)

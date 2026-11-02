@@ -111,12 +111,12 @@ internal static partial class AllmanFormatter
                 SyntaxToken spacingToken = GetClosingBraceSpacingToken(
                     source,
                     pair.CloseBrace,
-                    lineLayouts);
-                if (TryGetBlankLineChange(
+                    lineLayouts,
+                    cancellationToken);
+                if (spacingToken.RawKind != 0 && TryGetBlankLineChange(
                     source,
                     spacingToken,
                     canMoveSameLineSuccessor: false,
-                    requireTokenOnlyLine: spacingToken == pair.CloseBrace,
                     preprocessorLines,
                     lineLayouts,
                     cancellationToken,
@@ -154,7 +154,6 @@ internal static partial class AllmanFormatter
                         source,
                         semicolon,
                         canMoveSameLineSuccessor: true,
-                        requireTokenOnlyLine: false,
                         preprocessorLines,
                         lineLayouts,
                         cancellationToken,
@@ -352,14 +351,14 @@ internal static partial class AllmanFormatter
                 SyntaxToken spacingToken = GetClosingBraceSpacingToken(
                     source,
                     pair.CloseBrace,
-                    lineLayouts);
-                if (TryAddBlankLineAfter(
+                    lineLayouts,
+                    cancellationToken);
+                if (spacingToken.RawKind != 0 && TryAddBlankLineAfter(
                     source,
                     spacingToken,
                     replacements,
                     sameLineIndentation: null,
                     fallbackLineBreak,
-                    requireTokenOnlyLine: spacingToken == pair.CloseBrace,
                     preprocessorLines,
                     lineLayouts,
                     cancellationToken))
@@ -395,7 +394,6 @@ internal static partial class AllmanFormatter
                 replacements,
                 statementIndentation,
                 fallbackLineBreak,
-                requireTokenOnlyLine: false,
                 preprocessorLines,
                 lineLayouts,
                 cancellationToken))
@@ -411,7 +409,6 @@ internal static partial class AllmanFormatter
         Dictionary<TextSpan, string> replacements,
         string? sameLineIndentation,
         string fallbackLineBreak,
-        bool requireTokenOnlyLine,
         PreprocessorLineMap preprocessorLines,
         Dictionary<int, LineLayout> lineLayouts,
         CancellationToken cancellationToken)
@@ -420,7 +417,6 @@ internal static partial class AllmanFormatter
             source,
             token,
             canMoveSameLineSuccessor: sameLineIndentation is not null,
-            requireTokenOnlyLine,
             preprocessorLines,
             lineLayouts,
             cancellationToken,
@@ -441,25 +437,13 @@ internal static partial class AllmanFormatter
         SourceText source,
         SyntaxToken token,
         bool canMoveSameLineSuccessor,
-        bool requireTokenOnlyLine,
         PreprocessorLineMap preprocessorLines,
         Dictionary<int, LineLayout> lineLayouts,
         CancellationToken cancellationToken,
         out BlankLineChange change)
     {
         TextLine tokenLine = source.Lines.GetLineFromPosition(token.Span.End);
-        LineLayout tokenLayout = GetLineLayout(source, tokenLine, lineLayouts);
-        if (requireTokenOnlyLine
-            && (tokenLayout.FirstNonWhitespace != token.SpanStart
-                || tokenLayout.LastNonWhitespaceExclusive != token.Span.End))
-        {
-            change = default;
-            return false;
-        }
-
-        TextLine line = requireTokenOnlyLine
-            ? tokenLine
-            : GetLineIncludingAttachedComment(source, token, tokenLine);
+        TextLine line = GetLineIncludingAttachedComment(source, token, tokenLine);
         SyntaxToken nextToken = token.GetNextToken();
         if (IsContinuation(token, nextToken))
         {
@@ -516,7 +500,7 @@ internal static partial class AllmanFormatter
                 return false;
             }
 
-            if (source[nextContent] == '}')
+            if (source[nextContent] == '}' && nextLayout.LastNonWhitespaceExclusive == nextContent + 1)
             {
                 change = default;
                 return false;
@@ -536,21 +520,37 @@ internal static partial class AllmanFormatter
     private static SyntaxToken GetClosingBraceSpacingToken(
         SourceText source,
         SyntaxToken closeBrace,
-        Dictionary<int, LineLayout> lineLayouts)
+        Dictionary<int, LineLayout> lineLayouts,
+        CancellationToken cancellationToken)
     {
-        if (closeBrace.Parent is not SwitchExpressionSyntax)
-        {
-            return closeBrace;
-        }
-
         TextLine closeLine = source.Lines.GetLineFromPosition(closeBrace.SpanStart);
         LineLayout closeLayout = GetLineLayout(source, closeLine, lineLayouts);
-        SyntaxToken nextToken = closeBrace.GetNextToken();
-        return closeLayout.FirstNonWhitespace == closeBrace.SpanStart
-            && nextToken.IsKind(SyntaxKind.SemicolonToken)
-            && nextToken.Parent?.GetLastToken() == nextToken
-                ? nextToken
-                : closeBrace;
+        if (closeLayout.FirstNonWhitespace != closeBrace.SpanStart)
+        {
+            return default;
+        }
+
+        SyntaxToken last = closeBrace;
+        for (SyntaxToken next = last.GetNextToken();
+            next.RawKind != 0 && !next.IsKind(SyntaxKind.EndOfFileToken)
+                && source.Lines.GetLineFromPosition(next.SpanStart).LineNumber == closeLine.LineNumber;
+            next = last.GetNextToken())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (next.Kind() is not (SyntaxKind.CloseParenToken
+                or SyntaxKind.CloseBracketToken
+                or SyntaxKind.CloseBraceToken
+                or SyntaxKind.SemicolonToken
+                or SyntaxKind.CommaToken
+                or SyntaxKind.ExclamationToken))
+            {
+                return default;
+            }
+
+            last = next;
+        }
+
+        return last;
     }
 
     private static bool TryGetSameLineContinuationSpan(

@@ -23,6 +23,66 @@ public partial class AllmanFormattingAnalyzerTests
                 diagnosticOptions: s_enabled);
 
     [TestMethod]
+    public async Task Analyze_FieldInitializerEndingWithSemicolon_RequiresBlankLine()
+    {
+        const string source = """
+            class Sample
+            {
+                int[] first =
+                {
+                    1
+                };
+                int[] second = [];
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task Analyze_ClosingBraceBeforePunctuatedClosingBrace_RequiresBlankLine()
+    {
+        const string source = """
+            class Sample
+            {
+                object[] values =
+                {
+                    new object
+                    {
+                    }
+                };
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task Analyze_CommaAfterInitializer_RequiresBlankLineBeforeNextItem()
+    {
+        const string source = """
+            class Sample
+            {
+                object[] values =
+                {
+                    new object
+                    {
+                    },
+                    new object()
+                };
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
     public async Task Analyze_DiagnosticNotExplicitlyEnabled_ReportsNothing()
     {
         const string source = "class Sample {\n}\n";
@@ -799,7 +859,7 @@ public partial class AllmanFormattingAnalyzerTests
     }
 
     [TestMethod]
-    public async Task Analyze_ClosingBraceWithTrailingComment_ReportsNothing()
+    public async Task Analyze_ClosingBraceWithTrailingComment_ReportsMissingBlankLine()
     {
         const string source = """
             class Sample
@@ -813,7 +873,7 @@ public partial class AllmanFormattingAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
-        diagnostics.Should().BeEmpty();
+        diagnostics.Should().ContainSingle();
     }
 
     [TestMethod]
@@ -935,7 +995,7 @@ public partial class AllmanFormattingAnalyzerTests
     }
 
     [TestMethod]
-    public async Task Analyze_MultilineSwitchExpressionInForHeader_ReportsNothing()
+    public async Task Analyze_MultilineSwitchExpressionInForHeader_ReportsMissingBlankLine()
     {
         const string source = """
             class Sample
@@ -956,7 +1016,7 @@ public partial class AllmanFormattingAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
-        diagnostics.Should().BeEmpty();
+        diagnostics.Should().ContainSingle();
     }
 
     [TestMethod]

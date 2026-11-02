@@ -223,7 +223,9 @@ public class SimpleServiceProviderTests
                         // Small delay to simulate real work and increase the chance of thread interleaving
                         await Task.Delay(1).ConfigureAwait(continueOnCapturedContext: false);
                     }
+
                 },
+
                 CancellationToken.None));
         }
 

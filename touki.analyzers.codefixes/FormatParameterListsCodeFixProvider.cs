@@ -208,25 +208,80 @@ public sealed class FormatParameterListsCodeFixProvider : CodeFixProvider
             return document;
         }
 
-        HashSet<SyntaxNode> affected = [.. lists];
+        // An outer selection and its descendants form one rewrite group; unsafe groups must not cancel siblings.
+        HashSet<SyntaxNode> affected = [];
         foreach (SyntaxNode list in lists)
         {
+            bool hasSelectedAncestor = false;
+            for (SyntaxNode? parent = list.Parent; parent is not null; parent = parent.Parent)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (lists.Contains(parent))
+                {
+                    hasSelectedAncestor = true;
+                    break;
+                }
+            }
+
+            if (hasSelectedAncestor)
+            {
+                continue;
+            }
+
+            List<SyntaxNode> group = [list];
+            bool canRewriteGroup = true;
             foreach (SyntaxNode descendant in list.DescendantNodes())
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (ParameterListFormatting.IsList(descendant))
+                if (!ParameterListFormatting.IsList(descendant))
                 {
-                    affected.Add(descendant);
+                    continue;
+                }
+
+                if (ParameterListFormatting.IsNameofCandidate(descendant))
+                {
+                    initialModel ??= await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+                    if (initialModel is null)
+                    {
+                        canRewriteGroup = false;
+                        break;
+                    }
+
+                    if (ParameterListFormatting.IsNameofOperator(descendant, initialModel, cancellationToken))
+                    {
+                        continue;
+                    }
+                }
+
+                if (!CanRewrite(descendant, cancellationToken))
+                {
+                    canRewriteGroup = false;
+                    break;
+                }
+
+                group.Add(descendant);
+            }
+
+            if (canRewriteGroup)
+            {
+                foreach (SyntaxNode member in group)
+                {
+                    affected.Add(member);
                 }
             }
         }
 
+        if (affected.Count == 0)
+        {
+            return document;
+        }
+
+        string newLine = GetNewLine(document, root, source);
         SyntaxAnnotation tracking = new();
         SyntaxAnnotation formatting = new();
         root = root.ReplaceNodes(affected, (_, rewritten) => rewritten.WithAdditionalAnnotations(tracking));
         Document changed = document.WithSyntaxRoot(root);
         OptionSet options = await document.GetOptionsAsync(cancellationToken).ConfigureAwait(false);
-        string newLine = GetNewLine(document, root, source);
         int tabWidth = options.GetOption(FormattingOptions.TabSize, LanguageNames.CSharp);
         if (tabWidth is < 1 or > StatementBreakFormattingOptions.MaximumIndentSize)
         {

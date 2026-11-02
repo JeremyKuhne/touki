@@ -125,7 +125,9 @@ public class LockTests
                     lockObj.IsHeldByCurrentThread.Should().BeTrue();
                     b.SignalAndWait(CancellationToken.None);
                 }
+
             },
+
             CancellationToken.None);
 
         b.SignalAndWait(CancellationToken.None);
@@ -163,7 +165,9 @@ public class LockTests
                     b.SignalAndWait(CancellationToken.None);
                     b.SignalAndWait(CancellationToken.None);
                 }
+
             },
+
             CancellationToken.None);
 
         b.SignalAndWait(CancellationToken.None);
@@ -223,6 +227,7 @@ public class LockTests
                 using (lockObj.EnterScope())
                 {
                 }
+
             });
 
             backgroundTestDelegates.Add(() =>
@@ -345,6 +350,7 @@ public class LockTests
                         lockObj.TryEnter(50); // Try to enter with timeout - will contend with main thread
                         barrier.SignalAndWait(); // Signal completion
                     },
+
                     CancellationToken.None);
             }
 
@@ -436,7 +442,9 @@ public class LockTests
 
                         Thread.Yield(); // Give other threads a chance
                     }
+
                 },
+
                 CancellationToken.None);
         }
 

@@ -213,6 +213,7 @@ public class FileSystemMatcherCompositionTests
                     actualFileName = fileName.ToString();
                     return true;
                 }),
+
                 FileSystemMatchAction.Exclude),
             new(pathMatcher, FileSystemMatchAction.Include)
         ]);

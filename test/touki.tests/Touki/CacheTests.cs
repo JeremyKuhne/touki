@@ -302,6 +302,7 @@ public class CacheTests
                 {
                     countdown.Signal();
                 }
+
             });
 
             thread.Start();

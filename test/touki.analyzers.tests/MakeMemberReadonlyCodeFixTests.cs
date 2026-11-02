@@ -1166,7 +1166,9 @@ public class MakeMemberReadonlyCodeFixTests
                         syntaxContext.ReportDiagnostic(
                             Diagnostic.Create(s_rule, memberAccess.Expression.GetLocation()));
                     }
+
                 },
+
                 SyntaxKind.InvocationExpression);
         }
     }

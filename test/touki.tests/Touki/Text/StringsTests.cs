@@ -78,6 +78,7 @@ public class StringsTests
             {
                 span[i] = state;
             }
+
         });
 
         result.Should().Be("AAAAA");
@@ -93,6 +94,7 @@ public class StringsTests
             {
                 span[i] = (char)(s.start + i);
             }
+
         });
 
         result.Should().Be("ABCDE");

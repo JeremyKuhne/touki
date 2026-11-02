@@ -22,6 +22,54 @@ public partial class StatementBreakFormattingAnalyzerTests
                 diagnosticOptions: s_enabled);
 
     [TestMethod]
+    public async Task Analyze_DotsAfterMultilineCall_AlignOneLevelBeyondChainStart()
+    {
+        const string source = """
+            class Sample
+            {
+                Sample Call(int value) => this;
+
+                Sample Run()
+                {
+                    return Call(
+                        1)
+                        .Call(
+                            2)
+                        .Call(3);
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_StaircaseDotsAfterMultilineCall_ReportsBothDots()
+    {
+        const string source = """
+            class Sample
+            {
+                Sample Call(int value) => this;
+
+                Sample Run()
+                {
+                    return Call(
+                        1)
+                            .Call(
+                                2)
+                                .Call(3);
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().HaveCount(2);
+    }
+
+    [TestMethod]
     public async Task Analyze_DiagnosticNotExplicitlyEnabled_ReportsNothing()
     {
         const string source = "class Sample { int Add(int left, int right) { return left +\nright; } }";
