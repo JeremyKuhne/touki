@@ -23,6 +23,58 @@ public class OneStatementPerLineCodeFixTests
             diagnosticOptions: s_enabled);
 
     [TestMethod]
+    [DataRow(data: false)]
+    [DataRow(data: true)]
+    public async Task FixAll_OutdentedLabel_UsesBodyIndentation(bool fixAll)
+    {
+        const string source = "class Sample\n{\n    void M()\n    {\n    label:\n        M(); M(); M();\n    }\n}\n";
+        string expected = fixAll
+            ? "class Sample\n{\n    void M()\n    {\n    label:\n        M();\n        M();\n        M();\n    }\n}\n"
+            : "class Sample\n{\n    void M()\n    {\n    label:\n        M();\n        M(); M();\n    }\n}\n";
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new OneStatementPerLineAnalyzer(),
+            new OneStatementPerLineCodeFixProvider(),
+            [("Sample.cs", "Sample.cs", source)],
+            OneStatementPerLineAnalyzer.DiagnosticId,
+            fixAll,
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(2);
+        result.CompilerErrors.Should().BeEmpty();
+        result.Documents[0].Source.Should().Be(expected);
+        result.AnalyzerDiagnostics.Should().HaveCount(fixAll ? 0 : 1);
+    }
+
+    [TestMethod]
+    public async Task RegisterCodeFixesAsync_ChainedOutdentedLabels_UsesBodyIndentation()
+    {
+        const string source = "class Sample\n{\n    void M()\n    {\n    outer:\n    inner:\n        M(); M();\n    }\n}\n";
+        const string expected =
+            "class Sample\n{\n    void M()\n    {\n    outer:\n    inner:\n        M();\n        M();\n    }\n}\n";
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(expected);
+    }
+
+    [TestMethod]
+    public async Task RegisterCodeFixesAsync_OutdentedLabelInSwitchSection_UsesBodyIndentation()
+    {
+        const string source =
+            "class Sample\n{\n    void M(int value)\n    {\n        switch (value)\n        {\n"
+                + "            case 1:\n        label:\n                M(0); M(0); break;\n        }\n    }\n}\n";
+
+        const string expected =
+            "class Sample\n{\n    void M(int value)\n    {\n        switch (value)\n        {\n"
+                + "            case 1:\n        label:\n                M(0);\n                M(0); break;\n        }\n    }\n}\n";
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(expected);
+    }
+
+    [TestMethod]
     [DataRow("\n")]
     [DataRow("\r\n")]
     [DataRow("\r")]

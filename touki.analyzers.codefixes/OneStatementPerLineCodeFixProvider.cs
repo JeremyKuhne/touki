@@ -135,6 +135,13 @@ public sealed class OneStatementPerLineCodeFixProvider : CodeFixProvider
             SwitchSectionSyntax section => section.Statements[0],
             _ => statement
         };
+
+        while (first is LabeledStatementSyntax labeled)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            first = labeled.Statement;
+        }
+
         TextLine line = source.Lines.GetLineFromPosition(first.SpanStart);
         int indentationEnd = line.Start;
         while (indentationEnd < first.SpanStart && source[indentationEnd] is ' ' or '\t')

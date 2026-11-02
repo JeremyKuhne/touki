@@ -1001,6 +1001,8 @@ The fixer preserves comments and surrounding layout, uses existing indentation w
 and follows `indent_style`, `indent_size`, `tab_width`, and `end_of_line`. Without an
 `end_of_line` setting, it preserves the source's line endings, defaulting to LF for a single-line file.
 Fix All applies the independent whitespace edits together per document.
+When the first statement has labels, indentation is taken from the labeled statement's body,
+not from an outdented label.
 
 Diagnostics remain available, but fixes are withheld for linked files and inside interpolated
 strings, where changing physical lines requires additional cross-context or language-version checks.
