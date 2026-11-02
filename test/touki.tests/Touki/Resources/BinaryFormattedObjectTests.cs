@@ -123,7 +123,10 @@ public class BinaryFormattedObjectTests
         Task<(object? Result, Exception? Exception)> second = Task.Run(Deserialize);
         barrier.SignalAndWait();
 
-        (object? Result, Exception? Exception)[] outcomes = await Task.WhenAll(first, second).ConfigureAwait(continueOnCapturedContext: false);
+        (object? Result, Exception? Exception)[] outcomes = await Task.WhenAll(
+            first,
+            second).ConfigureAwait(
+                continueOnCapturedContext: false);
 
         outcomes.Count(static outcome => Equals(outcome.Result, 42) && outcome.Exception is null).Should().Be(1);
         outcomes.Count(static outcome => outcome.Result is null

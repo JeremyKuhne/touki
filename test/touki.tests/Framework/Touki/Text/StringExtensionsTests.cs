@@ -43,6 +43,7 @@ public class StringExtensionsTests
             {
                 span[i] = state;
             }
+
         });
 
         created.Should().Be("XXXXX");

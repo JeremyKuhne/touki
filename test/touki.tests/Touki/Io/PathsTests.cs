@@ -116,10 +116,10 @@ public class PathsTests
                 foreach (string candidate in candidates)
                 {
                     bool overlaps = Paths.MatchesExpression(
-                            candidate,
-                            firstPattern,
-                            MatchCasing.CaseSensitive,
-                            MatchType.Simple)
+                        candidate,
+                        firstPattern,
+                        MatchCasing.CaseSensitive,
+                        MatchType.Simple)
                         && Paths.MatchesExpression(
                             candidate,
                             secondPattern,

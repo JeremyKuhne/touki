@@ -197,7 +197,8 @@ public class VirtualPathTests
     [TestMethod]
     public void VirtualPath_MoveNextSegment_LeadingSeparators_SkipsSeparators()
     {
-        PathSegmentEnumerator path = new($"{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}first{Path.DirectorySeparatorChar}second");
+        PathSegmentEnumerator path = new(
+            $"{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}first{Path.DirectorySeparatorChar}second");
 
         bool result1 = path.MoveNext();
         result1.Should().BeTrue();
@@ -211,7 +212,8 @@ public class VirtualPathTests
     [TestMethod]
     public void VirtualPath_MoveNextSegment_TrailingSeparators_IgnoresTrailingSeparators()
     {
-        PathSegmentEnumerator path = new($"first{Path.DirectorySeparatorChar}second{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}");
+        PathSegmentEnumerator path = new(
+            $"first{Path.DirectorySeparatorChar}second{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}");
 
         bool result1 = path.MoveNext();
         result1.Should().BeTrue();
@@ -228,7 +230,8 @@ public class VirtualPathTests
     [TestMethod]
     public void VirtualPath_MoveNextSegment_ConsecutiveSeparators_SkipsEmptySegments()
     {
-        PathSegmentEnumerator path = new($"first{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}second{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}third");
+        PathSegmentEnumerator path = new(
+            $"first{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}second{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}{Path.DirectorySeparatorChar}third");
 
         bool result1 = path.MoveNext();
         result1.Should().BeTrue();
@@ -386,7 +389,10 @@ public class VirtualPathTests
     [DataRow("path", "", "path")]
     [DataRow("", "path", "path")]
     [DataRow("first", "second", "first", "second")]
-    public void VirtualPath_MoveNextSegment_VariousInputs_ReturnsExpectedSegments(string firstPath, string secondPath, params string[] expectedSegments)
+    public void VirtualPath_MoveNextSegment_VariousInputs_ReturnsExpectedSegments(
+        string firstPath,
+        string secondPath,
+        params string[] expectedSegments)
     {
         PathSegmentEnumerator path = new(firstPath.AsSpan(), secondPath.AsSpan());
 

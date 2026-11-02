@@ -1000,8 +1000,13 @@ public unsafe class ValueStringBuilderTests
         bool boolVal = true;
         DateTime dateVal = new(2025, 1, 1);
 
-        string expected = string.Format("String: {0}, Int: {1:D5}, Double: {2:F2}, Bool: {3}, Date: {4:yyyy-MM-dd}",
-            stringVal, intVal, doubleVal, boolVal, dateVal);
+        string expected = string.Format(
+            "String: {0}, Int: {1:D5}, Double: {2:F2}, Bool: {3}, Date: {4:yyyy-MM-dd}",
+            stringVal,
+            intVal,
+            doubleVal,
+            boolVal,
+            dateVal);
 
         Value[] args = [stringVal, intVal, doubleVal, boolVal, dateVal];
         builder.AppendFormat("String: {0}, Int: {1:D5}, Double: {2:F2}, Bool: {3}, Date: {4:yyyy-MM-dd}".AsSpan(), args.AsSpan());
@@ -1075,8 +1080,11 @@ public unsafe class ValueStringBuilderTests
         decimal value = 1234567.89m;
         DateTime date = new(2025, 12, 25, 14, 30, 0);
 
-        string expected = string.Format("Money: {0:C2}, Scientific: {1:E3}, Date: {2:MMM dd, yyyy}",
-            value, 987654.321, date);
+        string expected = string.Format(
+            "Money: {0:C2}, Scientific: {1:E3}, Date: {2:MMM dd, yyyy}",
+            value,
+            987654.321,
+            date);
 
         Value[] args = [value, 987654.321, date];
         builder.AppendFormat("Money: {0:C2}, Scientific: {1:E3}, Date: {2:MMM dd, yyyy}".AsSpan(), args.AsSpan());
@@ -1331,7 +1339,8 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("First: First, Second: Friday");
 
         builder.Clear();
-        builder.AppendFormat("Values: {0}, {1}, {2}",
+        builder.AppendFormat(
+            "Values: {0}, {1}, {2}",
             Value.Create(TestEnum.First),
             Value.Create(TestEnum.Second),
             Value.Create(TestEnum.Third));
@@ -1844,7 +1853,8 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_AllFlagsEnumsWithCombinations()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);        // Test combinations across different backing types
-        builder.AppendFormat("Byte: {0}, SByte: {1}, Short: {2}",
+        builder.AppendFormat(
+            "Byte: {0}, SByte: {1}, Short: {2}",
             Value.Create(ByteFlagsEnum.ByteFlag1 | ByteFlagsEnum.ByteFlag2),
             Value.Create(SByteFlagsEnum.SByteFlag1 | SByteFlagsEnum.SByteFlag4),
             Value.Create(ShortFlagsEnum.ShortAll));
@@ -1856,7 +1866,8 @@ public unsafe class ValueStringBuilderTests
         // Test undefined flag combinations
         IntFlagsEnum undefinedCombination = IntFlagsEnum.IntFlag1 | (IntFlagsEnum)64;
         ULongFlagsEnum undefinedULongCombination = ULongFlagsEnum.ULongFlag2 | (ULongFlagsEnum)128;
-        builder.AppendFormat("Undefined: {0}, ULongUndefined: {1}",
+        builder.AppendFormat(
+            "Undefined: {0}, ULongUndefined: {1}",
             Value.Create(undefinedCombination),
             Value.Create(undefinedULongCombination));
 
@@ -1869,7 +1880,8 @@ public unsafe class ValueStringBuilderTests
     public void AppendFormat_EnumFormatsWithAllBackingTypes()
     {
         using ValueStringBuilder builder = new(stackalloc char[200]);        // Test decimal format on different backing types
-        builder.AppendFormat("Byte: {0:D}, Short: {1:D}, Int: {2:D}",
+        builder.AppendFormat(
+            "Byte: {0:D}, Short: {1:D}, Int: {2:D}",
             Value.Create(ByteEnum.ByteMax),
             Value.Create(ShortEnum.ShortMax),
             Value.Create(IntEnum.IntMax));
@@ -1877,14 +1889,16 @@ public unsafe class ValueStringBuilderTests
         builder.ToString().Should().Be("Byte: 255, Short: 32767, Int: 2147483647");
 
         builder.Clear();        // Test hex format
-        builder.AppendFormat("Hex Byte: {0:X}, Hex UInt: {1:X}",
+        builder.AppendFormat(
+            "Hex Byte: {0:X}, Hex UInt: {1:X}",
             Value.Create(ByteEnum.ByteMax),
             Value.Create(UIntEnum.UIntMax));
 
         builder.ToString().Should().Be("Hex Byte: FF, Hex UInt: FFFFFFFF");
 
         builder.Clear();        // Test general format (default)
-        builder.AppendFormat("General Long: {0:G}, General ULong: {1:G}",
+        builder.AppendFormat(
+            "General Long: {0:G}, General ULong: {1:G}",
             Value.Create(LongEnum.LongSecond),
             Value.Create(ULongEnum.ULongSecond));
 
@@ -1894,14 +1908,18 @@ public unsafe class ValueStringBuilderTests
     [TestMethod]
     public void AppendFormat_EnumZeroValuesAllTypes()
     {
-        using ValueStringBuilder builder = new(stackalloc char[300]);        // Test zero values across all backing types - split into multiple calls due to parameter limit
-        builder.AppendFormat("Zeros: {0}, {1}, {2}, {3}",
+        using ValueStringBuilder builder = new(
+            stackalloc char[300]);        // Test zero values across all backing types - split into multiple calls due to parameter limit
+
+        builder.AppendFormat(
+            "Zeros: {0}, {1}, {2}, {3}",
             Value.Create(SByteEnum.SByteZero),
             Value.Create(ShortEnum.ShortZero),
             Value.Create(IntEnum.IntZero),
             Value.Create(LongEnum.LongZero));
 
-        builder.AppendFormat(", {0}, {1}, {2}, {3}",
+        builder.AppendFormat(
+            ", {0}, {1}, {2}, {3}",
             Value.Create(ByteFlagsEnum.ByteNone),
             Value.Create(UShortFlagsEnum.UShortNone),
             Value.Create(UIntFlagsEnum.UIntNone),

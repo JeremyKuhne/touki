@@ -157,6 +157,7 @@ public class IndexedStringResourceTableTests
             {
                 table.Lookup("Greeting").Should().Be("Hello");
             }
+
         });
 
         reader.LookupCount.Should().Be(8_000);
@@ -279,6 +280,7 @@ public class IndexedStringResourceTableTests
                 string expected = greeting ? "Hello" : "Goodbye";
                 table.Lookup(name).Should().Be(expected);
             }
+
         });
     }
 

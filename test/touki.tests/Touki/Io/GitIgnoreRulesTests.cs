@@ -151,7 +151,7 @@ public sealed class GitIgnoreRulesTests
     public void Compile_NestedSource_AppliesOnlyUnderBasePath()
     {
         GitIgnoreRules rules = GitIgnoreRules.Compile(
-        [
+            [
             new("*.log"),
             new("!keep.log", "src")
         ]);

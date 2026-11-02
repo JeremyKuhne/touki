@@ -78,6 +78,7 @@ internal static class SweepRunner
 
             Volatile.Write(ref counter, iterations);
         })
+
         {
             IsBackground = true,
             Name = "fuzz-sweep"

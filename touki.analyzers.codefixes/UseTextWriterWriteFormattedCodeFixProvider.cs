@@ -250,7 +250,7 @@ public sealed partial class UseTextWriterWriteFormattedCodeFixProvider : CodeFix
         }
 
         UsingDirectiveSyntax usingDirective = SyntaxFactory.UsingDirective(
-                SyntaxFactory.ParseName(ExtensionNamespace))
+            SyntaxFactory.ParseName(ExtensionNamespace))
             .WithAdditionalAnnotations(Formatter.Annotation);
         changedDocument = document.WithSyntaxRoot(updatedRoot.AddUsings(usingDirective));
         if (!await ReplacementPreservesDocumentAsync(

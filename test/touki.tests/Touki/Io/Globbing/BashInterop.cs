@@ -133,6 +133,7 @@ internal static class BashInterop
                 "-c",
                 "[[ \"$INPUT\" == $PATTERN ]]",
             },
+
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -182,6 +183,7 @@ internal static class BashInterop
                 "-c",
                 "cd \"$ROOT\" || exit 2; printf '%s\\n' $PATTERN",
             },
+
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,

@@ -184,14 +184,17 @@ public class InterlockTests
         Task[] tasks = new Task[taskCount];
         for (int i = 0; i < taskCount; i++)
         {
-            tasks[i] = Task.Run(() =>
-            {
-                for (int j = 0; j < iterations; j++)
+            tasks[i] = Task.Run(
+                () =>
                 {
-                    Interlocked.Increment(ref value);
-                }
-            },
-            CancellationToken.None);
+                    for (int j = 0; j < iterations; j++)
+                    {
+                        Interlocked.Increment(ref value);
+                    }
+
+                },
+
+                CancellationToken.None);
         }
 
         await Task.WhenAll(tasks);
@@ -208,14 +211,17 @@ public class InterlockTests
         Task[] tasks = new Task[taskCount];
         for (int i = 0; i < taskCount; i++)
         {
-            tasks[i] = Task.Run(() =>
-            {
-                for (int j = 0; j < iterations; j++)
+            tasks[i] = Task.Run(
+                () =>
                 {
-                    Interlocked.Add(ref value, 1);
-                }
-            },
-            CancellationToken.None);
+                    for (int j = 0; j < iterations; j++)
+                    {
+                        Interlocked.Add(ref value, 1);
+                    }
+
+                },
+
+                CancellationToken.None);
         }
 
         await Task.WhenAll(tasks);
@@ -232,19 +238,22 @@ public class InterlockTests
         Task[] tasks = new Task[taskCount];
         for (int i = 0; i < taskCount; i++)
         {
-            tasks[i] = Task.Run(() =>
-            {
-                for (int j = 0; j < iterations; j++)
+            tasks[i] = Task.Run(
+                () =>
                 {
-                    uint current;
-                    do
+                    for (int j = 0; j < iterations; j++)
                     {
-                        current = value;
+                        uint current;
+                        do
+                        {
+                            current = value;
+                        }
+                        while (Interlocked.CompareExchange(ref value, current + 1, current) != current);
                     }
-                    while (Interlocked.CompareExchange(ref value, current + 1, current) != current);
-                }
-            },
-            CancellationToken.None);
+
+                },
+
+                CancellationToken.None);
         }
 
         await Task.WhenAll(tasks);
@@ -264,15 +273,18 @@ public class InterlockTests
         for (int i = 0; i < taskCount; i++)
         {
             uint mask = (uint)(1 << i);
-            tasks[i] = Task.Run(() =>
-            {
-                for (int j = 0; j < iterations; j++)
+            tasks[i] = Task.Run(
+                () =>
                 {
-                    Interlocked.And(ref andValue, ~mask);
-                    Interlocked.Or(ref orValue, mask);
-                }
-            },
-            CancellationToken.None);
+                    for (int j = 0; j < iterations; j++)
+                    {
+                        Interlocked.And(ref andValue, ~mask);
+                        Interlocked.Or(ref orValue, mask);
+                    }
+
+                },
+
+                CancellationToken.None);
         }
 
         await Task.WhenAll(tasks);

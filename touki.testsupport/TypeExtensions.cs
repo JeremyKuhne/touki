@@ -74,7 +74,9 @@ public static class TypeExtensions
 
             if ((parentTypes.Length + nestedGenericCount) != genericArgumentCount)
             {
-                throw new ArgumentException("Generic type parameter count does not match nested type definition.", nameof(nestedGenericTypes));
+                throw new ArgumentException(
+                    "Generic type parameter count does not match nested type definition.",
+                    nameof(nestedGenericTypes));
             }
 
             if (nestedGenericCount == 0)

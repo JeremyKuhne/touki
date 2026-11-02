@@ -91,8 +91,8 @@ public class MSBuildEnumerationResultTests
         // Drive-rooted, wildcard path begins with "**\" but is not a simple recursive match
         // (extra fixed segments after the **). Still drive enumeration.
         MSBuildSpecification spec = new MSBuildSpecification(
-                $"{CurrentDriveRoot}**{Path.DirectorySeparatorChar}foo{Path.DirectorySeparatorChar}*.cs")
-                    .FullyQualify(Environment.CurrentDirectory);
+            $"{CurrentDriveRoot}**{Path.DirectorySeparatorChar}foo{Path.DirectorySeparatorChar}*.cs").FullyQualify(
+                Environment.CurrentDirectory);
 
         spec.IsSimpleRecursiveMatch.Should().BeFalse();
         spec.IsDriveRootRecursion.Should().BeTrue();

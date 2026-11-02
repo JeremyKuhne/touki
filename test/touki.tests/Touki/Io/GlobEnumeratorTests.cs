@@ -50,6 +50,7 @@ public class GlobEnumeratorTests
             IgnoreInaccessible = true,
             RecurseSubdirectories = true
         }
+
     };
 
     [TestMethod]

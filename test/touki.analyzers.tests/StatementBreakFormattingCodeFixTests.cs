@@ -26,6 +26,150 @@ public class StatementBreakFormattingCodeFixTests
                 s_enabled).ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
+    [DataRow(data: false)]
+    [DataRow(data: true)]
+    public async Task Format_LeadingDotWithInlineFirstArgument_ShiftsContinuationArguments(bool fixAll)
+    {
+        string source = """
+            class Sample
+            {
+                Sample Call(int first, int second) => this;
+
+                Sample Run(int first, int second)
+                {
+                    return this
+                            .Call(first,
+                                second);
+                }
+            }
+            """.ReplaceLineEndings("\n");
+
+        string expected = """
+            class Sample
+            {
+                Sample Call(int first, int second) => this;
+
+                Sample Run(int first, int second)
+                {
+                    return this
+                        .Call(first,
+                            second);
+                }
+            }
+            """.ReplaceLineEndings("\n");
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new StatementBreakFormattingAnalyzer(),
+            new FormatStatementBreaksCodeFixProvider(),
+            [("Sample.cs", "Sample.cs", source)],
+            StatementBreakFormattingAnalyzer.DiagnosticId,
+            fixAll,
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(1);
+        result.Documents[0].Source.Should().Be(expected);
+        result.AnalyzerDiagnostics.Should().BeEmpty();
+        result.CompilerErrors.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    [DataRow(data: false)]
+    [DataRow(data: true)]
+    public async Task Format_LeadingDotWithNestedArgumentOperator_ShiftsOperatorWithArgument(bool fixAll)
+    {
+        string source = """
+            class Sample
+            {
+                Sample Call(int value) => this;
+
+                Sample Run(int first, int second)
+                {
+                    return this
+                            .Call(
+                                first
+                                    + second);
+                }
+            }
+            """.ReplaceLineEndings("\n");
+
+        string expected = """
+            class Sample
+            {
+                Sample Call(int value) => this;
+
+                Sample Run(int first, int second)
+                {
+                    return this
+                        .Call(
+                            first
+                                + second);
+                }
+            }
+            """.ReplaceLineEndings("\n");
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new StatementBreakFormattingAnalyzer(),
+            new FormatStatementBreaksCodeFixProvider(),
+            [("Sample.cs", "Sample.cs", source)],
+            StatementBreakFormattingAnalyzer.DiagnosticId,
+            fixAll,
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(1);
+        result.Documents[0].Source.Should().Be(expected);
+        result.AnalyzerDiagnostics.Should().BeEmpty();
+        result.CompilerErrors.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task FormatAll_StaircaseDotsAfterMultilineCall_AlignsChainAndArguments()
+    {
+        string source = """
+            class Sample
+            {
+                Sample Call(int value) => this;
+
+                Sample Run()
+                {
+                    return Call(
+                        1)
+                            .Call(
+                                2)
+                                .Call(3);
+                }
+            }
+            """.ReplaceLineEndings("\n");
+
+        string expected = """
+            class Sample
+            {
+                Sample Call(int value) => this;
+
+                Sample Run()
+                {
+                    return Call(
+                        1)
+                        .Call(
+                            2)
+                        .Call(3);
+                }
+            }
+            """.ReplaceLineEndings("\n");
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new StatementBreakFormattingAnalyzer(),
+            new FormatStatementBreaksCodeFixProvider(),
+            [("Sample.cs", "Sample.cs", source)],
+            StatementBreakFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(2);
+        result.FixAllActionOffered.Should().BeTrue();
+        result.Documents[0].Source.Should().Be(expected);
+    }
+
+    [TestMethod]
     public void GetFixAllProvider_Default_IsDocumentBased()
     {
         FixAllProvider provider = new FormatStatementBreaksCodeFixProvider().GetFixAllProvider();

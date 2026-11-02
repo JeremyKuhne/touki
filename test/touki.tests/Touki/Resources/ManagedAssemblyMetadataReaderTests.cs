@@ -287,6 +287,7 @@ public class ManagedAssemblyMetadataReaderTests
                             parameters.AddParameter().Type().String();
                         }
                     }
+
                 });
 
             MemberReferenceHandle constructor = builder.AddMemberReference(

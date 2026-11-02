@@ -51,7 +51,10 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("**/@(*.cs)", "a/b/c/", "x.cs", true)]
     [DataRow("**/@(*.cs)", "touki/", "GlobalUsings.md", false)]
     public void MatchCore_GlobStar_AtConstruct_WithDirectoryPrefix(
-        string pattern, string prefix, string fileName, bool expected) =>
+        string pattern,
+        string prefix,
+        string fileName,
+        bool expected) =>
             MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
@@ -70,7 +73,10 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("**/!(skip)", "touki/", "keep", true)]
     [DataRow("**/!(skip)", "touki/", "skip", false)]
     public void MatchCore_GlobStar_BeforeEachExtGlobKind(
-        string pattern, string prefix, string fileName, bool expected) =>
+        string pattern,
+        string prefix,
+        string fileName,
+        bool expected) =>
             MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
@@ -84,7 +90,10 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("prefix*@(a|b)suffix", "", "prefixbsuffix", true)]
     [DataRow("prefix*@(a|b)suffix", "", "prefixxxcsuffix", false)]
     public void MatchCore_AnyRun_BeforeExtGlob_BacktracksCorrectly(
-        string pattern, string prefix, string fileName, bool expected) =>
+        string pattern,
+        string prefix,
+        string fileName,
+        bool expected) =>
             MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
@@ -95,7 +104,10 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("!(skip)/**/*.cs", "", "keep/sub/foo.cs", true)]
     [DataRow("!(skip)/**/*.cs", "", "skip/foo.cs", false)]
     public void MatchCore_Negation_BeforeBacktrackingRest(
-        string pattern, string prefix, string fileName, bool expected) =>
+        string pattern,
+        string prefix,
+        string fileName,
+        bool expected) =>
             MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
@@ -106,7 +118,10 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("@(a|b)*@(x|y)", "", "bxxxy", true)]
     [DataRow("@(a|b)*@(x|y)", "", "az", false)]
     public void MatchCore_TwoAlternations_AnyRunBetween(
-        string pattern, string prefix, string fileName, bool expected) =>
+        string pattern,
+        string prefix,
+        string fileName,
+        bool expected) =>
             MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
@@ -118,7 +133,10 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("**/@(foo|bar).cs", "a/b/c/", "foo.cs", true)]
     [DataRow("**/@(foo|bar).cs", "a/b/c/", "baz.cs", false)]
     public void MatchCore_GlobStar_MultiSegmentPrefix(
-        string pattern, string prefix, string fileName, bool expected) =>
+        string pattern,
+        string prefix,
+        string fileName,
+        bool expected) =>
             MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
@@ -152,7 +170,10 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("@(*.cs|README)", "", "foo.cs", true)]
     [DataRow("@(*.cs|README)", "", "README", true)]
     public void MatchCore_LeadingDotRule_WithExtGlob(
-        string pattern, string prefix, string fileName, bool expected) =>
+        string pattern,
+        string prefix,
+        string fileName,
+        bool expected) =>
             MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
@@ -184,7 +205,9 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("*/@(foo|bar).cs", "dir/", "foo.cs")]
     [DataRow("*/@(foo|bar).cs", "", "dir/bar.cs")]
     public void MatchCore_SeparatorAtFirstSecondBoundary_AgreesWithSingleSpan(
-        string pattern, string prefix, string fileName)
+        string pattern,
+        string prefix,
+        string fileName)
     {
         bool twoSpan = MatchCore(pattern, prefix, fileName);
         bool single = IsMatch(pattern, prefix + fileName);
@@ -203,7 +226,10 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("@(keep.cs|other)", "kee", "p.cx", false)]
     [DataRow("@(keep.cs|other)", "oth", "er", true)]
     public void MatchCore_LiteralStraddlesBoundary_MatchesAcrossSplit(
-        string pattern, string prefix, string fileName, bool expected)
+        string pattern,
+        string prefix,
+        string fileName,
+        bool expected)
     {
         MatchCore(pattern, prefix, fileName).Should().Be(expected);
         // The split must not change the answer relative to one contiguous span.
@@ -226,7 +252,10 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("**/@(foo|bar|baz).cs", "a/b/", "baz.cs", true)]
     [DataRow("**/@(foo|bar|baz).cs", "a/b/", "qux.cs", false)]
     public void MatchCore_OffsetTable_MultipleAlternatives(
-        string pattern, string prefix, string fileName, bool expected) =>
+        string pattern,
+        string prefix,
+        string fileName,
+        bool expected) =>
             MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
@@ -247,7 +276,10 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("**/@(keep|@(foo|bar)|skip).cs", "a/b/", "bar.cs", true)]
     [DataRow("**/@(keep|@(foo|bar)|skip).cs", "a/b/", "nope.cs", false)]
     public void MatchCore_OffsetTable_NestedInNonFirstAlternative(
-        string pattern, string prefix, string fileName, bool expected) =>
+        string pattern,
+        string prefix,
+        string fileName,
+        bool expected) =>
             MatchCore(pattern, prefix, fileName).Should().Be(expected);
 
     [TestMethod]
@@ -268,7 +300,10 @@ public class ExtGlobPathAwareMatchTests
     [DataRow("*(a|)", "", "aa", true)]
     [DataRow("+(a|)", "", "aa", true)]
     public void MatchCore_EmptyAlternative_RepeatingConstruct(
-        string pattern, string prefix, string fileName, bool expected)
+        string pattern,
+        string prefix,
+        string fileName,
+        bool expected)
     {
         MatchCore(pattern, prefix, fileName).Should().Be(expected);
         // The two-span split must never change the answer relative to one span.

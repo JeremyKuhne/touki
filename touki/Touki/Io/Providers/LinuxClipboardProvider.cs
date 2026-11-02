@@ -310,6 +310,7 @@ internal sealed partial class LinuxClipboardProvider : IClipboardProvider
                 {
                     process.StandardInput.Close();
                 }
+
             });
 
             if (!writeTask.Wait(ProcessTimeoutMs))

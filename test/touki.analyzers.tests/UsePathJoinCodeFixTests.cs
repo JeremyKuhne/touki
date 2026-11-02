@@ -720,7 +720,9 @@ public class UsePathJoinCodeFixTests
                                 Diagnostic.Create(s_rule, methodName.GetLocation()));
                         }
                     }
+
                 },
+
                 SyntaxKind.InvocationExpression);
         }
     }

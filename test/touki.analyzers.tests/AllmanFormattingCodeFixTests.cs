@@ -27,6 +27,340 @@ public class AllmanFormattingCodeFixTests
                 parseOptions: parseOptions).ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
+    [DataRow(FixAllScope.Document)]
+    [DataRow(FixAllScope.Project)]
+    [DataRow(FixAllScope.Solution)]
+    public async Task FormatAll_MixedPairedGroups_ExpandsEveryBranchAndPreservesExistingSpacing(FixAllScope scope)
+    {
+        string source = """
+            class C
+            {
+                void M(bool ready)
+                {
+                    if (ready) { }
+                    else
+                    {
+                    }
+
+                }
+
+                void N()
+                {
+                    try
+                    {
+                    }
+                    catch { }
+                    finally { }
+                }
+            }
+            """.ReplaceLineEndings("\n");
+
+        string expected = """
+            class C
+            {
+                void M(bool ready)
+                {
+                    if (ready)
+                    {
+                    }
+                    else
+                    {
+                    }
+
+                }
+
+                void N()
+                {
+                    try
+                    {
+                    }
+                    catch
+                    {
+                    }
+                    finally
+                    {
+                    }
+                }
+            }
+            """.ReplaceLineEndings("\n");
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new AllmanFormattingAnalyzer(),
+            new FormatAllmanCodeFixProvider(),
+            [("C.cs", "C.cs", source)],
+            AllmanFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            diagnosticOptions: s_enabled,
+            fixAllScope: scope).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.FixAllActionOffered.Should().BeTrue();
+        result.Documents[0].Source.Should().Be(expected);
+        result.AnalyzerDiagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Format_PairedGroupOverLengthLimit_ExpandsAllBranches()
+    {
+        const string longBranch = "        if (ready) { System.Console.WriteLine(\"a longer branch\"); }";
+        const string source = "class C\n{\n    void M(bool ready)\n    {\n"
+            + longBranch
+            + "\n        else { }\n    }\n}\n";
+
+        Dictionary<string, string> options = new()
+        {
+            [AllmanFormattingAnalyzer.MaxLineLengthOption] = (longBranch.Length - 1).ToString()
+        };
+
+        string result = await ApplyFixAsync(source, options).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Contain("if (ready)\n        {\n").And.Contain("else\n        {\n");
+        string second = await ApplyFixAsync(result, options).ConfigureAwait(continueOnCapturedContext: false);
+
+        second.Should().Be(result);
+    }
+
+    [TestMethod]
+    [DataRow("    ")]
+    [DataRow("\t")]
+    public async Task Format_BlockEndBeforeDifferentIndent_PreservesExistingBlankLines(string indent)
+    {
+        string source = "class C\n{\n"
+            + indent
+            + "void M()\n"
+            + indent
+            + "{\n"
+            + indent
+            + indent
+            + "if (true)\n"
+            + indent
+            + indent
+            + "{\n"
+            + indent
+            + indent
+            + "}\n\n\n"
+            + indent
+            + "}\n}\n";
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(source);
+    }
+
+    [TestMethod]
+    public async Task Format_BlockEndBeforeIndentedContinuation_PreservesExistingBlankLines()
+    {
+        const string source = "class C\n{\n    object Value => new object\n    {\n    }\n\n        .ToString();\n}\n";
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(source);
+    }
+
+    [TestMethod]
+    [DataRow("if (ready) { A(); }\n        else\n        {\n            B();\n        }")]
+    [DataRow("if (ready)\n        {\n            A();\n        }\n        else { B(); }")]
+    [DataRow("if (ready) { A(); }\n        else if (!ready)\n        {\n            B();\n        }\n        else { A(); }")]
+    [DataRow("try { A(); }\n        catch (System.Exception)\n        {\n            B();\n        }\n        finally { A(); }")]
+    [DataRow("try\n        {\n            A();\n        }\n        catch (System.ArgumentException) { B(); }\n        catch { A(); }")]
+    public async Task Format_PairedBlocksWithMixedLayout_ExpandsEveryBranch(string body)
+    {
+        string source = "class C\n{\n    void A() { }\n    void B() { }\n\n    void M(bool ready)\n    {\n        "
+            + body
+            + "\n    }\n}\n";
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().NotBe(source);
+        result.Should().NotContain("{ A(); }").And.NotContain("{ B(); }");
+        string second = await ApplyFixAsync(result).ConfigureAwait(continueOnCapturedContext: false);
+
+        second.Should().Be(result);
+    }
+
+    [TestMethod]
+    public async Task Format_PairedCompactBlocks_PreservesSingleLineLayout()
+    {
+        const string source = """
+            class C
+            {
+                void A() { }
+
+                void M(bool ready)
+                {
+                    if (ready) { A(); }
+                    else if (!ready) { A(); }
+                    else { A(); }
+
+                    try { A(); }
+                    catch { A(); }
+                    finally { A(); }
+                }
+            }
+            """;
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(source);
+    }
+
+    [TestMethod]
+    public async Task Format_PunctuatedBlockEnds_InsertsBlankLinesAndConverges()
+    {
+        const string source = """
+            class Sample
+            {
+                object[] values =
+                {
+                    new object
+                    {
+                    },
+                    new object
+                    {
+                    }
+                };
+                int count;
+            }
+            """;
+
+        const string expected = """
+            class Sample
+            {
+                object[] values =
+                {
+                    new object
+                    {
+                    },
+
+                    new object
+                    {
+                    }
+                };
+
+                int count;
+            }
+            """;
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(expected);
+        string second = await ApplyFixAsync(result).ConfigureAwait(continueOnCapturedContext: false);
+
+        second.Should().Be(result);
+    }
+
+    [TestMethod]
+    public async Task Format_LambdaEndingWithCloseParenthesisAndSemicolon_AddsBlankLine()
+    {
+        const string source = """
+            using System;
+
+            class Sample
+            {
+                void Run()
+                {
+                    Invoke(() =>
+                    {
+                    });
+                    Invoke(() => { });
+                }
+
+                void Invoke(Action action) { }
+            }
+            """;
+
+        const string expected = """
+            using System;
+
+            class Sample
+            {
+                void Run()
+                {
+                    Invoke(() =>
+                    {
+                    });
+
+                    Invoke(() => { });
+                }
+
+                void Invoke(Action action) { }
+            }
+            """;
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(expected);
+    }
+
+    [TestMethod]
+    public async Task Format_CollectionLambdaEndingWithBracket_BeforeDedentedMember_LeavesUnchanged()
+    {
+        const string source = """
+            using System;
+
+            class Sample
+            {
+                Action[] callbacks =
+                [
+                    () =>
+                    {
+                    }];
+                int count;
+            }
+            """;
+
+        const string expected = """
+            using System;
+
+            class Sample
+            {
+                Action[] callbacks =
+                [
+                    () =>
+                    {
+                    }];
+                int count;
+            }
+            """;
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(expected);
+    }
+
+    [TestMethod]
+    public async Task Format_PunctuatedEndWithMultilineComment_InsertsAfterComment()
+    {
+        const string source = """
+            class Sample
+            {
+                int[] values =
+                {
+                    1
+                }; /* closing
+                   comment */
+                int count;
+            }
+            """;
+
+        const string expected = """
+            class Sample
+            {
+                int[] values =
+                {
+                    1
+                }; /* closing
+                   comment */
+
+                int count;
+            }
+            """;
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(expected);
+    }
+
+    [TestMethod]
     public void GetFixAllProvider_Default_IsDocumentBased()
     {
         FixAllProvider provider = new FormatAllmanCodeFixProvider().GetFixAllProvider();
@@ -451,6 +785,7 @@ public class AllmanFormattingCodeFixTests
                 + "\n"
                 + "        Use(value);\n"
                 + "    } // First.\n"
+                + "\n"
                 + "    int GetValue() => 0;\n"
                 + "    void Use(int value) { }\n"
                 + "}\n";
@@ -929,7 +1264,9 @@ public class AllmanFormattingCodeFixTests
                 + "{\n"
                 + "    void Method(bool condition)\n"
                 + "    {\n"
-                + "        if (condition) { }\n"
+                + "        if (condition)\n"
+                + "        {\n"
+                + "        }\n"
                 + "        else\n"
                 + "        {\n"
                 + "        }\n"

@@ -495,6 +495,7 @@ public class StringResourceManagerTests
                     maximumReadSize: 3,
                     canSeek: true,
                     throwOnSecondDispose: true);
+
             });
 
         Action action = () => manager.GetString("Greeting");

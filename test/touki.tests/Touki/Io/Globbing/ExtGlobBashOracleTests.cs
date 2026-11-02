@@ -102,7 +102,9 @@ public class ExtGlobBashOracleTests
         // gate.
         if (pattern == "!(*)" && input == "")
         {
-            Assert.Inconclusive("Documented divergence: bash accepts `!(*)` against empty input; touki rejects (`*` matches the empty alt slice exactly).");
+            Assert.Inconclusive(
+                "Documented divergence: bash accepts `!(*)` against empty input; touki rejects (`*` matches the empty alt slice exactly).");
+
             return;
         }
 

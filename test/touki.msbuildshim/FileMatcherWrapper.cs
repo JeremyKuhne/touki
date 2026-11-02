@@ -139,10 +139,12 @@ public static class FileMatcherWrapper
                         ParameterInfo[] parameters = c.GetParameters();
                         return parameters.Length >= 1 && parameters[0].ParameterType == fileSystemType;
                     })
+
                 ?? throw new InvalidOperationException("Could not find FileMatcher(IFileSystem, ...) constructor");
 
             // Get the GetFiles method
-            s_getFilesMethodInfo = fileMatcherType.GetMethod("GetFiles",
+            s_getFilesMethodInfo = fileMatcherType.GetMethod(
+                "GetFiles",
                 BindingFlags.NonPublic | BindingFlags.Instance,
                 binder: null,
                 [typeof(string), typeof(string), typeof(List<string>)],

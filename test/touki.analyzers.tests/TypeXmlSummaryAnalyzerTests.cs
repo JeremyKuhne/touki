@@ -717,10 +717,12 @@ public class TypeXmlSummaryAnalyzerTests
             {
                 [TypeXmlSummaryAnalyzer.ApiSurfaceOption] = "public"
             },
+
             ["B.cs"] = new Dictionary<string, string>
             {
                 [TypeXmlSummaryAnalyzer.ApiSurfaceOption] = "internal"
             }
+
         };
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
@@ -753,11 +755,13 @@ public class TypeXmlSummaryAnalyzerTests
             {
                 [TypeXmlSummaryAnalyzer.ApiSurfaceOption] = "internal"
             },
+
             ["B.cs"] = new Dictionary<string, string>
             {
                 [TypeXmlSummaryAnalyzer.ApiSurfaceOption] = "private",
                 [TypeXmlSummaryAnalyzer.EffectiveApiSurfaceOption] = "internal"
             }
+
         };
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
@@ -784,10 +788,12 @@ public class TypeXmlSummaryAnalyzerTests
             {
                 [TypeXmlSummaryAnalyzer.ApiSurfaceOption] = "public"
             },
+
             ["B.cs"] = new Dictionary<string, string>
             {
                 [TypeXmlSummaryAnalyzer.ApiSurfaceOption] = "public"
             }
+
         };
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(

@@ -1394,7 +1394,8 @@ public class StringSegmentTests
             StringSegment segment = new(source, start, length);
             string substring = source.Substring(start, length);
 
-            segment.GetHashCode().Should().Be(substring.GetHashCode(),
+            segment.GetHashCode().Should().Be(
+                substring.GetHashCode(),
                 $"Segment '{segment}' should have same hash code as substring '{substring}'");
         }
     }
@@ -1849,7 +1850,8 @@ public class StringSegmentTests
             "ASCII and mixed comparison should match string.Compare");
 
         // Compare mixed vs same mixed
-        mixed.CompareTo(mixedSame).Should().Be(0,
+        mixed.CompareTo(mixedSame).Should().Be(
+            0,
             "Identical mixed strings should compare as equal");
 
         // Compare mixed vs non-ASCII
@@ -1900,7 +1902,8 @@ public class StringSegmentTests
 
         // Test with a partial segment
         StringSegment partialTransition = new("xxabcd\u00E9yy", 2, 5); // "abcd\u00E9"
-        partialTransition.CompareTo(transitionA).Should().Be(0,
+        partialTransition.CompareTo(transitionA).Should().Be(
+            0,
             "Partial segment with transition should compare correctly");
     }
 
@@ -1917,33 +1920,40 @@ public class StringSegmentTests
         StringSegment upperNonAsciiCase = new("abcdÉ"); // É (U+00C9)
 
         // ASCII case-insensitive comparison
-        lower.CompareTo(upper, StringComparison.OrdinalIgnoreCase).Should().Be(0,
+        lower.CompareTo(upper, StringComparison.OrdinalIgnoreCase).Should().Be(
+            0,
             "ASCII case-insensitive comparison should work correctly");
 
-        lower.CompareTo(mixedCase, StringComparison.OrdinalIgnoreCase).Should().Be(0,
+        lower.CompareTo(mixedCase, StringComparison.OrdinalIgnoreCase).Should().Be(
+            0,
             "Mixed case ASCII should compare as equal with case-insensitive comparison");
 
         // Non-ASCII case-insensitive comparison
-        lowerWithNonAscii.CompareTo(upperWithNonAscii, StringComparison.OrdinalIgnoreCase).Should().Be(0,
+        lowerWithNonAscii.CompareTo(upperWithNonAscii, StringComparison.OrdinalIgnoreCase).Should().Be(
+            0,
             "Case-insensitive comparison with non-ASCII should work correctly for ASCII part");
 
-        lowerWithNonAscii.CompareTo(upperNonAsciiCase, StringComparison.OrdinalIgnoreCase).Should().Be(0,
+        lowerWithNonAscii.CompareTo(upperNonAsciiCase, StringComparison.OrdinalIgnoreCase).Should().Be(
+            0,
             "Case-insensitive comparison with non-ASCII should work correctly for non-ASCII part");
 
         // Mixed ASCII/non-ASCII with case differences
         StringSegment complexLower = new("abc\u00E9\u00F1xyz"); // abcéñxyz
         StringSegment complexUpper = new("ABC\u00C9\u00D1XYZ"); // ABCÉÑxyz
 
-        complexLower.CompareTo(complexUpper, StringComparison.OrdinalIgnoreCase).Should().Be(0,
+        complexLower.CompareTo(complexUpper, StringComparison.OrdinalIgnoreCase).Should().Be(
+            0,
             "Complex mixed case comparison should work correctly");
 
         // Different strings that should not be equal even with case-insensitive comparison
         StringSegment differAtAscii = new("abd\u00E9\u00F1xyz"); // abdéñxyz
-        complexLower.CompareTo(differAtAscii, StringComparison.OrdinalIgnoreCase).Should().NotBe(0,
+        complexLower.CompareTo(differAtAscii, StringComparison.OrdinalIgnoreCase).Should().NotBe(
+            0,
             "Different strings should not be equal with case-insensitive comparison");
 
         StringSegment differAtNonAscii = new("abc\u00EA\u00F1xyz"); // abcêñxyz
-        complexLower.CompareTo(differAtNonAscii, StringComparison.OrdinalIgnoreCase).Should().NotBe(0,
+        complexLower.CompareTo(differAtNonAscii, StringComparison.OrdinalIgnoreCase).Should().NotBe(
+            0,
             "Strings differing at non-ASCII should not be equal with case-insensitive comparison");
     }
 
@@ -1997,7 +2007,8 @@ public class StringSegmentTests
             "Ordinal comparison should detect difference in non-ASCII suffix");
 
         // OrdinalIgnoreCase should ignore case in ASCII part but detect difference in non-ASCII
-        segment1.CompareTo(segment3, StringComparison.OrdinalIgnoreCase).Should().Be(0,
+        segment1.CompareTo(segment3, StringComparison.OrdinalIgnoreCase).Should().Be(
+            0,
             "OrdinalIgnoreCase should consider different case ASCII with same non-ASCII as equal");
 
         segment1.CompareTo(segment2, StringComparison.OrdinalIgnoreCase).Should().Be(
@@ -2013,7 +2024,8 @@ public class StringSegmentTests
             string.Compare("hello\U0001F600", "hello\U0001F601", StringComparison.Ordinal),
             "Ordinal comparison should detect difference in surrogate pairs");
 
-        surrogate1.CompareTo(surrogate3, StringComparison.OrdinalIgnoreCase).Should().Be(0,
+        surrogate1.CompareTo(surrogate3, StringComparison.OrdinalIgnoreCase).Should().Be(
+            0,
             "OrdinalIgnoreCase should consider different case ASCII with same surrogate pairs as equal");
     }
 
@@ -2117,7 +2129,8 @@ public class StringSegmentTests
                 StringSegment segment = new(str, start, length);
                 string substring = str.Substring(start, length);
 
-                segment.GetHashCode().Should().Be(substring.GetHashCode(),
+                segment.GetHashCode().Should().Be(
+                    substring.GetHashCode(),
                     $"Hash code for segment '{segment}' should match substring '{substring}'");
             }
         }

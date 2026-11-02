@@ -766,22 +766,32 @@ internal static partial class StatementBreakFormatting
         out List<TextChange> changes)
     {
         changes = [];
+        SyntaxNode? invocationRoot = operation.Node switch
+        {
+            BinaryExpressionSyntax binary => binary.Right,
+            MemberAccessExpressionSyntax member
+                when member.Parent is InvocationExpressionSyntax memberInvocation
+                    && memberInvocation.Expression == member => memberInvocation,
+            ConditionalAccessExpressionSyntax conditional => conditional.WhenNotNull,
+            _ => null
+        };
+
         if (changeKind != StatementBreakChangeKind.Indentation
-            || operation.Node is not BinaryExpressionSyntax binary
+            || invocationRoot is null
             || maximumReplacementCharacters < 0
             || !indentation.TryCreateText(source, out string operatorIndentation))
         {
             return true;
         }
 
-        if (binary.Right.Span.Length > StatementBreakDiagnosticData.MaximumChangeCharacters)
+        if (invocationRoot.Span.Length > StatementBreakDiagnosticData.MaximumChangeCharacters)
         {
             return false;
         }
 
         TextLine operatorLine = source.Lines.GetLineFromPosition(operation.OperatorSpan.Start);
         InvocationExpressionSyntax? invocation = null;
-        foreach (SyntaxNode candidate in binary.Right.DescendantNodesAndSelf())
+        foreach (SyntaxNode candidate in invocationRoot.DescendantNodesAndSelf())
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (candidate is InvocationExpressionSyntax currentInvocation)
@@ -810,9 +820,11 @@ internal static partial class StatementBreakFormatting
             return false;
         }
 
-        string targetIndentation = string.Concat(operatorIndentation, indentation.Unit);
         TextLine firstArgumentLine = source.Lines.GetLineFromPosition(
             argumentList.Arguments[0].GetFirstToken().SpanStart);
+        string targetIndentation = firstArgumentLine.LineNumber == operatorLine.LineNumber
+            ? operatorIndentation
+            : string.Concat(operatorIndentation, indentation.Unit);
         if (!TryGetIndentationEnd(source, firstArgumentLine, cancellationToken, out int oldIndentationEnd))
         {
             return false;
@@ -841,8 +853,7 @@ internal static partial class StatementBreakFormatting
 
             SyntaxToken token = root.FindToken(indentationEnd, findInsideTrivia: true);
             bool isShiftableToken = token.SpanStart == indentationEnd
-                && argumentList.Span.Contains(token.Span)
-                && !TryGetFormattingNode(token, out _);
+                && argumentList.Span.Contains(token.Span);
             SyntaxTrivia trivia = root.FindTrivia(indentationEnd);
             bool isShiftableComment = trivia.Span.Contains(indentationEnd)
                 && IsShiftableComment(trivia)
@@ -1088,15 +1099,13 @@ internal static partial class StatementBreakFormatting
                 && current == node)
             {
                 anchorExpression = conditionalAccess.Expression;
-                anchor = conditionalAccess.Expression.GetLastToken();
-                useAnchorEndLine = true;
+                anchor = conditionalAccess.Expression.GetFirstToken();
             }
             else if (current is MemberAccessExpressionSyntax memberAccess
                 && current == node)
             {
                 anchorExpression = memberAccess.Expression;
-                anchor = memberAccess.Expression.GetLastToken();
-                useAnchorEndLine = true;
+                anchor = memberAccess.Expression.GetFirstToken();
             }
             else if (current is RangeExpressionSyntax { LeftOperand: not null } range
                 && current == node)

@@ -125,6 +125,7 @@ public class StreamStringResourceReaderTests
                 string expected = greeting ? "Hello" : "Goodbye";
                 reader.Lookup(name).Should().Be(expected);
             }
+
         });
     }
 
@@ -146,6 +147,7 @@ public class StreamStringResourceReaderTests
                 reader.GetResourceTypeCode(index).Should().Be(ResourceTypeCode.String);
                 reader.GetString(index).Should().Be(values[index]);
             }
+
         });
     }
 

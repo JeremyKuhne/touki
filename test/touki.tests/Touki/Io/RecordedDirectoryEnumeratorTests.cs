@@ -90,6 +90,7 @@ public class RecordedDirectoryEnumeratorTests
                 ExcludePatterns = s_globExcludes,
                 Dialect = GlobDialect.MSBuild
             }))
+
         {
             while (real.MoveNext())
             {

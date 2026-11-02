@@ -58,7 +58,9 @@ public class IgnoreCaseKindTests
     [DataRow(GlobDialect.Simple, GlobOptions.IgnoreCase | GlobOptions.AllowGlobStar, (int)IgnoreCaseKind.Unicode)]
     [DataRow(GlobDialect.Posix, GlobOptions.MatchLeadingDot, (int)IgnoreCaseKind.Off)]
     public void DefaultIgnoreCaseKind_UnrelatedFlags_DoNotInfluence(
-        GlobDialect dialect, GlobOptions options, int expectedAsInt) =>
+        GlobDialect dialect,
+        GlobOptions options,
+        int expectedAsInt) =>
             dialect.DefaultIgnoreCaseKind(options).Should().Be((IgnoreCaseKind)expectedAsInt);
 
     [TestMethod]
@@ -73,8 +75,14 @@ public class IgnoreCaseKindTests
     [DataRow(GlobDialect.PowerShell, GlobOptions.None, (int)IgnoreCaseKind.Off)]
     [DataRow(GlobDialect.PowerShell, GlobOptions.IgnoreCase, (int)IgnoreCaseKind.Unicode)]
     public void GlobSpecification_IgnoreCaseKind_FlowsFromDialectAndOptions(
-        GlobDialect dialect, GlobOptions options, int expectedAsInt) =>
-            ((IgnoreCaseKind)GlobSpecification.Compile("abc", dialect, options).TestAccessor.Dynamic.IgnoreCaseKind).Should().Be((IgnoreCaseKind)expectedAsInt);
+        GlobDialect dialect,
+        GlobOptions options,
+        int expectedAsInt) =>
+            ((IgnoreCaseKind)GlobSpecification.Compile(
+                "abc",
+                dialect,
+                options).TestAccessor.Dynamic.IgnoreCaseKind).Should().Be(
+                    (IgnoreCaseKind)expectedAsInt);
 
     // -- GetEscapeChar --------------------------------------------------------------
 

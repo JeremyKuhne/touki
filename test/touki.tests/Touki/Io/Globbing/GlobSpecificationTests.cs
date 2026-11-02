@@ -314,8 +314,12 @@ public partial class GlobSpecificationTests
     [TestMethod]
     public void TryCompile_DanglingEscape_ReturnsFalse()
     {
-        bool ok = GlobSpecification.TryCompile(@"abc\", GlobDialect.Posix, GlobOptions.None,
-            out GlobSpecification? result, out GlobCompileError error);
+        bool ok = GlobSpecification.TryCompile(
+            @"abc\",
+            GlobDialect.Posix,
+            GlobOptions.None,
+            out GlobSpecification? result,
+            out GlobCompileError error);
 
         ok.Should().BeFalse();
         result.Should().BeNull();
@@ -367,8 +371,12 @@ public partial class GlobSpecificationTests
     [TestMethod]
     public void Compile_PowerShell_DanglingBacktick_Throws()
     {
-        bool ok = GlobSpecification.TryCompile("ab`", GlobDialect.PowerShell, GlobOptions.None,
-            out GlobSpecification? result, out GlobCompileError error);
+        bool ok = GlobSpecification.TryCompile(
+            "ab`",
+            GlobDialect.PowerShell,
+            GlobOptions.None,
+            out GlobSpecification? result,
+            out GlobCompileError error);
 
         ok.Should().BeFalse();
         result.Should().BeNull();
@@ -565,7 +573,9 @@ public partial class GlobSpecificationTests
     [DataRow("**/*foo*", "barfoobaz", true)]
     [DataRow("**/*foo*", "dir/barfoobaz", true)]
     public void IsMatch_GlobStarFileNameSpecialization_FunctionalParity(
-        string pattern, string input, bool expected) =>
+        string pattern,
+        string input,
+        bool expected) =>
             GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing).IsMatch(input).Should().Be(expected);
 
     [TestMethod]

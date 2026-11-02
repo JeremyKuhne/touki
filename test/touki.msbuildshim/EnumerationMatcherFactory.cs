@@ -29,11 +29,11 @@ public static class EnumerationMatcherFactory
         GlobDialect dialect = GlobDialect.PosixPath,
         GlobOptions globOptions = GlobOptions.None) =>
             GlobEnumerator.BuildSession(
-            includePattern,
-            excludePatterns,
-            rootDirectory,
-            dialect,
-            globOptions);
+                includePattern,
+                excludePatterns,
+                rootDirectory,
+                dialect,
+                globOptions);
 
     /// <summary>
     ///  Builds the matcher used by <see cref="MSBuildEnumerator"/> for the given file specification

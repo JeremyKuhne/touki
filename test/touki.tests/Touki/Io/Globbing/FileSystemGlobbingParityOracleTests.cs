@@ -118,6 +118,7 @@ public class FileSystemGlobbingParityOracleTests
         {
             GlobSpecification specification =
                 GlobSpecification.Compile(pattern, GlobDialect.FileSystemGlobbing);
+
         });
 
         if (accepted)

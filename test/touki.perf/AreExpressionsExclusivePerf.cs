@@ -10,13 +10,18 @@ namespace touki.perf;
 public class AreExpressionsExclusivePerf
 {
     [Params(
-        "?????,????",                // question-mark only, different lengths
-        "foobar.txt,bar*.txt",       // prefix mismatch
-        "foo.txt,foo*.bin",          // suffix mismatch
-        "*foo,*bar",                 // differing fixed suffixes
-        "foo*,bar*",                 // differing fixed prefixes
-        "pre*mid*suf,pre*X*suf"      // not provably exclusive
-    )]
+        // question-mark only, different lengths
+        "?????,????",
+        // prefix mismatch
+        "foobar.txt,bar*.txt",
+        // suffix mismatch
+        "foo.txt,foo*.bin",
+        // differing fixed suffixes
+        "*foo,*bar",
+        // differing fixed prefixes
+        "foo*,bar*",
+        // not provably exclusive
+        "pre*mid*suf,pre*X*suf")]
     public string Case = string.Empty;
 
     private string _p1 = string.Empty;

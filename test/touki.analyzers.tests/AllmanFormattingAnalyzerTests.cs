@@ -23,6 +23,66 @@ public partial class AllmanFormattingAnalyzerTests
                 diagnosticOptions: s_enabled);
 
     [TestMethod]
+    public async Task Analyze_FieldInitializerEndingWithSemicolon_RequiresBlankLine()
+    {
+        const string source = """
+            class Sample
+            {
+                int[] first =
+                {
+                    1
+                };
+                int[] second = [];
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    public async Task Analyze_ClosingBraceBeforeDedentedPunctuatedClosingBrace_ReportsNothing()
+    {
+        const string source = """
+            class Sample
+            {
+                object[] values =
+                {
+                    new object
+                    {
+                    }
+                };
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_CommaAfterInitializer_RequiresBlankLineBeforeNextItem()
+    {
+        const string source = """
+            class Sample
+            {
+                object[] values =
+                {
+                    new object
+                    {
+                    },
+                    new object()
+                };
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
     public async Task Analyze_DiagnosticNotExplicitlyEnabled_ReportsNothing()
     {
         const string source = "class Sample {\n}\n";
@@ -43,9 +103,11 @@ public partial class AllmanFormattingAnalyzerTests
     [DataRow("class Item { public int Value; }\n\nclass Sample\n{\n    Item Create() => new Item {\n        Value = 1\n    };\n}\n")]
     [DataRow("class Sample\n{\n    int[] Values = new[] {\n        1\n    };\n}\n")]
     [DataRow("class Sample\n{\n    object Value => new {\n        Number = 1\n    };\n}\n")]
-    [DataRow("record Item { public int Value; }\n\nclass Sample\n{\n    Item Copy(Item item) => item with {\n        Value = 1\n    };\n}\n")]
+    [DataRow(
+        "record Item { public int Value; }\n\nclass Sample\n{\n    Item Copy(Item item) => item with {\n        Value = 1\n    };\n}\n")]
     [DataRow("class Sample\n{\n    int Convert(int value) => value switch {\n        _ => 0\n    };\n}\n")]
-    [DataRow("record Item { public int Value; }\n\nclass Sample\n{\n    bool Matches(Item item) => item is {\n        Value: 1\n    };\n}\n")]
+    [DataRow(
+        "record Item { public int Value; }\n\nclass Sample\n{\n    bool Matches(Item item) => item is {\n        Value: 1\n    };\n}\n")]
     public async Task Analyze_MultilineBraceDelimitedConstructWithSameLineOpeningBrace_ReportsDiagnostic(
         string source)
     {
@@ -578,7 +640,7 @@ public partial class AllmanFormattingAnalyzerTests
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic diagnostic = diagnostics.Should().ContainSingle().Subject;
-        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("}");
+        diagnostic.Location.GetRequiredSourceTree().GetText().ToString(diagnostic.Location.SourceSpan).Should().Be("{");
     }
 
     [TestMethod]
@@ -797,7 +859,7 @@ public partial class AllmanFormattingAnalyzerTests
     }
 
     [TestMethod]
-    public async Task Analyze_ClosingBraceWithTrailingComment_ReportsNothing()
+    public async Task Analyze_ClosingBraceWithTrailingComment_ReportsMissingBlankLine()
     {
         const string source = """
             class Sample
@@ -811,7 +873,7 @@ public partial class AllmanFormattingAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
-        diagnostics.Should().BeEmpty();
+        diagnostics.Should().ContainSingle();
     }
 
     [TestMethod]

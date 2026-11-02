@@ -255,31 +255,31 @@ internal readonly partial struct NamingStyle
         string name,
         TextSpan nameSpan,
         [NotNullWhen(returnValue: false)] out string? reason) => CheckAllWords(
-        name,
-        nameSpan,
-        FirstCharIsUpperCase,
-        "These words must begin with upper case characters: ",
-        out reason);
+            name,
+            nameSpan,
+            FirstCharIsUpperCase,
+            "These words must begin with upper case characters: ",
+            out reason);
 
     private bool CheckAllUpper(
         string name,
         TextSpan nameSpan,
         [NotNullWhen(returnValue: false)] out string? reason) => CheckAllWords(
-        name,
-        nameSpan,
-        WordIsAllUpperCase,
-        "These words cannot contain lower case characters: ",
-        out reason);
+            name,
+            nameSpan,
+            WordIsAllUpperCase,
+            "These words cannot contain lower case characters: ",
+            out reason);
 
     private bool CheckAllLower(
         string name,
         TextSpan nameSpan,
         [NotNullWhen(returnValue: false)] out string? reason) => CheckAllWords(
-        name,
-        nameSpan,
-        WordIsAllLowerCase,
-        "These words cannot contain upper case characters: ",
-        out reason);
+            name,
+            nameSpan,
+            WordIsAllLowerCase,
+            "These words cannot contain upper case characters: ",
+            out reason);
 
     private bool CheckFirstAndRestWords(
         string name,
@@ -327,25 +327,25 @@ internal readonly partial struct NamingStyle
         string name,
         TextSpan nameSpan,
         [NotNullWhen(returnValue: false)] out string? reason) => CheckFirstAndRestWords(
-        name,
-        nameSpan,
-        FirstCharIsLowerCase,
-        FirstCharIsUpperCase,
-        "The first word must begin with a lower case character: ",
-        "These non-leading words must begin with an upper case letter: ",
-        out reason);
+            name,
+            nameSpan,
+            FirstCharIsLowerCase,
+            FirstCharIsUpperCase,
+            "The first word must begin with a lower case character: ",
+            "These non-leading words must begin with an upper case letter: ",
+            out reason);
 
     private bool CheckFirstUpper(
         string name,
         TextSpan nameSpan,
         [NotNullWhen(returnValue: false)] out string? reason) => CheckFirstAndRestWords(
-        name,
-        nameSpan,
-        FirstCharIsUpperCase,
-        FirstCharIsLowerCase,
-        "The first word must begin with an upper case character: ",
-        "These non-leading words must begin with a lower case letter: ",
-        out reason);
+            name,
+            nameSpan,
+            FirstCharIsUpperCase,
+            FirstCharIsLowerCase,
+            "The first word must begin with an upper case character: ",
+            "These non-leading words must begin with a lower case letter: ",
+            out reason);
 
     private static bool DoesCharacterHaveCasing(char c) => char.ToLowerInvariant(c) != char.ToUpperInvariant(c);
 

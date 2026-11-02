@@ -151,13 +151,13 @@ public sealed partial class GlobSpecification
             if (allowExtGlob || escape != '\0')
             {
                 if (!Scan(
-                        pattern,
-                        escape,
-                        allowClasses,
-                        questionMarkIsWildcard,
-                        allowExtGlob,
-                        out sourceShape,
-                        out error))
+                    pattern,
+                    escape,
+                    allowClasses,
+                    questionMarkIsWildcard,
+                    allowExtGlob,
+                    out sourceShape,
+                    out error))
                 {
                     RemapCompileError(ref error, sourcePositionsPreserved, sourcePositionOffset);
                     return false;
@@ -270,7 +270,7 @@ public sealed partial class GlobSpecification
                         && !hasFileSystemGlobbingExtGlob,
                 knownHasAsteriskRun: fileSystemGlobbingHasAsteriskRun,
                 out bool neverMatch,
-                    out bool coalesceInputSeparators);
+                out bool coalesceInputSeparators);
 
             if (neverMatch)
             {
@@ -486,13 +486,13 @@ public sealed partial class GlobSpecification
             // to the general bytecode path.
             bool allowExtGlobScan = (options & GlobOptions.AllowExtGlob) != 0;
             if (!Scan(
-                    segment,
-                    escape,
-                    allowClasses,
-                    dialect != GlobDialect.FileSystemGlobbing,
-                    allowExtGlobScan,
-                    out PatternShape segmentShape,
-                    out _))
+                segment,
+                escape,
+                allowClasses,
+                dialect != GlobDialect.FileSystemGlobbing,
+                allowExtGlobScan,
+                out PatternShape segmentShape,
+                out _))
             {
                 return false;
             }
@@ -672,7 +672,7 @@ public sealed partial class GlobSpecification
         /// </summary>
         private static (bool Negated, bool RootAnchored, bool DirectoryOnly, int SourcePositionOffset)
             StripGitignoreMarkers(
-            ref StringSegment pattern)
+                ref StringSegment pattern)
         {
             bool negated = false;
             bool rootAnchored = false;
@@ -1883,19 +1883,19 @@ public sealed partial class GlobSpecification
                     && current is '?' or '*' or '+' or '@' or '!')
                 {
                     if (!TryEmitExtGlob(
-                            pattern,
-                            ref i,
-                            escape,
-                            allowClasses,
-                            questionMarkIsWildcard,
-                            allowGlobStar,
-                            separator,
-                            markEffectiveDoubleStarRuns,
-                            msbuildNeverRuns,
-                            ref builder,
-                            ref lastLiteral,
-                            ref traits,
-                            out int extGlobOverflow))
+                        pattern,
+                        ref i,
+                        escape,
+                        allowClasses,
+                        questionMarkIsWildcard,
+                        allowGlobStar,
+                        separator,
+                        markEffectiveDoubleStarRuns,
+                        msbuildNeverRuns,
+                        ref builder,
+                        ref lastLiteral,
+                        ref traits,
+                        out int extGlobOverflow))
                     {
                         overflowPosition = extGlobOverflow;
                         break;
@@ -2173,19 +2173,19 @@ public sealed partial class GlobSpecification
                     && current is '?' or '*' or '+' or '@' or '!')
                 {
                     if (!TryEmitExtGlob(
-                            pattern,
-                            ref i,
-                            escape,
-                            allowClasses,
-                            questionMarkIsWildcard,
-                            allowGlobStar,
-                            separator,
-                            markEffectiveDoubleStarRuns,
-                            msbuildNeverRuns,
-                            ref builder,
-                            ref lastLiteral,
-                            ref traits,
-                            out overflowPosition))
+                        pattern,
+                        ref i,
+                        escape,
+                        allowClasses,
+                        questionMarkIsWildcard,
+                        allowGlobStar,
+                        separator,
+                        markEffectiveDoubleStarRuns,
+                        msbuildNeverRuns,
+                        ref builder,
+                        ref lastLiteral,
+                        ref traits,
+                        out overflowPosition))
                     {
                         return false;
                     }

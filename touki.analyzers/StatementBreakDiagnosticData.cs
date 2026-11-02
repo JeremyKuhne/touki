@@ -269,13 +269,13 @@ internal static class StatementBreakDiagnosticData
 
         int primaryReplacementCharacters = primaryChange.NewText?.Length ?? 0;
         if (!StatementBreakFormatting.TryGetDependentIndentationChanges(
-                operation,
-                source,
-                changeKind,
-                indentation,
+            operation,
+            source,
+            changeKind,
+            indentation,
             MaximumChangeCharacters - primaryReplacementCharacters,
-                cancellationToken,
-                out List<TextChange> dependentChanges))
+            cancellationToken,
+            out List<TextChange> dependentChanges))
         {
             changes = [];
             intentionalNoFix = true;

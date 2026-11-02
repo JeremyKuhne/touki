@@ -592,11 +592,11 @@ public sealed partial class MemberXmlDocumentationAnalyzer : DiagnosticAnalyzer
         while (containingType is not null && containingDeclaration is not null)
         {
             if (HasGeneratedAttribute(
-                    containingType,
-                    containingDeclaration,
-                    generatedCodeAttribute,
-                    compilerGeneratedAttribute,
-                    cancellationToken)
+                containingType,
+                containingDeclaration,
+                generatedCodeAttribute,
+                compilerGeneratedAttribute,
+                cancellationToken)
                 || containingDeclaration.SyntaxTree is CSharpSyntaxTree containingTree
                     && containingTree.GetLineVisibility(
                         containingDeclaration.SpanStart,
