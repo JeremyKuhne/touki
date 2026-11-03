@@ -955,7 +955,9 @@ internal static partial class AllmanFormatter
 
         SyntaxNode? owner = openBrace.Parent;
         if (owner is InitializerExpressionSyntax initializer
-            && initializer.IsKind(SyntaxKind.ComplexElementInitializerExpression))
+            && (initializer.IsKind(SyntaxKind.ComplexElementInitializerExpression)
+                || initializer.IsKind(SyntaxKind.ArrayInitializerExpression)
+                    && initializer.Parent is InitializerExpressionSyntax))
         {
             return true;
         }

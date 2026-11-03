@@ -146,6 +146,61 @@ public partial class AllmanFormattingAnalyzerTests
     }
 
     [TestMethod]
+    [DataRow("int[,]", "{ 1, 2 },\n        { 3, 4 }")]
+    [DataRow("int[,,]", "{ { 1, 2 }, { 3, 4 } },\n        { { 5, 6 }, { 7, 8 } }")]
+    public async Task Analyze_MultidimensionalArrayRows_PreservesCompactEntries(string type, string rows)
+    {
+        string source = "class Sample\n{\n    " + type + " values =\n    {\n        " + rows + "\n    };\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_MultidimensionalArrayRows_SingleLineBlocksDisabled_ReportsDiagnostic()
+    {
+        const string source = """
+            class Sample
+            {
+                int[,] values =
+                {
+                    { 1, 2 },
+                    { 3, 4 }
+                };
+            }
+            """;
+
+        Dictionary<string, string> options = new()
+        {
+            [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "false"
+        };
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options)
+            .ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    [DataRow(0, false)]
+    [DataRow(-1, true)]
+    public async Task Analyze_MultidimensionalArrayRow_LengthLimitStillApplies(int limitOffset, bool expected)
+    {
+        const string row = "        { 1, 2 }";
+        const string source = "class Sample\n{\n    int[,] values =\n    {\n" + row + "\n    };\n}\n";
+        Dictionary<string, string> options = new()
+        {
+            [AllmanFormattingAnalyzer.MaxLineLengthOption] = (row.Length + limitOffset).ToString()
+        };
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options)
+            .ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Length.Should().Be(expected ? 1 : 0);
+    }
+
+    [TestMethod]
     public async Task Analyze_CollectionElementWithoutHeader_PreservesCompactEntry()
     {
         const string source = """

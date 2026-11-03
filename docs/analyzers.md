@@ -636,6 +636,8 @@ if (ready)
 ```
 
 Declaration attributes on preceding lines do not count as part of the header.
+Headerless collection entries and nested multidimensional-array rows may also stay compact within
+the configured line-length limit when `allow_single_line_blocks` is enabled.
 Paired blocks must agree: if any braced branch of an `if`/`else if`/`else` chain or a
 `try`/`catch`/`finally` group has a split header, is multiline, or exceeds the compact-line limit, every braced branch
 in that group is expanded. Entirely compact groups remain compact. This does not add braces to

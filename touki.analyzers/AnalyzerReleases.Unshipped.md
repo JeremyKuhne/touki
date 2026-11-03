@@ -9,6 +9,8 @@
 ; parameter/argument lists or initializer/collection entries.
 ; TOUKI0027 behavior fix: compact bodies require a same-line header; split
 ; headers expand the body and every paired braced branch.
+; TOUKI0027 behavior fix: treat nested multidimensional-array initializer
+; rows as headerless entries, preserving compact rows within the configured limit.
 ; TOUKI0042 behavior fix: use the statement body beneath labels as the
 ; indentation anchor instead of an outdented label.
 ; TOUKI0028 behavior fix: anchor leading-dot chains to their starting line and

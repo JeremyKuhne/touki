@@ -27,6 +27,66 @@ public class AllmanFormattingCodeFixTests
                 parseOptions: parseOptions).ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
+    public async Task Format_MultidimensionalArrayRows_LeavesSourceUnchanged()
+    {
+        const string source = """
+            class Sample
+            {
+                int[,] values =
+                {
+                    { 1, 2 },
+                    { 3, 4 }
+                };
+            }
+            """;
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(source);
+    }
+
+    [TestMethod]
+    [DataRow(FixAllScope.Document)]
+    [DataRow(FixAllScope.Project)]
+    [DataRow(FixAllScope.Solution)]
+    public async Task FormatAll_MultidimensionalArrayRows_PreservesRowsWhileFixingSibling(FixAllScope scope)
+    {
+        string source = """
+            class Sample
+            {
+                int[,] values =
+                {
+                    { 1, 2 },
+                    { 3, 4 }
+                };
+
+                void Run(bool ready)
+                {
+                    if (ready)
+                    { }
+                }
+            }
+            """.ReplaceLineEndings("\n");
+
+        string expected = source.Replace("        { }", "        {\n        }", StringComparison.Ordinal);
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new AllmanFormattingAnalyzer(),
+            new FormatAllmanCodeFixProvider(),
+            [("Sample.cs", "Sample.cs", source)],
+            AllmanFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            diagnosticOptions: s_enabled,
+            fixAllScope: scope).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.InitialAnalyzerDiagnosticCount.Should().Be(1);
+        result.FixAllActionOffered.Should().BeTrue();
+        result.CompilerErrors.Should().BeEmpty();
+        result.Documents[0].Source.Should().Be(expected);
+        result.AnalyzerDiagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
     public async Task Format_CompactThrowBodyWithSplitHeader_ExpandsAndIndents()
     {
         const string source = """
