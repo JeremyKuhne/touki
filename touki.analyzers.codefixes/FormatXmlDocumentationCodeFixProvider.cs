@@ -56,14 +56,6 @@ public sealed partial class FormatXmlDocumentationCodeFixProvider : CodeFixProvi
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
         SourceText source = await context.Document.GetTextAsync(context.CancellationToken).ConfigureAwait(false);
-        ImmutableArray<DocumentId> documentIds = await GetCompatibleDocumentIdsAsync(
-            context.Document,
-            context.CancellationToken).ConfigureAwait(false);
-        if (documentIds.IsDefault)
-        {
-            return;
-        }
-
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
             if (!diagnostic.Properties.TryGetValue(ReplacementProperty, out string? replacement)
@@ -74,6 +66,16 @@ public sealed partial class FormatXmlDocumentationCodeFixProvider : CodeFixProvi
 
             TextSpan span = diagnostic.Location.SourceSpan;
             if (string.Equals(source.ToString(span), replacement, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            ImmutableArray<DocumentId> documentIds = await GetCompatibleDocumentIdsAsync(
+                context.Document,
+                [new(span, replacement)],
+                context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+            if (documentIds.IsDefaultOrEmpty)
             {
                 continue;
             }
@@ -94,6 +96,7 @@ public sealed partial class FormatXmlDocumentationCodeFixProvider : CodeFixProvi
 
     private static async Task<ImmutableArray<DocumentId>> GetCompatibleDocumentIdsAsync(
         Document document,
+        IReadOnlyList<TextChange> changes,
         CancellationToken cancellationToken)
     {
         ImmutableArray<DocumentId> documentIds = DocumentFileUtilities.GetRelatedDocumentIds(
@@ -110,15 +113,6 @@ public sealed partial class FormatXmlDocumentationCodeFixProvider : CodeFixProvi
         }
 
         SourceText expectedSource = await document.GetTextAsync(cancellationToken).ConfigureAwait(false);
-        SyntaxNode? expectedRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-        if (expectedRoot is null)
-        {
-            return default;
-        }
-
-        (int IndentSize, int MaxLineLength) expectedOptions = GetFormattingOptions(
-            document,
-            expectedRoot.SyntaxTree);
         foreach (DocumentId documentId in documentIds)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -128,27 +122,34 @@ public sealed partial class FormatXmlDocumentationCodeFixProvider : CodeFixProvi
                 return default;
             }
 
-            SourceText source = await candidate.GetTextAsync(cancellationToken).ConfigureAwait(false);
-            SyntaxNode? root = await candidate.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            SourceText source = await candidate.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            SyntaxNode? root = await candidate.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
             if (root is null
-                || !expectedSource.ContentEquals(source)
-                || !expectedRoot.SyntaxTree.Options.Equals(root.SyntaxTree.Options)
-                || GetFormattingOptions(candidate, root.SyntaxTree) != expectedOptions)
+                || !expectedSource.ContentEquals(source))
             {
                 return default;
+            }
+
+            AnalyzerConfigOptions options = candidate.Project.AnalyzerOptions.AnalyzerConfigOptionsProvider
+                .GetOptions(root.SyntaxTree);
+            Dictionary<TextSpan, string?> replacements = [];
+            foreach (TextChange change in XmlDocumentationFormatting.GetChanges(root.SyntaxTree, options, cancellationToken))
+            {
+                replacements.Add(change.Span, change.NewText);
+            }
+
+            foreach (TextChange change in changes)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!replacements.TryGetValue(change.Span, out string? replacement)
+                    || !string.Equals(change.NewText, replacement, StringComparison.Ordinal))
+                {
+                    return default;
+                }
             }
         }
 
         return documentIds;
-    }
-
-    private static (int IndentSize, int MaxLineLength) GetFormattingOptions(
-        Document document,
-        SyntaxTree syntaxTree)
-    {
-        AnalyzerConfigOptions options = document.Project.AnalyzerOptions.AnalyzerConfigOptionsProvider
-            .GetOptions(syntaxTree);
-        return XmlDocumentationFormattingOptions.GetOptions(options);
     }
 
     private static async Task<Solution> ApplyChangeAsync(
@@ -168,7 +169,7 @@ public sealed partial class FormatXmlDocumentationCodeFixProvider : CodeFixProvi
                 continue;
             }
 
-            SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(false);
+            SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
             solution = solution.WithDocumentText(documentId, text.WithChanges(change));
         }
 
@@ -188,10 +189,11 @@ public sealed partial class FormatXmlDocumentationCodeFixProvider : CodeFixProvi
             return null;
         }
 
-        ImmutableArray<DocumentId> relatedDocumentIds = DocumentFileUtilities.GetRelatedDocumentIds(
+        ImmutableArray<DocumentId> relatedDocumentIds = await GetCompatibleDocumentIdsAsync(
             document,
-            context.CancellationToken);
-        if (relatedDocumentIds.IsDefaultOrEmpty || relatedDocumentIds.Length != 1)
+            changes,
+            context.CancellationToken).ConfigureAwait(false);
+        if (relatedDocumentIds.IsDefaultOrEmpty)
         {
             return null;
         }
@@ -223,12 +225,13 @@ public sealed partial class FormatXmlDocumentationCodeFixProvider : CodeFixProvi
             return false;
         }
 
-        Comparison<TextChange> comparison = (left, right) =>
+        int comparison(TextChange left, TextChange right)
         {
             cancellationToken.ThrowIfCancellationRequested();
             int result = left.Span.Start.CompareTo(right.Span.Start);
             return result != 0 ? result : left.Span.Length.CompareTo(right.Span.Length);
-        };
+        }
+
         try
         {
             changes.Sort(comparison);

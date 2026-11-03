@@ -54,10 +54,13 @@ internal static partial class AllmanFormatter
                 maximumGeneratedIndentationLength,
                 AddWithoutOverflow(braceIndentationLength, options.Indentation.Length));
 
-            bool allowedSingleLine = options.AllowSingleLineBlocks
-                && (pair.OpenBrace.Parent is not BlockSyntax block || !expandedBlocks.Contains(block))
-                && openLine.LineNumber == closeLine.LineNumber
-                && openLine.Span.Length <= options.MaxLineLength;
+            bool allowedSingleLine = IsAllowedSingleLine(
+                source,
+                pair.OpenBrace,
+                pair.CloseBrace,
+                options,
+                expandedBlocks,
+                cancellationToken);
             if (TryGetSameLineContinuationSpan(source, pair.CloseBrace, out _)
                 && (!allowedSingleLine || !CompleteContinuationIsOnSameLine(source, pair.CloseBrace)))
             {
@@ -218,10 +221,13 @@ internal static partial class AllmanFormatter
                 options.Indentation,
                 lineLayouts);
             braceIndentations.Add(pair.OpenBrace.SpanStart, braceIndentation);
-            bool allowedSingleLine = options.AllowSingleLineBlocks
-                && (pair.OpenBrace.Parent is not BlockSyntax block || !expandedBlocks.Contains(block))
-                && openLine.LineNumber == closeLine.LineNumber
-                && openLine.Span.Length <= options.MaxLineLength;
+            bool allowedSingleLine = IsAllowedSingleLine(
+                source,
+                pair.OpenBrace,
+                pair.CloseBrace,
+                options,
+                expandedBlocks,
+                cancellationToken);
             bool moveContinuation = TryGetSameLineContinuationSpan(
                 source,
                 pair.CloseBrace,
@@ -458,7 +464,8 @@ internal static partial class AllmanFormatter
         TextLine tokenLine = source.Lines.GetLineFromPosition(token.Span.End);
         TextLine line = GetLineIncludingAttachedComment(source, token, tokenLine);
         SyntaxToken nextToken = token.GetNextToken();
-        if (IsContinuation(token, nextToken))
+        if (IsContinuation(token, nextToken)
+            || blockEndSpacing && IsListEntryEnd(token, cancellationToken))
         {
             change = default;
             return false;
@@ -530,6 +537,38 @@ internal static partial class AllmanFormatter
         }
 
         change = default;
+        return false;
+    }
+
+    private static bool IsListEntryEnd(SyntaxToken token, CancellationToken cancellationToken)
+    {
+        for (SyntaxNode? node = token.Parent; node is not null; node = node.Parent)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (node is BaseArgumentListSyntax
+                or AttributeArgumentListSyntax
+                or BaseParameterListSyntax
+                or InitializerExpressionSyntax
+                or AnonymousObjectCreationExpressionSyntax
+                or CollectionExpressionSyntax
+                or TupleExpressionSyntax)
+            {
+                return true;
+            }
+
+            if (node is BlockSyntax block)
+            {
+                if (block.CloseBraceToken != token)
+                {
+                    return false;
+                }
+            }
+            else if (node is StatementSyntax or MemberDeclarationSyntax or AccessorDeclarationSyntax)
+            {
+                return false;
+            }
+        }
+
         return false;
     }
 
@@ -897,6 +936,64 @@ internal static partial class AllmanFormatter
     private static SourceText ApplyChanges(SourceText source, List<TextChange> changes) =>
         changes.Count == 0 ? source : source.WithChanges(changes);
 
+    private static bool IsAllowedSingleLine(
+        SourceText source,
+        SyntaxToken openBrace,
+        SyntaxToken closeBrace,
+        AllmanFormattingOptions options,
+        HashSet<BlockSyntax>? expandedBlocks,
+        CancellationToken cancellationToken)
+    {
+        TextLine openLine = source.Lines.GetLineFromPosition(openBrace.SpanStart);
+        if (!options.AllowSingleLineBlocks
+            || openLine.LineNumber != source.Lines.GetLineFromPosition(closeBrace.SpanStart).LineNumber
+            || openLine.Span.Length > options.MaxLineLength
+            || openBrace.Parent is BlockSyntax block && expandedBlocks is not null && expandedBlocks.Contains(block))
+        {
+            return false;
+        }
+
+        SyntaxNode? owner = openBrace.Parent;
+        if (owner is InitializerExpressionSyntax initializer
+            && (initializer.IsKind(SyntaxKind.ComplexElementInitializerExpression)
+                || initializer.IsKind(SyntaxKind.ArrayInitializerExpression)
+                    && initializer.Parent is InitializerExpressionSyntax))
+        {
+            return true;
+        }
+
+        while (owner is not null)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            SyntaxToken first = owner.GetFirstToken();
+            foreach (SyntaxNodeOrToken child in owner.ChildNodesAndTokens())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (child.IsNode && child.AsNode() is AttributeListSyntax)
+                {
+                    continue;
+                }
+
+                first = child.IsToken ? child.AsToken() : child.AsNode()?.GetFirstToken() ?? first;
+                break;
+            }
+
+            if (first != openBrace)
+            {
+                return source.Lines.GetLineFromPosition(first.SpanStart).LineNumber == openLine.LineNumber;
+            }
+
+            if (owner.Parent is BlockSyntax or SwitchSectionSyntax or GlobalStatementSyntax)
+            {
+                return true;
+            }
+
+            owner = owner.Parent;
+        }
+
+        return true;
+    }
+
     private static HashSet<BlockSyntax> GetPairedBlocksToExpand(
         SyntaxNode root,
         SourceText source,
@@ -963,9 +1060,13 @@ internal static partial class AllmanFormatter
             foreach (BlockSyntax block in blocks)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                TextLine openLine = source.Lines.GetLineFromPosition(block.OpenBraceToken.SpanStart);
-                TextLine closeLine = source.Lines.GetLineFromPosition(block.CloseBraceToken.SpanStart);
-                expand |= openLine.LineNumber != closeLine.LineNumber || openLine.Span.Length > options.MaxLineLength;
+                expand |= !IsAllowedSingleLine(
+                    source,
+                    block.OpenBraceToken,
+                    block.CloseBraceToken,
+                    options,
+                    expandedBlocks: null,
+                    cancellationToken);
             }
 
             if (expand)

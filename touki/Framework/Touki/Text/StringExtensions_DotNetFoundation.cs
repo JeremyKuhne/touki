@@ -120,7 +120,11 @@ public static partial class StringExtensions
             {
                 int idx = IndexOfNewlineChar(remaining, replacementText, out stride);
                 if (idx < 0)
-                { break; } // no more newline chars
+                {
+                    // no more newline chars
+                    break;
+                }
+
                 builder.Append(replacementText);
                 builder.Append(remaining[..idx]);
                 remaining = remaining[(idx + stride)..];

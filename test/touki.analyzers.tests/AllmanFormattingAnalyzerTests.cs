@@ -23,6 +23,25 @@ public partial class AllmanFormattingAnalyzerTests
                 diagnosticOptions: s_enabled);
 
     [TestMethod]
+    [DataRow("if (ready)\n        { M(); }")]
+    [DataRow("while (ready)\n        { M(); }")]
+    [DataRow("for (; ready;)\n        { M(); }")]
+    [DataRow("foreach (int value in new[] { 1 })\n        { M(); }")]
+    [DataRow("lock (this)\n        { M(); }")]
+    [DataRow("using (System.IO.MemoryStream stream = new())\n        { M(); }")]
+    [DataRow("if (\n            ready) { M(); }")]
+    public async Task Analyze_CompactBodyWithSplitHeader_ReportsDiagnostic(string statement)
+    {
+        string source = "class Sample\n{\n    void M() { }\n\n    void Run(bool ready)\n    {\n        "
+            + statement
+            + "\n    }\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
     public async Task Analyze_FieldInitializerEndingWithSemicolon_RequiresBlankLine()
     {
         const string source = """
@@ -62,7 +81,7 @@ public partial class AllmanFormattingAnalyzerTests
     }
 
     [TestMethod]
-    public async Task Analyze_CommaAfterInitializer_RequiresBlankLineBeforeNextItem()
+    public async Task Analyze_CommaAfterInitializer_ReportsNothing()
     {
         const string source = """
             class Sample
@@ -79,7 +98,140 @@ public partial class AllmanFormattingAnalyzerTests
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
 
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_ArrayInParameterAttribute_LeavesArgumentsAdjacent()
+    {
+        const string source = """
+            using System;
+
+            class ValuesAttribute : Attribute
+            {
+                public ValuesAttribute(int[] values, int count) { }
+            }
+
+            class Sample
+            {
+                void M(
+                    [Values(
+                        new int[]
+                        {
+                            1
+                        },
+                        2)] int value)
+                {
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    [DataRow("class Sample\n{ }\n")]
+    [DataRow("class Sample\n{\n    void M()\n    { }\n}\n")]
+    [DataRow("class Sample\n{\n    int Value\n    { get; }\n}\n")]
+    [DataRow("class Sample\n{\n    int Value\n    {\n        get\n        { return 1; }\n    }\n}\n")]
+    [DataRow("class Sample\n{\n    System.Action Value = () =>\n    { };\n}\n")]
+    [DataRow("class Sample\n{\n    int[] values = new int[]\n    { 1 };\n}\n")]
+    public async Task Analyze_CompactConstructWithSplitHeader_ReportsDiagnostic(string source)
+    {
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
         diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    [DataRow("int[,]", "{ 1, 2 },\n        { 3, 4 }")]
+    [DataRow("int[,,]", "{ { 1, 2 }, { 3, 4 } },\n        { { 5, 6 }, { 7, 8 } }")]
+    public async Task Analyze_MultidimensionalArrayRows_PreservesCompactEntries(string type, string rows)
+    {
+        string source = "class Sample\n{\n    " + type + " values =\n    {\n        " + rows + "\n    };\n}\n";
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_MultidimensionalArrayRows_SingleLineBlocksDisabled_ReportsDiagnostic()
+    {
+        const string source = """
+            class Sample
+            {
+                int[,] values =
+                {
+                    { 1, 2 },
+                    { 3, 4 }
+                };
+            }
+            """;
+
+        Dictionary<string, string> options = new()
+        {
+            [AllmanFormattingAnalyzer.AllowSingleLineBlocksOption] = "false"
+        };
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options)
+            .ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().ContainSingle();
+    }
+
+    [TestMethod]
+    [DataRow(0, false)]
+    [DataRow(-1, true)]
+    public async Task Analyze_MultidimensionalArrayRow_LengthLimitStillApplies(int limitOffset, bool expected)
+    {
+        const string row = "        { 1, 2 }";
+        const string source = "class Sample\n{\n    int[,] values =\n    {\n" + row + "\n    };\n}\n";
+        Dictionary<string, string> options = new()
+        {
+            [AllmanFormattingAnalyzer.MaxLineLengthOption] = (row.Length + limitOffset).ToString()
+        };
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source, options)
+            .ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Length.Should().Be(expected ? 1 : 0);
+    }
+
+    [TestMethod]
+    public async Task Analyze_CollectionElementWithoutHeader_PreservesCompactEntry()
+    {
+        const string source = """
+            class Sample
+            {
+                System.Collections.Generic.Dictionary<int, int> values = new()
+                {
+                    { 1, 2 }
+                };
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Analyze_AttributedSingleLineHeader_PreservesCompactBody()
+    {
+        const string source = """
+            class Sample
+            {
+                [System.Obsolete]
+                void M() { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().BeEmpty();
     }
 
     [TestMethod]

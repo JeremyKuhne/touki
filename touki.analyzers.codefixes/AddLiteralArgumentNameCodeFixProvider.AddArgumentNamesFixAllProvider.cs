@@ -112,11 +112,11 @@ public sealed partial class AddLiteralArgumentNameCodeFixProvider
                     continue;
                 }
 
-                Comparison<TextChange> comparison = (left, right) =>
+                int comparison(TextChange left, TextChange right)
                 {
                     fixAllContext.CancellationToken.ThrowIfCancellationRequested();
                     return left.Span.Start.CompareTo(right.Span.Start);
-                };
+                }
                 try
                 {
                     changes.Sort(comparison);
