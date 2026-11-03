@@ -66,6 +66,12 @@
                 Link="Shared\FilePathIdentity.cs" />
      <Compile Include="..\touki.analyzers\XmlDocumentationFormattingOptions.cs"
                 Link="Shared\XmlDocumentationFormattingOptions.cs" />
+    <Compile Include="..\touki.analyzers\XmlDocumentationFormatting.cs"
+             Link="Shared\XmlDocumentationFormatting.cs" />
+    <Compile Include="..\touki.analyzers\XmlDocumentationCommentFormatter.cs"
+             Link="Shared\XmlDocumentationCommentFormatter.cs" />
+    <Compile Include="..\touki.analyzers\XmlDocumentationCommentFormatter.BreakBoundary.cs"
+             Link="Shared\XmlDocumentationCommentFormatter.BreakBoundary.cs" />
     <Compile Include="..\touki.analyzers\StatementBreakChangeKind.cs"
          Link="Shared\StatementBreakChangeKind.cs" />
     <Compile Include="..\touki.analyzers\StatementBreakDiagnosticData.cs"

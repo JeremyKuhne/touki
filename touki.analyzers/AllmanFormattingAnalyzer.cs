@@ -15,12 +15,12 @@ namespace Touki.Analyzers;
 /// <remarks>
 ///  <para>
 ///   Every structural brace pair participates except interpolated-string delimiters and empty property patterns.
-///   A complete construct may remain on one line when enabled and the physical line fits within the configured
-///   maximum.
+///   A complete construct may remain on one line when enabled and its header and body share a physical line
+///   within the configured maximum. Declaration attributes do not count as part of the header.
 ///  </para>
 ///  <para>
 ///   Braced branches of an <c>if</c>/<c>else if</c>/<c>else</c> chain or a <c>try</c>/<c>catch</c>/<c>finally</c>
-///   group expand together when any branch is multiline or exceeds the compact-line limit.
+///   group expand together when any branch has a split header, is multiline, or exceeds the compact-line limit.
 ///  </para>
 ///  <para>
 ///   Before C# 11, interpolation holes are left unchanged because those language versions do not permit the
@@ -38,6 +38,8 @@ namespace Touki.Analyzers;
 ///  </para>
 ///  <para>
 ///   Closing punctuation such as <c>};</c>, <c>},</c>, and <c>});</c> stays together before any required spacing.
+///   Parameter/argument lists and initializer/collection entries are exempt from block-end spacing,
+///   but executable statements within lambda arguments are not.
 ///  </para>
 ///  <para>
 ///   The rule ships disabled because source layout is a house style. Its formatting options default to enabled.

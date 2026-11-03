@@ -27,6 +27,272 @@ public class AllmanFormattingCodeFixTests
                 parseOptions: parseOptions).ConfigureAwait(continueOnCapturedContext: false);
 
     [TestMethod]
+    public async Task Format_CompactThrowBodyWithSplitHeader_ExpandsAndIndents()
+    {
+        const string source = """
+            class Sample
+            {
+                void Validate(int length, int origin, int size, int address)
+                {
+                    if (length < 0 || length > origin + size - address)
+                    { throw new System.InvalidOperationException("Statement exceeds the declared ROM image."); }
+                }
+            }
+            """;
+
+        const string expected = """
+            class Sample
+            {
+                void Validate(int length, int origin, int size, int address)
+                {
+                    if (length < 0 || length > origin + size - address)
+                    {
+                        throw new System.InvalidOperationException("Statement exceeds the declared ROM image.");
+                    }
+                }
+            }
+            """;
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(expected);
+        string second = await ApplyFixAsync(result).ConfigureAwait(continueOnCapturedContext: false);
+
+        second.Should().Be(result);
+    }
+
+    [TestMethod]
+    [DataRow(FixAllScope.Document)]
+    [DataRow(FixAllScope.Project)]
+    [DataRow(FixAllScope.Solution)]
+    public async Task FormatAll_SplitHeaderInPairedGroup_ExpandsAllBranches(FixAllScope scope)
+    {
+        string source = """
+            class Sample
+            {
+                void M() { }
+
+                void Run(bool ready)
+                {
+                    if (ready)
+                    { M(); }
+                    else { M(); }
+
+                    try
+                    { M(); }
+                    catch { M(); }
+                }
+            }
+            """.ReplaceLineEndings("\n");
+
+        string expected = """
+            class Sample
+            {
+                void M() { }
+
+                void Run(bool ready)
+                {
+                    if (ready)
+                    {
+                        M();
+                    }
+                    else
+                    {
+                        M();
+                    }
+
+                    try
+                    {
+                        M();
+                    }
+                    catch
+                    {
+                        M();
+                    }
+                }
+            }
+            """.ReplaceLineEndings("\n");
+
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new AllmanFormattingAnalyzer(),
+            new FormatAllmanCodeFixProvider(),
+            [("Sample.cs", "Sample.cs", source)],
+            AllmanFormattingAnalyzer.DiagnosticId,
+            fixAll: true,
+            diagnosticOptions: s_enabled,
+            fixAllScope: scope).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.FixAllActionOffered.Should().BeTrue();
+        result.CompilerErrors.Should().BeEmpty();
+        result.Documents[0].Source.Should().Be(expected);
+        result.AnalyzerDiagnostics.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Format_ObjectInitializerWithNestedCollection_LeavesEntriesAdjacent()
+    {
+        const string source = """
+            using System.Diagnostics;
+
+            class Sample
+            {
+                ProcessStartInfo Create() => new()
+                {
+                    FileName = "bash",
+                    ArgumentList =
+                    {
+                        "-c",
+                        "true"
+                    },
+                    RedirectStandardOutput = true
+                };
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new AllmanFormattingAnalyzer(),
+            source,
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().BeEmpty();
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(source);
+    }
+
+    [TestMethod]
+    public async Task Format_LambdaArgumentBeforeSibling_LeavesArgumentsAdjacent()
+    {
+        const string source = """
+            using System;
+
+            class Sample
+            {
+                void Invoke(Action action, int value) { }
+
+                void Run()
+                {
+                    Invoke(
+                        () =>
+                        {
+                        },
+                        1);
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new AllmanFormattingAnalyzer(),
+            source,
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().BeEmpty();
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(source);
+    }
+
+    [TestMethod]
+    public async Task Format_BlockStatementInsideLambdaArgument_StillRequiresBlankLine()
+    {
+        string source = """
+            using System;
+
+            class Sample
+            {
+                void Invoke(Action action, int value) { }
+
+                void Run()
+                {
+                    Invoke(
+                        () =>
+                        {
+                            if (true)
+                            {
+                            }
+                            Console.WriteLine();
+                        },
+                        1);
+                }
+            }
+            """.ReplaceLineEndings("\n");
+
+        string expected = source.Replace(
+            "                }\n                Console",
+            "                }\n\n                Console",
+            StringComparison.Ordinal);
+
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(expected).And.NotBe(source);
+    }
+
+    [TestMethod]
+    [DataRow(data: false)]
+    [DataRow(data: true)]
+    public async Task Format_CollectionExpressionLambdaEntries_PreservesSpacing(bool hasBlankLine)
+    {
+        string source = """
+            using System;
+
+            class Sample
+            {
+                Action[] actions =
+                [
+                    () =>
+                    {
+                    },
+
+                    () =>
+                    {
+                    }
+                ];
+            }
+            """.ReplaceLineEndings("\n");
+
+        if (!hasBlankLine)
+        {
+            source = source.Replace("},\n\n", "},\n", StringComparison.Ordinal);
+        }
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new AllmanFormattingAnalyzer(),
+            source,
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().BeEmpty();
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(source);
+    }
+
+    [TestMethod]
+    public async Task Format_TupleWithAnonymousObjectEntry_LeavesEntriesAdjacent()
+    {
+        const string source = """
+            class Sample
+            {
+                object Value => (
+                    new
+                    {
+                        Number = 1
+                    },
+                    2);
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(
+            new AllmanFormattingAnalyzer(),
+            source,
+            diagnosticOptions: s_enabled).ConfigureAwait(continueOnCapturedContext: false);
+
+        diagnostics.Should().BeEmpty();
+        string result = await ApplyFixAsync(source).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.Should().Be(source);
+    }
+
+    [TestMethod]
     [DataRow(FixAllScope.Document)]
     [DataRow(FixAllScope.Project)]
     [DataRow(FixAllScope.Solution)]
@@ -230,7 +496,6 @@ public class AllmanFormattingCodeFixTests
                     new object
                     {
                     },
-
                     new object
                     {
                     }

@@ -30,5 +30,6 @@
         "/^git\\s+branch\\s+-[dD]\\b/": false,
         "/^gh\\s+pr\\s+(create|merge|close|edit)\\b/": false,
         "/^gh\\s+(repo|release)\\s+/": false
-    }
+    },
+    "dotnet.defaultSolution": "touki.slnx"
 }

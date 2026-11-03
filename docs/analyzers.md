@@ -406,6 +406,11 @@ The physical length includes source indentation, the `///` prefix, and its follo
 Invalid and non-positive values fall through to the next source rather than failing the build.
 
 Fix All supports document, project, solution, containing-member, and containing-type scopes.
+Linked documents are supported even when their projects use different framework symbols or
+formatting options, provided every context produces the same replacement spans and text.
+Fix All updates every linked representation of a selected physical file without selecting
+unrelated files outside its scope. Divergent source, conflicting replacements, or documentation
+that is inactive in a linked context prevent the linked edit.
 
 ## TOUKI0025
 
@@ -599,6 +604,11 @@ A blank line is required only when the following content line has the same inden
 the closing line. No new blank line is required before differently indented content, including an
 outer closing delimiter or an indented continuation, or at EOF. Existing blank lines are preserved.
 
+No block-end blank line is added between parameter/argument-list entries or initializer/collection
+entries, including nested object initializers, collection initializers, and tuple elements.
+This exemption ends at executable statements: blocks inside a lambda argument still follow the
+normal spacing rule, as does a completed statement containing a lambda or initializer.
+
 Continuation clauses (`else`, `catch`, `finally`, and `do`/`while`) and sibling accessors retain
 their adjacency exceptions. Continuation clauses are placed on the next line without an
 intervening blank.
@@ -611,9 +621,23 @@ For a switch expression ending in `};`, the semicolon is the terminator.
 Both blank-line policies skip preprocessor-only and inactive lines without carrying a requirement
 across `#else` or `#elif`.
 
-`allow_single_line_blocks` permits a complete structural brace pair to stay on one line.
+`allow_single_line_blocks` permits a compact body only when its header and both braces are on the
+same physical line and that line fits the configured limit. A header on a preceding line, including a
+multiline header ending beside the opening brace, requires expansion and an indented body:
+
+```csharp
+if (ready)
+{ Run(); } // TOUKI0027
+
+if (ready)
+{
+    Run();
+}
+```
+
+Declaration attributes on preceding lines do not count as part of the header.
 Paired blocks must agree: if any braced branch of an `if`/`else if`/`else` chain or a
-`try`/`catch`/`finally` group is multiline or exceeds the compact-line limit, every braced branch
+`try`/`catch`/`finally` group has a split header, is multiline, or exceeds the compact-line limit, every braced branch
 in that group is expanded. Entirely compact groups remain compact. This does not add braces to
 unbraced statements.
 

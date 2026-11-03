@@ -3,6 +3,7 @@
 // See LICENSE file in the project root for full license information
 
 using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Touki.Analyzers;
@@ -41,12 +42,17 @@ public class XmlDocumentationFormattingCodeFixTests
     }
 
     [TestMethod]
-    [DataRow(FixAllScope.Document)]
-    [DataRow(FixAllScope.Project)]
-    [DataRow(FixAllScope.Solution)]
-    [DataRow(FixAllScope.ContainingMember)]
-    [DataRow(FixAllScope.ContainingType)]
-    public async Task FormatAll_Scope_FixesCommentsWithinScope(FixAllScope scope)
+    [DataRow(FixAllScope.Document, false)]
+    [DataRow(FixAllScope.Project, false)]
+    [DataRow(FixAllScope.Solution, false)]
+    [DataRow(FixAllScope.ContainingMember, false)]
+    [DataRow(FixAllScope.ContainingType, false)]
+    [DataRow(FixAllScope.Document, true)]
+    [DataRow(FixAllScope.Project, true)]
+    [DataRow(FixAllScope.Solution, true)]
+    [DataRow(FixAllScope.ContainingMember, true)]
+    [DataRow(FixAllScope.ContainingType, true)]
+    public async Task FormatAll_Scope_FixesCommentsWithinScope(FixAllScope scope, bool linked)
     {
         const string bothOriginal =
             "class Sample\n"
@@ -109,14 +115,15 @@ public class XmlDocumentationFormattingCodeFixTests
             fixAll: true,
             fixAllScope: scope,
             diagnosticOptions: s_enabled,
+            addLinkedProject: linked,
             additionalProjectSources: additionalProjectSources).ConfigureAwait(continueOnCapturedContext: false);
 
         result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
-        result.InitialAnalyzerDiagnosticCount.Should().Be(4);
+        result.InitialAnalyzerDiagnosticCount.Should().Be(linked ? 7 : 4);
 
-        CodeFixTestDocument both = result.Documents.Single(document => document.Name == "Both.cs");
-        CodeFixTestDocument other = result.Documents.Single(document => document.Name == "Other.cs");
+        CodeFixTestDocument both = result.Documents.First(document => document.Name == "Both.cs");
+        CodeFixTestDocument other = result.Documents.First(document => document.Name == "Other.cs");
         CodeFixTestDocument additional = result.Documents.Single(document => document.Name == "Additional.cs");
         switch (scope)
         {
@@ -124,14 +131,14 @@ public class XmlDocumentationFormattingCodeFixTests
                 both.Source.Should().Be(bothMemberFixed);
                 other.Source.Should().Be(otherOriginal);
                 additional.Source.Should().Be(additionalOriginal);
-                result.AnalyzerDiagnostics.Should().HaveCount(3);
+                result.AnalyzerDiagnostics.Should().HaveCount(linked ? 5 : 3);
                 break;
             case FixAllScope.ContainingType:
             case FixAllScope.Document:
                 both.Source.Should().Be(bothFixed);
                 other.Source.Should().Be(otherOriginal);
                 additional.Source.Should().Be(additionalOriginal);
-                result.AnalyzerDiagnostics.Should().HaveCount(2);
+                result.AnalyzerDiagnostics.Should().HaveCount(linked ? 3 : 2);
                 break;
             case FixAllScope.Project:
                 both.Source.Should().Be(bothFixed);
@@ -146,6 +153,12 @@ public class XmlDocumentationFormattingCodeFixTests
                 result.AnalyzerDiagnostics.Should().BeEmpty();
                 break;
         }
+
+        result.Documents.Where(document => document.Name == "Both.cs")
+            .Should().OnlyContain(document => document.Source == both.Source);
+
+        result.Documents.Where(document => document.Name == "Other.cs")
+            .Should().OnlyContain(document => document.Source == other.Source);
     }
 
     [TestMethod]
@@ -251,9 +264,9 @@ public class XmlDocumentationFormattingCodeFixTests
     [DataRow(FixAllScope.Project)]
     [DataRow(FixAllScope.ContainingMember)]
     [DataRow(FixAllScope.ContainingType)]
-    public async Task FormatAll_LinkedDocumentNarrowScope_OffersNoFix(FixAllScope scope)
+    public async Task FormatAll_LinkedDocumentNarrowScope_FixesBothProjectCopies(FixAllScope scope)
     {
-        const string source = "/// <summary>Shared.</summary>\nclass Shared { }\n";
+        const string source = "class Shared\n{\n    /// <summary>Shared.</summary>\n    void M() { }\n}\n";
 
         CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
             new XmlDocumentationFormattingAnalyzer(),
@@ -266,9 +279,76 @@ public class XmlDocumentationFormattingCodeFixTests
             addLinkedProject: true).ConfigureAwait(continueOnCapturedContext: false);
 
         result.InitialAnalyzerDiagnosticCount.Should().Be(2);
-        result.FixAllActionOffered.Should().BeFalse();
+        result.FixAllActionOffered.Should().BeTrue();
         result.CompilerErrors.Should().BeEmpty();
-        result.AnalyzerDiagnostics.Should().HaveCount(2);
+        result.AnalyzerDiagnostics.Should().BeEmpty();
+        result.Documents.Should().HaveCount(2).And.OnlyContain(document =>
+            document.Source == "class Shared\n{\n    /// <summary>\n    ///  Shared.\n    /// </summary>\n    void M() { }\n}\n");
+    }
+
+    [TestMethod]
+    [DataRow(false, FixAllScope.Document)]
+    [DataRow(true, FixAllScope.Document)]
+    [DataRow(true, FixAllScope.Project)]
+    [DataRow(true, FixAllScope.Solution)]
+    [DataRow(true, FixAllScope.ContainingMember)]
+    [DataRow(true, FixAllScope.ContainingType)]
+    public async Task Format_LinkedFrameworkSymbols_FixesEquivalentReplacements(bool fixAll, FixAllScope scope)
+    {
+        const string source = "class Shared\n{\n    /// <summary>Shared.</summary>\n    void M() { }\n}\n";
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            [("Shared.cs", "Shared.cs", source)],
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll,
+            fixAllScope: scope,
+            diagnosticOptions: s_enabled,
+            addLinkedProject: true,
+            parseOptions: new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: ["NET10_0"]),
+            linkedProjectParseOptions: new CSharpParseOptions(
+                LanguageVersion.Preview,
+                preprocessorSymbols: ["NETSTANDARD2_0"])).ConfigureAwait(continueOnCapturedContext: false);
+
+        result.CodeFixActionOffered.Should().BeTrue();
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().BeEmpty();
+        result.Documents.Should().HaveCount(2).And.OnlyContain(document =>
+            document.Source == "class Shared\n{\n    /// <summary>\n    ///  Shared.\n    /// </summary>\n    void M() { }\n}\n");
+
+        if (fixAll)
+        {
+            result.FixAllActionOffered.Should().BeTrue();
+        }
+    }
+
+    [TestMethod]
+    [DataRow(data: false)]
+    [DataRow(data: true)]
+    public async Task Format_LinkedInactiveComment_OffersNoFix(bool fixAll)
+    {
+        const string source = "#if NET10_0\n/// <summary>Shared.</summary>\nclass Shared { }\n#endif\n";
+        CodeFixTestResult result = await CodeFixTestHarness.ApplyFixToSolutionAsync(
+            new XmlDocumentationFormattingAnalyzer(),
+            new FormatXmlDocumentationCodeFixProvider(),
+            [("Shared.cs", "Shared.cs", source)],
+            XmlDocumentationFormattingAnalyzer.DiagnosticId,
+            fixAll,
+            diagnosticOptions: s_enabled,
+            addLinkedProject: true,
+            parseOptions: new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: ["NET10_0"]),
+            linkedProjectParseOptions: new CSharpParseOptions(
+                LanguageVersion.Preview,
+                preprocessorSymbols: ["NETSTANDARD2_0"])).ConfigureAwait(continueOnCapturedContext: false);
+
+        if (!fixAll)
+        {
+            result.CodeFixActionOffered.Should().BeFalse();
+        }
+
+        result.FixAllActionOffered.Should().NotBe(unexpected: true);
+        result.CompilerErrors.Should().BeEmpty();
+        result.AnalyzerDiagnostics.Should().ContainSingle();
         result.Documents.Should().HaveCount(2).And.OnlyContain(document => document.Source == source);
     }
 

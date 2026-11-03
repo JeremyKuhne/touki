@@ -64,6 +64,28 @@ public sealed partial class FormatXmlDocumentationCodeFixProvider
                 return null;
             }
 
+            foreach (ProjectChanges projectChanges in changedSolution.GetChanges(fixAllContext.Solution).GetProjectChanges())
+            {
+                foreach (DocumentId documentId in projectChanges.GetChangedDocuments())
+                {
+                    fixAllContext.CancellationToken.ThrowIfCancellationRequested();
+                    Document? original = fixAllContext.Solution.GetDocument(documentId);
+                    Document? changed = changedSolution.GetDocument(documentId);
+                    if (original is null || changed is null)
+                    {
+                        continue;
+                    }
+
+                    SourceText text = await changed.GetTextAsync(fixAllContext.CancellationToken).ConfigureAwait(false);
+                    foreach (DocumentId relatedId in DocumentFileUtilities.GetRelatedDocumentIds(
+                        original,
+                        fixAllContext.CancellationToken))
+                    {
+                        changedSolution = changedSolution.WithDocumentText(relatedId, text);
+                    }
+                }
+            }
+
             return CodeAction.Create(
                 Title,
                 cancellationToken =>
